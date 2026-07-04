@@ -4,13 +4,27 @@ import type {
   Activity,
   Campaign,
   Competitor,
+  ContractInfo,
+  DeliveryStatus,
   Meeting,
   NurtureSequence,
+  Payment,
   Prospect,
 } from "./types";
 import { daysAgo, daysAhead } from "./utils";
 
-export const seedProspects: Prospect[] = [
+/** Defaults for fields added over time — applied to every seed prospect. */
+export const prospectDefaults = {
+  likeness: 55,
+  problems: [] as string[],
+  solution: "",
+  personalizedOffer: "",
+  payments: [] as Payment[],
+  contract: { status: "aucun" } as ContractInfo,
+  delivery: "non-demarre" as DeliveryStatus,
+};
+
+const baseProspects = [
   {
     id: "p-bouchon",
     name: "Marc Perrin",
@@ -48,6 +62,16 @@ export const seedProspects: Prospect[] = [
       { id: "a2", name: "maquette-mobile-v2.png", kind: "maquette", size: 890000, addedAt: daysAgo(7) },
     ],
     notes: "Fait 90 couverts le week-end, 15 en semaine. Le mardi soir est mort. Femme tient la caisse — l'inclure dans la boucle.",
+    likeness: 76,
+    problems: [
+      "40+ appels ratés/mois pendant le coup de feu",
+      "Fiche Google à l'abandon (photos 2019, horaires faux)",
+      "Zéro réservation possible hors horaires d'ouverture",
+      "Mardis soirs à 15 couverts sur 90 places",
+    ],
+    solution: "Site vitrine premium + module résa 24/7 + overlay IA qui répond aux appels ratés et relance les no-shows par SMS.",
+    personalizedOffer: "Setup 1 800 € (maquette déjà validée émotionnellement) + 290 €/mois. Garantie : 30 réservations captées hors horaires le 1er mois ou 2e mois offert.",
+    contract: { status: "brouillon" } as ContractInfo,
     createdAt: daysAgo(25),
     updatedAt: daysAgo(2),
   },
@@ -82,6 +106,13 @@ export const seedProspects: Prospect[] = [
     tags: ["vieux-lyon", "événementiel"],
     attachments: [],
     notes: "Anglophone, clientèle expat + étudiants. Très sensible à l'esthétique — la démo doit être léchée.",
+    likeness: 68,
+    problems: [
+      "Mardis/mercredis à 20 % de remplissage",
+      "Événements annoncés à la craie — invisibles en ligne",
+      "Aucune base de contacts d'habitués exploitable",
+    ],
+    solution: "Site événementiel + agenda auto-publié + relances WhatsApp des habitués avant chaque soirée.",
     createdAt: daysAgo(14),
     updatedAt: daysAgo(8),
   },
@@ -154,7 +185,18 @@ export const seedProspects: Prospect[] = [
     tags: ["signé", "referral-source"],
     attachments: [{ id: "a1", name: "proposition-signee.pdf", kind: "proposition", size: 310000, addedAt: daysAgo(18) }],
     notes: "Cliente ambassadrice. Le fils (Thomas) gère le téléphone — le former sur l'overlay IA.",
-    wonAt: daysAgo(18),
+    likeness: 94,
+    problems: ["12 appels manqués/semaine pendant les chantiers", "Ancien site 2014 jamais référencé — traumatisme « payé pour rien »"],
+    solution: "Site premium + formulaire devis intelligent (budget, délai, photos) + notifications SMS instantanées.",
+    personalizedOffer: "Setup 1 200 € + 190 €/mois, garantie résultat conditionnelle (résiliable si < 5 demandes qualifiées/mois après M2).",
+    payments: [
+      { id: "pay1", label: "Setup", amount: 1200, dueDate: daysAgo(16), status: "paye" },
+      { id: "pay2", label: "Abonnement M1", amount: 190, dueDate: daysAgo(10), status: "paye" },
+      { id: "pay3", label: "Abonnement M2", amount: 190, dueDate: daysAhead(20), status: "en-attente" },
+    ] as Payment[],
+    contract: { status: "signe", signedAt: daysAgo(18) } as ContractInfo,
+    delivery: "en-cours" as DeliveryStatus,
+    wonReason: "Garantie résultat conditionnelle + preuve locale (plombier Caluire) — la croyance n°3 a basculé.",
     createdAt: daysAgo(40),
     updatedAt: daysAgo(18),
   },
@@ -282,10 +324,20 @@ export const seedProspects: Prospect[] = [
     tags: ["referral", "chaud"],
     attachments: [{ id: "a1", name: "proposition-fabre.pdf", kind: "proposition", size: 298000, addedAt: daysAgo(1) }],
     notes: "Referral chain : Charbonnier → Fabre. La preuve « pour lui » est déjà faite par Sylvie.",
+    likeness: 82,
+    problems: ["12 appels manqués/semaine sur chantier", "Urgences plomberie perdues = interventions à 300 €+ chez le concurrent"],
+    solution: "Site + capture d'urgence qualifiée en 40 s (adresse, photo, urgence) routée par SMS.",
+    personalizedOffer: "Même formule que Charbonnier (preuve sociale directe) : 1 200 € + 190 €/mois.",
+    contract: { status: "envoye" } as ContractInfo,
     createdAt: daysAgo(18),
     updatedAt: daysAgo(1),
   },
 ];
+
+export const seedProspects: Prospect[] = baseProspects.map((p) => ({
+  ...prospectDefaults,
+  ...p,
+})) as unknown as Prospect[];
 
 export const seedCampaigns: Campaign[] = [
   {
@@ -293,10 +345,16 @@ export const seedCampaigns: Campaign[] = [
     name: "Restos Lyon — Remplir les soirs creux",
     sector: "restaurant",
     status: "active",
+    offerInfo: "Site premium + résa 24/7 + overlay IA anti no-show. Setup 1 800 € + 290 €/mois. Garantie : 30 résas captées hors horaires le 1er mois.",
+    cible: "Restaurateurs indépendants Lyon intra-muros, 30–90 couverts, sans module de réservation en ligne, fiche Google mal tenue.",
+    industries: ["Restauration traditionnelle", "Bouchons lyonnais", "Bistronomie"],
+    marketInfo: "~4 200 restaurants dans le Grand Lyon ; 62 % des recherches « restaurant + quartier » se font après 19h, quand personne ne décroche. TheFork prélève 2–4 €/couvert : l'argument « récupérez vos habitués en direct » porte.",
+    leadMagnet: "Audit gratuit : « Combien vous coûtent vos mardis soirs ? » (calculateur couverts perdus × ticket moyen)",
     steps: [
-      { id: "s1", kind: "email", delayDays: 0, subject: "Vos mardis soirs, M. {prenom}", body: "Bonjour {prenom},\n\nJ'ai compté : {concurrents} restaurants dans votre rue prennent des réservations à 23h. Pas vous.\n\nChaque mardi soir vide vous coûte environ {taxe} €. Je passe 10 minutes vous montrer, sur mon téléphone, à quoi ressemblerait {commerce} en ligne — sans engagement, sans prix, juste pour voir.\n\n{closer} — EAGLEYE, Lyon" },
-      { id: "s2", kind: "whatsapp", delayDays: 3, subject: "Relance douce", body: "Bonjour {prenom}, c'est {closer} (EAGLEYE Lyon). Je vous ai envoyé un mot sur vos soirées creuses — je passe mardi à 15h dans le quartier, je vous montre 2 minutes ?" },
-      { id: "s3", kind: "appel", delayDays: 6, subject: "Appel heure creuse", body: "Appeler entre 14h30 et 17h. Objectif unique : décrocher 20 min d'audit terrain daté. Zéro pitch produit au téléphone." },
+      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Vos mardis soirs, M. {prenom}", body: "Bonjour {prenom},\n\nJ'ai compté : {concurrents} restaurants dans votre rue prennent des réservations à 23h. Pas vous.\n\nChaque mardi soir vide vous coûte environ {taxe} €. Je passe 10 minutes vous montrer, sur mon téléphone, à quoi ressemblerait {commerce} en ligne — sans engagement, sans prix, juste pour voir.\n\n{closer} — EAGLEYE, Lyon" },
+      { id: "s2", kind: "whatsapp", role: "relance", delayDays: 3, subject: "Relance douce", body: "Bonjour {prenom}, c'est {closer} (EAGLEYE Lyon). Je vous ai envoyé un mot sur vos soirées creuses — je passe mardi à 15h dans le quartier, je vous montre 2 minutes ?" },
+      { id: "s3", kind: "appel", role: "relance", delayDays: 6, subject: "Appel heure creuse", body: "Appeler entre 14h30 et 17h. Objectif unique : décrocher 20 min d'audit terrain daté. Zéro pitch produit au téléphone." },
+      { id: "s4", kind: "email", role: "reponse", delayDays: 0, subject: "Réponse à un intéressé", body: "Bonjour {prenom},\n\nParfait — je passe {jour} à 15h (heure creuse) avec deux choses : la maquette de {commerce} sur mon téléphone, et le calcul exact de ce que vous perdez chaque mois. 20 minutes, montre en main.\n\nÀ {jour} !\n{closer}" },
     ],
     stats: { sent: 42, opened: 28, replied: 9, booked: 4 },
     createdAt: daysAgo(20),
@@ -306,9 +364,14 @@ export const seedCampaigns: Campaign[] = [
     name: "Ambulanciers Rhône — Standard 24/7",
     sector: "ambulance",
     status: "active",
+    offerInfo: "Standard IA 24/7 qui qualifie et route les demandes de transport. Setup 2 400 € + 390 €/mois.",
+    cible: "Sociétés d'ambulances 3–15 véhicules du Rhône, standard humain uniquement en journée, co-gérants familiaux.",
+    industries: ["Transport sanitaire", "Ambulances privées", "VSL"],
+    marketInfo: "~180 sociétés de transport sanitaire dans le Rhône. 31 % des demandes de transport programmé arrivent entre 20h et 7h. Décideurs joignables avant 8h (avant les tournées). Cycle de décision : 2 co-gérants → toujours les deux à la démo.",
+    leadMagnet: "Rapport : « Les demandes de transport que votre standard ne voit jamais » (grille d'auto-diagnostic)",
     steps: [
-      { id: "s1", kind: "email", delayDays: 0, subject: "Les demandes de nuit que vous ne voyez jamais", body: "Bonjour {prenom},\n\nEntre 20h et 7h, votre standard dort. Les demandes de transport programmé, elles, continuent d'arriver — chez ceux qui répondent.\n\nOn équipe des ambulanciers du Rhône avec un standard IA qui qualifie et route 24/7. Audit gratuit de vos flux : 20 minutes au dépôt.\n\n{closer} — EAGLEYE" },
-      { id: "s2", kind: "appel", delayDays: 4, subject: "Appel avant tournées", body: "Appeler avant 8h. Mentionner les confrères équipés. Objectif : RDV dépôt daté." },
+      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Les demandes de nuit que vous ne voyez jamais", body: "Bonjour {prenom},\n\nEntre 20h et 7h, votre standard dort. Les demandes de transport programmé, elles, continuent d'arriver — chez ceux qui répondent.\n\nOn équipe des ambulanciers du Rhône avec un standard IA qui qualifie et route 24/7. Audit gratuit de vos flux : 20 minutes au dépôt.\n\n{closer} — EAGLEYE" },
+      { id: "s2", kind: "appel", role: "relance", delayDays: 4, subject: "Appel avant tournées", body: "Appeler avant 8h. Mentionner les confrères équipés. Objectif : RDV dépôt daté." },
     ],
     stats: { sent: 18, opened: 12, replied: 5, booked: 2 },
     createdAt: daysAgo(12),
@@ -318,8 +381,13 @@ export const seedCampaigns: Campaign[] = [
     name: "Artisans — Devis pendant le chantier",
     sector: "artisan",
     status: "brouillon",
+    offerInfo: "Site + formulaire devis intelligent (budget, délai, photos) + SMS instantané. Setup 1 200 € + 190 €/mois, garantie résultat conditionnelle.",
+    cible: "Artisans du bâtiment (plomberie, menuiserie, élec) Lyon + périphérie, 1–5 salariés, sur chantier la journée, sans site ou site mort.",
+    industries: ["Plomberie", "Menuiserie", "Électricité", "Chauffage"],
+    marketInfo: "~11 000 artisans du bâtiment dans la métropole. Un artisan sur chantier rate ~12 appels/semaine ; 70 % des appelants ne rappellent pas et prennent le devis suivant. Meilleur canal d'entrée : referral d'artisan équipé (chaîne Charbonnier → Fabre).",
+    leadMagnet: "Checklist : « 12 appels manqués par semaine = combien de devis perdus ? » (calculateur)",
     steps: [
-      { id: "s1", kind: "email", delayDays: 0, subject: "12 appels manqués par semaine", body: "Bonjour {prenom},\n\nUn artisan sur chantier rate en moyenne 12 appels par semaine. Chaque appel raté = un devis chez le concurrent.\n\nNos artisans reçoivent des demandes pré-qualifiées (budget, délai, photos) par SMS, sans décrocher. {preuve}\n\nJe vous montre sur votre téléphone ? 10 minutes, quand vous voulez.\n\n{closer} — EAGLEYE" },
+      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "12 appels manqués par semaine", body: "Bonjour {prenom},\n\nUn artisan sur chantier rate en moyenne 12 appels par semaine. Chaque appel raté = un devis chez le concurrent.\n\nNos artisans reçoivent des demandes pré-qualifiées (budget, délai, photos) par SMS, sans décrocher. {preuve}\n\nJe vous montre sur votre téléphone ? 10 minutes, quand vous voulez.\n\n{closer} — EAGLEYE" },
     ],
     stats: { sent: 0, opened: 0, replied: 0, booked: 0 },
     createdAt: daysAgo(5),
@@ -327,11 +395,11 @@ export const seedCampaigns: Campaign[] = [
 ];
 
 export const seedMeetings: Meeting[] = [
-  { id: "m1", prospectId: "p-bouchon", title: "Closing — Le Bouchon des Canuts", date: daysAhead(1), durationMin: 45, kind: "closing", location: "Sur place — Croix-Rousse", calLink: "https://cal.com/eagleye/closing-bouchon", reminded: true, done: false },
-  { id: "m2", prospectId: "p-smoking-dog", title: "Démo mobile — Smoking Dog", date: daysAhead(2), durationMin: 30, kind: "demo", location: "Sur place — Vieux Lyon", calLink: "https://cal.com/eagleye/demo-smokingdog", reminded: false, done: false },
-  { id: "m3", prospectId: "p-ambulances-rhone", title: "Audit + démo (les 2 frères)", date: daysAhead(3), durationMin: 60, kind: "audit", location: "Dépôt Villeurbanne", calLink: "https://cal.com/eagleye/audit-rhone", reminded: false, done: false },
-  { id: "m4", prospectId: "p-boulangerie", title: "Appel décision — Plomberie Fabre", date: daysAhead(1), durationMin: 15, kind: "closing", location: "Téléphone", reminded: true, done: false },
-  { id: "m5", prospectId: "p-menuiserie", title: "Onboarding + referrals — Charbonnier", date: daysAhead(5), durationMin: 45, kind: "suivi", location: "Atelier Caluire", calLink: "https://cal.com/eagleye/onboarding-charbonnier", reminded: false, done: false },
+  { id: "m1", prospectId: "p-bouchon", title: "Closing — Le Bouchon des Canuts", date: daysAhead(1), durationMin: 45, kind: "closing", channel: "physique", location: "Sur place — Croix-Rousse", calLink: "https://cal.com/eagleye/closing-bouchon", reminded: true, done: false },
+  { id: "m2", prospectId: "p-smoking-dog", title: "Démo mobile — Smoking Dog", date: daysAhead(2), durationMin: 30, kind: "demo", channel: "physique", location: "Sur place — Vieux Lyon", calLink: "https://cal.com/eagleye/demo-smokingdog", reminded: false, done: false },
+  { id: "m3", prospectId: "p-ambulances-rhone", title: "Audit + démo (les 2 frères)", date: daysAhead(3), durationMin: 60, kind: "audit", channel: "physique", location: "Dépôt Villeurbanne", calLink: "https://cal.com/eagleye/audit-rhone", reminded: false, done: false },
+  { id: "m4", prospectId: "p-boulangerie", title: "Appel décision — Plomberie Fabre", date: daysAhead(1), durationMin: 15, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
+  { id: "m5", prospectId: "p-menuiserie", title: "Onboarding + referrals — Charbonnier", date: daysAhead(5), durationMin: 45, kind: "suivi", channel: "visio", location: "Google Meet", calLink: "https://cal.com/eagleye/onboarding-charbonnier", reminded: false, done: false },
 ];
 
 export const seedNurture: NurtureSequence[] = [

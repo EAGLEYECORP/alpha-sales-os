@@ -77,6 +77,23 @@ export interface TimelineEvent {
   nextStep?: NextStep;
 }
 
+/** Commercial follow-through: money, paper, delivery. */
+export interface Payment {
+  id: string;
+  label: string;
+  amount: number;
+  dueDate: string;
+  status: "en-attente" | "paye" | "retard";
+}
+
+export interface ContractInfo {
+  status: "aucun" | "brouillon" | "envoye" | "signe";
+  url?: string;
+  signedAt?: string;
+}
+
+export type DeliveryStatus = "non-demarre" | "en-cours" | "livre" | "maintenance";
+
 export interface Attachment {
   id: string;
   name: string;
@@ -98,6 +115,8 @@ export interface Prospect {
   stage: Stage;
   /** 0–100, relationship heat */
   trust: number;
+  /** 0–100, likeness/affinity — does he LIKE us? Distinct from trust. */
+  likeness: number;
   /** 0–100, quality/completeness of the audit */
   auditScore: number;
   /** 0–10 — YOUR conviction. Signing requires 10/10. */
@@ -120,6 +139,14 @@ export interface Prospect {
   tags: string[];
   attachments: Attachment[];
   notes: string;
+  /** Deep audit: problems found → solution designed → offer personalized. */
+  problems: string[];
+  solution: string;
+  personalizedOffer: string;
+  payments: Payment[];
+  contract: ContractInfo;
+  delivery: DeliveryStatus;
+  wonReason?: string;
   lostReason?: string;
   wonAt?: string;
   createdAt: string;
@@ -128,9 +155,13 @@ export interface Prospect {
 
 export type CampaignStepKind = "email" | "whatsapp" | "appel";
 
+export type StepRole = "premiere-impression" | "relance" | "reponse";
+
 export interface CampaignStep {
   id: string;
   kind: CampaignStepKind;
+  /** Template role: first impression, follow-up, or reply handler. */
+  role: StepRole;
   delayDays: number;
   subject: string;
   body: string;
@@ -141,12 +172,19 @@ export interface Campaign {
   name: string;
   sector: Sector | "tous";
   status: "brouillon" | "active" | "pausee" | "terminee";
+  /** Offer & targeting intelligence */
+  offerInfo: string;
+  cible: string;
+  industries: string[];
+  marketInfo: string;
+  leadMagnet: string;
   steps: CampaignStep[];
   stats: { sent: number; opened: number; replied: number; booked: number };
   createdAt: string;
 }
 
 export type MeetingKind = "audit" | "demo" | "closing" | "suivi";
+export type MeetingChannel = "appel" | "visio" | "physique";
 
 export interface Meeting {
   id: string;
@@ -155,11 +193,14 @@ export interface Meeting {
   date: string;
   durationMin: number;
   kind: MeetingKind;
+  channel: MeetingChannel;
   location: string;
   calLink?: string;
   reminded: boolean;
   done: boolean;
   outcome?: string;
+  /** Post-meeting feedback from the business — feeds the AI context. */
+  feedback?: string;
 }
 
 export interface NurtureSequence {
@@ -199,6 +240,12 @@ export interface AppSettings {
   businessRules: string;
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
+  security: {
+    /** SHA-256 of the app-lock PIN; null = no lock */
+    pinHash: string | null;
+    /** Require PIN on every app open */
+    autoLock: boolean;
+  };
 }
 
 export interface AuditLogEntry {

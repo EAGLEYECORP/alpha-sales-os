@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Mail, MessageSquare, Phone, Plus, Trash2, Wand2 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import type { Campaign, CampaignStep, CampaignStepKind, Sector } from "@/lib/types";
+import type { Campaign, CampaignStep, CampaignStepKind, Sector, StepRole } from "@/lib/types";
 import { cn, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 
@@ -31,8 +31,13 @@ export default function CampaignsPage() {
       name: "Nouvelle campagne",
       sector: "restaurant",
       status: "brouillon",
+      offerInfo: "",
+      cible: "",
+      industries: [],
+      marketInfo: "",
+      leadMagnet: "",
       steps: [
-        { id: uid(), kind: "email", delayDays: 0, subject: "Accroche douleur", body: "Bonjour {prenom},\n\n…" },
+        { id: uid(), kind: "email", role: "premiere-impression", delayDays: 0, subject: "Accroche douleur", body: "Bonjour {prenom},\n\n…" },
       ],
       stats: { sent: 0, opened: 0, replied: 0, booked: 0 },
       createdAt: new Date().toISOString(),
@@ -62,12 +67,37 @@ export default function CampaignsPage() {
           return (
             <div key={c.id} className="card card-hover p-4">
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-paper">{c.name}</p>
-                  <p className="text-[11px] capitalize text-paper-faint">cible : {c.sector}</p>
+                  <p className="truncate text-[11px] text-paper-faint" title={c.cible}>
+                    {c.cible || <span className="capitalize">secteur : {c.sector}</span>}
+                  </p>
                 </div>
-                <span className={cn("chip", STATUS_TONE[c.status])}>{c.status}</span>
+                <span className={cn("chip shrink-0", STATUS_TONE[c.status])}>{c.status}</span>
               </div>
+
+              {c.industries.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {c.industries.map((ind) => (
+                    <span key={ind} className="chip border-ink-600 text-paper-faint">{ind}</span>
+                  ))}
+                </div>
+              )}
+              {c.offerInfo && (
+                <p className="mt-2 rounded-lg border border-bronze-700/40 bg-bronze-900/20 px-2.5 py-1.5 text-[11px] text-paper-dim">
+                  <span className="text-bronze-400">Offre :</span> {c.offerInfo}
+                </p>
+              )}
+              {c.marketInfo && (
+                <p className="mt-1.5 text-[11px] text-paper-faint" title={c.marketInfo}>
+                  <span className="text-bronze-500">Marché :</span> {c.marketInfo.slice(0, 140)}{c.marketInfo.length > 140 ? "…" : ""}
+                </p>
+              )}
+              {c.leadMagnet && (
+                <p className="mt-1.5 text-[11px] text-paper-faint">
+                  <span className="text-bronze-500">🧲 Lead magnet :</span> {c.leadMagnet}
+                </p>
+              )}
 
               <div className="mt-3 grid grid-cols-4 gap-2 text-center">
                 <Stat label="Envoyés" value={c.stats.sent} />
@@ -180,6 +210,53 @@ function SequenceEditor({
             <option value="artisan">Artisans</option>
           </select>
         </div>
+        <div className="sm:col-span-2">
+          <label className="label">Cible précise (qui exactement ?)</label>
+          <input
+            className="input"
+            value={c.cible}
+            onChange={(e) => setC({ ...c, cible: e.target.value })}
+            placeholder="Restaurateurs indépendants Lyon intra-muros, 30–90 couverts, sans module de résa…"
+          />
+        </div>
+        <div>
+          <label className="label">Offre de la campagne</label>
+          <textarea
+            className="input min-h-16"
+            value={c.offerInfo}
+            onChange={(e) => setC({ ...c, offerInfo: e.target.value })}
+            placeholder="Setup X € + Y €/mois, garantie…"
+          />
+        </div>
+        <div>
+          <label className="label">Lead magnet</label>
+          <textarea
+            className="input min-h-16"
+            value={c.leadMagnet}
+            onChange={(e) => setC({ ...c, leadMagnet: e.target.value })}
+            placeholder="Audit gratuit / checklist / calculateur…"
+          />
+        </div>
+        <div>
+          <label className="label">Industries (séparées par des virgules)</label>
+          <input
+            className="input"
+            value={c.industries.join(", ")}
+            onChange={(e) =>
+              setC({ ...c, industries: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })
+            }
+            placeholder="Bouchons lyonnais, Bistronomie…"
+          />
+        </div>
+        <div>
+          <label className="label">Info marché (vis-à-vis de cette offre)</label>
+          <textarea
+            className="input min-h-16"
+            value={c.marketInfo}
+            onChange={(e) => setC({ ...c, marketInfo: e.target.value })}
+            placeholder="Taille du marché local, comportements d'achat, timing, concurrents…"
+          />
+        </div>
       </div>
 
       <p className="label mt-4">Étapes ({c.steps.length}) — variables : {"{prenom} {commerce} {taxe} {closer} {preuve}"}</p>
@@ -192,6 +269,11 @@ function SequenceEditor({
                 <option value="email">Email</option>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="appel">Appel</option>
+              </select>
+              <select className="input w-44" value={s.role} onChange={(e) => patchStep(s.id, { role: e.target.value as StepRole })}>
+                <option value="premiere-impression">Première impression</option>
+                <option value="relance">Relance</option>
+                <option value="reponse">Réponse</option>
               </select>
               <label className="flex items-center gap-1 text-[12px] text-paper-faint">
                 J+
@@ -232,7 +314,7 @@ function SequenceEditor({
         onClick={() =>
           setC((x) => ({
             ...x,
-            steps: [...x.steps, { id: uid(), kind: "email", delayDays: (x.steps.at(-1)?.delayDays ?? 0) + 3, subject: "", body: "" }],
+            steps: [...x.steps, { id: uid(), kind: "email", role: "relance", delayDays: (x.steps.at(-1)?.delayDays ?? 0) + 3, subject: "", body: "" }],
           }))
         }
       >

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, GripVertical, Smartphone } from "lucide-react";
 import type { Prospect, Stage } from "@/lib/types";
-import { STAGES, weightedValue, croyancesReady } from "@/lib/hormozi";
+import { STAGES, weightedValue, croyancesReady, signingBlockers } from "@/lib/hormozi";
 import { cn, eur, isOverdue, relativeFr } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
 import { ProgressRing } from "@/components/ui/progress-ring";
@@ -20,8 +20,18 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
   const drop = (stage: Stage) => {
     if (!dragId) return;
     const p = prospects.find((x) => x.id === dragId);
-    const res = moveStage(dragId, stage);
-    if (!res.ok && p) setBlockers({ company: p.company, list: res.blockers });
+    if (!p) return;
+    // Ask why yes / why no BEFORE moving — feeds the KPI module.
+    let extra: { wonReason?: string; lostReason?: string } | undefined;
+    if (stage === "signe") {
+      if (signingBlockers(p).length === 0) {
+        extra = { wonReason: prompt("Pourquoi OUI ? (raison du win — alimente les KPIs)") || undefined };
+      }
+    } else if (stage === "perdu") {
+      extra = { lostReason: prompt("Pourquoi NON ? (raison de perte — doctrine : toujours documentée)") || undefined };
+    }
+    const res = moveStage(dragId, stage, extra);
+    if (!res.ok) setBlockers({ company: p.company, list: res.blockers });
     if (res.ok && stage === "signe") fireSignedConfetti();
     setDragId(null);
     setOverStage(null);

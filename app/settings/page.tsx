@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Cloud, CloudOff, Download, KeyRound, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { Cloud, CloudOff, Download, KeyRound, Lock, Plus, RotateCcw, ShieldCheck, Trash2, Upload } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { supabaseEnabled, pushSnapshot, pullSnapshot } from "@/lib/supabase";
-import { uid } from "@/lib/utils";
+import { sha256, uid } from "@/lib/utils";
+import { lockNow } from "@/components/security/lock-gate";
 
 export default function SettingsPage() {
   const { settings, patchSettings, exportData, importData, resetToSeed, prospects } = useAlpha();
@@ -12,6 +13,16 @@ export default function SettingsPage() {
   const [syncMsg, setSyncMsg] = useState("");
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
+  const [newPin, setNewPin] = useState("");
+
+  const setPin = async () => {
+    if (newPin.length < 4) {
+      alert("PIN de 4 chiffres minimum.");
+      return;
+    }
+    patchSettings({ security: { ...settings.security, pinHash: await sha256(newPin), autoLock: true } });
+    setNewPin("");
+  };
 
   const doExportJson = () => {
     const blob = new Blob([exportData()], { type: "application/json" });
@@ -199,6 +210,71 @@ export default function SettingsPage() {
             >
               <RotateCcw size={14} /> Reset seed
             </button>
+          </div>
+        </section>
+
+        {/* Security */}
+        <section className="card p-4 lg:col-span-2">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <ShieldCheck size={15} className="text-bronze-400" /> Sécurité
+          </h2>
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="label">Verrou d&apos;application (PIN)</label>
+              {settings.security.pinHash ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-signal-green">PIN actif ✓ — demandé à chaque nouvelle session navigateur.</p>
+                  <label className="flex items-center gap-2 text-sm text-paper-dim">
+                    <input
+                      type="checkbox"
+                      className="accent-bronze-500"
+                      checked={settings.security.autoLock}
+                      onChange={(e) => patchSettings({ security: { ...settings.security, autoLock: e.target.checked } })}
+                    />
+                    Verrouillage automatique à l&apos;ouverture
+                  </label>
+                  <div className="flex gap-2">
+                    <button className="btn-ghost" onClick={lockNow}>
+                      <Lock size={14} /> Verrouiller maintenant
+                    </button>
+                    <button
+                      className="btn-danger"
+                      onClick={() =>
+                        confirm("Supprimer le PIN ?") &&
+                        patchSettings({ security: { pinHash: null, autoLock: false } })
+                      }
+                    >
+                      Supprimer le PIN
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    className="input w-40 font-mono"
+                    placeholder="Nouveau PIN"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                  />
+                  <button className="btn-bronze" onClick={setPin}>Activer</button>
+                </div>
+              )}
+              <p className="mt-2 text-[11px] text-paper-faint">
+                Défense en profondeur pour un poste laissé ouvert — le PIN est haché (SHA-256), jamais stocké en clair. En mode équipe, l&apos;authentification réelle passe par Supabase (lien magique + RLS).
+              </p>
+            </div>
+            <div>
+              <label className="label">Défenses actives</label>
+              <ul className="space-y-1.5 text-[12px] text-paper-dim">
+                <li>✓ Clé Anthropic <strong className="text-paper">côté serveur uniquement</strong> (jamais exposée au navigateur)</li>
+                <li>✓ En-têtes durcis : CSP, X-Frame-Options DENY, nosniff, Referrer-Policy stricte</li>
+                <li>✓ Supabase : Row Level Security par utilisateur, journal d&apos;audit append-only, bucket privé</li>
+                <li>✓ Sortie IA échappée avant rendu (anti-XSS) · aucune dépendance CDN tierce au runtime</li>
+                <li>✓ Export chiffrable : les données restent locales tant que la sync n&apos;est pas activée</li>
+              </ul>
+            </div>
           </div>
         </section>
 

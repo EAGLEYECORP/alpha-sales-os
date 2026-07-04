@@ -7,6 +7,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -94,6 +95,37 @@ export function ForecastChart({
         <Area type="monotone" dataKey="pondere" stroke={BRONZE_DARK} strokeWidth={2} fill="url(#gradPond)" name="pondere" />
         <Area type="monotone" dataKey="signe" stroke={BRONZE_LIGHT} strokeWidth={2} fill="url(#gradSigne)" name="signe" />
       </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Two-series grouped bars: openness vs responsiveness per campaign (%). */
+export function CampaignRatesChart({
+  data,
+}: {
+  data: { name: string; ouverture: number; reponse: number }[];
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <BarChart data={data} margin={{ left: 4, right: 12, top: 8, bottom: 4 }}>
+        <CartesianGrid stroke={GRID} strokeDasharray="2 4" vertical={false} />
+        <XAxis dataKey="name" tick={{ fill: TEXT, fontSize: 11 }} axisLine={false} tickLine={false} />
+        <YAxis
+          tick={{ fill: TEXT, fontSize: 11 }}
+          axisLine={false}
+          tickLine={false}
+          width={40}
+          unit="%"
+          domain={[0, 100]}
+        />
+        <Tooltip {...tooltipStyle} formatter={(v: number, name: string) => [`${v} %`, name === "ouverture" ? "Taux d'ouverture" : "Taux de réponse"]} />
+        <Legend
+          wrapperStyle={{ fontSize: 11, color: TEXT }}
+          formatter={(v: string) => (v === "ouverture" ? "Ouverture" : "Réponse")}
+        />
+        <Bar dataKey="ouverture" fill={BRONZE_LIGHT} radius={[4, 4, 0, 0]} barSize={18} label={{ position: "top", fill: TEXT, fontSize: 10, formatter: (v: number) => `${v}%` }} />
+        <Bar dataKey="reponse" fill={BRONZE_DARK} radius={[4, 4, 0, 0]} barSize={18} label={{ position: "top", fill: TEXT, fontSize: 10, formatter: (v: number) => `${v}%` }} />
+      </BarChart>
     </ResponsiveContainer>
   );
 }

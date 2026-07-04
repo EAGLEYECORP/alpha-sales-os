@@ -22,6 +22,14 @@ export const daysAhead = (n: number) => new Date(Date.now() + n * 864e5).toISOSt
 
 export const isOverdue = (iso: string) => new Date(iso).getTime() < Date.now();
 
+/** SHA-256 hex digest (Web Crypto) — used for the app-lock PIN. */
+export async function sha256(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export const relativeFr = (iso: string) => {
   const diff = new Date(iso).getTime() - Date.now();
   const days = Math.round(diff / 864e5);

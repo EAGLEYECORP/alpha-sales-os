@@ -7,6 +7,7 @@ import {
   BarChart3,
   CalendarDays,
   Eye,
+  Gauge,
   Kanban,
   Mail,
   Settings,
@@ -17,11 +18,13 @@ import { cn } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
 import { eur } from "@/lib/utils";
 import { weightedValue } from "@/lib/hormozi";
+import { LockGate } from "@/components/security/lock-gate";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
+  { href: "/kpis", label: "KPIs", icon: Gauge },
   { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
   { href: "/nurture", label: "Nurture", icon: Sprout },
   { href: "/intel", label: "Intel Concurrents", icon: Swords },
@@ -30,7 +33,7 @@ const NAV = [
 ];
 
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/", "/pipeline", "/campaigns", "/meetings", "/settings"].includes(n.href)
+  ["/", "/pipeline", "/campaigns", "/kpis", "/settings"].includes(n.href)
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -42,6 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
+    <LockGate>
     <div className="flex min-h-screen">
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-60 flex-col border-r border-ink-700 bg-ink-900/60 sticky top-0 h-screen">
@@ -110,5 +114,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
     </div>
+    </LockGate>
   );
 }

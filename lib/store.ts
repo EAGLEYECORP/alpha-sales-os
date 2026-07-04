@@ -22,6 +22,7 @@ import {
   seedMeetings,
   seedNurture,
   seedProspects,
+  prospectDefaults,
   DEFAULT_BUSINESS_RULES,
 } from "./seed";
 import { stageById, signingBlockers } from "./hormozi";
@@ -42,7 +43,11 @@ interface AlphaState {
   upsertProspect: (p: Prospect) => void;
   patchProspect: (id: string, patch: Partial<Prospect>) => void;
   deleteProspect: (id: string) => void;
-  moveStage: (id: string, stage: Stage) => { ok: boolean; blockers: string[] };
+  moveStage: (
+    id: string,
+    stage: Stage,
+    extra?: { wonReason?: string; lostReason?: string }
+  ) => { ok: boolean; blockers: string[] };
   addEvent: (id: string, ev: Omit<TimelineEvent, "id">) => void;
   setNextStep: (id: string, step: NextStep | null) => void;
 
@@ -72,7 +77,27 @@ const defaultSettings: AppSettings = {
   businessRules: DEFAULT_BUSINESS_RULES,
   apiKeys: [],
   supabaseSync: false,
+  security: { pinHash: null, autoLock: false },
 };
+
+/* Normalizers: fill fields added in later schema versions so old
+   localStorage snapshots and imported JSON keep working. */
+const normalizeProspect = (p: Partial<Prospect>): Prospect =>
+  ({ ...prospectDefaults, ...p }) as Prospect;
+
+const normalizeCampaign = (c: Partial<Campaign>): Campaign =>
+  ({
+    offerInfo: "",
+    cible: "",
+    industries: [],
+    marketInfo: "",
+    leadMagnet: "",
+    ...c,
+    steps: (c.steps ?? []).map((s) => ({ ...s, role: s.role ?? "premiere-impression" })),
+  }) as Campaign;
+
+const normalizeMeeting = (m: Partial<Meeting>): Meeting =>
+  ({ channel: "physique", ...m }) as Meeting;
 
 const audit = (actor: string, action: string, target: string): AuditLogEntry => ({
   id: uid(),
@@ -123,7 +148,7 @@ export const useAlpha = create<AlphaState>()(
           auditLog: [audit(s.settings.closerName, "delete", `prospect:${id}`), ...s.auditLog].slice(0, 500),
         })),
 
-      moveStage: (id, stage) => {
+      moveStage: (id, stage, extra) => {
         const p = get().prospects.find((x) => x.id === id);
         if (!p) return { ok: false, blockers: ["Prospect introuvable"] };
         if (stage === "signe") {
@@ -139,6 +164,9 @@ export const useAlpha = create<AlphaState>()(
                   stage,
                   probability: stageById(stage).probability,
                   wonAt: stage === "signe" ? now : x.wonAt,
+                  wonReason: extra?.wonReason ?? x.wonReason,
+                  lostReason: extra?.lostReason ?? x.lostReason,
+                  contract: stage === "signe" && x.contract.status !== "signe" ? { ...x.contract, status: "signe" as const, signedAt: now } : x.contract,
                   events: [
                     { id: uid(), date: now, kind: "stage" as const, summary: `Étape → ${stageById(stage).label}` },
                     ...x.events,
@@ -226,9 +254,9 @@ export const useAlpha = create<AlphaState>()(
           const data = JSON.parse(json);
           if (!Array.isArray(data.prospects)) throw new Error("Format invalide : « prospects » manquant");
           set((s) => ({
-            prospects: data.prospects,
-            campaigns: data.campaigns ?? s.campaigns,
-            meetings: data.meetings ?? s.meetings,
+            prospects: data.prospects.map(normalizeProspect),
+            campaigns: (data.campaigns ?? s.campaigns).map(normalizeCampaign),
+            meetings: (data.meetings ?? s.meetings).map(normalizeMeeting),
             nurture: data.nurture ?? s.nurture,
             competitors: data.competitors ?? s.competitors,
             activities: data.activities ?? s.activities,
@@ -259,7 +287,18 @@ export const useAlpha = create<AlphaState>()(
     }),
     {
       name: "alpha-sales-os-v2",
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persisted) => {
+        const s = persisted as Partial<AlphaState>;
+        return {
+          ...s,
+          prospects: (s.prospects ?? []).map(normalizeProspect),
+          campaigns: (s.campaigns ?? []).map(normalizeCampaign),
+          meetings: (s.meetings ?? []).map(normalizeMeeting),
+          settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
+        } as AlphaState;
+      },
       onRehydrateStorage: () => (state) => {
         state && useAlpha.setState({ hydrated: true });
       },

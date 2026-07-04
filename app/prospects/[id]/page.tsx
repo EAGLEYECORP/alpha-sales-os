@@ -5,8 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   ArrowLeft,
+  Banknote,
   Bot,
   CalendarPlus,
+  ClipboardList,
+  FileSignature,
   FileText,
   Layers,
   Mail,
@@ -18,6 +21,7 @@ import {
   Smartphone,
   Sparkles,
   Trash2,
+  Video,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { EventKind, Objection, Obstacle, Prospect } from "@/lib/types";
@@ -38,7 +42,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
 import { fireSignedConfetti } from "@/lib/confetti";
 
-type Tab = "doctrine" | "timeline" | "coach" | "templates" | "fichiers";
+type Tab = "doctrine" | "audit" | "timeline" | "commercial" | "coach" | "templates" | "fichiers";
 
 const EVENT_ICONS: Record<EventKind, React.ReactNode> = {
   appel: <Phone size={13} />,
@@ -73,9 +77,13 @@ export default function ProspectDetailPage() {
   const nba = nextBestAction(p);
 
   const trySign = () => {
-    const res = moveStage(p.id, "signe");
+    if (signingBlockers(p).length > 0) {
+      alert(`⛔ Doctrine :\n\n${signingBlockers(p).join("\n")}`);
+      return;
+    }
+    const wonReason = prompt("Pourquoi OUI ? (raison du win — alimente les KPIs)") || undefined;
+    const res = moveStage(p.id, "signe", { wonReason });
     if (res.ok) fireSignedConfetti();
-    else alert(`⛔ Doctrine :\n\n${res.blockers.join("\n")}`);
   };
 
   return (
@@ -111,8 +119,9 @@ export default function ProspectDetailPage() {
               </span>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <ProgressRing value={p.trust} size={52} label="confiance" />
+            <ProgressRing value={p.likeness} size={52} label="affinité" tone="dim" />
             <ProgressRing value={p.auditScore} size={52} label="audit" tone="dim" />
             <ProgressRing value={p.probability} size={52} label="close %" tone={p.probability >= 65 ? "green" : "bronze"} />
             <ProgressRing value={p.conviction} max={10} size={52} label="conviction" tone={p.conviction >= 10 ? "green" : "red"} />
@@ -160,7 +169,9 @@ export default function ProspectDetailPage() {
         {(
           [
             ["doctrine", "Doctrine", <Layers key="i" size={14} />],
+            ["audit", "Audit & Offre", <ClipboardList key="i" size={14} />],
             ["timeline", "Timeline", <CalendarPlus key="i" size={14} />],
+            ["commercial", "Commercial", <Banknote key="i" size={14} />],
             ["coach", "AI Coach", <Bot key="i" size={14} />],
             ["templates", "Templates", <Mail key="i" size={14} />],
             ["fichiers", "Fichiers", <Paperclip key="i" size={14} />],
@@ -180,7 +191,9 @@ export default function ProspectDetailPage() {
       </nav>
 
       {tab === "doctrine" && <DoctrineTab p={p} patch={patchProspect} />}
+      {tab === "audit" && <AuditTab p={p} patch={patchProspect} />}
       {tab === "timeline" && <TimelineTab p={p} addEvent={addEvent} />}
+      {tab === "commercial" && <CommercialTab p={p} patch={patchProspect} />}
       {tab === "coach" && <CoachTab p={p} rules={settings.businessRules} />}
       {tab === "templates" && <TemplatesTab p={p} closer={settings.closerName} />}
       {tab === "fichiers" && <FilesTab p={p} patch={patchProspect} />}
@@ -283,6 +296,18 @@ function DoctrineTab({
             <span className={cn("font-mono", p.conviction >= 10 ? "text-signal-green" : "text-signal-red")}>
               {p.conviction}/10
             </span>
+          </label>
+          <label className="flex items-center gap-2 text-paper-dim">
+            Affinité (il nous apprécie) :
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={p.likeness}
+              onChange={(e) => patch(p.id, { likeness: +e.target.value })}
+              className="w-28 accent-bronze-500"
+            />
+            <span className="font-mono text-bronze-400">{p.likeness}/100</span>
           </label>
         </div>
       </section>
@@ -421,7 +446,240 @@ function DoctrineTab({
   );
 }
 
+/* ── Audit & Offre tab: problems → solution → personalized offer ────── */
+
+function AuditTab({
+  p,
+  patch,
+}: {
+  p: Prospect;
+  patch: (id: string, patch: Partial<Prospect>) => void;
+}) {
+  const [newProblem, setNewProblem] = useState("");
+
+  const addProblem = () => {
+    if (!newProblem.trim()) return;
+    patch(p.id, { problems: [...p.problems, newProblem.trim()] });
+    setNewProblem("");
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <section className="card p-4">
+        <h2 className="font-display text-sm font-semibold text-paper">
+          Problèmes identifiés <span className="text-[11px] font-normal text-paper-faint">(audit profond terrain)</span>
+        </h2>
+        <p className="mt-1 text-[11px] text-paper-faint">
+          Chaque problème chiffrable nourrit la Taxe d&apos;Ignorance. Score audit : profondeur du diagnostic.
+        </p>
+        <ul className="mt-3 space-y-2">
+          {p.problems.map((prob, i) => (
+            <li key={i} className="flex items-start justify-between gap-2 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-paper">
+              <span>• {prob}</span>
+              <button
+                className="text-paper-faint hover:text-signal-red"
+                onClick={() => patch(p.id, { problems: p.problems.filter((_, j) => j !== i) })}
+              >
+                <Trash2 size={13} />
+              </button>
+            </li>
+          ))}
+          {p.problems.length === 0 && <p className="text-sm text-paper-faint">Aucun problème documenté — l&apos;audit n&apos;a pas commencé.</p>}
+        </ul>
+        <div className="mt-3 flex gap-2">
+          <input
+            className="input flex-1"
+            placeholder="Problème constaté sur place…"
+            value={newProblem}
+            onChange={(e) => setNewProblem(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addProblem()}
+          />
+          <button className="btn-ghost" onClick={addProblem}><Plus size={14} /></button>
+        </div>
+        <label className="label mt-4">Score audit (complétude du diagnostic)</label>
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={p.auditScore}
+            onChange={(e) => patch(p.id, { auditScore: +e.target.value })}
+            className="flex-1 accent-bronze-500"
+          />
+          <span className="font-mono text-sm text-bronze-400">{p.auditScore}/100</span>
+        </div>
+      </section>
+
+      <section className="card p-4">
+        <h2 className="font-display text-sm font-semibold text-paper">Solution conçue</h2>
+        <p className="mt-1 text-[11px] text-paper-faint">Le pont entre SES problèmes et NOTRE offre. Spécifique, pas générique.</p>
+        <textarea
+          className="input mt-3 min-h-24"
+          value={p.solution}
+          onChange={(e) => patch(p.id, { solution: e.target.value })}
+          placeholder="Site premium + module résa 24/7 + overlay IA qui…"
+        />
+        <h2 className="mt-4 font-display text-sm font-semibold text-paper">Offre personnalisée</h2>
+        <p className="mt-1 text-[11px] text-paper-faint">
+          Prix, garantie, conditions — formulée pour LUI. C&apos;est ce que le contrat reprendra mot pour mot.
+        </p>
+        <textarea
+          className="input mt-3 min-h-24"
+          value={p.personalizedOffer}
+          onChange={(e) => patch(p.id, { personalizedOffer: e.target.value })}
+          placeholder="Setup X € + Y €/mois. Garantie : …"
+        />
+        <div className="mt-3 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper-dim">
+          Taxe d&apos;Ignorance : <strong className="text-signal-red">{eur(p.ignoranceTax)}/mois</strong> — l&apos;offre doit toujours coûter moins que l&apos;inaction.
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ── Commercial tab: payments, contract, delivery ────────────────────── */
+
+const DELIVERY_LABELS: Record<Prospect["delivery"], string> = {
+  "non-demarre": "Non démarré",
+  "en-cours": "En cours",
+  livre: "Livré",
+  maintenance: "Maintenance",
+};
+
+function CommercialTab({
+  p,
+  patch,
+}: {
+  p: Prospect;
+  patch: (id: string, patch: Partial<Prospect>) => void;
+}) {
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState(0);
+
+  const totalPaid = p.payments.filter((x) => x.status === "paye").reduce((s, x) => s + x.amount, 0);
+  const totalDue = p.payments.filter((x) => x.status !== "paye").reduce((s, x) => s + x.amount, 0);
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {/* Payments */}
+      <section className="card p-4">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <Banknote size={15} className="text-bronze-400" /> Paiements
+        </h2>
+        <div className="mt-2 flex gap-4 font-mono text-sm">
+          <span className="text-signal-green">{eur(totalPaid)} encaissé</span>
+          <span className="text-bronze-400">{eur(totalDue)} attendu</span>
+        </div>
+        <ul className="mt-3 space-y-2">
+          {p.payments.map((pay) => (
+            <li key={pay.id} className="flex items-center justify-between gap-2 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm">
+              <div>
+                <p className="text-paper">{pay.label}</p>
+                <p className="text-[11px] text-paper-faint">échéance {relativeFr(pay.dueDate)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-paper">{eur(pay.amount)}</span>
+                <select
+                  className="input w-28 py-1 text-[11px]"
+                  value={pay.status}
+                  onChange={(e) =>
+                    patch(p.id, {
+                      payments: p.payments.map((x) =>
+                        x.id === pay.id ? { ...x, status: e.target.value as typeof pay.status } : x
+                      ),
+                    })
+                  }
+                >
+                  <option value="en-attente">En attente</option>
+                  <option value="paye">Payé ✓</option>
+                  <option value="retard">En retard ⚠</option>
+                </select>
+              </div>
+            </li>
+          ))}
+          {p.payments.length === 0 && <p className="text-sm text-paper-faint">Aucun paiement planifié.</p>}
+        </ul>
+        <div className="mt-3 flex gap-2">
+          <input className="input flex-1" placeholder="Libellé (Setup, M1…)" value={label} onChange={(e) => setLabel(e.target.value)} />
+          <input type="number" className="input w-28" placeholder="€" value={amount || ""} onChange={(e) => setAmount(+e.target.value)} />
+          <button
+            className="btn-ghost"
+            onClick={() => {
+              if (!label.trim() || !amount) return;
+              patch(p.id, {
+                payments: [...p.payments, { id: uid(), label, amount, dueDate: daysAhead(14), status: "en-attente" }],
+              });
+              setLabel("");
+              setAmount(0);
+            }}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      </section>
+
+      {/* Contract + delivery */}
+      <section className="card p-4">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <FileSignature size={15} className="text-bronze-400" /> Contrat & livraison
+        </h2>
+        <label className="label mt-3">Statut du contrat</label>
+        <select
+          className="input"
+          value={p.contract.status}
+          onChange={(e) =>
+            patch(p.id, {
+              contract: {
+                ...p.contract,
+                status: e.target.value as Prospect["contract"]["status"],
+                signedAt: e.target.value === "signe" ? (p.contract.signedAt ?? new Date().toISOString()) : p.contract.signedAt,
+              },
+            })
+          }
+        >
+          <option value="aucun">Aucun</option>
+          <option value="brouillon">Brouillon</option>
+          <option value="envoye">Envoyé</option>
+          <option value="signe">Signé ✓</option>
+        </select>
+        {p.contract.signedAt && (
+          <p className="mt-1 text-[11px] text-signal-green">Signé le {dateTimeFr(p.contract.signedAt)}</p>
+        )}
+        <label className="label mt-3">Lien du contrat (Drive, DocuSign…)</label>
+        <input
+          className="input"
+          placeholder="https://…"
+          value={p.contract.url ?? ""}
+          onChange={(e) => patch(p.id, { contract: { ...p.contract, url: e.target.value } })}
+        />
+
+        <label className="label mt-4">Statut de livraison</label>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(DELIVERY_LABELS) as Prospect["delivery"][]).map((d) => (
+            <button
+              key={d}
+              className={p.delivery === d ? "btn-bronze" : "btn-ghost"}
+              onClick={() => patch(p.id, { delivery: d })}
+            >
+              {DELIVERY_LABELS[d]}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] italic text-paper-faint">
+          Croyance n°2 (« tu le soutiens ») se prouve ici : livraison rapide + suivi visible = referrals.
+        </p>
+      </section>
+    </div>
+  );
+}
+
 /* ── Timeline tab ────────────────────────────────────────────────────── */
+
+const CHANNEL_ICON = {
+  appel: <Phone size={12} />,
+  visio: <Video size={12} />,
+  physique: <ArrowLeft size={12} className="rotate-45" />,
+};
 
 function TimelineTab({
   p,
@@ -430,6 +688,10 @@ function TimelineTab({
   p: Prospect;
   addEvent: (id: string, ev: Omit<Prospect["events"][number], "id">) => void;
 }) {
+  const { meetings, upsertMeeting } = useAlpha();
+  const myMeetings = meetings
+    .filter((m) => m.prospectId === p.id)
+    .sort((a, b) => b.date.localeCompare(a.date));
   const [kind, setKind] = useState<EventKind>("appel");
   const [summary, setSummary] = useState("");
   const [nextAction, setNextAction] = useState("");
@@ -499,6 +761,33 @@ function TimelineTab({
         <button className="btn-bronze mt-4 w-full" onClick={submit}>
           Enregistrer le contact
         </button>
+
+        {/* Meetings history + feedback */}
+        <h2 className="mb-2 mt-6 border-t border-ink-700 pt-4 font-display text-sm font-semibold text-paper">
+          Rendez-vous ({myMeetings.length})
+        </h2>
+        <ul className="space-y-2">
+          {myMeetings.map((m) => (
+            <li key={m.id} className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+              <p className="flex items-center gap-1.5 text-sm text-paper">
+                <span className="text-bronze-400">{CHANNEL_ICON[m.channel]}</span>
+                {m.title}
+              </p>
+              <p className="text-[11px] text-paper-faint">
+                {m.channel} · {dateTimeFr(m.date)} {m.done ? "· fait ✓" : `· ${relativeFr(m.date)}`}
+              </p>
+              {m.done && (
+                <textarea
+                  className="input mt-2 min-h-14 text-[12px]"
+                  placeholder="Feedback du RDV (alimente l'IA et l'historique)…"
+                  value={m.feedback ?? m.outcome ?? ""}
+                  onChange={(e) => upsertMeeting({ ...m, feedback: e.target.value })}
+                />
+              )}
+            </li>
+          ))}
+          {myMeetings.length === 0 && <p className="text-[12px] text-paper-faint">Aucun RDV pour ce prospect.</p>}
+        </ul>
       </section>
     </div>
   );

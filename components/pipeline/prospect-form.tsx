@@ -30,6 +30,13 @@ const emptyProspect = (): Prospect => ({
   tags: [],
   attachments: [],
   notes: "",
+  likeness: 50,
+  problems: [],
+  solution: "",
+  personalizedOffer: "",
+  payments: [],
+  contract: { status: "aucun" },
+  delivery: "non-demarre",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Bell, BellOff, CalendarDays, Check, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import type { Meeting, MeetingKind } from "@/lib/types";
+import type { Meeting, MeetingChannel, MeetingKind } from "@/lib/types";
 import { cn, dateTimeFr, daysAhead, isOverdue, relativeFr, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 
@@ -13,6 +13,12 @@ const KIND_LABEL: Record<MeetingKind, string> = {
   demo: "Démo mobile",
   closing: "Closing",
   suivi: "Suivi client",
+};
+
+const CHANNEL_LABEL: Record<MeetingChannel, string> = {
+  appel: "📞 Appel",
+  visio: "🎥 Visio",
+  physique: "🤝 Physique",
 };
 
 export default function MeetingsPage() {
@@ -48,7 +54,7 @@ export default function MeetingsPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-paper">{m.title}</p>
                 <p className="text-[12px] text-paper-faint">
-                  {KIND_LABEL[m.kind]} · {dateTimeFr(m.date)} ({relativeFr(m.date)}) · {m.durationMin} min · {m.location}
+                  {KIND_LABEL[m.kind]} · {CHANNEL_LABEL[m.channel]} · {dateTimeFr(m.date)} ({relativeFr(m.date)}) · {m.durationMin} min · {m.location}
                   {p && (
                     <>
                       {" · "}
@@ -76,8 +82,8 @@ export default function MeetingsPage() {
                   className="btn-ghost px-2.5"
                   title="Marquer fait"
                   onClick={() => {
-                    const outcome = prompt("Résultat du RDV + next step daté ?") ?? "";
-                    upsertMeeting({ ...m, done: true, outcome });
+                    const outcome = prompt("Feedback du RDV + next step daté ? (alimente l'IA)") ?? "";
+                    upsertMeeting({ ...m, done: true, outcome, feedback: outcome });
                   }}
                 >
                   <Check size={14} />
@@ -127,6 +133,7 @@ function MeetingForm({ onClose }: { onClose: () => void }) {
     date: daysAhead(1),
     durationMin: 30,
     kind: "audit",
+    channel: "physique",
     location: "Sur place",
     calLink: "",
     reminded: false,
@@ -151,17 +158,31 @@ function MeetingForm({ onClose }: { onClose: () => void }) {
             ))}
           </select>
         </div>
-        <div>
-          <label className="label">Type</label>
-          <select
-            className="input"
-            value={form.kind}
-            onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as MeetingKind }))}
-          >
-            {Object.entries(KIND_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Type</label>
+            <select
+              className="input"
+              value={form.kind}
+              onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value as MeetingKind }))}
+            >
+              {Object.entries(KIND_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Canal</label>
+            <select
+              className="input"
+              value={form.channel}
+              onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value as MeetingChannel }))}
+            >
+              {Object.entries(CHANNEL_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div>
           <label className="label">Titre</label>
