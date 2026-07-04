@@ -64,6 +64,10 @@ interface AlphaState {
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
   importData: (json: string) => { ok: boolean; error?: string };
+  /** Merge imported prospects: match by email or company (case-insensitive). */
+  importProspects: (list: Prospect[]) => { added: number; updated: number };
+  /** Wipe ALL business data (prospects, campaigns, meetings, activities, intel) — start real. */
+  clearAllData: () => void;
   exportData: () => string;
   resetToSeed: () => void;
 }
@@ -268,6 +272,66 @@ export const useAlpha = create<AlphaState>()(
           return { ok: false, error: e instanceof Error ? e.message : "JSON invalide" };
         }
       },
+
+      importProspects: (list) => {
+        let added = 0;
+        let updated = 0;
+        set((s) => {
+          const next = [...s.prospects];
+          for (const raw of list) {
+            const p = normalizeProspect(raw);
+            const idx = next.findIndex(
+              (x) =>
+                (p.email && x.email && x.email.toLowerCase() === p.email.toLowerCase()) ||
+                x.company.trim().toLowerCase() === p.company.trim().toLowerCase()
+            );
+            if (idx >= 0) {
+              // keep local pipeline state, refresh identity + audit data
+              next[idx] = {
+                ...next[idx],
+                name: p.name || next[idx].name,
+                phone: p.phone ?? next[idx].phone,
+                email: p.email ?? next[idx].email,
+                city: p.city || next[idx].city,
+                sector: p.sector !== "autre" ? p.sector : next[idx].sector,
+                monthlyValue: p.monthlyValue || next[idx].monthlyValue,
+                setupValue: p.setupValue || next[idx].setupValue,
+                ignoranceTax: p.ignoranceTax || next[idx].ignoranceTax,
+                notes: p.notes || next[idx].notes,
+                problems: p.problems.length ? p.problems : next[idx].problems,
+                deepAudit: { ...next[idx].deepAudit, ...Object.fromEntries(Object.entries(p.deepAudit).filter(([, v]) => v !== undefined && v !== "")) },
+                updatedAt: new Date().toISOString(),
+              };
+              updated++;
+            } else {
+              next.unshift(p);
+              added++;
+            }
+          }
+          return {
+            prospects: next,
+            activities: [
+              { id: uid(), date: new Date().toISOString(), kind: "systeme" as const, message: `Import : ${added} nouveau(x) prospect(s), ${updated} mis à jour` },
+              ...s.activities,
+            ],
+            auditLog: [audit(s.settings.closerName, "import-csv", `${added} added / ${updated} updated`), ...s.auditLog].slice(0, 500),
+          };
+        });
+        return { added, updated };
+      },
+
+      clearAllData: () =>
+        set((s) => ({
+          prospects: [],
+          campaigns: [],
+          meetings: [],
+          nurture: [],
+          competitors: [],
+          activities: [
+            { id: uid(), date: new Date().toISOString(), kind: "systeme" as const, message: "Données de démo effacées — mode données réelles" },
+          ],
+          auditLog: [audit(s.settings.closerName, "clear-all", "all business data"), ...s.auditLog].slice(0, 500),
+        })),
 
       exportData: () => {
         const { prospects, campaigns, meetings, nurture, competitors, activities, settings } = get();

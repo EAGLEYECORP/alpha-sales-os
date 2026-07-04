@@ -11,6 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { SEED_PROSPECT_IDS } from "@/lib/seed";
 import { STAGES, BLAME_LAYERS, weightedValue, ignoranceTaxTotal, nextBestAction } from "@/lib/hormozi";
 import type { BlameLayer, Sector } from "@/lib/types";
 import { eur, isOverdue, relativeFr } from "@/lib/utils";
@@ -101,6 +102,22 @@ export default function DashboardPage() {
         <Kpi icon={<Flame size={16} />} label="Taxe d'Ignorance du pipe" value={`${eur(taxTotal)}/mois`} sub="ce que les prospects perdent" tone="red" />
         <Kpi icon={<Coins size={16} />} label={`Commission ${settings.commissionPct}% (CA an)`} value={eur(commission)} sub="sur MRR signé" />
       </section>
+
+      {/* Demo-data banner — push toward real data */}
+      {prospects.some((p) => SEED_PROSPECT_IDS.includes(p.id)) && (
+        <section className="card border-bronze-700/60 bg-bronze-900/20 px-4 py-3">
+          <p className="text-sm text-paper">
+            <strong className="text-bronze-300">Données de démo actives.</strong>{" "}
+            <span className="text-paper-dim">
+              Pour passer en réel :{" "}
+              <Link href="/settings" className="text-bronze-400 underline hover:text-bronze-300">
+                Réglages → Tout vider
+              </Link>{" "}
+              puis importe ton Google Sheet / CSV (prospects + deep audit).
+            </span>
+          </p>
+        </section>
+      )}
 
       {/* Doctrine alerts */}
       {(overdue.length > 0 || noStep.length > 0) && (

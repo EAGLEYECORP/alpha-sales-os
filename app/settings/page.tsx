@@ -1,15 +1,19 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Cloud, CloudOff, Download, KeyRound, Lock, Plus, RotateCcw, ShieldCheck, Trash2, Upload } from "lucide-react";
+import { Cloud, CloudOff, Download, Eraser, FileSpreadsheet, KeyRound, Lock, Plus, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Webhook } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { supabaseEnabled, pushSnapshot, pullSnapshot } from "@/lib/supabase";
 import { sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
+import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
 
 export default function SettingsPage() {
-  const { settings, patchSettings, exportData, importData, resetToSeed, prospects } = useAlpha();
+  const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, prospects } = useAlpha();
   const importRef = useRef<HTMLInputElement>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [importMsg, setImportMsg] = useState("");
   const [syncMsg, setSyncMsg] = useState("");
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
@@ -44,6 +48,44 @@ export default function SettingsPage() {
     a.href = URL.createObjectURL(blob);
     a.download = `prospects-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
+  };
+
+  const applyCsv = (text: string) => {
+    const { prospects: parsed, skipped, headersFound } = csvToProspects(text);
+    if (parsed.length === 0) {
+      setImportMsg(
+        `Aucun prospect reconnu (${skipped} ligne(s) ignorée(s)). Colonnes détectées : ${headersFound.join(", ") || "aucune"}. Il faut au minimum une colonne « company / commerce ».`
+      );
+      return;
+    }
+    const { added, updated } = importProspects(parsed);
+    setImportMsg(`✓ Import réussi : ${added} nouveau(x), ${updated} mis à jour, ${skipped} ligne(s) ignorée(s).`);
+  };
+
+  const doImportCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => applyCsv(String(reader.result));
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const doImportSheet = async () => {
+    if (!sheetUrl.trim()) return;
+    setImportMsg("Récupération de la feuille…");
+    try {
+      const res = await fetch(`/api/import/sheet?url=${encodeURIComponent(sheetUrl.trim())}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setImportMsg(`Échec : ${data.error ?? res.status}`);
+        return;
+      }
+      applyCsv(await res.text());
+      setSheetUrl("");
+    } catch {
+      setImportMsg("Échec réseau — réessaie.");
+    }
   };
 
   const doImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,26 +232,89 @@ export default function SettingsPage() {
           />
         </section>
 
-        {/* Data */}
-        <section className="card p-4">
-          <h2 className="font-display text-sm font-semibold text-paper">Données</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button className="btn-ghost" onClick={doExportJson}>
-              <Download size={14} /> Export JSON
-            </button>
-            <button className="btn-ghost" onClick={doExportCsv}>
-              <Download size={14} /> Export CSV
-            </button>
-            <button className="btn-ghost" onClick={() => importRef.current?.click()}>
-              <Upload size={14} /> Import JSON
-            </button>
-            <input ref={importRef} type="file" accept=".json" className="hidden" onChange={doImport} />
-            <button
-              className="btn-danger"
-              onClick={() => confirm("Réinitialiser avec les données de démo ? Tout sera perdu.") && resetToSeed()}
-            >
-              <RotateCcw size={14} /> Reset seed
-            </button>
+        {/* Data — real data first */}
+        <section className="card p-4 lg:col-span-2">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <Table2 size={15} className="text-bronze-400" /> Données réelles — import & export
+          </h2>
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="label">Importer depuis Google Sheets</label>
+              <p className="mb-2 text-[11px] text-paper-faint">
+                Colle un lien de partage (« tous ceux qui ont le lien ») ou de publication CSV. Les prospects sont fusionnés par email/commerce — jamais dupliqués.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1"
+                  placeholder="https://docs.google.com/spreadsheets/d/…"
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && doImportSheet()}
+                />
+                <button className="btn-bronze" onClick={doImportSheet}>
+                  <FileSpreadsheet size={14} /> Importer
+                </button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button className="btn-ghost" onClick={() => csvRef.current?.click()}>
+                  <Upload size={14} /> Fichier CSV
+                </button>
+                <input ref={csvRef} type="file" accept=".csv,text/csv" className="hidden" onChange={doImportCsvFile} />
+                <button
+                  className="btn-ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(CSV_TEMPLATE_HEADER.replace(/;/g, "\t"));
+                    setImportMsg("✓ En-têtes copiés — colle-les dans la 1re ligne de ta feuille (colonnes séparées par tabulation).");
+                  }}
+                >
+                  Copier le modèle de colonnes
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-paper-faint">
+                Colonnes reconnues : commerce, nom, secteur, ville, téléphone, email, étape, abonnement, setup, taxe, note Google, avis, appels ratés, panier moyen, conversion, site, réseaux, concurrence, process, problèmes (séparés par |), notes.
+              </p>
+              {importMsg && <p className="mt-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-[12px] text-paper-dim">{importMsg}</p>}
+            </div>
+            <div>
+              <label className="label">Exports & remise à zéro</label>
+              <div className="flex flex-wrap gap-2">
+                <button className="btn-ghost" onClick={doExportJson}>
+                  <Download size={14} /> Export JSON
+                </button>
+                <button className="btn-ghost" onClick={doExportCsv}>
+                  <Download size={14} /> Export CSV
+                </button>
+                <button className="btn-ghost" onClick={() => importRef.current?.click()}>
+                  <Upload size={14} /> Import JSON
+                </button>
+                <input ref={importRef} type="file" accept=".json" className="hidden" onChange={doImport} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  className="btn-danger"
+                  onClick={() =>
+                    confirm("Effacer TOUTES les données (prospects, campagnes, RDV, intel) pour démarrer avec tes vraies données ?") && clearAllData()
+                  }
+                >
+                  <Eraser size={14} /> Tout vider — mode données réelles
+                </button>
+                <button
+                  className="btn-ghost"
+                  onClick={() => confirm("Restaurer les données de démo Lyon ? Les données actuelles seront perdues.") && resetToSeed()}
+                >
+                  <RotateCcw size={14} /> Restaurer la démo
+                </button>
+              </div>
+              <label className="label mt-4 flex items-center gap-1.5"><Webhook size={13} className="text-bronze-400" /> Webhook entrant (réponses)</label>
+              <code className="block rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 font-mono text-[11px] text-paper-dim">
+                POST {typeof window !== "undefined" ? window.location.origin : ""}/api/webhooks/inbound<br />
+                Header x-webhook-secret: $WEBHOOK_SECRET<br />
+                {"{"} &quot;type&quot;: &quot;email.reply&quot;, &quot;email&quot;: &quot;…&quot;, &quot;message&quot;: &quot;…&quot; {"}"}
+              </code>
+              <p className="mt-1.5 text-[11px] text-paper-faint">
+                Branche Instantly / Smartlead / Zapier / Make dessus. Les réponses arrivent dans Campagnes → Réponses entrantes. Définis <code className="font-mono text-bronze-400">WEBHOOK_SECRET</code> (+ <code className="font-mono text-bronze-400">SUPABASE_SERVICE_ROLE_KEY</code> en prod serverless).
+              </p>
+            </div>
           </div>
         </section>
 

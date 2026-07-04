@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import type { Campaign, CampaignStep, CampaignStepKind, Sector, StepRole } from "@/lib/types";
 import { cn, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { InboundInbox } from "@/components/campaigns/inbox";
 
 const KIND_ICON: Record<CampaignStepKind, React.ReactNode> = {
   email: <Mail size={13} />,
@@ -59,6 +60,8 @@ export default function CampaignsPage() {
           </button>
         </div>
       </header>
+
+      <InboundInbox />
 
       <div className="grid gap-4 md:grid-cols-2">
         {campaigns.map((c) => {

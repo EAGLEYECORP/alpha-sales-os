@@ -57,6 +57,27 @@ alpha-sales-os/
 └── supabase/schema.sql         # Tables + RLS + storage + audit log
 ```
 
+## Données réelles (pas de mock)
+
+- **Tout vider** : Réglages → « Tout vider — mode données réelles » efface la démo.
+- **Import Google Sheets** : colle un lien de partage (« tous ceux qui ont le lien ») ou de publication CSV — le serveur convertit et fusionne (matching par email/commerce, jamais de doublon). Import fichier CSV identique.
+- **Colonnes reconnues** (FR/EN, accents ignorés) : commerce, nom, secteur, ville, téléphone, email, étape, abonnement, setup, taxe, **note Google, avis, appels ratés/sem, panier moyen, % conversion, site, réseaux, concurrence, process**, problèmes (séparés par `|`), notes. Bouton « Copier le modèle de colonnes » dans Réglages.
+- **Deep audit par prospect** : onglet Audit & Offre → grille structurée (Google rating/avis, appels ratés, panier, conversion, site, réseaux, concurrence locale, process actuel) avec **calcul automatique de la Taxe d'Ignorance** (appels ratés × 4,33 × conversion × panier) applicable au deal en un clic.
+
+## Webhooks — réponses entrantes
+
+```
+POST /api/webhooks/inbound
+Header : x-webhook-secret: $WEBHOOK_SECRET
+Body   : { "type": "email.reply", "email": "…", "name": "…", "campaignId": "…", "message": "…" }
+```
+
+Branche Instantly / Smartlead / Lemlist / Zapier / Make dessus. Les événements apparaissent dans **Campagnes → Réponses entrantes** : attache-les au prospect (timeline + stats campagne + trust), ou crée le prospect à la volée, et génère un **brouillon de réponse IA** (objectif unique : un créneau daté, jamais de prix par écrit avant la démo). Stockage : mémoire process en local, table `inbound_events` Supabase (clé `SUPABASE_SERVICE_ROLE_KEY`) en serverless.
+
+## Agent conversationnel ALPHA
+
+Page **Agent ALPHA** : chat en streaming branché sur l'état réel complet (deals, croyances, audits, RDV, campagnes, règles business). « Prépare ma journée », « quels deals sont en danger ? », rédaction de relances… Sans clé API, il répond quand même avec un briefing chiffré hors-ligne.
+
 ## Lancer en local
 
 ```bash

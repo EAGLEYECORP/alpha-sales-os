@@ -31,6 +31,7 @@ const emptyProspect = (): Prospect => ({
   attachments: [],
   notes: "",
   likeness: 50,
+  deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "" },
   problems: [],
   solution: "",
   personalizedOffer: "",

@@ -77,6 +77,38 @@ export interface TimelineEvent {
   nextStep?: NextStep;
 }
 
+/**
+ * Full deep audit — the structured field diagnosis. Every number here is
+ * REAL, measured on site or from public data. Importable via CSV/Sheet.
+ */
+export interface DeepAudit {
+  googleRating?: number;
+  googleReviews?: number;
+  /** State of current website: "aucun", "obsolète (2014)", url… */
+  websiteState: string;
+  socialState: string;
+  missedCallsPerWeek?: number;
+  /** average basket / ticket in € */
+  avgTicket?: number;
+  /** % of missed contacts that would have converted */
+  conversionRate?: number;
+  localCompetition: string;
+  currentProcess: string;
+  updatedAt?: string;
+}
+
+/** Inbound webhook event (email reply/open, WhatsApp, form…). */
+export interface InboundEvent {
+  id: string;
+  receivedAt: string;
+  type: "email.reply" | "email.open" | "whatsapp.reply" | "form.submit" | "autre";
+  email: string;
+  name?: string;
+  campaignId?: string;
+  message: string;
+  processed: boolean;
+}
+
 /** Commercial follow-through: money, paper, delivery. */
 export interface Payment {
   id: string;
@@ -140,6 +172,7 @@ export interface Prospect {
   attachments: Attachment[];
   notes: string;
   /** Deep audit: problems found → solution designed → offer personalized. */
+  deepAudit: DeepAudit;
   problems: string[];
   solution: string;
   personalizedOffer: string;

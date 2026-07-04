@@ -5,6 +5,7 @@ import type {
   Campaign,
   Competitor,
   ContractInfo,
+  DeepAudit,
   DeliveryStatus,
   Meeting,
   NurtureSequence,
@@ -22,7 +23,25 @@ export const prospectDefaults = {
   payments: [] as Payment[],
   contract: { status: "aucun" } as ContractInfo,
   delivery: "non-demarre" as DeliveryStatus,
+  deepAudit: {
+    websiteState: "",
+    socialState: "",
+    localCompetition: "",
+    currentProcess: "",
+  } as DeepAudit,
 };
+
+/** Ids of the demo dataset — used to detect « données de démo » in the UI. */
+export const SEED_PROSPECT_IDS = [
+  "p-bouchon",
+  "p-smoking-dog",
+  "p-ambulances-rhone",
+  "p-menuiserie",
+  "p-brasserie-part-dieu",
+  "p-taxi-fourviere",
+  "p-paddy",
+  "p-boulangerie",
+];
 
 const baseProspects = [
   {

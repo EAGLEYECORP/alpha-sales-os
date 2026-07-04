@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
+  Bot,
   CalendarDays,
   Eye,
   Gauge,
@@ -24,6 +25,7 @@ import { LockGate } from "@/components/security/lock-gate";
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
+  { href: "/agent", label: "Agent ALPHA", icon: Bot },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
   { href: "/kpis", label: "KPIs", icon: Gauge },
   { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
@@ -34,7 +36,7 @@ const NAV = [
 ];
 
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/", "/pipeline", "/campaigns", "/kpis", "/settings"].includes(n.href)
+  ["/", "/pipeline", "/agent", "/campaigns", "/settings"].includes(n.href)
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {

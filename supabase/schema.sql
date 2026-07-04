@@ -103,6 +103,23 @@ create policy "audit select own" on public.audit_log for select using (auth.uid(
 create policy "audit insert own" on public.audit_log for insert with check (auth.uid() = user_id);
 -- no update/delete policies: audit log is append-only
 
+-- Inbound webhook events -------------------------------------------------
+-- Written by the /api/webhooks/inbound route using the SERVICE ROLE key
+-- (server-side only). RLS is enabled with NO policies: anon/authenticated
+-- clients cannot touch it; only the service role bypasses RLS.
+create table if not exists public.inbound_events (
+  id text primary key,
+  received_at timestamptz not null default now(),
+  type text not null,
+  email text not null,
+  name text,
+  campaign_id text,
+  message text not null default '',
+  processed boolean not null default false
+);
+create index if not exists inbound_unprocessed_idx on public.inbound_events (processed, received_at desc);
+alter table public.inbound_events enable row level security;
+
 -- Realtime -------------------------------------------------------------------
 -- Dashboard → Database → Replication → enable for prospects/meetings if you
 -- want live team sync, then subscribe client-side with sb.channel(...).

@@ -456,6 +456,10 @@ function AuditTab({
   patch: (id: string, patch: Partial<Prospect>) => void;
 }) {
   const [newProblem, setNewProblem] = useState("");
+  const audit = p.deepAudit;
+
+  const patchAudit = (partial: Partial<Prospect["deepAudit"]>) =>
+    patch(p.id, { deepAudit: { ...audit, ...partial, updatedAt: new Date().toISOString() } });
 
   const addProblem = () => {
     if (!newProblem.trim()) return;
@@ -463,8 +467,91 @@ function AuditTab({
     setNewProblem("");
   };
 
+  // Taxe d'Ignorance = appels ratés/sem × 4,33 sem × taux conv × panier moyen
+  const computedTax =
+    audit.missedCallsPerWeek && audit.avgTicket
+      ? Math.round(audit.missedCallsPerWeek * 4.33 * ((audit.conversionRate ?? 30) / 100) * audit.avgTicket)
+      : null;
+
+  const auditFields = [
+    audit.googleRating,
+    audit.googleReviews,
+    audit.websiteState,
+    audit.socialState,
+    audit.missedCallsPerWeek,
+    audit.avgTicket,
+    audit.localCompetition,
+    audit.currentProcess,
+  ];
+  const completeness = Math.round((auditFields.filter((f) => f !== undefined && f !== "").length / auditFields.length) * 100);
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      {/* Structured deep audit — real, measured data */}
+      <section className="card p-4 lg:col-span-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-sm font-semibold text-paper">
+            Deep audit terrain <span className="text-[11px] font-normal text-paper-faint">(données réelles mesurées — importables CSV/Sheet)</span>
+          </h2>
+          <span className="chip border-bronze-700 text-bronze-400">complétude {completeness} %</span>
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label className="label">Note Google (/5)</label>
+            <input type="number" step="0.1" min="0" max="5" className="input" value={audit.googleRating ?? ""} onChange={(e) => patchAudit({ googleRating: e.target.value === "" ? undefined : +e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Nb d&apos;avis Google</label>
+            <input type="number" className="input" value={audit.googleReviews ?? ""} onChange={(e) => patchAudit({ googleReviews: e.target.value === "" ? undefined : +e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Appels ratés / semaine</label>
+            <input type="number" className="input" value={audit.missedCallsPerWeek ?? ""} onChange={(e) => patchAudit({ missedCallsPerWeek: e.target.value === "" ? undefined : +e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Panier moyen (€)</label>
+            <input type="number" className="input" value={audit.avgTicket ?? ""} onChange={(e) => patchAudit({ avgTicket: e.target.value === "" ? undefined : +e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Taux de conversion estimé (%)</label>
+            <input type="number" className="input" value={audit.conversionRate ?? ""} placeholder="30" onChange={(e) => patchAudit({ conversionRate: e.target.value === "" ? undefined : +e.target.value })} />
+          </div>
+          <div>
+            <label className="label">État du site web</label>
+            <input className="input" value={audit.websiteState} placeholder="aucun / obsolète 2014 / url…" onChange={(e) => patchAudit({ websiteState: e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Réseaux sociaux</label>
+            <input className="input" value={audit.socialState} placeholder="Insta 200 abonnés, inactif…" onChange={(e) => patchAudit({ socialState: e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Concurrence locale (500 m)</label>
+            <input className="input" value={audit.localCompetition} placeholder="3 concurrents mieux notés…" onChange={(e) => patchAudit({ localCompetition: e.target.value })} />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <label className="label">Process actuel (qui répond, quand, comment ?)</label>
+            <input className="input" value={audit.currentProcess} placeholder="Le patron décroche entre deux services ; rien en dehors des horaires…" onChange={(e) => patchAudit({ currentProcess: e.target.value })} />
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2.5">
+          <p className="text-[12px] text-paper-dim">
+            Taxe d&apos;Ignorance calculée :{" "}
+            {computedTax !== null ? (
+              <strong className="font-mono text-signal-red">{computedTax.toLocaleString("fr-FR")} €/mois</strong>
+            ) : (
+              <span className="text-paper-faint">renseigne appels ratés + panier moyen</span>
+            )}
+            {computedTax !== null && (
+              <span className="text-paper-faint"> ({audit.missedCallsPerWeek} appels × 4,33 sem × {audit.conversionRate ?? 30} % × {audit.avgTicket} €)</span>
+            )}
+          </p>
+          {computedTax !== null && computedTax !== p.ignoranceTax && (
+            <button className="btn-bronze py-1 text-[12px]" onClick={() => patch(p.id, { ignoranceTax: computedTax, auditScore: Math.max(p.auditScore, completeness) })}>
+              Appliquer au deal ({computedTax.toLocaleString("fr-FR")} €/mois)
+            </button>
+          )}
+        </div>
+      </section>
       <section className="card p-4">
         <h2 className="font-display text-sm font-semibold text-paper">
           Problèmes identifiés <span className="text-[11px] font-normal text-paper-faint">(audit profond terrain)</span>

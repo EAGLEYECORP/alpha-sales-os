@@ -12,13 +12,15 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type AiTask = "script" | "audit" | "objection" | "summary" | "next-action";
+type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply";
 
 interface AiRequest {
   task: AiTask;
   prospect: Prospect;
   businessRules: string;
   objection?: string;
+  /** inbound message to answer (task = reply) */
+  inboundMessage?: string;
 }
 
 const SYSTEM = `Tu es le copilote de vente d'EAGLEYE CORP (agence lyonnaise : sites premium + overlays IA pour restaurants, pubs, ambulances, artisans).
@@ -65,6 +67,8 @@ function buildPrompt(req: AiRequest): string {
       return `${ctx}\n\n## Tâche\nRésumé intelligent en 5 lignes max : où on en est, quel est le vrai blocage, quelle est la prochaine action et pourquoi.`;
     case "next-action":
       return `${ctx}\n\n## Tâche\nRecommande LA prochaine meilleure action (une seule), avec le pourquoi doctrine et le timing exact.`;
+    case "reply":
+      return `${ctx}\n\n## Message entrant du prospect\n« ${req.inboundMessage ?? ""} »\n\n## Tâche\nRédige LA réponse à envoyer (email ou WhatsApp selon le ton). Objectif unique : verrouiller un next step DATÉ (audit ou démo mobile). Court, chaleureux, zéro pitch produit, jamais de prix par écrit avant la démo. Termine par une question fermée à deux créneaux.`;
   }
 }
 
@@ -81,6 +85,23 @@ function fallback(req: AiRequest): string {
     case "next-action": {
       const nba = nextBestAction(req.prospect);
       return `**Action recommandée (${nba.urgency}) :** ${nba.action}\n\n**Pourquoi :** ${nba.why}`;
+    }
+    case "reply": {
+      const p = req.prospect;
+      const first = (p.name || "").split(" ")[0] || "bonjour";
+      return [
+        `**Brouillon de réponse (moteur templates) :**`,
+        ``,
+        `Bonjour ${first},`,
+        ``,
+        `Merci pour votre retour ! Le plus simple : je passe vous montrer 2 minutes, sur mon téléphone, à quoi ressemblerait ${p.company} en ligne — sans engagement et sans blabla.`,
+        ``,
+        `Plutôt mardi 15h ou jeudi 10h ?`,
+        ``,
+        `—`,
+        ``,
+        `*Doctrine : jamais de prix par écrit avant la démo mobile. L'objectif de cette réponse est UN créneau daté, rien d'autre.*`,
+      ].join("\n");
     }
   }
 }
