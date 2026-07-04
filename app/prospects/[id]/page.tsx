@@ -1,0 +1,705 @@
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  Bot,
+  CalendarPlus,
+  FileText,
+  Layers,
+  Mail,
+  MessageSquare,
+  Paperclip,
+  Pencil,
+  Phone,
+  Plus,
+  Smartphone,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import { useAlpha } from "@/lib/store";
+import type { EventKind, Objection, Obstacle, Prospect } from "@/lib/types";
+import {
+  BLAME_LAYERS,
+  CROYANCES_META,
+  OBJECTION_LIBRARY,
+  OBSTACLE_LIBRARY,
+  ignoranceTaxTotal,
+  nextBestAction,
+  signingBlockers,
+  weightedValue,
+} from "@/lib/hormozi";
+import { cn, dateTimeFr, daysAhead, eur, relativeFr, uid } from "@/lib/utils";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { StageBadge } from "@/components/ui/stage-badge";
+import { Markdown } from "@/components/ui/markdown";
+import { ProspectFormModal } from "@/components/pipeline/prospect-form";
+import { fireSignedConfetti } from "@/lib/confetti";
+
+type Tab = "doctrine" | "timeline" | "coach" | "templates" | "fichiers";
+
+const EVENT_ICONS: Record<EventKind, React.ReactNode> = {
+  appel: <Phone size={13} />,
+  visite: <ArrowLeft size={13} className="rotate-45" />,
+  email: <Mail size={13} />,
+  whatsapp: <MessageSquare size={13} />,
+  demo: <Smartphone size={13} />,
+  meeting: <CalendarPlus size={13} />,
+  note: <FileText size={13} />,
+  stage: <Layers size={13} />,
+  offre: <Sparkles size={13} />,
+};
+
+export default function ProspectDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const { prospects, settings, patchProspect, moveStage, addEvent, deleteProspect } = useAlpha();
+  const p = prospects.find((x) => x.id === id);
+  const [tab, setTab] = useState<Tab>("doctrine");
+  const [editing, setEditing] = useState(false);
+
+  if (!p) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-paper-faint">Prospect introuvable.</p>
+        <Link href="/pipeline" className="btn-ghost mt-4">← Retour au pipeline</Link>
+      </div>
+    );
+  }
+
+  const blockers = signingBlockers(p);
+  const nba = nextBestAction(p);
+
+  const trySign = () => {
+    const res = moveStage(p.id, "signe");
+    if (res.ok) fireSignedConfetti();
+    else alert(`⛔ Doctrine :\n\n${res.blockers.join("\n")}`);
+  };
+
+  return (
+    <div className="space-y-5 animate-fade-up">
+      <div className="flex items-center gap-2 text-sm text-paper-faint">
+        <Link href="/pipeline" className="flex items-center gap-1 hover:text-paper">
+          <ArrowLeft size={14} /> Pipeline
+        </Link>
+        <span>/</span>
+        <span className="text-paper">{p.company}</span>
+      </div>
+
+      {/* Header card */}
+      <header className="card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="font-display text-2xl font-bold text-paper">{p.company}</h1>
+              <StageBadge stage={p.stage} />
+            </div>
+            <p className="mt-1 text-sm text-paper-dim">
+              {p.name} · <span className="capitalize">{p.sector}</span> · {p.city}
+              {p.phone && <> · <a href={`tel:${p.phone}`} className="text-bronze-400 hover:underline">{p.phone}</a></>}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-4 font-mono text-sm">
+              <span className="text-paper">
+                {eur(p.setupValue)} <span className="text-paper-faint">setup</span> + {eur(p.monthlyValue)}
+                <span className="text-paper-faint">/mois</span>
+              </span>
+              <span className="text-bronze-400">{eur(weightedValue(p))} <span className="text-paper-faint">pondéré</span></span>
+              <span className="text-signal-red">
+                −{eur(ignoranceTaxTotal(p))} <span className="text-paper-faint">taxe d&apos;ignorance cumulée</span>
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <ProgressRing value={p.trust} size={52} label="confiance" />
+            <ProgressRing value={p.auditScore} size={52} label="audit" tone="dim" />
+            <ProgressRing value={p.probability} size={52} label="close %" tone={p.probability >= 65 ? "green" : "bronze"} />
+            <ProgressRing value={p.conviction} max={10} size={52} label="conviction" tone={p.conviction >= 10 ? "green" : "red"} />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-700 pt-4">
+          {p.stage !== "signe" && p.stage !== "perdu" && (
+            <button
+              className={cn(blockers.length ? "btn-ghost opacity-70" : "btn-bronze")}
+              onClick={trySign}
+              title={blockers.length ? blockers.join(" · ") : "Toutes les conditions doctrine sont réunies"}
+            >
+              ✍ Signer {blockers.length > 0 && `(${blockers.length} blocage${blockers.length > 1 ? "s" : ""})`}
+            </button>
+          )}
+          <button className="btn-ghost" onClick={() => setEditing(true)}>
+            <Pencil size={14} /> Modifier
+          </button>
+          <button
+            className="btn-danger ml-auto"
+            onClick={() => {
+              if (confirm(`Supprimer ${p.company} ?`)) {
+                deleteProspect(p.id);
+                router.push("/pipeline");
+              }
+            }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+
+        {/* Next best action banner */}
+        <div className="mt-4 rounded-lg border border-bronze-700/60 bg-bronze-900/30 px-4 py-3">
+          <p className="text-[11px] uppercase tracking-wider text-bronze-500">
+            Prochaine meilleure action · urgence {nba.urgency}
+          </p>
+          <p className="mt-0.5 text-sm font-medium text-paper">{nba.action}</p>
+          <p className="text-[12px] text-paper-dim">{nba.why}</p>
+        </div>
+      </header>
+
+      {/* Tabs */}
+      <nav className="flex gap-1 overflow-x-auto rounded-xl border border-ink-700 bg-ink-900/60 p-1">
+        {(
+          [
+            ["doctrine", "Doctrine", <Layers key="i" size={14} />],
+            ["timeline", "Timeline", <CalendarPlus key="i" size={14} />],
+            ["coach", "AI Coach", <Bot key="i" size={14} />],
+            ["templates", "Templates", <Mail key="i" size={14} />],
+            ["fichiers", "Fichiers", <Paperclip key="i" size={14} />],
+          ] as [Tab, string, React.ReactNode][]
+        ).map(([key, label, icon]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={cn(
+              "flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm transition-colors",
+              tab === key ? "bg-bronze-900/70 text-bronze-300 font-medium" : "text-paper-faint hover:text-paper"
+            )}
+          >
+            {icon} {label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "doctrine" && <DoctrineTab p={p} patch={patchProspect} />}
+      {tab === "timeline" && <TimelineTab p={p} addEvent={addEvent} />}
+      {tab === "coach" && <CoachTab p={p} rules={settings.businessRules} />}
+      {tab === "templates" && <TemplatesTab p={p} closer={settings.closerName} />}
+      {tab === "fichiers" && <FilesTab p={p} patch={patchProspect} />}
+
+      <ProspectFormModal open={editing} onClose={() => setEditing(false)} initial={p} />
+    </div>
+  );
+}
+
+/* ── Doctrine tab: croyances, obstacles, objections ─────────────────── */
+
+function DoctrineTab({
+  p,
+  patch,
+}: {
+  p: Prospect;
+  patch: (id: string, patch: Partial<Prospect>) => void;
+}) {
+  const [newObstacle, setNewObstacle] = useState("");
+  const [newObjection, setNewObjection] = useState("");
+
+  const addObstacle = (label: string, layer: Obstacle["blameLayer"] = "circonstances") => {
+    if (!label.trim()) return;
+    patch(p.id, {
+      obstacles: [...p.obstacles, { id: uid(), label, blameLayer: layer, resolved: false }],
+    });
+    setNewObstacle("");
+  };
+
+  const addObjection = (label: string) => {
+    if (!label.trim()) return;
+    const known = OBJECTION_LIBRARY.find((o) => o.label === label);
+    patch(p.id, {
+      objections: [
+        ...p.objections,
+        {
+          id: uid(),
+          label,
+          type: known?.type ?? "confiance",
+          croyance: known?.croyance ?? 3,
+          status: "ouverte",
+          counter: known?.counter,
+        },
+      ],
+    });
+    setNewObjection("");
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {/* 3 Croyances */}
+      <section className="card p-4 lg:col-span-2">
+        <h2 className="font-display text-sm font-semibold text-paper">Les 3 Croyances — toutes à 10 pour signer</h2>
+        <div className="mt-3 grid gap-4 md:grid-cols-3">
+          {CROYANCES_META.map((c) => {
+            const value = p.croyances[c.key];
+            return (
+              <div key={c.key} className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+                <p className="text-sm font-medium text-paper">
+                  {c.num}. {c.label}{" "}
+                  <span className={cn("font-mono", value >= 10 ? "text-signal-green" : "text-bronze-400")}>
+                    {value}/10
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[11px] text-paper-faint">{c.description}</p>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  value={value}
+                  onChange={(e) =>
+                    patch(p.id, { croyances: { ...p.croyances, [c.key]: +e.target.value } })
+                  }
+                  className="mt-2 w-full accent-bronze-500"
+                />
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm">
+          <label className="flex items-center gap-2 text-paper-dim">
+            <input
+              type="checkbox"
+              className="accent-bronze-500"
+              checked={p.demoShownBeforePrice}
+              onChange={(e) => patch(p.id, { demoShownBeforePrice: e.target.checked })}
+            />
+            Démo mobile montrée AVANT le prix
+          </label>
+          <label className="flex items-center gap-2 text-paper-dim">
+            Ma conviction :
+            <input
+              type="range"
+              min={0}
+              max={10}
+              value={p.conviction}
+              onChange={(e) => patch(p.id, { conviction: +e.target.value })}
+              className="w-28 accent-bronze-500"
+            />
+            <span className={cn("font-mono", p.conviction >= 10 ? "text-signal-green" : "text-signal-red")}>
+              {p.conviction}/10
+            </span>
+          </label>
+        </div>
+      </section>
+
+      {/* Obstacles (pre-offer) */}
+      <section className="card p-4">
+        <h2 className="font-display text-sm font-semibold text-paper">
+          Obstacles <span className="text-[11px] font-normal text-paper-faint">(pré-offre — Oignon du Blâme)</span>
+        </h2>
+        <ul className="mt-3 space-y-2">
+          {p.obstacles.map((o) => (
+            <li key={o.id} className={cn("rounded-lg border px-3 py-2", o.resolved ? "border-ink-700 opacity-50" : "border-ink-600 bg-ink-850")}>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className={cn("text-sm", o.resolved && "line-through")}>{o.label}</p>
+                  <p className="mt-0.5 text-[11px] text-bronze-500">
+                    Couche « {BLAME_LAYERS[o.blameLayer].label} » — {BLAME_LAYERS[o.blameLayer].peel}
+                  </p>
+                  {o.note && <p className="mt-1 text-[11px] text-paper-faint">↳ {o.note}</p>}
+                </div>
+                <input
+                  type="checkbox"
+                  className="mt-1 accent-bronze-500"
+                  checked={o.resolved}
+                  title="Épluché"
+                  onChange={(e) =>
+                    patch(p.id, {
+                      obstacles: p.obstacles.map((x) => (x.id === o.id ? { ...x, resolved: e.target.checked } : x)),
+                    })
+                  }
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 flex gap-2">
+          <input
+            className="input flex-1"
+            placeholder="Nouvel obstacle entendu…"
+            value={newObstacle}
+            onChange={(e) => setNewObstacle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addObstacle(newObstacle)}
+          />
+          <button className="btn-ghost" onClick={() => addObstacle(newObstacle)}>
+            <Plus size={14} />
+          </button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {OBSTACLE_LIBRARY.filter((o) => !p.obstacles.some((x) => x.label === o.label)).slice(0, 4).map((o) => (
+            <button
+              key={o.label}
+              onClick={() => addObstacle(o.label, o.blameLayer)}
+              className="chip border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-bronze-400"
+            >
+              + {o.label.slice(0, 34)}…
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Objections (Red Zone) */}
+      <section className={cn("card p-4", p.stage === "redzone" && "border-signal-red/40")}>
+        <h2 className="font-display text-sm font-semibold text-paper">
+          Objections <span className="text-[11px] font-normal text-signal-red">(post-offre — Red Zone uniquement)</span>
+        </h2>
+        {!["offre", "redzone", "signe"].includes(p.stage) && (
+          <p className="mt-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-[12px] text-paper-faint">
+            Pas d&apos;offre présentée = pas d&apos;objection possible. Ce que tu entends maintenant, ce sont des <strong className="text-paper">obstacles</strong>.
+          </p>
+        )}
+        <ul className="mt-3 space-y-2">
+          {p.objections.map((o) => (
+            <li key={o.id} className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm text-paper">{o.label}</p>
+                  <p className="mt-0.5 text-[11px] text-bronze-500">
+                    Croyance cassée n°{o.croyance} · type {o.type}
+                  </p>
+                  {o.counter && <p className="mt-1 text-[11px] text-paper-dim">💡 {o.counter}</p>}
+                </div>
+                <select
+                  className="input w-28 py-1 text-[11px]"
+                  value={o.status}
+                  onChange={(e) =>
+                    patch(p.id, {
+                      objections: p.objections.map((x) =>
+                        x.id === o.id ? { ...x, status: e.target.value as Objection["status"] } : x
+                      ),
+                    })
+                  }
+                >
+                  <option value="ouverte">Ouverte</option>
+                  <option value="traitee">Traitée ✓</option>
+                  <option value="bloquante">Bloquante</option>
+                </select>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 flex gap-2">
+          <input
+            className="input flex-1"
+            placeholder="Objection entendue après l'offre…"
+            value={newObjection}
+            onChange={(e) => setNewObjection(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addObjection(newObjection)}
+          />
+          <button className="btn-ghost" onClick={() => addObjection(newObjection)}>
+            <Plus size={14} />
+          </button>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {OBJECTION_LIBRARY.filter((o) => !p.objections.some((x) => x.label === o.label)).slice(0, 3).map((o) => (
+            <button
+              key={o.label}
+              onClick={() => addObjection(o.label)}
+              className="chip border-ink-600 text-paper-faint hover:border-signal-red/50 hover:text-signal-red"
+            >
+              + {o.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Notes */}
+      <section className="card p-4 lg:col-span-2">
+        <h2 className="mb-2 font-display text-sm font-semibold text-paper">Notes terrain</h2>
+        <textarea
+          className="input min-h-24"
+          value={p.notes}
+          onChange={(e) => patch(p.id, { notes: e.target.value })}
+        />
+      </section>
+    </div>
+  );
+}
+
+/* ── Timeline tab ────────────────────────────────────────────────────── */
+
+function TimelineTab({
+  p,
+  addEvent,
+}: {
+  p: Prospect;
+  addEvent: (id: string, ev: Omit<Prospect["events"][number], "id">) => void;
+}) {
+  const [kind, setKind] = useState<EventKind>("appel");
+  const [summary, setSummary] = useState("");
+  const [nextAction, setNextAction] = useState("");
+  const [nextDate, setNextDate] = useState(daysAhead(2).slice(0, 10));
+
+  const submit = () => {
+    if (!summary.trim()) return;
+    if (!nextAction.trim()) {
+      alert("Doctrine : chaque contact se termine par un next step DATÉ.");
+      return;
+    }
+    addEvent(p.id, {
+      date: new Date().toISOString(),
+      kind,
+      summary,
+      nextStep: { date: new Date(nextDate).toISOString(), action: nextAction },
+    });
+    setSummary("");
+    setNextAction("");
+  };
+
+  const sorted = [...p.events].sort((a, b) => b.date.localeCompare(a.date));
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <section className="card p-4">
+        <h2 className="mb-4 font-display text-sm font-semibold text-paper">Historique des contacts</h2>
+        <ol className="relative space-y-4 border-l border-ink-700 pl-5">
+          {sorted.map((e) => (
+            <li key={e.id} className="relative">
+              <span className="absolute -left-[27px] grid h-5 w-5 place-items-center rounded-full border border-bronze-700 bg-ink-900 text-bronze-400">
+                {EVENT_ICONS[e.kind]}
+              </span>
+              <p className="text-[11px] uppercase tracking-wider text-paper-faint">
+                {e.kind} · {dateTimeFr(e.date)}
+              </p>
+              <p className="mt-0.5 text-sm text-paper">{e.summary}</p>
+              {e.nextStep && (
+                <p className="mt-1 text-[12px] text-bronze-400">
+                  → {e.nextStep.action} <span className="text-paper-faint">({relativeFr(e.nextStep.date)})</span>
+                </p>
+              )}
+            </li>
+          ))}
+          {sorted.length === 0 && <p className="text-sm text-paper-faint">Aucun contact enregistré.</p>}
+        </ol>
+      </section>
+
+      <section className="card h-fit p-4">
+        <h2 className="mb-3 font-display text-sm font-semibold text-paper">Nouveau contact</h2>
+        <label className="label">Type</label>
+        <select className="input" value={kind} onChange={(e) => setKind(e.target.value as EventKind)}>
+          <option value="appel">Appel</option>
+          <option value="visite">Visite terrain</option>
+          <option value="email">Email</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="demo">Démo mobile</option>
+          <option value="meeting">Rendez-vous</option>
+          <option value="offre">Présentation d&apos;offre</option>
+          <option value="note">Note</option>
+        </select>
+        <label className="label mt-3">Résumé</label>
+        <textarea className="input min-h-20" value={summary} onChange={(e) => setSummary(e.target.value)} />
+        <label className="label mt-3">Next step (obligatoire)</label>
+        <input className="input" value={nextAction} onChange={(e) => setNextAction(e.target.value)} placeholder="Action précise" />
+        <input type="date" className="input mt-2" value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
+        <button className="btn-bronze mt-4 w-full" onClick={submit}>
+          Enregistrer le contact
+        </button>
+      </section>
+    </div>
+  );
+}
+
+/* ── AI Coach tab ────────────────────────────────────────────────────── */
+
+const COACH_TASKS = [
+  { task: "script", label: "Script de vente terrain", icon: <FileText size={14} /> },
+  { task: "audit", label: "Notes d'audit auto", icon: <Layers size={14} /> },
+  { task: "summary", label: "Résumé intelligent", icon: <Sparkles size={14} /> },
+  { task: "next-action", label: "Next best action", icon: <Bot size={14} /> },
+] as const;
+
+function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
+  const [output, setOutput] = useState("");
+  const [engine, setEngine] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | null>(null);
+  const [objection, setObjection] = useState("");
+
+  const run = async (task: string, extra?: Record<string, string>) => {
+    setLoading(task);
+    setOutput("");
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task, prospect: p, businessRules: rules, ...extra }),
+      });
+      const data = await res.json();
+      setOutput(data.text ?? data.error ?? "Erreur");
+      setEngine(data.engine ?? null);
+    } catch {
+      setOutput("Erreur réseau — réessaie.");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      <section className="card h-fit space-y-2 p-4">
+        <h2 className="mb-1 font-display text-sm font-semibold text-paper">AI Coach</h2>
+        <p className="mb-3 text-[11px] text-paper-faint">
+          Contexte complet injecté : doctrine, règles business, état des croyances.
+        </p>
+        {COACH_TASKS.map(({ task, label, icon }) => (
+          <button
+            key={task}
+            className="btn-ghost w-full justify-start"
+            disabled={loading !== null}
+            onClick={() => run(task)}
+          >
+            {icon} {loading === task ? "Génération…" : label}
+          </button>
+        ))}
+        <div className="border-t border-ink-700 pt-3">
+          <label className="label">Traiter une objection</label>
+          <input
+            className="input"
+            value={objection}
+            onChange={(e) => setObjection(e.target.value)}
+            placeholder="« C'est trop cher »"
+          />
+          <button
+            className="btn-bronze mt-2 w-full"
+            disabled={loading !== null || !objection.trim()}
+            onClick={() => run("objection", { objection })}
+          >
+            {loading === "objection" ? "Analyse…" : "Recadrer"}
+          </button>
+        </div>
+      </section>
+
+      <section className="card min-h-64 p-5">
+        {output ? (
+          <>
+            <p className="mb-3 text-[10px] uppercase tracking-wider text-paper-faint">
+              moteur : {engine === "claude" ? "Claude (Anthropic)" : "templates Hormozi (hors-ligne)"}
+            </p>
+            <Markdown>{output}</Markdown>
+          </>
+        ) : (
+          <div className="grid h-full min-h-52 place-items-center text-center">
+            <div>
+              <Bot size={32} className="mx-auto text-bronze-700" />
+              <p className="mt-3 text-sm text-paper-faint">
+                Choisis une action à gauche.<br />
+                Sans clé API, le moteur de templates Hormozi prend le relais.
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* ── Templates tab ───────────────────────────────────────────────────── */
+
+function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
+  const firstName = p.name.split(" ")[0];
+  const templates = [
+    {
+      channel: "Email",
+      subject: `Vos clients de 23h, ${firstName}`,
+      body: `Bonjour ${firstName},\n\nPendant que ${p.company} est fermé, vos futurs clients cherchent — et trouvent le concurrent qui répond.\n\nChaque mois sans présence sérieuse en ligne vous coûte environ ${p.ignoranceTax.toLocaleString("fr-FR")} €. Ce n'est pas un argument de vente, c'est un calcul qu'on fera ensemble, sur place, en 20 minutes.\n\nJe passe dans le quartier mardi. Je vous montre 2 minutes sur mon téléphone à quoi ressemblerait ${p.company} en ligne — sans prix, sans engagement, juste pour voir.\n\n${closer} — EAGLEYE, Lyon`,
+    },
+    {
+      channel: "WhatsApp",
+      subject: "Relance douce",
+      body: `Bonjour ${firstName}, ${closer} d'EAGLEYE (Lyon). J'ai préparé une maquette de ${p.company} sur mobile — ça prend 2 minutes à regarder et ça vaut mille discours. Je passe mardi 15h ou jeudi 10h ?`,
+    },
+    {
+      channel: "Email",
+      subject: "Après notre échange — les chiffres",
+      body: `Bonjour ${firstName},\n\nComme convenu, le résumé de l'audit :\n\n• Manque à gagner estimé : ${p.ignoranceTax.toLocaleString("fr-FR")} €/mois\n• Soit ${(p.ignoranceTax * 12).toLocaleString("fr-FR")} €/an de Taxe d'Ignorance\n• Notre solution : ${p.setupValue.toLocaleString("fr-FR")} € + ${p.monthlyValue.toLocaleString("fr-FR")} €/mois\n\nLa question n'est pas « est-ce que ça coûte cher » — c'est « combien coûte le fait de ne rien faire ».\n\nOn se voit ${p.nextStep ? relativeFr(p.nextStep.date) : "cette semaine"} pour décider avec les vrais chiffres.\n\n${closer} — EAGLEYE`,
+    },
+  ];
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {templates.map((t, i) => (
+        <div key={i} className="card flex flex-col p-4">
+          <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-bronze-500">
+            {t.channel === "Email" ? <Mail size={12} /> : <MessageSquare size={12} />} {t.channel}
+          </p>
+          <p className="mt-1 text-sm font-medium text-paper">{t.subject}</p>
+          <pre className="mt-2 flex-1 whitespace-pre-wrap rounded-lg border border-ink-700 bg-ink-850 p-3 font-body text-[12px] leading-relaxed text-paper-dim">
+            {t.body}
+          </pre>
+          <button
+            className="btn-ghost mt-3"
+            onClick={() => navigator.clipboard.writeText(t.body)}
+          >
+            Copier
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Files tab ───────────────────────────────────────────────────────── */
+
+function FilesTab({
+  p,
+  patch,
+}: {
+  p: Prospect;
+  patch: (id: string, patch: Partial<Prospect>) => void;
+}) {
+  const onUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const additions = files.map((f) => ({
+      id: uid(),
+      name: f.name,
+      kind: (f.name.includes("audit") ? "audit" : f.name.includes("prop") ? "proposition" : "autre") as
+        | "audit"
+        | "proposition"
+        | "autre",
+      size: f.size,
+      addedAt: new Date().toISOString(),
+    }));
+    patch(p.id, { attachments: [...p.attachments, ...additions] });
+  };
+
+  return (
+    <section className="card p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-sm font-semibold text-paper">Pièces jointes</h2>
+        <label className="btn-bronze cursor-pointer">
+          <Plus size={14} /> Ajouter
+          <input type="file" multiple className="hidden" onChange={onUpload} />
+        </label>
+      </div>
+      <p className="mt-1 text-[11px] text-paper-faint">
+        Métadonnées stockées en local — connecte Supabase Storage pour l&apos;upload réel (voir README).
+      </p>
+      <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+        {p.attachments.map((a) => (
+          <li key={a.id} className="flex items-center justify-between rounded-lg border border-ink-700 bg-ink-850 px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <Paperclip size={14} className="shrink-0 text-bronze-500" />
+              <div className="min-w-0">
+                <p className="truncate text-sm text-paper">{a.name}</p>
+                <p className="text-[11px] text-paper-faint">
+                  {a.kind} · {(a.size / 1024).toFixed(0)} Ko
+                </p>
+              </div>
+            </div>
+            <button
+              className="text-paper-faint hover:text-signal-red"
+              onClick={() => patch(p.id, { attachments: p.attachments.filter((x) => x.id !== a.id) })}
+            >
+              <Trash2 size={14} />
+            </button>
+          </li>
+        ))}
+        {p.attachments.length === 0 && <p className="text-sm text-paper-faint">Aucun fichier.</p>}
+      </ul>
+    </section>
+  );
+}
