@@ -123,7 +123,7 @@ export default function ProspectDetailPage() {
             <ProgressRing value={p.trust} size={52} label="confiance" />
             <ProgressRing value={p.likeness} size={52} label="affinité" tone="dim" />
             <ProgressRing value={p.auditScore} size={52} label="audit" tone="dim" />
-            <ProgressRing value={p.probability} size={52} label="close %" tone={p.probability >= 65 ? "green" : "bronze"} />
+            <ProgressRing value={p.probability} size={52} label="close %" tone="heat" />
             <ProgressRing value={p.conviction} max={10} size={52} label="conviction" tone={p.conviction >= 10 ? "green" : "red"} />
           </div>
         </div>

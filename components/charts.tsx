@@ -14,24 +14,24 @@ import {
   YAxis,
 } from "recharts";
 
-// Single-hue bronze system: magnitude = lightness, identity = axis labels.
-export const BRONZE = "#b08d57";
-export const BRONZE_LIGHT = "#d9bc8c";
-export const BRONZE_DARK = "#8f6f42";
-const GRID = "#292420";
-const TEXT = "#7d766c";
+// Single-hue gold system (Closer OS DA): magnitude = lightness, identity = axis labels.
+export const BRONZE = "#E8C98A";
+export const BRONZE_LIGHT = "#F2E2BC";
+export const BRONZE_DARK = "#B98F4B";
+const GRID = "#2B241C";
+const TEXT = "#8E877B";
 
 const tooltipStyle = {
   contentStyle: {
-    background: "#171412",
-    border: "1px solid #3a332d",
-    borderRadius: 8,
+    background: "#15110D",
+    border: "1px solid #3A3227",
+    borderRadius: 12,
     fontSize: 12,
-    color: "#e8e2d9",
+    color: "#F3EEE4",
   },
-  labelStyle: { color: "#d9bc8c", fontWeight: 600 },
-  itemStyle: { color: "#e8e2d9" },
-  cursor: { fill: "rgba(176,141,87,0.08)" },
+  labelStyle: { color: "#E8C98A", fontWeight: 600 },
+  itemStyle: { color: "#F3EEE4" },
+  cursor: { fill: "rgba(232,201,138,0.08)" },
 };
 
 export function FunnelChart({ data }: { data: { name: string; value: number }[] }) {

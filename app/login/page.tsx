@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { getSupabase, supabaseEnabled } from "@/lib/supabase";
+import { Eagle } from "@/components/eagle";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,11 +30,11 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-[70vh] place-items-center">
       <div className="card w-full max-w-sm p-6 text-center">
-        <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-bronze-500 text-ink-950">
-          <Eye size={24} strokeWidth={2.5} />
+        <span className="mx-auto block text-bronze-400">
+          <Eagle size={72} glow />
         </span>
-        <h1 className="mt-4 font-display text-xl font-bold text-paper">ALPHA SALES OS<sup className="text-bronze-500">®</sup></h1>
-        <p className="text-[12px] uppercase tracking-[0.2em] text-bronze-500">Eagleye Corp</p>
+        <h1 className="mt-4 font-display text-xl font-extrabold text-paper">ALPHA <span className="text-bronze-400">SALES OS</span><sup className="text-bronze-400">®</sup></h1>
+        <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-paper-faint">Eagleye Corp</p>
 
         {supabaseEnabled() ? (
           status === "sent" ? (

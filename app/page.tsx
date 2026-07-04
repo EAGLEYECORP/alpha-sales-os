@@ -15,6 +15,7 @@ import { SEED_PROSPECT_IDS } from "@/lib/seed";
 import { STAGES, BLAME_LAYERS, weightedValue, ignoranceTaxTotal, nextBestAction } from "@/lib/hormozi";
 import type { BlameLayer, Sector } from "@/lib/types";
 import { eur, isOverdue, relativeFr } from "@/lib/utils";
+import { useCountUp } from "@/lib/use-count-up";
 import { FunnelChart, ForecastChart, SectorChart } from "@/components/charts";
 import { StageBadge } from "@/components/ui/stage-badge";
 
@@ -97,10 +98,10 @@ export default function DashboardPage() {
 
       {/* KPI tiles */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi icon={<TrendingUp size={16} />} label="MRR signé" value={eur(mrrSigned)} sub={`${signed.length} client(s)`} />
-        <Kpi icon={<Target size={16} />} label="Pipe pondéré (annuel)" value={eur(pipeWeighted)} sub={`${active.length} deals actifs`} />
-        <Kpi icon={<Flame size={16} />} label="Taxe d'Ignorance du pipe" value={`${eur(taxTotal)}/mois`} sub="ce que les prospects perdent" tone="red" />
-        <Kpi icon={<Coins size={16} />} label={`Commission ${settings.commissionPct}% (CA an)`} value={eur(commission)} sub="sur MRR signé" />
+        <Kpi icon={<TrendingUp size={16} />} label="MRR signé" value={mrrSigned} sub={`${signed.length} client(s)`} />
+        <Kpi icon={<Target size={16} />} label="Pipe pondéré (annuel)" value={pipeWeighted} sub={`${active.length} deals actifs`} accent />
+        <Kpi icon={<Flame size={16} />} label="Taxe d'Ignorance du pipe" value={taxTotal} suffix="/mois" sub="ce que les prospects perdent" tone="red" />
+        <Kpi icon={<Coins size={16} />} label={`Commission ${settings.commissionPct}% (CA an)`} value={commission} sub="sur MRR signé" />
       </section>
 
       {/* Demo-data banner — push toward real data */}
@@ -318,21 +319,33 @@ function Kpi({
   icon,
   label,
   value,
+  suffix,
   sub,
   tone,
+  accent,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: number;
+  suffix?: string;
   sub: string;
   tone?: "red";
+  accent?: boolean;
 }) {
+  const animated = useCountUp(value);
   return (
     <div className="card card-hover p-4">
-      <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-paper-faint">
-        <span className="text-bronze-500">{icon}</span> {label}
+      <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-paper-faint">
+        <span className="text-bronze-400">{icon}</span> {label}
       </p>
-      <p className={`mt-1.5 font-mono text-xl md:text-2xl ${tone === "red" ? "text-signal-red" : "text-paper"}`}>{value}</p>
+      <p
+        className={`mt-1.5 font-display text-2xl font-extrabold md:text-[28px] ${
+          tone === "red" ? "text-signal-red" : accent ? "text-bronze-400" : "text-paper"
+        }`}
+      >
+        {eur(Math.round(animated))}
+        {suffix && <span className="text-sm font-semibold text-paper-faint">{suffix}</span>}
+      </p>
       <p className="text-[11px] text-paper-faint">{sub}</p>
     </div>
   );

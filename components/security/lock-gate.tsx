@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock } from "lucide-react";
 import { useAlpha, useHydrated } from "@/lib/store";
 import { sha256 } from "@/lib/utils";
+import { Eagle } from "@/components/eagle";
 
 const SESSION_KEY = "alpha-unlock";
 
@@ -54,10 +54,10 @@ export function LockGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-screen place-items-center bg-ink-950 px-4">
       <div className="card w-full max-w-xs p-6 text-center">
-        <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-bronze-900/80 text-bronze-400">
-          <Lock size={22} />
+        <span className="mx-auto block animate-floaty text-bronze-400">
+          <Eagle size={64} glow />
         </span>
-        <h1 className="mt-4 font-display text-lg font-bold text-paper">OS verrouillé</h1>
+        <h1 className="mt-4 font-display text-lg font-extrabold text-paper">OS verrouillé</h1>
         <p className="mt-1 text-[12px] text-paper-faint">Entre le PIN pour déverrouiller ALPHA SALES OS.</p>
         <input
           type="password"

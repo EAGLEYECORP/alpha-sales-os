@@ -8,7 +8,6 @@ import {
   BarChart3,
   Bot,
   CalendarDays,
-  Eye,
   Gauge,
   Kanban,
   Mail,
@@ -16,6 +15,7 @@ import {
   Sprout,
   Swords,
 } from "lucide-react";
+import { Eagle } from "@/components/eagle";
 import { cn } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
 import { eur } from "@/lib/utils";
@@ -56,14 +56,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!mounted) {
     return (
       <div className="grid min-h-screen place-items-center bg-ink-950">
-        <div className="text-center animate-pulse-ring">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-bronze-500 text-ink-950">
-            <Eye size={24} strokeWidth={2.5} />
+        <div className="animate-floaty text-center">
+          <span className="mx-auto block text-bronze-400">
+            <Eagle size={96} glow />
           </span>
-          <p className="mt-3 font-display text-sm font-bold tracking-wide text-paper">
-            ALPHA SALES OS<sup className="text-bronze-500">®</sup>
+          <p className="mt-4 font-display text-lg font-extrabold tracking-[0.1em] text-bronze-400">
+            ALPHA SALES OS<sup>®</sup>
           </p>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-bronze-500">Eagleye Corp</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-paper-faint">Eagleye Corp — Lyon</p>
         </div>
       </div>
     );
@@ -73,17 +73,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <LockGate>
     <div className="flex min-h-screen">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-ink-700 bg-ink-900/60 sticky top-0 h-screen">
+      <aside className="hidden md:flex w-60 flex-col border-r border-ink-700 bg-ink-900/60 backdrop-blur-xl sticky top-0 h-screen">
         <div className="px-5 py-6 border-b border-ink-700">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-bronze-500 text-ink-950">
-              <Eye size={20} strokeWidth={2.5} />
+          <Link href="/" className="flex items-center gap-3 group">
+            <span className="text-bronze-400 transition-transform group-hover:scale-105">
+              <Eagle size={38} glow />
             </span>
             <span>
-              <span className="block font-display text-sm font-bold tracking-wide text-paper">
-                ALPHA SALES OS<sup className="text-bronze-500">®</sup>
+              <span className="block font-display text-sm font-extrabold tracking-[0.04em] text-paper">
+                ALPHA <span className="text-bronze-400">SALES OS</span>
               </span>
-              <span className="block text-[10px] uppercase tracking-[0.2em] text-bronze-500">
+              <span className="block font-mono text-[9px] uppercase tracking-[0.22em] text-paper-faint">
                 Eagleye Corp — Lyon
               </span>
             </span>
@@ -109,9 +109,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-ink-700 p-4">
-          <p className="text-[10px] uppercase tracking-wider text-paper-faint">Pipe pondéré</p>
-          <p className="font-mono text-lg text-bronze-400">{eur(pipeValue)}</p>
-          <p className="mt-1 text-[10px] text-paper-faint italic">
+          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Pipe pondéré</p>
+          <p className="font-display text-xl font-extrabold text-bronze-400">{eur(pipeValue)}</p>
+          <p className="mt-1 text-[10px] italic text-paper-faint">
             « La décision EST le produit. »
           </p>
         </div>

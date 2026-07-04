@@ -143,7 +143,7 @@ function KanbanCard({
         <div className="flex gap-2">
           <ProgressRing value={p.trust} size={36} stroke={3} label="conf." />
           <ProgressRing value={p.auditScore} size={36} stroke={3} label="audit" tone="dim" />
-          <ProgressRing value={p.probability} size={36} stroke={3} label="close" tone={p.probability >= 65 ? "green" : "bronze"} />
+          <ProgressRing value={p.probability} size={36} stroke={3} label="close" tone="heat" />
         </div>
         <div className="text-right">
           <p className="font-mono text-sm text-bronze-400">{eur(weightedValue(p))}</p>
