@@ -273,6 +273,8 @@ export interface AppSettings {
   businessRules: string;
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
+  /** First-run choice made (demo vs real data) */
+  onboarded: boolean;
   security: {
     /** SHA-256 of the app-lock PIN; null = no lock */
     pinHash: string | null;

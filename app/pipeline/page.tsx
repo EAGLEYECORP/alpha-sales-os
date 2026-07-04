@@ -181,7 +181,18 @@ export default function PipelinePage() {
         )}
       </div>
 
-      {view === "kanban" ? (
+      {prospects.length === 0 ? (
+        <div className="card p-10 text-center">
+          <p className="font-display text-lg font-bold text-paper">Aucun prospect pour l&apos;instant</p>
+          <p className="mt-1 text-sm text-paper-faint">Ajoute le premier ou importe ton fichier — chaque carte arrive avec son next step daté obligatoire.</p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button className="btn-bronze" onClick={() => setAdding(true)}>
+              <Plus size={15} /> Premier prospect
+            </button>
+            <Link href="/settings" className="btn-ghost">Importer CSV / Sheet</Link>
+          </div>
+        </div>
+      ) : view === "kanban" ? (
         <KanbanBoard prospects={filtered} />
       ) : (
         <div className="card overflow-x-auto">

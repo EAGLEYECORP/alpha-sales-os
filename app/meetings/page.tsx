@@ -126,6 +126,19 @@ export default function MeetingsPage() {
 function MeetingForm({ onClose }: { onClose: () => void }) {
   const { prospects, upsertMeeting } = useAlpha();
   const active = prospects.filter((p) => p.stage !== "perdu");
+
+  if (active.length === 0) {
+    return (
+      <Modal open onClose={onClose} title="Nouveau rendez-vous">
+        <p className="text-sm text-paper-dim">
+          Un RDV se rattache toujours à un prospect — ajoute d&apos;abord ton premier prospect dans le{" "}
+          <Link href="/pipeline" className="text-bronze-400 underline">Pipeline</Link>{" "}
+          ou importe tes données dans les <Link href="/settings" className="text-bronze-400 underline">Réglages</Link>.
+        </p>
+      </Modal>
+    );
+  }
+
   const [form, setForm] = useState<Meeting>({
     id: uid(),
     prospectId: active[0]?.id ?? "",

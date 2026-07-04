@@ -30,6 +30,7 @@ import {
   CROYANCES_META,
   OBJECTION_LIBRARY,
   OBSTACLE_LIBRARY,
+  STAGES,
   ignoranceTaxTotal,
   nextBestAction,
   signingBlockers,
@@ -84,6 +85,20 @@ export default function ProspectDetailPage() {
     const wonReason = prompt("Pourquoi OUI ? (raison du win — alimente les KPIs)") || undefined;
     const res = moveStage(p.id, "signe", { wonReason });
     if (res.ok) fireSignedConfetti();
+  };
+
+  /** Stage stepper — works on touch, same doctrine gates as the Kanban. */
+  const changeStage = (stageId: (typeof STAGES)[number]["id"]) => {
+    if (stageId === p.stage) return;
+    if (stageId === "signe") {
+      trySign();
+      return;
+    }
+    let extra: { lostReason?: string } | undefined;
+    if (stageId === "perdu") {
+      extra = { lostReason: prompt("Pourquoi NON ? (raison de perte — doctrine : toujours documentée)") || undefined };
+    }
+    moveStage(p.id, stageId, extra);
   };
 
   return (
@@ -153,6 +168,44 @@ export default function ProspectDetailPage() {
             <Trash2 size={14} />
           </button>
         </div>
+
+        {/* Stage stepper — tap to move (mobile-first, doctrine-gated) */}
+        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 font-mono text-[9px] uppercase tracking-[0.14em] text-paper-faint">Étape :</span>
+          {STAGES.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => changeStage(s.id)}
+              title={s.hint}
+              className={cn(
+                "chip transition-colors",
+                s.id === p.stage
+                  ? "border-bronze-400 bg-bronze-400 font-semibold text-ink-950"
+                  : i < STAGES.findIndex((x) => x.id === p.stage)
+                    ? "border-bronze-700/60 text-bronze-600 hover:text-bronze-400"
+                    : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Current next step + quick log */}
+        {p.nextStep && !["signe", "perdu"].includes(p.stage) && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink-700 bg-ink-900 px-3.5 py-2.5">
+            <p className="text-sm text-paper-dim">
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-paper-faint">Next step · </span>
+              {p.nextStep.action}{" "}
+              <span className={cn("font-mono text-[11px]", new Date(p.nextStep.date) < new Date() ? "text-signal-red" : "text-bronze-400")}>
+                ({relativeFr(p.nextStep.date)})
+              </span>
+            </p>
+            <button className="btn-ghost px-3 py-1.5 text-[12px]" onClick={() => setTab("timeline")}>
+              ✓ Consigner le contact
+            </button>
+          </div>
+        )}
 
         {/* Next best action banner */}
         <div className="mt-4 rounded-lg border border-bronze-700/60 bg-bronze-900/30 px-4 py-3">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, GripVertical, Smartphone } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, GripVertical, Smartphone } from "lucide-react";
 import type { Prospect, Stage } from "@/lib/types";
 import { STAGES, weightedValue, croyancesReady, signingBlockers } from "@/lib/hormozi";
 import { cn, eur, isOverdue, relativeFr } from "@/lib/utils";
@@ -17,11 +17,8 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
   const [overStage, setOverStage] = useState<Stage | null>(null);
   const [blockers, setBlockers] = useState<{ company: string; list: string[] } | null>(null);
 
-  const drop = (stage: Stage) => {
-    if (!dragId) return;
-    const p = prospects.find((x) => x.id === dragId);
-    if (!p) return;
-    // Ask why yes / why no BEFORE moving — feeds the KPI module.
+  // Shared gated move — used by drag-drop (desktop) AND arrow buttons (touch).
+  const requestMove = (p: Prospect, stage: Stage) => {
     let extra: { wonReason?: string; lostReason?: string } | undefined;
     if (stage === "signe") {
       if (signingBlockers(p).length === 0) {
@@ -30,9 +27,16 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
     } else if (stage === "perdu") {
       extra = { lostReason: prompt("Pourquoi NON ? (raison de perte — doctrine : toujours documentée)") || undefined };
     }
-    const res = moveStage(dragId, stage, extra);
+    const res = moveStage(p.id, stage, extra);
     if (!res.ok) setBlockers({ company: p.company, list: res.blockers });
     if (res.ok && stage === "signe") fireSignedConfetti();
+    return res.ok;
+  };
+
+  const drop = (stage: Stage) => {
+    if (!dragId) return;
+    const p = prospects.find((x) => x.id === dragId);
+    if (p) requestMove(p, stage);
     setDragId(null);
     setOverStage(null);
   };
@@ -78,7 +82,18 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
               </div>
               <div className="flex-1 space-y-2 p-2 min-h-24">
                 {items.map((p) => (
-                  <KanbanCard key={p.id} p={p} dragging={dragId === p.id} onDragStart={() => setDragId(p.id)} onDragEnd={() => setDragId(null)} />
+                  <KanbanCard
+                    key={p.id}
+                    p={p}
+                    dragging={dragId === p.id}
+                    onDragStart={() => setDragId(p.id)}
+                    onDragEnd={() => setDragId(null)}
+                    onMove={(dir) => {
+                      const idx = STAGES.findIndex((s) => s.id === p.stage);
+                      const target = STAGES[idx + dir];
+                      if (target) requestMove(p, target.id);
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -111,14 +126,18 @@ function KanbanCard({
   dragging,
   onDragStart,
   onDragEnd,
+  onMove,
 }: {
   p: Prospect;
   dragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
+  /** touch-friendly: -1 = previous stage, +1 = next stage */
+  onMove: (dir: -1 | 1) => void;
 }) {
   const overdue = p.nextStep && isOverdue(p.nextStep.date) && !["signe", "perdu"].includes(p.stage);
   const openObjections = p.objections.filter((o) => o.status !== "traitee").length;
+  const stageIdx = STAGES.findIndex((s) => s.id === p.stage);
   return (
     <div
       draggable
@@ -175,6 +194,35 @@ function KanbanCard({
       {!p.nextStep && !["signe", "perdu"].includes(p.stage) && (
         <p className="mt-2 text-[11px] font-medium text-signal-red">⚠ AUCUN NEXT STEP DATÉ</p>
       )}
+
+      {/* Touch controls — drag-drop doesn't exist on mobile */}
+      <div className="mt-2 flex items-center justify-between border-t border-ink-700 pt-2">
+        <button
+          className="rounded-full border border-ink-600 p-1.5 text-paper-faint transition-colors hover:border-bronze-600 hover:text-bronze-400 disabled:opacity-25"
+          disabled={stageIdx <= 0}
+          title="Étape précédente"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMove(-1);
+          }}
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-paper-faint">
+          {stageIdx + 1}/{STAGES.length}
+        </span>
+        <button
+          className="rounded-full border border-ink-600 p-1.5 text-paper-faint transition-colors hover:border-bronze-600 hover:text-bronze-400 disabled:opacity-25"
+          disabled={stageIdx >= STAGES.length - 1}
+          title="Étape suivante"
+          onClick={(e) => {
+            e.stopPropagation();
+            onMove(1);
+          }}
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
     </div>
   );
 }

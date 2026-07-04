@@ -82,6 +82,28 @@ export default function DashboardPage() {
 
   const hottest = [...active].sort((a, b) => weightedValue(b) - weightedValue(a)).slice(0, 3);
 
+  if (prospects.length === 0) {
+    return (
+      <div className="grid min-h-[70vh] place-items-center animate-fade-up">
+        <div className="card max-w-lg p-8 text-center">
+          <h1 className="font-display text-2xl font-extrabold text-paper">
+            Base vide — <span className="text-bronze-400">prêt pour le réel</span>
+          </h1>
+          <p className="mt-2 text-sm text-paper-dim">
+            Importe tes prospects (Google Sheet / CSV avec deep audit) ou ajoute le premier à la main. Le reste — doctrine, agent, KPIs — s&apos;active tout seul.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Link href="/settings" className="btn-bronze">Importer mes données</Link>
+            <Link href="/pipeline" className="btn-ghost">Ajouter un prospect</Link>
+          </div>
+          <p className="mt-4 font-mono text-[9.5px] uppercase tracking-[0.18em] text-paper-faint">
+            Réglages → Restaurer la démo pour revoir l&apos;exemple
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-up">
       <header className="flex flex-wrap items-end justify-between gap-3">

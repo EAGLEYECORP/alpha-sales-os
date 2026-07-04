@@ -81,6 +81,7 @@ const defaultSettings: AppSettings = {
   businessRules: DEFAULT_BUSINESS_RULES,
   apiKeys: [],
   supabaseSync: false,
+  onboarded: false,
   security: { pinHash: null, autoLock: false },
 };
 
@@ -351,7 +352,7 @@ export const useAlpha = create<AlphaState>()(
     }),
     {
       name: "alpha-sales-os-v2",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted) => {
         const s = persisted as Partial<AlphaState>;
@@ -363,12 +364,16 @@ export const useAlpha = create<AlphaState>()(
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
       },
-      onRehydrateStorage: () => (state) => {
-        state && useAlpha.setState({ hydrated: true });
-      },
     }
   )
 );
+
+// Flip the flag via the persist API — never inside onRehydrateStorage, which
+// fires during create() while `useAlpha` is still in its temporal dead zone.
+if (typeof window !== "undefined") {
+  if (useAlpha.persist.hasHydrated()) useAlpha.setState({ hydrated: true });
+  useAlpha.persist.onFinishHydration(() => useAlpha.setState({ hydrated: true }));
+}
 
 /** SSR-safe hydration gate — render seed data until localStorage is read. */
 export const useHydrated = () => useAlpha((s) => s.hydrated);

@@ -21,6 +21,7 @@ import { useAlpha } from "@/lib/store";
 import { eur } from "@/lib/utils";
 import { weightedValue } from "@/lib/hormozi";
 import { LockGate } from "@/components/security/lock-gate";
+import { Onboarding } from "@/components/onboarding";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
@@ -71,6 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <LockGate>
+    <Onboarding />
     <div className="flex min-h-screen">
       {/* Sidebar — desktop */}
       <aside className="hidden md:flex w-60 flex-col border-r border-ink-700 bg-ink-900/60 backdrop-blur-xl sticky top-0 h-screen">
