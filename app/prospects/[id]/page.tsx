@@ -300,6 +300,9 @@ function DoctrineTab({
       {/* 3 Croyances */}
       <section className="card p-4 lg:col-span-2">
         <h2 className="font-display text-sm font-semibold text-paper">Les 3 Croyances — toutes à 10 pour signer</h2>
+        <p className="mt-0.5 text-[11px] text-paper-faint">
+          En clair : s&apos;il hésite encore, c&apos;est qu&apos;une de ces trois convictions n&apos;est pas installée. Trouve laquelle, répare-la.
+        </p>
         <div className="mt-3 grid gap-4 md:grid-cols-3">
           {CROYANCES_META.map((c) => {
             const value = p.croyances[c.key];
@@ -368,8 +371,11 @@ function DoctrineTab({
       {/* Obstacles (pre-offer) */}
       <section className="card p-4">
         <h2 className="font-display text-sm font-semibold text-paper">
-          Obstacles <span className="text-[11px] font-normal text-paper-faint">(pré-offre — Oignon du Blâme)</span>
+          Obstacles <span className="text-[11px] font-normal text-paper-faint">(AVANT l&apos;offre — les excuses pour ne pas écouter)</span>
         </h2>
+        <p className="mt-0.5 text-[11px] text-paper-faint">
+          Il se cache derrière 3 couches : les circonstances (« pas le moment »), les autres (« mon associé »), lui-même (« je suis nul en informatique »). On épluche, on n&apos;argumente pas.
+        </p>
         <ul className="mt-3 space-y-2">
           {p.obstacles.map((o) => (
             <li key={o.id} className={cn("rounded-lg border px-3 py-2", o.resolved ? "border-ink-700 opacity-50" : "border-ink-600 bg-ink-850")}>
@@ -424,8 +430,11 @@ function DoctrineTab({
       {/* Objections (Red Zone) */}
       <section className={cn("card p-4", p.stage === "redzone" && "border-signal-red/40")}>
         <h2 className="font-display text-sm font-semibold text-paper">
-          Objections <span className="text-[11px] font-normal text-signal-red">(post-offre — Red Zone uniquement)</span>
+          Objections <span className="text-[11px] font-normal text-signal-red">(APRÈS l&apos;offre — les vraies raisons de ne pas signer)</span>
         </h2>
+        <p className="mt-0.5 text-[11px] text-paper-faint">
+          Chaque objection pointe une des 3 Croyances cassée. On répare la croyance, pas l&apos;argument.
+        </p>
         {!["offre", "redzone", "signe"].includes(p.stage) && (
           <p className="mt-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-[12px] text-paper-faint">
             Pas d&apos;offre présentée = pas d&apos;objection possible. Ce que tu entends maintenant, ce sont des <strong className="text-paper">obstacles</strong>.
@@ -1029,6 +1038,7 @@ function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
 /* ── Templates tab ───────────────────────────────────────────────────── */
 
 function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
+  // 3 messages prêts pour CE prospect — la bibliothèque complète est dans /templates
   const firstName = p.name.split(" ")[0];
   const templates = [
     {
@@ -1049,6 +1059,11 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
   ];
 
   return (
+    <div className="space-y-4">
+    <div className="flex items-center justify-between rounded-xl border border-ink-700 bg-ink-900 px-4 py-2.5">
+      <p className="text-[12px] text-paper-faint">3 messages prêts pour <strong className="text-paper">{p.company}</strong> — besoin d&apos;un autre moment ou format ?</p>
+      <Link href="/templates" className="btn-ghost px-3 py-1.5 text-[12px]">Toute la bibliothèque →</Link>
+    </div>
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {templates.map((t, i) => (
         <div key={i} className="card flex flex-col p-4">
@@ -1067,6 +1082,7 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
           </button>
         </div>
       ))}
+    </div>
     </div>
   );
 }

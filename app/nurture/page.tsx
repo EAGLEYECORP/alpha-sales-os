@@ -18,9 +18,9 @@ export default function NurturePage() {
   return (
     <div className="space-y-4 animate-fade-up">
       <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Séquences Nurture</h1>
+        <h1 className="font-display text-2xl font-bold text-paper">Relances long terme</h1>
         <p className="text-sm text-paper-faint">
-          Un perdu documenté est un futur signé. Un signé est une machine à referrals.
+          Deux automatismes : recontacter les « non » au bon moment (90 jours), et transformer chaque client signé en source de recommandations.
         </p>
       </header>
 

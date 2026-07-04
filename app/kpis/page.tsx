@@ -52,7 +52,7 @@ export default function KpisPage() {
       <header>
         <h1 className="font-display text-2xl font-bold text-paper">KPIs</h1>
         <p className="text-sm text-paper-faint">
-          Réactivité, ouverture, confiance — et surtout : pourquoi OUI, pourquoi NON.
+          Est-ce qu&apos;on t&apos;ouvre, est-ce qu&apos;on te répond, est-ce qu&apos;on te fait confiance — et surtout : pourquoi OUI, pourquoi NON.
         </p>
       </header>
 
@@ -60,21 +60,21 @@ export default function KpisPage() {
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile
           icon={<MailOpen size={16} />}
-          label="Ouverture (openness)"
+          label="Taux d'ouverture"
           value={`${openRate} %`}
           sub={`${opened}/${sent} messages ouverts`}
         />
         <Tile
           icon={<MessageCircleReply size={16} />}
-          label="Réactivité (responsiveness)"
+          label="Taux de réponse"
           value={`${replyRate} %`}
           sub={`${replied} réponses · ${booked} RDV décrochés`}
         />
         <Tile
           icon={<Gauge size={16} />}
-          label="Fraîcheur du pipe"
+          label="Pipe à jour"
           value={`${freshness} %`}
-          sub={`${contactedLast7d}/${active.length} contactés < 7 j`}
+          sub={`${contactedLast7d}/${active.length} contactés cette semaine`}
           tone={freshness < 50 ? "red" : undefined}
         />
         <Tile

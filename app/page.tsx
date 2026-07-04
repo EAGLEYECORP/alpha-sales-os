@@ -196,8 +196,10 @@ export default function DashboardPage() {
 
         {/* Blocker heatmap */}
         <div className="card p-4">
-          <h2 className="mb-1 font-display text-sm font-semibold text-paper">Oignon du Blâme — obstacles ouverts</h2>
-          <p className="mb-3 text-[11px] text-paper-faint">couche × secteur (nombre d&apos;obstacles)</p>
+          <h2 className="mb-1 font-display text-sm font-semibold text-paper">Excuses entendues (Oignon du Blâme)</h2>
+          <p className="mb-3 text-[11px] text-paper-faint">
+            derrière quoi ils se cachent, par secteur : les circonstances, les autres, ou eux-mêmes
+          </p>
           <div className="grid grid-cols-[auto_repeat(4,1fr)] gap-1 text-[11px]">
             <span />
             {SECTORS.map((s) => (
@@ -294,9 +296,9 @@ export default function DashboardPage() {
 
       {/* Ignorance tax cumulative */}
       <section className="card p-4">
-        <h2 className="mb-2 font-display text-sm font-semibold text-paper">Compteur Taxe d&apos;Ignorance cumulée</h2>
+        <h2 className="mb-2 font-display text-sm font-semibold text-paper">Ce qu&apos;ils ont déjà perdu (Taxe d&apos;Ignorance)</h2>
         <p className="text-[11px] text-paper-faint mb-3">
-          Ce que chaque prospect actif a déjà perdu depuis qu&apos;on le connaît — l&apos;argument massue au closing.
+          L&apos;argent parti chez le concurrent depuis qu&apos;on les connaît, faute d&apos;avoir agi — l&apos;argument massue au closing.
         </p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {active.slice(0, 8).map((p) => (
