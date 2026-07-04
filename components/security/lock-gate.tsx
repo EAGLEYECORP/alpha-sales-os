@@ -21,22 +21,25 @@ export function lockNow() {
 export function LockGate({ children }: { children: React.ReactNode }) {
   const hydrated = useHydrated();
   const security = useAlpha((s) => s.settings.security);
-  const [unlocked, setUnlocked] = useState<boolean | null>(null);
+  // Default OPEN so the server-rendered page always has content — the lock
+  // clamps down right after hydration when a PIN is configured. Never gate
+  // SSR on client-only state: a blocked script would blank the whole app.
+  const [unlocked, setUnlocked] = useState(true);
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!security.pinHash || !security.autoLock) {
+    if (!security?.pinHash || !security.autoLock) {
       setUnlocked(true);
       return;
     }
     setUnlocked(sessionStorage.getItem(SESSION_KEY) === security.pinHash);
-  }, [hydrated, security.pinHash, security.autoLock]);
+  }, [hydrated, security?.pinHash, security?.autoLock]);
 
   const tryUnlock = async () => {
     const hash = await sha256(pin);
-    if (hash === security.pinHash) {
+    if (hash === security?.pinHash) {
       sessionStorage.setItem(SESSION_KEY, hash);
       setUnlocked(true);
       setError(false);
@@ -46,7 +49,6 @@ export function LockGate({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (unlocked === null) return null; // waiting for hydration — avoid flash
   if (unlocked) return <>{children}</>;
 
   return (

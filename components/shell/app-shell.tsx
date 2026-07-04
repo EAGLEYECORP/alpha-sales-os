@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -41,8 +42,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const prospects = useAlpha((s) => s.prospects);
   const pipeValue = prospects.reduce((sum, p) => sum + weightedValue(p), 0);
 
+  // Mounted gate: all content is driven by localStorage (local-first), which
+  // the server can't know. Server and first client paint both render the
+  // splash — identical markup, zero hydration mismatch — then real data.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  if (!mounted) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-ink-950">
+        <div className="text-center animate-pulse-ring">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-bronze-500 text-ink-950">
+            <Eye size={24} strokeWidth={2.5} />
+          </span>
+          <p className="mt-3 font-display text-sm font-bold tracking-wide text-paper">
+            ALPHA SALES OS<sup className="text-bronze-500">®</sup>
+          </p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-bronze-500">Eagleye Corp</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <LockGate>

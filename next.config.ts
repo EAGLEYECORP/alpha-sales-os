@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// Dev mode needs 'unsafe-eval' (webpack/react-refresh run through eval);
+// production stays strict.
+const isDev = process.env.NODE_ENV === "development";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   eslint: { ignoreDuringBuilds: true },
@@ -16,10 +20,12 @@ const nextConfig: NextConfig = {
           value: [
             "default-src 'self'",
             // Next.js hydration + Tailwind runtime styles need inline; fonts via Google
-            "script-src 'self' 'unsafe-inline'",
+            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob:",
+            // canvas-confetti spawns a blob: worker
+            "worker-src 'self' blob:",
             "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
             "frame-ancestors 'none'",
             "base-uri 'self'",
