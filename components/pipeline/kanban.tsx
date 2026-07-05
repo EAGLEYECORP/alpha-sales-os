@@ -9,6 +9,7 @@ import { cn, eur, isOverdue, relativeFr } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { Modal } from "@/components/ui/modal";
+import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { fireSignedConfetti } from "@/lib/confetti";
 
 export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
@@ -16,21 +17,30 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<Stage | null>(null);
   const [blockers, setBlockers] = useState<{ company: string; list: string[] } | null>(null);
+  const [pendingReason, setPendingReason] = useState<{ p: Prospect; stage: Stage; kind: "won" | "lost" } | null>(null);
 
-  // Shared gated move — used by drag-drop (desktop) AND arrow buttons (touch).
-  const requestMove = (p: Prospect, stage: Stage) => {
-    let extra: { wonReason?: string; lostReason?: string } | undefined;
-    if (stage === "signe") {
-      if (signingBlockers(p).length === 0) {
-        extra = { wonReason: prompt("Pourquoi OUI ? (raison du win — alimente les KPIs)") || undefined };
-      }
-    } else if (stage === "perdu") {
-      extra = { lostReason: prompt("Pourquoi NON ? (raison de perte — doctrine : toujours documentée)") || undefined };
-    }
+  const applyMove = (p: Prospect, stage: Stage, extra?: { wonReason?: string; lostReason?: string }) => {
     const res = moveStage(p.id, stage, extra);
     if (!res.ok) setBlockers({ company: p.company, list: res.blockers });
     if (res.ok && stage === "signe") fireSignedConfetti();
     return res.ok;
+  };
+
+  // Shared gated move — used by drag-drop (desktop) AND arrow buttons (touch).
+  const requestMove = (p: Prospect, stage: Stage) => {
+    if (stage === "signe") {
+      if (signingBlockers(p).length > 0) {
+        setBlockers({ company: p.company, list: signingBlockers(p) });
+        return false;
+      }
+      setPendingReason({ p, stage, kind: "won" });
+      return true;
+    }
+    if (stage === "perdu") {
+      setPendingReason({ p, stage, kind: "lost" });
+      return true;
+    }
+    return applyMove(p, stage);
   };
 
   const drop = (stage: Stage) => {
@@ -117,6 +127,23 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
           La conviction se transfère, elle ne se négocie pas. Répare les croyances, puis reviens signer.
         </p>
       </Modal>
+
+      <ReasonDialog
+        open={!!pendingReason}
+        kind={pendingReason?.kind ?? "won"}
+        company={pendingReason?.p.company ?? ""}
+        onCancel={() => setPendingReason(null)}
+        onSubmit={(reason) => {
+          if (pendingReason) {
+            applyMove(
+              pendingReason.p,
+              pendingReason.stage,
+              pendingReason.kind === "won" ? { wonReason: reason } : { lostReason: reason }
+            );
+          }
+          setPendingReason(null);
+        }}
+      />
     </>
   );
 }

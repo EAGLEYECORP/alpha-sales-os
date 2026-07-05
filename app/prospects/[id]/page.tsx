@@ -24,7 +24,7 @@ import {
   Video,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import type { EventKind, Objection, Obstacle, Prospect } from "@/lib/types";
+import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
 import {
   BLAME_LAYERS,
   CROYANCES_META,
@@ -41,6 +41,7 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { Markdown } from "@/components/ui/markdown";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
+import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { SendBar } from "@/components/send-bar";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { Sparring } from "@/components/training/sparring";
@@ -69,6 +70,7 @@ export default function ProspectDetailPage() {
   const [editing, setEditing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [sparring, setSparring] = useState(false);
+  const [reasonAsk, setReasonAsk] = useState<{ kind: "won" | "lost"; stage: Stage } | null>(null);
 
   if (!p) {
     return (
@@ -87,9 +89,7 @@ export default function ProspectDetailPage() {
       alert(`⛔ Doctrine :\n\n${signingBlockers(p).join("\n")}`);
       return;
     }
-    const wonReason = prompt("Pourquoi OUI ? (raison du win — alimente les KPIs)") || undefined;
-    const res = moveStage(p.id, "signe", { wonReason });
-    if (res.ok) fireSignedConfetti();
+    setReasonAsk({ kind: "won", stage: "signe" });
   };
 
   /** Stage stepper — works on touch, same doctrine gates as the Kanban. */
@@ -99,11 +99,11 @@ export default function ProspectDetailPage() {
       trySign();
       return;
     }
-    let extra: { lostReason?: string } | undefined;
     if (stageId === "perdu") {
-      extra = { lostReason: prompt("Pourquoi NON ? (raison de perte — doctrine : toujours documentée)") || undefined };
+      setReasonAsk({ kind: "lost", stage: "perdu" });
+      return;
     }
-    moveStage(p.id, stageId, extra);
+    moveStage(p.id, stageId);
   };
 
   return (
@@ -276,6 +276,23 @@ export default function ProspectDetailPage() {
         />
       )}
       {sparring && <Sparring p={p} onClose={() => setSparring(false)} />}
+      <ReasonDialog
+        open={!!reasonAsk}
+        kind={reasonAsk?.kind ?? "won"}
+        company={p.company}
+        onCancel={() => setReasonAsk(null)}
+        onSubmit={(reason) => {
+          if (reasonAsk) {
+            const res = moveStage(
+              p.id,
+              reasonAsk.stage,
+              reasonAsk.kind === "won" ? { wonReason: reason } : { lostReason: reason }
+            );
+            if (res.ok && reasonAsk.stage === "signe") fireSignedConfetti();
+          }
+          setReasonAsk(null);
+        }}
+      />
     </div>
   );
 }

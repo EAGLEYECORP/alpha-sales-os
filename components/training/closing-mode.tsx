@@ -8,6 +8,7 @@ import { OBJECTION_LIBRARY, signingBlockers } from "@/lib/hormozi";
 import { useAlpha } from "@/lib/store";
 import { fireSignedConfetti } from "@/lib/confetti";
 import { Eagle } from "@/components/eagle";
+import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,12 +21,14 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
   const [i, setI] = useState(0);
   const [openObj, setOpenObj] = useState<number | null>(null);
   const [done, setDone] = useState(false);
+  const [reasonAsk, setReasonAsk] = useState<"signe" | "perdu" | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // Ne pas fermer tout le mode si c'est le dialog de raison qui est ouvert.
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !reasonAsk && onClose();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, reasonAsk]);
 
   const firstName = p.name.split(" ")[0] || "chef";
   const steps = useMemo(() => {
@@ -81,15 +84,14 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
         alert(`⛔ Doctrine :\n\n${signingBlockers(p).join("\n")}`);
         return;
       }
-      const wonReason = prompt("Pourquoi OUI ? (raison du win)") || undefined;
-      const res = moveStage(p.id, "signe", { wonReason });
-      if (res.ok) fireSignedConfetti();
-    } else if (outcome === "perdu") {
-      const lostReason = prompt("Pourquoi NON ? (raison de perte)") || undefined;
-      moveStage(p.id, "perdu", { lostReason });
-    } else {
-      moveStage(p.id, "redzone");
+      setReasonAsk("signe");
+      return;
     }
+    if (outcome === "perdu") {
+      setReasonAsk("perdu");
+      return;
+    }
+    moveStage(p.id, "redzone");
     onClose();
   };
 
@@ -185,6 +187,23 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
           )}
         </div>
       )}
+
+      <ReasonDialog
+        open={!!reasonAsk}
+        kind={reasonAsk === "signe" ? "won" : "lost"}
+        company={p.company}
+        onCancel={() => setReasonAsk(null)}
+        onSubmit={(reason) => {
+          if (reasonAsk === "signe") {
+            const res = moveStage(p.id, "signe", { wonReason: reason });
+            if (res.ok) fireSignedConfetti();
+          } else if (reasonAsk === "perdu") {
+            moveStage(p.id, "perdu", { lostReason: reason });
+          }
+          setReasonAsk(null);
+          onClose();
+        }}
+      />
     </div>,
     document.body
   );
