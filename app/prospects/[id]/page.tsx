@@ -41,6 +41,9 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { Markdown } from "@/components/ui/markdown";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
+import { SendBar } from "@/components/send-bar";
+import { ClosingMode } from "@/components/training/closing-mode";
+import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
 
 type Tab = "doctrine" | "audit" | "timeline" | "commercial" | "coach" | "templates" | "fichiers";
@@ -64,6 +67,8 @@ export default function ProspectDetailPage() {
   const p = prospects.find((x) => x.id === id);
   const [tab, setTab] = useState<Tab>("doctrine");
   const [editing, setEditing] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [sparring, setSparring] = useState(false);
 
   if (!p) {
     return (
@@ -144,6 +149,14 @@ export default function ProspectDetailPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-700 pt-4">
+          {p.stage !== "signe" && p.stage !== "perdu" && (
+            <button className="btn-bronze" onClick={() => setClosing(true)}>
+              ▶ Mode Closing
+            </button>
+          )}
+          <button className="btn-ghost" onClick={() => setSparring(true)} title="Le prospect est joué par l'IA — entraîne-toi avant le vrai RDV">
+            🥊 Sparring
+          </button>
           {p.stage !== "signe" && p.stage !== "perdu" && (
             <button
               className={cn(blockers.length ? "btn-ghost opacity-70" : "btn-bronze")}
@@ -252,6 +265,17 @@ export default function ProspectDetailPage() {
       {tab === "fichiers" && <FilesTab p={p} patch={patchProspect} />}
 
       <ProspectFormModal open={editing} onClose={() => setEditing(false)} initial={p} />
+      {closing && (
+        <ClosingMode
+          p={p}
+          onClose={() => setClosing(false)}
+          onSpar={() => {
+            setClosing(false);
+            setSparring(true);
+          }}
+        />
+      )}
+      {sparring && <Sparring p={p} onClose={() => setSparring(false)} />}
     </div>
   );
 }
@@ -1074,12 +1098,12 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
           <pre className="mt-2 flex-1 whitespace-pre-wrap rounded-lg border border-ink-700 bg-ink-850 p-3 font-body text-[12px] leading-relaxed text-paper-dim">
             {t.body}
           </pre>
-          <button
-            className="btn-ghost mt-3"
-            onClick={() => navigator.clipboard.writeText(t.body)}
-          >
-            Copier
-          </button>
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => navigator.clipboard.writeText(t.body)}>
+              Copier
+            </button>
+            <SendBar prospect={p} subject={t.subject} body={t.body} compact />
+          </div>
         </div>
       ))}
     </div>

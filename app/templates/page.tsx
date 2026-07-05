@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Copy, Lightbulb } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { SendBar } from "@/components/send-bar";
 import {
   FORMAT_LABELS,
   SECTOR_LABELS,
@@ -141,6 +142,10 @@ export default function TemplatesPage() {
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {templates.map((t) => {
           const text = fillTemplate(t.body, prospect, settings.closerName);
+          // Les templates email embarquent leur ligne « Objet : … » — on la sépare pour l'envoi réel.
+          const objetMatch = text.match(/^Objet\s*:\s*(.+)\n+/);
+          const subject = objetMatch ? objetMatch[1].trim() : t.title;
+          const sendBody = objetMatch ? text.slice(objetMatch[0].length) : text;
           return (
             <div key={t.id} className="card card-hover flex flex-col p-4">
               <div className="flex items-start justify-between gap-2">
@@ -153,10 +158,15 @@ export default function TemplatesPage() {
               <p className="mt-2.5 flex gap-1.5 text-[11.5px] text-bronze-400">
                 <Lightbulb size={13} className="mt-0.5 shrink-0" /> {t.tip}
               </p>
-              <button className="btn-ghost mt-3" onClick={() => copy(t.id, text)}>
-                {copied === t.id ? <Check size={14} className="text-signal-green" /> : <Copy size={14} />}
-                {copied === t.id ? "Copié ✓" : "Copier"}
-              </button>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => copy(t.id, text)}>
+                  {copied === t.id ? <Check size={13} className="text-signal-green" /> : <Copy size={13} />}
+                  {copied === t.id ? "Copié ✓" : "Copier"}
+                </button>
+                {prospect && t.format !== "appel" && (
+                  <SendBar prospect={prospect} subject={subject} body={sendBody} compact />
+                )}
+              </div>
             </div>
           );
         })}

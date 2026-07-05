@@ -7,6 +7,7 @@ import type { InboundEvent, Prospect } from "@/lib/types";
 import { prospectDefaults } from "@/lib/seed";
 import { dateTimeFr, daysAhead, uid } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
+import { SendBar } from "@/components/send-bar";
 
 const TYPE_LABEL: Record<InboundEvent["type"], string> = {
   "email.reply": "✉ Réponse email",
@@ -177,9 +178,12 @@ export function InboundInbox() {
                 <div className="mt-2 rounded-lg border border-bronze-700/50 bg-bronze-900/20 p-3">
                   <p className="mb-1 text-[10px] uppercase tracking-wider text-bronze-500">Brouillon de réponse (agent)</p>
                   <Markdown>{drafts[ev.id]}</Markdown>
-                  <button className="btn-ghost mt-2 py-1 text-[12px]" onClick={() => navigator.clipboard.writeText(drafts[ev.id])}>
-                    Copier
-                  </button>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => navigator.clipboard.writeText(drafts[ev.id])}>
+                      Copier
+                    </button>
+                    {p && <SendBar prospect={p} subject="Re : votre message" body={drafts[ev.id]} compact />}
+                  </div>
                 </div>
               )}
             </li>

@@ -74,6 +74,19 @@ Body   : { "type": "email.reply", "email": "…", "name": "…", "campaignId": "
 
 Branche Instantly / Smartlead / Lemlist / Zapier / Make dessus. Les événements apparaissent dans **Campagnes → Réponses entrantes** : attache-les au prospect (timeline + stats campagne + trust), ou crée le prospect à la volée, et génère un **brouillon de réponse IA** (objectif unique : un créneau daté, jamais de prix par écrit avant la démo). Stockage : mémoire process en local, table `inbound_events` Supabase (clé `SUPABASE_SERVICE_ROLE_KEY`) en serverless.
 
+## Envoi réel (open-source, zéro vendor lock-in)
+
+- **Email** : [Nodemailer](https://github.com/nodemailer/nodemailer) (MIT) sur n'importe quel SMTP — `SMTP_HOST/PORT/USER/PASS/FROM` dans `.env.local` (Gmail app-password, OVH, Brevo, ton Postfix…).
+- **SMS** : API compatible [Textbelt](https://github.com/typpo/textbelt) (open-source, auto-hébergeable) — `TEXTBELT_KEY` (+ `TEXTBELT_URL` si self-host).
+- **WhatsApp** : lien `wa.me` pré-rempli — le message part de TON téléphone, dans TA conversation.
+
+Boutons d'envoi partout où il y a un message : bibliothèque Templates (prospect sélectionné), onglet Templates d'une fiche, brouillons IA de l'inbox. Chaque envoi est consigné dans la timeline du prospect.
+
+## Training — Mode Closing & Sparring
+
+- **▶ Mode Closing** (fiche prospect) : plein écran à dérouler PENDANT le rendez-vous. Script en 6 étapes construit avec les données réelles du deal (ses problèmes, sa taxe, son offre personnalisée), objections connues à un tap avec leur contre, écran de fin qui fait avancer le pipeline (Signé gaté par la doctrine + confettis / Red Zone / Perdu).
+- **🥊 Sparring** : le prospect est joué par l'IA (méfiant mais juste — il s'adoucit si tu vends bien, durcit si tu pitches ou parles prix trop tôt). Un coach commente chaque réponse. Verdict : RDV décroché ou raté. Fonctionne aussi sans clé API (moteur local basé sur la doctrine).
+
 ## Agent conversationnel ALPHA
 
 Page **Agent ALPHA** : chat en streaming branché sur l'état réel complet (deals, croyances, audits, RDV, campagnes, règles business). « Prépare ma journée », « quels deals sont en danger ? », rédaction de relances… Sans clé API, il répond quand même avec un briefing chiffré hors-ligne.
