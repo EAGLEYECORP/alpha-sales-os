@@ -208,3 +208,56 @@ export function notifyN8n(type: string, id: string, payload: Record<string, unkn
   if (!n8nConnected()) return;
   void callN8n("event", { type, id, payload });
 }
+
+/** Prospect → ligne CRM (clés alignées sur le schéma Sheets / Apps Script). */
+export function prospectToRow(p: Prospect): Record<string, unknown> {
+  return {
+    prospect: p.company,
+    contact: p.name,
+    email: p.email ?? "",
+    phone: p.phone ?? "",
+    city: p.city,
+    stage: p.stage,
+    rating: p.deepAudit.googleRating ?? "",
+    reviews: p.deepAudit.googleReviews ?? "",
+    tax: p.ignoranceTax || "",
+    website: p.deepAudit.websiteState ?? "",
+    audit: p.deepAudit.currentProcess ?? "",
+    notes: p.notes ?? "",
+    channel: p.preferredChannel ?? "",
+    satisfaction: p.satisfaction ?? "",
+    testimonial: p.testimonial ?? "",
+    upsell: p.upsell?.note ?? "",
+    delivery: p.delivery,
+    updatedAt: p.updatedAt,
+  };
+}
+
+/**
+ * Repousse un prospect vers le CRM centralisé : d'abord Supabase (durable,
+ * service role côté serveur via /api/crm/patch), puis n8n → Google Sheets.
+ * Les infos critiques saisies dans l'app remontent ainsi jusqu'à la feuille.
+ */
+export async function syncProspectToCrm(p: Prospect): Promise<{ ok: boolean; via: string[]; error?: string }> {
+  const via: string[] = [];
+  const row = prospectToRow(p);
+  // 1) Supabase (serveur, service role) — la source durable
+  try {
+    const res = await fetch("/api/crm/patch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: p.company, company: p.company, data: row }),
+    });
+    const d = (await res.json()) as { persisted?: string };
+    if (res.ok && d.persisted === "supabase") via.push("supabase");
+  } catch {
+    /* best-effort */
+  }
+  // 2) n8n → Google Sheets (immédiat)
+  if (n8nConnected()) {
+    const r = await callN8n("upsert", { data: row });
+    if (r.ok) via.push("n8n → Sheets");
+    else if (via.length === 0) return { ok: false, via, error: r.error };
+  }
+  return { ok: via.length > 0, via };
+}

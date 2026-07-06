@@ -1,5 +1,6 @@
 import type { Campaign, CampaignDraft, Meeting, Prospect } from "./types";
 import { isOverdue } from "./utils";
+import { criticalGaps } from "./missing-info";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ import { isOverdue } from "./utils";
 export type RoutineCategory =
   | "relance"
   | "next-step"
+  | "info-manquante"
   | "review"
   | "reply"
   | "meeting-confirm"
@@ -40,6 +42,7 @@ export interface Routine {
 export const CATEGORY_META: Record<RoutineCategory, { label: string; tone: "red" | "bronze" | "green" }> = {
   relance: { label: "Relancer", tone: "red" },
   "next-step": { label: "Next step manquant", tone: "red" },
+  "info-manquante": { label: "Info manquante", tone: "red" },
   review: { label: "Relire & envoyer", tone: "bronze" },
   reply: { label: "Répondre", tone: "red" },
   "meeting-confirm": { label: "Confirmer un RDV", tone: "bronze" },
@@ -80,6 +83,13 @@ export function computeRoutines(input: RoutineInput): Routine[] {
     } else if (!p.nextStep) {
       out.push({ id: `nostep-${p.id}`, category: "next-step", priority: "haute", company: p.company,
         title: `${p.company} — poser un next step daté`, detail: "Aucun next step. Interdit par la doctrine.", href: `/prospects/${p.id}` });
+    }
+    // Infos critiques manquantes (à obtenir de l'humain → CRM/Sheets)
+    const gaps = criticalGaps(p);
+    const blockers = gaps.filter((g) => g.severity === "bloquant");
+    if (blockers.length) {
+      out.push({ id: `info-${p.id}`, category: "info-manquante", priority: "haute", company: p.company,
+        title: `${p.company} — info critique manquante`, detail: blockers.map((g) => g.label).join(", "), href: `/prospects/${p.id}` });
     }
   }
 

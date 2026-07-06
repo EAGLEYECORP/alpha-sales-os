@@ -146,6 +146,21 @@ create index if not exists tracking_channel_created_idx on public.tracking_messa
 create index if not exists tracking_email_created_idx on public.tracking_messages (email, created_at desc);
 alter table public.tracking_messages enable row level security;
 
+-- CRM centralisé (infos critiques app → Supabase → Google Sheets) ------------
+-- L'app dépose ici (via /api/crm/patch, service role) les infos critiques
+-- saisies par l'humain. Le n8n de l'utilisateur lit les lignes non synchronisées
+-- (synced_to_sheet = false), les écrit dans Google Sheets, puis repasse le flag
+-- à true. `data` = ligne CRM (clés alignées sur le schéma Sheets).
+create table if not exists public.crm_records (
+  id text primary key,
+  company text,
+  data jsonb not null default '{}'::jsonb,
+  synced_to_sheet boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+create index if not exists crm_records_unsynced_idx on public.crm_records (synced_to_sheet, updated_at desc);
+alter table public.crm_records enable row level security;
+
 -- Realtime -------------------------------------------------------------------
 -- Dashboard → Database → Replication → enable for prospects/meetings if you
 -- want live team sync, then subscribe client-side with sb.channel(...).

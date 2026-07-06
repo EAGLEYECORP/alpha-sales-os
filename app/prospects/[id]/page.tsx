@@ -22,6 +22,7 @@ import {
   Smartphone,
   Sparkles,
   Trash2,
+  UploadCloud,
   Video,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
@@ -44,6 +45,8 @@ import { Markdown } from "@/components/ui/markdown";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
 import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { SendBar } from "@/components/send-bar";
+import { syncProspectToCrm } from "@/lib/n8n";
+import { criticalGaps } from "@/lib/missing-info";
 import { ClientTrackingStats } from "@/components/tracking/tracking-stats";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { Sparring } from "@/components/training/sparring";
@@ -73,6 +76,7 @@ export default function ProspectDetailPage() {
   const [closing, setClosing] = useState(false);
   const [sparring, setSparring] = useState(false);
   const [reasonAsk, setReasonAsk] = useState<{ kind: "won" | "lost"; stage: Stage } | null>(null);
+  const [crmSync, setCrmSync] = useState("");
 
   if (!p) {
     return (
@@ -172,6 +176,18 @@ export default function ProspectDetailPage() {
             <Pencil size={14} /> Modifier
           </button>
           <button
+            className="btn-ghost"
+            title="Repousser la fiche vers le CRM centralisé (Supabase → Google Sheets via n8n)"
+            onClick={async () => {
+              setCrmSync("Synchronisation…");
+              const r = await syncProspectToCrm(p);
+              setCrmSync(r.ok ? `✓ ${r.via.join(" + ") || "aucune cible"}` : `Échec : ${r.error ?? "n8n/Supabase non configurés"}`);
+              setTimeout(() => setCrmSync(""), 4000);
+            }}
+          >
+            <UploadCloud size={14} /> {crmSync || "Synchroniser CRM"}
+          </button>
+          <button
             className="btn-danger ml-auto"
             onClick={() => {
               if (confirm(`Supprimer ${p.company} ?`)) {
@@ -230,6 +246,23 @@ export default function ProspectDetailPage() {
           <p className="mt-0.5 text-sm font-medium text-paper">{nba.action}</p>
           <p className="text-[12px] text-paper-dim">{nba.why}</p>
         </div>
+
+        {/* Infos critiques manquantes — à obtenir puis remonter vers le CRM */}
+        {criticalGaps(p).length > 0 && (
+          <div className="mt-3 rounded-lg border border-signal-red/40 bg-signal-red/5 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-wider text-signal-red">Infos critiques manquantes</p>
+            <ul className="mt-1 space-y-0.5 text-[13px] text-paper-dim">
+              {criticalGaps(p).map((g) => (
+                <li key={g.field}>
+                  • <strong className="text-paper">{g.label}</strong> <span className="text-paper-faint">— {g.why}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-[11px] text-paper-faint">
+              Renseigne-les (Modifier / onglets Audit &amp; Commercial), puis « Synchroniser CRM » : elles remontent jusqu&apos;à Supabase → Google Sheets.
+            </p>
+          </div>
+        )}
       </header>
 
       {/* Tabs */}
