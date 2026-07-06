@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Activity,
+  BadgeEuro,
   BarChart3,
   Bot,
   CalendarDays,
@@ -36,6 +37,7 @@ const NAV = [
   { href: "/templates", label: "Templates", icon: ScrollText },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
   { href: "/kpis", label: "KPIs", icon: Gauge },
+  { href: "/offre", label: "Offre & Tarifs", icon: BadgeEuro },
   { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
   { href: "/nurture", label: "Relances", icon: Sprout },
   { href: "/intel", label: "Concurrents", icon: Swords },

@@ -82,6 +82,30 @@ Branche Instantly / Smartlead / Lemlist / Zapier / Make dessus. Les événements
 
 Boutons d'envoi partout où il y a un message : bibliothèque Templates (prospect sélectionné), onglet Templates d'une fiche, brouillons IA de l'inbox. Chaque envoi est consigné dans la timeline du prospect.
 
+## Offre & Tarifs (modèle économique)
+
+Page **Offre & Tarifs** (`app/offre`, `lib/pricing.ts`) : deux modèles calés
+sur les standards du marché — **Performance** (setup + 30 % du CA généré,
+incitations alignées) et **Abonnement** (setup + mensuel par paliers de
+prospects : Starter / Growth / Scale / Enterprise). Un **calculateur de ROI**
+interactif projette RDV → ventes → CA, compare le coût an 1 des deux modèles et
+recommande le plus avantageux — à dérouler en RDV pour rendre la décision
+chiffrée.
+
+## Thème clair / sombre
+
+Bascule clair/sombre (icône soleil/lune dans la sidebar et le header mobile),
+persistée, appliquée avant le premier paint (aucun flash). Sombre = défaut
+marque. Détails d'implémentation : jetons CSS dans `tailwind.config` +
+`globals.css`, `lib/theme.ts`.
+
+## Sécurité
+
+Posture complète dans [`SECURITY.md`](./SECURITY.md) : middleware anti-CSRF
+(même origine sur les endpoints internes) + rate-limit, en-têtes durcis (HSTS,
+COOP/CORP, CSP…), lint anti-spam, List-Unsubscribe, RLS Supabase, checklist
+opérateur (HTTPS, SPF/DKIM/DMARC, secrets).
+
 ## Relecture avant envoi (campagnes)
 
 **Rien ne part tant que l'humain n'a pas validé.** Sur une campagne →
