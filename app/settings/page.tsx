@@ -1,9 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Cloud, CloudOff, Download, Eraser, FileSpreadsheet, KeyRound, Lock, Plus, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Webhook } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Cloud, CloudOff, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, Plus, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Webhook } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { supabaseEnabled, pushSnapshot, pullSnapshot } from "@/lib/supabase";
+import {
+  pushSnapshot,
+  pullSnapshot,
+  getSupabaseConfig,
+  supabaseConfigSource,
+  setSupabaseConfig,
+  clearSupabaseConfig,
+} from "@/lib/supabase";
 import { sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
@@ -18,6 +25,41 @@ export default function SettingsPage() {
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
   const [newPin, setNewPin] = useState("");
+
+  // Supabase — linkable from the UI (client-only to avoid hydration mismatch)
+  const [sbSource, setSbSource] = useState<"runtime" | "env" | null>(null);
+  const [sbUrl, setSbUrl] = useState("");
+  const [sbKey, setSbKey] = useState("");
+  const [sbMsg, setSbMsg] = useState("");
+
+  useEffect(() => {
+    setSbSource(supabaseConfigSource());
+    const cfg = getSupabaseConfig();
+    if (cfg) {
+      setSbUrl(cfg.url);
+      setSbKey(cfg.key);
+    }
+  }, []);
+
+  const linkSupabase = () => {
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)/i.test(sbUrl.trim())) {
+      setSbMsg("URL invalide — attendu https://xxxx.supabase.co");
+      return;
+    }
+    if (sbKey.trim().length < 20) {
+      setSbMsg("Clé anon trop courte — copie la clé « anon public » du projet.");
+      return;
+    }
+    setSupabaseConfig(sbUrl, sbKey);
+    setSbSource(supabaseConfigSource());
+    setSbMsg("Supabase lié ✓ — connecte-toi via /login, puis « Pousser ».");
+  };
+
+  const unlinkSupabase = () => {
+    clearSupabaseConfig();
+    setSbSource(supabaseConfigSource());
+    setSbMsg("Configuration retirée.");
+  };
 
   const setPin = async () => {
     if (newPin.length < 4) {
@@ -383,27 +425,70 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Supabase */}
-        <section className="card p-4">
+        {/* Supabase — linkable from the UI */}
+        <section className="card p-4 lg:col-span-2">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
-            {supabaseEnabled() ? <Cloud size={15} className="text-signal-green" /> : <CloudOff size={15} className="text-paper-faint" />}
+            {sbSource ? <Cloud size={15} className="text-signal-green" /> : <CloudOff size={15} className="text-paper-faint" />}
             Supabase
+            {sbSource && (
+              <span className={sbSource === "runtime" ? "chip border-signal-green/50 text-signal-green" : "chip border-bronze-700 text-bronze-400"}>
+                {sbSource === "runtime" ? "lié (cette machine)" : "via variables d'env"}
+              </span>
+            )}
           </h2>
-          {supabaseEnabled() ? (
-            <>
-              <p className="mt-1 text-[11px] text-paper-faint">Connecté. Synchronise le snapshot local (nécessite une session auth).</p>
-              <div className="mt-3 flex gap-2">
+          <p className="mt-1 text-[11px] text-paper-faint">
+            Colle l&apos;URL du projet et la clé <strong>anon public</strong> (Supabase → Project Settings → API). La config est
+            stockée dans ce navigateur et prend le pas sur les variables d&apos;environnement. Applique d&apos;abord{" "}
+            <code className="font-mono text-bronze-400">supabase/schema.sql</code> (SQL Editor).
+          </p>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="label">URL du projet</label>
+              <input
+                className="input font-mono text-[12px]"
+                placeholder="https://xxxx.supabase.co"
+                value={sbUrl}
+                onChange={(e) => setSbUrl(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Clé anon public</label>
+              <input
+                className="input font-mono text-[12px]"
+                type="password"
+                placeholder="eyJhbGciOi…"
+                value={sbKey}
+                onChange={(e) => setSbKey(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button className="btn-bronze" onClick={linkSupabase}>
+              <Link2 size={14} /> {sbSource === "runtime" ? "Mettre à jour le lien" : "Lier Supabase"}
+            </button>
+            {sbSource === "runtime" && (
+              <button className="btn-ghost" onClick={unlinkSupabase}>
+                <Link2Off size={14} /> Délier
+              </button>
+            )}
+            {sbSource && (
+              <>
+                <span className="mx-1 self-center text-ink-600">|</span>
                 <button className="btn-bronze" onClick={() => sync("push")}>Pousser</button>
                 <button className="btn-ghost" onClick={() => sync("pull")}>Récupérer</button>
-              </div>
-              {syncMsg && <p className="mt-2 text-[12px] text-paper-dim">{syncMsg}</p>}
-            </>
-          ) : (
-            <p className="mt-1 text-[12px] text-paper-faint">
-              Non configuré — l&apos;app tourne en 100 % local. Renseigne <code className="font-mono text-bronze-400">NEXT_PUBLIC_SUPABASE_URL</code> et{" "}
-              <code className="font-mono text-bronze-400">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, applique <code className="font-mono text-bronze-400">supabase/schema.sql</code>, redémarre.
-            </p>
-          )}
+              </>
+            )}
+          </div>
+          {sbMsg && <p className="mt-2 text-[12px] text-paper-dim">{sbMsg}</p>}
+          {syncMsg && <p className="mt-1 text-[12px] text-paper-dim">{syncMsg}</p>}
+
+          <p className="mt-3 border-t border-ink-700 pt-3 text-[11px] text-paper-faint">
+            La synchronisation prospects/campagnes/RDV exige une session auth (lien magique via <code className="font-mono text-bronze-400">/login</code>) — RLS isole chaque utilisateur.
+            Pour <strong className="text-paper-dim">persister le tracking email</strong> (ouvertures/clics) côté serveur, définis aussi{" "}
+            <code className="font-mono text-bronze-400">SUPABASE_SERVICE_ROLE_KEY</code> en variable d&apos;environnement serveur (table <code className="font-mono text-bronze-400">tracking_messages</code>, service role uniquement).
+          </p>
         </section>
       </div>
     </div>

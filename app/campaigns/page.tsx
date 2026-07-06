@@ -7,6 +7,7 @@ import type { Campaign, CampaignStep, CampaignStepKind, Sector, StepRole } from 
 import { cn, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { InboundInbox } from "@/components/campaigns/inbox";
+import { IndustryTrackingStats } from "@/components/tracking/tracking-stats";
 
 const KIND_ICON: Record<CampaignStepKind, React.ReactNode> = {
   email: <Mail size={13} />,
@@ -62,6 +63,8 @@ export default function CampaignsPage() {
       </header>
 
       <InboundInbox />
+
+      <IndustryTrackingStats />
 
       <div className="grid gap-4 md:grid-cols-2">
         {campaigns.map((c) => {

@@ -14,6 +14,7 @@ import {
   Layers,
   Mail,
   MessageSquare,
+  MousePointerClick,
   Paperclip,
   Pencil,
   Phone,
@@ -43,11 +44,12 @@ import { Markdown } from "@/components/ui/markdown";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
 import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { SendBar } from "@/components/send-bar";
+import { ClientTrackingStats } from "@/components/tracking/tracking-stats";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
 
-type Tab = "doctrine" | "audit" | "timeline" | "commercial" | "coach" | "templates" | "fichiers";
+type Tab = "doctrine" | "audit" | "timeline" | "commercial" | "coach" | "templates" | "tracking" | "fichiers";
 
 const EVENT_ICONS: Record<EventKind, React.ReactNode> = {
   appel: <Phone size={13} />,
@@ -240,6 +242,7 @@ export default function ProspectDetailPage() {
             ["commercial", "Commercial", <Banknote key="i" size={14} />],
             ["coach", "AI Coach", <Bot key="i" size={14} />],
             ["templates", "Templates", <Mail key="i" size={14} />],
+            ["tracking", "Tracking", <MousePointerClick key="i" size={14} />],
             ["fichiers", "Fichiers", <Paperclip key="i" size={14} />],
           ] as [Tab, string, React.ReactNode][]
         ).map(([key, label, icon]) => (
@@ -262,6 +265,7 @@ export default function ProspectDetailPage() {
       {tab === "commercial" && <CommercialTab p={p} patch={patchProspect} />}
       {tab === "coach" && <CoachTab p={p} rules={settings.businessRules} />}
       {tab === "templates" && <TemplatesTab p={p} closer={settings.closerName} />}
+      {tab === "tracking" && <ClientTrackingStats prospectId={p.id} />}
       {tab === "fichiers" && <FilesTab p={p} patch={patchProspect} />}
 
       <ProspectFormModal open={editing} onClose={() => setEditing(false)} initial={p} />
