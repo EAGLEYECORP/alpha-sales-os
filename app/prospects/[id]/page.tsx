@@ -195,7 +195,7 @@ export default function ProspectDetailPage() {
               className={cn(
                 "chip transition-colors",
                 s.id === p.stage
-                  ? "border-bronze-400 bg-bronze-400 font-semibold text-ink-950"
+                  ? "border-gold bg-gold font-semibold text-goldink"
                   : i < STAGES.findIndex((x) => x.id === p.stage)
                     ? "border-bronze-700/60 text-bronze-600 hover:text-bronze-400"
                     : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"

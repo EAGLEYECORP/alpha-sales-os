@@ -65,7 +65,7 @@ export default function TemplatesPage() {
                   className={cn(
                     "chip transition-colors",
                     s === sector
-                      ? "border-bronze-400 bg-bronze-400 font-semibold text-ink-950"
+                      ? "border-gold bg-gold font-semibold text-goldink"
                       : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
                   )}
                 >
@@ -84,7 +84,7 @@ export default function TemplatesPage() {
                   className={cn(
                     "chip transition-colors",
                     f === format
-                      ? "border-bronze-400 bg-bronze-400 font-semibold text-ink-950"
+                      ? "border-gold bg-gold font-semibold text-goldink"
                       : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
                   )}
                 >
@@ -105,7 +105,7 @@ export default function TemplatesPage() {
                 className={cn(
                   "chip transition-colors",
                   g.id === group
-                    ? "border-bronze-400 bg-bronze-400 font-semibold text-ink-950"
+                    ? "border-gold bg-gold font-semibold text-goldink"
                     : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
                 )}
               >

@@ -93,7 +93,7 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                 {i < step ? (
                   <CheckCircle2 size={16} className="text-signal-green" />
                 ) : i === step ? (
-                  <span className="grid h-4 w-4 place-items-center rounded-full bg-bronze-400 text-[10px] font-bold text-ink-950">{i + 1}</span>
+                  <span className="grid h-4 w-4 place-items-center rounded-full bg-gold text-[10px] font-bold text-goldink">{i + 1}</span>
                 ) : (
                   <Circle size={16} className="text-paper-faint" />
                 )}

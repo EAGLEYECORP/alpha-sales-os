@@ -27,6 +27,7 @@ import { weightedValue } from "@/lib/hormozi";
 import { LockGate } from "@/components/security/lock-gate";
 import { Onboarding } from "@/components/onboarding";
 import { CommandPalette } from "@/components/command-palette";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
@@ -205,8 +206,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Toggle repli */}
-        <div className={cn("border-t border-ink-700", collapsed ? "px-2 py-2" : "px-3 py-2")}>
+        {/* Thème + repli */}
+        <div className={cn("space-y-1 border-t border-ink-700", collapsed ? "px-2 py-2" : "px-3 py-2")}>
+          <ThemeToggle variant={collapsed ? "icon" : "rail"} className={collapsed ? "mx-auto h-9 w-9" : ""} />
           <button
             onClick={toggleCollapsed}
             aria-label={collapsed ? "Déplier la barre latérale (⌘B)" : "Replier la barre latérale (⌘B)"}
@@ -232,13 +234,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ALPHA <span className="text-bronze-400">SALES OS</span>
             </span>
           </Link>
-          <button
-            onClick={() => setPaletteOpen(true)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-ink-600 text-paper-faint"
-            aria-label="Rechercher"
-          >
-            <Search size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle variant="icon" className="h-9 w-9" />
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="grid h-9 w-9 place-items-center rounded-full border border-ink-600 text-paper-faint"
+              aria-label="Rechercher"
+            >
+              <Search size={16} />
+            </button>
+          </div>
         </div>
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
