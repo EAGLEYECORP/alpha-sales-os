@@ -11,6 +11,8 @@ import {
   Gauge,
   Kanban,
   Mail,
+  PanelLeftClose,
+  PanelLeftOpen,
   ScrollText,
   Search,
   Settings,
@@ -55,18 +57,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+  // Collapsible sidebar — persisted per browser. Lazy-init from localStorage
+  // (client only; the shell renders splash on the server so no hydration risk).
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => typeof window !== "undefined" && localStorage.getItem("alpha_sidebar_collapsed") === "1"
+  );
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      const next = !c;
+      if (typeof window !== "undefined")
+        localStorage.setItem("alpha_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
+
   // Mounted gate: all content is driven by localStorage (local-first), which
   // the server can't know. Server and first client paint both render the
   // splash — identical markup, zero hydration mismatch — then real data.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Recherche globale : Ctrl/Cmd+K partout
+  // Raccourcis : ⌘/Ctrl+K (recherche) · ⌘/Ctrl+B (replier la sidebar)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((o) => !o);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        toggleCollapsed();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -96,68 +115,110 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <LockGate>
     <Onboarding />
     <div className="flex min-h-screen">
-      {/* Sidebar — desktop */}
-      <aside className="hidden md:flex w-60 flex-col border-r border-ink-700 bg-ink-900/60 backdrop-blur-xl sticky top-0 h-screen">
-        <div className="px-5 py-6 border-b border-ink-700">
-          <Link href="/" className="flex items-center gap-3 group">
+      {/* Sidebar — desktop (repliable : ⌘B ou le bouton) */}
+      <aside
+        className={cn(
+          "hidden md:flex flex-col border-r border-ink-700 bg-ink-900/60 backdrop-blur-xl sticky top-0 h-screen transition-[width] duration-200 ease-out",
+          collapsed ? "w-16" : "w-60"
+        )}
+      >
+        <div className={cn("border-b border-ink-700", collapsed ? "px-2 py-4" : "px-5 py-6")}>
+          <Link
+            href="/"
+            className={cn("flex items-center gap-3 group", collapsed && "justify-center")}
+            title="ALPHA SALES OS — Dashboard"
+          >
             <span className="text-bronze-400 transition-transform group-hover:scale-105">
-              <Eagle size={38} glow />
+              <Eagle size={collapsed ? 30 : 38} glow />
             </span>
-            <span>
-              <span className="block font-display text-sm font-extrabold tracking-[0.04em] text-paper">
-                ALPHA <span className="text-bronze-400">SALES OS</span>
+            {!collapsed && (
+              <span>
+                <span className="block font-display text-sm font-extrabold tracking-[0.04em] text-paper">
+                  ALPHA <span className="text-bronze-400">SALES OS</span>
+                </span>
+                <span className="block font-mono text-[9px] uppercase tracking-[0.22em] text-paper-faint">
+                  Eagleye Corp — Lyon
+                </span>
               </span>
-              <span className="block font-mono text-[9px] uppercase tracking-[0.22em] text-paper-faint">
-                Eagleye Corp — Lyon
-              </span>
-            </span>
+            )}
           </Link>
         </div>
 
-        <div className="px-3 pt-3">
+        <div className={cn("pt-3", collapsed ? "px-2" : "px-3")}>
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex w-full items-center gap-2.5 rounded-xl border border-ink-600 px-3 py-2 text-left text-sm text-paper-faint transition-colors hover:border-bronze-700 hover:text-paper"
+            aria-label="Rechercher (⌘K)"
+            title="Rechercher (⌘K)"
+            className={cn(
+              "flex w-full items-center rounded-xl border border-ink-600 text-paper-faint transition-colors hover:border-bronze-700 hover:text-paper",
+              collapsed ? "justify-center py-2" : "gap-2.5 px-3 py-2 text-left text-sm"
+            )}
           >
             <Search size={14} />
-            Rechercher…
-            <kbd className="ml-auto rounded border border-ink-600 px-1.5 py-0.5 font-mono text-[9px] uppercase">⌘K</kbd>
+            {!collapsed && (
+              <>
+                Rechercher…
+                <kbd className="ml-auto rounded border border-ink-600 px-1.5 py-0.5 font-mono text-[9px] uppercase">⌘K</kbd>
+              </>
+            )}
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        <nav className={cn("flex-1 overflow-y-auto py-3 space-y-0.5", collapsed ? "px-2" : "px-3")}>
           {NAV.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
+              aria-label={label}
+              aria-current={isActive(href) ? "page" : undefined}
+              title={collapsed ? label : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                "flex items-center rounded-lg text-sm transition-colors",
+                collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
                 isActive(href)
                   ? "bg-bronze-900/70 text-bronze-300 font-medium"
                   : "text-paper-dim hover:text-paper hover:bg-ink-800"
               )}
             >
               <Icon size={17} strokeWidth={isActive(href) ? 2.4 : 1.8} />
-              {label}
+              {!collapsed && label}
             </Link>
           ))}
         </nav>
 
-        <div className="space-y-2.5 border-t border-ink-700 p-4">
-          {nextMeeting && (
-            <Link href="/meetings" className="block">
-              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Prochain RDV</p>
-              <p className="truncate text-[12px] font-medium text-paper">
-                {nextMeeting.title}{" "}
-                <span className="font-mono text-bronze-400">{relativeFr(nextMeeting.date)}</span>
-              </p>
-            </Link>
-          )}
-          <div>
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Pipe pondéré</p>
-            <p className="font-display text-xl font-extrabold text-bronze-400">{eur(pipeValue)}</p>
+        {!collapsed && (
+          <div className="space-y-2.5 border-t border-ink-700 p-4">
+            {nextMeeting && (
+              <Link href="/meetings" className="block">
+                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Prochain RDV</p>
+                <p className="truncate text-[12px] font-medium text-paper">
+                  {nextMeeting.title}{" "}
+                  <span className="font-mono text-bronze-400">{relativeFr(nextMeeting.date)}</span>
+                </p>
+              </Link>
+            )}
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Pipe pondéré</p>
+              <p className="font-display text-xl font-extrabold text-bronze-400">{eur(pipeValue)}</p>
+            </div>
+            <p className="text-[10px] italic text-paper-faint">« La décision EST le produit. »</p>
           </div>
-          <p className="text-[10px] italic text-paper-faint">« La décision EST le produit. »</p>
+        )}
+
+        {/* Toggle repli */}
+        <div className={cn("border-t border-ink-700", collapsed ? "px-2 py-2" : "px-3 py-2")}>
+          <button
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Déplier la barre latérale (⌘B)" : "Replier la barre latérale (⌘B)"}
+            title={collapsed ? "Déplier (⌘B)" : "Replier (⌘B)"}
+            className={cn(
+              "flex w-full items-center rounded-lg text-paper-faint transition-colors hover:text-paper hover:bg-ink-800",
+              collapsed ? "justify-center py-2" : "gap-2.5 px-3 py-2 text-[12px]"
+            )}
+          >
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            {!collapsed && "Replier"}
+          </button>
         </div>
       </aside>
 

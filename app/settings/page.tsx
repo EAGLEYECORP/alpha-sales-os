@@ -14,6 +14,7 @@ import {
 import { sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
+import { SystemStatus } from "@/components/settings/system-status";
 
 export default function SettingsPage() {
   const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, prospects } = useAlpha();
@@ -178,6 +179,9 @@ export default function SettingsPage() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* System status — what's configured, what's missing */}
+        <SystemStatus />
+
         {/* Agency */}
         <section className="card space-y-3 p-4">
           <h2 className="font-display text-sm font-semibold text-paper">Agence</h2>
