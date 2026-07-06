@@ -69,6 +69,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Garde-fou taille : borne les charges utiles (anti-abus mémoire).
+  const len = Number(request.headers.get("content-length") ?? 0);
+  if (len > 200_000) {
+    return NextResponse.json({ error: "Charge utile trop volumineuse." }, { status: 413 });
+  }
   let body: SendRequest;
   try {
     body = (await request.json()) as SendRequest;
