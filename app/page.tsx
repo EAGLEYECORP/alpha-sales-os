@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  AlertTriangle,
   ArrowRight,
   CalendarClock,
   Coins,
@@ -14,10 +13,11 @@ import { useAlpha } from "@/lib/store";
 import { SEED_PROSPECT_IDS } from "@/lib/seed";
 import { STAGES, BLAME_LAYERS, weightedValue, ignoranceTaxTotal, nextBestAction } from "@/lib/hormozi";
 import type { BlameLayer, Sector } from "@/lib/types";
-import { eur, isOverdue, relativeFr } from "@/lib/utils";
+import { eur, relativeFr } from "@/lib/utils";
 import { useCountUp } from "@/lib/use-count-up";
 import { FunnelChart, ForecastChart, SectorChart } from "@/components/charts";
 import { StageBadge } from "@/components/ui/stage-badge";
+import { RoutinesPanel } from "@/components/routines-panel";
 
 const SECTORS: Sector[] = ["restaurant", "pub", "ambulance", "artisan"];
 const SECTOR_LABELS: Record<string, string> = {
@@ -73,8 +73,6 @@ export default function DashboardPage() {
 
   const lostReasons = prospects.filter((p) => p.lostReason).map((p) => p.lostReason!);
 
-  const overdue = active.filter((p) => p.nextStep && isOverdue(p.nextStep.date));
-  const noStep = active.filter((p) => !p.nextStep);
   const upcoming = meetings
     .filter((m) => !m.done && new Date(m.date) > new Date(Date.now() - 864e5))
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -142,34 +140,8 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Doctrine alerts */}
-      {(overdue.length > 0 || noStep.length > 0) && (
-        <section className="card border-signal-red/40 p-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-signal-red">
-            <AlertTriangle size={15} /> Violations doctrine — à corriger aujourd&apos;hui
-          </p>
-          <ul className="mt-2 space-y-1.5 text-sm">
-            {overdue.map((p) => (
-              <li key={p.id}>
-                <Link href={`/prospects/${p.id}`} className="text-paper hover:text-bronze-300">
-                  {p.company}
-                </Link>{" "}
-                <span className="text-paper-faint">
-                  — next step en retard ({relativeFr(p.nextStep!.date)}) : {p.nextStep!.action}
-                </span>
-              </li>
-            ))}
-            {noStep.map((p) => (
-              <li key={p.id}>
-                <Link href={`/prospects/${p.id}`} className="text-paper hover:text-bronze-300">
-                  {p.company}
-                </Link>{" "}
-                <span className="text-paper-faint">— AUCUN next step daté. Interdit par la doctrine.</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* Routines — les actions humaines à faire pour avancer */}
+      <RoutinesPanel />
 
       {/* Charts row */}
       <section className="grid gap-4 lg:grid-cols-2">

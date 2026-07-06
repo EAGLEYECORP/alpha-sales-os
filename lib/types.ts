@@ -126,6 +126,14 @@ export interface ContractInfo {
 
 export type DeliveryStatus = "non-demarre" | "en-cours" | "livre" | "maintenance";
 
+/** Opportunité d'upsell sur un client livré. */
+export type UpsellStatus = "aucun" | "identifie" | "propose" | "gagne";
+export interface UpsellOpportunity {
+  note: string;
+  value?: number; // € additionnel /mois
+  status: UpsellStatus;
+}
+
 export interface Attachment {
   id: string;
   name: string;
@@ -179,6 +187,15 @@ export interface Prospect {
   payments: Payment[];
   contract: ContractInfo;
   delivery: DeliveryStatus;
+  /** Plateforme d'échange privilégiée (email, whatsapp, tel, linkedin…). */
+  preferredChannel?: string;
+  /** Suivi de satisfaction 0–100 (post-livraison). */
+  satisfaction?: number;
+  /** Témoignage / avis obtenu. */
+  testimonial?: string;
+  testimonialAt?: string;
+  /** Opportunité d'upsell. */
+  upsell?: UpsellOpportunity;
   wonReason?: string;
   lostReason?: string;
   wonAt?: string;

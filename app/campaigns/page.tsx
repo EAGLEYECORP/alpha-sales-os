@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Mail, MailCheck, MessageSquare, Phone, Plus, Trash2, Wand2 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import type { Campaign, CampaignStep, CampaignStepKind, Sector, StepRole } from "@/lib/types";
-import { cn, uid } from "@/lib/utils";
+import type { Campaign, CampaignStep, CampaignStepKind, Prospect, Sector, StepRole } from "@/lib/types";
+import { cn, eur, uid } from "@/lib/utils";
+import { computeCampaignFunnel, pct, type FunnelRecord } from "@/lib/campaign-funnel";
 import { Modal } from "@/components/ui/modal";
 import { InboundInbox } from "@/components/campaigns/inbox";
 import { IndustryTrackingStats } from "@/components/tracking/tracking-stats";
@@ -24,10 +25,35 @@ const STATUS_TONE: Record<Campaign["status"], string> = {
 };
 
 export default function CampaignsPage() {
-  const { campaigns, upsertCampaign, deleteCampaign, logActivity } = useAlpha();
+  const { campaigns, prospects, upsertCampaign, deleteCampaign, logActivity } = useAlpha();
   const [editing, setEditing] = useState<Campaign | null>(null);
   const [reviewing, setReviewing] = useState<Campaign | null>(null);
   const [magnetOpen, setMagnetOpen] = useState(false);
+
+  // Tracking réel → funnel par campagne (délivré/ouvert/réponse/…/closed/LTV).
+  const [records, setRecords] = useState<FunnelRecord[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/track/stats")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d.records)) setRecords(d.records);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const recordsByCampaign = useMemo(() => {
+    const m = new Map<string, FunnelRecord[]>();
+    for (const r of records) {
+      if (!r.campaignId) continue;
+      const arr = m.get(r.campaignId) ?? [];
+      arr.push(r);
+      m.set(r.campaignId, arr);
+    }
+    return m;
+  }, [records]);
 
   const newCampaign = () =>
     setEditing({
@@ -70,8 +96,6 @@ export default function CampaignsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {campaigns.map((c) => {
-          const openRate = c.stats.sent ? Math.round((c.stats.opened / c.stats.sent) * 100) : 0;
-          const replyRate = c.stats.sent ? Math.round((c.stats.replied / c.stats.sent) * 100) : 0;
           return (
             <div key={c.id} className="card card-hover p-4">
               <div className="flex items-start justify-between gap-2">
@@ -107,12 +131,7 @@ export default function CampaignsPage() {
                 </p>
               )}
 
-              <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-                <Stat label="Envoyés" value={c.stats.sent} />
-                <Stat label="Ouverts" value={`${openRate}%`} />
-                <Stat label="Réponses" value={`${replyRate}%`} />
-                <Stat label="RDV" value={c.stats.booked} tone="bronze" />
-              </div>
+              <CampaignFunnelStrip records={recordsByCampaign.get(c.id) ?? []} prospects={prospects} fallback={c.stats} />
 
               <ol className="mt-3 space-y-1">
                 {c.steps.map((s, i) => (
@@ -172,11 +191,53 @@ export default function CampaignsPage() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string | number; tone?: "bronze" }) {
+function Mini({ label, value, tone }: { label: string; value: string | number; tone?: "bronze" }) {
   return (
-    <div className="rounded-lg border border-ink-700 bg-ink-850 py-2">
-      <p className={cn("font-mono text-sm", tone === "bronze" ? "text-bronze-400" : "text-paper")}>{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-paper-faint">{label}</p>
+    <div className="rounded-lg border border-ink-700 bg-ink-850 py-1.5">
+      <p className={cn("font-mono text-[13px] leading-tight", tone === "bronze" ? "text-bronze-400" : "text-paper")}>{value}</p>
+      <p className="text-[9px] uppercase tracking-wider text-paper-faint">{label}</p>
+    </div>
+  );
+}
+
+/**
+ * Funnel réel de la campagne : délivré(nospam)/ouvert/réponse/follow-thru/
+ * follow-up/closed + LTV + satisfaction. Sans tracking (campagnes de démo),
+ * retombe sur les compteurs historiques.
+ */
+function CampaignFunnelStrip({
+  records,
+  prospects,
+  fallback,
+}: {
+  records: FunnelRecord[];
+  prospects: Prospect[];
+  fallback: Campaign["stats"];
+}) {
+  if (records.length === 0) {
+    const openRate = fallback.sent ? Math.round((fallback.opened / fallback.sent) * 100) : 0;
+    const replyRate = fallback.sent ? Math.round((fallback.replied / fallback.sent) * 100) : 0;
+    return (
+      <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+        <Mini label="Envoyés" value={fallback.sent} />
+        <Mini label="Ouverts" value={`${openRate}%`} />
+        <Mini label="Réponses" value={`${replyRate}%`} />
+        <Mini label="RDV" value={fallback.booked} tone="bronze" />
+      </div>
+    );
+  }
+  const f = computeCampaignFunnel(records, prospects);
+  const b = f.people;
+  return (
+    <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+      <Mini label="Délivré" value={f.people} />
+      <Mini label="Ouvert" value={`${pct(f.opened, b)}%`} />
+      <Mini label="Réponse" value={`${pct(f.responded, b)}%`} />
+      <Mini label="Follow-thru" value={`${pct(f.followThru, b)}%`} />
+      <Mini label="Follow-up" value={`${pct(f.followUp, b)}%`} />
+      <Mini label="Closed" value={f.closed} tone="bronze" />
+      <Mini label="LTV" value={eur(f.ltv)} tone="bronze" />
+      <Mini label="Satisf." value={f.satisfaction === null ? "—" : `${f.satisfaction}`} />
     </div>
   );
 }

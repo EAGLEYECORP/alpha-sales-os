@@ -353,6 +353,10 @@ export const useAlpha = create<AlphaState>()(
                 notes: p.notes || next[idx].notes,
                 problems: p.problems.length ? p.problems : next[idx].problems,
                 deepAudit: { ...next[idx].deepAudit, ...Object.fromEntries(Object.entries(p.deepAudit).filter(([, v]) => v !== undefined && v !== "")) },
+                preferredChannel: p.preferredChannel ?? next[idx].preferredChannel,
+                satisfaction: p.satisfaction ?? next[idx].satisfaction,
+                testimonial: p.testimonial ?? next[idx].testimonial,
+                upsell: p.upsell ?? next[idx].upsell,
                 updatedAt: new Date().toISOString(),
               };
               updated++;

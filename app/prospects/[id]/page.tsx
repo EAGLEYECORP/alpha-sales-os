@@ -863,6 +863,122 @@ function CommercialTab({
           Croyance n°2 (« tu le soutiens ») se prouve ici : livraison rapide + suivi visible = referrals.
         </p>
       </section>
+
+      {/* Suivi & fidélisation : canal, satisfaction, témoignage, upsell */}
+      <section className="card p-4 lg:col-span-2">
+        <h2 className="font-display text-sm font-semibold text-paper">Suivi & fidélisation</h2>
+        <p className="mt-1 text-[11px] text-paper-faint">
+          Après la livraison : mesurer la satisfaction, récolter un témoignage, ouvrir un upsell. C&apos;est là que le client devient une machine à referrals.
+        </p>
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="label">Plateforme d&apos;échange privilégiée</label>
+            <select
+              className="input"
+              value={p.preferredChannel ?? ""}
+              onChange={(e) => patch(p.id, { preferredChannel: e.target.value || undefined })}
+            >
+              <option value="">— non défini —</option>
+              <option value="email">Email</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="tel">Téléphone</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="sms">SMS</option>
+              <option value="autre">Autre</option>
+            </select>
+
+            <label className="label mt-4 flex items-center justify-between">
+              <span>Satisfaction</span>
+              <label className="flex items-center gap-1.5 text-[10px] normal-case tracking-normal text-paper-faint">
+                <input
+                  type="checkbox"
+                  className="accent-bronze-500"
+                  checked={p.satisfaction !== undefined}
+                  onChange={(e) => patch(p.id, { satisfaction: e.target.checked ? 70 : undefined })}
+                />
+                mesurée
+              </label>
+            </label>
+            {p.satisfaction !== undefined ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={p.satisfaction}
+                  onChange={(e) => patch(p.id, { satisfaction: +e.target.value })}
+                  className="flex-1 accent-bronze-500"
+                />
+                <span className={cn("font-mono text-sm", p.satisfaction >= 70 ? "text-signal-green" : p.satisfaction >= 40 ? "text-bronze-400" : "text-signal-red")}>
+                  {p.satisfaction}/100
+                </span>
+              </div>
+            ) : (
+              <p className="text-[12px] text-paper-faint">Coche « mesurée » après le point J+30.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="label">Témoignage / avis</label>
+            <textarea
+              className="input min-h-20"
+              value={p.testimonial ?? ""}
+              placeholder="Ce que le client dit de nous — mot pour mot (futur argument de vente)…"
+              onChange={(e) => patch(p.id, { testimonial: e.target.value || undefined, testimonialAt: e.target.value ? new Date().toISOString() : undefined })}
+            />
+            {p.testimonialAt && <p className="mt-1 text-[11px] text-signal-green">Recueilli le {dateTimeFr(p.testimonialAt)}</p>}
+          </div>
+        </div>
+
+        {/* Upsell */}
+        <div className="mt-4 rounded-lg border border-bronze-700/40 bg-bronze-900/20 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-paper">Opportunité d&apos;upsell</p>
+            <select
+              className="input w-40 py-1 text-[12px]"
+              value={p.upsell?.status ?? "aucun"}
+              onChange={(e) =>
+                patch(p.id, {
+                  upsell: {
+                    note: p.upsell?.note ?? "",
+                    value: p.upsell?.value,
+                    status: e.target.value as NonNullable<Prospect["upsell"]>["status"],
+                  },
+                })
+              }
+            >
+              <option value="aucun">Aucune</option>
+              <option value="identifie">Identifiée</option>
+              <option value="propose">Proposée</option>
+              <option value="gagne">Gagnée ✓</option>
+            </select>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              className="input flex-1 min-w-48"
+              placeholder="Quelle suite ? (module IA, seconde régie, maintenance premium…)"
+              value={p.upsell?.note ?? ""}
+              onChange={(e) => patch(p.id, { upsell: { note: e.target.value, value: p.upsell?.value, status: p.upsell?.status ?? "identifie" } })}
+            />
+            <input
+              type="number"
+              className="input w-32"
+              placeholder="€/mois"
+              value={p.upsell?.value ?? ""}
+              onChange={(e) => patch(p.id, { upsell: { note: p.upsell?.note ?? "", value: e.target.value === "" ? undefined : +e.target.value, status: p.upsell?.status ?? "identifie" } })}
+            />
+            {p.upsell && (p.upsell.note || p.upsell.value) && (
+              <button
+                className="btn-ghost px-2.5 py-1.5 text-[12px]"
+                onClick={() => patch(p.id, { upsell: undefined })}
+                title="Retirer l'upsell"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
