@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Mail, MessageSquare, Phone, Plus, Trash2, Wand2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Mail, MailCheck, MessageSquare, Phone, Plus, Trash2, Wand2 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Campaign, CampaignStep, CampaignStepKind, Sector, StepRole } from "@/lib/types";
 import { cn, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { InboundInbox } from "@/components/campaigns/inbox";
 import { IndustryTrackingStats } from "@/components/tracking/tracking-stats";
+import { CampaignReview } from "@/components/campaigns/campaign-review";
 
 const KIND_ICON: Record<CampaignStepKind, React.ReactNode> = {
   email: <Mail size={13} />,
@@ -25,6 +26,7 @@ const STATUS_TONE: Record<Campaign["status"], string> = {
 export default function CampaignsPage() {
   const { campaigns, upsertCampaign, deleteCampaign, logActivity } = useAlpha();
   const [editing, setEditing] = useState<Campaign | null>(null);
+  const [reviewing, setReviewing] = useState<Campaign | null>(null);
   const [magnetOpen, setMagnetOpen] = useState(false);
 
   const newCampaign = () =>
@@ -122,13 +124,16 @@ export default function CampaignsPage() {
                 ))}
               </ol>
 
-              <div className="mt-4 flex gap-2">
+              <button className="btn-bronze mt-4 w-full" onClick={() => setReviewing(c)}>
+                <MailCheck size={14} /> Réviser & envoyer
+              </button>
+              <div className="mt-2 flex gap-2">
                 <button className="btn-ghost flex-1" onClick={() => setEditing(c)}>Éditer la séquence</button>
                 {c.status === "active" ? (
                   <button className="btn-ghost" onClick={() => upsertCampaign({ ...c, status: "pausee" })}>Pause</button>
                 ) : (
                   <button
-                    className="btn-bronze"
+                    className="btn-ghost"
                     onClick={() => {
                       upsertCampaign({ ...c, status: "active" });
                       logActivity({ kind: "campagne", message: `Campagne activée : ${c.name}` });
@@ -157,6 +162,8 @@ export default function CampaignsPage() {
           }}
         />
       )}
+
+      {reviewing && <CampaignReview campaign={reviewing} onClose={() => setReviewing(null)} />}
 
       <Modal open={magnetOpen} onClose={() => setMagnetOpen(false)} title="Générateur de lead magnet" wide>
         <LeadMagnet />

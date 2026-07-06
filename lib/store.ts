@@ -7,7 +7,9 @@ import type {
   AppSettings,
   AuditLogEntry,
   Campaign,
+  CampaignDraft,
   Competitor,
+  DraftStatus,
   Meeting,
   NextStep,
   NurtureSequence,
@@ -15,6 +17,7 @@ import type {
   Stage,
   TimelineEvent,
 } from "./types";
+import { fillTemplate } from "./templates";
 import {
   seedActivities,
   seedCampaigns,
@@ -38,6 +41,8 @@ interface AlphaState {
   activities: Activity[];
   auditLog: AuditLogEntry[];
   settings: AppSettings;
+  /** File de brouillons de campagne en attente de relecture avant envoi. */
+  drafts: CampaignDraft[];
 
   // prospects
   upsertProspect: (p: Prospect) => void;
@@ -60,6 +65,13 @@ interface AlphaState {
   upsertCompetitor: (c: Competitor) => void;
   deleteCompetitor: (id: string) => void;
   logActivity: (a: Omit<Activity, "id" | "date">) => void;
+
+  // campaign review (relecture avant envoi)
+  /** Génère les brouillons du 1er palier de la campagne × prospects ciblés. */
+  prepareCampaignDrafts: (campaignId: string) => number;
+  updateDraft: (id: string, patch: Partial<CampaignDraft>) => void;
+  setDraftStatus: (id: string, status: DraftStatus, error?: string) => void;
+  clearCampaignDrafts: (campaignId: string) => void;
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
@@ -124,6 +136,7 @@ export const useAlpha = create<AlphaState>()(
       activities: seedActivities,
       auditLog: [],
       settings: defaultSettings,
+      drafts: [],
 
       upsertProspect: (p) =>
         set((s) => {
@@ -252,6 +265,45 @@ export const useAlpha = create<AlphaState>()(
           activities: [{ ...a, id: uid(), date: new Date().toISOString() }, ...s.activities].slice(0, 300),
         })),
 
+      prepareCampaignDrafts: (campaignId) => {
+        const s = get();
+        const camp = s.campaigns.find((c) => c.id === campaignId);
+        if (!camp) return 0;
+        // Palier de départ : la première impression (sinon la 1re étape).
+        const step = camp.steps.find((x) => x.role === "premiere-impression") ?? camp.steps[0];
+        if (!step) return 0;
+        const closer = s.settings.closerName;
+        const recipients = s.prospects.filter(
+          (p) => (camp.sector === "tous" || p.sector === camp.sector) && p.stage !== "signe" && p.stage !== "perdu"
+        );
+        const drafts: CampaignDraft[] = recipients.map((p) => {
+          const to = step.kind === "email" ? (p.email ?? "") : (p.phone ?? "");
+          return {
+            id: uid(),
+            campaignId,
+            prospectId: p.id,
+            company: p.company,
+            channel: step.kind,
+            to,
+            subject: step.kind === "email" ? fillTemplate(step.subject, p, closer) : "",
+            body: fillTemplate(step.body, p, closer),
+            status: to ? "pending" : "skipped",
+            error: to ? undefined : step.kind === "email" ? "pas d'email sur la fiche" : "pas de téléphone",
+          };
+        });
+        set((st) => ({ drafts: [...st.drafts.filter((d) => d.campaignId !== campaignId), ...drafts] }));
+        return drafts.length;
+      },
+
+      updateDraft: (id, patch) =>
+        set((s) => ({ drafts: s.drafts.map((d) => (d.id === id ? { ...d, ...patch } : d)) })),
+
+      setDraftStatus: (id, status, error) =>
+        set((s) => ({ drafts: s.drafts.map((d) => (d.id === id ? { ...d, status, error } : d)) })),
+
+      clearCampaignDrafts: (campaignId) =>
+        set((s) => ({ drafts: s.drafts.filter((d) => d.campaignId !== campaignId) })),
+
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       importData: (json) => {
@@ -328,6 +380,7 @@ export const useAlpha = create<AlphaState>()(
           meetings: [],
           nurture: [],
           competitors: [],
+          drafts: [],
           activities: [
             { id: uid(), date: new Date().toISOString(), kind: "systeme" as const, message: "Données de démo effacées — mode données réelles" },
           ],
@@ -348,6 +401,7 @@ export const useAlpha = create<AlphaState>()(
           competitors: seedCompetitors,
           activities: seedActivities,
           settings: defaultSettings,
+          drafts: [],
         }),
     }),
     {
@@ -361,6 +415,7 @@ export const useAlpha = create<AlphaState>()(
           prospects: (s.prospects ?? []).map(normalizeProspect),
           campaigns: (s.campaigns ?? []).map(normalizeCampaign),
           meetings: (s.meetings ?? []).map(normalizeMeeting),
+          drafts: s.drafts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
       },

@@ -82,6 +82,23 @@ Branche Instantly / Smartlead / Lemlist / Zapier / Make dessus. Les événements
 
 Boutons d'envoi partout où il y a un message : bibliothèque Templates (prospect sélectionné), onglet Templates d'une fiche, brouillons IA de l'inbox. Chaque envoi est consigné dans la timeline du prospect.
 
+## Relecture avant envoi (campagnes)
+
+**Rien ne part tant que l'humain n'a pas validé.** Sur une campagne →
+**Réviser & envoyer** : l'app génère un brouillon par prospect ciblé (premier
+palier de la séquence, variables remplies avec ses vrais chiffres), puis
+`components/campaigns/campaign-review.tsx` affiche chaque texte/email pour
+relecture :
+
+- **aperçu HTML fidèle** de chaque email (iframe) + **lint anti-spam** ;
+- édition libre de l'objet / du corps ; alerte si des **variables `{…}` non
+  remplies** subsistent ; les fiches sans coordonnée sont écartées ;
+- **Approuver / Ignorer** par message ; **l'envoi est bloqué** tant qu'il reste
+  un message « à valider » (garde-fou) ;
+- « Envoyer les N emails approuvés » → passe par `/api/send` (HTML soigné +
+  tracking + délivrabilité), consigne dans la timeline et notifie n8n
+  (`campaign.sent`). Les DM WhatsApp approuvés s'ouvrent depuis ton téléphone.
+
 ## Emails, tracking & délivrabilité
 
 **Que de beaux emails HTML.** Tout email part **rendu en HTML soigné**

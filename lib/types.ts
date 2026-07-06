@@ -200,6 +200,27 @@ export interface CampaignStep {
   body: string;
 }
 
+/**
+ * Brouillon de campagne — un message généré, EN ATTENTE de relecture avant
+ * envoi. « Rien ne part tant que l'humain n'a pas validé. »
+ */
+export type DraftStatus = "pending" | "approved" | "skipped" | "sent" | "error";
+
+export interface CampaignDraft {
+  id: string;
+  campaignId: string;
+  prospectId: string;
+  company: string;
+  channel: CampaignStepKind; // email | whatsapp | appel
+  /** destinataire : email (email) ou téléphone (whatsapp/appel) */
+  to: string;
+  subject: string;
+  body: string;
+  status: DraftStatus;
+  error?: string;
+  sentAt?: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;
