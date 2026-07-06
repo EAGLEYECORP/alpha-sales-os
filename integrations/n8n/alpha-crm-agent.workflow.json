@@ -1,0 +1,262 @@
+{
+  "name": "ALPHA SALES OS — Agent CRM (mémoire Google Sheets)",
+  "meta": {
+    "description": "Agent conversationnel local (n8n) qui lit et REMPLIT le CRM Google Sheets d'ALPHA SALES OS à chaque étape du pipeline. Les outils appellent le Web App Apps Script (voir integrations/google-apps-script). Configure les variables d'environnement n8n ALPHA_CRM_URL et ALPHA_CRM_TOKEN, et la credential Anthropic."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "b1a11111-1111-4111-8111-111111111111",
+      "name": "Chat — Agent ALPHA",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [-120, 300],
+      "webhookId": "alpha-crm-agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Tu es ALPHA, l'agent commercial d'EAGLEYE CORP (Lyon), branché sur le CRM « mémoire » (Google Sheets). Cible : régies immobilières de Lyon.\n\nTa mission : faire avancer chaque prospect dans le pipeline (prospect → contact → audit → demo → offre → redzone → signe → perdu) et REMPLIR le CRM à chaque étape avec le MAXIMUM d'infos.\n\nRègles :\n- Après CHAQUE interaction ou décision, appelle `CRM_History` pour journaliser (horodaté) et `CRM_Upsert` pour enrichir les champs (audit, taxe, contact, meeting…). La mémoire ne s'écrit pas toute seule : c'est TON travail.\n- Pour rédiger un message, appelle d'abord `CRM_Script` (scripts calibrés selon l'étape courante) puis adapte avec les données réelles de la ligne (note Google, nombre d'avis, taxe d'ignorance).\n- Quand une étape est franchie (RDV obtenu, démo faite, offre présentée…), appelle `CRM_Stage` : ça pose un next step daté.\n- Doctrine : démo mobile AVANT le prix ; jamais de prix par écrit avant la démo ; chaque contact finit par un next step daté ; objectif de premier contact = un créneau, pas une vente.\n- Réponds en français, direct, terrain. Cite les chiffres réels (note, avis, taxe).\n- Si l'utilisateur demande « qui relancer ? », appelle `CRM_Due`."
+        }
+      },
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "name": "Agent ALPHA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-opus-4-8",
+        "options": {
+          "maxTokensToSample": 2000,
+          "temperature": 0.4
+        }
+      },
+      "id": "c3333333-3333-4333-8333-333333333333",
+      "name": "Claude (Anthropic)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.2,
+      "position": [40, 540],
+      "credentials": {
+        "anthropicApi": {
+          "id": "REMPLACE_MOI",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId || 'alpha' }}",
+        "contextWindowLength": 20
+      },
+      "id": "d4444444-4444-4444-8444-444444444444",
+      "name": "Mémoire conversation",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [240, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Liste TOUTES les lignes du CRM (prospects régies + leur étape). À utiliser pour avoir la vue d'ensemble du pipeline.",
+        "method": "GET",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "values": [
+            { "name": "token", "value": "={{ $env.ALPHA_CRM_TOKEN }}" },
+            { "name": "action", "value": "list" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555551",
+      "name": "CRM_List",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [440, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Récupère UNE ligne du CRM (toutes les infos d'un prospect). Fournis son nom exact ou son email.",
+        "method": "GET",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "values": [
+            { "name": "token", "value": "={{ $env.ALPHA_CRM_TOKEN }}" },
+            { "name": "action", "value": "get" },
+            { "name": "id", "value": "{id}" }
+          ]
+        },
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "id", "description": "Nom exact du prospect (raison sociale) ou son email", "type": "string" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555552",
+      "name": "CRM_Get",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [600, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Retourne les scripts de vente (email objet+corps, DM, appel) calibrés pour l'ÉTAPE COURANTE du prospect, remplis avec ses vraies variables (note Google, avis, taxe, ville, contact). Utilise-le AVANT de rédiger un message.",
+        "method": "GET",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "values": [
+            { "name": "token", "value": "={{ $env.ALPHA_CRM_TOKEN }}" },
+            { "name": "action", "value": "script" },
+            { "name": "id", "value": "{id}" }
+          ]
+        },
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "id", "description": "Nom exact du prospect ou son email", "type": "string" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555553",
+      "name": "CRM_Script",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [760, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Liste les prospects dont la Deadline (next step daté) est dépassée — ceux à relancer aujourd'hui.",
+        "method": "GET",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "values": [
+            { "name": "token", "value": "={{ $env.ALPHA_CRM_TOKEN }}" },
+            { "name": "action", "value": "due" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555554",
+      "name": "CRM_Due",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [920, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Crée ou ENRICHIT un prospect dans le CRM. Ne remplace que les champs fournis (enrichissement progressif). Champs possibles : prospect, type, rating, reviews, experience, city, phone, email, hours, website, onSite, onlineBooking, stage, audit, contact, message, meeting, obstacles, objections, tax, delivery, satisfaction, upsell, notes.",
+        "method": "POST",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"token\": \"={{ $env.ALPHA_CRM_TOKEN }}\",\n  \"action\": \"upsert\",\n  \"data\": {\n    \"prospect\": \"{prospect}\",\n    \"email\": \"{email}\",\n    \"contact\": \"{contact}\",\n    \"audit\": \"{audit}\",\n    \"tax\": \"{tax}\",\n    \"notes\": \"{notes}\"\n  }\n}",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "prospect", "description": "Nom (raison sociale) du prospect — sert de clé", "type": "string" },
+            { "name": "email", "description": "Email de contact (laisser vide si inconnu)", "type": "string" },
+            { "name": "contact", "description": "Nom du décideur / interlocuteur", "type": "string" },
+            { "name": "audit", "description": "Synthèse d'audit (site, avis, réactivité…)", "type": "string" },
+            { "name": "tax", "description": "Taxe d'ignorance estimée en €/mois (nombre)", "type": "string" },
+            { "name": "notes", "description": "Notes libres", "type": "string" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555555",
+      "name": "CRM_Upsert",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1080, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Ajoute une note HORODATÉE au journal (History) d'un prospect. Appelle-le après chaque interaction (email envoyé, appel passé, réponse reçue) pour garder la mémoire vivante.",
+        "method": "POST",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"token\": \"={{ $env.ALPHA_CRM_TOKEN }}\",\n  \"action\": \"history\",\n  \"id\": \"{id}\",\n  \"text\": \"{text}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "id", "description": "Nom exact du prospect ou son email", "type": "string" },
+            { "name": "text", "description": "Ce qui vient de se passer (ex. 'Email d'audit envoyé, ouvert 2×')", "type": "string" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555556",
+      "name": "CRM_History",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1240, 540]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Change l'ÉTAPE d'un prospect dans le pipeline (prospect, contact, audit, demo, offre, redzone, signe, perdu). Pose automatiquement un next step daté. Fournis aussi l'action prévue.",
+        "method": "POST",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"token\": \"={{ $env.ALPHA_CRM_TOKEN }}\",\n  \"action\": \"stage\",\n  \"id\": \"{id}\",\n  \"stage\": \"{stage}\",\n  \"action\": \"{next}\"\n}",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "id", "description": "Nom exact du prospect ou son email", "type": "string" },
+            { "name": "stage", "description": "Nouvelle étape : prospect|contact|audit|demo|offre|redzone|signe|perdu", "type": "string" },
+            { "name": "next", "description": "Prochaine action prévue (ex. 'RDV audit mardi 15h')", "type": "string" }
+          ]
+        }
+      },
+      "id": "e5555555-5555-4555-8555-555555555557",
+      "name": "CRM_Stage",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1400, 540]
+    }
+  ],
+  "connections": {
+    "Chat — Agent ALPHA": {
+      "main": [[{ "node": "Agent ALPHA", "type": "main", "index": 0 }]]
+    },
+    "Claude (Anthropic)": {
+      "ai_languageModel": [[{ "node": "Agent ALPHA", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Mémoire conversation": {
+      "ai_memory": [[{ "node": "Agent ALPHA", "type": "ai_memory", "index": 0 }]]
+    },
+    "CRM_List": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    },
+    "CRM_Get": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    },
+    "CRM_Script": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    },
+    "CRM_Due": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    },
+    "CRM_Upsert": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    },
+    "CRM_History": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    },
+    "CRM_Stage": {
+      "ai_tool": [[{ "node": "Agent ALPHA", "type": "ai_tool", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

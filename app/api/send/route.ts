@@ -1,4 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { renderEmail, plainText } from "@/lib/email-html";
+import { createTrackedEmail } from "@/lib/tracking";
+import {
+  unsubscribeUrl,
+  deliverabilityHeaders,
+  lintForSpam,
+  allowSend,
+  isSuppressed,
+} from "@/lib/deliverability";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -10,8 +19,12 @@ export const maxDuration = 30;
  *  · sms   : API compatible Textbelt (open-source, auto-hébergeable)
  *      env : TEXTBELT_URL (défaut https://textbelt.com/text), TEXTBELT_KEY
  *
- * Le WhatsApp part en lien wa.me côté client (ton numéro, ta conversation) —
- * pas besoin de serveur pour ça.
+ * Les emails partent en HTML soigné (multipart html + texte), avec :
+ *  · tracking ouvertures + clics (nombre de clics),
+ *  · List-Unsubscribe One-Click + en-têtes anti-spam,
+ *  · lint anti-spam (bloque ou avertit selon la sévérité).
+ *
+ * Le WhatsApp part en lien wa.me côté client (ton numéro, ta conversation).
  */
 
 interface SendRequest {
@@ -19,6 +32,31 @@ interface SendRequest {
   to: string;
   subject?: string;
   body: string;
+  /** Métadonnées de tracking (facultatives). */
+  prospectId?: string;
+  campaignId?: string;
+  /** Bouton d'appel à l'action optionnel dans l'email. */
+  ctaLabel?: string;
+  ctaUrl?: string;
+  /** Forcer l'envoi malgré un score anti-spam élevé. */
+  force?: boolean;
+}
+
+/** Compte les liens de contenu uniques (hors désinscription). */
+function countContentLinks(html: string): number {
+  const urls = [...html.matchAll(/href="(https?:\/\/[^"]+)"/gi)]
+    .map((m) => m[1])
+    .filter((u) => !u.includes("/api/unsubscribe"));
+  return new Set(urls).size;
+}
+
+/** URL publique de base pour les liens de tracking / désinscription. */
+function baseUrlFrom(req: NextRequest): string {
+  return (
+    process.env.TRACKING_BASE_URL ||
+    process.env.APP_BASE_URL ||
+    req.nextUrl.origin
+  ).replace(/\/+$/, "");
 }
 
 export async function GET() {
@@ -26,6 +64,7 @@ export async function GET() {
   return NextResponse.json({
     email: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),
     sms: Boolean(process.env.TEXTBELT_KEY),
+    tracking: true,
   });
 }
 
@@ -41,16 +80,66 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.channel === "email") {
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+    const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
     if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
       return NextResponse.json(
         { error: "SMTP non configuré — renseigne SMTP_HOST / SMTP_USER / SMTP_PASS dans .env.local (n'importe quel fournisseur SMTP fonctionne)." },
         { status: 503 }
       );
     }
+
+    const to = body.to.trim();
+    if (isSuppressed(to)) {
+      return NextResponse.json({ error: "Destinataire désinscrit — envoi bloqué." }, { status: 409 });
+    }
+
+    // Rate-limit anti-pic (protège la réputation d'envoi).
+    const gate = allowSend("email");
+    if (!gate.ok) {
+      return NextResponse.json(
+        { error: `Limite d'envoi atteinte (anti-spam). Réessaie dans ${gate.retryAfterSec}s.` },
+        { status: 429, headers: { "retry-after": String(gate.retryAfterSec ?? 60) } }
+      );
+    }
+
+    const subject = body.subject?.trim() || "(sans objet)";
+    const base = baseUrlFrom(request);
+    const unsub = unsubscribeUrl(base, to);
+
+    // Rendu HTML soigné + alternative texte.
+    const emailOpts = {
+      subject,
+      body: body.body,
+      closerName: process.env.CLOSER_NAME || "EAGLEYE",
+      ctaLabel: body.ctaLabel,
+      ctaUrl: body.ctaUrl,
+      unsubscribeUrl: unsub,
+    };
+    const html = renderEmail(emailOpts);
+    const text = plainText(emailOpts);
+
+    // Lint anti-spam — ne compter que les VRAIS liens de contenu (uniques,
+    // hors désinscription ; le bouton « bulletproof » duplique son href).
+    const lint = lintForSpam(subject, body.body, true, countContentLinks(html));
+    if (lint.level === "risque" && !body.force) {
+      return NextResponse.json(
+        { error: "Score anti-spam élevé — corrige ou renvoie avec force:true.", lint },
+        { status: 422 }
+      );
+    }
+
+    // Injection tracking (ouvertures + clics).
+    const { id: trackingId, html: trackedHtml } = await createTrackedEmail(html, base, {
+      channel: "email",
+      email: to,
+      prospectId: body.prospectId,
+      campaignId: body.campaignId,
+      subject,
+    });
+
     try {
       const nodemailer = (await import("nodemailer")).default;
-      const port = Number(SMTP_PORT ?? 587);
+      const port = Number(process.env.SMTP_PORT ?? 587);
       const transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port,
@@ -59,11 +148,14 @@ export async function POST(request: NextRequest) {
       });
       const info = await transporter.sendMail({
         from: SMTP_FROM ?? SMTP_USER,
-        to: body.to,
-        subject: body.subject ?? "(sans objet)",
-        text: body.body,
+        to,
+        subject,
+        text,
+        html: trackedHtml,
+        // List-Unsubscribe + One-Click (RFC 8058) et en-têtes anti-spam
+        headers: deliverabilityHeaders(unsub),
       });
-      return NextResponse.json({ ok: true, id: info.messageId });
+      return NextResponse.json({ ok: true, id: info.messageId, trackingId, lint });
     } catch (e) {
       return NextResponse.json(
         { error: `Envoi email échoué : ${e instanceof Error ? e.message : "erreur inconnue"}` },

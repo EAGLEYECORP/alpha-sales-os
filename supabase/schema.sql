@@ -120,6 +120,28 @@ create table if not exists public.inbound_events (
 create index if not exists inbound_unprocessed_idx on public.inbound_events (processed, received_at desc);
 alter table public.inbound_events enable row level security;
 
+-- Tracking email/DM (ouvertures & clics) --------------------------------
+-- Écrit par /api/send + /api/track/* avec le SERVICE ROLE key. RLS activée
+-- SANS policy : seul le service role y accède. `links` = JSONB des liens
+-- tracés [{ idx, url, clicks }].
+create table if not exists public.tracking_messages (
+  id text primary key,
+  channel text not null default 'email',
+  prospect_id text,
+  campaign_id text,
+  email text,
+  subject text,
+  created_at timestamptz not null default now(),
+  opens integer not null default 0,
+  clicks integer not null default 0,
+  last_open_at timestamptz,
+  last_click_at timestamptz,
+  links jsonb not null default '[]'::jsonb
+);
+create index if not exists tracking_prospect_idx on public.tracking_messages (prospect_id, created_at desc);
+create index if not exists tracking_campaign_idx on public.tracking_messages (campaign_id, created_at desc);
+alter table public.tracking_messages enable row level security;
+
 -- Realtime -------------------------------------------------------------------
 -- Dashboard → Database → Replication → enable for prospects/meetings if you
 -- want live team sync, then subscribe client-side with sb.channel(...).

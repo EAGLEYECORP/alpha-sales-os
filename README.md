@@ -82,6 +82,52 @@ Branche Instantly / Smartlead / Lemlist / Zapier / Make dessus. Les événements
 
 Boutons d'envoi partout où il y a un message : bibliothèque Templates (prospect sélectionné), onglet Templates d'une fiche, brouillons IA de l'inbox. Chaque envoi est consigné dans la timeline du prospect.
 
+## Emails, tracking & délivrabilité
+
+**Que de beaux emails HTML.** Tout email part **rendu en HTML soigné**
+(gabarit bronze EAGLEYE, table-based, responsive, lisible en clair sombre
+comme clair, bouton « bulletproof » Outlook), **en multipart html + texte**.
+Le corps texte des scripts est mis en forme automatiquement (`lib/email-html.ts`).
+Aperçu avant envoi : `POST /api/email/preview` → `{ html, text, lint }`.
+
+**Tracking (le « nombre de clics »).** Avant l'envoi, chaque email est
+réécrit (`lib/tracking.ts`) :
+
+- chaque lien passe par `GET /api/track/click/<id>?l=<n>` (compte le clic puis
+  redirige vers l'URL d'origine — **aucun open-redirect**) ;
+- un pixel 1×1 `GET /api/track/open/<id>` compte les ouvertures.
+
+Stats : `GET /api/track/stats?prospectId=…` (ou `campaignId`, `messageId`) →
+`{ messages, opens, clicks, openRate, clickRate, records }`. Stockage :
+mémoire de process en local, table `tracking_messages` Supabase (clé
+`SUPABASE_SERVICE_ROLE_KEY`) en serverless. Chaque ouverture/clic peut être
+renvoyée à un webhook n8n (`TRACKING_WEBHOOK_URL`) pour alimenter le History
+du CRM.
+
+**Ne PAS finir dans les spams** (`lib/deliverability.ts`) :
+
+- **List-Unsubscribe + One-Click** (RFC 8058) → bouton natif Gmail/Apple ;
+  page `GET /api/unsubscribe` + suppression list (le désinscrit n'est plus
+  jamais recontacté, envoi bloqué en 409).
+- **Lint anti-spam** : mots déclencheurs, MAJUSCULES, prix dans l'objet, ratio
+  texte/lien, alternative texte manquante… Score `risque` → envoi bloqué (422)
+  sauf `force:true`.
+- **Rate-limit anti-pic** : `MAX_SENDS_PER_HOUR` (défaut 40) — un volume
+  régulier protège la réputation.
+- **Infra DNS/SMTP** : configure **SPF + DKIM + DMARC** sur ton domaine
+  d'envoi (voir `integrations/README.md`) — c'est 80 % de la délivrabilité.
+
+## CRM « mémoire » (Google Sheets) + backend n8n
+
+Le CRM **est** un Google Sheets piloté par Apps Script ; le backend est un
+**n8n local** dont l'agent conversationnel **remplit la mémoire à chaque
+étape**. Tout est dans [`integrations/`](./integrations/README.md) :
+
+- [`integrations/google-apps-script/`](./integrations/google-apps-script) — schéma CRM (colonnes de la liste régies Lyon), **génération de scripts selon le statut du prospect**, Web App `doGet/doPost` (token) pour n8n, seed des ~32 régies.
+- [`integrations/n8n/`](./integrations/n8n) — workflow importable : agent Claude + outils `CRM_List/Get/Script/Upsert/History/Stage/Due`, mémoire de conversation.
+
+La boucle : **n8n remplit le Sheets → l'app importe & envoie des emails HTML trackés → clics renvoyés dans le History → l'agent voit tout.**
+
 ## Training — Mode Closing & Sparring
 
 - **▶ Mode Closing** (fiche prospect) : plein écran à dérouler PENDANT le rendez-vous. Script en 6 étapes construit avec les données réelles du deal (ses problèmes, sa taxe, son offre personnalisée), objections connues à un tap avec leur contre, écran de fin qui fait avancer le pipeline (Signé gaté par la doctrine + confettis / Red Zone / Perdu).

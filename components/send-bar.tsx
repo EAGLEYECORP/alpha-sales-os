@@ -68,6 +68,7 @@ export function SendBar({
           to: channel === "email" ? prospect.email : toIntlPhone(prospect.phone ?? ""),
           subject,
           body,
+          prospectId: prospect.id,
         }),
       });
       const data = await res.json();
