@@ -4,8 +4,13 @@ import crypto from "crypto";
  * ─────────────────────────────────────────────────────────────────────
  * Délivrabilité — « tout faire pour ne PAS finir dans les spams ».
  *
- *  · unsubscribe signé (List-Unsubscribe + One-Click, RFC 8058)
- *  · en-têtes de bonne conduite
+ * Désinscription = **réponse « STOP »**. Pas de page web ni de liste de
+ * suppression côté app : le prospect répond STOP → le webhook entrant le
+ * remonte → n8n le retire de la feuille et enfile un nouveau prospect.
+ * On pose quand même un en-tête `List-Unsubscribe: <mailto:…>` : le bouton
+ * natif de Gmail/Apple envoie alors… un email STOP, traité par le même flux.
+ *
+ *  · en-têtes de bonne conduite (List-Unsubscribe mailto, X-Mailer)
  *  · lint anti-spam (mots déclencheurs, MAJUSCULES, ratio texte/lien…)
  *  · rate-limit d'envoi (un pic de volume = signal spam)
  *
@@ -13,58 +18,21 @@ import crypto from "crypto";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-// ── Unsubscribe signé ──────────────────────────────────────────────────
-function secret(): string {
-  return process.env.UNSUB_SECRET || process.env.WEBHOOK_SECRET || "alpha-sales-os-dev-secret";
-}
-
-/** Jeton opaque et infalsifiable pour un email donné. */
-export function makeUnsubToken(email: string): string {
-  const payload = Buffer.from(email.toLowerCase().trim()).toString("base64url");
-  const sig = crypto.createHmac("sha256", secret()).update(payload).digest("base64url").slice(0, 24);
-  return `${payload}.${sig}`;
-}
-
-/** Vérifie un jeton, retourne l'email ou null. */
-export function verifyUnsubToken(token: string): string | null {
-  const [payload, sig] = String(token).split(".");
-  if (!payload || !sig) return null;
-  const expect = crypto.createHmac("sha256", secret()).update(payload).digest("base64url").slice(0, 24);
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expect))) return null;
-  try {
-    return Buffer.from(payload, "base64url").toString("utf8");
-  } catch {
-    return null;
-  }
-}
-
-export function unsubscribeUrl(baseUrl: string, email: string): string {
-  return `${baseUrl.replace(/\/+$/, "")}/api/unsubscribe?t=${makeUnsubToken(email)}`;
-}
-
 /**
- * En-têtes qui améliorent la délivrabilité et donnent le bouton
- * « Se désinscrire » natif de Gmail/Apple (List-Unsubscribe + One-Click).
+ * En-têtes qui améliorent la délivrabilité. Si `stopMailto` est fourni, on
+ * ajoute List-Unsubscribe en **mailto** : le clic natif « se désinscrire »
+ * envoie un email (objet STOP) que le workflow n8n traite comme une réponse
+ * STOP — cohérent avec le modèle, aucune page à héberger.
  */
-export function deliverabilityHeaders(unsubUrl?: string): Record<string, string> {
+export function deliverabilityHeaders(stopMailto?: string): Record<string, string> {
   const h: Record<string, string> = {
     "X-Entity-Ref-ID": crypto.randomUUID(),
     "X-Mailer": "ALPHA-SALES-OS",
   };
-  if (unsubUrl) {
-    h["List-Unsubscribe"] = `<${unsubUrl}>`;
-    h["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  if (stopMailto) {
+    h["List-Unsubscribe"] = `<mailto:${stopMailto}?subject=STOP>`;
   }
   return h;
-}
-
-// ── Suppression list (désinscrits) ─────────────────────────────────────
-const suppressed = new Set<string>();
-export function isSuppressed(email: string): boolean {
-  return suppressed.has(email.toLowerCase().trim());
-}
-export function suppress(email: string): void {
-  suppressed.add(email.toLowerCase().trim());
 }
 
 // ── Lint anti-spam ─────────────────────────────────────────────────────

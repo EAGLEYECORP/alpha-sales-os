@@ -15,7 +15,6 @@ interface Health {
     inboundWebhook: { configured: boolean };
     tracking: {
       baseUrl: boolean;
-      unsubscribeSecret: boolean;
       forwardWebhook: boolean;
       persistence: string;
       maxSendsPerHour: number;
@@ -52,11 +51,10 @@ TEXTBELT_KEY=
 # ── Tracking & délivrabilité ──
 TRACKING_BASE_URL=
 APP_BASE_URL=
-UNSUB_SECRET=
 MAX_SENDS_PER_HOUR=40
 TRACKING_WEBHOOK_URL=
 
-# ── Webhooks entrants (réponses) ──
+# ── Webhooks entrants (réponses + STOP) ──
 WEBHOOK_SECRET=
 
 # ── Supabase (sync + auth + persistance tracking) ──
@@ -174,11 +172,6 @@ export function SystemStatus() {
               label: c.tracking.baseUrl ? "URL publique de tracking" : "URL publique (TRACKING_BASE_URL)",
               level: bool(c.tracking.baseUrl),
               hint: "En prod, requise pour que le pixel et les liens de clic se chargent chez le destinataire.",
-            },
-            {
-              label: c.tracking.unsubscribeSecret ? "Secret de désinscription" : "Secret désinscription (UNSUB_SECRET)",
-              level: c.tracking.unsubscribeSecret ? "ok" : "warn",
-              hint: "Signe les liens List-Unsubscribe. Repli sur WEBHOOK_SECRET si absent.",
             },
             {
               label: `Persistance : ${c.tracking.persistence === "supabase" ? "Supabase (durable)" : "mémoire (dev / mono-instance)"}`,

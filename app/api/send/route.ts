@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { createTrackedEmail } from "@/lib/tracking";
-import {
-  unsubscribeUrl,
-  deliverabilityHeaders,
-  lintForSpam,
-  allowSend,
-  isSuppressed,
-} from "@/lib/deliverability";
+import { deliverabilityHeaders, lintForSpam, allowSend } from "@/lib/deliverability";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -21,7 +15,7 @@ export const maxDuration = 30;
  *
  * Les emails partent en HTML soigné (multipart html + texte), avec :
  *  · tracking ouvertures + clics (nombre de clics),
- *  · List-Unsubscribe One-Click + en-têtes anti-spam,
+ *  · pied « Répondez STOP » + List-Unsubscribe mailto (géré par n8n),
  *  · lint anti-spam (bloque ou avertit selon la sévérité).
  *
  * Le WhatsApp part en lien wa.me côté client (ton numéro, ta conversation).
@@ -94,9 +88,6 @@ export async function POST(request: NextRequest) {
     }
 
     const to = body.to.trim();
-    if (isSuppressed(to)) {
-      return NextResponse.json({ error: "Destinataire désinscrit — envoi bloqué." }, { status: 409 });
-    }
 
     // Rate-limit anti-pic (protège la réputation d'envoi).
     const gate = allowSend("email");
@@ -109,16 +100,14 @@ export async function POST(request: NextRequest) {
 
     const subject = body.subject?.trim() || "(sans objet)";
     const base = baseUrlFrom(request);
-    const unsub = unsubscribeUrl(base, to);
 
-    // Rendu HTML soigné + alternative texte.
+    // Rendu HTML soigné + alternative texte (pied « Répondez STOP »).
     const emailOpts = {
       subject,
       body: body.body,
       closerName: process.env.CLOSER_NAME || "EAGLEYE",
       ctaLabel: body.ctaLabel,
       ctaUrl: body.ctaUrl,
-      unsubscribeUrl: unsub,
     };
     const html = renderEmail(emailOpts);
     const text = plainText(emailOpts);
@@ -151,14 +140,16 @@ export async function POST(request: NextRequest) {
         secure: port === 465,
         auth: { user: SMTP_USER, pass: SMTP_PASS },
       });
+      // List-Unsubscribe en mailto : le clic natif envoie un email STOP,
+      // traité par le même flux entrant que « Répondez STOP ».
+      const stopMailto = (SMTP_FROM ?? SMTP_USER)?.match(/<([^>]+)>/)?.[1] ?? SMTP_FROM ?? SMTP_USER;
       const info = await transporter.sendMail({
         from: SMTP_FROM ?? SMTP_USER,
         to,
         subject,
         text,
         html: trackedHtml,
-        // List-Unsubscribe + One-Click (RFC 8058) et en-têtes anti-spam
-        headers: deliverabilityHeaders(unsub),
+        headers: deliverabilityHeaders(stopMailto),
       });
       return NextResponse.json({ ok: true, id: info.messageId, trackingId, lint });
     } catch (e) {

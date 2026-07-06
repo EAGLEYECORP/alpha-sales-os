@@ -23,13 +23,10 @@ export async function POST(request: NextRequest) {
     closerName: process.env.CLOSER_NAME || "EAGLEYE",
     ctaLabel: b.ctaLabel,
     ctaUrl: b.ctaUrl,
-    unsubscribeUrl: `${request.nextUrl.origin}/api/unsubscribe?t=preview`,
   };
   const html = renderEmail(opts);
   const text = plainText(opts);
-  const urls = [...html.matchAll(/href="(https?:\/\/[^"]+)"/gi)]
-    .map((m) => m[1])
-    .filter((u) => !u.includes("/api/unsubscribe"));
+  const urls = [...html.matchAll(/href="(https?:\/\/[^"]+)"/gi)].map((m) => m[1]);
   const lint = lintForSpam(opts.subject, opts.body, true, new Set(urls).size);
   return NextResponse.json({ html, text, lint });
 }

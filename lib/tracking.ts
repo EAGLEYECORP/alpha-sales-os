@@ -133,8 +133,8 @@ export async function createTrackedEmail(
   const links: TrackedLink[] = [];
 
   const html = rawHtml.replace(HREF_RE, (_m, quote: string, url: string) => {
-    // ne pas tracker le lien de désinscription
-    if (/[?&](utm_nofollow|no-?track)=1/i.test(url) || url.includes("/api/unsubscribe")) {
+    // opt-out explicite du tracking sur un lien
+    if (/[?&](utm_nofollow|no-?track)=1/i.test(url)) {
       return `href=${quote}${url}${quote}`;
     }
     // dédup : le bouton « bulletproof » émet le même href deux fois (Outlook VML + HTML)

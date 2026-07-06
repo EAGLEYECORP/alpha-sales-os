@@ -36,7 +36,6 @@ export async function GET() {
       tracking: {
         // les endpoints existent toujours ; ces réglages les rendent fiables
         baseUrl: has("TRACKING_BASE_URL") || has("APP_BASE_URL"),
-        unsubscribeSecret: has("UNSUB_SECRET") || has("WEBHOOK_SECRET"),
         forwardWebhook: has("TRACKING_WEBHOOK_URL"),
         persistence: has("SUPABASE_SERVICE_ROLE_KEY") ? "supabase" : "memory",
         maxSendsPerHour: Number(env.MAX_SENDS_PER_HOUR ?? 40),

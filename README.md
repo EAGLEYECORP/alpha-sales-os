@@ -103,7 +103,7 @@ marque. Détails d'implémentation : jetons CSS dans `tailwind.config` +
 
 Posture complète dans [`SECURITY.md`](./SECURITY.md) : middleware anti-CSRF
 (même origine sur les endpoints internes) + rate-limit, en-têtes durcis (HSTS,
-COOP/CORP, CSP…), lint anti-spam, List-Unsubscribe, RLS Supabase, checklist
+COOP/CORP, CSP…), lint anti-spam, désinscription STOP, RLS Supabase, checklist
 opérateur (HTTPS, SPF/DKIM/DMARC, secrets).
 
 ## Relecture avant envoi (campagnes)
@@ -147,9 +147,11 @@ du CRM.
 
 **Ne PAS finir dans les spams** (`lib/deliverability.ts`) :
 
-- **List-Unsubscribe + One-Click** (RFC 8058) → bouton natif Gmail/Apple ;
-  page `GET /api/unsubscribe` + suppression list (le désinscrit n'est plus
-  jamais recontacté, envoi bloqué en 409).
+- **Désinscription = réponse « STOP »** : le pied de chaque email invite à
+  répondre STOP ; le webhook entrant remonte la réponse et **n8n** retire le
+  prospect de la feuille puis en enfile un nouveau. L'en-tête
+  `List-Unsubscribe: <mailto:…>` fait que le bouton natif Gmail/Apple envoie
+  lui aussi un email STOP — même flux, zéro page à héberger.
 - **Lint anti-spam** : mots déclencheurs, MAJUSCULES, prix dans l'objet, ratio
   texte/lien, alternative texte manquante… Score `risque` → envoi bloqué (422)
   sauf `force:true`.

@@ -21,7 +21,7 @@ dans des backends que tu contrôles (n8n, Supabase, ton SMTP).
 | **Isolation cross-origin (Spectre-like)** | ✅ | `Cross-Origin-Opener-Policy: same-origin` ; `Cross-Origin-Resource-Policy: cross-origin` (nécessaire au pixel de tracking chargé par les clients mail). |
 | **MIME sniffing** | ✅ | `X-Content-Type-Options: nosniff`. |
 | **Prompt injection** (LLM) | ⚠️ Atténué | Les routes IA sont même-origine et rate-limitées ; l'IA ne dispose d'aucun outil d'écriture depuis l'app (génération de texte uniquement) ; côté n8n, l'agent n'a que les outils CRM explicitement branchés. Le contenu entrant (réponses prospects) est traité comme **données non fiables**. |
-| **Abus d'envoi / spam / usurpation** | ✅ | List-Unsubscribe One-Click, liste de suppression, lint anti-spam ; **SPF/DKIM/DMARC** à configurer côté DNS (voir plus bas). |
+| **Abus d'envoi / spam / usurpation** | ✅ | Désinscription par réponse **STOP** (traitée par n8n) + List-Unsubscribe mailto, lint anti-spam, rate-limit ; **SPF/DKIM/DMARC** à configurer côté DNS (voir plus bas). |
 | **Détournement de session (verrou local)** | ✅ | Verrou PIN optionnel (SHA-256, jamais en clair) ; auth réelle par lien magique Supabase + RLS en mode équipe. |
 | **Supply chain** | ⚠️ | Dépendances épinglées (`package-lock.json`) ; `npm audit` recommandé en CI ; aucune dépendance CDN exécutée au runtime hormis les polices Google (self-hostables). |
 | **Exfiltration via webhook n8n** | ⚠️ | Le lien n8n est saisi par l'utilisateur (même appareil) ; secret partagé optionnel (`x-alpha-secret`) ; garde n8n derrière ton réseau. |

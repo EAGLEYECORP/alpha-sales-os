@@ -24,8 +24,6 @@ export interface EmailOptions {
   ctaUrl?: string;
   /** Texte d'aperçu (inbox preview). Défaut : début du corps. */
   preheader?: string;
-  /** Lien de désinscription (List-Unsubscribe + pied de page). */
-  unsubscribeUrl?: string;
   /** Ligne d'adresse légale en pied (obligatoire anti-spam). */
   addressLine?: string;
 }
@@ -92,9 +90,6 @@ export function renderEmail(opts: EmailOptions): string {
   const preheader = (opts.preheader || opts.body.replace(/\s+/g, " ").trim()).slice(0, 140);
   const cta = opts.ctaLabel && opts.ctaUrl ? button(opts.ctaLabel, opts.ctaUrl) : "";
   const address = opts.addressLine || "EAGLEYE CORP — Lyon, France";
-  const unsub = opts.unsubscribeUrl
-    ? `<a href="${esc(opts.unsubscribeUrl)}" style="color:#9a8f80;text-decoration:underline;">Se désinscrire</a>`
-    : "";
 
   return `<!doctype html>
 <html lang="fr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -148,7 +143,8 @@ export function renderEmail(opts: EmailOptions): string {
           address
         )}</p>
         <p class="muted" style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#9a8f80;">
-          Vous recevez cet email car nous accompagnons les professionnels de votre secteur à Lyon. ${unsub}
+          Vous recevez cet email car nous accompagnons les professionnels de votre secteur à Lyon.
+          Vous ne souhaitez plus être contacté ? Répondez simplement <strong style="color:#6b6355;">STOP</strong>.
         </p>
       </td></tr>
     </table>
@@ -168,6 +164,6 @@ export function plainText(opts: EmailOptions): string {
   const lines = [opts.subject, "", opts.body.trim()];
   if (opts.ctaLabel && opts.ctaUrl) lines.push("", `${opts.ctaLabel} : ${opts.ctaUrl}`);
   lines.push("", `— ${opts.closerName || "EAGLEYE"}`, "", opts.addressLine || "EAGLEYE CORP — Lyon, France");
-  if (opts.unsubscribeUrl) lines.push(`Se désinscrire : ${opts.unsubscribeUrl}`);
+  lines.push("Vous ne souhaitez plus être contacté ? Répondez STOP.");
   return lines.join("\n");
 }
