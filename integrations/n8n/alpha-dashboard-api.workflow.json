@@ -1,7 +1,7 @@
 {
   "name": "ALPHA SALES OS — API tableau de bord (webhook)",
   "meta": {
-    "description": "Webhook n8n que l'app ALPHA SALES OS interroge (thin client). Contrat : POST { action } → 'ping' renvoie {ok:true} ; 'list' renvoie les lignes du CRM (Google Sheets) ; 'event' journalise. Autorise l'origine de ton app dans le nœud Webhook (Allowed Origins / CORS = *). Mappe ton Google Sheets + ta credential dans le nœud « CRM — lire les lignes »."
+    "description": "Webhook n8n que l'app ALPHA SALES OS interroge (thin client). Contrat POST { action } : 'ping' → {ok:true} ; 'list' → lignes du CRM (Google Sheets) ; 'upsert' → écrit/merge une ligne (data) dans Sheets (clé = prospect) ; 'event' → journalise. CORS : Allowed Origins = l'URL de ton app. Mappe ton Google Sheets + credentials. Colonnes = integrations/schema/crm-schema.json."
   },
   "nodes": [
     {
@@ -9,49 +9,22 @@
         "httpMethod": "POST",
         "path": "alpha",
         "responseMode": "responseNode",
-        "options": {
-          "allowedOrigins": "*"
-        }
+        "options": { "allowedOrigins": "*" }
       },
       "id": "aa000000-0000-4000-8000-000000000001",
       "name": "Webhook (App)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-260, 300],
+      "position": [-320, 300],
       "webhookId": "alpha-dashboard"
     },
     {
       "parameters": {
         "rules": {
           "values": [
-            {
-              "conditions": {
-                "options": { "caseSensitive": true, "typeValidation": "loose" },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.body.action }}",
-                    "rightValue": "list",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "list"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": true, "typeValidation": "loose" },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.body.action }}",
-                    "rightValue": "event",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "event"
-            }
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [{ "leftValue": "={{ $json.body.action }}", "rightValue": "list", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "outputKey": "list" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [{ "leftValue": "={{ $json.body.action }}", "rightValue": "upsert", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "outputKey": "upsert" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "loose" }, "conditions": [{ "leftValue": "={{ $json.body.action }}", "rightValue": "event", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "outputKey": "event" }
           ]
         },
         "options": { "fallbackOutput": "extra", "renameFallbackOutput": "ping" }
@@ -60,7 +33,7 @@
       "name": "Router (action)",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [-40, 300]
+      "position": [-100, 300]
     },
     {
       "parameters": {
@@ -72,10 +45,8 @@
       "name": "CRM — lire les lignes",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [220, 180],
-      "credentials": {
-        "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" }
-      }
+      "position": [160, 120],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" } }
     },
     {
       "parameters": {
@@ -86,47 +57,71 @@
       "name": "Répondre — rows",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [460, 180]
+      "position": [400, 120]
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ { \"ok\": true } }}",
+        "jsCode": "// Extrait la ligne à écrire (body.data) au niveau racine.\nreturn items.map((it) => ({ json: (it.json.body && it.json.body.data) || {} }));"
+      },
+      "id": "aa000000-0000-4000-8000-000000000007",
+      "name": "Extraire data (upsert)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [160, 300]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "REMPLACE_PAR_TON_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "CRM", "mode": "name" },
+        "columns": { "mappingMode": "autoMapInputData", "matchingColumns": ["prospect"] },
         "options": {}
       },
+      "id": "aa000000-0000-4000-8000-000000000008",
+      "name": "CRM — upsert (Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [400, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{ { \"ok\": true, \"action\": \"upsert\" } }}", "options": {} },
+      "id": "aa000000-0000-4000-8000-000000000009",
+      "name": "Répondre — upsert ok",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{ { \"ok\": true } }}", "options": {} },
       "id": "aa000000-0000-4000-8000-000000000005",
       "name": "Répondre — event ok",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [220, 360]
+      "position": [160, 480]
     },
     {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ { \"ok\": true, \"service\": \"alpha-dashboard\" } }}",
-        "options": {}
-      },
+      "parameters": { "respondWith": "json", "responseBody": "={{ { \"ok\": true, \"service\": \"alpha-dashboard\" } }}", "options": {} },
       "id": "aa000000-0000-4000-8000-000000000006",
       "name": "Répondre — ping",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [220, 520]
+      "position": [160, 640]
     }
   ],
   "connections": {
-    "Webhook (App)": {
-      "main": [[{ "node": "Router (action)", "type": "main", "index": 0 }]]
-    },
+    "Webhook (App)": { "main": [[{ "node": "Router (action)", "type": "main", "index": 0 }]] },
     "Router (action)": {
       "main": [
         [{ "node": "CRM — lire les lignes", "type": "main", "index": 0 }],
+        [{ "node": "Extraire data (upsert)", "type": "main", "index": 0 }],
         [{ "node": "Répondre — event ok", "type": "main", "index": 0 }],
         [{ "node": "Répondre — ping", "type": "main", "index": 0 }]
       ]
     },
-    "CRM — lire les lignes": {
-      "main": [[{ "node": "Répondre — rows", "type": "main", "index": 0 }]]
-    }
+    "CRM — lire les lignes": { "main": [[{ "node": "Répondre — rows", "type": "main", "index": 0 }]] },
+    "Extraire data (upsert)": { "main": [[{ "node": "CRM — upsert (Sheets)", "type": "main", "index": 0 }]] },
+    "CRM — upsert (Sheets)": { "main": [[{ "node": "Répondre — upsert ok", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" },
   "pinData": {}

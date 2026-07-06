@@ -1,11 +1,46 @@
-# Backend n8n — mémoire + API du tableau de bord
+# Backend n8n — le jeu de workflows complet
 
-Deux workflows :
+Cinq workflows couvrent tout le cycle. Les colonnes/variables sont définies une
+seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json).
 
-| Fichier | Rôle |
-|---|---|
-| [`alpha-dashboard-api.workflow.json`](./alpha-dashboard-api.workflow.json) | **Le webhook que l'app interroge** (thin client). L'app lit tes prospects ici. |
-| [`alpha-crm-agent.workflow.json`](./alpha-crm-agent.workflow.json) | L'agent conversationnel qui remplit le CRM à chaque étape. |
+| Fichier | Rôle | Déclencheur |
+|---|---|---|
+| [`alpha-dashboard-api.workflow.json`](./alpha-dashboard-api.workflow.json) | **Webhook lu/écrit par l'app** : `ping · list · upsert · event` | Webhook (POST) |
+| [`alpha-outreach.workflow.json`](./alpha-outreach.workflow.json) | **Outreach doctrine** : Sheet → IA (script par étape) → Switch → Gmail brouillon / Calendar / MAJ pipeline | Google Sheets (rowUpdate) |
+| [`alpha-inbound.workflow.json`](./alpha-inbound.workflow.json) | **Réponses & STOP** : email entrant → STOP (marque désinscrit) ou → app `/api/webhooks/inbound` | Gmail Trigger |
+| [`alpha-crm-sync.workflow.json`](./alpha-crm-sync.workflow.json) | **Info critique** : Supabase `crm_records` (non synchronisés) → Google Sheets → flag | Cron (2 min) |
+| [`alpha-crm-agent.workflow.json`](./alpha-crm-agent.workflow.json) | Agent conversationnel (Claude + outils CRM) | Chat |
+
+## Le flux complet
+
+```
+                       ┌──────────────── alpha-outreach ───────────────┐
+  Google Sheets ──────▶│ trigger → IA(script/étape) → Switch → Gmail    │──▶ brouillon
+   (le CRM)            │  draft / Calendar RDV / MAJ pipeline            │      │
+      ▲   ▲            └────────────────────────────────────────────────┘      ▼
+      │   │                                                        RELU dans l'app
+      │   │  alpha-dashboard-api (webhook)                         (Réviser & envoyer)
+      │   └──── list ◀──── app (syncFromN8n)                              │
+      │        upsert ◀─── app (Synchroniser CRM)                        envoi réel
+      │                                                                    │
+      │  alpha-crm-sync (cron)                                    tracking + STOP
+      └── Supabase crm_records ◀── app /api/crm/patch                      │
+                                                                    alpha-inbound
+                                          email STOP ◀──────────────── (Gmail)
+```
+
+## Variables d'environnement n8n
+
+- `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN` — pour l'agent (Web App Apps Script).
+- `ALPHA_APP_URL`, `ALPHA_WEBHOOK_SECRET` — pour `alpha-inbound` (POST vers l'app).
+- Credentials : Google Sheets, Gmail, Google Calendar, Supabase, Anthropic.
+
+> Tous les fichiers portent des `REMPLACE_MOI` (credentials) et
+> `REMPLACE_PAR_TON_SHEET_ID` : mappe-les à l'import.
+
+---
+
+## Détail — API tableau de bord & agent
 
 ## API tableau de bord (le webhook de l'app)
 

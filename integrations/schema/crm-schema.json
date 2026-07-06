@@ -1,0 +1,129 @@
+{
+  "$schema": "https://alpha-sales-os.eagleye/crm-schema.v1",
+  "version": 1,
+  "sheetName": "CRM",
+  "description": "Dictionnaire canonique des variables du CRM ALPHA SALES OS. Une ligne = un prospect/client. `key` est la clé stable partagée par l'app (lib/n8n prospectToRow), l'Apps Script (COLUMNS), l'import CSV (HEADER_MAP) et les workflows n8n. `header` est le libellé de colonne dans Google Sheets. `source` = qui écrit la valeur : human (saisie humaine), app (calculée/collectée par l'UI), n8n (automation), provider (fournisseur email), computed (dérivée). `critical`=true → à obtenir absolument pour avancer (voir lib/missing-info).",
+  "legend": {
+    "type": ["text", "longtext", "number", "money", "percent", "rating", "bool", "date", "datetime", "enum", "url", "email"],
+    "source": ["human", "app", "n8n", "provider", "computed"]
+  },
+  "groups": [
+    {
+      "id": "identity",
+      "label": "Identité",
+      "fields": [
+        { "key": "prospect", "header": "Prospect", "type": "text", "source": "n8n", "required": true, "critical": true, "usedBy": ["pipeline", "routines", "funnel"], "description": "Raison sociale — clé de matching (avec email)." },
+        { "key": "type", "header": "Type d'entreprise", "type": "text", "source": "n8n", "description": "Ex. Agence immobilière, Société de gestion." },
+        { "key": "sector", "header": "Secteur", "type": "enum", "enum": ["restaurant", "pub", "ambulance", "artisan", "autre"], "source": "human", "usedBy": ["tracking-par-industrie", "templates", "campaigns"], "description": "Secteur d'activité — pilote les angles de script." },
+        { "key": "city", "header": "Ville / Emplacement", "type": "text", "source": "n8n", "description": "Ville (défaut Lyon)." }
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact & canal",
+      "fields": [
+        { "key": "contact", "header": "Contact", "type": "text", "source": "human", "critical": true, "usedBy": ["scripts", "closing"], "description": "Nom du décideur / interlocuteur." },
+        { "key": "email", "header": "Email", "type": "email", "source": "human", "critical": true, "usedBy": ["send", "tracking", "dedup"], "description": "Email de contact (clé de matching secondaire, dédup)." },
+        { "key": "phone", "header": "Téléphone", "type": "text", "source": "n8n", "usedBy": ["send-sms", "whatsapp"], "description": "Téléphone (format FR)." },
+        { "key": "channel", "header": "Canal privilégié", "type": "enum", "enum": ["email", "whatsapp", "tel", "linkedin", "sms", "autre"], "source": "human", "description": "Plateforme d'échange préférée du prospect." },
+        { "key": "hours", "header": "Horaires", "type": "text", "source": "n8n", "description": "Horaires d'ouverture (pour caler les appels)." },
+        { "key": "website", "header": "Site", "type": "url", "source": "n8n", "usedBy": ["audit"], "description": "Site web actuel (état/URL)." }
+      ]
+    },
+    {
+      "id": "audit",
+      "label": "Fiche Google & audit terrain",
+      "fields": [
+        { "key": "rating", "header": "Note d'avis", "type": "rating", "source": "n8n", "usedBy": ["scripts", "dashboard"], "description": "Note Google /5 — argument #1 pour une régie." },
+        { "key": "reviews", "header": "Nombre d'avis", "type": "number", "source": "n8n", "description": "Nombre d'avis Google." },
+        { "key": "experience", "header": "Années d'expérience", "type": "text", "source": "n8n", "description": "Ancienneté (ex. « Plus de 30 ans »)." },
+        { "key": "onSite", "header": "Service sur place", "type": "bool", "source": "n8n", "description": "Présence d'un service sur place." },
+        { "key": "onlineBooking", "header": "Rdv en ligne", "type": "bool", "source": "n8n", "description": "Prise de RDV en ligne existante." },
+        { "key": "audit", "header": "Audit", "type": "longtext", "source": "human", "usedBy": ["scripts"], "description": "Synthèse d'audit (site, avis, réactivité, process)." },
+        { "key": "missedCalls", "header": "Appels ratés/sem", "type": "number", "source": "human", "critical": true, "usedBy": ["taxe-ignorance"], "description": "Appels/demandes ratés par semaine — entre dans la Taxe d'Ignorance." },
+        { "key": "avgTicket", "header": "Panier moyen", "type": "money", "source": "human", "critical": true, "usedBy": ["taxe-ignorance"], "description": "Valeur moyenne d'un client/mandat — entre dans la Taxe d'Ignorance." },
+        { "key": "conversionRate", "header": "% conversion", "type": "percent", "source": "human", "usedBy": ["taxe-ignorance"], "description": "Taux de conversion estimé des demandes." },
+        { "key": "competition", "header": "Concurrence", "type": "text", "source": "human", "description": "Concurrence locale (500 m / mieux notés)." },
+        { "key": "process", "header": "Process", "type": "text", "source": "human", "description": "Process actuel (qui répond, quand, comment)." }
+      ]
+    },
+    {
+      "id": "pipeline",
+      "label": "Pipeline & doctrine",
+      "fields": [
+        { "key": "stage", "header": "Étape", "type": "enum", "enum": ["prospect", "contact", "audit", "demo", "offre", "redzone", "signe", "perdu"], "source": "app", "required": true, "usedBy": ["pipeline", "routines", "funnel", "scripts"], "description": "Étape du pipeline. La doctrine gate le passage à « signe »." },
+        { "key": "probability", "header": "Probabilité %", "type": "percent", "source": "computed", "description": "Probabilité de close (auto depuis l'étape)." },
+        { "key": "conviction", "header": "Conviction /10", "type": "number", "source": "human", "usedBy": ["closing-gate"], "description": "Ta conviction — 10/10 requis pour signer." },
+        { "key": "trust", "header": "Confiance /100", "type": "number", "source": "human", "description": "Chaleur de la relation." },
+        { "key": "likeness", "header": "Affinité /100", "type": "number", "source": "human", "description": "Le prospect nous apprécie-t-il." },
+        { "key": "croyanceProduit", "header": "Croyance produit /10", "type": "number", "source": "human", "usedBy": ["closing-gate"], "description": "Croyance 1 : le produit fonctionne." },
+        { "key": "croyanceSoutien", "header": "Croyance soutien /10", "type": "number", "source": "human", "usedBy": ["closing-gate"], "description": "Croyance 2 : tu me soutiens." },
+        { "key": "croyancePourLui", "header": "Croyance pour lui /10", "type": "number", "source": "human", "usedBy": ["closing-gate"], "description": "Croyance 3 : ça marche POUR MOI." },
+        { "key": "demoBeforePrice", "header": "Démo avant prix", "type": "bool", "source": "human", "usedBy": ["closing-gate"], "description": "Démo mobile montrée AVANT tout prix." },
+        { "key": "obstacles", "header": "Obstacles", "type": "longtext", "source": "human", "description": "Obstacles pré-offre (séparés par |). Oignon du Blâme." },
+        { "key": "objections", "header": "Objections", "type": "longtext", "source": "human", "description": "Objections Red Zone (post-offre, séparées par |)." },
+        { "key": "tax", "header": "Taxe d'ignorance (€/mois)", "type": "money", "source": "computed", "critical": true, "usedBy": ["scripts", "closing", "dashboard"], "description": "€ perdus/mois à ne rien faire = appels ratés ×4,33 ×conv ×panier." },
+        { "key": "deadline", "header": "Deadline (next step)", "type": "date", "source": "app", "critical": true, "usedBy": ["routines", "due"], "description": "Date du prochain next step. Obligatoire (doctrine)." },
+        { "key": "nextStepAction", "header": "Next step", "type": "text", "source": "app", "description": "Action précise du prochain contact." }
+      ]
+    },
+    {
+      "id": "interactions",
+      "label": "Interactions",
+      "fields": [
+        { "key": "history", "header": "History", "type": "longtext", "source": "n8n", "usedBy": ["fiche", "agent"], "description": "Journal horodaté des interactions (append-only). Alimenté par n8n (envois, ouvertures, réponses)." },
+        { "key": "message", "header": "Message", "type": "longtext", "source": "app", "description": "Dernier message / brouillon en attente d'envoi." },
+        { "key": "meeting", "header": "Meeting", "type": "text", "source": "n8n", "usedBy": ["routines", "calendar"], "description": "Prochain RDV (date + type). Calendar via n8n." },
+        { "key": "suggestedReply", "header": "Réponse suggérée", "type": "longtext", "source": "app", "description": "Brouillon de réponse IA à une réponse entrante." }
+      ]
+    },
+    {
+      "id": "commercial",
+      "label": "Commercial",
+      "fields": [
+        { "key": "setupValue", "header": "Setup (€)", "type": "money", "source": "human", "usedBy": ["ltv", "pricing"], "description": "Frais de setup one-shot." },
+        { "key": "monthlyValue", "header": "Abonnement (€/mois)", "type": "money", "source": "human", "usedBy": ["mrr", "ltv"], "description": "Récurrent mensuel." },
+        { "key": "offer", "header": "Offre personnalisée", "type": "longtext", "source": "human", "critical": true, "usedBy": ["closing"], "description": "Prix + garantie + conditions formulés pour LUI." },
+        { "key": "solution", "header": "Solution", "type": "longtext", "source": "human", "description": "Le pont entre SES problèmes et NOTRE offre." },
+        { "key": "contractStatus", "header": "Contrat", "type": "enum", "enum": ["aucun", "brouillon", "envoye", "signe"], "source": "human", "usedBy": ["routines"], "description": "Statut du contrat." },
+        { "key": "contractUrl", "header": "Lien contrat", "type": "url", "source": "human", "description": "Drive / DocuSign." },
+        { "key": "closeDate", "header": "Close date", "type": "date", "source": "app", "description": "Date de signature." },
+        { "key": "paymentsPaid", "header": "Encaissé (€)", "type": "money", "source": "computed", "description": "Total payé." },
+        { "key": "paymentsDue", "header": "Attendu (€)", "type": "money", "source": "computed", "usedBy": ["routines"], "description": "Total en attente / retard." }
+      ]
+    },
+    {
+      "id": "retention",
+      "label": "Livraison & fidélisation",
+      "fields": [
+        { "key": "delivery", "header": "Delivery status", "type": "enum", "enum": ["non-demarre", "en-cours", "livre", "maintenance"], "source": "human", "usedBy": ["routines"], "description": "Statut de livraison du projet." },
+        { "key": "satisfaction", "header": "Satisfaction", "type": "number", "source": "human", "usedBy": ["routines", "funnel"], "description": "Satisfaction 0–100 (point J+30)." },
+        { "key": "testimonial", "header": "Témoignage", "type": "longtext", "source": "human", "usedBy": ["routines"], "description": "Avis/témoignage recueilli (futur argument de vente)." },
+        { "key": "upsell", "header": "Upsell", "type": "text", "source": "human", "usedBy": ["routines"], "description": "Opportunité d'upsell (note)." },
+        { "key": "upsellStatus", "header": "Upsell statut", "type": "enum", "enum": ["aucun", "identifie", "propose", "gagne"], "source": "human", "description": "Avancement de l'upsell." },
+        { "key": "ltv", "header": "LTV (€)", "type": "money", "source": "computed", "usedBy": ["funnel"], "description": "Valeur vie client = setup + abonnement ×12." }
+      ]
+    },
+    {
+      "id": "tracking",
+      "label": "Tracking (automatique)",
+      "fields": [
+        { "key": "delivered", "header": "Délivré", "type": "bool", "source": "app", "description": "Email parti (≈ délivré sans ESP). Table tracking_messages." },
+        { "key": "opens", "header": "Ouvertures", "type": "number", "source": "app", "usedBy": ["funnel", "tracking"], "description": "Nombre d'ouvertures (pixel)." },
+        { "key": "clicks", "header": "Clics", "type": "number", "source": "app", "usedBy": ["funnel", "tracking"], "description": "Nombre de clics (redirections)." },
+        { "key": "lastSentAt", "header": "Dernier envoi", "type": "datetime", "source": "app", "usedBy": ["dedup", "rate-limit"], "description": "Horodatage du dernier envoi (dédup « déjà contacté »)." },
+        { "key": "campaignId", "header": "Campagne", "type": "text", "source": "app", "usedBy": ["funnel"], "description": "Campagne rattachée au dernier envoi." },
+        { "key": "unsubscribed", "header": "STOP / Désinscrit", "type": "bool", "source": "n8n", "usedBy": ["send-guard"], "description": "A répondu STOP → à retirer + remplacer (n8n)." }
+      ]
+    },
+    {
+      "id": "meta",
+      "label": "Méta",
+      "fields": [
+        { "key": "notes", "header": "Notes", "type": "longtext", "source": "human", "description": "Notes terrain libres." },
+        { "key": "updatedAt", "header": "Maj le", "type": "datetime", "source": "app", "description": "Dernière mise à jour de la ligne." },
+        { "key": "syncedToSheet", "header": "Sync Sheet", "type": "bool", "source": "app", "description": "Drapeau crm_records → écrit dans Sheets par le workflow alpha-crm-sync." }
+      ]
+    }
+  ]
+}

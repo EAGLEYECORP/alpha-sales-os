@@ -1,0 +1,143 @@
+{
+  "name": "ALPHA SALES OS — Outreach doctrine (Sheet → IA → action → pipeline)",
+  "meta": {
+    "description": "Le workflow d'outreach (miroir de ton pipeline régies). Déclencheur : ligne du Sheet mise à jour → l'IA génère l'action selon l'ÉTAPE (doctrine Hormozi) → Switch route vers Gmail (brouillon), Google Calendar (RDV) ou relance → met à jour l'History/étape du Sheet. IMPORTANT : le brouillon Gmail est RELU/approuvé dans l'app (Campagnes → Réviser & envoyer) avant envoi réel. Mappe tes credentials Anthropic + Gmail + Calendar + Google Sheets."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "REMPLACE_PAR_TON_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "CRM", "mode": "name" },
+        "event": "rowUpdate",
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000001",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [-320, 300],
+      "credentials": { "googleSheetsTriggerOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets Trigger" } }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Tu es ALPHA, closer d'EAGLEYE (Lyon). Génère l'action pour CE prospect selon son ÉTAPE. Doctrine Hormozi NON négociable : émotion d'abord (démo mobile AVANT le prix), obstacles≠objections, chiffre TOUJOURS la Taxe d'Ignorance, chaque contact finit par un next step DATÉ, jamais de prix par écrit avant la démo.\n\n## Prospect\n- {{ $json.prospect }} ({{ $json.sector || 'agence' }}) — {{ $json.city || 'Lyon' }}\n- Étape : {{ $json.stage || 'prospect' }} · Contact : {{ $json.contact || 'inconnu' }}\n- Note Google : {{ $json.rating || '?' }}/5 ({{ $json.reviews || '?' }} avis) · Taxe d'Ignorance : {{ $json.tax || '?' }} €/mois\n- History récent : {{ ($json.history || '').slice(-400) }}\n\n## Objectif par étape\n- prospect/contact → décrocher 20 min d'audit (aucune vente). Canal : email court.\n- audit → confirmer le RDV puis restituer les chiffres (Taxe). \n- demo → inviter à la démo mobile (sans rien envoyer).\n- offre/redzone → appel décision, réparer la croyance cassée.\n- signe → onboarding + demander 2 recommandations.\n- perdu → utile, zéro vente, revenir à J+90.\n\n## Réponse\nRéponds STRICTEMENT en JSON (rien d'autre) :\n{\"action\":\"email\"|\"meeting\"|\"relance\",\"subject\":\"…\",\"body\":\"…\",\"nextStep\":\"action + date\",\"stage\":\"étape conseillée\"}",
+        "hasOutputParser": false
+      },
+      "id": "d0000000-0000-4000-8000-000000000002",
+      "name": "IA — Message a model",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [-60, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-opus-4-8",
+        "options": { "temperature": 0.4, "maxTokensToSample": 900 }
+      },
+      "id": "d0000000-0000-4000-8000-000000000003",
+      "name": "Claude (Anthropic)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.2,
+      "position": [-120, 520],
+      "credentials": { "anthropicApi": { "id": "REMPLACE_MOI", "name": "Anthropic account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse la sortie JSON de l'IA (tolérant).\nreturn items.map((it) => {\n  const raw = it.json.text || it.json.response || it.json.output || '';\n  let parsed = {};\n  try { parsed = JSON.parse(raw); } catch (e) {\n    const m = String(raw).match(/\\{[\\s\\S]*\\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (_) {} }\n  }\n  return { json: { ...it.json, ...parsed, action: parsed.action || 'relance' } };\n});"
+      },
+      "id": "d0000000-0000-4000-8000-000000000004",
+      "name": "Parser JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [160, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": false, "typeValidation": "loose" }, "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "email", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "outputKey": "email" },
+            { "conditions": { "options": { "caseSensitive": false, "typeValidation": "loose" }, "conditions": [{ "leftValue": "={{ $json.action }}", "rightValue": "meeting", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "outputKey": "meeting" }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "relance" }
+      },
+      "id": "d0000000-0000-4000-8000-000000000005",
+      "name": "Switch: Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": { "sendTo": "={{ $json.email }}" }
+      },
+      "id": "d0000000-0000-4000-8000-000000000006",
+      "name": "Gmail — brouillon (relu dans l'app)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [620, 140],
+      "credentials": { "gmailOAuth2": { "id": "REMPLACE_MOI", "name": "Gmail account" } }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "calendar": { "__rl": true, "value": "primary", "mode": "list" },
+        "start": "={{ $now.plus({ days: 2 }).toISO() }}",
+        "end": "={{ $now.plus({ days: 2, hours: 1 }).toISO() }}",
+        "additionalFields": { "summary": "=Audit — {{ $json.prospect }}", "description": "={{ $json.nextStep }}" }
+      },
+      "id": "d0000000-0000-4000-8000-000000000007",
+      "name": "Google Calendar — RDV",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [620, 320],
+      "credentials": { "googleCalendarOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Calendar" } }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "REMPLACE_PAR_TON_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "CRM", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["prospect"],
+          "value": {
+            "prospect": "={{ $json.prospect }}",
+            "stage": "={{ $json.stage }}",
+            "deadline": "={{ $json.nextStep }}",
+            "message": "={{ $json.subject }}\n{{ $json.body }}",
+            "history": "={{ ($json.history || '') + '\\n[' + $now.toFormat('yyyy-LL-dd HH:mm') + '] ' + $json.action + ' préparé' }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000008",
+      "name": "Update Pipeline in Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [900, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" } }
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": { "main": [[{ "node": "IA — Message a model", "type": "main", "index": 0 }]] },
+    "Claude (Anthropic)": { "ai_languageModel": [[{ "node": "IA — Message a model", "type": "ai_languageModel", "index": 0 }]] },
+    "IA — Message a model": { "main": [[{ "node": "Parser JSON", "type": "main", "index": 0 }]] },
+    "Parser JSON": { "main": [[{ "node": "Switch: Action Router", "type": "main", "index": 0 }]] },
+    "Switch: Action Router": {
+      "main": [
+        [{ "node": "Gmail — brouillon (relu dans l'app)", "type": "main", "index": 0 }],
+        [{ "node": "Google Calendar — RDV", "type": "main", "index": 0 }],
+        [{ "node": "Update Pipeline in Sheet", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gmail — brouillon (relu dans l'app)": { "main": [[{ "node": "Update Pipeline in Sheet", "type": "main", "index": 0 }]] },
+    "Google Calendar — RDV": { "main": [[{ "node": "Update Pipeline in Sheet", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

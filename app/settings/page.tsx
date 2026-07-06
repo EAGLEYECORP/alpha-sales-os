@@ -15,6 +15,7 @@ import { cn, sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
 import { SystemStatus } from "@/components/settings/system-status";
+import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
 
@@ -288,6 +289,9 @@ export default function SettingsPage() {
             <p className={cn("mt-2 text-[12px]", n8nMsg.ok ? "text-signal-green" : "text-signal-red")}>{n8nMsg.text}</p>
           )}
         </section>
+
+        {/* Dictionnaire CRM — toutes les variables suivies par Google Sheets */}
+        <CrmDictionary />
 
         {/* Agency */}
         <section className="card space-y-3 p-4">

@@ -180,11 +180,18 @@ Taxe, offre, contrat…), l'app la détecte (`criticalGaps`), l'affiche en routi
 + bandeau, l'utilisateur la saisit, puis **« Synchroniser CRM »** :
 1. app → `POST /api/crm/patch` → **Supabase `crm_records`** (`synced_to_sheet=false`).
 2. app → `callN8n('upsert', { data })` (écriture immédiate).
-3. **Workflow n8n à créer** : cron (1–5 min) → lire `crm_records` où
-   `synced_to_sheet=false` → **écrire/merger dans Google Sheets** → repasser
-   `synced_to_sheet=true`. Idempotent (merge par `id`/`prospect`).
-> C'est la seule brique n8n encore à faire pour fermer la boucle. Tout le côté
-> app est prêt et testé (endpoint + bouton + détection).
+3. **Workflow n8n** : `integrations/n8n/alpha-crm-sync.workflow.json` — cron
+   (2 min) → lit `crm_records` où `synced_to_sheet=false` → écrit/merge dans
+   Google Sheets (clé `prospect`) → repasse `synced_to_sheet=true`. Idempotent.
+> ✅ Livré. La boucle est fermée : il reste à **mapper tes credentials** à
+> l'import (Supabase + Google Sheets).
+
+**Le jeu de workflows complet est dans le repo** (voir `integrations/n8n/README`) :
+`alpha-dashboard-api` (ping/list/**upsert**/event), `alpha-outreach` (Sheet→IA→
+Switch→Gmail/Calendar→pipeline, mirroir de ton écran), `alpha-inbound`
+(réponses & STOP), `alpha-crm-sync` (Supabase→Sheets), `alpha-crm-agent` (chat).
+Toutes les colonnes = **`integrations/schema/crm-schema.json`** (63 variables,
+visibles aussi dans l'app : Réglages → Dictionnaire CRM).
 
 ---
 
