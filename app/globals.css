@@ -99,6 +99,9 @@
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-[10.5px];
   }
+  .code {
+    @apply rounded border border-ink-700 bg-ink-850 px-1 py-0.5 font-mono text-[11px] text-bronze-400;
+  }
   .shim {
     @apply animate-shimmer rounded;
     background: linear-gradient(90deg, #15110d 0, #201b15 50%, #15110d 100%);

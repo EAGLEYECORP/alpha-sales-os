@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Cloud, CloudOff, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, Plus, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Webhook } from "lucide-react";
+import { Cable, Cloud, CloudOff, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, PlugZap, Plus, RefreshCw, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Wand2, Webhook } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import {
   pushSnapshot,
@@ -11,10 +11,12 @@ import {
   setSupabaseConfig,
   clearSupabaseConfig,
 } from "@/lib/supabase";
-import { sha256, uid } from "@/lib/utils";
+import { cn, sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
 import { SystemStatus } from "@/components/settings/system-status";
+import { openSetupWizard } from "@/components/setup-wizard";
+import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
 
 export default function SettingsPage() {
   const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, prospects } = useAlpha();
@@ -60,6 +62,54 @@ export default function SettingsPage() {
     clearSupabaseConfig();
     setSbSource(supabaseConfigSource());
     setSbMsg("Configuration retirée.");
+  };
+
+  // Connexion n8n (le tableau de bord parle au webhook n8n)
+  const [n8nUrl, setN8nUrl] = useState("");
+  const [n8nSecret, setN8nSecret] = useState("");
+  const [n8nConnected, setN8nConnectedState] = useState(false);
+  const [n8nBusy, setN8nBusy] = useState(false);
+  const [n8nMsg, setN8nMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    const cfg = getN8nConfig();
+    if (cfg) {
+      setN8nUrl(cfg.url);
+      setN8nSecret(cfg.secret ?? "");
+      setN8nConnectedState(true);
+    }
+  }, []);
+
+  const saveN8n = () => {
+    setN8nConfig(n8nUrl, n8nSecret);
+    setN8nConnectedState(Boolean(n8nUrl.trim()));
+  };
+  const testN8nConn = async () => {
+    saveN8n();
+    setN8nBusy(true);
+    setN8nMsg(null);
+    const r = await testN8n();
+    setN8nMsg({ ok: r.ok, text: r.message });
+    setN8nBusy(false);
+  };
+  const pullN8n = async () => {
+    saveN8n();
+    setN8nBusy(true);
+    setN8nMsg(null);
+    const r = await syncFromN8n();
+    setN8nMsg(
+      r.ok
+        ? { ok: true, text: `✓ ${r.added ?? 0} prospect(s) importé(s), ${r.updated ?? 0} mis à jour depuis n8n.` }
+        : { ok: false, text: `Échec : ${r.error}` }
+    );
+    setN8nBusy(false);
+  };
+  const disconnectN8n = () => {
+    clearN8nConfig();
+    setN8nUrl("");
+    setN8nSecret("");
+    setN8nConnectedState(false);
+    setN8nMsg({ ok: true, text: "Déconnecté." });
   };
 
   const setPin = async () => {
@@ -181,6 +231,63 @@ export default function SettingsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* System status — what's configured, what's missing */}
         <SystemStatus />
+
+        {/* n8n — the app is a dashboard onto the n8n memory */}
+        <section className="card p-4 lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+              <Cable size={15} className="text-bronze-400" /> Connexion n8n
+              <span className={n8nConnected ? "chip border-signal-green/50 text-signal-green" : "chip border-ink-600 text-paper-faint"}>
+                {n8nConnected ? "connecté" : "non connecté"}
+              </span>
+            </h2>
+            <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={openSetupWizard}>
+              <Wand2 size={13} /> Relancer l&apos;assistant
+            </button>
+          </div>
+          <p className="mt-1 text-[11px] text-paper-faint">
+            L&apos;app est un <strong className="text-paper-dim">tableau de bord</strong> : la mémoire et les automatisations vivent dans n8n.
+            Colle l&apos;URL de ton webhook n8n (nœud Webhook → URL de Production), teste, puis récupère tes prospects.
+            Le lien reste dans ce navigateur. Pense à autoriser l&apos;origine (CORS) dans le nœud Webhook.
+          </p>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="label">URL du webhook</label>
+              <input
+                className="input font-mono text-[12px]"
+                placeholder="https://mon-n8n.fr/webhook/alpha"
+                value={n8nUrl}
+                onChange={(e) => setN8nUrl(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Mot de passe partagé (facultatif)</label>
+              <input
+                className="input font-mono text-[12px]"
+                type="password"
+                placeholder="en-tête x-alpha-secret"
+                value={n8nSecret}
+                onChange={(e) => setN8nSecret(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button className="btn-bronze" onClick={testN8nConn} disabled={n8nBusy || !n8nUrl.trim()}>
+              <PlugZap size={14} /> Tester la connexion
+            </button>
+            <button className="btn-ghost" onClick={pullN8n} disabled={n8nBusy || !n8nUrl.trim()}>
+              <RefreshCw size={14} className={n8nBusy ? "animate-spin" : ""} /> Récupérer mes prospects
+            </button>
+            {n8nConnected && (
+              <button className="btn-ghost" onClick={disconnectN8n}>Déconnecter</button>
+            )}
+          </div>
+          {n8nMsg && (
+            <p className={cn("mt-2 text-[12px]", n8nMsg.ok ? "text-signal-green" : "text-signal-red")}>{n8nMsg.text}</p>
+          )}
+        </section>
 
         {/* Agency */}
         <section className="card space-y-3 p-4">

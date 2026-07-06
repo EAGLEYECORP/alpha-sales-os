@@ -117,6 +117,28 @@ du CRM.
 - **Infra DNS/SMTP** : configure **SPF + DKIM + DMARC** sur ton domaine
   d'envoi (voir `integrations/README.md`) — c'est 80 % de la délivrabilité.
 
+## Tableau de bord branché sur n8n (assistant de configuration)
+
+L'app peut fonctionner en **thin client** : la mémoire et les automatisations
+vivent dans **n8n**, l'app **récupère** les données, fait les calculs et
+affiche les métriques.
+
+- **Assistant de configuration** (`components/setup-wizard.tsx`) — s'ouvre au
+  premier lancement et se relance depuis **Réglages → Connexion n8n → Relancer
+  l'assistant**. En 4 étapes en français simple (non-technique) : préparer n8n
+  → coller l'URL du webhook → tester → importer ses prospects.
+- **Connecteur** (`lib/n8n.ts`) — un seul webhook, contrat `POST { action }` :
+  `ping` / `list` (→ prospects) / `event`. Le lien reste dans le navigateur ;
+  le mapping des lignes est défensif (plusieurs alias de colonnes).
+- **Webhook prêt à l'emploi** : [`integrations/n8n/alpha-dashboard-api.workflow.json`](./integrations/n8n).
+- Les liens du navigateur vers ton n8n sont autorisés par la CSP
+  (`connect-src` élargi aux domaines HTTPS + localhost). Pense à activer le
+  **CORS** dans le nœud Webhook (`Allowed Origins = *`).
+
+**Réglages → État du système** montre en un coup d'œil ce qui est configuré
+(IA, SMTP, tracking, Supabase…) : une fois les identifiants en place, tout
+passe au vert.
+
 ## CRM « mémoire » (Google Sheets) + backend n8n
 
 Le CRM **est** un Google Sheets piloté par Apps Script ; le backend est un

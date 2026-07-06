@@ -1,4 +1,46 @@
-# Backend n8n — agent conversationnel qui remplit le CRM
+# Backend n8n — mémoire + API du tableau de bord
+
+Deux workflows :
+
+| Fichier | Rôle |
+|---|---|
+| [`alpha-dashboard-api.workflow.json`](./alpha-dashboard-api.workflow.json) | **Le webhook que l'app interroge** (thin client). L'app lit tes prospects ici. |
+| [`alpha-crm-agent.workflow.json`](./alpha-crm-agent.workflow.json) | L'agent conversationnel qui remplit le CRM à chaque étape. |
+
+## API tableau de bord (le webhook de l'app)
+
+L'app ALPHA SALES OS est un **tableau de bord** : la mémoire vit dans n8n.
+Elle parle à **un seul webhook**, avec ce contrat (POST JSON) :
+
+| `action` | Réponse attendue |
+|---|---|
+| `ping` | `{ "ok": true }` |
+| `list` | les lignes du CRM : `{ "rows": [ … ] }` **ou** un tableau `[ … ]` |
+| `event` | `{ "ok": true }` *(optionnel — l'app notifie les changements)* |
+
+Chaque ligne peut utiliser les clés du CRM (`prospect, contact, email, phone,
+city, rating, reviews, stage, tax, website, audit, notes…`) — l'app mappe
+défensivement plusieurs alias. Le minimum utile : `prospect` (nom) + `stage`.
+
+### Installer
+
+1. n8n → **Import from File** → `alpha-dashboard-api.workflow.json`.
+2. Nœud **CRM — lire les lignes** : choisis ta credential Google Sheets et
+   ton `documentId` / `sheetName`.
+3. Nœud **Webhook (App)** : `Allowed Origins (CORS)` = `*` (ou l'URL de ton
+   app), puis **active** le workflow.
+4. Copie l'**URL de Production** du webhook.
+5. Dans l'app : l'**assistant de configuration** (premier lancement, ou
+   Réglages → Connexion n8n → « Relancer l'assistant ») te fait coller cette
+   URL, tester, puis importer.
+
+> Sécurité : si tu ajoutes un mot de passe partagé, l'app l'envoie dans
+> l'en-tête `x-alpha-secret` **et** dans le corps (`secret`) — vérifie-le au
+> début du workflow.
+
+---
+
+# Agent conversationnel qui remplit le CRM
 
 n8n (local, open-source, auto-hébergé) est le **backend** d'ALPHA SALES OS.
 Un agent conversationnel y lit et **remplit la mémoire** (le Google Sheets)

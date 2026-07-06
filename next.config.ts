@@ -26,7 +26,9 @@ const nextConfig: NextConfig = {
             "img-src 'self' data: blob:",
             // canvas-confetti spawns a blob: worker
             "worker-src 'self' blob:",
-            "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+            // Thin-client : le navigateur appelle le webhook n8n de l'utilisateur
+            // (domaine arbitraire) + Supabase. HTTPS partout, plus localhost en dev.
+            "connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:*",
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
