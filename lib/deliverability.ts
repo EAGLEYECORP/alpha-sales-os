@@ -101,24 +101,11 @@ export function lintForSpam(subject: string, body: string, hasText: boolean, lin
   return { score, level, warnings };
 }
 
-// ── Rate limiting (anti-pic) ───────────────────────────────────────────
-const windows = new Map<string, number[]>();
-
 /**
- * Autorise ou non un envoi. Défaut : 40 emails / heure global (surchargeable
- * via MAX_SENDS_PER_HOUR). Un envoi régulier et modéré protège la réputation.
+ * Rate-limit d'envoi = nombre d'emails déjà partis dans la dernière heure
+ * (compté dans le store de tracking → durable via Supabase, partagé entre
+ * instances). La logique vit dans la route d'envoi via countRecentSends().
  */
-export function allowSend(key = "global"): { ok: boolean; retryAfterSec?: number } {
-  const max = Number(process.env.MAX_SENDS_PER_HOUR ?? 40);
-  const now = Date.now();
-  const hourAgo = now - 3600_000;
-  const arr = (windows.get(key) ?? []).filter((t) => t > hourAgo);
-  if (arr.length >= max) {
-    const retryAfterSec = Math.ceil((arr[0] + 3600_000 - now) / 1000);
-    windows.set(key, arr);
-    return { ok: false, retryAfterSec };
-  }
-  arr.push(now);
-  windows.set(key, arr);
-  return { ok: true };
+export function maxSendsPerHour(): number {
+  return Number(process.env.MAX_SENDS_PER_HOUR ?? 40);
 }

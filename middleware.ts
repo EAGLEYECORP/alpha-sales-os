@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const INTERNAL = ["/api/send", "/api/ai", "/api/agent", "/api/email/preview", "/api/track/stats"];
+const INTERNAL = ["/api/send", "/api/ai", "/api/agent", "/api/email/preview", "/api/track/stats", "/api/track/contacted"];
 
 function isInternal(path: string): boolean {
   return INTERNAL.some((p) => path === p || path.startsWith(p + "/"));

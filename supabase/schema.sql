@@ -140,6 +140,10 @@ create table if not exists public.tracking_messages (
 );
 create index if not exists tracking_prospect_idx on public.tracking_messages (prospect_id, created_at desc);
 create index if not exists tracking_campaign_idx on public.tracking_messages (campaign_id, created_at desc);
+-- rate-limit durable (comptage par canal sur la dernière heure)
+create index if not exists tracking_channel_created_idx on public.tracking_messages (channel, created_at desc);
+-- dédup « déjà contacté » (email minuscule + fenêtre de refroidissement)
+create index if not exists tracking_email_created_idx on public.tracking_messages (email, created_at desc);
 alter table public.tracking_messages enable row level security;
 
 -- Realtime -------------------------------------------------------------------

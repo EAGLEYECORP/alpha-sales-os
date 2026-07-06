@@ -52,6 +52,7 @@ TEXTBELT_KEY=
 TRACKING_BASE_URL=
 APP_BASE_URL=
 MAX_SENDS_PER_HOUR=40
+CONTACT_COOLDOWN_DAYS=14
 TRACKING_WEBHOOK_URL=
 
 # ── Webhooks entrants (réponses + STOP) ──
@@ -176,7 +177,7 @@ export function SystemStatus() {
             {
               label: `Persistance : ${c.tracking.persistence === "supabase" ? "Supabase (durable)" : "mémoire (dev / mono-instance)"}`,
               level: c.tracking.persistence === "supabase" ? "ok" : "off",
-              hint: "Pour des stats fiables en serverless, définis SUPABASE_SERVICE_ROLE_KEY.",
+              hint: "Tracking + rate-limit + dédup « déjà contacté » durables et partagés entre instances. En serverless, définis SUPABASE_SERVICE_ROLE_KEY.",
               optional: true,
             },
             {

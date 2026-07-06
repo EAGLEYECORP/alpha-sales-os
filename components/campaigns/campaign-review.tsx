@@ -59,13 +59,43 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
   const [openPreview, setOpenPreview] = useState<Record<string, boolean>>({});
   const [previewLoading, setPreviewLoading] = useState<Record<string, boolean>>({});
 
-  // Génère les brouillons au premier affichage s'il n'y en a pas encore.
+  // Génère les brouillons au premier affichage s'il n'y en a pas encore, puis
+  // pré-marque « déjà contacté » ceux dont l'email a reçu un envoi récent
+  // (dédup durable — évite de recontacter par erreur).
   useEffect(() => {
     if (prepared.current) return;
     prepared.current = true;
     if (drafts.length === 0) prepareCampaignDrafts(campaign.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const emails = useAlpha
+      .getState()
+      .drafts.filter((d) => d.campaignId === campaign.id && d.channel === "email" && d.to && d.status === "pending")
+      .map((d) => d.to);
+    if (emails.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/track/contacted?emails=${encodeURIComponent(emails.join(","))}`);
+        const data = (await res.json()) as { contacted?: string[] };
+        if (cancelled || !data.contacted?.length) return;
+        const set = new Set(data.contacted.map((e) => e.toLowerCase()));
+        for (const d of useAlpha.getState().drafts) {
+          if (d.campaignId === campaign.id && d.status === "pending" && d.to && set.has(d.to.toLowerCase())) {
+            setDraftStatus(d.id, "skipped", "déjà contacté récemment");
+          }
+        }
+      } catch {
+        /* dédup best-effort */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts.length]);
 
   const regen = () => {
     const n = prepareCampaignDrafts(campaign.id);

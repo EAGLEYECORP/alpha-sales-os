@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
-import { createTrackedEmail } from "@/lib/tracking";
-import { deliverabilityHeaders, lintForSpam, allowSend } from "@/lib/deliverability";
+import { createTrackedEmail, countRecentSends, contactedEmails } from "@/lib/tracking";
+import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -89,13 +89,26 @@ export async function POST(request: NextRequest) {
 
     const to = body.to.trim();
 
-    // Rate-limit anti-pic (protège la réputation d'envoi).
-    const gate = allowSend("email");
-    if (!gate.ok) {
+    // Rate-limit anti-pic (durable) : nb d'emails partis dans la dernière heure.
+    const recent = await countRecentSends("email", 3600_000);
+    if (recent >= maxSendsPerHour()) {
       return NextResponse.json(
-        { error: `Limite d'envoi atteinte (anti-spam). Réessaie dans ${gate.retryAfterSec}s.` },
-        { status: 429, headers: { "retry-after": String(gate.retryAfterSec ?? 60) } }
+        { error: `Limite d'envoi atteinte (${maxSendsPerHour()}/h, anti-spam). Réessaie plus tard.` },
+        { status: 429, headers: { "retry-after": "300" } }
       );
+    }
+
+    // Dédup durable « déjà contacté » : ne pas recontacter avant la fenêtre de
+    // refroidissement (partagé entre instances via Supabase). force:true passe outre.
+    const cooldownDays = Number(process.env.CONTACT_COOLDOWN_DAYS ?? 14);
+    if (cooldownDays > 0 && !body.force) {
+      const already = await contactedEmails([to], cooldownDays * 86_400_000);
+      if (already.has(to.toLowerCase())) {
+        return NextResponse.json(
+          { error: `Déjà contacté dans les ${cooldownDays} derniers jours — renvoie avec force:true si nécessaire.`, alreadyContacted: true },
+          { status: 409 }
+        );
+      }
     }
 
     const subject = body.subject?.trim() || "(sans objet)";

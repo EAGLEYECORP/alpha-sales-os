@@ -61,6 +61,56 @@ function newId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/** Mode de persistance actif — mémoire (dev/mono-instance) ou Supabase (durable). */
+export function persistenceMode(): "supabase" | "memory" {
+  return serviceClient() ? "supabase" : "memory";
+}
+
+/**
+ * Nombre d'emails envoyés depuis `sinceMs` — base du rate-limit d'envoi.
+ * Durable via Supabase, sinon compté en mémoire. Chaque envoi crée une ligne
+ * tracking_messages, donc le compteur est partagé entre instances.
+ */
+export async function countRecentSends(channel: "email" | "sms", sinceMs: number): Promise<number> {
+  const since = new Date(Date.now() - sinceMs).toISOString();
+  const sb = serviceClient();
+  if (sb) {
+    const { count } = await sb
+      .from("tracking_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("channel", channel)
+      .gte("created_at", since);
+    return count ?? 0;
+  }
+  return [...memory.values()].filter((r) => r.channel === channel && r.createdAt > since).length;
+}
+
+/**
+ * Parmi `emails`, lesquels ont DÉJÀ été contactés depuis `sinceMs` (dédup
+ * durable « qui a déjà été contacté »). Comparaison en minuscules.
+ */
+export async function contactedEmails(emails: string[], sinceMs: number): Promise<Set<string>> {
+  const uniq = [...new Set(emails.map((e) => e.toLowerCase().trim()).filter(Boolean))];
+  const set = new Set<string>();
+  if (uniq.length === 0) return set;
+  const since = new Date(Date.now() - sinceMs).toISOString();
+  const sb = serviceClient();
+  if (sb) {
+    for (let i = 0; i < uniq.length; i += 200) {
+      const chunk = uniq.slice(i, i + 200);
+      const { data } = await sb.from("tracking_messages").select("email").in("email", chunk).gte("created_at", since);
+      for (const r of data ?? []) if (r.email) set.add(String(r.email).toLowerCase());
+    }
+  } else {
+    const want = new Set(uniq);
+    for (const r of memory.values()) {
+      const e = r.email?.toLowerCase();
+      if (e && want.has(e) && r.createdAt > since) set.add(e);
+    }
+  }
+  return set;
+}
+
 async function persist(rec: TrackingRecord): Promise<void> {
   memory.set(rec.id, rec);
   if (memory.size > 5000) {
@@ -155,7 +205,7 @@ export async function createTrackedEmail(
     channel: meta.channel ?? "email",
     prospectId: meta.prospectId,
     campaignId: meta.campaignId,
-    email: meta.email,
+    email: meta.email?.toLowerCase().trim(),
     subject: meta.subject,
     createdAt: new Date().toISOString(),
     opens: 0,

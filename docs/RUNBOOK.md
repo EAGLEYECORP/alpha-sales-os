@@ -77,9 +77,11 @@ aussi un STOP (List-Unsubscribe mailto).
 - **Infra** : 1–2 domaines d'envoi, 2–4 inbox, warmup terminé. SMTP dédié
   (Brevo/OVH/Postfix) plutôt que Gmail perso.
 - **DNS** : DMARC en `p=quarantine`. Surveille **Google Postmaster Tools**.
-- **App** : active **Supabase** (service role) → tracking + mémoire persistés
-  (fini le store mémoire). `MAX_SENDS_PER_HOUR` réparti par inbox. Suivi des
-  taux par industrie (Campagnes → Tracking par industrie).
+- **App** : active **Supabase** (service role) → **tracking + rate-limit +
+  dédup « déjà contacté » deviennent durables et partagés entre instances**
+  (fini le store mémoire ; plus de double-contact ni de dérive du compteur).
+  `MAX_SENDS_PER_HOUR` et `CONTACT_COOLDOWN_DAYS` s'appliquent globalement.
+  Suivi des taux par industrie (Campagnes → Tracking par industrie).
 - **Objectif** : flux régulier de RDV. Taux d'ouverture ≥ 40 %, réponse ≥ 5 %,
   bounce < 3 %, plaintes < 0,1 %.
 - **Piège** : réutiliser le même texte partout → patterns détectés. Varier
