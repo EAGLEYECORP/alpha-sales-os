@@ -9,6 +9,7 @@ import type {
   Campaign,
   CampaignDraft,
   Competitor,
+  CustomScript,
   DraftStatus,
   Meeting,
   NextStep,
@@ -43,6 +44,8 @@ interface AlphaState {
   settings: AppSettings;
   /** File de brouillons de campagne en attente de relecture avant envoi. */
   drafts: CampaignDraft[];
+  /** Scripts écrits à la main (mode test / manuel). */
+  customScripts: CustomScript[];
 
   // prospects
   upsertProspect: (p: Prospect) => void;
@@ -72,6 +75,10 @@ interface AlphaState {
   updateDraft: (id: string, patch: Partial<CampaignDraft>) => void;
   setDraftStatus: (id: string, status: DraftStatus, error?: string) => void;
   clearCampaignDrafts: (campaignId: string) => void;
+
+  // scripts manuels
+  upsertCustomScript: (sc: CustomScript) => void;
+  deleteCustomScript: (id: string) => void;
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
@@ -137,6 +144,7 @@ export const useAlpha = create<AlphaState>()(
       auditLog: [],
       settings: defaultSettings,
       drafts: [],
+      customScripts: [],
 
       upsertProspect: (p) =>
         set((s) => {
@@ -304,6 +312,15 @@ export const useAlpha = create<AlphaState>()(
       clearCampaignDrafts: (campaignId) =>
         set((s) => ({ drafts: s.drafts.filter((d) => d.campaignId !== campaignId) })),
 
+      upsertCustomScript: (sc) =>
+        set((s) => ({
+          customScripts: s.customScripts.some((x) => x.id === sc.id)
+            ? s.customScripts.map((x) => (x.id === sc.id ? { ...sc, updatedAt: new Date().toISOString() } : x))
+            : [{ ...sc }, ...s.customScripts],
+        })),
+      deleteCustomScript: (id) =>
+        set((s) => ({ customScripts: s.customScripts.filter((x) => x.id !== id) })),
+
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       importData: (json) => {
@@ -425,6 +442,7 @@ export const useAlpha = create<AlphaState>()(
           campaigns: (s.campaigns ?? []).map(normalizeCampaign),
           meetings: (s.meetings ?? []).map(normalizeMeeting),
           drafts: s.drafts ?? [],
+          customScripts: s.customScripts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
       },

@@ -205,6 +205,21 @@ export interface Prospect {
 
 export type CampaignStepKind = "email" | "whatsapp" | "appel";
 
+/**
+ * Script écrit À LA MAIN par l'utilisateur (mode test / manuel) — en plus de
+ * la bibliothèque doctrine. Variables : {prenom} {commerce} {ville} {taxe}
+ * {taxe_semaine} {closer} {fois}, remplies via fillTemplate.
+ */
+export interface CustomScript {
+  id: string;
+  name: string;
+  channel: "email" | "dm";
+  subject: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type StepRole = "premiere-impression" | "relance" | "reponse";
 
 export interface CampaignStep {

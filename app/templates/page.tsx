@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, Copy, Lightbulb } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { SendBar } from "@/components/send-bar";
+import { CustomScripts } from "@/components/custom-scripts";
 import {
   FORMAT_LABELS,
   SECTOR_LABELS,
@@ -129,6 +130,9 @@ export default function TemplatesPage() {
           </p>
         </div>
       </div>
+
+      {/* Mes scripts — mode manuel / test */}
+      <CustomScripts prospect={prospect} />
 
       {/* Objectif du moment */}
       <div className="rounded-xl border border-bronze-700/50 bg-bronze-900/20 px-4 py-2.5">

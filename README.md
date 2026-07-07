@@ -116,6 +116,29 @@ Posture complète dans [`SECURITY.md`](./SECURITY.md) : middleware anti-CSRF
 COOP/CORP, CSP…), lint anti-spam, désinscription STOP, RLS Supabase, checklist
 opérateur (HTTPS, SPF/DKIM/DMARC, secrets).
 
+## Mode test / manuel (sans n8n)
+
+La boucle complète se fait à la main — parfait pour tester le message avant
+d'automatiser :
+
+1. **Prospects** : import CSV / Google Sheets (Réglages) ou saisie manuelle
+   (Pipeline → + Prospect).
+2. **Scripts** : Templates → **Mes scripts** — écris tes propres emails/DM
+   (variables `{prenom} {commerce} {taxe}…`), édite, supprime.
+3. **Envoi** : sélectionne un prospect → variables remplies → bouton Email
+   (HTML + tracking automatiques).
+4. **Réponses** : elles arrivent par webhook (n8n) OU tu les **colles à la
+   main** (Campagnes → Réponses entrantes → « Coller une réponse ») depuis ta
+   boîte mail.
+5. **Suggestion à chaque étape** : bouton « Réponse IA » sur chaque réponse
+   (fonctionne même sans clé API — moteur doctrine hors-ligne), édite, envoie.
+6. **Taux de réponse** : affiché en tête de l'inbox (répondants / contactés),
+   ouvertures/clics dans Tracking et KPIs.
+
+Quand le message convertit → branche l'agent conversationnel n8n
+(`integrations/n8n/PROMPTS.md`) et la même boucle devient automatique, avec
+les mêmes garde-fous de relecture.
+
 ## Relecture avant envoi (campagnes)
 
 **Rien ne part tant que l'humain n'a pas validé.** Sur une campagne →

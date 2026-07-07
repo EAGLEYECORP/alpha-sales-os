@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Bot, Check, Inbox, RefreshCw, UserPlus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bot, Check, ClipboardPaste, Inbox, RefreshCw, UserPlus } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { InboundEvent, Prospect } from "@/lib/types";
 import { prospectDefaults } from "@/lib/seed";
@@ -25,12 +25,57 @@ export function InboundInbox() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [drafting, setDrafting] = useState<string | null>(null);
 
+  // Mode test / manuel : coller une réponse reçue (Gmail…) sans webhook.
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteEmail, setPasteEmail] = useState("");
+  const [pasteMsg, setPasteMsg] = useState("");
+
+  // Taux de réponse : contactés (tracking) vs prospects avec un « ↩ Entrant ».
+  const [contacted, setContacted] = useState<number | null>(null);
+  useEffect(() => {
+    fetch("/api/track/stats")
+      .then((r) => r.json())
+      .then((d) => {
+        const emails = new Set(
+          (Array.isArray(d.records) ? d.records : [])
+            .map((r: { email?: string }) => r.email?.toLowerCase())
+            .filter(Boolean)
+        );
+        setContacted(emails.size);
+      })
+      .catch(() => {});
+  }, []);
+  const replied = useMemo(
+    () => prospects.filter((p) => p.events.some((e) => e.summary.startsWith("↩ Entrant"))).length,
+    [prospects]
+  );
+  const replyRate = contacted && contacted > 0 ? Math.round((replied / contacted) * 100) : null;
+
+  const addManual = () => {
+    const email = pasteEmail.trim().toLowerCase();
+    if (!email || !pasteMsg.trim()) return;
+    const ev: InboundEvent = {
+      id: `manual-${uid()}`,
+      receivedAt: new Date().toISOString(),
+      type: "email.reply",
+      email,
+      name: prospects.find((p) => p.email?.toLowerCase() === email)?.name,
+      message: pasteMsg.trim().slice(0, 4000),
+      processed: false,
+    };
+    setEvents((cur) => [ev, ...cur]);
+    setPasteEmail("");
+    setPasteMsg("");
+    setPasteOpen(false);
+  };
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/webhooks/inbound");
       const data = await res.json();
-      setEvents(data.events ?? []);
+      // conserve les réponses collées à la main (mode test) lors du refresh
+      setEvents((cur) => [...cur.filter((e) => e.id.startsWith("manual-")), ...(data.events ?? [])]);
       setStore(data.store ?? null);
     } catch {
       setStore("erreur");
@@ -44,11 +89,14 @@ export function InboundInbox() {
   }, [refresh]);
 
   const ack = async (ids: string[]) => {
-    await fetch("/api/webhooks/inbound", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    }).catch(() => {});
+    const serverIds = ids.filter((i) => !i.startsWith("manual-"));
+    if (serverIds.length) {
+      await fetch("/api/webhooks/inbound", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: serverIds }),
+      }).catch(() => {});
+    }
     setEvents((cur) => cur.filter((e) => !ids.includes(e.id)));
   };
 
@@ -142,13 +190,49 @@ export function InboundInbox() {
           <span className="chip border-ink-600 text-paper-faint">{events.length}</span>
           {store && <span className="text-[10px] text-paper-faint">stockage : {store}</span>}
         </h2>
-        <button className="btn-ghost" onClick={refresh} disabled={loading}>
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Relever
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {replyRate !== null && (
+            <span className="chip border-bronze-700 text-bronze-400" title={`${replied} prospect(s) ont répondu sur ${contacted} contacté(s)`}>
+              {replied}/{contacted} réponses · {replyRate} %
+            </span>
+          )}
+          <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => setPasteOpen((v) => !v)}>
+            <ClipboardPaste size={13} /> Coller une réponse
+          </button>
+          <button className="btn-ghost" onClick={refresh} disabled={loading}>
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Relever
+          </button>
+        </div>
       </div>
       <p className="mt-1 text-[11px] text-paper-faint">
-        Webhook : <code className="font-mono text-bronze-400">POST /api/webhooks/inbound</code> (secret requis — config dans Réglages). Chaque réponse peut être attachée au prospect et traitée par l&apos;agent.
+        Les réponses arrivent par webhook (<code className="font-mono text-bronze-400">POST /api/webhooks/inbound</code>, via n8n) — ou colle-les à la main (mode test) : tu reçois la réponse dans ta boîte, tu la colles ici, tu obtiens la suggestion, tu réponds.
       </p>
+
+      {pasteOpen && (
+        <div className="mt-3 rounded-lg border border-bronze-700/50 bg-bronze-900/10 p-3">
+          <div className="grid gap-2 sm:grid-cols-[260px_1fr]">
+            <div>
+              <label className="label">Email du prospect</label>
+              <input className="input" list="inbox-emails" placeholder="marc@bouchon.fr" value={pasteEmail} onChange={(e) => setPasteEmail(e.target.value)} />
+              <datalist id="inbox-emails">
+                {prospects.filter((p) => p.email).map((p) => (
+                  <option key={p.id} value={p.email}>{p.company}</option>
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <label className="label">Sa réponse (collée depuis ta boîte)</label>
+              <textarea className="input min-h-20" placeholder="« Ok pour mardi 15h… »" value={pasteMsg} onChange={(e) => setPasteMsg(e.target.value)} />
+            </div>
+          </div>
+          <div className="mt-2 flex justify-end gap-2">
+            <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => setPasteOpen(false)}>Annuler</button>
+            <button className="btn-bronze px-2.5 py-1.5 text-[12px]" disabled={!pasteEmail.trim() || !pasteMsg.trim()} onClick={addManual}>
+              <Check size={13} /> Ajouter
+            </button>
+          </div>
+        </div>
+      )}
 
       <ul className="mt-3 space-y-3">
         {events.map((ev) => {
