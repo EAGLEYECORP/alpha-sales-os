@@ -22,8 +22,10 @@ export async function GET() {
     runtime: `node ${process.version}`,
     capabilities: {
       ai: {
-        configured: has("ANTHROPIC_API_KEY"),
-        model: env.AI_MODEL || "claude-opus-4-8",
+        configured: has("OLLAMA_MODEL") || has("ANTHROPIC_API_KEY"),
+        model: has("OLLAMA_MODEL")
+          ? `ollama:${env.OLLAMA_MODEL} (local)`
+          : env.AI_MODEL || "claude-opus-4-8",
       },
       email: {
         configured: email,

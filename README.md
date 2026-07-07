@@ -250,11 +250,14 @@ npm run dev        # http://localhost:3000
 
 C'est tout. L'app démarre **sans aucune configuration** : données de démo lyonnaises, persistance localStorage, IA en mode templates Hormozi.
 
-### Activer Claude (IA)
+### Activer l'IA (locale gratuite, ou Claude)
 
 ```bash
 cp .env.example .env.local
-# ANTHROPIC_API_KEY=sk-ant-…
+# Option 1 — 100 % local, zéro coût (recommandé) :
+#   ollama pull qwen2.5:3b
+#   OLLAMA_MODEL=qwen2.5:3b        (OLLAMA_URL=http://localhost:11434 par défaut)
+# Option 2 — cloud : ANTHROPIC_API_KEY=sk-ant-…  (Ollama prioritaire si les deux)
 npm run dev
 ```
 

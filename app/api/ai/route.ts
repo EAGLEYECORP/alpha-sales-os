@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prospect } from "@/lib/types";
+import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -115,6 +116,23 @@ export async function POST(request: NextRequest) {
   }
   if (!body?.task || !body?.prospect) {
     return NextResponse.json({ error: "task et prospect requis" }, { status: 400 });
+  }
+
+  // IA locale (Ollama) prioritaire — consignes compactes pour un petit modèle.
+  if (ollamaConfigured()) {
+    try {
+      const text = await ollamaChat(
+        [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: buildPrompt(body) },
+        ],
+        { temperature: 0.3, maxTokens: 1200 }
+      );
+      return NextResponse.json({ text, engine: `ollama (${ollamaModel()})` });
+    } catch (e) {
+      console.error("Ollama error, falling back:", e);
+      // continue vers Anthropic ou templates
+    }
   }
 
   // No key → deterministic Hormozi template engine (app works offline).

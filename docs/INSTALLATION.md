@@ -22,7 +22,7 @@
    Vérifie dans un terminal : `node -v` → doit afficher `v20.x` ou plus.
 2. **Un compte Google** (Sheets, Gmail, Calendar).
 3. *(Optionnel mais recommandé)* un compte **Supabase** ([supabase.com](https://supabase.com), gratuit),
-   une clé **Anthropic** (IA), et des identifiants **SMTP** (Gmail app-password, Brevo, OVH…).
+   **Ollama** installé ([ollama.com](https://ollama.com), gratuit — puis `ollama pull qwen2.5:3b`), et des identifiants **SMTP** (Gmail app-password, Brevo, OVH…).
 
 ✅ **Vérification** : `node -v` répond dans le terminal.
 
@@ -73,7 +73,7 @@ n8n → **Credentials → Add credential** :
 - **Google Sheets OAuth2** (suis l'assistant Google) — sert à 4 workflows.
 - **Gmail OAuth2** — brouillons + trigger entrant.
 - **Google Calendar OAuth2** — création de RDV.
-- **Anthropic** — colle ta clé API (IA des scripts).
+- **Ollama** — base URL `http://localhost:11434` (avoir fait `ollama pull qwen2.5:3b` avant). C'est l'IA des scripts, 100 % locale et gratuite.
 - *(Si Supabase, Phase 4)* **Supabase** — Host = URL du projet, clé **service_role**.
 
 ### 2.3 Importer les 5 workflows (dans cet ordre)
@@ -84,10 +84,10 @@ Pour chacun : **Workflows → ⋯ → Import from File** → choisis le fichier 
 | # | Fichier | À mapper | Puis |
 |---|---|---|---|
 | 1 | `alpha-dashboard-api.workflow.json` | nœuds Google Sheets : credential + `SHEET_ID` ; nœud **Webhook** : `Allowed Origins (CORS)` = `http://localhost:3000` | **Activer** (interrupteur en haut à droite) |
-| 2 | `alpha-outreach.workflow.json` | Sheets trigger + Sheets update (`SHEET_ID`), Anthropic, Gmail, Calendar | **Activer** |
+| 2 | `alpha-outreach.workflow.json` | Sheets trigger + Sheets update (`SHEET_ID`), **Ollama**, Gmail, Calendar | **Activer** |
 | 3 | `alpha-inbound.workflow.json` | Gmail trigger, Sheets (`SHEET_ID`) — le POST vers l'app lit `ALPHA_APP_URL`/`ALPHA_WEBHOOK_SECRET` | **Activer** |
 | 4 | `alpha-crm-sync.workflow.json` | Supabase (×2) + Sheets (`SHEET_ID`) — *saute-le si pas de Supabase pour l'instant* | **Activer** |
-| 5 | `alpha-crm-agent.workflow.json` | Anthropic — les outils lisent `ALPHA_CRM_URL`/`ALPHA_CRM_TOKEN` | **Activer** |
+| 5 | `alpha-crm-agent.workflow.json` | **Ollama** — les outils lisent `ALPHA_CRM_URL`/`ALPHA_CRM_TOKEN` | **Activer** |
 
 > ⚠ Piège n°1 : utiliser l'URL de **Test** du webhook. La bonne URL est celle de
 > **Production** : `http://localhost:5678/webhook/alpha` (sans `-test`).
@@ -113,7 +113,7 @@ curl -X POST http://localhost:5678/webhook/alpha \
    - `WEBHOOK_SECRET=` **le même** que `ALPHA_WEBHOOK_SECRET` (Phase 2.1) ;
    - pour envoyer : `SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM`
      + `CLOSER_NAME=TonPrénom` ;
-   - *(si IA)* `ANTHROPIC_API_KEY=` ; *(si Supabase, Phase 4)* les 3 clés Supabase.
+   - *(IA locale)* `OLLAMA_MODEL=qwen2.5:3b` (ou `ANTHROPIC_API_KEY=`) ; *(si Supabase, Phase 4)* les 3 clés Supabase.
 3. Lance :
    ```bash
    npm run build && npm start     # → http://localhost:3000

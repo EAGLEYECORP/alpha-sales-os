@@ -126,9 +126,9 @@ export function SystemStatus() {
           title: "IA — Coach, Agent, Sparring",
           items: [
             {
-              label: c.ai.configured ? `Claude connecté (${c.ai.model})` : "Claude (ANTHROPIC_API_KEY)",
+              label: c.ai.configured ? `IA connectée (${c.ai.model})` : "IA (OLLAMA_MODEL ou ANTHROPIC_API_KEY)",
               level: c.ai.configured ? "ok" : "warn",
-              hint: "Sans clé, moteur de templates Hormozi hors-ligne (l'app fonctionne quand même).",
+              hint: "Local gratuit : ollama pull qwen2.5:3b + OLLAMA_MODEL=qwen2.5:3b. Sans IA, moteur de templates hors-ligne.",
               optional: true,
             },
           ],

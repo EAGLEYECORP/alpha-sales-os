@@ -491,6 +491,35 @@ gate doctrine que le closing initial.
 
 ---
 
+## Adaptation petits modèles — Ollama `qwen2.5:3b` (100 % local)
+
+Le stack IA choisi est **Ollama + qwen2.5:3b** (gratuit, local, `ollama pull
+qwen2.5:3b`). Les workflows du repo sont déjà câblés dessus (nœud *Ollama Chat
+Model*, base URL `http://localhost:11434`). Un 3B est capable mais fragile —
+règles d'or pour qu'il tienne :
+
+1. **Consignes courtes.** Les prompts longs ci-dessus sont écrits pour un grand
+   modèle ; pour le 3B, utilise les versions COMPACTES (celle du workflow
+   `alpha-outreach` en est le gabarit : règles en 1 ligne, données en 3 lignes,
+   objectif par étape en 1 ligne, schéma JSON + UN exemple).
+2. **JSON natif.** Active `format: json` dans le nœud Ollama (déjà fait dans
+   `alpha-outreach`) — c'est Ollama qui force la validité, pas le modèle.
+3. **Température basse** : 0.2–0.4. Un 3B chaud hallucine.
+4. **Une tâche par appel.** Ne demande jamais analyse + rédaction + décision
+   dans le même prompt : enchaîne deux nœuds IA plutôt qu'un gros.
+5. **Peu de clés JSON** (≤ 5 par appel) et toujours un exemple rempli.
+6. **Le français reste OK** sur qwen2.5 (entraîné multilingue), mais garde les
+   phrases simples ; bannis les tournures « lyriques » des prompts longs.
+7. **Escalade honnête** : si la qualité des emails de 1re impression déçoit,
+   passe à `qwen2.5:7b` (ou 14b si la machine suit) — mêmes prompts, juste
+   `ollama pull` + changer le nom du modèle dans le nœud. Le closing (ét. 7)
+   et l'analyse fine (ét. 3) sont les premiers à profiter d'un modèle plus
+   gros. L'app elle-même suit la même logique (`OLLAMA_MODEL` dans
+   `.env.local`, prioritaire sur Anthropic).
+8. **Filet de sécurité inchangé** : sortie parsée avec tolérance (nœud
+   « Parser JSON »), et de toute façon RIEN ne part sans relecture humaine —
+   un 3B qui rate un email coûte zéro, le gate l'attrape.
+
 ## Carte des WEBHOOKS de bout en bout
 
 | # | Direction | Endpoint / nœud | Déclenché par | Porte |

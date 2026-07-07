@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -40,6 +41,18 @@ export async function POST(request: NextRequest) {
     "\n## Règles business de l'agence\n" + (body.businessRules ?? ""),
     "\n## État du pipeline (données réelles, JSON)\n" + (body.context ?? "{}").slice(0, 30000),
   ].join("\n");
+
+  if (ollamaConfigured()) {
+    try {
+      const text = await ollamaChat(
+        [{ role: "system" as const, content: system }, ...body.messages.map((m) => ({ role: m.role, content: m.content }))],
+        { temperature: 0.4, maxTokens: 1500 }
+      );
+      return NextResponse.json({ text, engine: `ollama (${ollamaModel()})` });
+    } catch (e) {
+      console.error("Ollama agent error, falling back:", e);
+    }
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({

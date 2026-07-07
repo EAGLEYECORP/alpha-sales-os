@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "prospect et history requis" }, { status: 400 });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!ollamaConfigured() && !process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ ...localEngine(body), engine: "local" });
   }
 
@@ -59,6 +60,21 @@ ${hist}
 Réponds UNIQUEMENT en JSON strict, rien d'autre :
 {"prospect":"ta réplique en personnage (1-2 phrases, ton parlé, français)","coach":"1 conseil bref et concret au commercial sur sa DERNIÈRE réponse","status":"continue|gagne|perdu"}
 status="gagne" si le commercial vient d'obtenir un RDV d'audit daté ; "perdu" si après 5+ échanges il n'y arrive toujours pas ; sinon "continue".`;
+
+  // IA locale d'abord (format JSON natif d'Ollama : fiable même sur un 3B)
+  if (ollamaConfigured()) {
+    try {
+      const text = await ollamaChat([{ role: "user", content: prompt }], { temperature: 0.5, maxTokens: 400, json: true });
+      const a = text.indexOf("{");
+      const b = text.lastIndexOf("}");
+      const parsed = JSON.parse(text.slice(a, b + 1)) as SparringReply;
+      if (!parsed.prospect) throw new Error("réponse vide");
+      return NextResponse.json({ ...parsed, engine: `ollama (${ollamaModel()})` });
+    } catch (e) {
+      console.error("sparring ollama fallback:", e);
+      if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ ...localEngine(body), engine: "local" });
+    }
+  }
 
   try {
     const { generateText } = await import("ai");
