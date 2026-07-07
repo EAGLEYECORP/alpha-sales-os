@@ -165,13 +165,13 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                 <h2 className="font-display text-lg font-bold text-paper">Étape 2 — Coller le lien de connexion</h2>
                 <p className="mt-1 text-sm text-paper-dim">
                   Dans n8n, ouvrez le nœud <strong className="text-paper-dim">Webhook</strong> et copiez l&apos;
-                  <strong className="text-paper-dim">URL de Production</strong> (elle ressemble à
-                  <code className="code"> https://…/webhook/alpha</code>).
+                  <strong className="text-paper-dim">URL de Production</strong>. En local, elle ressemble à
+                  <code className="code"> http://localhost:5678/webhook/alpha</code>.
                 </p>
                 <label className="label mt-4 flex items-center gap-1.5"><Link2 size={13} className="text-bronze-400" /> URL du webhook n8n</label>
                 <input
                   className="input font-mono text-[12px]"
-                  placeholder="https://mon-n8n.fr/webhook/alpha"
+                  placeholder="http://localhost:5678/webhook/alpha"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                 />
@@ -185,6 +185,9 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                 />
                 <p className="mt-2 text-[11px] text-paper-faint">
                   Ce lien reste sur <strong className="text-paper-dim">votre appareil</strong> (rien n&apos;est envoyé ailleurs).
+                  n8n local (<code className="code">http://localhost:5678</code>) : ouvrez cette app aussi en local
+                  (<code className="code">http://localhost:3000</code>) — un site en <code className="code">https://</code>
+                  ne peut pas appeler <code className="code">http://localhost</code> (contenu mixte bloqué).
                   Si vous avez protégé le webhook par un mot de passe, mettez-le ici — il partira dans l&apos;en-tête
                   <code className="code"> x-alpha-secret</code>.
                 </p>

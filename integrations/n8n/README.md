@@ -29,6 +29,29 @@ seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json).
                                           email STOP ◀──────────────── (Gmail)
 ```
 
+## n8n en local (http://localhost:5678)
+
+Config typique quand n8n tourne sur ta machine :
+
+- **URL du webhook (dans l'app)** : `http://localhost:5678/webhook/alpha`
+  (l'URL de *Test* est `…/webhook-test/alpha` — n'utilise pas celle-là).
+- **Lance l'app en local aussi** : `http://localhost:3000`. Un site servi en
+  `https://` **ne peut pas** appeler `http://localhost` (contenu mixte bloqué
+  par le navigateur). Deux options si l'app est déployée en https :
+  1. exposer n8n en https via un tunnel (`cloudflared`, `ngrok`) et coller
+     l'URL https ;
+  2. régler `N8N_HOST`/`WEBHOOK_URL` de n8n derrière ce tunnel.
+- **CORS** : sur chaque nœud *Webhook*, `Allowed Origins` = l'origine de l'app
+  (`http://localhost:3000`, ou `*` pour démarrer). La CSP de l'app autorise déjà
+  `http://localhost:*` + tout `https:`.
+- **Variables d'env n8n** (au lancement) :
+  ```bash
+  export ALPHA_APP_URL="http://localhost:3000"        # pour alpha-inbound
+  export ALPHA_WEBHOOK_SECRET="ton-WEBHOOK_SECRET"     # doit matcher l'app
+  export ALPHA_CRM_URL="…/exec"  ALPHA_CRM_TOKEN="…"   # pour l'agent (Apps Script)
+  npx n8n
+  ```
+
 ## Variables d'environnement n8n
 
 - `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN` — pour l'agent (Web App Apps Script).

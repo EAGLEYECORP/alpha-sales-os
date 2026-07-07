@@ -250,6 +250,7 @@ export default function SettingsPage() {
             L&apos;app est un <strong className="text-paper-dim">tableau de bord</strong> : la mémoire et les automatisations vivent dans n8n.
             Colle l&apos;URL de ton webhook n8n (nœud Webhook → URL de Production), teste, puis récupère tes prospects.
             Le lien reste dans ce navigateur. Pense à autoriser l&apos;origine (CORS) dans le nœud Webhook.
+            n8n local ? URL <code className="font-mono text-bronze-400">http://localhost:5678/webhook/alpha</code> — ouvre alors cette app en <code className="font-mono text-bronze-400">http://localhost:3000</code> (un site https ne peut pas appeler http://localhost).
           </p>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -257,7 +258,7 @@ export default function SettingsPage() {
               <label className="label">URL du webhook</label>
               <input
                 className="input font-mono text-[12px]"
-                placeholder="https://mon-n8n.fr/webhook/alpha"
+                placeholder="http://localhost:5678/webhook/alpha"
                 value={n8nUrl}
                 onChange={(e) => setN8nUrl(e.target.value)}
               />
