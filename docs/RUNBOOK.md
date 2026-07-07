@@ -9,6 +9,9 @@ augmente le volume par paliers, jamais d'un coup.
 
 ## 1. Installer (≈ 30 min)
 
+> Version détaillée pas-à-pas avec vérifications à chaque phase (pour former
+> quelqu'un) : [`INSTALLATION.md`](./INSTALLATION.md).
+
 ### Le tableau de bord (cette app)
 ```bash
 npm install

@@ -212,6 +212,12 @@ La boucle : **n8n remplit le Sheets → l'app importe & envoie des emails HTML t
 
 Page **Agent ALPHA** : chat en streaming branché sur l'état réel complet (deals, croyances, audits, RDV, campagnes, règles business). « Prépare ma journée », « quels deals sont en danger ? », rédaction de relances… Sans clé API, il répond quand même avec un briefing chiffré hors-ligne.
 
+## Installer & former
+
+**Guide pas à pas complet** (pour installer, vérifier chaque phase, et former
+un employé à l'opérer) : [`docs/INSTALLATION.md`](./docs/INSTALLATION.md).
+Montée en volume : [`docs/RUNBOOK.md`](./docs/RUNBOOK.md).
+
 ## Lancer en local
 
 ```bash
