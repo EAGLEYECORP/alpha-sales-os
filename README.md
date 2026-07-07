@@ -82,6 +82,16 @@ Branche Instantly / Smartlead / Lemlist / Zapier / Make dessus. Les événements
 
 Boutons d'envoi partout où il y a un message : bibliothèque Templates (prospect sélectionné), onglet Templates d'une fiche, brouillons IA de l'inbox. Chaque envoi est consigné dans la timeline du prospect.
 
+## KPIs — rollup global
+
+La page **KPIs** ouvre sur le rollup (`components/kpis/rollup.tsx`) :
+**funnel global** agrégé sur toutes les campagnes (délivré → ouvert → réponse →
+follow-thru → closed, barres visuelles), **la ligne dorée** (réel vs cibles du
+RUNBOOK avec statut vert/ambre/rouge + garde-fou petit échantillon),
+**l'économie chiffrée** (CA généré an 1, notre part, MRR, LTV moyenne — le
+no-brainer à dérouler en RDV) et le **comparatif par campagne** (où investir
+l'effort, trié par LTV).
+
 ## Offre & Tarifs (modèle économique)
 
 Page **Offre & Tarifs** (`app/offre`, `lib/pricing.ts`) : deux modèles calés

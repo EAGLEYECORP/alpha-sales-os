@@ -5,6 +5,7 @@ import { Gauge, HeartHandshake, MailOpen, MessageCircleReply, ThumbsDown, Thumbs
 import { useAlpha } from "@/lib/store";
 import { STAGES } from "@/lib/hormozi";
 import { CampaignRatesChart, SectorChart } from "@/components/charts";
+import { KpisRollup } from "@/components/kpis/rollup";
 import { cn } from "@/lib/utils";
 
 export default function KpisPage() {
@@ -55,6 +56,9 @@ export default function KpisPage() {
           Est-ce qu&apos;on t&apos;ouvre, est-ce qu&apos;on te répond, est-ce qu&apos;on te fait confiance — et surtout : pourquoi OUI, pourquoi NON.
         </p>
       </header>
+
+      {/* Rollup — funnel global, ligne dorée, économie, comparatif campagnes */}
+      <KpisRollup />
 
       {/* Headline tiles */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
