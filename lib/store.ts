@@ -339,9 +339,14 @@ export const useAlpha = create<AlphaState>()(
                 x.company.trim().toLowerCase() === p.company.trim().toLowerCase()
             );
             if (idx >= 0) {
-              // keep local pipeline state, refresh identity + audit data
+              // keep local pipeline state, refresh identity + audit data.
+              // History du CRM (écrit par n8n) : fusionné dans la timeline, dédupliqué.
+              const seen = new Set(next[idx].events.map((e) => `${e.date.slice(0, 16)}|${e.summary}`));
+              const newEvents = p.events.filter((e) => !seen.has(`${e.date.slice(0, 16)}|${e.summary}`));
               next[idx] = {
                 ...next[idx],
+                events: newEvents.length ? [...newEvents, ...next[idx].events].sort((a, b) => b.date.localeCompare(a.date)) : next[idx].events,
+                nextStep: next[idx].nextStep ?? p.nextStep,
                 name: p.name || next[idx].name,
                 phone: p.phone ?? next[idx].phone,
                 email: p.email ?? next[idx].email,

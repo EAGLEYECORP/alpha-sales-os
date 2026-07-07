@@ -132,6 +132,29 @@ function rowToStage(v: string): Stage {
   return (found?.id ?? "prospect") as Stage;
 }
 
+/** Journal Sheets « [2026-07-07 14:30] texte » → événements de timeline. */
+function parseHistory(raw: string): Prospect["events"] {
+  if (!raw.trim()) return [];
+  return raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(-15)
+    .map((line) => {
+      const m = line.match(/^\[(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?\]\s*(.*)$/);
+      const date = m ? new Date(`${m[1]}T${m[2] ?? "12:00"}:00`).toISOString() : new Date().toISOString();
+      return { id: uid(), date, kind: "note" as const, summary: m ? m[3] : line };
+    });
+}
+
+/** Colonne Deadline « 2026-07-10 — appeler avant 9h » → next step daté. */
+function parseDeadline(deadline: string, action: string): Prospect["nextStep"] {
+  const m = deadline.match(/(\d{4}-\d{2}-\d{2})/);
+  const label = action || deadline.replace(/\d{4}-\d{2}-\d{2}\s*[—–-]?\s*/, "").trim();
+  if (m) return { date: new Date(`${m[1]}T09:00:00`).toISOString(), action: label || "Next step (CRM)" };
+  return null;
+}
+
 /** Convertit les lignes renvoyées par n8n en prospects de l'app. */
 export function n8nRowsToProspects(rows: unknown[]): Prospect[] {
   const out: Prospect[] = [];
@@ -164,9 +187,13 @@ export function n8nRowsToProspects(rows: unknown[]): Prospect[] {
       croyances: { produit: 5, soutien: 5, pourLui: 3 },
       obstacles: [],
       objections: [],
-      events: [],
+      // Journal History du Sheet (écrit par n8n) → timeline visible sur la fiche
+      events: parseHistory(pick(o, ["history", "historique", "journal"])),
       demoShownBeforePrice: false,
-      nextStep: { date: daysAhead(3), action: "Premier contact terrain" },
+      // Deadline du Sheet (next step daté) → sinon défaut doctrine J+3
+      nextStep:
+        parseDeadline(pick(o, ["deadline", "echeance"]), pick(o, ["nextStepAction", "nextstep", "prochaine_action"])) ??
+        { date: daysAhead(3), action: "Premier contact terrain" },
       tags: [],
       attachments: [],
       notes: pick(o, ["notes", "note", "commentaire"]),

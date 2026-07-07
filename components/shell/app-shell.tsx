@@ -29,6 +29,7 @@ import { LockGate } from "@/components/security/lock-gate";
 import { Onboarding } from "@/components/onboarding";
 import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { N8nAutoSync } from "@/components/n8n-autosync";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
@@ -117,6 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <LockGate>
     <Onboarding />
+    <N8nAutoSync />
     <div className="flex min-h-screen">
       {/* Sidebar — desktop (repliable : ⌘B ou le bouton) */}
       <aside
