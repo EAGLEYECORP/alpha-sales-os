@@ -4,6 +4,7 @@ import type { Prospect, Sector, Stage } from "./types";
 import { prospectDefaults } from "./seed";
 import { STAGES } from "./hormozi";
 import { daysAhead, uid } from "./utils";
+import { parseDeadline, parseDelivery, parseHistory, parseObjections, parseObstacles } from "./crm-parse";
 import { useAlpha } from "./store";
 
 /**
@@ -132,27 +133,16 @@ function rowToStage(v: string): Stage {
   return (found?.id ?? "prospect") as Stage;
 }
 
-/** Journal Sheets « [2026-07-07 14:30] texte » → événements de timeline. */
-function parseHistory(raw: string): Prospect["events"] {
-  if (!raw.trim()) return [];
-  return raw
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .slice(-15)
-    .map((line) => {
-      const m = line.match(/^\[(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?\]\s*(.*)$/);
-      const date = m ? new Date(`${m[1]}T${m[2] ?? "12:00"}:00`).toISOString() : new Date().toISOString();
-      return { id: uid(), date, kind: "note" as const, summary: m ? m[3] : line };
-    });
-}
-
-/** Colonne Deadline « 2026-07-10 — appeler avant 9h » → next step daté. */
-function parseDeadline(deadline: string, action: string): Prospect["nextStep"] {
-  const m = deadline.match(/(\d{4}-\d{2}-\d{2})/);
-  const label = action || deadline.replace(/\d{4}-\d{2}-\d{2}\s*[—–-]?\s*/, "").trim();
-  if (m) return { date: new Date(`${m[1]}T09:00:00`).toISOString(), action: label || "Next step (CRM)" };
-  return null;
+/**
+ * Normalise les CLÉS d'une ligne n8n/Sheets : le nœud Google Sheets renvoie
+ * les libellés de colonnes tels quels (« Note d'avis », « num de tel »,
+ * « Delivery status »…). On les réduit en minuscules sans accents ni
+ * ponctuation pour que le mapping tienne quel que soit le libellé exact.
+ */
+function normalizeKeys(o: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) out[strip(k)] = v;
+  return out;
 }
 
 /** Convertit les lignes renvoyées par n8n en prospects de l'app. */
@@ -160,13 +150,13 @@ export function n8nRowsToProspects(rows: unknown[]): Prospect[] {
   const out: Prospect[] = [];
   for (const raw of rows) {
     if (!raw || typeof raw !== "object") continue;
-    const o = raw as Record<string, unknown>;
-    const company = pick(o, ["prospect", "company", "commerce", "entreprise", "societe", "nom_entreprise"]);
+    const o = normalizeKeys(raw as Record<string, unknown>);
+    const company = pick(o, ["prospect", "company", "commerce", "entreprise", "societe", "nomentreprise"]);
     if (!company) continue;
     const stage = rowToStage(pick(o, ["stage", "etape", "statut", "status"]));
     const sector = SECTOR_ALIASES[strip(pick(o, ["sector", "secteur", "industrie", "type"]))] ?? "autre";
     const now = new Date().toISOString();
-    const tax = toNum(pick(o, ["tax", "ignoranceTax", "taxe", "perte"])) ?? 0;
+    const tax = toNum(pick(o, ["tax", "ignorancetax", "taxe", "taxedignorancemois", "perte"])) ?? 0;
     out.push({
       ...prospectDefaults,
       id: uid(),
@@ -174,44 +164,46 @@ export function n8nRowsToProspects(rows: unknown[]): Prospect[] {
       name: pick(o, ["contact", "name", "nom", "decideur", "gerant"]),
       sector,
       city: pick(o, ["city", "ville", "emplacement"]) || "Lyon",
-      phone: pick(o, ["phone", "telephone", "tel"]) || undefined,
+      phone: pick(o, ["phone", "telephone", "tel", "numdetel"]) || undefined,
       email: pick(o, ["email", "mail", "courriel"]) || undefined,
       stage,
       trust: 10,
       auditScore: 0,
       conviction: 8,
-      monthlyValue: toNum(pick(o, ["monthlyValue", "abonnement", "mrr", "mensuel"])) ?? 0,
-      setupValue: toNum(pick(o, ["setupValue", "setup"])) ?? 0,
+      monthlyValue: toNum(pick(o, ["monthlyvalue", "abonnement", "mrr", "mensuel"])) ?? 0,
+      setupValue: toNum(pick(o, ["setupvalue", "setup"])) ?? 0,
       probability: STAGES.find((s) => s.id === stage)?.probability ?? 5,
       ignoranceTax: tax,
       croyances: { produit: 5, soutien: 5, pourLui: 3 },
-      obstacles: [],
-      objections: [],
+      obstacles: parseObstacles(pick(o, ["obstacles"])),
+      objections: parseObjections(pick(o, ["objections"])),
       // Journal History du Sheet (écrit par n8n) → timeline visible sur la fiche
       events: parseHistory(pick(o, ["history", "historique", "journal"])),
       demoShownBeforePrice: false,
       // Deadline du Sheet (next step daté) → sinon défaut doctrine J+3
       nextStep:
-        parseDeadline(pick(o, ["deadline", "echeance"]), pick(o, ["nextStepAction", "nextstep", "prochaine_action"])) ??
+        parseDeadline(pick(o, ["deadline", "echeance"]), pick(o, ["nextstepaction", "nextstep", "prochaineaction"])) ??
         { date: daysAhead(3), action: "Premier contact terrain" },
-      tags: [],
+      tags: pick(o, ["typedentreprise", "type"]) ? [pick(o, ["typedentreprise", "type"]).replace(/^[·\s]+/, "")] : [],
       attachments: [],
       notes: pick(o, ["notes", "note", "commentaire"]),
       preferredChannel: pick(o, ["channel", "canal", "platform", "plateforme"]) || undefined,
-      satisfaction: toNum(pick(o, ["satisfaction", "satisfaction_score"])),
-      testimonial: pick(o, ["testimonial", "temoignage", "avis_client"]) || undefined,
-      upsell: pick(o, ["upsell", "upsell_note"]) ? { note: pick(o, ["upsell", "upsell_note"]), status: "identifie" as const } : undefined,
+      satisfaction: toNum(pick(o, ["satisfaction", "satisfactionscore"])),
+      testimonial: pick(o, ["testimonial", "temoignage", "avisclient"]) || undefined,
+      upsell: pick(o, ["upsell", "upsellnote"]) ? { note: pick(o, ["upsell", "upsellnote"]), status: "identifie" as const } : undefined,
       problems: [],
       solution: "",
       personalizedOffer: "",
       deepAudit: {
         ...prospectDefaults.deepAudit,
-        googleRating: toNum(pick(o, ["rating", "googleRating", "noteGoogle", "note"])),
-        googleReviews: toNum(pick(o, ["reviews", "googleReviews", "avis", "nombreAvis"])),
+        googleRating: toNum(pick(o, ["rating", "googlerating", "notegoogle", "notedavis", "note"])),
+        googleReviews: (() => { const n = toNum(pick(o, ["reviews", "googlereviews", "avis", "nombredavis", "nombreavis"])); return n === undefined ? undefined : Math.abs(n); })(),
         websiteState: pick(o, ["website", "site", "siteweb"]),
         currentProcess: pick(o, ["audit", "process", "processus"]),
         updatedAt: now,
       },
+      delivery: parseDelivery(pick(o, ["delivery", "deliverystatus", "livraison"])) ?? prospectDefaults.delivery,
+      wonAt: (pick(o, ["closedate", "datesignature"]).match(/\d{4}-\d{2}-\d{2}/) || [undefined])[0],
       createdAt: now,
       updatedAt: now,
     });
