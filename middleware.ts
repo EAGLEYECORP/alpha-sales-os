@@ -19,7 +19,17 @@ import { NextRequest, NextResponse } from "next/server";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const INTERNAL = ["/api/send", "/api/ai", "/api/agent", "/api/email/preview", "/api/track/stats", "/api/track/contacted", "/api/crm/patch"];
+const INTERNAL = [
+  "/api/send",
+  "/api/ai",
+  "/api/agent",
+  "/api/sparring", // consomme l'IA — même origine uniquement
+  "/api/email/preview",
+  "/api/import/sheet", // fetch sortant (allowlist Google) — pas un proxy public
+  "/api/track/stats",
+  "/api/track/contacted",
+  "/api/crm/patch",
+];
 
 function isInternal(path: string): boolean {
   return INTERNAL.some((p) => path === p || path.startsWith(p + "/"));

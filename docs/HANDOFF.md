@@ -186,6 +186,11 @@ Taxe, offre, contrat…), l'app la détecte (`criticalGaps`), l'affiche en routi
 > ✅ Livré. La boucle est fermée : il reste à **mapper tes credentials** à
 > l'import (Supabase + Google Sheets).
 
+**Les prompts de l'agent pour CHAQUE étape du cycle** (deep-dive audit → 1re
+impression + PDF cadeau → découverte → awareness → objections → booking →
+closing → satisfaction → témoignage → upsell), avec la carte des webhooks W1-W12
+et les 10 checkpoints human-in-the-loop : **`integrations/n8n/PROMPTS.md`**.
+
 **Le jeu de workflows complet est dans le repo** (voir `integrations/n8n/README`) :
 `alpha-dashboard-api` (ping/list/**upsert**/event), `alpha-outreach` (Sheet→IA→
 Switch→Gmail/Calendar→pipeline, mirroir de ton écran), `alpha-inbound`

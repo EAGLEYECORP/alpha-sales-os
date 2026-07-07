@@ -1,7 +1,9 @@
 # Backend n8n — le jeu de workflows complet
 
 Cinq workflows couvrent tout le cycle. Les colonnes/variables sont définies une
-seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json).
+seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json), et
+**tous les prompts de l'agent (étape par étape, avec webhooks et checkpoints
+human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
 
 | Fichier | Rôle | Déclencheur |
 |---|---|---|

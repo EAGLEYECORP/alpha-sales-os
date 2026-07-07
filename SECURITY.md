@@ -50,6 +50,26 @@ dans des backends que tu contrôles (n8n, Supabase, ton SMTP).
 6. **Dépendances** : `npm audit` + Dependabot ; mets à jour régulièrement.
 7. **PIN de verrouillage** pour les postes partagés (Réglages → Sécurité).
 
+## État d'audit (dernier passage complet)
+
+- **XSS** : 3 usages de `dangerouslySetInnerHTML`, tous vérifiés — 2 constantes
+  statiques (thème, logo SVG) + le rendu markdown qui **échappe l'entrée avant
+  tout formatage** (`components/ui/markdown.tsx`). Aperçus email en
+  `iframe sandbox=""` (aucune capacité).
+- **Endpoints internes** (même-origine via middleware) : send, ai, agent,
+  **sparring**, email/preview, **import/sheet**, track/stats, track/contacted,
+  crm/patch. Publics par conception : track/open|click (clients mail),
+  webhooks/inbound (secret), health (booléens seulement).
+- **npm audit** : 8 avis (4 low / 4 moderate), tous **transitifs** et hors de
+  nos chemins d'exécution — `jsondiffpatch` XSS (HtmlFormatter jamais utilisé ;
+  dép. de `ai` v4), « resource consumption » de `@ai-sdk/provider-utils`
+  (streams côté serveur que nous bornons), `postcss` via `next` (concerne le
+  build, le « fix » proposé par npm est un downgrade Next 9 — absurde).
+  **Décision** : pas de montée majeure à l'aveugle ; planifier `ai` v4→v7 +
+  `@ai-sdk/anthropic` v1→v4 comme chantier dédié (API breaking).
+- **CSP** : `script-src 'self' 'unsafe-inline'` — l'inline est requis par le
+  script anti-flash du thème ; durcissement possible plus tard via nonce.
+
 ## Signaler une faille
 
 Contact : sécurité EAGLEYE CORP. Merci de ne pas divulguer publiquement avant
