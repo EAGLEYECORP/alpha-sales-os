@@ -6,6 +6,8 @@ const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Build autonome (dossier .next/standalone) — requis par le Dockerfile.
+  output: "standalone",
   // Ne pas révéler la stack (fingerprinting)
   poweredByHeader: false,
   eslint: { ignoreDuringBuilds: true },

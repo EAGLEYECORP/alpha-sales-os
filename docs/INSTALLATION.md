@@ -10,9 +10,14 @@
 | Brique | Rôle | Où ça tourne |
 |---|---|---|
 | **Google Sheets + Apps Script** | la mémoire (le CRM que l'humain voit) | Google |
-| **n8n + 5 workflows** | le cerveau (lit, écrit, rédige, route) | ta machine (`localhost:5678`) |
+| **n8n + 6 workflows** | le cerveau (lit, écrit, rédige, route, alerte) | ta machine (`localhost:5678`) |
 | **ALPHA SALES OS (l'app)** | le tableau de bord (affiche, relit, envoie) | ta machine (`localhost:3000`) |
 | **Supabase** *(recommandé)* | la mémoire durable (tracking, sync) | cloud (gratuit) |
+
+> 🐳 **Voie rapide Docker** : si Docker Desktop est installé, l'app + n8n +
+> Ollama se lancent en une commande — voir [§ Docker](#docker--toute-la-pile-en-une-commande)
+> en bas. Les Phases 1 (Sheets), 2.2–2.3 (credentials + imports) et 4
+> (Supabase) restent identiques.
 
 ---
 
@@ -53,7 +58,7 @@
 
 ---
 
-## Phase 2 — Le cerveau : n8n local + les 5 workflows (20 min)
+## Phase 2 — Le cerveau : n8n local + les 6 workflows (25 min)
 
 ### 2.1 Lancer n8n
 
@@ -63,6 +68,7 @@ export ALPHA_APP_URL="http://localhost:3000"
 export ALPHA_WEBHOOK_SECRET="choisis-un-secret"     # le même ira dans l'app (Phase 3)
 export ALPHA_CRM_URL="URL_SHEETS"                    # Phase 1.7
 export ALPHA_CRM_TOKEN="TOKEN_SHEETS"                # Phase 1.6
+export ALPHA_ALERT_EMAIL="ton@email.fr"              # reçoit les alertes d'erreur
 npx n8n
 ```
 Ouvre `http://localhost:5678` → crée ton compte propriétaire local.
@@ -76,7 +82,7 @@ n8n → **Credentials → Add credential** :
 - **Ollama** — base URL `http://localhost:11434` (avoir fait `ollama pull qwen2.5:3b` avant). C'est l'IA des scripts, 100 % locale et gratuite.
 - *(Si Supabase, Phase 4)* **Supabase** — Host = URL du projet, clé **service_role**.
 
-### 2.3 Importer les 5 workflows (dans cet ordre)
+### 2.3 Importer les 6 workflows (dans cet ordre)
 
 Pour chacun : **Workflows → ⋯ → Import from File** → choisis le fichier dans
 [`integrations/n8n/`](../integrations/n8n/) → ouvre chaque nœud marqué et mappe :
@@ -88,6 +94,12 @@ Pour chacun : **Workflows → ⋯ → Import from File** → choisis le fichier 
 | 3 | `alpha-inbound.workflow.json` | Gmail trigger, Sheets (`SHEET_ID`) — le POST vers l'app lit `ALPHA_APP_URL`/`ALPHA_WEBHOOK_SECRET` | **Activer** |
 | 4 | `alpha-crm-sync.workflow.json` | Supabase (×2) + Sheets (`SHEET_ID`) — *saute-le si pas de Supabase pour l'instant* | **Activer** |
 | 5 | `alpha-crm-agent.workflow.json` | **Ollama** — les outils lisent `ALPHA_CRM_URL`/`ALPHA_CRM_TOKEN` | **Activer** |
+| 6 | `alpha-error-alert.workflow.json` | Gmail — le destinataire lit `ALPHA_ALERT_EMAIL` | **Save** (pas besoin d'activer) |
+
+**Puis branche l'alerte** : sur **chacun** des workflows 1 à 5, ouvre le
+workflow → menu `⋯` (haut droite) → **Settings → Error Workflow** →
+sélectionne « ALPHA SALES OS — Alerte erreur ». Dès qu'un workflow plante,
+tu reçois un email (nom, nœud, erreur, lien) au lieu d'une panne silencieuse.
 
 > ⚠ Piège n°1 : utiliser l'URL de **Test** du webhook. La bonne URL est celle de
 > **Production** : `http://localhost:5678/webhook/alpha` (sans `-test`).
@@ -193,6 +205,35 @@ Fais UN tour complet, comme au quotidien :
 **Règles non négociables** (la doctrine fait le reste) : démo avant prix ·
 jamais de prix par écrit avant la démo · chaque contact finit par un next step
 daté · on ne force JAMAIS un envoi non relu.
+
+---
+
+## Docker — toute la pile en une commande
+
+Alternative aux Phases 2.1 et 3 quand **Docker Desktop** est installé
+(l'app, n8n et Ollama tournent en conteneurs ; les Phases 1, 2.2–2.3 et 4
+ne changent pas) :
+
+1. À la racine du projet, crée un fichier `.env` (jamais commité) avec tes
+   secrets — mêmes noms que `.env.example` (`SMTP_*`, `WEBHOOK_SECRET`…),
+   plus ceux de n8n : `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN`, `ALPHA_ALERT_EMAIL`.
+2. Lance tout :
+   ```bash
+   docker compose up -d --build
+   docker compose exec ollama ollama pull qwen2.5:3b   # une fois — l'IA locale
+   ```
+3. App → `http://localhost:3000` · n8n → `http://localhost:5678` ·
+   Ollama → `http://localhost:11434`.
+
+**Deux différences à connaître en mode Docker** :
+- Dans la credential **Ollama** de n8n, la base URL est `http://ollama:11434`
+  (le nom du conteneur), pas `localhost`.
+- Les variables `ALPHA_*` de n8n sont déjà injectées par le compose
+  (`ALPHA_APP_URL` pointe sur `http://app:3000`) — pas d'`export` à faire.
+
+Mise à jour : `git pull` puis `docker compose up -d --build`.
+Arrêt : `docker compose down` (les données n8n/Ollama survivent dans les
+volumes ; `docker compose down -v` les efface — à éviter).
 
 ---
 

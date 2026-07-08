@@ -1,0 +1,83 @@
+# ── ALPHA SALES OS — la pile complète en une commande ────────────────
+#
+#   docker compose up -d --build
+#   docker compose exec ollama ollama pull qwen2.5:3b   # une fois (IA locale)
+#
+#   App    → http://localhost:3000
+#   n8n    → http://localhost:5678   (workflows : voir integrations/n8n/)
+#   Ollama → http://localhost:11434
+#
+# Réseau interne (entre conteneurs) :
+#   · l'app parle à Ollama via  http://ollama:11434
+#   · n8n parle à l'app via     http://app:3000       (ALPHA_APP_URL)
+#   · ton NAVIGATEUR parle à n8n via http://localhost:5678 (URL webhook
+#     à coller dans l'app : http://localhost:5678/webhook/alpha)
+#
+# Secrets : mets-les dans un fichier `.env` à côté de ce fichier (jamais
+# commité — voir .env.example pour la liste). Compose le charge tout seul.
+
+services:
+  app:
+    build: .
+    container_name: alpha-app
+    ports:
+      - "3000:3000"
+    environment:
+      # IA 100 % locale — le conteneur Ollama ci-dessous.
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      # Envoi email (SMTP) + identité
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      CLOSER_NAME: ${CLOSER_NAME:-EAGLEYE}
+      # Tracking & délivrabilité
+      TRACKING_BASE_URL: ${TRACKING_BASE_URL:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      MAX_SENDS_PER_HOUR: ${MAX_SENDS_PER_HOUR:-40}
+      CONTACT_COOLDOWN_DAYS: ${CONTACT_COOLDOWN_DAYS:-14}
+      TRACKING_WEBHOOK_URL: ${TRACKING_WEBHOOK_URL:-}
+      # Webhook entrant (doit matcher ALPHA_WEBHOOK_SECRET côté n8n)
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      # Supabase (persistance durable — optionnel)
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: alpha-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      GENERIC_TIMEZONE: Europe/Paris
+      TZ: Europe/Paris
+      # n8n sert en http sur localhost — sinon le login exige https.
+      N8N_SECURE_COOKIE: "false"
+      # Variables lues par les workflows ALPHA ($env.…)
+      ALPHA_APP_URL: http://app:3000
+      ALPHA_WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      ALPHA_CRM_URL: ${ALPHA_CRM_URL:-}
+      ALPHA_CRM_TOKEN: ${ALPHA_CRM_TOKEN:-}
+      ALPHA_ALERT_EMAIL: ${ALPHA_ALERT_EMAIL:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama
+    container_name: alpha-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  n8n_data:
+  ollama_data:

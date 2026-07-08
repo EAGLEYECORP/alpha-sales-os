@@ -49,6 +49,11 @@ dans des backends que tu contrôles (n8n, Supabase, ton SMTP).
 5. **n8n** derrière un tunnel/réseau authentifié ; active un secret partagé.
 6. **Dépendances** : `npm audit` + Dependabot ; mets à jour régulièrement.
 7. **PIN de verrouillage** pour les postes partagés (Réglages → Sécurité).
+8. **RGPD / prospection B2B (CNIL)** : le pied d'email intègre déjà l'origine
+   des données (sources publiques), le droit d'opposition (STOP) et les droits
+   d'accès/rectification/suppression. À toi de tenir le reste : traiter toute
+   demande d'effacement (purger Sheets + Supabase `tracking_messages` +
+   `crm_records`), et purger le tracking > 12 mois (politique de rétention).
 
 ## État d'audit (dernier passage complet)
 

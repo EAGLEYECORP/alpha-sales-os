@@ -142,9 +142,15 @@ export function renderEmail(opts: EmailOptions): string {
         <p class="muted" style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#9a8f80;">${esc(
           address
         )}</p>
-        <p class="muted" style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#9a8f80;">
+        <p class="muted" style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#9a8f80;">
           Vous recevez cet email car nous accompagnons les professionnels de votre secteur à Lyon.
+          Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels,
+          site web de votre entreprise).
+        </p>
+        <p class="muted" style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:#9a8f80;">
           Vous ne souhaitez plus être contacté ? Répondez simplement <strong style="color:#6b6355;">STOP</strong>.
+          Conformément au RGPD, vous pouvez aussi demander l&#8217;accès, la rectification ou la suppression
+          de vos données en répondant à cet email.
         </p>
       </td></tr>
     </table>
@@ -164,6 +170,7 @@ export function plainText(opts: EmailOptions): string {
   const lines = [opts.subject, "", opts.body.trim()];
   if (opts.ctaLabel && opts.ctaUrl) lines.push("", `${opts.ctaLabel} : ${opts.ctaUrl}`);
   lines.push("", `— ${opts.closerName || "EAGLEYE"}`, "", opts.addressLine || "EAGLEYE CORP — Lyon, France");
-  lines.push("Vous ne souhaitez plus être contacté ? Répondez STOP.");
+  lines.push("Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels, site web de votre entreprise).");
+  lines.push("Vous ne souhaitez plus être contacté ? Répondez STOP. Conformément au RGPD, vous pouvez aussi demander l'accès, la rectification ou la suppression de vos données en répondant à cet email.");
   return lines.join("\n");
 }

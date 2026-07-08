@@ -1,6 +1,6 @@
 # Backend n8n — le jeu de workflows complet
 
-Cinq workflows couvrent tout le cycle. Les colonnes/variables sont définies une
+Six workflows couvrent tout le cycle (5 opérationnels + 1 d'alerte). Les colonnes/variables sont définies une
 seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json), et
 **tous les prompts de l'agent (étape par étape, avec webhooks et checkpoints
 human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
@@ -12,6 +12,25 @@ human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
 | [`alpha-inbound.workflow.json`](./alpha-inbound.workflow.json) | **Réponses & STOP** : email entrant → STOP (marque désinscrit) ou → app `/api/webhooks/inbound` | Gmail Trigger |
 | [`alpha-crm-sync.workflow.json`](./alpha-crm-sync.workflow.json) | **Info critique** : Supabase `crm_records` (non synchronisés) → Google Sheets → flag | Cron (2 min) |
 | [`alpha-crm-agent.workflow.json`](./alpha-crm-agent.workflow.json) | Agent conversationnel (Claude + outils CRM) | Chat |
+| [`alpha-error-alert.workflow.json`](./alpha-error-alert.workflow.json) | **Alerte erreur** : n'importe quel workflow ALPHA échoue → email d'alerte (nom, nœud, erreur, lien) | Error Trigger |
+
+## Alerte erreur — jamais de panne silencieuse
+
+Si `alpha-crm-sync` plante un vendredi soir, tu ne veux pas le découvrir
+lundi. Le workflow d'alerte le transforme en email immédiat :
+
+1. **Import from File** → `alpha-error-alert.workflow.json`, choisis ta
+   credential Gmail, **Save** (pas besoin de l'activer — n8n déclenche les
+   Error Workflows automatiquement).
+2. Variable d'env au lancement de n8n :
+   `export ALPHA_ALERT_EMAIL="ton@email.fr"`.
+3. **À faire sur CHACUN des 5 autres workflows** : ouvre le workflow →
+   menu `⋯` (en haut à droite) → **Settings** → **Error Workflow** →
+   sélectionne « ALPHA SALES OS — Alerte erreur ». Sans cette étape, rien
+   ne se déclenche.
+
+Test : dans `alpha-crm-sync`, mets temporairement un mauvais Sheet ID,
+exécute → tu dois recevoir l'email d'alerte en moins d'une minute.
 
 ## Le flux complet
 
@@ -58,6 +77,7 @@ Config typique quand n8n tourne sur ta machine :
 
 - `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN` — pour l'agent (Web App Apps Script).
 - `ALPHA_APP_URL`, `ALPHA_WEBHOOK_SECRET` — pour `alpha-inbound` (POST vers l'app).
+- `ALPHA_ALERT_EMAIL` — pour `alpha-error-alert` (destinataire des alertes).
 - Credentials : Google Sheets, Gmail, Google Calendar, Supabase, Anthropic.
 
 > Tous les fichiers portent des `REMPLACE_MOI` (credentials) et

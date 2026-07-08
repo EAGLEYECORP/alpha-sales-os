@@ -250,6 +250,16 @@ npm run dev        # http://localhost:3000
 
 C'est tout. L'app démarre **sans aucune configuration** : données de démo lyonnaises, persistance localStorage, IA en mode templates Hormozi.
 
+**Ou toute la pile (app + n8n + Ollama) en une commande** avec Docker :
+
+```bash
+docker compose up -d --build
+docker compose exec ollama ollama pull qwen2.5:3b   # une fois — l'IA locale
+```
+
+Détails (credentials n8n, variables, mises à jour) :
+[`docs/INSTALLATION.md`](./docs/INSTALLATION.md) § Docker.
+
 ### Activer l'IA (locale gratuite, ou Claude)
 
 ```bash
