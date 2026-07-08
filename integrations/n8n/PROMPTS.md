@@ -200,7 +200,9 @@ suggérée — le closer voit *pourquoi* l'IA propose ce qu'elle propose.
 demande explicite « c'est quoi exactement votre truc ? ».
 
 **Entrées** : fiche + `besoins/peurs/douleurs` (étape 3) + catalogue interne
-`{offres}` (packages, partenaires, liens plaquette/contrat-type sur Drive).
+`{offres}` (packages, partenaires, liens plaquette/contrat-type sur Drive —
+le contrat-type est [`docs/CONTRAT-PRESTATION.md`](../../docs/CONTRAT-PRESTATION.md),
+à faire valider par un avocat puis exporter en PDF sur ton Drive).
 
 ```
 [SYSTÈME]

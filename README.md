@@ -240,6 +240,9 @@ Page **Agent ALPHA** : chat en streaming branché sur l'état réel complet (dea
 **Guide pas à pas complet** (pour installer, vérifier chaque phase, et former
 un employé à l'opérer) : [`docs/INSTALLATION.md`](./docs/INSTALLATION.md).
 Montée en volume : [`docs/RUNBOOK.md`](./docs/RUNBOOK.md).
+Contrat-type (setup + 30 % à vie, clauses anti-contournement & audit) :
+[`docs/CONTRAT-PRESTATION.md`](./docs/CONTRAT-PRESTATION.md) — à faire valider
+par un avocat.
 
 ## Lancer en local
 

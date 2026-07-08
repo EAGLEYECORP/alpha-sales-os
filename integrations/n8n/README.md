@@ -1,6 +1,6 @@
 # Backend n8n — le jeu de workflows complet
 
-Six workflows couvrent tout le cycle (5 opérationnels + 1 d'alerte). Les colonnes/variables sont définies une
+Sept workflows couvrent tout le cycle (5 opérationnels + sourcing + alerte). Les colonnes/variables sont définies une
 seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json), et
 **tous les prompts de l'agent (étape par étape, avec webhooks et checkpoints
 human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
@@ -12,7 +12,38 @@ human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
 | [`alpha-inbound.workflow.json`](./alpha-inbound.workflow.json) | **Réponses & STOP** : email entrant → STOP (marque désinscrit) ou → app `/api/webhooks/inbound` | Gmail Trigger |
 | [`alpha-crm-sync.workflow.json`](./alpha-crm-sync.workflow.json) | **Info critique** : Supabase `crm_records` (non synchronisés) → Google Sheets → flag | Cron (2 min) |
 | [`alpha-crm-agent.workflow.json`](./alpha-crm-agent.workflow.json) | Agent conversationnel (Claude + outils CRM) | Chat |
+| [`alpha-sourcing.workflow.json`](./alpha-sourcing.workflow.json) | **Sourcing (refill)** : secteur + ville → Google Places → Pappers (SIREN) → Apollo (email dirigeant) → dédup → CRM | Formulaire n8n |
 | [`alpha-error-alert.workflow.json`](./alpha-error-alert.workflow.json) | **Alerte erreur** : n'importe quel workflow ALPHA échoue → email d'alerte (nom, nœud, erreur, lien) | Error Trigger |
+
+## Sourcing — remplir le haut du pipeline
+
+Le refill après chaque STOP (et la croissance tout court) : le formulaire
+n8n (`http://localhost:5678/form/alpha-sourcing` une fois le workflow
+**activé**) demande **Secteur + Ville + Nombre**, puis :
+
+1. **Google Places** trouve les entreprises (nom, note, nb d'avis, tél,
+   site) — clé requise : `GOOGLE_PLACES_KEY`
+   ([console.cloud.google.com](https://console.cloud.google.com) → activer
+   *Places API (New)*).
+2. **Pappers** ajoute le SIREN + forme juridique — `PAPPERS_TOKEN`
+   ([pappers.fr/api](https://www.pappers.fr/api), gratuit jusqu'à un quota).
+   *Optionnel : sans clé, l'étape passe.*
+3. **Apollo** cherche l'email direct du dirigeant (owner/founder/C-suite) —
+   `APOLLO_API_KEY` ([apollo.io](https://www.apollo.io), payant).
+   *Optionnel : sans clé, le prospect arrive sans email direct (tu passeras
+   par le formulaire de contact du site).*
+4. **Dédup** contre le CRM existant (nom + email, insensible à la casse) —
+   relancer le formulaire ne crée jamais de doublon.
+5. Ajout dans le Sheet en étape `prospect`, avec `history` horodaté
+   (`Sourcing auto — Maps+Pappers+Apollo (secteur)`).
+
+Multi-secteurs par design : le champ **Secteur** devient la colonne `type`
+du CRM — les stats par industrie de l'app s'alimentent toutes seules.
+
+> À l'échelle : garde le rythme d'ajout aligné sur ta capacité d'envoi
+> (`MAX_SENDS_PER_HOUR`) et vérifie les emails avant envoi (les bounces
+> détruisent la réputation SMTP plus vite que les plaintes spam) — voir
+> RUNBOOK checkpoint 1 000.
 
 ## Alerte erreur — jamais de panne silencieuse
 
@@ -78,6 +109,8 @@ Config typique quand n8n tourne sur ta machine :
 - `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN` — pour l'agent (Web App Apps Script).
 - `ALPHA_APP_URL`, `ALPHA_WEBHOOK_SECRET` — pour `alpha-inbound` (POST vers l'app).
 - `ALPHA_ALERT_EMAIL` — pour `alpha-error-alert` (destinataire des alertes).
+- `GOOGLE_PLACES_KEY` (requis), `PAPPERS_TOKEN`, `APOLLO_API_KEY` (optionnels)
+  — pour `alpha-sourcing`.
 - Credentials : Google Sheets, Gmail, Google Calendar, Supabase, Anthropic.
 
 > Tous les fichiers portent des `REMPLACE_MOI` (credentials) et

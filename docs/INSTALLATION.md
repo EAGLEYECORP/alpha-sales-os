@@ -10,7 +10,7 @@
 | Brique | Rôle | Où ça tourne |
 |---|---|---|
 | **Google Sheets + Apps Script** | la mémoire (le CRM que l'humain voit) | Google |
-| **n8n + 6 workflows** | le cerveau (lit, écrit, rédige, route, alerte) | ta machine (`localhost:5678`) |
+| **n8n + 7 workflows** | le cerveau (lit, écrit, rédige, route, source, alerte) | ta machine (`localhost:5678`) |
 | **ALPHA SALES OS (l'app)** | le tableau de bord (affiche, relit, envoie) | ta machine (`localhost:3000`) |
 | **Supabase** *(recommandé)* | la mémoire durable (tracking, sync) | cloud (gratuit) |
 
@@ -58,7 +58,7 @@
 
 ---
 
-## Phase 2 — Le cerveau : n8n local + les 6 workflows (25 min)
+## Phase 2 — Le cerveau : n8n local + les 7 workflows (25 min)
 
 ### 2.1 Lancer n8n
 
@@ -69,6 +69,8 @@ export ALPHA_WEBHOOK_SECRET="choisis-un-secret"     # le même ira dans l'app (P
 export ALPHA_CRM_URL="URL_SHEETS"                    # Phase 1.7
 export ALPHA_CRM_TOKEN="TOKEN_SHEETS"                # Phase 1.6
 export ALPHA_ALERT_EMAIL="ton@email.fr"              # reçoit les alertes d'erreur
+export GOOGLE_PLACES_KEY="…"                         # sourcing (Places API New)
+export PAPPERS_TOKEN="…"  APOLLO_API_KEY="…"          # sourcing (optionnels)
 npx n8n
 ```
 Ouvre `http://localhost:5678` → crée ton compte propriétaire local.
@@ -82,7 +84,7 @@ n8n → **Credentials → Add credential** :
 - **Ollama** — base URL `http://localhost:11434` (avoir fait `ollama pull qwen2.5:3b` avant). C'est l'IA des scripts, 100 % locale et gratuite.
 - *(Si Supabase, Phase 4)* **Supabase** — Host = URL du projet, clé **service_role**.
 
-### 2.3 Importer les 6 workflows (dans cet ordre)
+### 2.3 Importer les 7 workflows (dans cet ordre)
 
 Pour chacun : **Workflows → ⋯ → Import from File** → choisis le fichier dans
 [`integrations/n8n/`](../integrations/n8n/) → ouvre chaque nœud marqué et mappe :
@@ -94,9 +96,10 @@ Pour chacun : **Workflows → ⋯ → Import from File** → choisis le fichier 
 | 3 | `alpha-inbound.workflow.json` | Gmail trigger, Sheets (`SHEET_ID`) — le POST vers l'app lit `ALPHA_APP_URL`/`ALPHA_WEBHOOK_SECRET` | **Activer** |
 | 4 | `alpha-crm-sync.workflow.json` | Supabase (×2) + Sheets (`SHEET_ID`) — *saute-le si pas de Supabase pour l'instant* | **Activer** |
 | 5 | `alpha-crm-agent.workflow.json` | **Ollama** — les outils lisent `ALPHA_CRM_URL`/`ALPHA_CRM_TOKEN` | **Activer** |
-| 6 | `alpha-error-alert.workflow.json` | Gmail — le destinataire lit `ALPHA_ALERT_EMAIL` | **Save** (pas besoin d'activer) |
+| 6 | `alpha-sourcing.workflow.json` | Sheets ×2 (`SHEET_ID`) — Places/Pappers/Apollo lisent `GOOGLE_PLACES_KEY`/`PAPPERS_TOKEN`/`APOLLO_API_KEY` | **Activer** → formulaire sur `http://localhost:5678/form/alpha-sourcing` |
+| 7 | `alpha-error-alert.workflow.json` | Gmail — le destinataire lit `ALPHA_ALERT_EMAIL` | **Save** (pas besoin d'activer) |
 
-**Puis branche l'alerte** : sur **chacun** des workflows 1 à 5, ouvre le
+**Puis branche l'alerte** : sur **chacun** des workflows 1 à 6, ouvre le
 workflow → menu `⋯` (haut droite) → **Settings → Error Workflow** →
 sélectionne « ALPHA SALES OS — Alerte erreur ». Dès qu'un workflow plante,
 tu reçois un email (nom, nœud, erreur, lien) au lieu d'une panne silencieuse.
@@ -216,7 +219,8 @@ ne changent pas) :
 
 1. À la racine du projet, crée un fichier `.env` (jamais commité) avec tes
    secrets — mêmes noms que `.env.example` (`SMTP_*`, `WEBHOOK_SECRET`…),
-   plus ceux de n8n : `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN`, `ALPHA_ALERT_EMAIL`.
+   plus ceux de n8n : `ALPHA_CRM_URL`, `ALPHA_CRM_TOKEN`, `ALPHA_ALERT_EMAIL`,
+   et le sourcing : `GOOGLE_PLACES_KEY` (+ `PAPPERS_TOKEN`, `APOLLO_API_KEY`).
 2. Lance tout :
    ```bash
    docker compose up -d --build
