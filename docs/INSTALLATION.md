@@ -174,7 +174,14 @@ apparaît, et ≤ 2 min plus tard elle est dans le Google Sheets
 
 ## Phase 5 — Recette finale : la boucle complète (10 min)
 
-Fais UN tour complet, comme au quotidien :
+**Le plus simple : la page Recette dans l'app** (menu latéral → **Recette**,
+ou le bouton « Lancer la recette guidée » à la fin de l'assistant). Elle
+envoie un email de test vers une adresse à toi (⚠️ différente de la boîte
+d'envoi) et **détecte toute seule, en direct**, l'ouverture, le clic, la
+réponse entrante et le STOP — voyant par voyant, avec le diagnostic à chaque
+blocage. Tout vert = **GOOD TO GO**.
+
+La même recette, à la main, si tu préfères comprendre chaque geste :
 
 1. **Campagnes → Réviser & envoyer** sur une campagne → des brouillons
    apparaissent → ouvre un **Aperçu HTML** → **Approuve** un email de test

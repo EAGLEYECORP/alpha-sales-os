@@ -536,6 +536,16 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                   <StatusRow ok={Boolean(c?.email.configured)} label="Envoi email (SMTP)" hint="étape 6 — « Vérifier l'état du serveur »" optional />
                   <StatusRow ok={sbLinked} label="Supabase (mémoire durable)" hint="étape 7" optional />
                 </ul>
+                <a
+                  href="/recette"
+                  className="btn-bronze mt-4 flex w-full items-center justify-center gap-2"
+                  onClick={finish}
+                >
+                  Lancer la recette guidée — prouver la boucle en live →
+                </a>
+                <p className="mt-1.5 text-center text-[11px] text-paper-faint">
+                  Envoi réel vers une adresse test : ouverture, clic, réponse et STOP se vérifient tout seuls.
+                </p>
                 <div className="mt-4 rounded-lg border border-ink-700 bg-ink-850 p-4 text-left text-[12px] text-paper-dim">
                   <p className="font-medium text-paper">Vos 3 premiers gestes :</p>
                   <ul className="mt-2 space-y-1 text-paper-faint">

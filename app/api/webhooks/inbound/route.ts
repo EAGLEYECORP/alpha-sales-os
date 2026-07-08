@@ -32,6 +32,20 @@ function serviceClient() {
 
 const VALID_TYPES = new Set(["email.reply", "email.open", "whatsapp.reply", "form.submit", "autre"]);
 
+/**
+ * Lecture/ack des événements : réservé à l'UI de l'app (navigateur même
+ * origine) ou à un appelant qui connaît le secret. Sans ce verrou, un
+ * déploiement public (Vercel/tunnel) laisserait n'importe qui LIRE les
+ * réponses des prospects via GET. Le POST, lui, reste ouvert cross-origin
+ * (fournisseurs/n8n) car déjà protégé par le secret.
+ */
+function canReadEvents(request: NextRequest): boolean {
+  const secret = process.env.WEBHOOK_SECRET;
+  const provided = request.headers.get("x-webhook-secret") ?? request.nextUrl.searchParams.get("secret");
+  if (secret && provided === secret) return true;
+  return request.headers.get("sec-fetch-site") === "same-origin";
+}
+
 export async function POST(request: NextRequest) {
   const secret = process.env.WEBHOOK_SECRET;
   if (!secret)
@@ -82,7 +96,10 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ ok: true, id: ev.id });
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!canReadEvents(request)) {
+    return NextResponse.json({ error: "lecture réservée à l'app (même origine) ou au porteur du secret" }, { status: 401 });
+  }
   const sb = serviceClient();
   if (sb) {
     const { data, error } = await sb
@@ -111,6 +128,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!canReadEvents(request)) {
+    return NextResponse.json({ error: "ack réservé à l'app (même origine) ou au porteur du secret" }, { status: 401 });
+  }
   let ids: string[];
   try {
     const body = await request.json();

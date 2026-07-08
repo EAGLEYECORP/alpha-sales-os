@@ -25,6 +25,7 @@ dans des backends que tu contrôles (n8n, Supabase, ton SMTP).
 | **Détournement de session (verrou local)** | ✅ | Verrou PIN optionnel (SHA-256, jamais en clair) ; auth réelle par lien magique Supabase + RLS en mode équipe. |
 | **Supply chain** | ⚠️ | Dépendances épinglées (`package-lock.json`) ; `npm audit` recommandé en CI ; aucune dépendance CDN exécutée au runtime hormis les polices Google (self-hostables). |
 | **Exfiltration via webhook n8n** | ⚠️ | Le lien n8n est saisi par l'utilisateur (même appareil) ; secret partagé optionnel (`x-alpha-secret`) ; garde n8n derrière ton réseau. |
+| **Lecture publique des réponses prospects** | ✅ | `GET/PATCH /api/webhooks/inbound` exigent le navigateur **même-origine** (l'UI) ou `x-webhook-secret` — un déploiement public (Vercel/tunnel) n'expose pas les réponses en lecture. Le `POST` reste ouvert cross-origin, protégé par le secret (son rôle). |
 
 ## En-têtes de sécurité (next.config.ts + middleware)
 

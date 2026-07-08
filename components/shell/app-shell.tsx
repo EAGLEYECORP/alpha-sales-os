@@ -9,6 +9,7 @@ import {
   BarChart3,
   Bot,
   CalendarDays,
+  ClipboardCheck,
   Gauge,
   Kanban,
   Mail,
@@ -43,6 +44,7 @@ const NAV = [
   { href: "/nurture", label: "Relances", icon: Sprout },
   { href: "/intel", label: "Concurrents", icon: Swords },
   { href: "/activity", label: "Activité", icon: Activity },
+  { href: "/recette", label: "Recette", icon: ClipboardCheck },
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
