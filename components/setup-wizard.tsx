@@ -585,7 +585,8 @@ function Li({ n, title, children }: { n: number; title: string; children: React.
       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-bronze-700 bg-ink-900 font-mono text-[11px] text-bronze-400">{n}</span>
       <div className="min-w-0">
         <p className="text-sm font-medium text-paper">{title}</p>
-        <p className="text-[12px] text-paper-dim">{children}</p>
+        {/* div, pas p : le contenu peut contenir <pre> / <table> (interdits dans un p) */}
+        <div className="text-[12px] text-paper-dim">{children}</div>
       </div>
     </li>
   );
