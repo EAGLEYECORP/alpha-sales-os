@@ -32,7 +32,11 @@ interface Item {
   optional?: boolean;
 }
 
-const ENV_TEMPLATE = `# ── IA (optionnel — sinon moteur templates Hormozi hors-ligne) ──
+export const ENV_TEMPLATE = `# ── IA (optionnel — sinon moteur templates Hormozi hors-ligne) ──
+# Option 1 (recommandé, 100 % local, gratuit) : ollama pull qwen2.5:3b
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:3b
+# Option 2 (cloud) — Ollama prioritaire si les deux sont remplis :
 ANTHROPIC_API_KEY=
 AI_MODEL=claude-opus-4-8
 
