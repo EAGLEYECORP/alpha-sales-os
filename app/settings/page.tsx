@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Cable, Cloud, CloudOff, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, PlugZap, Plus, RefreshCw, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Wand2, Webhook } from "lucide-react";
+import { Cable, Cloud, CloudOff, Compass, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, PlugZap, Plus, RefreshCw, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Wand2, Webhook } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import {
   pushSnapshot,
@@ -17,6 +17,7 @@ import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
 import { SystemStatus } from "@/components/settings/system-status";
 import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { openSetupWizard } from "@/components/setup-wizard";
+import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
 
 export default function SettingsPage() {
@@ -242,9 +243,14 @@ export default function SettingsPage() {
                 {n8nConnected ? "connecté" : "non connecté"}
               </span>
             </h2>
-            <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={openSetupWizard}>
-              <Wand2 size={13} /> Relancer l&apos;assistant
-            </button>
+            <div className="flex gap-2">
+              <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={openSetupWizard}>
+                <Wand2 size={13} /> Relancer l&apos;assistant
+              </button>
+              <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={openOperatorTour}>
+                <Compass size={13} /> Visite guidée
+              </button>
+            </div>
           </div>
           <p className="mt-1 text-[11px] text-paper-faint">
             L&apos;app est un <strong className="text-paper-dim">tableau de bord</strong> : la mémoire et les automatisations vivent dans n8n.
