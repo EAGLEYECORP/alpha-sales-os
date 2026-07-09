@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Download, ExternalLink, Gift, Import, Loader2, Sparkles, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Circle, Download, ExternalLink, Gift, GraduationCap, Import, Loader2, Sparkles, X } from "lucide-react";
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
 import { renderAuditDoc } from "@/lib/audit-doc";
-import { uid } from "@/lib/utils";
+import { cn, uid } from "@/lib/utils";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -67,12 +67,35 @@ function researchAttachment(research: string): Prospect["attachments"][number] {
   };
 }
 
+const COACH_KEY = "alpha_deepdive_coached";
+
 export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, patch: Partial<Prospect>) => void }) {
   const { settings } = useAlpha();
   const [research, setResearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [extracted, setExtracted] = useState<Extracted | null>(null);
+  const [coach, setCoach] = useState(false);
+  const [appliedOnce, setAppliedOnce] = useState(false);
+  const [giftOpened, setGiftOpened] = useState(false);
+
+  // La visite du deep-dive s'ouvre UNE fois (premier prospect travaillé).
+  useEffect(() => {
+    try {
+      if (!window.localStorage.getItem(COACH_KEY)) setCoach(true);
+    } catch {
+      /* stockage indispo → pas d'auto-ouverture */
+    }
+  }, []);
+
+  const closeCoach = () => {
+    setCoach(false);
+    try {
+      window.localStorage.setItem(COACH_KEY, new Date().toISOString());
+    } catch {
+      /* ignore */
+    }
+  };
 
   const runExtract = async () => {
     setBusy(true);
@@ -137,6 +160,7 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
     });
     setExtracted(null);
     setResearch("");
+    setAppliedOnce(true);
     setMsg("✓ Fiche mise à jour — la source est conservée en pièce jointe. Vérifie la Taxe d'Ignorance.");
   };
 
@@ -154,6 +178,7 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
     if (!w) return;
     w.document.write(renderAuditDoc(p, settings.closerName));
     w.document.close();
+    setGiftOpened(true);
   };
 
   const downloadGift = () => {
@@ -163,10 +188,70 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
     a.download = `audit-${p.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`;
     a.click();
     URL.revokeObjectURL(a.href);
+    setGiftOpened(true);
   };
+
+  // Progression de la visite (dérivée de l'état réel).
+  const steps: { label: string; done: boolean; hint: string }[] = [
+    { label: "Coller la recherche", done: research.trim().length >= 40 || appliedOnce || extracted !== null, hint: "Perplexity, ChatGPT ou tes notes — dans la zone ci-dessous." },
+    { label: "Structurer avec l'IA", done: extracted !== null || appliedOnce, hint: "L'IA transforme le texte en champs de fiche." },
+    { label: "Relire les champs", done: appliedOnce, hint: "Rien ne s'écrit sans ton clic — vérifie avant d'appliquer." },
+    { label: "Appliquer à la fiche", done: appliedOnce, hint: "Taxe recalculée, source jointe, saisies manuelles préservées." },
+    { label: "Générer l'audit cadeau", done: giftOpened, hint: "« Aperçu » ou « Télécharger » — le document brandé à offrir." },
+    { label: "Joindre au 1er email", done: false, hint: "Onglet Templates → 1er email → coche « Audit cadeau »." },
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
 
   return (
     <section className="card p-4 lg:col-span-2">
+      {/* Visite guidée du deep-dive (premier prospect) */}
+      {coach ? (
+        <div className="mb-4 rounded-xl border border-bronze-700/60 bg-bronze-900/10 p-3.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <GraduationCap size={16} className="text-bronze-400" />
+              <div>
+                <p className="font-display text-[13px] font-bold text-paper">Ton premier deep-dive — le guide</p>
+                <p className="text-[11px] text-paper-faint">Le ciblage commence par la connaissance. Suis les 6 étapes, {doneCount}/6 faites.</p>
+              </div>
+            </div>
+            <button className="grid h-6 w-6 place-items-center rounded-full text-paper-faint hover:bg-ink-800 hover:text-paper" onClick={closeCoach} aria-label="Fermer le guide">
+              <X size={13} />
+            </button>
+          </div>
+          <ol className="mt-2.5 grid gap-1.5 sm:grid-cols-2">
+            {steps.map((s, i) => (
+              <li key={s.label} className="flex items-start gap-2">
+                {s.done ? (
+                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-signal-green" />
+                ) : (
+                  <Circle size={15} className="mt-0.5 shrink-0 text-paper-faint" />
+                )}
+                <div className="min-w-0">
+                  <p className={cn("text-[12.5px]", s.done ? "text-paper-dim line-through" : "text-paper")}>
+                    {i + 1}. {s.label}
+                  </p>
+                  {!s.done && <p className="text-[10.5px] text-paper-faint">{s.hint}</p>}
+                </div>
+              </li>
+            ))}
+          </ol>
+          {doneCount >= 5 && (
+            <p className="mt-2.5 rounded-lg border border-signal-green/40 bg-signal-green/5 px-2.5 py-1.5 text-[11.5px] text-signal-green">
+              Bravo — tu tiens la méthode. Dernier réflexe : joins l&apos;audit cadeau à ton 1er email (onglet Templates), puis
+              <button className="ml-1 underline underline-offset-2" onClick={closeCoach}>termine le guide</button>.
+            </p>
+          )}
+        </div>
+      ) : (
+        <button
+          className="mb-3 flex items-center gap-1.5 text-[11px] text-paper-faint underline-offset-2 hover:text-bronze-400 hover:underline"
+          onClick={() => setCoach(true)}
+        >
+          <GraduationCap size={12} /> Revoir le guide du deep-dive
+        </button>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
           <Import size={15} className="text-bronze-400" /> Importer une recherche

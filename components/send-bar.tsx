@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { Check, Gift, Mail, MessageCircle, Smartphone } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
+import { renderAuditDoc } from "@/lib/audit-doc";
+import { auditDepth } from "@/lib/milestones";
+import { cn } from "@/lib/utils";
 
 /** 06 12 34 56 78 → 33612345678 (format wa.me / SMS international) */
 export function toIntlPhone(phone: string): string {
@@ -25,16 +28,22 @@ export function SendBar({
   subject,
   body,
   compact,
+  offerAudit,
 }: {
   prospect: Prospect;
   subject: string;
   body: string;
   compact?: boolean;
+  /** Propose de joindre l'audit cadeau (email de première impression). */
+  offerAudit?: boolean;
 }) {
-  const { addEvent, logActivity } = useAlpha();
+  const { addEvent, logActivity, settings } = useAlpha();
   const [caps, setCaps] = useState(capsCache);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+  const [attachAudit, setAttachAudit] = useState(false);
+  // On ne propose l'audit que s'il a assez de matière (≥ 40 % de profondeur).
+  const auditReady = auditDepth(prospect).score >= 40;
 
   useEffect(() => {
     if (capsCache) return;
@@ -60,6 +69,16 @@ export function SendBar({
     setStatus("sending");
     setError("");
     try {
+      const attachments =
+        channel === "email" && attachAudit && auditReady
+          ? [
+              {
+                filename: `audit-${prospect.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`,
+                contentBase64: btoa(unescape(encodeURIComponent(renderAuditDoc(prospect, settings.closerName)))),
+                contentType: "text/html; charset=utf-8",
+              },
+            ]
+          : undefined;
       const res = await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,6 +88,7 @@ export function SendBar({
           subject,
           body,
           prospectId: prospect.id,
+          attachments,
         }),
       });
       const data = await res.json();
@@ -96,6 +116,29 @@ export function SendBar({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      {offerAudit && prospect.email && caps?.email && (
+        <label
+          className={cn(
+            "flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11.5px]",
+            attachAudit ? "border-bronze-600 text-bronze-300" : "border-ink-600 text-paper-faint",
+            !auditReady && "cursor-not-allowed opacity-50"
+          )}
+          title={
+            auditReady
+              ? "Joindre l'audit cadeau (HTML brandé, ouvrable → imprimable PDF). Note : une pièce jointe sur un 1er email froid peut peser sur la délivrabilité — à réserver aux prospects tièdes / étape awareness."
+              : "Complète le deep-dive (onglet Audit) pour générer un audit cadeau digne d'être offert."
+          }
+        >
+          <input
+            type="checkbox"
+            className="accent-bronze-500"
+            checked={attachAudit}
+            disabled={!auditReady}
+            onChange={(e) => setAttachAudit(e.target.checked)}
+          />
+          <Gift size={12} /> Audit cadeau
+        </label>
+      )}
       {prospect.email && (
         <button
           className={btn}

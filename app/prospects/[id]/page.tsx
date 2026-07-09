@@ -1276,7 +1276,7 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
             <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => navigator.clipboard.writeText(t.body)}>
               Copier
             </button>
-            <SendBar prospect={p} subject={t.subject} body={t.body} compact />
+            <SendBar prospect={p} subject={t.subject} body={t.body} compact offerAudit={i === 0} />
           </div>
         </div>
       ))}

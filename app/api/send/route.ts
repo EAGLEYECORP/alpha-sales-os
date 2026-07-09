@@ -34,6 +34,19 @@ interface SendRequest {
   ctaUrl?: string;
   /** Forcer l'envoi malgré un score anti-spam élevé. */
   force?: boolean;
+  /** Pièces jointes (ex. audit cadeau). Contenu en base64. */
+  attachments?: { filename: string; contentBase64: string; contentType?: string }[];
+}
+
+/** Borne les pièces jointes : ≤ 3 fichiers, ≤ 400 Ko chacun (décodé). */
+function safeAttachments(atts: SendRequest["attachments"]) {
+  if (!Array.isArray(atts) || atts.length === 0) return [];
+  return atts.slice(0, 3).flatMap((a) => {
+    if (!a?.filename || !a?.contentBase64) return [];
+    const content = Buffer.from(a.contentBase64, "base64");
+    if (content.length === 0 || content.length > 400_000) return [];
+    return [{ filename: a.filename.slice(0, 120), content, contentType: a.contentType || undefined }];
+  });
 }
 
 /** Compte les liens de contenu uniques (hors désinscription). */
@@ -64,8 +77,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   // Garde-fou taille : borne les charges utiles (anti-abus mémoire).
+  // Marge pour d'éventuelles pièces jointes en base64 (audit cadeau ≈ 6 Ko).
   const len = Number(request.headers.get("content-length") ?? 0);
-  if (len > 200_000) {
+  if (len > 1_500_000) {
     return NextResponse.json({ error: "Charge utile trop volumineuse." }, { status: 413 });
   }
   let body: SendRequest;
@@ -163,6 +177,7 @@ export async function POST(request: NextRequest) {
         text,
         html: trackedHtml,
         headers: deliverabilityHeaders(stopMailto),
+        attachments: safeAttachments(body.attachments),
       });
       return NextResponse.json({ ok: true, id: info.messageId, trackingId, lint });
     } catch (e) {
