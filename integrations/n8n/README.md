@@ -1,6 +1,6 @@
 # Backend n8n — le jeu de workflows complet
 
-Neuf workflows couvrent tout le cycle (5 opérationnels + deep-dive + sourcing + tracking + alerte). Les colonnes/variables sont définies une
+Onze workflows couvrent tout le cycle (5 opérationnels + deep-dive + sourcing + tracking + signature + paiement + alerte). Les colonnes/variables sont définies une
 seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json), et
 **tous les prompts de l'agent (étape par étape, avec webhooks et checkpoints
 human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
@@ -15,6 +15,8 @@ human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
 | [`alpha-deepdive.workflow.json`](./alpha-deepdive.workflow.json) | **Deep-dive** : recherche externe collée (Perplexity…) → IA structure → colonnes audit du CRM | Formulaire n8n |
 | [`alpha-sourcing.workflow.json`](./alpha-sourcing.workflow.json) | **Sourcing (refill)** : secteur + ville → Google Places → Pappers (SIREN) → Apollo (email dirigeant) → dédup → CRM | Formulaire n8n |
 | [`alpha-tracking-sync.workflow.json`](./alpha-tracking-sync.workflow.json) | **Tracking → CRM** : Supabase `tracking_messages` → colonnes délivré/ouvertures/clics du Sheet (clé = email). Remplace `TRACKING_WEBHOOK_URL` quand n8n est local et le tracking sur Vercel | Cron (10 min) |
+| [`alpha-signature.workflow.json`](./alpha-signature.workflow.json) | **W10 — Signature** (Documenso, open-source) : contrat complété → History CRM + notification app. Le passage à « signé » reste humain (gate doctrine) | Webhook Documenso |
+| [`alpha-payment.workflow.json`](./alpha-payment.workflow.json) | **W11 — Paiement** (Stripe) : checkout/facture payée → History CRM + notification app. La saisie du paiement reste humaine | Stripe Trigger |
 | [`alpha-error-alert.workflow.json`](./alpha-error-alert.workflow.json) | **Alerte erreur** : n'importe quel workflow ALPHA échoue → email d'alerte (nom, nœud, erreur, lien) | Error Trigger |
 
 ## Sourcing — remplir le haut du pipeline
@@ -113,6 +115,35 @@ Config typique quand n8n tourne sur ta machine :
 - `ALPHA_ALERT_EMAIL` — pour `alpha-error-alert` (destinataire des alertes).
 - `GOOGLE_PLACES_KEY` (requis), `PAPPERS_TOKEN`, `APOLLO_API_KEY` (optionnels)
   — pour `alpha-sourcing`.
+- `ALPHA_DOCUMENSO_SECRET` — pour `alpha-signature` (doit matcher le secret
+  configuré dans Documenso → Settings → Webhooks). Stripe passe par une
+  **credential** n8n (clé secrète), pas une variable d'env.
+
+## W10/W11 — signature & paiement (mise en route)
+
+**Documenso** (docs.documenso.com — alternative open-source à DocuSign,
+auto-hébergeable ou cloud) :
+1. Importe `alpha-signature.workflow.json`, **active-le**, copie l'URL de
+   Production du webhook (`…/webhook/alpha-signature`).
+2. Documenso → Settings → **Webhooks** → Add : colle l'URL, événement
+   **document.completed**, secret = la valeur de `ALPHA_DOCUMENSO_SECRET`.
+3. Envoie tes contrats à signer depuis Documenso (le contrat-type :
+   `docs/CONTRAT-PRESTATION.md`, validé par avocat, exporté en PDF).
+4. À la signature : History du CRM + notification dans **Réponses
+   entrantes** → TU passes le deal en « Signé » dans l'app (gate doctrine).
+
+**Stripe** :
+1. Importe `alpha-payment.workflow.json`, crée la credential **Stripe**
+   (clé secrète `sk_…`), **active** — le nœud Stripe Trigger enregistre
+   le webhook chez Stripe et vérifie la signature tout seul.
+2. Encaisse via Payment Links / Checkout. À chaque paiement : History du
+   CRM + notification dans Réponses entrantes → TU enregistres le
+   paiement sur la fiche (Commercial → Paiements).
+
+> ⚠ Ces deux webhooks doivent être joignables par Documenso/Stripe : si
+> n8n est local, expose UNIQUEMENT ces deux chemins via un tunnel
+> (`cloudflared tunnel --url http://localhost:5678`) ou attends le
+> déploiement. Le reste de n8n n'a jamais besoin d'être public.
 - Credentials : Google Sheets, Gmail, Google Calendar, Supabase, Anthropic.
 
 > Tous les fichiers portent des `REMPLACE_MOI` (credentials) et

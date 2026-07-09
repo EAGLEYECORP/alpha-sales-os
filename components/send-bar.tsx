@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Gift, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { Check, Gift, Linkedin, Mail, MessageCircle, Smartphone } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
 import { renderAuditDoc } from "@/lib/audit-doc";
 import { auditDepth } from "@/lib/milestones";
+import { linkedinUrl, linkedinTouchesToday, LINKEDIN_DAILY_SAFE } from "@/lib/linkedin";
 import { cn } from "@/lib/utils";
 
 /** 06 12 34 56 78 → 33612345678 (format wa.me / SMS international) */
@@ -37,13 +38,17 @@ export function SendBar({
   /** Propose de joindre l'audit cadeau (email de première impression). */
   offerAudit?: boolean;
 }) {
-  const { addEvent, logActivity, settings } = useAlpha();
+  const { addEvent, logActivity, settings, prospects } = useAlpha();
   const [caps, setCaps] = useState(capsCache);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
   const [attachAudit, setAttachAudit] = useState(false);
+  const [liCopied, setLiCopied] = useState(false);
   // On ne propose l'audit que s'il a assez de matière (≥ 40 % de profondeur).
   const auditReady = auditDepth(prospect).score >= 40;
+  // Quota LinkedIn du jour (anti-restriction) — le multi-canal permet le volume.
+  const liToday = linkedinTouchesToday(prospects);
+  const liOver = liToday >= LINKEDIN_DAILY_SAFE;
 
   useEffect(() => {
     if (capsCache) return;
@@ -112,6 +117,26 @@ export function SendBar({
     log("whatsapp", "WhatsApp");
   };
 
+  // LinkedIn assisté : copie le message, ouvre le profil (ou la recherche),
+  // journalise la touche. LinkedIn n'accepte pas de message pré-rempli par
+  // URL → le presse-papier fait le pont : tu colles, tu envoies.
+  const openLinkedIn = () => {
+    try {
+      void navigator.clipboard.writeText(body);
+    } catch {
+      /* clipboard indisponible → l'utilisateur copiera depuis le template */
+    }
+    window.open(linkedinUrl(prospect), "_blank");
+    setLiCopied(true);
+    setTimeout(() => setLiCopied(false), 3000);
+    addEvent(prospect.id, {
+      date: new Date().toISOString(),
+      kind: "linkedin",
+      summary: `→ Touche LinkedIn (message copié) : ${body.slice(0, 80)}`,
+    });
+    logActivity({ kind: "campagne", message: `LinkedIn ouvert pour ${prospect.company} (message copié)`, prospectId: prospect.id });
+  };
+
   const btn = compact ? "btn-ghost px-2.5 py-1.5 text-[12px]" : "btn-ghost";
 
   return (
@@ -160,8 +185,22 @@ export function SendBar({
           <Smartphone size={13} /> SMS
         </button>
       )}
+      <button
+        className={cn(btn, liOver && "border-bronze-700 text-bronze-400")}
+        title={
+          (prospect.linkedin
+            ? `Ouvre le profil LinkedIn de la fiche`
+            : `Pas de profil sur la fiche → ouvre la recherche LinkedIn (${prospect.name} ${prospect.company})`) +
+          ` — le message part dans le presse-papier : colle et envoie.\nQuota du jour : ${liToday}/${LINKEDIN_DAILY_SAFE}` +
+          (liOver ? " ⚠ dépassé — bascule sur email/WhatsApp pour aujourd'hui (anti-restriction)." : "")
+        }
+        onClick={openLinkedIn}
+      >
+        {liCopied ? <Check size={13} className="text-signal-green" /> : <Linkedin size={13} />}
+        {liCopied ? "Copié ✓ — colle-le" : liOver ? `LinkedIn ${liToday}/${LINKEDIN_DAILY_SAFE} ⚠` : "LinkedIn"}
+      </button>
       {!prospect.email && !prospect.phone && (
-        <span className="text-[11px] text-paper-faint">ni email ni téléphone sur la fiche</span>
+        <span className="text-[11px] text-paper-faint">ni email ni téléphone — il reste LinkedIn ↑</span>
       )}
       {status === "error" && <span className="text-[11px] text-signal-red">{error}</span>}
     </div>

@@ -67,7 +67,9 @@ const WORKFLOWS: { file: string; map: string; activate: boolean }[] = [
   { file: "alpha-deepdive", map: "Ollama + Sheets — recherche externe → audit CRM", activate: true },
   { file: "alpha-sourcing", map: "Sheets ×2 (clés Places/Pappers/Apollo en env)", activate: true },
   { file: "alpha-tracking-sync", map: "Supabase + Sheets — ouvertures/clics dans le CRM", activate: true },
-  { file: "alpha-error-alert", map: "Gmail — puis Settings → Error Workflow sur les 8 autres", activate: false },
+  { file: "alpha-error-alert", map: "Gmail — puis Settings → Error Workflow sur les autres", activate: false },
+  { file: "alpha-signature", map: "Documenso (optionnel) — contrat signé → notif app", activate: false },
+  { file: "alpha-payment", map: "Stripe (optionnel) — paiement reçu → notif app", activate: false },
 ];
 
 interface Health {
@@ -321,7 +323,7 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
 
             {step === 2 && (
               <div className="animate-fade-up">
-                <h2 className="font-display text-lg font-bold text-paper">Étape 2 — Le cerveau : n8n + les 9 workflows</h2>
+                <h2 className="font-display text-lg font-bold text-paper">Étape 2 — Le cerveau : n8n + les 11 workflows</h2>
                 <ol className="mt-3 space-y-3">
                   <Li n={1} title="Lancez n8n avec ses variables">
                     Copiez-collez dans un terminal (remplacez les valeurs) — ou utilisez
@@ -335,7 +337,7 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                     (assistant Google), et <strong className="text-paper-dim">Ollama</strong> (base URL{" "}
                     <code className="code">http://localhost:11434</code>, après <code className="code">ollama pull qwen2.5:3b</code>).
                   </Li>
-                  <Li n={3} title="Importez les 9 workflows (dossier integrations/n8n/)">
+                  <Li n={3} title="Importez les 11 workflows (dossier integrations/n8n/)">
                     <span className="mt-1 block overflow-x-auto">
                       <table className="mt-1 w-full min-w-[380px] text-left text-[11px]">
                         <tbody>

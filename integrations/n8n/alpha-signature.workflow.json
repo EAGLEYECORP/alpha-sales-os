@@ -1,0 +1,72 @@
+{
+  "name": "ALPHA SALES OS — Signature Documenso (W10)",
+  "meta": {
+    "description": "Ferme W10. Documenso (alternative open-source à DocuSign, auto-hébergeable) envoie un webhook quand un document est complété → n8n vérifie le secret, journalise dans le History du CRM (via le Web App Apps Script — append propre), et NOTIFIE l'app (Réponses entrantes) : « Contrat signé — passe le deal en Signé dans l'app ». Le passage à « signé » reste HUMAIN (gate doctrine, H6) : ce workflow ne touche jamais au stage. Config Documenso : Settings → Webhooks → URL = http(s)://TON_N8N/webhook/alpha-signature, événement DOCUMENT_COMPLETED, secret = ALPHA_DOCUMENSO_SECRET. Variables d'env n8n : ALPHA_DOCUMENSO_SECRET, ALPHA_CRM_URL, ALPHA_CRM_TOKEN, ALPHA_APP_URL, ALPHA_WEBHOOK_SECRET."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "alpha-signature",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "j0000000-0000-4000-8000-000000000001",
+      "name": "Webhook Documenso",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-360, 300],
+      "webhookId": "alpha-signature"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Vérifie le secret (en-tête X-Documenso-Secret) puis extrait l'essentiel.\n// Payload Documenso : { event: 'DOCUMENT_COMPLETED', payload: { title, recipients: [{ email, name }] } }\nconst headers = $json.headers || {};\nconst provided = headers['x-documenso-secret'] || headers['X-Documenso-Secret'] || '';\nconst expected = $env.ALPHA_DOCUMENSO_SECRET || '';\nif (expected && provided !== expected) {\n  throw new Error('Secret Documenso invalide — webhook rejeté.');\n}\nconst b = $json.body || {};\nconst event = String(b.event || b.type || '').toUpperCase();\nif (!event.includes('COMPLETED') && !event.includes('SIGNED')) {\n  return []; // autre événement (créé, ouvert…) → rien à faire\n}\nconst p = b.payload || b.data || b;\nconst recipients = p.recipients || p.Recipient || [];\nconst first = Array.isArray(recipients) ? recipients[0] || {} : recipients;\nconst email = String(first.email || p.email || '').toLowerCase().trim();\nconst name = String(first.name || p.name || '');\nconst title = String(p.title || p.documentName || 'contrat');\nif (!email) return [];\nreturn [{ json: { email, name, title } }];"
+      },
+      "id": "j0000000-0000-4000-8000-000000000002",
+      "name": "Vérifier secret + extraire",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"token\": $env.ALPHA_CRM_TOKEN, \"action\": \"history\", \"id\": $json.email, \"text\": \"✍️ Contrat signé (Documenso) : \" + $json.title } }}",
+        "options": {}
+      },
+      "id": "j0000000-0000-4000-8000-000000000003",
+      "name": "CRM — journaliser la signature",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [140, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALPHA_APP_URL }}/api/webhooks/inbound",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-webhook-secret", "value": "={{ $env.ALPHA_WEBHOOK_SECRET }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"type\": \"autre\", \"email\": $json.email, \"name\": $json.name, \"message\": \"✍️ CONTRAT SIGNÉ (Documenso) — « \" + $json.title + \" ». Vérifie le document, puis passe le deal en Signé DANS L'APP (le gate doctrine s'applique : conviction, démo avant prix, croyances).\" } }}",
+        "options": {}
+      },
+      "id": "j0000000-0000-4000-8000-000000000004",
+      "name": "App — notifier (HITL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Documenso": { "main": [[{ "node": "Vérifier secret + extraire", "type": "main", "index": 0 }]] },
+    "Vérifier secret + extraire": { "main": [[{ "node": "CRM — journaliser la signature", "type": "main", "index": 0 }]] },
+    "CRM — journaliser la signature": { "main": [[{ "node": "App — notifier (HITL)", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

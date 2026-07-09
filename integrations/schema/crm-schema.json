@@ -26,6 +26,7 @@
         { "key": "email", "header": "Email", "type": "email", "source": "human", "critical": true, "usedBy": ["send", "tracking", "dedup"], "description": "Email de contact (clé de matching secondaire, dédup)." },
         { "key": "phone", "header": "Téléphone", "type": "text", "source": "n8n", "usedBy": ["send-sms", "whatsapp"], "description": "Téléphone (format FR)." },
         { "key": "channel", "header": "Canal privilégié", "type": "enum", "enum": ["email", "whatsapp", "tel", "linkedin", "sms", "autre"], "source": "human", "description": "Plateforme d'échange préférée du prospect." },
+        { "key": "linkedin", "header": "LinkedIn", "type": "url", "source": "human", "usedBy": ["prospection-multicanale"], "description": "URL du profil LinkedIn — canal assisté : message copié, envoi manuel par le closer, quota prudent 25/j." },
         { "key": "hours", "header": "Horaires", "type": "text", "source": "n8n", "description": "Horaires d'ouverture (pour caler les appels)." },
         { "key": "website", "header": "Site", "type": "url", "source": "n8n", "usedBy": ["audit"], "description": "Site web actuel (état/URL)." }
       ]

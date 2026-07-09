@@ -12,6 +12,7 @@ import {
   FileSignature,
   FileText,
   Layers,
+  Linkedin,
   Mail,
   MessageSquare,
   MousePointerClick,
@@ -60,6 +61,7 @@ const EVENT_ICONS: Record<EventKind, React.ReactNode> = {
   visite: <ArrowLeft size={13} className="rotate-45" />,
   email: <Mail size={13} />,
   whatsapp: <MessageSquare size={13} />,
+  linkedin: <Linkedin size={13} />,
   demo: <Smartphone size={13} />,
   meeting: <CalendarPlus size={13} />,
   note: <FileText size={13} />,
@@ -1250,6 +1252,11 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
       body: `Bonjour ${firstName}, ${closer} d'EAGLEYE (Lyon). J'ai préparé une maquette de ${p.company} sur mobile — ça prend 2 minutes à regarder et ça vaut mille discours. Je passe mardi 15h ou jeudi 10h ?`,
     },
     {
+      channel: "LinkedIn",
+      subject: "Invitation (≤ 300 car.)",
+      body: `Bonjour ${firstName} — j'ai étudié la présence en ligne de ${p.company} (note, avis, réactivité) et j'ai 2-3 constats chiffrés qui devraient vous intéresser. Je suis lyonnais, je travaille avec des ${p.sector === "autre" ? "entreprises" : p.sector + "s"} du coin. Partant pour échanger ? — ${closer}, EAGLEYE`,
+    },
+    {
       channel: "Email",
       subject: "Après notre échange — les chiffres",
       body: `Bonjour ${firstName},\n\nComme convenu, le résumé de l'audit :\n\n• Manque à gagner estimé : ${p.ignoranceTax.toLocaleString("fr-FR")} €/mois\n• Soit ${(p.ignoranceTax * 12).toLocaleString("fr-FR")} €/an de Taxe d'Ignorance\n• Notre solution : ${p.setupValue.toLocaleString("fr-FR")} € + ${p.monthlyValue.toLocaleString("fr-FR")} €/mois\n\nLa question n'est pas « est-ce que ça coûte cher » — c'est « combien coûte le fait de ne rien faire ».\n\nOn se voit ${p.nextStep ? relativeFr(p.nextStep.date) : "cette semaine"} pour décider avec les vrais chiffres.\n\n${closer} — EAGLEYE`,
@@ -1259,14 +1266,14 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
   return (
     <div className="space-y-4">
     <div className="flex items-center justify-between rounded-xl border border-ink-700 bg-ink-900 px-4 py-2.5">
-      <p className="text-[12px] text-paper-faint">3 messages prêts pour <strong className="text-paper">{p.company}</strong> — besoin d&apos;un autre moment ou format ?</p>
+      <p className="text-[12px] text-paper-faint">4 messages prêts pour <strong className="text-paper">{p.company}</strong> (email, WhatsApp, LinkedIn) — besoin d&apos;un autre moment ou format ?</p>
       <Link href="/templates" className="btn-ghost px-3 py-1.5 text-[12px]">Toute la bibliothèque →</Link>
     </div>
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {templates.map((t, i) => (
         <div key={i} className="card flex flex-col p-4">
           <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-bronze-500">
-            {t.channel === "Email" ? <Mail size={12} /> : <MessageSquare size={12} />} {t.channel}
+            {t.channel === "Email" ? <Mail size={12} /> : t.channel === "LinkedIn" ? <Linkedin size={12} /> : <MessageSquare size={12} />} {t.channel}
           </p>
           <p className="mt-1 text-sm font-medium text-paper">{t.subject}</p>
           <pre className="mt-2 flex-1 whitespace-pre-wrap rounded-lg border border-ink-700 bg-ink-850 p-3 font-body text-[12px] leading-relaxed text-paper-dim">

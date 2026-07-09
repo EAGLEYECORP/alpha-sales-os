@@ -98,6 +98,10 @@ export function ProspectFormModal({
           <input className="input" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
         </div>
         <div>
+          <label className="label">LinkedIn (profil / page)</label>
+          <input className="input" placeholder="linkedin.com/in/…" value={form.linkedin ?? ""} onChange={(e) => set("linkedin", e.target.value)} />
+        </div>
+        <div>
           <label className="label">Setup (€)</label>
           <input type="number" className="input" value={form.setupValue} onChange={(e) => set("setupValue", +e.target.value)} />
         </div>

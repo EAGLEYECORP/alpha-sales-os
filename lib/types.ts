@@ -58,6 +58,7 @@ export type EventKind =
   | "visite"
   | "email"
   | "whatsapp"
+  | "linkedin"
   | "demo"
   | "meeting"
   | "note"
@@ -189,6 +190,8 @@ export interface Prospect {
   delivery: DeliveryStatus;
   /** Plateforme d'échange privilégiée (email, whatsapp, tel, linkedin…). */
   preferredChannel?: string;
+  /** URL du profil LinkedIn (personne ou page entreprise) — canal de prospection. */
+  linkedin?: string;
   /** Suivi de satisfaction 0–100 (post-livraison). */
   satisfaction?: number;
   /** Témoignage / avis obtenu. */

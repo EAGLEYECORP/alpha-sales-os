@@ -558,8 +558,8 @@ règles d'or pour qu'il tienne :
 | W8 | client mail → app | `GET /api/track/open/:id`, `/api/track/click/:id` | ouverture/clic | funnel + Supabase `tracking_messages` |
 | W9a | app → n8n *(push)* | `TRACKING_WEBHOOK_URL` (POST) | chaque open/clic | **seulement si n8n a une URL https publique** |
 | W9b | n8n → Sheets *(pull)* | `alpha-tracking-sync` (cron 10 min, lit Supabase) | montage hybride (app/Vercel + n8n local) | colonnes délivré/ouvertures/clics — `TRACKING_WEBHOOK_URL` reste **vide** |
-| W10 | signature → n8n | webhook DocuSign/Dropbox Sign *(à brancher)* | contrat signé | étape 7 → won |
-| W11 | paiement → n8n | webhook Stripe/GoCardless *(à brancher)* | paiement reçu | `payments` |
+| W10 | signature → n8n | `alpha-signature.workflow.json` (Documenso, open-source) | contrat complété | History CRM + notif app — « signé » reste humain (H6) |
+| W11 | paiement → n8n | `alpha-payment.workflow.json` (Stripe Trigger) | checkout/facture payée | History CRM + notif app — saisie humaine (H7) |
 | W12 | Calendar → n8n | Google Calendar trigger *(option)* | RDV accepté/annulé | routines RDV |
 
 ## Checkpoints HUMAN-IN-THE-LOOP (le fil rouge)

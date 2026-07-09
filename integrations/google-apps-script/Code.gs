@@ -78,7 +78,8 @@ var COLUMNS = [
   { key: 'clicks',        label: 'Clics' },                 // AG
   { key: 'lastSentAt',    label: 'Dernier envoi' },         // AH
   { key: 'campaignId',    label: 'Campagne' },              // AI
-  { key: 'unsubscribed',  label: 'STOP / Désinscrit' }      // AJ — flag STOP (n8n → send-guard)
+  { key: 'unsubscribed',  label: 'STOP / Désinscrit' },     // AJ — flag STOP (n8n → send-guard)
+  { key: 'linkedin',      label: 'LinkedIn' }               // AK — profil (prospection multicanale)
 ];
 
 // Étapes du pipeline (statuts) — miroir de l'app ALPHA SALES OS.
