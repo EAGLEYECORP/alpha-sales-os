@@ -24,6 +24,7 @@ const INTERNAL = [
   "/api/ai",
   "/api/agent",
   "/api/sparring", // consomme l'IA — même origine uniquement
+  "/api/audit/extract", // consomme l'IA — même origine uniquement
   "/api/email/preview",
   "/api/import/sheet", // fetch sortant (allowlist Google) — pas un proxy public
   "/api/track/stats",

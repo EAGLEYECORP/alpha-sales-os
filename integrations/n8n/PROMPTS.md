@@ -48,8 +48,19 @@ tu ne l'improvises pas :
 « audit {prospect} » à l'agent. **Nœuds** : IA + outil de recherche web
 (SerpAPI/Tavily/HTTP) + éventuel scrape du site.
 
+**Import libre d'une recherche externe** : la recherche n'a pas à venir de
+n8n. Un deep-dive fait avec **Perplexity, ChatGPT ou des notes terrain** se
+colle tel quel `{web_results}` — trois portes d'entrée, même schéma JSON :
+
+| Porte | Où | Quoi |
+|---|---|---|
+| Fiche prospect (app) | onglet Audit → « Importer une recherche » | l'IA structure → **relecture** → appliquer ; source conservée en pièce jointe |
+| Formulaire n8n | `alpha-deepdive.workflow.json` → `/form/alpha-deepdive` | prospect + recherche collée → colonnes CRM directement |
+| API (autres outils) | `POST /api/audit/extract` (même origine) | `{research, company, city}` → JSON structuré |
+
 **Entrées** : `prospect, type, city, website, rating, reviews, phone, hours` +
-résultats bruts de recherche (`{web_results}` : SERP, avis récents, site).
+résultats bruts de recherche (`{web_results}` : SERP, avis récents, site,
+**ou recherche externe collée**).
 
 ```
 [SYSTÈME ci-dessus]
@@ -99,6 +110,11 @@ vérifiable → mets-le dans "aVerifier", n'invente JAMAIS un chiffre.
 génère le **PDF lead magnet** depuis `pdfOutline` (nœud HTML→PDF type Gotenberg
 auto-hébergé, ou Google Docs template) et stocke le lien Drive dans la ligne.
 **Événement** : `event { type:"audit.done", id, payload:{tax} }`.
+
+**Lead magnet sans n8n** : la fiche (onglet Audit) génère le même document
+en un clic — « Aperçu audit cadeau » / « Télécharger » (HTML brandé EAGLEYE,
+imprimable en PDF) — construit depuis le deep-dive validé. C'est CE document
+qu'on joint à l'email de première impression : la valeur AVANT la demande.
 
 **🤝 HITL** : l'audit apparaît sur la fiche (onglet Audit) — le closer **valide
 ou corrige les chiffres** avant tout envoi. Les `aVerifier` deviennent des

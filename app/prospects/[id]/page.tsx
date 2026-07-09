@@ -49,6 +49,7 @@ import { syncProspectToCrm } from "@/lib/n8n";
 import { criticalGaps } from "@/lib/missing-info";
 import { ClientTrackingStats } from "@/components/tracking/tracking-stats";
 import { ClosingMode } from "@/components/training/closing-mode";
+import { DeepdiveTools } from "@/components/prospects/deepdive-tools";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
 
@@ -627,6 +628,9 @@ function AuditTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      {/* Import de recherche externe + audit cadeau (lead magnet) */}
+      <DeepdiveTools p={p} patch={patch} />
+
       {/* Structured deep audit — real, measured data */}
       <section className="card p-4 lg:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
