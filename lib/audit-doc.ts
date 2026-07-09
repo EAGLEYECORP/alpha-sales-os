@@ -13,9 +13,15 @@ import type { Prospect } from "./types";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const BRONZE = "#c79a4b";
-const INK = "#1c1917";
-const PAPER = "#faf7f2";
+// DA « or » — alignée sur le light mode d'ALPHA SALES OS.
+const GOLD = "#e8c98a";
+const GOLD_SOFT = "#ddb36a";
+const GOLD_DEEP = "#8a6a38";
+const GOLDINK = "#1b1408";
+const INK = "#221c14";
+const PARCHMENT = "#ede7da";
+const CREAM = "#fbf7f0";
+const BORDER = "#e0d8c9";
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -51,28 +57,29 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
 <title>Audit de présence — ${esc(p.company)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; }
-  body { font-family: Georgia, 'Times New Roman', serif; background: ${PAPER}; color: #2b2520; line-height: 1.6; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: ${PARCHMENT}; color: #33291b; line-height: 1.6; }
   .page { max-width: 760px; margin: 0 auto; padding: 40px 28px 60px; }
-  header.doc { background: ${INK}; color: #e7c46b; padding: 26px 28px; border-radius: 14px 14px 0 0; }
+  header.doc { background: ${GOLD}; background: linear-gradient(100deg, ${GOLD} 0%, ${GOLD_SOFT} 100%); color: ${GOLDINK}; padding: 26px 28px; border-radius: 14px 14px 0 0; }
   header.doc .brand { letter-spacing: .18em; font-weight: 700; font-size: 18px; }
-  header.doc .sub { font-family: Arial, sans-serif; font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; color: #8a7c60; margin-top: 2px; }
-  .sheet { background: #fff; border: 1px solid #ece4d7; border-top: none; border-radius: 0 0 14px 14px; padding: 34px 36px 40px; }
+  header.doc .sub { font-family: Arial, sans-serif; font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; color: #6b5426; margin-top: 2px; }
+  .sheet { background: ${CREAM}; border: 1px solid ${BORDER}; border-top: none; border-radius: 0 0 14px 14px; padding: 34px 36px 40px; }
   h1 { font-size: 26px; color: ${INK}; line-height: 1.25; }
-  .meta { font-family: Arial, sans-serif; font-size: 12px; color: #9a8f80; margin-top: 6px; }
-  h2 { font-size: 15px; color: ${INK}; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid ${BRONZE}; text-transform: uppercase; letter-spacing: .08em; font-family: Arial, sans-serif; }
+  .meta { font-family: Arial, sans-serif; font-size: 12px; color: #8c8069; margin-top: 6px; }
+  h2 { font-size: 15px; color: ${INK}; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid ${GOLD}; text-transform: uppercase; letter-spacing: .08em; font-family: Arial, sans-serif; }
   p, li, td { font-size: 14.5px; }
   ul { padding-left: 20px; margin: 8px 0; }
   li { margin: 4px 0; }
+  li::marker { color: ${GOLD_DEEP}; }
   table.facts { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.facts td { padding: 7px 10px; border-bottom: 1px solid #f0e9dd; vertical-align: top; }
-  table.facts td.lbl { width: 200px; font-family: Arial, sans-serif; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: #9a8f80; }
-  .tax { background: #fdf6ec; border: 1px solid ${BRONZE}; border-radius: 12px; padding: 18px 22px; margin-top: 10px; }
+  table.facts td { padding: 7px 10px; border-bottom: 1px solid ${BORDER}; vertical-align: top; }
+  table.facts td.lbl { width: 200px; font-family: Arial, sans-serif; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: #8c8069; }
+  .tax { background: #fdf6ec; border: 1px solid ${GOLD_SOFT}; border-radius: 12px; padding: 18px 22px; margin-top: 10px; }
   .tax .big { font-size: 34px; font-weight: 700; color: #b23a2f; }
-  .tax .per { font-family: Arial, sans-serif; font-size: 12px; color: #9a8f80; }
-  .cta { background: ${INK}; color: ${PAPER}; border-radius: 12px; padding: 20px 24px; margin-top: 34px; }
-  .cta strong { color: #e7c46b; }
-  footer { font-family: Arial, sans-serif; font-size: 11px; color: #9a8f80; text-align: center; margin-top: 26px; }
-  .print { position: fixed; top: 14px; right: 14px; font-family: Arial, sans-serif; font-size: 12px; background: ${INK}; color: #e7c46b; border: 1px solid ${BRONZE}; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  .tax .per { font-family: Arial, sans-serif; font-size: 12px; color: #8c8069; }
+  .cta { background: ${GOLD}; background: linear-gradient(100deg, ${GOLD} 0%, ${GOLD_SOFT} 100%); color: ${GOLDINK}; border-radius: 12px; padding: 20px 24px; margin-top: 34px; }
+  .cta strong { color: ${GOLDINK}; }
+  footer { font-family: Arial, sans-serif; font-size: 11px; color: #8c8069; text-align: center; margin-top: 26px; }
+  .print { position: fixed; top: 14px; right: 14px; font-family: Arial, sans-serif; font-size: 12px; background: ${GOLD}; color: ${GOLDINK}; border: 1px solid ${GOLD_SOFT}; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: bold; }
   @media print { .print { display: none; } body { background: #fff; } .page { padding: 0; } }
 </style>
 </head>
