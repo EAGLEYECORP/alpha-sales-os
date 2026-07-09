@@ -20,6 +20,7 @@ import {
   Settings,
   Sprout,
   Swords,
+  Trophy,
 } from "lucide-react";
 import { Eagle } from "@/components/eagle";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const NAV = [
   { href: "/templates", label: "Templates", icon: ScrollText },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
   { href: "/kpis", label: "KPIs", icon: Gauge },
+  { href: "/milestones", label: "Jalons", icon: Trophy },
   { href: "/offre", label: "Offre & Tarifs", icon: BadgeEuro },
   { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
   { href: "/nurture", label: "Relances", icon: Sprout },

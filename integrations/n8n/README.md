@@ -1,6 +1,6 @@
 # Backend n8n — le jeu de workflows complet
 
-Sept workflows couvrent tout le cycle (5 opérationnels + sourcing + alerte). Les colonnes/variables sont définies une
+Huit workflows couvrent tout le cycle (5 opérationnels + sourcing + tracking + alerte). Les colonnes/variables sont définies une
 seule fois dans [`../schema/crm-schema.json`](../schema/crm-schema.json), et
 **tous les prompts de l'agent (étape par étape, avec webhooks et checkpoints
 human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
@@ -13,6 +13,7 @@ human-in-the-loop) sont dans [`PROMPTS.md`](./PROMPTS.md)**.
 | [`alpha-crm-sync.workflow.json`](./alpha-crm-sync.workflow.json) | **Info critique** : Supabase `crm_records` (non synchronisés) → Google Sheets → flag | Cron (2 min) |
 | [`alpha-crm-agent.workflow.json`](./alpha-crm-agent.workflow.json) | Agent conversationnel (Claude + outils CRM) | Chat |
 | [`alpha-sourcing.workflow.json`](./alpha-sourcing.workflow.json) | **Sourcing (refill)** : secteur + ville → Google Places → Pappers (SIREN) → Apollo (email dirigeant) → dédup → CRM | Formulaire n8n |
+| [`alpha-tracking-sync.workflow.json`](./alpha-tracking-sync.workflow.json) | **Tracking → CRM** : Supabase `tracking_messages` → colonnes délivré/ouvertures/clics du Sheet (clé = email). Remplace `TRACKING_WEBHOOK_URL` quand n8n est local et le tracking sur Vercel | Cron (10 min) |
 | [`alpha-error-alert.workflow.json`](./alpha-error-alert.workflow.json) | **Alerte erreur** : n'importe quel workflow ALPHA échoue → email d'alerte (nom, nœud, erreur, lien) | Error Trigger |
 
 ## Sourcing — remplir le haut du pipeline
