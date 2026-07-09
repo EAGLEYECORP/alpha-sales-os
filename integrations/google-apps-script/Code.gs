@@ -68,7 +68,17 @@ var COLUMNS = [
   { key: 'satisfaction',  label: 'Satisfaction' },          // Y
   { key: 'upsell',        label: 'Upsell' },                // Z
   { key: 'notes',         label: 'Notes' },                 // AA
-  { key: 'updatedAt',     label: 'Maj le' }                 // AB — horodatage auto
+  { key: 'updatedAt',     label: 'Maj le' },                // AB — horodatage auto
+  // ── Colonnes ajoutées APRÈS updatedAt = migration non destructive :
+  //    « ① Initialiser / réparer » les ajoute en fin sans décaler l'existant.
+  { key: 'channel',       label: "Plateforme d'échange" },  // AC — canal privilégié
+  { key: 'testimonial',   label: 'Témoignage' },            // AD — preuve sociale
+  { key: 'delivered',     label: 'Délivré' },               // AE — tracking (alpha-tracking-sync)
+  { key: 'opens',         label: 'Ouvertures' },            // AF
+  { key: 'clicks',        label: 'Clics' },                 // AG
+  { key: 'lastSentAt',    label: 'Dernier envoi' },         // AH
+  { key: 'campaignId',    label: 'Campagne' },              // AI
+  { key: 'unsubscribed',  label: 'STOP / Désinscrit' }      // AJ — flag STOP (n8n → send-guard)
 ];
 
 // Étapes du pipeline (statuts) — miroir de l'app ALPHA SALES OS.
@@ -494,7 +504,7 @@ function doGet(e) {
  * Body JSON : { token, action, ... }
  *   action=upsert          { data:{prospect,email,rating,...} }
  *   action=history         { id, text }
- *   action=stage           { id, stage, action? }
+ *   action=stage           { id, stage, next? }   // next = texte du next step
  *   action=set             { id, field, value }   // maj d'un champ précis
  *   action=script          { id }                 // idem GET script
  */
@@ -512,7 +522,8 @@ function doPost(e) {
       return json_({ ok: true, line: line });
     }
     if (action === 'stage') {
-      setStage_(body.id, body.stage, body.action);
+      // `next` = texte du next step. Rétro-compat : accepte l'ancien `nextAction`.
+      setStage_(body.id, body.stage, body.next || body.nextAction || '');
       return json_({ ok: true });
     }
     if (action === 'set') {

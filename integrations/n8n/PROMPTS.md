@@ -50,7 +50,13 @@ tu ne l'improvises pas :
 
 **Import libre d'une recherche externe** : la recherche n'a pas à venir de
 n8n. Un deep-dive fait avec **Perplexity, ChatGPT ou des notes terrain** se
-colle tel quel `{web_results}` — trois portes d'entrée, même schéma JSON :
+colle tel quel `{web_results}`. Trois portes d'entrée. Deux formats de sortie
+selon l'usage : l'**app** et le **formulaire n8n** produisent le schéma
+*compact d'extraction* (`rating, reviews, websiteState, localCompetition,
+currentProcess, missedCallsPerWeek, avgTicket, problems, personalizedOffer,
+marketPosition, audience, summary`) → écrit dans les colonnes du CRM ; le
+prompt long ci-dessous produit l'*audit complet* (avec `scores`, `taxeCalcul`,
+`pdfOutline`) quand tu veux le diagnostic « consultant 500 € ».
 
 | Porte | Où | Quoi |
 |---|---|---|
@@ -549,8 +555,9 @@ règles d'or pour qu'il tienne :
 | W5 | Sheets → n8n | Google Sheets Trigger (`alpha-outreach`) | ligne modifiée | audit/brouillons/RDV |
 | W6 | Gmail → n8n | Gmail Trigger (`alpha-inbound`) | email entrant | STOP ou réponse |
 | W7 | n8n → app | `POST /api/webhooks/inbound` (+ `x-webhook-secret`) | réponse non-STOP | inbox + analyse (étape 3) |
-| W8 | client mail → app | `GET /api/track/open/:id`, `/api/track/click/:id` | ouverture/clic | funnel + History (via W9) |
-| W9 | app → n8n | `TRACKING_WEBHOOK_URL` (POST) | chaque open/clic | History du CRM |
+| W8 | client mail → app | `GET /api/track/open/:id`, `/api/track/click/:id` | ouverture/clic | funnel + Supabase `tracking_messages` |
+| W9a | app → n8n *(push)* | `TRACKING_WEBHOOK_URL` (POST) | chaque open/clic | **seulement si n8n a une URL https publique** |
+| W9b | n8n → Sheets *(pull)* | `alpha-tracking-sync` (cron 10 min, lit Supabase) | montage hybride (app/Vercel + n8n local) | colonnes délivré/ouvertures/clics — `TRACKING_WEBHOOK_URL` reste **vide** |
 | W10 | signature → n8n | webhook DocuSign/Dropbox Sign *(à brancher)* | contrat signé | étape 7 → won |
 | W11 | paiement → n8n | webhook Stripe/GoCardless *(à brancher)* | paiement reçu | `payments` |
 | W12 | Calendar → n8n | Google Calendar trigger *(option)* | RDV accepté/annulé | routines RDV |

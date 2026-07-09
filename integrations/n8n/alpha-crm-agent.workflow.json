@@ -306,7 +306,7 @@
         "url": "={{ $env.ALPHA_CRM_URL }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\n  \"token\": \"={{ $env.ALPHA_CRM_TOKEN }}\",\n  \"action\": \"stage\",\n  \"id\": \"{id}\",\n  \"stage\": \"{stage}\",\n  \"action\": \"{next}\"\n}",
+        "jsonBody": "{\n  \"token\": \"={{ $env.ALPHA_CRM_TOKEN }}\",\n  \"action\": \"stage\",\n  \"id\": \"{id}\",\n  \"stage\": \"{stage}\",\n  \"next\": \"{next}\"\n}",
         "placeholderDefinitions": {
           "values": [
             {
