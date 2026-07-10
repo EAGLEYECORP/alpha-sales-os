@@ -128,6 +128,13 @@ function setupSheet() {
   var sh = getSheet_();
   var headers = COLUMNS.map(function (c) { return c.label; });
 
+  // Migration : si la grille a moins de colonnes que le schéma (nouvelles
+  // colonnes ajoutées en fin), on l'élargit d'abord — sinon getRange refuse.
+  var maxCols = sh.getMaxColumns();
+  if (maxCols < headers.length) {
+    sh.insertColumnsAfter(maxCols, headers.length - maxCols);
+  }
+
   // Ligne d'en-tête
   var headerRange = sh.getRange(1, 1, 1, headers.length);
   headerRange.setValues([headers]);
