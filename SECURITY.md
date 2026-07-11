@@ -26,6 +26,7 @@ dans des backends que tu contrôles (n8n, Supabase, ton SMTP).
 | **Supply chain** | ⚠️ | Dépendances épinglées (`package-lock.json`) ; `npm audit` recommandé en CI ; aucune dépendance CDN exécutée au runtime hormis les polices Google (self-hostables). |
 | **Exfiltration via webhook n8n** | ⚠️ | Le lien n8n est saisi par l'utilisateur (même appareil) ; secret partagé optionnel (`x-alpha-secret`) ; garde n8n derrière ton réseau. |
 | **Lecture publique des réponses prospects** | ✅ | `GET/PATCH /api/webhooks/inbound` exigent le navigateur **même-origine** (l'UI) ou `x-webhook-secret` — un déploiement public (Vercel/tunnel) n'expose pas les réponses en lecture. Le `POST` reste ouvert cross-origin, protégé par le secret (son rôle). |
+| **UI publique sur déploiement ouvert** | ✅ | **Porte d'accès serveur** (`middleware.ts`) : si `SITE_PASSWORD` est défini, aucune page ni route interne n'est servie sans un cookie httpOnly signé (HMAC-SHA256 du mot de passe, `lib/access.ts`). Redirection vers `/gate` ; l'API interne renvoie 401. Restent publics (par nécessité) : pixel/clic de tracking, `webhooks/inbound` (secret), `health`, l'écran `/gate`. Off en local (variable absente). « État du système » alerte en rouge si l'hôte est public (Vercel) sans mot de passe. |
 
 ## En-têtes de sécurité (next.config.ts + middleware)
 

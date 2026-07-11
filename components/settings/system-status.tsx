@@ -20,6 +20,7 @@ interface Health {
       maxSendsPerHour: number;
     };
     supabase: { publicEnv: boolean; serviceRole: boolean };
+    access: { gated: boolean; publicHost: boolean };
     branding: { closerName: boolean };
   };
 }
@@ -61,6 +62,9 @@ TRACKING_WEBHOOK_URL=
 
 # ── Webhooks entrants (réponses + STOP) ──
 WEBHOOK_SECRET=
+
+# ── Porte d'accès (OBLIGATOIRE si déployé en public / Vercel) ──
+SITE_PASSWORD=
 
 # ── Supabase (sync + auth + persistance tracking) ──
 NEXT_PUBLIC_SUPABASE_URL=
@@ -203,6 +207,23 @@ export function SystemStatus() {
               label: c.inboundWebhook.configured ? "Secret webhook entrant" : "Secret webhook (WEBHOOK_SECRET)",
               level: c.inboundWebhook.configured ? "ok" : "warn",
               hint: "Requis pour recevoir les réponses (Instantly / Smartlead / Zapier / n8n).",
+            },
+          ],
+        },
+        {
+          title: "Accès (déploiement public)",
+          items: [
+            {
+              label: c.access.gated
+                ? "Porte d'accès active (mot de passe requis)"
+                : c.access.publicHost
+                  ? "⚠ Déployé SANS mot de passe — UI publique !"
+                  : "Porte d'accès (SITE_PASSWORD) — off en local",
+              level: c.access.gated ? "ok" : c.access.publicHost ? "warn" : "off",
+              hint: c.access.publicHost
+                ? "Hôte public détecté : définis SITE_PASSWORD dans Vercel → Settings → Environment Variables, puis redéploie. Sinon n'importe qui voit ton CRM."
+                : "En local, inutile. Sur un déploiement public (Vercel), OBLIGATOIRE : SITE_PASSWORD verrouille toute l'UI.",
+              optional: !c.access.publicHost,
             },
           ],
         },

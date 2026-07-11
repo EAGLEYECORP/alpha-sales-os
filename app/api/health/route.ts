@@ -46,6 +46,13 @@ export async function GET() {
         publicEnv: supabasePublic,
         serviceRole: has("SUPABASE_SERVICE_ROLE_KEY"),
       },
+      access: {
+        // porte d'accès serveur active (mot de passe requis pour toute l'UI)
+        gated: has("SITE_PASSWORD"),
+        // vrai si l'app tourne sur un hôte public (Vercel) — sert d'alerte
+        // « déployé sans mot de passe »
+        publicHost: has("VERCEL") || has("VERCEL_URL"),
+      },
       branding: { closerName: has("CLOSER_NAME") },
     },
   });
