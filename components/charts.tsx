@@ -130,7 +130,21 @@ export function CampaignRatesChart({
   );
 }
 
-export function SectorChart({ data }: { data: { name: string; value: number }[] }) {
+/**
+ * Barres par catégorie. `variant` :
+ *  - "eur"   (défaut) : axe/tooltip en euros (pipe pondéré par secteur)
+ *  - "score" : axe/tooltip sur une échelle 0–100 (confiance par étape)
+ */
+export function SectorChart({
+  data,
+  variant = "eur",
+  tooltipLabel,
+}: {
+  data: { name: string; value: number }[];
+  variant?: "eur" | "score";
+  tooltipLabel?: string;
+}) {
+  const isScore = variant === "score";
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{ left: 4, right: 12, top: 8, bottom: 4 }}>
@@ -140,10 +154,18 @@ export function SectorChart({ data }: { data: { name: string; value: number }[] 
           tick={{ fill: TEXT, fontSize: 11 }}
           axisLine={false}
           tickLine={false}
-          width={52}
-          tickFormatter={(v: number) => `${Math.round(v / 100) / 10}k€`}
+          width={isScore ? 30 : 52}
+          domain={isScore ? [0, 100] : undefined}
+          tickFormatter={(v: number) => (isScore ? `${Math.round(v)}` : `${Math.round(v / 100) / 10}k€`)}
         />
-        <Tooltip {...tooltipStyle} formatter={(v: number) => [`${Math.round(v).toLocaleString("fr-FR")} €`, "Pipe pondéré"]} />
+        <Tooltip
+          {...tooltipStyle}
+          formatter={(v: number) =>
+            isScore
+              ? [`${Math.round(v)}/100`, tooltipLabel ?? "Score"]
+              : [`${Math.round(v).toLocaleString("fr-FR")} €`, tooltipLabel ?? "Pipe pondéré"]
+          }
+        />
         <Bar dataKey="value" fill={BRONZE} radius={[4, 4, 0, 0]} barSize={36} />
       </BarChart>
     </ResponsiveContainer>

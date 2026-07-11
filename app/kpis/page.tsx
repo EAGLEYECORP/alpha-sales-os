@@ -100,7 +100,7 @@ export default function KpisPage() {
         </div>
         <div className="card p-4">
           <h2 className="mb-2 font-display text-sm font-semibold text-paper">Confiance moyenne par étape</h2>
-          <SectorChart data={trustByStage} />
+          <SectorChart data={trustByStage} variant="score" tooltipLabel="Confiance" />
           <p className="mt-1 text-[11px] text-paper-faint">
             La confiance doit MONTER avec les étapes. Un creux = une croyance cassée quelque part.
           </p>
