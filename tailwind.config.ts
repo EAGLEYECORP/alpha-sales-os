@@ -69,12 +69,24 @@ const config: Config = {
           "0%": { backgroundPosition: "-300px 0" },
           "100%": { backgroundPosition: "300px 0" },
         },
+        // Intro de marque (écran de connexion) : l'aigle surgit…
+        "brand-in": {
+          from: { opacity: "0", transform: "scale(.6)", filter: "blur(6px)" },
+          to: { opacity: "1", transform: "scale(1)", filter: "blur(0)" },
+        },
+        // …et un filet d'or se déploie sous le wordmark.
+        "gold-sweep": {
+          from: { width: "0", opacity: "0" },
+          to: { width: "120px", opacity: "1" },
+        },
       },
       animation: {
         "fade-up": "fade-up .6s cubic-bezier(.16,1,.3,1) both",
         "pulse-ring": "pulse-ring 2.4s ease-in-out infinite",
         floaty: "floaty 2s ease-in-out infinite",
         shimmer: "shimmer 1.4s infinite",
+        "brand-in": "brand-in .9s cubic-bezier(.16,1,.3,1) both",
+        "gold-sweep": "gold-sweep .7s .5s cubic-bezier(.16,1,.3,1) both",
       },
     },
   },

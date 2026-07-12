@@ -15,6 +15,7 @@ import {
   Mail,
   PlugZap,
   RefreshCw,
+  Rocket,
   Sheet,
   Sparkles,
   X,
@@ -40,6 +41,7 @@ const STEPS = [
   "Importer",
   "Envoi & IA",
   "Supabase",
+  "Déployer",
   "Prêt",
 ] as const;
 
@@ -57,6 +59,17 @@ export ALPHA_CRM_URL="URL_SHEETS (…/exec, étape précédente)"
 export ALPHA_CRM_TOKEN="TOKEN_SHEETS"
 export ALPHA_ALERT_EMAIL="ton@email.fr"
 npx n8n`;
+
+// Variables à coller sur Vercel (Settings → Environment Variables).
+// Rôle du déploiement : réceptionniste de tracking 24/7 + porte d'accès.
+// PAS de SMTP ni d'Ollama sur Vercel — l'envoi et l'IA restent locaux.
+const VERCEL_ENV = `SITE_PASSWORD=choisis-un-mot-de-passe-FORT
+TRACKING_BASE_URL=https://TON-APP.vercel.app
+APP_BASE_URL=https://TON-APP.vercel.app
+WEBHOOK_SECRET=le-même-que-local-et-n8n
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
+SUPABASE_SERVICE_ROLE_KEY=eyJ…`;
 
 const WORKFLOWS: { file: string; map: string; activate: boolean }[] = [
   { file: "alpha-dashboard-api", map: "Sheets (credential + ID du Sheet) · Webhook : CORS", activate: true },
@@ -529,6 +542,48 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
             )}
 
             {step === 8 && (
+              <div className="animate-fade-up">
+                <h2 className="flex items-center gap-2 font-display text-lg font-bold text-paper">
+                  <Rocket size={16} className="text-bronze-400" /> Étape 8 — Déployer sur Vercel (optionnel, pour shipper)
+                </h2>
+                <p className="mt-1 text-[12px] text-paper-faint">
+                  Le déploiement public joue UN rôle : <strong className="text-paper-dim">réceptionniste de tracking 24h/24</strong>{" "}
+                  (le pixel doit être joignable même Mac éteint) — protégé par une <strong className="text-paper-dim">porte
+                  d&apos;accès</strong>. L&apos;envoi (SMTP) et l&apos;IA (Ollama) restent sur votre machine.
+                </p>
+                <ol className="mt-4 space-y-3">
+                  <Li n={1} title="Importez le repo sur vercel.com">
+                    Sign up with GitHub → Import Project → sélectionnez le repo. Puis
+                    <strong className="text-paper-dim"> Settings → Git → Production Branch</strong> = votre branche de travail
+                    (chaque <code className="code">git push</code> redéploiera tout seul).
+                  </Li>
+                  <Li n={2} title="Collez les variables d'environnement">
+                    Settings → Environment Variables — remplacez les valeurs puis Redeploy :
+                    <CopyBlock id="vercel" text={VERCEL_ENV} copied={copied} onCopy={copy} />
+                    <span className="mt-1 block">
+                      <strong className="text-paper-dim">SITE_PASSWORD est OBLIGATOIRE</strong> : sans lui, n&apos;importe qui
+                      voit votre CRM. Pas de SMTP ni d&apos;OLLAMA ici — ce n&apos;est pas leur maison.
+                    </span>
+                  </Li>
+                  <Li n={3} title="Vérifiez en navigation privée">
+                    <code className="code">https://votre-app.vercel.app</code> → l&apos;animation ALPHA puis
+                    l&apos;<strong className="text-paper-dim">écran de connexion</strong> (pas le dashboard !).
+                    Et <code className="code">/api/health</code> → du JSON avec <code className="code">&quot;gated&quot;: true</code>.
+                  </Li>
+                  <Li n={4} title="Pointez le tracking local dessus">
+                    Sur votre machine, dans <code className="code">.env.local</code> :
+                    <code className="code"> TRACKING_BASE_URL=https://votre-app.vercel.app</code> → redémarrez. Vos emails
+                    embarquent alors des pixels joignables 24h/24 (comptés dans Supabase, lus par l&apos;app locale).
+                  </Li>
+                </ol>
+                <p className="mt-3 text-[11px] text-paper-faint">
+                  Étape sautable — tant que vous testez en local avec un tunnel, tout marche. Détails :{" "}
+                  <code className="code">docs/INSTALLATION.md</code> § Vercel.
+                </p>
+              </div>
+            )}
+
+            {step === 9 && (
               <div className="animate-fade-up">
                 <div className="text-center">
                   <span className="mx-auto block animate-floaty text-bronze-400"><Eagle size={56} glow /></span>

@@ -223,6 +223,37 @@ daté · on ne force JAMAIS un envoi non relu.
 
 ---
 
+## Phase 6 — Publier sur Vercel (le réceptionniste public, ~15 min)
+
+> Rôle du déploiement : **tracking joignable 24h/24** (le pixel doit se
+> charger chez le prospect même ta machine éteinte) + **porte d'accès**.
+> L'envoi (SMTP) et l'IA (Ollama) restent en local — ne les mets PAS sur
+> Vercel.
+
+1. [vercel.com](https://vercel.com) → **Continue with GitHub** → **Import
+   Project** → ton repo.
+2. **Settings → Git → Production Branch** = ta branche de travail — chaque
+   `git push` redéploiera automatiquement.
+3. **Settings → Environment Variables** — colle et adapte :
+
+   | Variable | Valeur |
+   |---|---|
+   | `SITE_PASSWORD` | **OBLIGATOIRE** — un mot de passe fort : verrouille toute l'UI (écran de connexion après l'animation) |
+   | `TRACKING_BASE_URL` / `APP_BASE_URL` | `https://TON-APP.vercel.app` |
+   | `WEBHOOK_SECRET` | le même que local et n8n |
+   | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | ton projet Supabase (le tracking s'y écrit) |
+
+   Puis **Redeploy**.
+4. Sur **ta machine**, `.env.local` : `TRACKING_BASE_URL=https://TON-APP.vercel.app`
+   → redémarre. Tes emails embarquent des pixels joignables en continu ;
+   `alpha-tracking-sync` (n8n) redescend les compteurs dans le Sheet.
+
+✅ **Vérification (navigation privée)** : `https://TON-APP.vercel.app` →
+l'animation ALPHA puis l'**écran de connexion** (jamais le dashboard) ;
+`/api/health` → JSON avec `"gated": true`. Entre le mot de passe → dashboard.
+
+---
+
 ## Docker — toute la pile en une commande
 
 Alternative aux Phases 2.1 et 3 quand **Docker Desktop** est installé

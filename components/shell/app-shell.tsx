@@ -104,6 +104,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  // L'écran de connexion (/gate) vit HORS du shell : pas de sidebar, pas
+  // d'assistant, pas de visite guidée par-dessus le mot de passe.
+  if (pathname === "/gate") return <>{children}</>;
+
   if (!mounted) {
     return (
       <div className="grid min-h-screen place-items-center bg-ink-950">
