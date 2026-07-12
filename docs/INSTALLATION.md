@@ -252,6 +252,25 @@ daté · on ne force JAMAIS un envoi non relu.
 l'animation ALPHA puis l'**écran de connexion** (jamais le dashboard) ;
 `/api/health` → JSON avec `"gated": true`. Entre le mot de passe → dashboard.
 
+### 📱 Installer sur ton téléphone (PWA)
+
+L'app est installable comme une vraie application (Android — Nothing Phone,
+Pixel… — et iPhone) :
+
+1. Sur le téléphone, ouvre `https://TON-APP.vercel.app` dans **Chrome**
+   (Safari sur iPhone) et connecte-toi (le cookie tient 30 jours).
+2. Menu **⋮ → « Ajouter à l'écran d'accueil »** (iPhone : Partager →
+   « Sur l'écran d'accueil »).
+3. **ALPHA OS** apparaît avec l'icône aigle or → se lance en plein écran,
+   sans barre de navigateur, avec la bottom-nav mobile et des raccourcis
+   (appui long sur l'icône : Routines / Pipeline / Campagnes).
+
+> Tes données de travail restent celles du navigateur du téléphone :
+> connecte n8n/Supabase depuis Réglages comme sur le poste (ou utilise le
+> téléphone surtout pour consulter, répondre et consigner en déplacement —
+> le poste reste le cockpit d'envoi). Nécessite d'être en ligne : le
+> mode hors-ligne complet (service worker) viendra si le besoin se confirme.
+
 ---
 
 ## Docker — toute la pile en une commande

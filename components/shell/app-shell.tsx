@@ -264,8 +264,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
-      {/* Bottom nav — mobile */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 bg-ink-900/95 backdrop-blur md:hidden">
+      {/* Bottom nav — mobile (safe-area : barre gestuelle Android/iOS en PWA) */}
+      <nav className="fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 bg-ink-900/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]">
         {MOBILE_NAV.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}

@@ -15,7 +15,17 @@ export const metadata: Metadata = {
   keywords: ["sales", "CRM", "Hormozi", "Lyon", "EAGLEYE"],
   robots: { index: false, follow: false },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>◆</text></svg>",
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  // Installée sur le téléphone (PWA) : plein écran, sans chrome navigateur.
+  appleWebApp: {
+    capable: true,
+    title: "ALPHA OS",
+    statusBarStyle: "black-translucent",
   },
 };
 
@@ -26,6 +36,8 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  // Laisse l'app peindre sous les encoches/barres système (safe-areas gérées).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

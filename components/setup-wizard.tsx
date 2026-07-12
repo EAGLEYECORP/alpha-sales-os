@@ -576,7 +576,12 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                     embarquent alors des pixels joignables 24h/24 (comptés dans Supabase, lus par l&apos;app locale).
                   </Li>
                 </ol>
-                <p className="mt-3 text-[11px] text-paper-faint">
+                <p className="mt-3 rounded-lg border border-bronze-700/50 bg-bronze-900/10 px-3 py-2 text-[11.5px] text-paper-dim">
+                  📱 <strong className="text-paper">Sur votre téléphone</strong> : ouvrez l&apos;URL dans Chrome →
+                  menu ⋮ → <strong className="text-paper">« Ajouter à l&apos;écran d&apos;accueil »</strong> —
+                  ALPHA OS s&apos;installe comme une app (icône aigle or, plein écran, raccourcis Pipeline/Campagnes).
+                </p>
+                <p className="mt-2 text-[11px] text-paper-faint">
                   Étape sautable — tant que vous testez en local avec un tunnel, tout marche. Détails :{" "}
                   <code className="code">docs/INSTALLATION.md</code> § Vercel.
                 </p>
