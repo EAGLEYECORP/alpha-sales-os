@@ -1,4 +1,5 @@
 import type { Prospect } from "./types";
+import { EAGLE_SVG } from "@/components/eagle";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -13,15 +14,18 @@ import type { Prospect } from "./types";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-// DA « or » — alignée sur le light mode d'ALPHA SALES OS.
-const GOLD = "#e8c98a";
-const GOLD_SOFT = "#ddb36a";
-const GOLD_DEEP = "#8a6a38";
-const GOLDINK = "#1b1408";
-const INK = "#221c14";
-const PARCHMENT = "#ede7da";
-const CREAM = "#fbf7f0";
-const BORDER = "#e0d8c9";
+// DA « calme » — plateforme de marque : fond végétal pâle, encre douce,
+// sauge + blush en accents, cartes blanc cassé, serif italique (Fraunces,
+// repli Georgia). Même voix que les emails : on chuchote, jamais on ne crie.
+const BG = "#f4f7ec";
+const BG_DEEP = "#e7eeda";
+const CARD = "#fffdf9";
+const INK = "#1e1e19";
+const INK_SOFT = "#55564c";
+const BLUSH = "#e3c9bc";
+const SAGE = "#8b9678";
+const TERRA = "#b98872"; // terracotta doux — le chiffre qui pique, sans crier
+const LINE = "rgba(30,30,25,0.12)";
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -55,44 +59,57 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Audit de présence — ${esc(p.company)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; margin: 0; }
-  body { font-family: Georgia, 'Times New Roman', serif; background: ${PARCHMENT}; color: #33291b; line-height: 1.6; }
+  body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; background: ${BG}; color: ${INK}; line-height: 1.65; }
   .page { max-width: 760px; margin: 0 auto; padding: 40px 28px 60px; }
-  header.doc { background: ${GOLD}; background: linear-gradient(100deg, ${GOLD} 0%, ${GOLD_SOFT} 100%); color: ${GOLDINK}; padding: 26px 28px; border-radius: 14px 14px 0 0; }
-  header.doc .brand { letter-spacing: .18em; font-weight: 700; font-size: 18px; }
-  header.doc .sub { font-family: Arial, sans-serif; font-size: 10.5px; letter-spacing: .3em; text-transform: uppercase; color: #6b5426; margin-top: 2px; }
-  .sheet { background: ${CREAM}; border: 1px solid ${BORDER}; border-top: none; border-radius: 0 0 14px 14px; padding: 34px 36px 40px; }
-  h1 { font-size: 26px; color: ${INK}; line-height: 1.25; }
-  .meta { font-family: Arial, sans-serif; font-size: 12px; color: #8c8069; margin-top: 6px; }
-  h2 { font-size: 15px; color: ${INK}; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid ${GOLD}; text-transform: uppercase; letter-spacing: .08em; font-family: Arial, sans-serif; }
-  p, li, td { font-size: 14.5px; }
+  .sheet { background: ${CARD}; border: 1px solid ${LINE}; border-radius: 18px; padding: 38px 40px 44px; }
+  header.doc { display: flex; align-items: center; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid ${LINE}; margin-bottom: 28px; }
+  header.doc .mark { width: 52px; height: 42px; color: ${INK}; flex-shrink: 0; }
+  header.doc .mark svg { width: 100%; height: 100%; }
+  header.doc .brand { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 400; font-size: 24px; line-height: 1.1; }
+  header.doc .sub { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: ${SAGE}; font-weight: 600; margin-top: 4px; }
+  h1 { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 400; font-size: 30px; color: ${INK}; line-height: 1.2; }
+  .meta { font-size: 12.5px; color: ${INK_SOFT}; margin-top: 8px; }
+  .rule { width: 38px; height: 2px; background: ${BLUSH}; margin-top: 14px; }
+  h2 { font-family: 'Inter', Arial, sans-serif; font-weight: 600; font-size: 11.5px; color: ${SAGE}; margin: 34px 0 12px; padding-top: 18px; border-top: 1px solid ${LINE}; text-transform: uppercase; letter-spacing: .18em; }
+  p, li, td { font-size: 14.5px; color: ${INK_SOFT}; }
   ul { padding-left: 20px; margin: 8px 0; }
-  li { margin: 4px 0; }
-  li::marker { color: ${GOLD_DEEP}; }
+  li { margin: 5px 0; }
+  li::marker { color: ${SAGE}; }
   table.facts { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.facts td { padding: 7px 10px; border-bottom: 1px solid ${BORDER}; vertical-align: top; }
-  table.facts td.lbl { width: 200px; font-family: Arial, sans-serif; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: #8c8069; }
-  .tax { background: #fdf6ec; border: 1px solid ${GOLD_SOFT}; border-radius: 12px; padding: 18px 22px; margin-top: 10px; }
-  .tax .big { font-size: 34px; font-weight: 700; color: #b23a2f; }
-  .tax .per { font-family: Arial, sans-serif; font-size: 12px; color: #8c8069; }
-  .cta { background: ${GOLD}; background: linear-gradient(100deg, ${GOLD} 0%, ${GOLD_SOFT} 100%); color: ${GOLDINK}; border-radius: 12px; padding: 20px 24px; margin-top: 34px; }
-  .cta strong { color: ${GOLDINK}; }
-  footer { font-family: Arial, sans-serif; font-size: 11px; color: #8c8069; text-align: center; margin-top: 26px; }
-  .print { position: fixed; top: 14px; right: 14px; font-family: Arial, sans-serif; font-size: 12px; background: ${GOLD}; color: ${GOLDINK}; border: 1px solid ${GOLD_SOFT}; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: bold; }
-  @media print { .print { display: none; } body { background: #fff; } .page { padding: 0; } }
+  table.facts td { padding: 8px 10px; border-bottom: 1px solid ${LINE}; vertical-align: top; }
+  table.facts td.lbl { width: 200px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: ${SAGE}; font-weight: 600; }
+  .tax { background: #f7ece5; border: 1px solid ${BLUSH}; border-radius: 16px; padding: 20px 24px; margin-top: 10px; }
+  .tax .big { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 34px; font-weight: 500; color: ${TERRA}; }
+  .tax .per { font-size: 12px; color: ${INK_SOFT}; }
+  .reco { border-left: 3px solid ${BLUSH}; padding: 4px 0 4px 18px; font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 16px; color: ${INK}; }
+  .cta { background: ${SAGE}; color: ${CARD}; border-radius: 16px; padding: 22px 26px; margin-top: 36px; }
+  .cta p, .cta strong { color: ${CARD}; }
+  .cta strong { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 500; font-size: 16px; }
+  footer { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: ${SAGE}; text-align: center; margin-top: 28px; }
+  .print { position: fixed; top: 14px; right: 14px; font-family: 'Inter', Arial, sans-serif; font-size: 12px; background: ${INK}; color: ${CARD}; border: none; border-radius: 100px; padding: 9px 18px; cursor: pointer; font-weight: 500; }
+  .soft-note { background: ${BG_DEEP}; border-radius: 12px; padding: 10px 16px; font-style: italic; color: ${INK_SOFT}; font-size: 13px; }
+  @media print { .print { display: none; } body { background: #fff; } .page { padding: 0; } .sheet { border: none; } }
 </style>
 </head>
 <body>
 <button class="print" onclick="window.print()">Imprimer / PDF</button>
 <div class="page">
-  <header class="doc">
-    <div class="brand">🦅 EAGLEYE</div>
-    <div class="sub">Audit de présence — offert</div>
-  </header>
   <div class="sheet">
+    <header class="doc">
+      <span class="mark">${EAGLE_SVG}</span>
+      <div>
+        <div class="brand">Eagleye</div>
+        <div class="sub">Audit de présence — offert</div>
+      </div>
+    </header>
     <h1>${esc(p.company)}</h1>
     <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — EAGLEYE CORP, Lyon</p>
+    <div class="rule"></div>
 
     <h2>Votre position sur votre marché</h2>
     <table class="facts">
@@ -102,13 +119,13 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
       ${row("Concurrence locale", d.localCompetition)}
       ${row("Votre process actuel", d.currentProcess)}
     </table>
-    ${!d.websiteState && d.googleRating === undefined ? `<p style="color:#9a8f80;font-style:italic;">(Sections complétées lors de l'audit terrain.)</p>` : ""}
+    ${!d.websiteState && d.googleRating === undefined ? `<p class="soft-note" style="margin-top:10px;">(Sections complétées lors de l'audit terrain.)</p>` : ""}
 
     ${taxMonthly ? `
     <h2>Ce que l'inaction vous coûte</h2>
     <div class="tax">
       <span class="big">≈ ${eur(taxMonthly)}</span> <span class="per">/ mois — soit ${eur(taxYearly as number)} / an</span>
-      ${taxDetail ? `<p style="margin-top:8px;font-family:Arial,sans-serif;font-size:12.5px;color:#6b6355;">Base de calcul : ${esc(taxDetail)}. Estimation prudente, à affiner ensemble avec vos vrais chiffres.</p>` : ""}
+      ${taxDetail ? `<p style="margin-top:8px;font-size:12.5px;">Base de calcul : ${esc(taxDetail)}. Estimation prudente, à affiner ensemble avec vos vrais chiffres.</p>` : ""}
     </div>` : ""}
 
     ${problems.length ? `
@@ -117,7 +134,7 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
 
     ${p.solution.trim() ? `
     <h2>Ce que font les mieux placés — et ce que nous recommandons</h2>
-    <p>${esc(p.solution)}</p>` : ""}
+    <p class="reco">${esc(p.solution)}</p>` : ""}
 
     <div class="cta">
       <p><strong>La suite, si vous le souhaitez :</strong> 20 minutes, nous venons vous montrer — sur un téléphone,
@@ -126,8 +143,7 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
     </div>
 
     <footer>
-      EAGLEYE CORP — Lyon · Cet audit vous est offert. Données issues de sources publiques et de nos observations ;
-      chiffres à valider ensemble.
+      Eagleye Corp — Lyon · Cet audit vous est offert · Données publiques, chiffres à valider ensemble
     </footer>
   </div>
 </div>

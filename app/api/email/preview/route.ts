@@ -17,12 +17,18 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
+  const base = (
+    process.env.TRACKING_BASE_URL ||
+    process.env.APP_BASE_URL ||
+    request.nextUrl.origin
+  ).replace(/\/+$/, "");
   const opts = {
     subject: b.subject?.trim() || "(sans objet)",
     body: b.body ?? "",
     closerName: process.env.CLOSER_NAME || "EAGLEYE",
     ctaLabel: b.ctaLabel,
     ctaUrl: b.ctaUrl,
+    logoUrl: `${base}/email-eagle.png`,
   };
   const html = renderEmail(opts);
   const text = plainText(opts);

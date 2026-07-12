@@ -135,6 +135,8 @@ export async function POST(request: NextRequest) {
       closerName: process.env.CLOSER_NAME || "EAGLEYE",
       ctaLabel: body.ctaLabel,
       ctaUrl: body.ctaUrl,
+      // Logo aigle hébergé (PNG public, non gaté par le middleware).
+      logoUrl: `${base}/email-eagle.png`,
     };
     const html = renderEmail(emailOpts);
     const text = plainText(emailOpts);

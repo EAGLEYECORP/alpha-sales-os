@@ -26,20 +26,27 @@ export interface EmailOptions {
   preheader?: string;
   /** Ligne d'adresse légale en pied (obligatoire anti-spam). */
   addressLine?: string;
+  /** URL publique du logo aigle (PNG hébergé — l'inline SVG est bloqué par
+   *  Gmail). Repli : monogramme typographique si absent. */
+  logoUrl?: string;
 }
 
-// ── DA « or » — alignée sur le light mode d'ALPHA SALES OS ────────────
-// Parchemin crème, encre, or plein #E8C98A + encre-or #1B1408 (duo signature).
-const GOLD = "#e8c98a"; // or plein (bandeau, bouton, filets décoratifs)
-const GOLD_SOFT = "#ddb36a"; // dégradé du bandeau
-const GOLD_DEEP = "#8a6a38"; // or foncé — emphase & liens (contraste sur crème)
-const GOLDINK = "#1b1408"; // encre sombre posée sur l'or
-const INK = "#221c14"; // texte principal (encre)
-const INK_DIM = "#4a4133"; // texte secondaire
-const FAINT = "#8c8069"; // texte atténué / pied
-const PARCHMENT = "#ede7da"; // fond de page
-const CREAM = "#fbf7f0"; // fond des cartes
-const BORDER = "#e0d8c9"; // bordures / séparateurs
+// ── DA « calme » — plateforme de marque : on chuchote, on ne crie jamais.
+// Fond végétal doux, encre profonde, sauge + blush en accents, cartes
+// blanc cassé, filets « cheveu ». Titres en serif italique (Fraunces →
+// repli email : Georgia italique), corps en Inter → Helvetica/Arial.
+const BG = "#f4f7ec"; // fond de page (vert d'eau très pâle)
+const BG_DEEP = "#e7eeda"; // bandeaux doux (pied, blocs secondaires)
+const CARD = "#fffdf9"; // fond des cartes (blanc cassé chaud)
+const INK = "#1e1e19"; // encre — titres, emphase
+const INK_SOFT = "#55564c"; // encre douce — corps de texte
+const BLUSH = "#e3c9bc"; // accent blush — filets décoratifs
+const SAGE = "#8b9678"; // sauge — eyebrows, puces, bouton
+const SAGE_DEEP = "#5f6a4c"; // sauge profonde — liens (contraste sur crème)
+const LINE = "#e4e3da"; // filet « cheveu » (rgba → aplati pour Outlook)
+
+const SERIF = "Georgia,'Times New Roman',serif"; // repli Fraunces
+const SANS = "'Helvetica Neue',Helvetica,Arial,sans-serif"; // repli Inter
 
 function esc(s: string): string {
   return s
@@ -62,18 +69,18 @@ function bodyToHtml(body: string): string {
         .map((l) => l.replace(/^\s*(\d+[.)]|[-·•*])\s+/, "").trim())
         .map(
           (t) =>
-            `<tr><td style="padding:2px 0;vertical-align:top;color:${GOLD_DEEP};font-weight:700;width:18px;">›</td><td style="padding:2px 0;color:${INK_DIM};font-size:15px;line-height:1.6;">${esc(
+            `<tr><td style="padding:3px 0;vertical-align:top;color:${SAGE};font-weight:700;width:18px;font-family:${SANS};">·</td><td style="padding:3px 0;color:${INK_SOFT};font-family:${SANS};font-size:15px;line-height:1.65;">${esc(
               t
             )}</td></tr>`
         )
         .join("");
       out.push(
-        `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;"><tbody>${items}</tbody></table>`
+        `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;"><tbody>${items}</tbody></table>`
       );
     } else {
       const html = lines.map(esc).join("<br />");
       out.push(
-        `<p style="margin:0 0 16px;color:${INK_DIM};font-size:15px;line-height:1.65;">${html}</p>`
+        `<p style="margin:0 0 16px;color:${INK_SOFT};font-family:${SANS};font-size:15px;line-height:1.7;">${html}</p>`
       );
     }
   }
@@ -81,14 +88,14 @@ function bodyToHtml(body: string): string {
 }
 
 /** Bouton « bulletproof » (rendu correct jusque dans Outlook via VML).
- *  DA or : pastille or pleine, texte encre-or — le duo signature. */
+ *  DA calme : pastille sauge arrondie, texte blanc cassé — doux, jamais criard. */
 function button(label: string, url: string): string {
   const safeUrl = esc(url);
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 22px;"><tbody><tr><td>
-  <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeUrl}" style="height:46px;v-text-anchor:middle;width:260px;" arcsize="14%" strokecolor="${GOLD_SOFT}" fillcolor="${GOLD}"><w:anchorlock/><center style="color:${GOLDINK};font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${esc(
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;"><tbody><tr><td>
+  <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeUrl}" style="height:46px;v-text-anchor:middle;width:260px;" arcsize="50%" strokecolor="${SAGE}" fillcolor="${SAGE}"><w:anchorlock/><center style="color:${CARD};font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${esc(
     label
   )}</center></v:roundrect><![endif]-->
-  <!--[if !mso]><!-- --><a href="${safeUrl}" style="background:${GOLD};border:1px solid ${GOLD_SOFT};border-radius:8px;color:${GOLDINK};display:inline-block;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;line-height:46px;text-align:center;text-decoration:none;width:260px;-webkit-text-size-adjust:none;">${esc(
+  <!--[if !mso]><!-- --><a href="${safeUrl}" style="background:${SAGE};border:1px solid ${SAGE};border-radius:100px;color:${CARD};display:inline-block;font-family:${SANS};font-size:15px;font-weight:600;line-height:46px;text-align:center;text-decoration:none;width:260px;-webkit-text-size-adjust:none;">${esc(
     label
   )}</a><!--<![endif]-->
   </td></tr></tbody></table>`;
@@ -99,6 +106,11 @@ export function renderEmail(opts: EmailOptions): string {
   const preheader = (opts.preheader || opts.body.replace(/\s+/g, " ").trim()).slice(0, 140);
   const cta = opts.ctaLabel && opts.ctaUrl ? button(opts.ctaLabel, opts.ctaUrl) : "";
   const address = opts.addressLine || "EAGLEYE CORP — Lyon, France";
+  // Logo aigle : PNG hébergé (encre sur transparent). Repli sans image :
+  // monogramme serif italique — même voix, zéro dépendance.
+  const logo = opts.logoUrl
+    ? `<img src="${esc(opts.logoUrl)}" width="52" height="42" alt="EAGLEYE" style="display:block;border:0;width:52px;height:42px;" />`
+    : `<span style="font-family:${SERIF};font-style:italic;font-size:30px;line-height:42px;color:${INK};">E.</span>`;
 
   return `<!doctype html>
 <html lang="fr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -111,61 +123,66 @@ export function renderEmail(opts: EmailOptions): string {
 <title>${esc(opts.subject)}</title>
 <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 <style>
-  /* DA « or » = light mode ALPHA. On garde l'identité même en clients
-     sombres : fonds explicites, l'or reste l'or (pas d'inversion agressive). */
+  /* DA « calme » : l'identité tient même en clients sombres — fonds
+     explicites, on ne laisse pas l'inversion agressive écraser la douceur. */
   @media (prefers-color-scheme: dark) {
-    .bg { background:#141007 !important; }
-    .card { background:${CREAM} !important; border-color:${BORDER} !important; }
+    .bg { background:${BG} !important; }
+    .card { background:${CARD} !important; border-color:${LINE} !important; }
   }
   @media only screen and (max-width:600px) {
     .card { width:100% !important; border-radius:0 !important; }
     .pad { padding:24px !important; }
   }
-  a { color:${GOLD_DEEP}; }
+  a { color:${SAGE_DEEP}; }
 </style>
 </head>
-<body class="bg" style="margin:0;padding:0;background:${PARCHMENT};-webkit-text-size-adjust:100%;">
+<body class="bg" style="margin:0;padding:0;background:${BG};-webkit-text-size-adjust:100%;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(preheader)}</div>
-<table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" style="background:${PARCHMENT};">
-  <tr><td align="center" style="padding:28px 12px;">
-    <table role="presentation" class="card" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:${CREAM};border:1px solid ${BORDER};border-radius:14px;overflow:hidden;">
-      <!-- Bandeau OR -->
-      <tr><td style="background:${GOLD};background:linear-gradient(100deg,${GOLD} 0%,${GOLD_SOFT} 100%);padding:18px 32px;border-bottom:1px solid ${GOLD_SOFT};">
-        <span style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;letter-spacing:.14em;color:${GOLDINK};">🦅 EAGLEYE</span>
-        <span style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:.28em;color:#6b5426;text-transform:uppercase;margin-left:8px;">Sales OS</span>
+<table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" style="background:${BG};">
+  <tr><td align="center" style="padding:32px 12px;">
+    <table role="presentation" class="card" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:${CARD};border:1px solid ${LINE};border-radius:18px;overflow:hidden;">
+      <!-- En-tête — aigle + marque, sur carte claire, filet cheveu dessous -->
+      <tr><td class="pad" style="padding:28px 36px 20px;border-bottom:1px solid ${LINE};">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tbody><tr>
+          <td style="vertical-align:middle;padding-right:14px;">${logo}</td>
+          <td style="vertical-align:middle;">
+            <span style="display:block;font-family:${SERIF};font-style:italic;font-size:22px;line-height:1.1;color:${INK};">Eagleye</span>
+            <span style="display:block;font-family:${SANS};font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${SAGE};margin-top:3px;">Sales OS — Lyon</span>
+          </td>
+        </tr></tbody></table>
       </td></tr>
       <!-- Corps -->
-      <tr><td class="pad" style="padding:32px;font-family:Arial,Helvetica,sans-serif;color:${INK_DIM};">
-        <h1 style="margin:0 0 6px;font-family:Georgia,serif;font-size:21px;line-height:1.3;color:${INK};font-weight:700;">${esc(
+      <tr><td class="pad" style="padding:30px 36px;font-family:${SANS};color:${INK_SOFT};">
+        <h1 style="margin:0 0 8px;font-family:${SERIF};font-style:italic;font-weight:400;font-size:23px;line-height:1.3;color:${INK};">${esc(
           opts.subject
         )}</h1>
-        <div style="width:44px;height:3px;background:${GOLD};border-radius:2px;margin:0 0 18px;"></div>
+        <div style="width:38px;height:2px;background:${BLUSH};margin:0 0 20px;"></div>
         ${bodyToHtml(opts.body)}
         ${cta}
-        <p style="margin:22px 0 0;color:${INK};font-size:15px;line-height:1.6;">— <span style="color:${GOLD_DEEP};font-weight:700;">${esc(
+        <p style="margin:24px 0 0;color:${INK_SOFT};font-family:${SANS};font-size:15px;line-height:1.6;">— <span style="font-family:${SERIF};font-style:italic;font-size:16px;color:${INK};">${esc(
           closer
         )}</span></p>
       </td></tr>
-      <!-- Pied -->
-      <tr><td class="pad" style="padding:20px 32px;border-top:1px solid ${BORDER};">
-        <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:${FAINT};">${esc(
+      <!-- Pied — bandeau doux, mentions RGPD -->
+      <tr><td class="pad" style="padding:22px 36px;background:${BG_DEEP};">
+        <p style="margin:0 0 6px;font-family:${SANS};font-size:12px;line-height:1.55;color:${INK_SOFT};">${esc(
           address
         )}</p>
-        <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:${FAINT};">
+        <p style="margin:0 0 6px;font-family:${SANS};font-size:12px;line-height:1.55;color:${INK_SOFT};">
           Vous recevez cet email car nous accompagnons les professionnels de votre secteur à Lyon.
           Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels,
           site web de votre entreprise).
         </p>
-        <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;color:${FAINT};">
-          Vous ne souhaitez plus être contacté ? Répondez simplement <strong style="color:${GOLD_DEEP};">STOP</strong>.
+        <p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.55;color:${INK_SOFT};">
+          Vous ne souhaitez plus être contacté ? Répondez simplement <strong style="color:${INK};">STOP</strong>.
           Conformément au RGPD, vous pouvez aussi demander l&#8217;accès, la rectification ou la suppression
           de vos données en répondant à cet email.
         </p>
       </td></tr>
     </table>
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
-      <tr><td style="padding:14px 8px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:${FAINT};">
-        Envoyé par EAGLEYE CORP · Lyon
+      <tr><td style="padding:16px 8px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
+        Envoyé par Eagleye Corp · Lyon
       </td></tr>
     </table>
   </td></tr>

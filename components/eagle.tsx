@@ -1,7 +1,7 @@
 "use client";
 
 /** EAGLEYE CORP. mark — inline SVG, colored via currentColor, optional gold glow. */
-const EAGLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 704.00 564.00" role="img" aria-label="EAGLEYE CORP." fill="currentColor">
+export const EAGLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 704.00 564.00" role="img" aria-label="EAGLEYE CORP." fill="currentColor">
   <title>EAGLEYE CORP.</title>
   <g transform="translate(0.000000,564.000000) scale(0.100000,-0.100000)" fill="currentColor" stroke="none">
 <path d="M5000 4154 c-1944 -1942 -2315 -2309 -2328 -2308 -7 1 -16 2 -21 3
