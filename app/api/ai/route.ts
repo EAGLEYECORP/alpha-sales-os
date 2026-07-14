@@ -13,15 +13,18 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply";
+type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply" | "briefing";
 
 interface AiRequest {
   task: AiTask;
-  prospect: Prospect;
+  /** Requis pour toutes les tâches sauf `briefing` (qui porte sur la tournée). */
+  prospect?: Prospect;
   businessRules: string;
   objection?: string;
   /** inbound message to answer (task = reply) */
   inboundMessage?: string;
+  /** résumé de la tournée du jour (task = briefing) */
+  tourSummary?: string;
 }
 
 const SYSTEM = `Tu es le copilote de vente d'EAGLEYE CORP (agence lyonnaise : sites premium + overlays IA pour restaurants, pubs, ambulances, artisans).
@@ -35,7 +38,25 @@ Doctrine Hormozi non négociable :
 Réponds en français, format Markdown, concret et terrain — zéro corporate.`;
 
 function buildPrompt(req: AiRequest): string {
-  const p = req.prospect;
+  // Le briefing porte sur la tournée entière, pas sur une fiche.
+  if (req.task === "briefing") {
+    return [
+      `## Tournée du jour (RDV terrain, dans l'ordre horaire)`,
+      req.tourSummary ?? "(aucune étape)",
+      ``,
+      `## Règles business de l'agence`,
+      req.businessRules,
+      ``,
+      `## Tâche`,
+      `Tu es le directeur commercial qui briefe son closer avant la tournée. Donne un BRIEFING tactique en 4 puces courtes (commence chaque ligne par « • »), langage terrain :`,
+      `1. l'ordre / le rythme de la tournée,`,
+      `2. LE closing prioritaire du jour et pourquoi (valeur × chaleur),`,
+      `3. l'angle qui marche aujourd'hui (Taxe d'Ignorance chiffrée, démo mobile avant prix),`,
+      `4. le piège doctrine à éviter (croyance cassée, objection bloquante, prix sans démo).`,
+    ].join("\n");
+  }
+
+  const p = req.prospect!;
   const ctx = [
     `## Prospect`,
     `- ${p.name}, ${p.company} (${p.sector}) — ${p.city}`,
@@ -75,20 +96,29 @@ function buildPrompt(req: AiRequest): string {
 
 function fallback(req: AiRequest): string {
   switch (req.task) {
+    case "briefing":
+      // Le client affiche déjà son brief déterministe (lib/closer) ; ce repli
+      // serveur rappelle juste la doctrine de tournée.
+      return [
+        "• Suis l'ordre horaire — chaque RDV se termine par un next step DATÉ.",
+        "• Garde ton énergie pour le closing à plus forte valeur pondérée × chaleur.",
+        "• L'angle : la Taxe d'Ignorance chiffrée, démo mobile AVANT tout prix.",
+        "• Piège : ne traite jamais une objection sans avoir isolé la croyance cassée.",
+      ].join("\n");
     case "script":
-      return fallbackScript(req.prospect, req.businessRules);
+      return fallbackScript(req.prospect!, req.businessRules);
     case "audit":
-      return fallbackAuditNotes(req.prospect);
+      return fallbackAuditNotes(req.prospect!);
     case "objection":
-      return fallbackObjectionAnswer(req.objection ?? "Objection inconnue", req.prospect);
+      return fallbackObjectionAnswer(req.objection ?? "Objection inconnue", req.prospect!);
     case "summary":
-      return fallbackSummary(req.prospect);
+      return fallbackSummary(req.prospect!);
     case "next-action": {
-      const nba = nextBestAction(req.prospect);
+      const nba = nextBestAction(req.prospect!);
       return `**Action recommandée (${nba.urgency}) :** ${nba.action}\n\n**Pourquoi :** ${nba.why}`;
     }
     case "reply": {
-      const p = req.prospect;
+      const p = req.prospect!;
       const first = (p.name || "").split(" ")[0] || "bonjour";
       return [
         `**Brouillon de réponse (moteur templates) :**`,
@@ -114,8 +144,11 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
-  if (!body?.task || !body?.prospect) {
+  if (!body?.task || (body.task !== "briefing" && !body?.prospect)) {
     return NextResponse.json({ error: "task et prospect requis" }, { status: 400 });
+  }
+  if (body.task === "briefing" && typeof body.tourSummary !== "string") {
+    return NextResponse.json({ error: "tourSummary requis pour le briefing" }, { status: 400 });
   }
 
   // IA locale (Ollama) prioritaire — consignes compactes pour un petit modèle.

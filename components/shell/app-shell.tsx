@@ -13,6 +13,7 @@ import {
   Gauge,
   Kanban,
   Mail,
+  Navigation,
   PanelLeftClose,
   PanelLeftOpen,
   ScrollText,
@@ -37,6 +38,7 @@ import { N8nAutoSync } from "@/components/n8n-autosync";
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
+  { href: "/closer", label: "Closer OS", icon: Navigation },
   { href: "/agent", label: "Agent ALPHA", icon: Bot },
   { href: "/templates", label: "Templates", icon: ScrollText },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
@@ -51,8 +53,9 @@ const NAV = [
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
+// Sur téléphone, le Closer OS remplace Templates : c'est LE compagnon terrain.
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/", "/pipeline", "/agent", "/templates", "/settings"].includes(n.href)
+  ["/", "/pipeline", "/closer", "/agent", "/settings"].includes(n.href)
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {
