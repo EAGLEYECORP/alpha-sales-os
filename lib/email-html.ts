@@ -181,8 +181,11 @@ export function renderEmail(opts: EmailOptions): string {
       </td></tr>
     </table>
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
-      <tr><td style="padding:16px 8px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
-        Envoyé par Eagleye Corp · Lyon
+      <tr><td style="padding:16px 8px 4px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
+        Eagleye Corp · Lyon
+      </td></tr>
+      <tr><td style="padding:0 8px 14px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
+        Envoyé avec <span style="font-family:${SERIF};font-style:italic;font-size:12px;letter-spacing:.04em;text-transform:none;color:${INK};">Alpha Sales OS</span><span style="color:${INK};">&#174;</span>
       </td></tr>
     </table>
   </td></tr>
@@ -198,5 +201,6 @@ export function plainText(opts: EmailOptions): string {
   lines.push("", `— ${opts.closerName || "EAGLEYE"}`, "", opts.addressLine || "EAGLEYE CORP — Lyon, France");
   lines.push("Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels, site web de votre entreprise).");
   lines.push("Vous ne souhaitez plus être contacté ? Répondez STOP. Conformément au RGPD, vous pouvez aussi demander l'accès, la rectification ou la suppression de vos données en répondant à cet email.");
+  lines.push("", "Envoyé avec ALPHA SALES OS® — Eagleye Corp, Lyon");
   return lines.join("\n");
 }

@@ -143,7 +143,8 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
     </div>
 
     <footer>
-      Eagleye Corp — Lyon · Cet audit vous est offert · Données publiques, chiffres à valider ensemble
+      Eagleye Corp — Lyon · Cet audit vous est offert · Données publiques, chiffres à valider ensemble<br />
+      <span style="text-transform:none;letter-spacing:.02em;">Généré avec <em style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:${INK};">Alpha Sales OS</em><span style="color:${INK};">®</span></span>
     </footer>
   </div>
 </div>
