@@ -26,6 +26,7 @@ export default function TemplatesPage() {
   const [format, setFormat] = useState<TemplateFormat | "tous">("tous");
   const [prospectId, setProspectId] = useState<string>("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [htmlBusy, setHtmlBusy] = useState<string | null>(null);
 
   const prospect = prospects.find((p) => p.id === prospectId) ?? null;
   const groupMeta = STAGE_GROUPS.find((g) => g.id === group)!;
@@ -42,6 +43,31 @@ export default function TemplatesPage() {
     navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 1500);
+  };
+
+  // « Copier le HTML » : rend l'email FINAL (DA calme, aigle, pied RGPD,
+  // signature Alpha Sales OS) via /api/email/preview et le met au presse-
+  // papiers — pour coller dans un autre outil d'envoi. ⚠ Sans tracking :
+  // les ouvertures/clics ne se comptent que via l'envoi depuis l'app.
+  const copyHtml = async (id: string, subject: string, body: string) => {
+    setHtmlBusy(id);
+    try {
+      const res = await fetch("/api/email/preview", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ subject, body }),
+      });
+      const data = (await res.json()) as { html?: string };
+      if (data.html) {
+        await navigator.clipboard.writeText(data.html);
+        setCopied(`html-${id}`);
+        setTimeout(() => setCopied(null), 2000);
+      }
+    } catch {
+      /* réseau indisponible — le bouton reste inerte, sans casser la page */
+    } finally {
+      setHtmlBusy(null);
+    }
   };
 
   return (
@@ -167,6 +193,17 @@ export default function TemplatesPage() {
                   {copied === t.id ? <Check size={13} className="text-signal-green" /> : <Copy size={13} />}
                   {copied === t.id ? "Copié ✓" : "Copier"}
                 </button>
+                {t.format === "email" && (
+                  <button
+                    className="btn-ghost px-2.5 py-1.5 text-[12px]"
+                    title="Copie l'email HTML final (DA + pied RGPD) pour un autre outil. Sans tracking — envoie depuis l'app pour compter ouvertures et clics."
+                    disabled={htmlBusy === t.id}
+                    onClick={() => void copyHtml(t.id, subject, sendBody)}
+                  >
+                    {copied === `html-${t.id}` ? <Check size={13} className="text-signal-green" /> : <Copy size={13} />}
+                    {copied === `html-${t.id}` ? "HTML copié ✓" : htmlBusy === t.id ? "Rendu…" : "Copier le HTML"}
+                  </button>
+                )}
                 {prospect && t.format !== "appel" && (
                   <SendBar prospect={prospect} subject={subject} body={sendBody} compact />
                 )}

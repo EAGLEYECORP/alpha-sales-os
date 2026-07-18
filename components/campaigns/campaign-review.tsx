@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
+  Copy,
   Eye,
   EyeOff,
   Loader2,
@@ -57,6 +58,7 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
   const [sending, setSending] = useState(false);
   const [previews, setPreviews] = useState<Record<string, Preview>>({});
   const [openPreview, setOpenPreview] = useState<Record<string, boolean>>({});
+  const [copiedHtml, setCopiedHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState<Record<string, boolean>>({});
 
   // Génère les brouillons au premier affichage s'il n'y en a pas encore, puis
@@ -298,6 +300,19 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
                           {openPreview[d.id] ? "Masquer l'aperçu" : "Aperçu HTML"}
                         </button>
                         {previewLoading[d.id] && <Loader2 size={13} className="animate-spin text-paper-faint" />}
+                        {pv && (
+                          <button
+                            className="btn-ghost px-2.5 py-1.5 text-[12px]"
+                            title="Copier le HTML final (DA + pied RGPD) — pour un autre outil d'envoi"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(pv.html);
+                              setCopiedHtml(d.id);
+                              setTimeout(() => setCopiedHtml((c) => (c === d.id ? null : c)), 2000);
+                            }}
+                          >
+                            <Copy size={13} /> {copiedHtml === d.id ? "HTML copié ✓" : "Copier le HTML"}
+                          </button>
+                        )}
                         {pv && <LintChip lint={pv.lint} />}
                       </div>
                     )}

@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ALPHA SALES OS® — Le système d'exploitation commercial | EAGLEYE CORP</title>
+<meta name="description" content="ALPHA SALES OS : prospection, audit terrain, emails trackés, closing — piloté par une doctrine. Accès par vagues, sur liste d'attente. / The sales operating system. Waitlist access." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0A0807; --ink2:#15110D; --ink3:#201B15;
+    --paper:#F3EEE4; --dim:#8E877B;
+    --line:rgba(243,238,228,.12); --line2:rgba(243,238,228,.22);
+    --gold:#E8C98A; --goldink:#1B1408;
+    --green:#86C06A; --red:#E5564E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--ink);color:var(--paper);font-family:'Inter Tight',system-ui,sans-serif;line-height:1.6;overflow-x:hidden}
+  .fd{font-family:'Bricolage Grotesque',sans-serif}
+  .fm{font-family:'JetBrains Mono',monospace}
+  a{color:var(--gold)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:14px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:100px;padding:14px 26px;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;border:none}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),#E0AC46);color:var(--goldink);box-shadow:0 8px 24px -8px rgba(232,201,138,.55)}
+  .btn-ghost{border:1px solid var(--line2);color:var(--paper);background:transparent}
+  .card{background:var(--ink2);border:1px solid var(--line);border-radius:16px}
+  img.shot{width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--line2);box-shadow:0 24px 70px -30px rgba(0,0,0,.85)}
+  /* ambience */
+  .amb{position:fixed;inset:0;pointer-events:none;background:radial-gradient(900px 500px at 80% -5%,rgba(232,201,138,.05),transparent 60%),radial-gradient(700px 600px at -10% 100%,rgba(106,160,216,.04),transparent 55%)}
+  /* header */
+  header{position:sticky;top:0;z-index:50;background:rgba(10,8,7,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;max-width:1080px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--paper)}
+  .brand .mark{width:34px;height:27px;color:var(--gold);filter:drop-shadow(0 0 10px rgba(232,201,138,.35))}
+  .brand .mark svg{width:100%;height:100%}
+  .brand b{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:15px;letter-spacing:.04em}
+  .brand b span{color:var(--gold)}
+  .lang{display:flex;border:1px solid var(--line2);border-radius:100px;overflow:hidden}
+  .lang button{background:none;border:none;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;padding:7px 14px;cursor:pointer}
+  .lang button.on{background:var(--gold);color:var(--goldink);font-weight:700}
+  /* hero */
+  .hero{padding:84px 0 40px;text-align:center;position:relative}
+  .hero h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(2.1rem,5.6vw,3.6rem);line-height:1.08;letter-spacing:-.02em;max-width:820px;margin:0 auto}
+  .hero h1 em{font-style:normal;color:var(--gold)}
+  .hero p.sub{max-width:640px;margin:22px auto 0;color:var(--dim);font-size:1.08rem}
+  .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .hero .shotwrap{max-width:960px;margin:56px auto 0}
+  .waves{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.08em;margin-top:14px}
+  .waves i{color:var(--green);font-style:normal}
+  /* sections */
+  section{padding:76px 0}
+  .sec-line{border-top:1px solid var(--line)}
+  h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(1.5rem,3.4vw,2.2rem);letter-spacing:-.01em;max-width:680px}
+  .lead{color:var(--dim);max-width:640px;margin-top:12px}
+  /* tax band */
+  .tax{background:linear-gradient(180deg,rgba(229,86,78,.07),transparent);border:1px solid rgba(229,86,78,.25);border-radius:20px;padding:34px;display:flex;gap:30px;flex-wrap:wrap;align-items:center}
+  .tax .big{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(2rem,5vw,3rem);color:var(--red)}
+  .tax .calc{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--dim);margin-top:6px}
+  .tax p{flex:1;min-width:260px}
+  /* features */
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:34px}
+  .feat{padding:24px}
+  .feat .ic{font-size:22px}
+  .feat h3{font-family:'Bricolage Grotesque',sans-serif;font-size:1.02rem;font-weight:700;margin:10px 0 6px}
+  .feat p{color:var(--dim);font-size:.92rem}
+  /* split */
+  .split{display:flex;gap:44px;align-items:center;flex-wrap:wrap}
+  .split>div{flex:1;min-width:290px}
+  .phone{max-width:320px;margin:0 auto}
+  /* how */
+  .how{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:34px}
+  .how .step{padding:24px;border-left:2px solid var(--gold)}
+  .how .n{font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:11px;letter-spacing:.18em}
+  .how h3{font-family:'Bricolage Grotesque',sans-serif;font-size:1rem;margin:8px 0 6px}
+  .how p{color:var(--dim);font-size:.9rem}
+  /* waitlist */
+  .wl{background:linear-gradient(180deg,rgba(232,201,138,.08),transparent);border:1px solid rgba(232,201,138,.3);border-radius:24px;padding:52px 34px;text-align:center}
+  .wl h2{margin:0 auto}
+  .wl .lead{margin:14px auto 0}
+  footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--dim);font-size:12.5px}
+  footer .fm{font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-top:8px}
+  @media(max-width:640px){.tax{padding:24px}.wl{padding:38px 20px}}
+</style>
+</head>
+<body>
+<div class="amb"></div>
+
+<header>
+  <nav class="nav">
+    <a class="brand" href="#top">
+      <span class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 704 564" fill="currentColor"><g transform="translate(0,564) scale(0.1,-0.1)"><path d="M5000 4154 c-1944 -1942 -2315 -2309 -2328 -2308 -7 1 -16 2 -21 3 -15 2 -114 159 -140 221 -69 162 -66 411 6 570 56 123 98 176 280 361 95 96 173 182 173 189 0 14 -2418 2440 -2431 2440 -9 0 -26 -76 -39 -175 -8 -63 -7 -107 5 -210 26 -214 55 -396 65 -416 6 -10 17 -58 26 -106 8 -48 19 -92 25 -99 5 -7 21 -54 35 -105 14 -50 34 -108 45 -128 10 -20 19 -45 19 -56 0 -11 7 -33 16 -50 9 -16 27 -59 40 -95 14 -35 31 -71 38 -80 8 -8 19 -34 25 -57 7 -23 16 -45 21 -48 14 -8 13 -55 -1 -55 -6 0 -32 11 -58 24 -105 55 -460 226 -469 226 -5 0 -20 8 -33 19 -13 10 -41 24 -61 30 -20 7 -54 23 -74 37 -22 15 -47 24 -63 22 -23 -3 -26 -7 -25 -38 1 -46 47 -198 83 -275 16 -33 32 -71 36 -85 4 -14 11 -30 15 -35 5 -6 30 -51 56 -100 79 -151 241 -383 367 -527 31 -36 57 -70 57 -77 0 -18 -76 -13 -233 14 -80 14 -151 27 -158 30 -28 10 -241 34 -255 28 -22 -8 -17 -34 22 -98 143 -237 431 -515 739 -713 39 -24 81 -52 95 -62 15 -10 48 -30 75 -44 28 -15 77 -43 110 -62 33 -19 83 -46 110 -59 86 -42 106 -67 62 -79 -45 -11 -308 -46 -347 -46 -22 0 -57 -7 -77 -15 -21 -8 -63 -18 -93 -23 -78 -10 -76 -28 10 -98 77 -64 139 -104 241 -158 36 -18 74 -39 85 -44 68 -38 317 -129 386 -142 29 -5 69 -16 88 -24 42 -17 331 -72 450 -85 47 -6 130 -12 185 -15 55 -3 101 -5 103 -6 19 -3 -52 -80 -348 -375 -193 -192 -350 -354 -350 -358 0 -13 59 -79 86 -97 12 -8 47 -33 79 -55 73 -52 117 -80 217 -138 46 -27 90 -53 98 -57 36 -22 221 -110 231 -110 5 0 31 -11 57 -25 26 -14 52 -25 58 -25 7 0 45 -13 85 -30 41 -16 83 -30 94 -30 12 0 71 51 151 131 93 93 137 130 148 126 14 -6 16 -29 16 -167 l0 -161 36 -15 c60 -25 121 -33 350 -45 350 -18 756 9 812 53 9 8 12 55 12 174 0 108 4 165 11 170 7 4 69 -51 148 -130 98 -98 143 -136 160 -136 23 0 168 53 247 91 23 10 46 19 51 19 13 0 254 122 321 163 50 30 164 104 222 144 72 49 160 127 160 142 0 9 -157 174 -350 366 -295 295 -367 373 -347 375 1 0 72 5 157 10 158 10 511 68 580 96 19 8 58 18 85 24 57 10 254 78 302 103 18 9 37 17 43 17 10 0 91 43 237 125 19 11 72 49 116 85 105 83 107 100 17 115 -36 6 -71 14 -77 18 -7 5 -54 12 -105 18 -95 10 -285 36 -325 45 -13 2 -23 10 -23 17 0 15 20 28 140 90 52 27 106 58 119 68 13 11 29 19 36 19 7 0 30 13 52 29 22 16 55 37 73 46 18 9 38 21 44 26 23 19 103 77 161 117 144 97 379 322 506 482 47 60 119 178 119 195 0 22 -30 33 -74 28 -73 -8 -239 -34 -246 -38 -14 -9 -256 -45 -297 -45 -24 0 -43 5 -43 10 0 6 39 58 88 115 48 57 96 117 108 132 38 51 184 272 184 279 0 4 6 15 14 23 23 27 139 264 152 311 3 14 14 43 24 65 10 22 26 75 36 118 29 124 27 125 -201 13 -349 -171 -464 -226 -472 -226 -4 0 -19 -9 -33 -20 -29 -23 -68 -26 -76 -7 -3 8 22 70 54 139 33 69 63 140 67 159 4 19 13 43 19 54 31 49 138 402 162 530 9 50 23 112 31 139 39 134 39 649 -1 645 -6 -1 -679 -669 -1496 -1485z"/></g></svg></span>
+      <b>ALPHA <span>SALES OS</span></b>
+    </a>
+    <div class="lang" role="group" aria-label="Langue / Language">
+      <button id="btn-fr" class="on" onclick="setLang('fr')">FR</button>
+      <button id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+  </nav>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <div class="hero wrap">
+    <span class="eyebrow" data-k="hero_eyebrow"></span>
+    <h1 data-k="hero_h1"></h1>
+    <p class="sub" data-k="hero_sub"></p>
+    <div class="cta-row">
+      <a class="btn btn-gold" id="cta-top" href="#" data-k="cta_main"></a>
+      <a class="btn btn-ghost" href="#os" data-k="cta_see"></a>
+    </div>
+    <p class="waves" data-k="hero_waves"></p>
+    <div class="shotwrap"><img class="shot" src="assets/mkt-dashboard.png" alt="ALPHA SALES OS — Dashboard" /></div>
+  </div>
+
+  <!-- TAXE -->
+  <section class="wrap sec-line" id="taxe">
+    <span class="eyebrow" data-k="tax_eyebrow"></span>
+    <h2 data-k="tax_h2"></h2>
+    <p class="lead" data-k="tax_lead"></p>
+    <div class="tax" style="margin-top:30px">
+      <div>
+        <div class="big">≈ 9 300 € <span style="font-size:.45em;color:var(--dim)">/ <span data-k="month"></span></span></div>
+        <div class="calc" data-k="tax_calc"></div>
+      </div>
+      <p style="color:var(--dim)" data-k="tax_note"></p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="wrap sec-line" id="os">
+    <span class="eyebrow" data-k="feat_eyebrow"></span>
+    <h2 data-k="feat_h2"></h2>
+    <div class="grid">
+      <div class="card feat"><div class="ic">🎯</div><h3 data-k="f1_t"></h3><p data-k="f1_p"></p></div>
+      <div class="card feat"><div class="ic">🎁</div><h3 data-k="f2_t"></h3><p data-k="f2_p"></p></div>
+      <div class="card feat"><div class="ic">✉️</div><h3 data-k="f3_t"></h3><p data-k="f3_p"></p></div>
+      <div class="card feat"><div class="ic">🧭</div><h3 data-k="f4_t"></h3><p data-k="f4_p"></p></div>
+      <div class="card feat"><div class="ic">🥊</div><h3 data-k="f5_t"></h3><p data-k="f5_p"></p></div>
+      <div class="card feat"><div class="ic">🔒</div><h3 data-k="f6_t"></h3><p data-k="f6_p"></p></div>
+    </div>
+  </section>
+
+  <!-- FICHE -->
+  <section class="wrap sec-line">
+    <div class="split">
+      <div>
+        <span class="eyebrow" data-k="file_eyebrow"></span>
+        <h2 data-k="file_h2"></h2>
+        <p class="lead" data-k="file_lead"></p>
+      </div>
+      <div><img class="shot" src="assets/mkt-prospect.png" alt="Fiche prospect — audit & Taxe d'Ignorance" /></div>
+    </div>
+  </section>
+
+  <!-- CLOSER OS -->
+  <section class="wrap sec-line">
+    <div class="split">
+      <div class="phone"><img class="shot" src="assets/mkt-mobile-closer.png" alt="Closer OS — mobile" /></div>
+      <div>
+        <span class="eyebrow" data-k="closer_eyebrow"></span>
+        <h2 data-k="closer_h2"></h2>
+        <p class="lead" data-k="closer_lead"></p>
+        <div style="margin-top:22px"><img class="shot" src="assets/mkt-closer.png" alt="Closer OS — tournée du jour" /></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section class="wrap sec-line">
+    <span class="eyebrow" data-k="how_eyebrow"></span>
+    <h2 data-k="how_h2"></h2>
+    <div class="how">
+      <div class="card step"><div class="n">01</div><h3 data-k="h1_t"></h3><p data-k="h1_p"></p></div>
+      <div class="card step"><div class="n">02</div><h3 data-k="h2_t"></h3><p data-k="h2_p"></p></div>
+      <div class="card step"><div class="n">03</div><h3 data-k="h3_t"></h3><p data-k="h3_p"></p></div>
+    </div>
+  </section>
+
+  <!-- WAITLIST -->
+  <section class="wrap" id="waitlist">
+    <div class="wl">
+      <span class="eyebrow" data-k="wl_eyebrow"></span>
+      <h2 data-k="wl_h2"></h2>
+      <p class="lead" data-k="wl_lead"></p>
+      <div class="cta-row">
+        <a class="btn btn-gold" id="cta-bottom" href="#" data-k="cta_main"></a>
+      </div>
+      <p class="waves" data-k="wl_note"></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© <span id="yr"></span> EAGLEYE CORP — Lyon, France · <a href="https://eagleyecorp.netlify.app">eagleyecorp.netlify.app</a></p>
+    <p class="fm" data-k="foot_note"></p>
+  </div>
+</footer>
+
+<script>
+const I18N = {
+  fr: {
+    hero_eyebrow: "Eagleye Corp — Lyon · Accès sur liste d'attente",
+    hero_h1: "Le système d'exploitation <em>commercial</em>. Prospection, audit, closing — piloté par une doctrine.",
+    hero_sub: "ALPHA SALES OS trouve vos prospects, chiffre ce que leur inaction leur coûte, envoie des emails soignés et trackés, et vous accompagne jusqu'au closing — sur ordinateur comme sur le terrain. Rien ne part sans votre validation.",
+    cta_main: "Rejoindre la liste d'attente",
+    cta_see: "Voir l'OS ↓",
+    hero_waves: "ACCÈS PAR VAGUES · <i>PREMIERS INSCRITS, PREMIERS SERVIS</i>",
+    tax_eyebrow: "Le point de départ",
+    tax_h2: "Chaque entreprise paie une Taxe d'Ignorance. Presque aucune ne l'a calculée.",
+    tax_lead: "Demandes manquées × panier moyen × taux de conversion : c'est ce que « ne rien faire » coûte chaque mois. L'OS la chiffre pour chaque prospect — et en fait votre meilleur argument de vente.",
+    month: "mois",
+    tax_calc: "8 demandes manquées/sem × 900 € × 30 % de conversion — exemple de calcul",
+    tax_note: "Ce n'est jamais notre chiffre : c'est le sien, calculé avec ses vrais nombres, offert dans un audit dont il garde le document quoi qu'il arrive.",
+    feat_eyebrow: "Ce qu'il y a dedans",
+    feat_h2: "Un seul outil, tout le cycle de vente.",
+    f1_t: "Pipeline doctrine", f1_p: "Chaque deal a une étape, une probabilité, un next step DATÉ. La Red Zone isole les objections pour les traiter — pas les subir.",
+    f2_t: "Audit cadeau (lead magnet)", f2_p: "Un audit de présence brandé, généré depuis la fiche : position marché, coût de l'inaction, recommandations. Offert au prospect, document à lui.",
+    f3_t: "Emails soignés & trackés", f3_p: "HTML au design travaillé, ouvertures et clics comptés, pied RGPD et désinscription STOP automatiques, quotas anti-spam intégrés.",
+    f4_t: "Closer OS — le terrain", f4_p: "Sur téléphone : la tournée du jour dans l'ordre, navigation Maps, brief tactique, et le Mode Closing plein écran pendant le rendez-vous.",
+    f5_t: "Sparring IA", f5_p: "Le prospect est joué par l'IA : entraînez-vous à décrocher l'audit avant le vrai rendez-vous, un coach commente chaque réponse.",
+    f6_t: "Vos données chez vous", f6_p: "IA locale gratuite (Ollama), CRM Google Sheets que vous voyez, secrets sur votre machine. L'humain valide chaque envoi — toujours.",
+    file_eyebrow: "La fiche prospect",
+    file_h2: "Tout le deal en un écran.",
+    file_lead: "Audit terrain, Taxe d'Ignorance calculée, les 3 Croyances à installer, objections et contre-arguments, historique complet, envoi tracké. La doctrine bloque la signature tant que le dossier n'est pas prêt.",
+    closer_eyebrow: "Sur le terrain",
+    closer_h2: "Un compagnon de tournée dans la poche.",
+    closer_lead: "La tournée du jour triée par heure, la chaleur de chaque prospect, « Y aller » qui ouvre Maps, et à un tap : le script de closing plein écran avec les réponses aux objections. Installable sur votre téléphone comme une app.",
+    how_eyebrow: "Comment ça marche",
+    how_h2: "Simple devant, sérieux derrière.",
+    h1_t: "Vous ciblez", h1_p: "Importez votre liste (Sheets, CSV, recherche) — l'OS enrichit, déduplique et priorise par valeur.",
+    h2_t: "L'OS prépare", h2_p: "Audits chiffrés, brouillons d'emails, relances planifiées. L'IA propose, vous validez — rien ne part seul.",
+    h3_t: "Vous closez", h3_p: "Tournée, démo mobile, closing guidé. Chaque signature nourrit le cycle suivant : le pipeline est une boucle, pas un stock.",
+    wl_eyebrow: "Accès anticipé",
+    wl_h2: "L'accès ouvre par vagues.",
+    wl_lead: "Laissez-nous un contact : vous recevrez votre accès quand votre vague s'ouvre — les premiers inscrits d'abord. Pas de spam : uniquement l'accès et les nouveautés majeures.",
+    wl_note: "VOTRE EMAIL NE SERT QU'À ÇA · <i>DÉSINSCRIPTION EN UN MOT : STOP</i>",
+    foot_note: "Construit avec Alpha Sales OS® · La décision est le produit.",
+    mail_subject: "ACCÈS ALPHA SALES OS — liste d'attente",
+    mail_body: "Bonjour,%0D%0A%0D%0AJe veux rejoindre la liste d'attente d'ALPHA SALES OS.%0D%0A%0D%0AMon activité : %0D%0AMa ville : %0D%0A%0D%0AMerci !"
+  },
+  en: {
+    hero_eyebrow: "Eagleye Corp — Lyon, France · Waitlist access",
+    hero_h1: "The <em>sales</em> operating system. Prospecting, audits, closing — driven by doctrine.",
+    hero_sub: "ALPHA SALES OS finds your prospects, prices what their inaction costs them, sends polished tracked emails, and walks you to the close — at your desk and in the field. Nothing goes out without your approval.",
+    cta_main: "Join the waitlist",
+    cta_see: "See the OS ↓",
+    hero_waves: "ACCESS OPENS IN WAVES · <i>FIRST IN, FIRST SERVED</i>",
+    tax_eyebrow: "The starting point",
+    tax_h2: "Every business pays an Ignorance Tax. Almost none has ever computed it.",
+    tax_lead: "Missed enquiries × average ticket × conversion rate: that's what “doing nothing” costs every month. The OS computes it for each prospect — and turns it into your best sales argument.",
+    month: "month",
+    tax_calc: "8 missed enquiries/week × €900 × 30% conversion — sample calculation",
+    tax_note: "It's never our number: it's theirs, computed with their real figures, given away in an audit they keep no matter what.",
+    feat_eyebrow: "What's inside",
+    feat_h2: "One tool, the whole sales cycle.",
+    f1_t: "Doctrine pipeline", f1_p: "Every deal has a stage, a probability, a DATED next step. The Red Zone isolates objections so you handle them — not endure them.",
+    f2_t: "Gift audit (lead magnet)", f2_p: "A branded presence audit generated from the record: market position, cost of inaction, recommendations. Given to the prospect — the document is theirs.",
+    f3_t: "Polished, tracked emails", f3_p: "Carefully designed HTML, opens and clicks counted, GDPR footer and STOP unsubscribe built in, anti-spam quotas enforced.",
+    f4_t: "Closer OS — the field", f4_p: "On your phone: today's route in order, Maps navigation, a tactical brief, and the full-screen Closing Mode during the meeting.",
+    f5_t: "AI sparring", f5_p: "The prospect is played by AI: rehearse landing the audit before the real meeting, with a coach commenting every answer.",
+    f6_t: "Your data stays yours", f6_p: "Free local AI (Ollama), a Google Sheets CRM you can see, secrets on your machine. A human approves every send — always.",
+    file_eyebrow: "The prospect record",
+    file_h2: "The whole deal on one screen.",
+    file_lead: "Field audit, computed Ignorance Tax, the 3 Beliefs to install, objections with counters, full history, tracked sending. Doctrine blocks the signature until the case is ready.",
+    closer_eyebrow: "In the field",
+    closer_h2: "A route companion in your pocket.",
+    closer_lead: "Today's route sorted by time, each prospect's heat, “Go” opens Maps, and one tap away: the full-screen closing script with objection answers. Installs on your phone like an app.",
+    how_eyebrow: "How it works",
+    how_h2: "Simple up front, serious underneath.",
+    h1_t: "You target", h1_p: "Import your list (Sheets, CSV, research) — the OS enriches, dedupes and prioritises by value.",
+    h2_t: "The OS prepares", h2_p: "Priced audits, email drafts, scheduled follow-ups. AI proposes, you approve — nothing leaves on its own.",
+    h3_t: "You close", h3_p: "Route, mobile demo, guided closing. Every signature feeds the next cycle: the pipeline is a loop, not a stock.",
+    wl_eyebrow: "Early access",
+    wl_h2: "Access opens in waves.",
+    wl_lead: "Leave us a contact: you'll receive access when your wave opens — first signed up, first served. No spam: access and major updates only.",
+    wl_note: "YOUR EMAIL IS USED FOR THIS ONLY · <i>UNSUBSCRIBE WITH ONE WORD: STOP</i>",
+    foot_note: "Built with Alpha Sales OS® · The decision is the product.",
+    mail_subject: "ALPHA SALES OS ACCESS — waitlist",
+    mail_body: "Hi,%0D%0A%0D%0AI want to join the ALPHA SALES OS waitlist.%0D%0A%0D%0AMy business: %0D%0AMy city: %0D%0A%0D%0AThanks!"
+  }
+};
+
+const MAIL = "eagleyecorp.ad@gmail.com";
+
+function setLang(l) {
+  document.documentElement.lang = l;
+  document.querySelectorAll("[data-k]").forEach((el) => {
+    const v = I18N[l][el.dataset.k];
+    if (v !== undefined) el.innerHTML = v;
+  });
+  const href = `mailto:${MAIL}?subject=${encodeURIComponent(I18N[l].mail_subject)}&body=${I18N[l].mail_body}`;
+  document.getElementById("cta-top").href = href;
+  document.getElementById("cta-bottom").href = href;
+  document.getElementById("btn-fr").classList.toggle("on", l === "fr");
+  document.getElementById("btn-en").classList.toggle("on", l === "en");
+  try { localStorage.setItem("alpha_site_lang", l); } catch {}
+}
+
+document.getElementById("yr").textContent = new Date().getFullYear();
+let lang = "fr";
+try { lang = localStorage.getItem("alpha_site_lang") || (navigator.language.startsWith("fr") ? "fr" : "en"); } catch {}
+setLang(lang === "en" ? "en" : "fr");
+</script>
+</body>
+</html>
