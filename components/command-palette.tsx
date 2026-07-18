@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Activity, BarChart3, Bot, CalendarDays, CornerDownLeft, Gauge, Kanban, Mail,
-  Navigation, ScrollText, Search, Settings, Sprout, Swords, User,
+  Gem, Navigation, ScrollText, Search, Settings, Sprout, Swords, User,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { StageBadge } from "@/components/ui/stage-badge";
@@ -19,6 +19,7 @@ const PAGES = [
   { href: "/templates", label: "Templates", icon: ScrollText },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
   { href: "/kpis", label: "KPIs", icon: Gauge },
+  { href: "/preuves", label: "Preuves", icon: Gem },
   { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
   { href: "/nurture", label: "Relances", icon: Sprout },
   { href: "/intel", label: "Concurrents", icon: Swords },

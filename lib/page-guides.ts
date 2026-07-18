@@ -105,6 +105,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Un client signé redevient un prospect — pour l'upsell. La boucle ne s'arrête jamais.",
   },
   {
+    path: "/preuves",
+    title: "Salle des Preuves — la valeur, démontrée",
+    role: "Tout ce que l'OS a réellement produit, en euros : CA encaissé, Taxe d'Ignorance rendue aux clients, commission, closing. Extrait du CRM — jamais projeté, jamais inventé.",
+    steps: [
+      "Ouvre cette page avant chaque post, RDV important ou négociation : tes arguments sont là.",
+      "« Carte de preuve publique » : un document anonymisé prêt à capturer pour LinkedIn/X.",
+      "Après chaque livraison réussie : demande le témoignage — il apparaît ici.",
+    ],
+    tip: "La preuve bat la promesse. Un chiffre daté issu du CRM vaut dix slogans.",
+  },
+  {
     path: "/offre",
     title: "Offre & Tarifs — la grille et la calculatrice",
     role: "Ta grille : setup variable selon la taille + commission sur les ventes apportées. La calculatrice chiffre l'offre face à la Taxe d'Ignorance.",
