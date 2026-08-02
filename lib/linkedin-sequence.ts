@@ -56,7 +56,7 @@ export function messageText(p: Prospect, bookingUrl?: string): string {
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
   const diag = v?.diagnostic[0] ?? "Quand tout le monde est occupé et que le téléphone sonne, il se passe quoi chez vous ?";
   const booking = bookingUrl?.trim()
-    ? ["", `Ou prenez directement 15 minutes dans mon agenda : ${bookingUrl.trim()}`]
+    ? ["", `Mon agenda est ouvert si vous voulez en parler un jour : ${bookingUrl.trim()}`]
     : [];
   return [
     `${hi}`,
@@ -67,7 +67,7 @@ export function messageText(p: Prospect, bookingUrl?: string): string {
     ``,
     `Une seule question, celle qui m'intéresse vraiment : ${diag}`,
     ``,
-    `Si le sujet vous parle, je prépare pour ${p.company} un audit de votre accueil téléphonique — ce que vous captez, ce qui vous échappe, et ce que ça représente. C'est offert et il est à vous, avec ou sans suite. Dites-moi juste « oui » et je vous l'envoie.`,
+    `Il m'arrive de préparer, pour une entreprise en particulier, un audit de son accueil téléphonique — ce qu'elle capte, ce qui lui échappe, ce que ça représente. Je ne vous le propose pas : je vous dis juste que ça existe, au cas où ce soit utile à ${p.company} un jour.`,
     ...booking,
     ``,
     `Zakaria — EAGLEYE CORP, Lyon`,
@@ -85,9 +85,9 @@ export function relanceText(p: Prospect): string {
     ``,
     `Pas de réponse et c'est très bien — vous êtes sur le terrain, pas sur LinkedIn. C'est exactement le problème dont je parlais.`,
     ``,
-    `Je clos proprement : je vous envoie l'audit de ${p.company} ou je vous laisse tranquille ?`,
+    `Je ne relancerai pas : vous savez où me trouver si le sujet revient un jour. Bonne continuation à ${p.company}.`,
     ``,
-    `Un mot suffit. Zakaria — EAGLEYE CORP`,
+    `Zakaria — EAGLEYE CORP`,
   ].join("\n");
 }
 

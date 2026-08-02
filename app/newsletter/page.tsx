@@ -39,20 +39,22 @@ Ce que j'observe revient toujours au même endroit. Ce n'est pas que les gens r�
 
 Et le client qui n'a personne au bout du fil ne rappelle pas. Il appelle le suivant. L'entreprise ne saura jamais qu'il a existé : aucune trace, aucun avis, aucune statistique. C'est une perte parfaitement invisible — c'est ce qui la rend dangereuse.
 
-Je publie ici ce que je constate, métier par métier.
+Je publie ici ce que je constate, métier par métier. C'est tout — je n'ai rien à vous vendre aujourd'hui.
 
-Si vous voulez savoir ce que ça donne chez {commerce} précisément, je prépare un audit de votre accueil téléphonique : ce que vous captez, ce qui vous échappe, et ce que ça représente sur un mois. C'est offert, et le document est à vous — avec ou sans suite.
-
-Répondez simplement « AUDIT » et je vous l'envoie.
+Il m'arrive de préparer, pour une entreprise en particulier, un audit de son accueil téléphonique : ce qu'elle capte, ce qui lui échappe, et ce que ça représente sur un mois. Si un jour ça vous intéresse pour {commerce}, la porte est ouverte.
 
 Zakaria — EAGLEYE CORP, Lyon`;
 
-/** Ajoute l'invitation à réserver quand un lien de réservation existe. */
+/**
+ * La porte, jamais la demande. On n'ajoute aucune injonction à répondre :
+ * le lien de réservation suffit — il rend le chemin visible sans rien
+ * exiger. Sans lien configuré, la lettre se termine simplement.
+ */
 const withBooking = (text: string, url?: string) =>
   url?.trim()
     ? text.replace(
-        "Répondez simplement « AUDIT » et je vous l'envoie.",
-        "Répondez simplement « AUDIT » et je vous l'envoie.\n\nOu prenez directement 15 minutes dans mon agenda, au moment qui vous arrange :"
+        "la porte est ouverte.",
+        "la porte est ouverte — mon agenda est ici, au moment qui vous arrange :"
       )
     : text;
 

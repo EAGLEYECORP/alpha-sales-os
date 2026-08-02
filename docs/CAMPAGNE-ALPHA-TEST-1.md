@@ -40,8 +40,17 @@ Publication régulière (LinkedIn + newsletter)
                  SCINTIA
 ```
 
-L'audit n'est **jamais** envoyé d'office. Il se mérite par un « oui »,
-même tiède. C'est ce qui en fait un cadeau et pas une pièce jointe.
+L'audit n'est **jamais** envoyé d'office — et il n'est même pas
+proposé. On dit qu'il existe, une fois, sans insister. C'est le prospect
+qui vient le chercher : c'est ce qui en fait un cadeau, et non une
+pièce jointe déguisée en lead magnet.
+
+> **Posture assumée : on ne demande rien.** Pas de « répondez AUDIT »,
+> pas de « dites-moi oui ». Le seul chemin visible est le lien de
+> réservation — une porte ouverte n'est pas une demande. Coût honnête :
+> le taux de réponse immédiat baisse. Contrepartie : ceux qui viennent
+> sont déjà convaincus, et le closing est beaucoup plus court.
+> Condition pour que ça marche : **publier régulièrement, longtemps.**
 
 **Où ça se pilote dans l'app :**
 
@@ -81,12 +90,11 @@ même tiède. C'est ce qui en fait un cadeau et pas une pièce jointe.
 >
 > Je publie ici ce que je constate, métier par métier.
 >
-> Et si vous voulez savoir ce que ça donne **chez vous** précisément,
-> je prépare un audit de votre accueil téléphonique : ce que vous
-> captez, ce qui vous échappe, et ce que ça représente sur un mois.
-> C'est offert, et le document est à vous — avec ou sans suite.
+> Il m'arrive de préparer, pour une entreprise en particulier, un audit
+> de son accueil téléphonique : ce qu'elle capte, ce qui lui échappe, et
+> ce que ça représente sur un mois.
 >
-> Écrivez-moi « AUDIT » en commentaire ou en message.
+> Je ne le propose à personne. Je dis juste que ça existe.
 >
 > Zakaria — EAGLEYE CORP, Lyon 🦅
 
@@ -120,7 +128,7 @@ L'app prépare le texte, ouvre le bon profil et consigne la touche.
 | 9h45 | Envoyer la lettre n° 1 au segment Lyon 6 | `/newsletter` |
 | 10h00 | Session d'appels sur les fiches les plus chaudes | `/appels` |
 | 12h00 | Répondre à TOUS les commentaires et messages | LinkedIn |
-| 14h00 | Envoyer les audits demandés le matin | fiche → Audit → cadeau |
+| 14h00 | Répondre à ceux qui sont venus d'eux-mêmes | fiche → Audit → cadeau |
 | 17h00 | Relire les touches consignées du jour | `/preuves` |
 
 **Réflexe non négociable :** toute demande d'audit reçue le matin part
@@ -135,8 +143,10 @@ Un test ne se juge pas au chiffre d'affaires. Il se juge à ceci :
   d'invitation est trop commercial : le retravailler.
 - **Taux de réponse au message J+2** — si < 15 %, la question de
   diagnostic n'est pas la bonne pour ce métier.
-- **Nombre de « oui » à l'audit** — c'est LE chiffre du test. En dessous
-  de 3 sur 25, le problème est dans le ciblage, pas dans le message.
+- **Nombre de personnes venues d'elles-mêmes** (réponse spontanée ou
+  créneau réservé) — c'est LE chiffre du test. Attention : en posture
+  « pull », ce chiffre démarre bas et monte avec la répétition. Ne juge
+  pas sur une semaine.
 - **Nombre de RDV posés** — la conversion réelle.
 - **Temps de réponse moyen** aux demandes — doit rester sous 2 heures.
 
