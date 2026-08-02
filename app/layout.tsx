@@ -52,7 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
+      {/* suppressHydrationWarning : le script de thème mute <html> avant
+          l'hydratation, et des extensions navigateur ajoutent souvent des
+          attributs sur <body>. Ni l'un ni l'autre ne doit faire échouer
+          l'hydratation. */}
+      <body suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>

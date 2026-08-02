@@ -56,23 +56,45 @@ function isInternal(path: string): boolean {
   return INTERNAL.some((p) => path === p || path.startsWith(p + "/"));
 }
 
-// Rate-limit mémoire (par instance). Fenêtre glissante simple par IP.
+/**
+ * Rate-limit mémoire (par instance), fenêtre glissante par IP.
+ *
+ * Deux budgets, parce qu'une navigation et une tentative de mot de passe
+ * ne se défendent pas de la même façon :
+ *
+ *  · GÉNÉRAL — une seule page de l'app déclenche ~17 requêtes qui
+ *    traversent ce middleware (documents RSC, routes API du tableau de
+ *    bord). Avec un budget de 240, un utilisateur légitime était bloqué
+ *    dès la 14ᵉ navigation en une minute — ce qui arrive en explorant
+ *    avec ⌘K. Mesuré, puis relevé à 1200 (≈ 70 pages/minute).
+ *
+ *  · PORTE D'ACCÈS — /api/gate est la seule surface de force brute :
+ *    budget volontairement bas, indépendant du général.
+ */
 const hits = new Map<string, { count: number; start: number }>();
+const gateHits = new Map<string, { count: number; start: number }>();
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 240;
+const MAX_PER_WINDOW = 1200;
+const MAX_GATE_PER_WINDOW = 20;
 
-function rateLimited(ip: string): boolean {
+function bump(map: Map<string, { count: number; start: number }>, ip: string, max: number): boolean {
   const now = Date.now();
-  const e = hits.get(ip);
+  const e = map.get(ip);
   if (!e || now - e.start > WINDOW_MS) {
-    hits.set(ip, { count: 1, start: now });
-    if (hits.size > 10_000) {
-      for (const [k, v] of hits) if (now - v.start > WINDOW_MS) hits.delete(k);
+    map.set(ip, { count: 1, start: now });
+    if (map.size > 10_000) {
+      for (const [k, v] of map) if (now - v.start > WINDOW_MS) map.delete(k);
     }
     return false;
   }
   e.count += 1;
-  return e.count > MAX_PER_WINDOW;
+  return e.count > max;
+}
+
+function rateLimited(ip: string, pathname: string): boolean {
+  // La porte d'accès porte SON budget en plus du budget général.
+  if (pathname === "/api/gate" && bump(gateHits, ip, MAX_GATE_PER_WINDOW)) return true;
+  return bump(hits, ip, MAX_PER_WINDOW);
 }
 
 export async function middleware(req: NextRequest) {
@@ -82,7 +104,7 @@ export async function middleware(req: NextRequest) {
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "unknown";
-  if (rateLimited(ip)) {
+  if (rateLimited(ip, pathname)) {
     return NextResponse.json(
       { error: "Trop de requêtes — réessaie dans un instant." },
       { status: 429, headers: { "retry-after": "30" } }
