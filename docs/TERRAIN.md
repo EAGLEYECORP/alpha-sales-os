@@ -57,9 +57,30 @@ aujourd'hui : immobilier, auto-écoles, garage/carrosserie, santé.
 
 | Surface | Effet |
 |---|---|
+| **`/appels` — Session d'appels** | La « liste du matin », native : une verticale, son script complet (ouverture, diagnostic, miroir, interdits, Red Zone) et les prospects avec l'angle de chacun. Chaque statut consigne une touche réelle et pose le next step daté. |
 | `/api/ai` (scripts, résumés, prochaine action, réponses) | Le playbook entre dans le prompt système : l'agent cesse le conseil générique et rejoue la méthode. |
 | `/api/sparring` | Le prospect joué par l'IA sort les vraies objections du métier ; le coach corrige selon la méthode maison. |
 | Deep-dive & audit cadeau | Chiffrage de la fuite avec les paramètres de la verticale, toujours étiqueté « estimation à valider ». |
+
+### La session d'appels, en pratique
+
+Elle remplace le document HTML jetable qu'on refabriquait à chaque
+session. Deux différences décisives :
+
+1. **L'angle est calculé**, pas retapé : objection bloquante ouverte,
+   next step dépassé, Red Zone en attente de décision, silence de plus
+   de 14 jours, information critique manquante, réputation à protéger.
+   Le prospect à appeler en premier remonte tout seul.
+2. **Le statut écrit dans le CRM** : « RDV posé » consigne une touche
+   `appel`, pose le next step à J+2 et fait avancer l'étape ; « à
+   rappeler » date le rappel à J+3 ; « pas intéressé » programme une
+   réactivation à J+90. Rien ne se perd au rechargement, et la Salle
+   des Preuves se remplit de touches réelles.
+
+Les neuf verticales couvrent l'intégralité des secteurs de l'app
+(restaurants, bars & pubs, ambulances, artisans, autres) plus les
+métiers travaillés sur le terrain (immobilier, auto-écoles,
+garage/carrosserie, santé), rattachés par mots-clés de la fiche.
 
 ## 4. La boucle d'entretien — le seul rituel à tenir
 

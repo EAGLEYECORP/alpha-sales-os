@@ -113,7 +113,9 @@ export const VERTICALS: VerticalPlaybook[] = [
   {
     id: "immobilier",
     label: "Immobilier — transaction & gestion",
-    sectors: ["autre"],
+    // Verticales « métier » : rattachées par mots-clés de la fiche, pas
+    // par le secteur générique de l'app (voir verticalForProspect).
+    sectors: [],
     criterion: "Les métiers où le premier qui décroche prend l'affaire : le mandat va à la première agence qui répond.",
     structuralPain:
       "Les vendeurs et acquéreurs appellent le soir, le midi et le week-end — exactement quand l'agence est fermée ou en visite. Un vendeur qui veut faire estimer appelle trois agences ; les deux qui n'ont pas décroché ne sauront jamais qu'elles sont passées à côté.",
@@ -151,7 +153,7 @@ export const VERTICALS: VerticalPlaybook[] = [
   {
     id: "auto-ecole",
     label: "Auto-écoles",
-    sectors: ["autre"],
+    sectors: [],
     criterion: "Les métiers où le patron est sur le terrain, pas derrière un bureau — et où le téléphone EST le chiffre d'affaires.",
     structuralPain:
       "Beaucoup n'ouvrent que l'après-midi : chaque matin, le téléphone sonne dans le vide pendant quatre à cinq heures. Et quand le gérant est sur le plateau ou en leçon, personne ne prend l'inscription.",
@@ -186,7 +188,7 @@ export const VERTICALS: VerticalPlaybook[] = [
   {
     id: "garage-carrosserie",
     label: "Garage & carrosserie",
-    sectors: ["artisan"],
+    sectors: [],
     criterion: "Les métiers où l'atelier tourne et le téléphone sonne en même temps.",
     structuralPain:
       "Structure à deux ou trois : quand tout le monde est sous une voiture, il n'y a personne pour le téléphone. Pas de secrétaire à convaincre — le problème est structurel, pas accidentel. Et le téléphone n'y sert pas qu'à vendre : il orchestre le dossier (client sinistré, expert, assureur, suivi de réparation).",
@@ -215,7 +217,7 @@ export const VERTICALS: VerticalPlaybook[] = [
   {
     id: "sante-cabinet",
     label: "Santé — cabinets & centres",
-    sectors: ["autre"],
+    sectors: [],
     criterion: "Les structures où le soin et le standard se disputent la même personne : le secrétariat lâche le téléphone dès qu'un patient est au comptoir.",
     structuralPain:
       "Le patient qui n'obtient pas de réponse ne rappelle pas : il prend le premier créneau disponible ailleurs, souvent en ligne. Chaque appel perdu est un fauteuil vide — et un fauteuil vide ne se rattrape jamais.",
@@ -241,6 +243,154 @@ export const VERTICALS: VerticalPlaybook[] = [
       { q: "On est complets de toute façon.", a: "Un carnet plein se vide par les annulations. Ce sont exactement les appels que personne ne prend qui les remplissent." },
     ],
     leak: { callsPerMonth: 400, missRate: 0.3, avgTicket: 180, convertRate: 0.35 },
+  },
+
+  // ── Verticales natives EAGLEYE — rattachées aux secteurs de l'app ──
+  {
+    id: "restauration",
+    label: "Restaurants",
+    sectors: ["restaurant"],
+    criterion: "Les métiers où le téléphone sonne exactement au pire moment : pendant le service.",
+    structuralPain:
+      "Le coup de feu et le téléphone tombent en même temps. Les réservations arrivent pendant qu'on est en salle, et hors service il n'y a personne. Le client qui n'a personne au bout du fil réserve ailleurs — il ne rappelle jamais.",
+    opener: [
+      { label: "Barrage", line: "Bonjour, je cherche le patron — c'est au sujet des appels qui arrivent pendant le service. Il est là ?" },
+      { label: "Permission", line: "Je vous appelle à froid, trente secondes : si c'est pas pour vous, vous me le dites et je raccroche. Ça marche ?" },
+      {
+        label: "Ciblage",
+        line: "Je travaille avec les métiers où le téléphone sonne au pire moment — la restauration, c'est le cas type. Chez vous, en plein service, c'est qui qui décroche ?",
+        note: "L'observation en question : il énonce lui-même le problème.",
+      },
+      { label: "Bascule", line: "On installe un accueil qui décroche pendant le service, prend la réservation et vous envoie le résumé. Vous restez en salle, lui capte tout ce qui passe." },
+      { label: "CTA", line: "Quinze minutes pour vous montrer sur votre restaurant — plutôt fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "En plein coup de feu, quand ça sonne, il se passe quoi ?",
+      "Et entre les services, quand la salle est fermée — les appels tombent où ?",
+    ],
+    mirror:
+      "Celui qui tombe sur le répondeur ne laisse pas de message : il réserve au restaurant d'à côté. Vous ne saurez jamais qu'il a appelé — il n'apparaîtra nulle part.",
+    forbidden: ["Le détail du logiciel de réservation et des intégrations — ça se montre, ça ne se raconte pas."],
+    objections: [
+      { q: "On a déjà TheFork / une plateforme.", a: "Et vous leur payez une commission sur chaque couvert. Une réservation prise en direct, c'est votre table, sans commission." },
+      { q: "On rappelle toujours après le service.", a: "Le rappel, c'est dans trois heures. La table, elle est réservée dans les dix minutes — chez celui qui a décroché." },
+      { q: "J'ai pas le temps là.", a: "Jouer le coup du méta, puis : « fin de semaine ou début de la prochaine ? » Jamais raccrocher sans créneau." },
+    ],
+    leak: { callsPerMonth: 300, missRate: 0.35, avgTicket: 55, convertRate: 0.4 },
+  },
+  {
+    id: "bar-pub",
+    label: "Bars & pubs",
+    sectors: ["pub"],
+    criterion: "Les établissements dont le chiffre se joue sur les soirées et les privatisations — et dont personne ne décroche en journée.",
+    structuralPain:
+      "L'équipe arrive en fin d'après-midi : toute la journée, les appels de privatisation, de groupes et d'événements tombent dans le vide. Or ce sont les appels les plus rentables — une privatisation vaut une soirée entière.",
+    opener: [
+      { label: "Barrage", line: "Bonjour, je cherche le gérant — c'est au sujet des demandes de privatisation qui arrivent en journée. Il est là ?" },
+      { label: "Permission", line: "Appel à froid, trente secondes, et si c'est pas pour vous je raccroche. Ça marche ?" },
+      { label: "Ciblage", line: "Je travaille avec les établissements où le chiffre se fait le soir mais où les demandes arrivent en journée. Chez vous, avant l'ouverture, qui prend les appels ?" },
+      { label: "Bascule", line: "On installe un accueil qui décroche en journée, prend la demande de groupe ou d'événement et vous envoie le résumé avant l'ouverture." },
+      { label: "CTA", line: "Quinze minutes pour vous montrer — fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Les demandes de privatisation, elles vous arrivent comment aujourd'hui ?",
+      "Et en journée, avant l'ouverture, les appels tombent où ?",
+    ],
+    mirror:
+      "Une soirée d'entreprise se décide dans la journée, sur trois appels. Celui qui décroche prend la privatisation — et c'est votre plus grosse soirée du mois qui part ailleurs.",
+    forbidden: ["La billetterie et l'agenda automatisé : ça se montre en RDV."],
+    objections: [
+      { q: "On est connus, les gens viennent.", a: "Justement — capitalisez dessus. Les habitués viennent seuls ; les groupes, eux, appellent. Et en journée, personne ne répond." },
+      { q: "On a Instagram.", a: "On ne privatise pas une salle sur Instagram. La demande de groupe passe par le téléphone, toujours." },
+      { q: "C'est cher.", a: "Une privatisation récupérée dans le mois et c'est remboursé. Vous en ratez combien, à votre avis ? (silence)" },
+    ],
+    leak: { callsPerMonth: 200, missRate: 0.4, avgTicket: 400, convertRate: 0.12 },
+  },
+  {
+    id: "ambulance",
+    label: "Ambulances & transport sanitaire",
+    sectors: ["ambulance"],
+    criterion: "Les métiers où le standard sature aux heures de pointe et où la demande non prise part chez le confrère dans la minute.",
+    structuralPain:
+      "Le standard sature entre 8h et 10h, exactement quand les établissements passent leurs commandes de transport. Et les demandes de nuit se perdent entièrement. Une course non prise ne se rattrape pas : elle est passée au confrère suivant sur la liste.",
+    opener: [
+      { label: "Barrage", line: "Bonjour, je cherche le responsable d'exploitation — c'est au sujet des appels non pris aux heures de pointe. Il est là ?" },
+      { label: "Permission", line: "Appel à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
+      { label: "Ciblage", line: "Je travaille avec les métiers où le standard sature aux heures de pointe. Le transport sanitaire, c'est le cas type. Le matin entre 8h et 10h, chez vous, ça se passe comment ?" },
+      { label: "Bascule", line: "On installe un accueil qui prend les demandes que le standard ne peut pas prendre, note le transport et vous transmet le résumé." },
+      { label: "CTA", line: "Quinze minutes pour vous montrer sur votre exploitation — fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Entre 8h et 10h, combien d'appels vous n'arrivez pas à prendre ?",
+      "Et les demandes qui arrivent la nuit, elles vont où ?",
+    ],
+    mirror:
+      "Un établissement qui n'a personne au bout du fil appelle le transporteur suivant. La course est partie en trente secondes — et le compte avec elle, parce que la prochaine fois il appellera l'autre en premier.",
+    forbidden: [
+      "Toute promesse touchant la régulation médicale ou l'urgence vitale : l'agent prend des demandes de transport, il ne régule rien.",
+    ],
+    objections: [
+      { q: "On a un standard dédié.", a: "Il prend un appel à la fois. Aux heures de pointe, trois établissements appellent en même temps — deux tombent dans le vide." },
+      { q: "Nos clients nous connaissent, ils rappellent.", a: "Un service hospitalier ne rappelle pas : il descend sa liste. Le premier disponible prend la course." },
+      { q: "C'est réglementé, ça ne marchera pas.", a: "L'agent ne régule rien : il prend la demande et vous la transmet. Ce sont vos équipes qui décident, comme aujourd'hui." },
+    ],
+    leak: { callsPerMonth: 500, missRate: 0.25, avgTicket: 120, convertRate: 0.45 },
+  },
+  {
+    id: "artisan-batiment",
+    label: "Artisans & bâtiment",
+    sectors: ["artisan"],
+    criterion: "Les métiers où l'artisan est sur le chantier toute la journée — donc jamais près du téléphone.",
+    structuralPain:
+      "Sur un chantier, on ne décroche pas : les mains sont prises, il y a du bruit, et le client qui appelle pour un devis tombe systématiquement sur la messagerie. Or une demande de devis n'attend pas : elle part chez le prochain artisan de la liste.",
+    opener: [
+      { label: "Barrage", line: "Bonjour, je cherche le patron — c'est au sujet des demandes de devis qui arrivent pendant les chantiers." },
+      { label: "Permission", line: "Appel à froid, trente secondes, et si c'est pas pour vous je raccroche. Ça marche ?" },
+      { label: "Ciblage", line: "Je travaille avec les métiers où le patron est sur le chantier toute la journée, donc jamais près du téléphone. C'est votre cas ?" },
+      { label: "Bascule", line: "On installe un accueil qui décroche pendant que vous êtes sur le chantier, prend la demande de devis et vous envoie le résumé par SMS." },
+      { label: "CTA", line: "Quinze minutes pour vous montrer — fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Quand vous êtes sur un chantier et que ça sonne, il se passe quoi ?",
+      "Les demandes de devis, vous les récupérez comment aujourd'hui ?",
+    ],
+    mirror:
+      "Une demande de devis n'attend pas. Celui qui tombe sur la messagerie appelle l'artisan suivant — et c'est un chantier entier qui part, sans que vous sachiez qu'il a appelé.",
+    forbidden: ["Le devis automatisé : à ne promettre qu'après validation technique, sinon c'est une promesse en l'air."],
+    objections: [
+      { q: "Je rappelle le soir.", a: "Le soir, il a déjà eu deux autres devis. Le chantier va au premier qui a répondu, pas au meilleur qui a rappelé." },
+      { q: "J'ai déjà trop de travail.", a: "Alors l'agent vous sert à trier : il prend tout, vous ne rappelez que ce qui vaut le coup. Aujourd'hui vous ne choisissez pas, vous subissez." },
+      { q: "Ma femme / ma secrétaire prend les appels.", a: "Elle prend un appel à la fois, et pas la nuit ni le week-end. Elle n'est pas remplacée, elle arrête juste de rater des demandes." },
+    ],
+    leak: { callsPerMonth: 140, missRate: 0.4, avgTicket: 1800, convertRate: 0.1 },
+  },
+  {
+    id: "generique",
+    label: "Autres métiers",
+    sectors: ["autre"],
+    criterion: "Les métiers où le téléphone est le premier point de contact et où personne n'est dédié à le prendre.",
+    structuralPain:
+      "Quand l'activité tourne, personne n'est au téléphone. La demande non prise ne laisse aucune trace : elle part chez le concurrent qui a décroché, et l'entreprise ne saura jamais qu'elle a existé.",
+    opener: [
+      { label: "Barrage", line: "Bonjour, je cherche le responsable — c'est au sujet des appels qui arrivent quand personne n'est disponible pour les prendre." },
+      { label: "Permission", line: "Appel à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
+      { label: "Ciblage", line: "Je travaille avec les métiers où le téléphone est le premier point de contact et où personne n'est dédié à le prendre. C'est votre cas ?" },
+      { label: "Bascule", line: "On installe un accueil qui décroche quand vous ne pouvez pas, prend la demande et vous en envoie le résumé." },
+      { label: "CTA", line: "Quinze minutes pour vous montrer sur votre activité — fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Quand tout le monde est occupé et que ça sonne, il se passe quoi ?",
+      "Un client qui n'a personne au bout du fil, il rappelle ou il va ailleurs ?",
+    ],
+    mirror:
+      "Celui qui n'obtient pas de réponse ne rappelle pas : il appelle le suivant. La perte est invisible — c'est exactement ce qui la rend dangereuse.",
+    forbidden: ["Les fonctionnalités en liste : une seule capacité à la bascule, le reste se montre en RDV."],
+    objections: [
+      { q: "On gère, on n'a pas tant d'appels manqués.", a: "C'est ce qu'on croit tous — jusqu'à les compter. Je vous propose de mesurer une semaine, et on regarde ensemble." },
+      { q: "On a un répondeur.", a: "Sur un répondeur, personne ne laisse de message. L'agent, lui, parle et prend la demande. C'est le jour et la nuit." },
+      { q: "Ça coûte combien ?", a: "Des frais d'installation, puis un abonnement dimensionné à votre volume. C'est ce qu'on cale en 15 minutes — je préfère un chiffre juste qu'un chiffre au hasard." },
+    ],
+    leak: { callsPerMonth: 150, missRate: 0.3, avgTicket: 400, convertRate: 0.15 },
   },
 ];
 

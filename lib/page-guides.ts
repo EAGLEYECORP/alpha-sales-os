@@ -53,6 +53,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Garde ton énergie pour LE closing du jour : valeur × chaleur, le brief te le nomme.",
   },
   {
+    path: "/appels",
+    title: "Session d'appels — la liste du matin",
+    role: "Une verticale à la fois : son script terrain (ouverture, diagnostic, miroir, interdits, Red Zone) et les prospects à appeler, chacun avec SON angle — la raison de l'appeler lui, maintenant.",
+    steps: [
+      "Choisis la verticale : on n'alterne pas les métiers dans une même session, la voix se cale sur un seul registre.",
+      "Relis le script une fois en haut de session, puis descends la liste : les prioritaires sont déjà en tête.",
+      "Après chaque appel, clique le statut — la touche est consignée et le next step daté posé automatiquement.",
+    ],
+    tip: "Le critère, jamais le volume. Et deux questions de diagnostic, puis tu te tais : le silence fait le travail.",
+  },
+  {
     path: "/agent",
     title: "Agent ALPHA — ton copilote IA",
     role: "Il lit tout ton pipe et répond : scripts, résumés, prochaine action, traitement d'objection. IA locale (Ollama) d'abord, gratuite.",
