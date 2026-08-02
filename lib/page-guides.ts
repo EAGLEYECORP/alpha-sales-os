@@ -130,6 +130,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "L'audit ne part jamais d'office : il s'envoie quand la personne a dit oui. C'est ça, la différence avec du spam.",
   },
   {
+    path: "/prescripteurs",
+    title: "Prescripteurs — le seul canal qui compose",
+    role: "Ceux qui parlent déjà à tes prospects : experts-comptables, assureurs pro, vendeurs de caisses, agences web, réseaux consulaires, groupements. Un prospect se convainc une fois et se recommence ; un prescripteur se convainc une fois et ramène des affaires pendant des années.",
+    steps: [
+      "Onglet « La méthode » : choisis l'archétype, lis ses motivations DANS SON ORDRE et sa peur. C'est là que tout se joue.",
+      "Copie l'ouverture et la demande — elles sont écrites mot pour mot, et elles n'ont rien à voir d'un archétype à l'autre.",
+      "Onglet « Mes prescripteurs » : consigne chaque mise en relation reçue. C'est la seule mesure qui compte.",
+    ],
+    tip: "Ne sers JAMAIS l'argumentaire prospect à un prescripteur : il n'a pas le problème, il connaît des gens qui l'ont. Et la demande doit être petite — trois noms, pas « un partenariat ».",
+  },
+  {
     path: "/agent",
     title: "Agent ALPHA — ton copilote IA",
     role: "Il lit tout ton pipe et répond : scripts, résumés, prochaine action, traitement d'objection. IA locale (Ollama) d'abord, gratuite.",

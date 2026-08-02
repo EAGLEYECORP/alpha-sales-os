@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prospect } from "@/lib/types";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { playbookPrompt } from "@/lib/playbook";
+import { prescripteurPrompt } from "@/lib/prescripteurs";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -14,7 +15,7 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply" | "briefing";
+type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply" | "briefing" | "prescripteur";
 
 interface AiRequest {
   task: AiTask;
@@ -28,6 +29,10 @@ interface AiRequest {
   tourSummary?: string;
   /** verticale du playbook terrain à injecter (défaut : déduite du secteur) */
   verticalId?: string;
+  /** archétype de prescripteur (task = prescripteur) — leur économie n'est pas celle d'un prospect */
+  archetypeId?: string;
+  /** question libre sur l'approche d'un prescripteur */
+  question?: string;
 }
 
 const SYSTEM = `Tu es le copilote de vente d'EAGLEYE CORP (agence lyonnaise : sites premium + overlays IA pour restaurants, pubs, ambulances, artisans).
@@ -41,6 +46,22 @@ Doctrine Hormozi non négociable :
 Réponds en français, format Markdown, concret et terrain — zéro corporate.`;
 
 function buildPrompt(req: AiRequest): string {
+  // Un prescripteur n'a PAS le problème qu'on résout : il connaît des gens
+  // qui l'ont. L'argumentaire prospect ne s'applique pas, et le servir
+  // quand même fait perdre l'interlocuteur en une phrase.
+  if (req.task === "prescripteur") {
+    return [
+      `## Règles business de l'agence`,
+      req.businessRules,
+      ``,
+      `## Question`,
+      req.question ?? "Comment aborder ce prescripteur ?",
+      ``,
+      `## Tâche`,
+      `Réponds en partant de SON économie à lui : ce qu'il gagne, ce qu'il risque, ce que ça lui coûte en temps. Donne une phrase exacte à prononcer, la demande concrète et petite à formuler, et le piège à éviter avec cet archétype précis. Jamais de projection chiffrée sans fourchette ni hypothèses.`,
+    ].join("\n");
+  }
+
   // Le briefing porte sur la tournée entière, pas sur une fiche.
   if (req.task === "briefing") {
     return [
@@ -99,6 +120,11 @@ function buildPrompt(req: AiRequest): string {
 
 function fallback(req: AiRequest): string {
   switch (req.task) {
+    case "prescripteur": {
+      // Sans IA, on rend la doctrine elle-même : elle est écrite, précise,
+      // et elle vaut mieux qu'une paraphrase générique.
+      return prescripteurPrompt(req.archetypeId);
+    }
     case "briefing":
       // Le client affiche déjà son brief déterministe (lib/closer) ; ce repli
       // serveur rappelle juste la doctrine de tournée.
@@ -147,7 +173,8 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
-  if (!body?.task || (body.task !== "briefing" && !body?.prospect)) {
+  const noProspectNeeded = body?.task === "briefing" || body?.task === "prescripteur";
+  if (!body?.task || (!noProspectNeeded && !body?.prospect)) {
     return NextResponse.json({ error: "task et prospect requis" }, { status: 400 });
   }
   if (body.task === "briefing" && typeof body.tourSummary !== "string") {
@@ -156,7 +183,10 @@ export async function POST(request: NextRequest) {
 
   // Le playbook terrain entre dans le système : c'est lui qui fait la
   // différence entre un conseil générique et la méthode maison.
-  const system = `${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
+  const system =
+    body.task === "prescripteur"
+      ? `${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
+      : `${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
 
   // IA locale (Ollama) prioritaire — consignes compactes pour un petit modèle.
   if (ollamaConfigured()) {

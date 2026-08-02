@@ -352,3 +352,54 @@ export interface AuditLogEntry {
   action: string;
   target: string;
 }
+
+/**
+ * Un PRESCRIPTEUR — quelqu'un qui parle déjà à tes prospects.
+ *
+ * Volontairement séparé de Prospect, et pas un simple tag : un
+ * prescripteur ne doit JAMAIS entrer dans le volume d'envoi, ni dans le
+ * pipe pondéré, ni dans les taux de conversion. Le mélanger fausserait
+ * tout ce qui se calcule — et surtout, on ne lui écrit pas la même chose.
+ */
+export type PartnerStatus =
+  | "identifie"   // repéré, jamais contacté
+  | "contacte"    // approche faite, pas de réponse tranchée
+  | "rdv"         // rendez-vous obtenu ou passé
+  | "accord"      // il a dit oui, l'accord tient
+  | "actif"       // il a présenté au moins une fois
+  | "dormant";    // accord signé, mais plus rien depuis — le piège du canal
+
+export interface PartnerIntro {
+  id: string;
+  date: string;
+  /** Qui il a présenté. Texte libre : l'entreprise peut ne pas être en base. */
+  company: string;
+  /** Fiche prospect créée à partir de cette mise en relation, si elle existe. */
+  prospectId?: string;
+  /** Chiffre d'affaires réellement ENCAISSÉ sur cette mise en relation. */
+  revenue: number;
+  notes?: string;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  organisation: string;
+  /** Identifiant d'archétype (lib/prescripteurs.ts). */
+  archetype: string;
+  status: PartnerStatus;
+  city: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  /** Taille de portefeuille annoncée par LUI — pas une estimation. */
+  portfolio?: number;
+  /** Ce qui a été convenu, en clair. Un accord flou ne produit rien. */
+  agreement?: string;
+  /** Les mises en relation reçues. C'est la seule mesure qui compte. */
+  intros: PartnerIntro[];
+  nextStep: NextStep | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}

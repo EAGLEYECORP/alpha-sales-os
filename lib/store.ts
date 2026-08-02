@@ -17,6 +17,8 @@ import type {
   Prospect,
   Stage,
   TimelineEvent,
+  Partner,
+  PartnerIntro,
 } from "./types";
 import { fillTemplate } from "./templates";
 import {
@@ -46,6 +48,12 @@ interface AlphaState {
   drafts: CampaignDraft[];
   /** Scripts écrits à la main (mode test / manuel). */
   customScripts: CustomScript[];
+  /**
+   * Prescripteurs — volontairement HORS du tableau prospects : ils ne
+   * doivent entrer ni dans le volume d'envoi, ni dans le pipe pondéré,
+   * ni dans les taux de conversion. Les mélanger fausserait tout.
+   */
+  partners: Partner[];
 
   // prospects
   upsertProspect: (p: Prospect) => void;
@@ -58,6 +66,12 @@ interface AlphaState {
   ) => { ok: boolean; blockers: string[] };
   addEvent: (id: string, ev: Omit<TimelineEvent, "id">) => void;
   setNextStep: (id: string, step: NextStep | null) => void;
+
+  // prescripteurs
+  upsertPartner: (p: Partner) => void;
+  deletePartner: (id: string) => void;
+  addIntro: (partnerId: string, intro: Omit<PartnerIntro, "id">) => void;
+  deleteIntro: (partnerId: string, introId: string) => void;
 
   // modules
   upsertCampaign: (c: Campaign) => void;
@@ -146,6 +160,7 @@ export const useAlpha = create<AlphaState>()(
       settings: defaultSettings,
       drafts: [],
       customScripts: [],
+      partners: [],
 
       upsertProspect: (p) =>
         set((s) => {
@@ -237,6 +252,66 @@ export const useAlpha = create<AlphaState>()(
         })),
 
       setNextStep: (id, step) => get().patchProspect(id, { nextStep: step }),
+
+      upsertPartner: (p) =>
+        set((s) => {
+          const now = new Date().toISOString();
+          const exists = s.partners.some((x) => x.id === p.id);
+          const next = { ...p, updatedAt: now };
+          return {
+            partners: exists
+              ? s.partners.map((x) => (x.id === p.id ? next : x))
+              : [{ ...next, createdAt: now }, ...s.partners],
+            activities: [
+              {
+                id: uid(),
+                date: now,
+                kind: "prospect" as const,
+                message: exists ? `Prescripteur mis à jour — ${p.organisation}` : `Prescripteur ajouté — ${p.organisation}`,
+              },
+              ...s.activities,
+            ],
+          };
+        }),
+
+      deletePartner: (id) => set((s) => ({ partners: s.partners.filter((p) => p.id !== id) })),
+
+      addIntro: (partnerId, intro) =>
+        set((s) => {
+          const now = new Date().toISOString();
+          return {
+            partners: s.partners.map((p) =>
+              p.id === partnerId
+                ? {
+                    ...p,
+                    intros: [{ ...intro, id: uid() }, ...p.intros],
+                    // Une mise en relation prouve que le partenaire est vivant.
+                    // C'est le seul signal qui vaille : un accord signé qui ne
+                    // produit rien n'est pas un partenaire actif.
+                    status: p.status === "dormant" || p.status === "accord" ? ("actif" as const) : p.status,
+                    updatedAt: now,
+                  }
+                : p
+            ),
+            activities: [
+              {
+                id: uid(),
+                date: now,
+                kind: "prospect" as const,
+                message: `Mise en relation reçue — ${intro.company}`,
+                prospectId: intro.prospectId,
+              },
+              ...s.activities,
+            ],
+          };
+        }),
+
+      deleteIntro: (partnerId, introId) =>
+        set((s) => ({
+          partners: s.partners.map((p) =>
+            p.id === partnerId ? { ...p, intros: p.intros.filter((i) => i.id !== introId) } : p
+          ),
+        })),
 
       upsertCampaign: (c) =>
         set((s) => ({
@@ -429,11 +504,12 @@ export const useAlpha = create<AlphaState>()(
           activities: seedActivities,
           settings: defaultSettings,
           drafts: [],
+          partners: [],
         }),
     }),
     {
       name: "alpha-sales-os-v2",
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted) => {
         const s = persisted as Partial<AlphaState>;
@@ -444,6 +520,7 @@ export const useAlpha = create<AlphaState>()(
           meetings: (s.meetings ?? []).map(normalizeMeeting),
           drafts: s.drafts ?? [],
           customScripts: s.customScripts ?? [],
+          partners: s.partners ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
       },

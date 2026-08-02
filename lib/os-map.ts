@@ -19,6 +19,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 | /pipeline | Kanban par étape ; on n'y déplace une carte que quand la réalité a changé |
 | /debrief | Débrief vocal post-terrain : l'opérateur parle 40 s, l'app extrait interlocuteur, freins et prochaine étape DATÉE, puis écrit dans la fiche après relecture |
 | /appels | Session d'appels : une verticale, son script terrain, l'angle de chaque fiche. Les statuts consignent la touche |
+| /prescripteurs | Le canal qui COMPOSE : 6 archétypes d'apporteurs (expert-comptable, assureur pro, vendeur de caisse, agence web, réseau consulaire, groupement), chacun avec SON économie, sa peur, sa structure de deal. Un prescripteur n'est PAS un prospect : ne jamais lui servir l'argumentaire appels manqués |
 | /linkedin | Machine LinkedIn : séquence invitation → J+2 message → J+4 relance, quota 25/jour |
 | /outbox | Boîte d'envoi MANUELLE : ALPHA rédige le message personnalisé, ouvre Gmail pré-rempli, l'opérateur clique Envoyer lui-même puis consigne. Aucun SMTP requis |
 | /newsletter | La lettre hebdomadaire (une seule par semaine) |
@@ -47,6 +48,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Lire ouvertures et clics → fiche du prospect onglet Tracking, ou **/campaigns** pour le global. Ordre de fiabilité : réponse > clic > ouverture.
 - Consigner un rendez-vous qu'on vient de faire → **/debrief**, à la voix.
 - Envoyer les emails du jour sans SMTP → **/outbox** : « Ouvrir dans Gmail », puis « J'ai envoyé » pour consigner la touche.
+- Construire du flux qui dure, ou parler à un expert-comptable / assureur / vendeur de caisses → **/prescripteurs**, onglet « La méthode », l'archétype correspondant.
 - Être soufflé pendant un appel → bouton « Assistant d'appel » dans **/appels** ou **/closer** : il reconnaît l'objection et affiche la réponse du playbook.`;
 
 export const AGENT_LIMITS = `## Ce que tu ne fais JAMAIS
