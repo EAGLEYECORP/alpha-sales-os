@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   ChevronDown,
   Ban,
+  Ear,
   PhoneCall,
   PhoneOff,
   RotateCcw,
@@ -18,6 +19,7 @@ import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { HEAT_HEX, heatTone } from "@/lib/closer";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
+import { LiveAssist } from "@/components/voice/live-assist";
 
 /**
  * Session d'appels — la « liste du matin ». Une verticale, son script
@@ -44,6 +46,7 @@ export default function AppelsPage() {
   const verticals = useMemo(() => verticalsWithTargets(prospects), [prospects]);
   const [activeId, setActiveId] = useState<string>("");
   const [scriptOpen, setScriptOpen] = useState(true);
+  const [assistOpen, setAssistOpen] = useState(false);
   const [done, setDone] = useState<Record<string, Outcome>>({});
 
   const verticalId = activeId || verticals[0]?.vertical.id || "";
@@ -147,6 +150,17 @@ export default function AppelsPage() {
             <span className="rounded-full bg-bronze-400/20 px-1.5 font-mono text-[10px] text-bronze-300">{count}</span>
           </button>
         ))}
+      </div>
+
+      {/* Assistant d'appel en direct — il écoute POUR toi, il ne parle qu'à toi */}
+      <div>
+        {assistOpen ? (
+          <LiveAssist verticalId={verticalId} onClose={() => setAssistOpen(false)} />
+        ) : (
+          <button className="btn-ghost px-3 py-2 text-[13px]" onClick={() => setAssistOpen(true)}>
+            <Ear size={14} /> Assistant d&apos;appel — l&apos;IA souffle la réponse du playbook
+          </button>
+        )}
       </div>
 
       {/* Le script de la verticale */}

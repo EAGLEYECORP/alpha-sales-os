@@ -17,6 +17,7 @@ import {
   Kanban,
   Linkedin,
   Mail,
+  Mic,
   Newspaper,
   Navigation,
   PanelLeftClose,
@@ -48,6 +49,7 @@ const NAV = [
   { href: "/pilote", label: "Pilote", icon: Cpu },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/closer", label: "Closer OS", icon: Navigation },
+  { href: "/debrief", label: "Débrief terrain", icon: Mic },
   { href: "/appels", label: "Appels", icon: PhoneCall },
   { href: "/linkedin", label: "LinkedIn", icon: Linkedin },
   { href: "/agent", label: "Agent ALPHA", icon: Bot },
@@ -68,7 +70,7 @@ const NAV = [
 
 // Sur téléphone, le Closer OS remplace Templates : c'est LE compagnon terrain.
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/", "/pipeline", "/closer", "/agent", "/settings"].includes(n.href)
+  ["/", "/pipeline", "/closer", "/debrief", "/settings"].includes(n.href)
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {

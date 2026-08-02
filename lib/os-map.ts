@@ -17,6 +17,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 | /pilote | L'écran du matin : état de la machine, file de décision chiffrée en minutes, volume du jour par canal |
 | / | Dashboard : les 4 vitaux + les Routines (ce qui fait avancer le pipe) |
 | /pipeline | Kanban par étape ; on n'y déplace une carte que quand la réalité a changé |
+| /debrief | Débrief vocal post-terrain : l'opérateur parle 40 s, l'app extrait interlocuteur, freins et prochaine étape DATÉE, puis écrit dans la fiche après relecture |
 | /appels | Session d'appels : une verticale, son script terrain, l'angle de chaque fiche. Les statuts consignent la touche |
 | /linkedin | Machine LinkedIn : séquence invitation → J+2 message → J+4 relance, quota 25/jour |
 | /newsletter | La lettre hebdomadaire (une seule par semaine) |
@@ -40,7 +41,9 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Dérouler le closing pendant le RDV → fiche ou /closer, bouton **Mode Closing**.
 - Savoir quoi faire maintenant → **/pilote**, file de décision.
 - Débuter, ou reprendre après une pause → **/demarrage**, l'étape en cours est en haut de l'écran.
-- Trouver le prochain appel → **/appels**, les prioritaires sont en tête.`;
+- Trouver le prochain appel → **/appels**, les prioritaires sont en tête.
+- Consigner un rendez-vous qu'on vient de faire → **/debrief**, à la voix.
+- Être soufflé pendant un appel → bouton « Assistant d'appel » dans **/appels** ou **/closer** : il reconnaît l'objection et affiche la réponse du playbook.`;
 
 export const AGENT_LIMITS = `## Ce que tu ne fais JAMAIS
 

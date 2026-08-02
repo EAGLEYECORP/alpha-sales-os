@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   ChevronDown,
   Dumbbell,
+  Ear,
   Flame,
   MapPin,
   Navigation,
@@ -33,6 +34,8 @@ import {
 import { useCountUp } from "@/lib/use-count-up";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { Sparring } from "@/components/training/sparring";
+import { LiveAssist } from "@/components/voice/live-assist";
+import { verticalForProspect } from "@/lib/playbook";
 
 /**
  * ALPHA CLOSER OS — le compagnon de tournée. Pensé pour le téléphone,
@@ -88,6 +91,8 @@ export default function CloserPage() {
   const [closing, setClosing] = useState<Prospect | null>(null);
   const [sparring, setSparring] = useState<Prospect | null>(null);
   const [openStop, setOpenStop] = useState<string | null>(null);
+  /** Fiche pour laquelle l'assistant d'appel écoute — le playbook suit sa verticale. */
+  const [assistFor, setAssistFor] = useState<Prospect | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [brief, setBrief] = useState<string | null>(null);
   const [briefEngine, setBriefEngine] = useState<string | null>(null);
@@ -194,6 +199,14 @@ export default function CloserPage() {
         ))}
       </div>
 
+      {/* Assistant d'appel en direct — playbook de la verticale de la fiche */}
+      {assistFor && (
+        <LiveAssist
+          verticalId={verticalForProspect(assistFor)?.id ?? null}
+          onClose={() => setAssistFor(null)}
+        />
+      )}
+
       {view === "tournee" && (
         <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
           {/* Feuille de route */}
@@ -270,6 +283,9 @@ export default function CloserPage() {
                         </button>
                         <button className="btn-ghost px-4 py-2 text-[13px]" onClick={() => setSparring(p)}>
                           <Dumbbell size={14} /> Sparring
+                        </button>
+                        <button className="btn-ghost px-4 py-2 text-[13px]" onClick={() => setAssistFor(p)}>
+                          <Ear size={14} /> Assistant
                         </button>
                         <a className="btn-ghost px-3 py-2 text-[13px]" href={mapsUrl(s.place)} target="_blank" rel="noreferrer">
                           <MapPin size={14} /> Y aller
@@ -361,6 +377,9 @@ export default function CloserPage() {
                   {stageById(p.stage).label} · {p.city} · {eur(Math.round(weightedValue(p)))} pondérés
                 </p>
               </Link>
+              <button className="btn-ghost hidden px-3 py-1.5 text-[12px] sm:flex" onClick={() => setAssistFor(p)}>
+                <Ear size={13} /> Assistant
+              </button>
               <button className="btn-ghost hidden px-3 py-1.5 text-[12px] sm:flex" onClick={() => setSparring(p)}>
                 <Dumbbell size={13} /> Sparring
               </button>

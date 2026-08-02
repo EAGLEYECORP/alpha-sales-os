@@ -75,6 +75,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Garde ton énergie pour LE closing du jour : valeur × chaleur, le brief te le nomme.",
   },
   {
+    path: "/debrief",
+    title: "Débrief terrain — 40 secondes de voix",
+    role: "Tu sors d'un rendez-vous : tu parles, ALPHA extrait l'interlocuteur, les freins et la prochaine étape datée, et écrit dans la fiche. C'est la saisie d'après-coup qui tue le CRM — celle qu'on repousse au soir et qu'on ne fait jamais.",
+    steps: [
+      "Choisis la fiche, appuie sur le micro, raconte : qui tu as vu, ce qui bloque, ce que tu fais ensuite ET QUAND.",
+      "« Extraire » : relis le brouillon. Ce que l'app n'a pas trouvé est écrit en clair, pas caché.",
+      "Corrige, puis « Écrire dans le CRM ». Le transcript complet part dans les notes de la fiche.",
+    ],
+    tip: "Dis toujours une date à voix haute : « je rappelle jeudi ». Sans date entendue, aucune prochaine étape n'est écrite — l'app ne devine jamais un rendez-vous.",
+  },
+  {
     path: "/appels",
     title: "Session d'appels — la liste du matin",
     role: "Une verticale à la fois : son script terrain (ouverture, diagnostic, miroir, interdits, Red Zone) et les prospects à appeler, chacun avec SON angle — la raison de l'appeler lui, maintenant.",

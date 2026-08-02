@@ -260,6 +260,28 @@ débriefing vocal (a), puis l'assistant en direct (b). Garder LiveKit Agents en
 veille technique : si un client Scintia demande un jour du sortant, la pile
 existe, elle est mûre, et l'intégration est une affaire de jours.
 
+### 4.5 État : (a) et (b) sont construits
+
+Les deux briques recommandées existent dans l'app. Détail d'usage complet dans
+`docs/VOIX.md`.
+
+**(a) Débrief terrain — `/debrief`.** Quarante secondes de voix, et
+l'interlocuteur, le frein et la prochaine étape DATÉE sont extraits, puis
+écrits dans la fiche après relecture. Deux moteurs : déterministe hors-ligne
+d'abord (il ne peut pas inventer de date), Ollama ensuite pour affiner le
+résumé et le nom — jamais la date.
+
+**(b) Assistant d'appel — bouton dans `/appels` et `/closer`.** Il écoute,
+reconnaît l'objection et affiche la réponse du playbook, mot pour mot. Aucune
+IA générative : l'appariement est local, en quelques millisecondes. Une
+réponse qui arrive deux secondes trop tard n'est pas une réponse.
+
+Et une chose qu'aucun outil du marché ne peut copier, parce qu'elle vient de
+la doctrine maison : l'assistant écoute aussi **ce que l'opérateur dit** et
+alerte quand il casse une règle — prix avant la démo, € perdus annoncés à
+froid, note Google citée, ciblage dit en volume au lieu d'un critère,
+observation posée en affirmation au lieu d'une question.
+
 ---
 
 ## 5. Ce qui a été amélioré dans le sillage de cette analyse
