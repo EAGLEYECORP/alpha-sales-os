@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "private": true,
   "description": "ALPHA SALES OS® — EAGLEYE CORP. Hormozi-native sales operating system. Monochrome bronze, ink & paper.",
+  "engines": {
+    "node": ">=18.18"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
