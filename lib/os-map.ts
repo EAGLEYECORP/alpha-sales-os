@@ -18,6 +18,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 | /pilote | L'écran du matin : état de la machine, file de décision chiffrée en minutes, volume du jour par canal |
 | / | Dashboard : les 4 vitaux + les Routines (ce qui fait avancer le pipe) |
 | /pipeline | Kanban par étape ; on n'y déplace une carte que quand la réalité a changé |
+| /voice | ALPHA VOICE : l'agent vocal qui DÉMONTRE. Le prospect entend, sur son métier, ce que vivraient ses clients. Divulgation IA (art. 50) prononcée par le code, non contournable. Le démarchage à froid n'est PAS proposé, par décision |
 | /debrief | Débrief vocal post-terrain : l'opérateur parle 40 s, l'app extrait interlocuteur, freins et prochaine étape DATÉE, puis écrit dans la fiche après relecture |
 | /appels | Session d'appels : une verticale, son script terrain, l'angle de chaque fiche. Les statuts consignent la touche |
 | /prescripteurs | Le canal qui COMPOSE : 6 archétypes d'apporteurs (expert-comptable, assureur pro, vendeur de caisse, agence web, réseau consulaire, groupement), chacun avec SON économie, sa peur, sa structure de deal. Un prescripteur n'est PAS un prospect : ne jamais lui servir l'argumentaire appels manqués |
@@ -52,6 +53,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Consigner un rendez-vous qu'on vient de faire → **/debrief**, à la voix.
 - Envoyer les emails du jour sans SMTP → **/outbox** : « Ouvrir dans Gmail », puis « J'ai envoyé » pour consigner la touche.
 - Construire du flux qui dure, ou parler à un expert-comptable / assureur / vendeur de caisses → **/prescripteurs**, onglet « La méthode », l'archétype correspondant.
+- Faire ENTENDRE la solution en rendez-vous → **/voice**, mode « démo sortante ». C'est l'émotion avant le prix, et c'est ce qui a converti la Carrosserie des Brotteaux.
 - Être soufflé pendant un appel → bouton « Assistant d'appel » dans **/appels** ou **/closer** : il reconnaît l'objection et affiche la réponse du playbook.`;
 
 export const AGENT_LIMITS = `## Ce que tu ne fais JAMAIS

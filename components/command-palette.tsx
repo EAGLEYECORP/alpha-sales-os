@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  Activity, BarChart3, Bot, CalendarCheck, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
+  Activity, AudioLines, BarChart3, Bot, CalendarCheck, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
   Gem, Handshake, Linkedin, Navigation, Newspaper, PhoneCall, ScrollText, Search, Send, Settings, Sprout, Swords, User,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
@@ -19,6 +19,7 @@ const PAGES = [
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/closer", label: "Closer OS", icon: Navigation },
   { href: "/debrief", label: "Débrief terrain (voix)", icon: Mic },
+  { href: "/voice", label: "Alpha Voice (agent vocal)", icon: AudioLines },
   { href: "/appels", label: "Session d'appels", icon: PhoneCall },
   { href: "/linkedin", label: "Machine LinkedIn", icon: Linkedin },
   { href: "/prescripteurs", label: "Prescripteurs (apporteurs)", icon: Handshake },

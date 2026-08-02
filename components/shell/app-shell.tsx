@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Activity,
+  AudioLines,
   BadgeEuro,
   BarChart3,
   Bot,
@@ -54,6 +55,7 @@ const NAV = [
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/closer", label: "Closer OS", icon: Navigation },
   { href: "/debrief", label: "Débrief terrain", icon: Mic },
+  { href: "/voice", label: "Alpha Voice", icon: AudioLines },
   { href: "/appels", label: "Appels", icon: PhoneCall },
   { href: "/linkedin", label: "LinkedIn", icon: Linkedin },
   { href: "/prescripteurs", label: "Prescripteurs", icon: Handshake },

@@ -1,0 +1,6 @@
+# ALPHA VOICE — agent vocal LiveKit
+# Le LLM passe par l'API compatible OpenAI, donc NVIDIA NIM fonctionne
+# avec le plugin openai et la même clé que le reste d'ALPHA.
+livekit-agents[openai,deepgram,silero,turn-detector]~=1.6
+livekit-api~=1.0
+python-dotenv~=1.0

@@ -97,6 +97,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Dis toujours une date à voix haute : « je rappelle jeudi ». Sans date entendue, aucune prochaine étape n'est écrite — l'app ne devine jamais un rendez-vous.",
   },
   {
+    path: "/voice",
+    title: "Alpha Voice — faire ENTENDRE",
+    role: "L'agent vocal qui démontre. Le prospect entend, sur son propre métier, ce que vivraient ses clients quand personne ne décroche. C'est la doctrine appliquée : l'émotion avant le prix.",
+    steps: [
+      "Choisis le mode. « Démo sortante » pendant un rendez-vous : l'agent appelle le prospect, qui est prévenu et présent.",
+      "Sélectionne la fiche — le playbook de sa verticale entre automatiquement dans le script.",
+      "Relis le script en bas de page avant de lancer. Ce qui est affiché est exactement ce qui sera dit.",
+    ],
+    tip: "La première phrase déclare que c'est une IA et pour qui elle agit. Elle est prononcée par le code, pas par le modèle — et si elle manque, l'agent refuse de démarrer. C'est ce qui rend l'outil utilisable en clientèle.",
+  },
+  {
     path: "/appels",
     title: "Session d'appels — la liste du matin",
     role: "Une verticale à la fois : son script terrain (ouverture, diagnostic, miroir, interdits, Red Zone) et les prospects à appeler, chacun avec SON angle — la raison de l'appeler lui, maintenant.",

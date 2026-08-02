@@ -161,6 +161,26 @@ dis le nom de la personne, dis le frein, **dis la date**.
 
 ---
 
+## (c) Alpha Voice — l'agent qui parle · `/voice`
+
+Construit. Le détail d'installation est dans `voice/README.md`.
+
+Il sert la **démonstration** : le prospect entend, sur son propre métier, ce
+que vivraient ses clients. C'est la doctrine appliquée — l'émotion avant le
+prix — et c'est ce qui a converti la Carrosserie des Brotteaux.
+
+**La divulgation est prononcée par le code, pas par le modèle.** Un modèle
+peut reformuler ou sauter une consigne ; une ligne de code, non. Elle passe
+sans interruption possible, et si le script ne porte pas les trois mentions de
+l'article 50, l'agent refuse de démarrer — vérifié des deux côtés, app et
+service.
+
+Trois modes exposés : démo entrante, démo sortante sur rendez-vous, rappel
+d'un contact entrant. **Le démarchage à froid n'en fait pas partie** : voir
+juste en dessous.
+
+---
+
 ## Ce qui n'a PAS été construit, et pourquoi
 
 **Pas de démarcheur téléphonique IA sortant.** Techniquement faisable en
