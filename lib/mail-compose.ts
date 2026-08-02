@@ -1,5 +1,6 @@
 import type { Prospect } from "./types";
 import { verticalForProspect } from "./playbook";
+import { isDemoProspect } from "./seed";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -130,6 +131,13 @@ export interface OutboxTarget {
   draft: ComposeDraft;
   /** Pourquoi cette fiche est dans la file aujourd'hui. */
   reason: string;
+  /**
+   * Fiche de démonstration : son adresse est INVENTÉE. Écrire dessus
+   * produit un rebond dur, et les rebonds comptent contre le domaine
+   * pendant longtemps. La file la montre — pour qu'on comprenne pourquoi
+   * l'envoi est refusé — mais aucune surface ne doit la laisser partir.
+   */
+  demo: boolean;
 }
 
 const isToday = (iso: string) => iso.slice(0, 10) === new Date().toISOString().slice(0, 10);
@@ -158,5 +166,6 @@ export function buildOutbox(prospects: Prospect[], limit: number, opts: ComposeO
         p.events.length === 0
           ? "jamais contactée"
           : `dernière touche : ${p.events[0].kind}`,
+      demo: isDemoProspect(p.id),
     }));
 }

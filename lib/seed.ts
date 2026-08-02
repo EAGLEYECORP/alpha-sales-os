@@ -500,3 +500,28 @@ export const DEFAULT_BUSINESS_RULES = `1. La décision EST le produit. On vend u
 10. Offre : site premium + overlay IA. Setup 1 200–2 400 € + 190–390 €/mois selon secteur.
 11. Ne jamais se battre sur le prix face au low-cost : se battre sur la preuve.
 12. Un perdu = nurture 90 jours. Un signé = machine à referrals semaine 1.`;
+
+/**
+ * Identifiants des fiches de démonstration.
+ *
+ * Elles portent des adresses email INVENTÉES. Écrire à l'une d'elles
+ * produit un rebond dur — et les rebonds comptent contre le domaine
+ * pendant longtemps. Sur une boîte qui démarre son historique de
+ * sortant, c'est la pire première journée possible.
+ *
+ * Toute surface qui envoie doit s'en servir pour REFUSER, pas pour
+ * avertir : le coût est trop asymétrique pour être laissé au jugement
+ * d'un opérateur pressé.
+ */
+export const DEMO_PROSPECT_IDS: ReadonlySet<string> = new Set([
+  "p-bouchon",
+  "p-smoking-dog",
+  "p-ambulances-rhone",
+  "p-menuiserie",
+  "p-brasserie-part-dieu",
+  "p-taxi-fourviere",
+  "p-paddy",
+  "p-boulangerie",
+]);
+
+export const isDemoProspect = (id: string): boolean => DEMO_PROSPECT_IDS.has(id);

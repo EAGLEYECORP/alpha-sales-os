@@ -12,6 +12,7 @@ import {
   gmailComposeUrl,
   mailtoUrl,
 } from "../lib/mail-compose";
+import { DEMO_PROSPECT_IDS, isDemoProspect } from "../lib/seed";
 
 /**
  * L'envoi manuel touche à deux choses fragiles : une URL qui part vers
@@ -138,4 +139,26 @@ test("outbox — chaque cible arrive avec un brouillon prêt et une raison", () 
   assert.ok(t.draft.subject.length > 0);
   assert.ok(t.draft.body.length > 100);
   assert.equal(t.reason, "jamais contactée");
+});
+
+// ───────────────── Garde-fou : les fiches de démonstration ─────────────────
+
+test("outbox — une fiche de démonstration est marquée comme telle", () => {
+  // Ses adresses sont inventées : un envoi produirait un rebond dur, et les
+  // rebonds comptent contre le domaine pendant des mois. La file doit la
+  // montrer (pour qu'on comprenne le blocage) mais la marquer sans ambiguïté.
+  const demo = buildOutbox([prospect({ id: "p-bouchon", email: "contact@bouchondescanuts.fr" })], 5);
+  assert.equal(demo[0].demo, true);
+
+  const real = buildOutbox([prospect({ id: "crm-4821", email: "vrai@garage-lyon.fr" })], 5);
+  assert.equal(real[0].demo, false);
+});
+
+test("outbox — tous les identifiants de démonstration sont couverts", () => {
+  // Si une fiche de démo échappait à la liste, elle passerait le garde-fou.
+  for (const id of DEMO_PROSPECT_IDS) {
+    assert.equal(isDemoProspect(id), true, `${id} doit être reconnu comme démo`);
+  }
+  assert.equal(isDemoProspect("crm-4821"), false);
+  assert.ok(DEMO_PROSPECT_IDS.size >= 8);
 });

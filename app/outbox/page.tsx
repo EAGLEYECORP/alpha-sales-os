@@ -8,6 +8,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  FlaskConical,
   Info,
   Mail,
   RefreshCw,
@@ -28,6 +29,7 @@ import { stageById } from "@/lib/hormozi";
 import { cn } from "@/lib/utils";
 
 const SENDER_KEY = "alpha_manual_sender";
+const TEST_KEY = "alpha_manual_test_to";
 
 /**
  * Boîte d'envoi manuelle — ALPHA rédige, tu envoies de ta main.
@@ -48,10 +50,14 @@ export default function OutboxPage() {
   const [copied, setCopied] = useState("");
   const [warn, setWarn] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<string | null>(null);
+  const [testTo, setTestTo] = useState("");
+  const [testMsg, setTestMsg] = useState("");
 
   useEffect(() => {
     try {
-      setSender(localStorage.getItem(SENDER_KEY) ?? "");
+      const saved = localStorage.getItem(SENDER_KEY) ?? "";
+      setSender(saved);
+      setTestTo(localStorage.getItem(TEST_KEY) ?? saved);
     } catch {
       /* stockage indisponible — le compte se choisira dans Gmail */
     }
@@ -159,7 +165,38 @@ export default function OutboxPage() {
     setSent((s) => ({ ...s, [id]: true }));
   };
 
+  /**
+   * Le test à soi-même. Il emprunte le brouillon de la première fiche —
+   * texte identique, seule l'adresse change — et ne consigne RIEN : un
+   * test n'est pas une touche, et le faire apparaître dans le CRM
+   * fausserait le compte du jour comme les preuves.
+   */
+  const sendTest = async () => {
+    const first = list[0];
+    if (!first) return;
+    const d = {
+      ...draftFor(first.prospect.id, first.draft),
+      to: testTo.trim(),
+      subject: `[TEST] ${first.draft.subject}`,
+    };
+    try {
+      localStorage.setItem(TEST_KEY, d.to);
+    } catch {
+      /* stockage indisponible */
+    }
+    if (!composeFitsInUrl(d, sender)) {
+      await navigator.clipboard.writeText(clipboardText(d));
+      setTestMsg("Message trop long pour l'URL — il est dans le presse-papier, colle-le dans Gmail.");
+      return;
+    }
+    window.open(gmailComposeUrl(d, sender), "_blank", "noopener");
+    setTestMsg(
+      "Gmail est ouvert. Envoie, puis va lire le message dans ta boîte : le rendu, le dossier d'arrivée, et clique le lien s'il y en a un."
+    );
+  };
+
   const doneToday = Object.keys(sent).length;
+  const demoCount = list.filter((t) => t.demo).length;
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -197,6 +234,38 @@ export default function OutboxPage() {
         </p>
       </section>
 
+      {/* Le premier test : se l'envoyer à soi-même. Personne d'autre. */}
+      <section className="card border-bronze-700 p-4">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <FlaskConical size={15} className="text-bronze-400" /> Premier test — envoie-le-toi
+        </h2>
+        <p className="mt-1 text-[12px] text-paper-dim">
+          Le premier message ne part jamais vers un prospect. Envoie-toi exactement ce que recevra ta cible : tu
+          verras le rendu réel dans une boîte de réception, tu vérifieras qu&apos;il n&apos;atterrit pas en spam, et
+          tu pourras cliquer le lien pour voir le clic remonter dans l&apos;app.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            className="input w-full max-w-xs text-[13px]"
+            placeholder="ton adresse"
+            value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+          />
+          <button
+            className="btn-bronze px-3 py-2 text-[13px]"
+            onClick={() => void sendTest()}
+            disabled={!testTo.includes("@") || list.length === 0}
+          >
+            <ExternalLink size={14} /> M&apos;envoyer le message de test
+          </button>
+        </div>
+        {testMsg && <p className="mt-2 text-[12px] text-paper-faint">{testMsg}</p>}
+        <p className="mt-2 text-[11px] text-paper-faint">
+          Le message reprend la première fiche de la file, avec son texte exact — seule l&apos;adresse change. Rien
+          n&apos;est consigné au CRM : c&apos;est un test, pas une touche.
+        </p>
+      </section>
+
       {/* Ce que ce mode fait et ne fait pas — dit une fois, en haut */}
       <section className="card border-ink-700 p-4">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
@@ -223,6 +292,26 @@ export default function OutboxPage() {
         </ul>
       </section>
 
+      {demoCount > 0 && (
+        <section className="card border-signal-red/50 p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-signal-red">
+            <AlertTriangle size={15} /> {demoCount} fiche{demoCount > 1 ? "s" : ""} de démonstration dans la file —
+            envoi bloqué
+          </h2>
+          <p className="mt-1.5 text-[12px] text-paper">
+            Ces fiches portent des adresses <b>inventées</b> (Le Bouchon des Canuts, The Smoking Dog…). Écrire à
+            l&apos;une d&apos;elles produit un rebond dur, et les rebonds comptent contre ton domaine pendant des
+            mois. Sur une boîte qui démarre son historique d&apos;envoi, c&apos;est la pire première journée
+            possible.
+          </p>
+          <p className="mt-1.5 text-[12px] text-paper-dim">
+            Charge tes vraies fiches — <Link href="/settings" className="text-bronze-400 underline">Réglages →
+            Données réelles → « Tout vider »</Link>, puis importe ton CSV. Les boutons d&apos;envoi se rallumeront
+            tout seuls.
+          </p>
+        </section>
+      )}
+
       {list.length === 0 ? (
         <p className="card px-4 py-8 text-center text-sm text-paper-faint">
           Rien à envoyer aujourd&apos;hui — soit le palier est atteint, soit aucune fiche active n&apos;a
@@ -238,6 +327,10 @@ export default function OutboxPage() {
             const d = draftFor(p.id, base);
             const isOpen = open === p.id;
             const isSent = sent[p.id];
+            // Une adresse inventée ne doit pas pouvoir partir, même par
+            // inadvertance : le coût d'un rebond est trop asymétrique pour
+            // être laissé au jugement d'un opérateur pressé.
+            const blocked = target.demo;
             return (
               <li
                 key={p.id}
@@ -251,6 +344,9 @@ export default function OutboxPage() {
                       <span className="chip border-ink-700 text-[10px] text-paper-faint">
                         {stageById(p.stage).label}
                       </span>
+                      {target.demo && (
+                        <span className="chip border-signal-red/50 text-[10px] text-signal-red">démo — adresse inventée</span>
+                      )}
                     </p>
                     <p className="mt-0.5 truncate text-[11px] text-paper-faint">
                       {d.to} · {p.city} · {reason}
@@ -283,10 +379,19 @@ export default function OutboxPage() {
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button className="btn-bronze px-3 py-2 text-[13px]" onClick={() => void openGmail(p.id, base)}>
+                  <button
+                    className="btn-bronze px-3 py-2 text-[13px]"
+                    onClick={() => void openGmail(p.id, base)}
+                    disabled={blocked}
+                    title={blocked ? "Adresse de démonstration — inventée. Charge tes vraies fiches." : undefined}
+                  >
                     <ExternalLink size={14} /> Ouvrir dans Gmail
                   </button>
-                  <button className="btn-ghost px-3 py-2 text-[13px]" onClick={() => void openMailto(p.id, base)}>
+                  <button
+                    className="btn-ghost px-3 py-2 text-[13px]"
+                    onClick={() => void openMailto(p.id, base)}
+                    disabled={blocked}
+                  >
                     <Mail size={13} /> Client mail
                   </button>
                   <button className="btn-ghost px-3 py-2 text-[13px]" onClick={() => void copy(p.id, base)}>
@@ -295,7 +400,7 @@ export default function OutboxPage() {
                   <button
                     className={cn("px-3 py-2 text-[13px]", isSent ? "btn-ghost" : "btn-bronze")}
                     onClick={() => markSent(target, d.subject)}
-                    disabled={isSent}
+                    disabled={isSent || blocked}
                   >
                     <Send size={13} /> {isSent ? "Consigné ✓" : "J'ai envoyé"}
                   </button>
