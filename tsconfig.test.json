@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "react-jsx",
+    "noEmit": false,
+    "outDir": ".test-build",
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": false,
+    "incremental": false,
+    "plugins": []
+  },
+  "include": ["tests/**/*.ts", "lib/**/*.ts", "components/ui/markdown.tsx"],
+  "exclude": ["node_modules", ".next"]
+}

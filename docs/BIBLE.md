@@ -313,6 +313,7 @@ Mise en marche continue : `AUTOPILOTE.md`.
 | Contrat, grille tarifaire | `CONTRAT-PRESTATION.md` |
 | Architecture, prompts n8n | `HANDOFF.md`, `integrations/n8n/PROMPTS.md` |
 | Exploitation quotidienne, montée en volume | `RUNBOOK.md` |
+| Vérifier que rien n'est cassé (`npm test`) | `tests/` — 26 tests sur les calculs d'argent et les garde-fous |
 | Démarrer une session locale de zéro | `LANCEMENT.md` |
 | Posts de lancement, brief pub vidéo | `POSTS-LANCEMENT.md`, `PUB-VIDEO.md` |
 
