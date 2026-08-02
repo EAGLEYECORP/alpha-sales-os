@@ -64,6 +64,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Le critère, jamais le volume. Et deux questions de diagnostic, puis tu te tais : le silence fait le travail.",
   },
   {
+    path: "/linkedin",
+    title: "Machine LinkedIn — assistée, jamais automatisée",
+    role: "La séquence de la campagne : invitation, puis message deux jours après, puis relance. L'app prépare le texte et ouvre le bon profil ; c'est toi qui colles et envoies — donc zéro risque de restriction.",
+    steps: [
+      "Règle le périmètre (ville / arrondissement) : une campagne = un territoire.",
+      "« Copier + ouvrir » : le message est dans le presse-papier, LinkedIn s'ouvre, la touche est consignée.",
+      "Relis avant d'envoyer — surtout le prénom. Puis arrête-toi au quota du jour.",
+    ],
+    tip: "L'audit ne part jamais d'office : il s'envoie quand la personne a dit oui. C'est ça, la différence avec du spam.",
+  },
+  {
     path: "/agent",
     title: "Agent ALPHA — ton copilote IA",
     role: "Il lit tout ton pipe et répond : scripts, résumés, prochaine action, traitement d'objection. IA locale (Ollama) d'abord, gratuite.",
