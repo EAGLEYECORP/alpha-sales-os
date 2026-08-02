@@ -237,8 +237,18 @@ Page **Agent ALPHA** : chat en streaming branché sur l'état réel complet (dea
 
 ## Installer & former
 
+📖 **[`docs/BIBLE.md`](./docs/BIBLE.md) — la Bible de la bonne utilisation.**
+Le seul document à relire quand on ne sait plus quoi faire de sa journée :
+les dix commandements, le premier mois dans l'ordre, la journée type, quel
+écran à quel moment, les sept péchés, et quand changer quelque chose.
+**À lire en premier** — les guides ci-dessous traitent de l'installation et
+de l'architecture, celui-là traite de l'usage.
+
 **Guide pas à pas complet** (pour installer, vérifier chaque phase, et former
 un employé à l'opérer) : [`docs/INSTALLATION.md`](./docs/INSTALLATION.md).
+Faire tourner en continu et tenir le volume : [`docs/AUTOPILOTE.md`](./docs/AUTOPILOTE.md).
+Capacités réelles et modèle de conversion : [`docs/CHIFFRES.md`](./docs/CHIFFRES.md).
+Enrichir la méthode terrain : [`docs/TERRAIN.md`](./docs/TERRAIN.md).
 Montée en volume : [`docs/RUNBOOK.md`](./docs/RUNBOOK.md).
 Prospection multi-plateformes (email + LinkedIn + WhatsApp + SMS, quotas
 anti-spam par canal) : [`docs/MULTICANAL.md`](./docs/MULTICANAL.md).
