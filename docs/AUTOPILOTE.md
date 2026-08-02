@@ -44,50 +44,89 @@ font signer.
 
 Sur Linux Mint :
 
+**Étape 1 — empêcher la veille** (le portable doit rester éveillé,
+capot fermé) :
+
 ```bash
-# 1. Empêcher la mise en veille quand le capot est fermé
-sudo sed -i 's/^#HandleLidSwitch=.*/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
+sudo sed -i 's/^#\?HandleLidSwitch=.*/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
 sudo systemctl restart systemd-logind
-
-# 2. Désactiver la veille système
 sudo systemctl mask sleep.target suspend.target hibernate.target
+```
 
-# 3. Lancer n8n et l'app au démarrage (à faire une fois)
-#    n8n en service utilisateur :
+**Étape 2 — les deux services.** Copie-colle ce bloc *entier*, il écrit
+les deux fichiers et démarre tout :
+
+```bash
 mkdir -p ~/.config/systemd/user
+
+# --- n8n (le cerveau) ---
 cat > ~/.config/systemd/user/n8n.service <<'EOF'
 [Unit]
 Description=n8n — cerveau ALPHA
+After=network-online.target
+
 [Service]
-ExecStart=/usr/bin/env n8n start
+Type=simple
+# bash -lc charge ton profil : n8n et node sont trouvés même installés
+# via nvm ou npm global (le PATH d'un service systemd est minimal).
+ExecStart=/bin/bash -lc 'n8n start'
 Restart=always
+RestartSec=5
+
 [Install]
 WantedBy=default.target
 EOF
-systemctl --user daemon-reload
-systemctl --user enable --now n8n
-loginctl enable-linger "$USER"   # tourne même sans session ouverte
-```
 
-Pour l'app, dans le dossier du projet :
-
-```bash
+# --- l'app ALPHA ---
 cat > ~/.config/systemd/user/alpha.service <<'EOF'
 [Unit]
 Description=ALPHA SALES OS
+After=network-online.target
+
 [Service]
+Type=simple
+# Le chemin contient un espace, et c'est bien SANS guillemets :
+# systemd prend la fin de ligne telle quelle pour WorkingDirectory.
+# (Avec des guillemets, il refuse : « path is not absolute ».)
 WorkingDirectory=/home/neo4tony/Desktop/EAGLEYE CORP/alpha-sales-os
-ExecStart=/usr/bin/npm run start
+ExecStart=/bin/bash -lc 'npm run start'
 Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
 [Install]
 WantedBy=default.target
 EOF
+
 systemctl --user daemon-reload
-systemctl --user enable --now alpha
+systemctl --user enable --now n8n alpha
+loginctl enable-linger "$USER"   # tourne même sans session ouverte
 ```
 
-> Le chemin contient un espace : les guillemets dans `WorkingDirectory`
-> sont obligatoires si tu le retapes.
+**Étape 3 — vérifier que ça tourne vraiment :**
+
+```bash
+systemctl --user status n8n alpha --no-pager   # les deux doivent être « active (running) »
+curl -s localhost:3000/api/health | head -c 120  # l'app répond
+curl -s -o /dev/null -w '%{http_code}\n' localhost:5678  # n8n répond (200 ou 401)
+```
+
+Si un service est en `failed`, la cause exacte est dans les logs :
+
+```bash
+journalctl --user -u alpha -n 30 --no-pager
+journalctl --user -u n8n -n 30 --no-pager
+```
+
+> ⚠ Deux pièges, tous deux déjà traités dans le bloc ci-dessus :
+>
+> 1. **Le PATH d'un service systemd est minimal** — sans `bash -lc`, tu
+>    obtiens « npm: command not found » (surtout avec nvm).
+> 2. **Le chemin du projet contient un espace** — et il ne faut
+>    **surtout pas** de guillemets : `WorkingDirectory` prend la fin de
+>    ligne littéralement. Avec des guillemets, systemd refuse de démarrer
+>    le service (« path is not absolute »). Vérifié avec
+>    `systemd-analyze verify`.
 
 ### Option B — un petit serveur (5–10 €/mois, quand tu ne seras plus seul)
 
