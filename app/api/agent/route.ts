@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { playbookPrompt } from "@/lib/playbook";
 import { AGENT_LIMITS, OS_MAP } from "@/lib/os-map";
 
@@ -60,6 +61,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ text, engine: `ollama (${ollamaModel()})` });
     } catch (e) {
       console.error("Ollama agent error, falling back:", e);
+    }
+  }
+
+  // NVIDIA NIM — gratuit, 70B, avant Anthropic qui est payant.
+  if (nvidiaConfigured()) {
+    try {
+      const text = await nvidiaChat(
+        [{ role: "system" as const, content: system }, ...body.messages.map((m) => ({ role: m.role, content: m.content }))],
+        { temperature: 0.4, maxTokens: 1500 }
+      );
+      return NextResponse.json({ text, engine: `nvidia (${nvidiaModel()})` });
+    } catch (e) {
+      console.error("NVIDIA agent error, falling back:", e);
     }
   }
 

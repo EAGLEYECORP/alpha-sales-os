@@ -9,7 +9,7 @@ interface Health {
   ok: boolean;
   runtime: string;
   capabilities: {
-    ai: { configured: boolean; model: string };
+    ai: { configured: boolean; model: string; engines?: string[] };
     email: { configured: boolean; from: boolean };
     sms: { configured: boolean; selfHosted: boolean };
     inboundWebhook: { configured: boolean };
@@ -37,7 +37,12 @@ export const ENV_TEMPLATE = `# ── IA (optionnel — sinon moteur templates H
 # Option 1 (recommandé, 100 % local, gratuit) : ollama pull qwen2.5:3b
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:3b
-# Option 2 (cloud) — Ollama prioritaire si les deux sont remplis :
+# Option 2 (GRATUIT, 100+ modèles) — NVIDIA NIM, clé sur build.nvidia.com
+# La cascade essaie dans cet ordre : Ollama (local) → NVIDIA → Anthropic
+NVIDIA_API_KEY=
+NVIDIA_MODEL=meta/llama-3.3-70b-instruct
+
+# Option 3 (payant) :
 ANTHROPIC_API_KEY=
 AI_MODEL=claude-opus-4-8
 
@@ -134,11 +139,20 @@ export function SystemStatus() {
           title: "IA — Coach, Agent, Sparring",
           items: [
             {
-              label: c.ai.configured ? `IA connectée (${c.ai.model})` : "IA (OLLAMA_MODEL ou ANTHROPIC_API_KEY)",
+              label: c.ai.configured ? `IA connectée — ${c.ai.model}` : "IA (aucun moteur branché)",
               level: c.ai.configured ? "ok" : "warn",
-              hint: "Local gratuit : ollama pull qwen2.5:3b + OLLAMA_MODEL=qwen2.5:3b. Sans IA, moteur de templates hors-ligne.",
+              hint: "Trois options, essayées dans cet ordre : Ollama en local (rien ne sort de la machine) → NVIDIA NIM (GRATUIT, modèles 70B, clé sur build.nvidia.com) → Anthropic (payant). Sans aucune, moteur de templates hors-ligne.",
               optional: true,
             },
+            ...(c.ai.engines && c.ai.engines.length > 1
+              ? [
+                  {
+                    label: `Repli disponible : ${c.ai.engines.slice(1).join(", ")}`,
+                    level: "ok" as const,
+                    optional: true,
+                  },
+                ]
+              : []),
           ],
         },
         {

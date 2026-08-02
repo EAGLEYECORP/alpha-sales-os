@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -110,6 +111,23 @@ export async function POST(request: NextRequest) {
       if (data) return NextResponse.json({ data, engine: `ollama (${ollamaModel()})` });
     } catch (e) {
       console.error("extract: Ollama error", e);
+    }
+  }
+
+  // NVIDIA NIM — gratuit, avant Anthropic.
+  if (nvidiaConfigured()) {
+    try {
+      const text = await nvidiaChat(
+        [
+          { role: "system", content: EXTRACT_SYSTEM },
+          { role: "user", content: prompt },
+        ],
+        { temperature: 0.2, maxTokens: 900 }
+      );
+      const data = parseLoose(text);
+      if (data) return NextResponse.json({ data, engine: `nvidia (${nvidiaModel()})` });
+    } catch (e) {
+      console.error("NVIDIA extract error, falling back:", e);
     }
   }
 

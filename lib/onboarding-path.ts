@@ -114,12 +114,12 @@ export const STEPS: StepDef[] = [
   {
     id: "ia",
     phase: "brancher",
-    title: "Brancher l'IA locale",
-    why: "Sans IA, l'app bascule sur des templates hors-ligne : ça marche, mais tu perds la personnalisation par fiche — donc l'essentiel de l'avantage.",
+    title: "Brancher l'IA",
+    why: "Sans IA, l'app bascule sur des templates hors-ligne : ça marche, mais tu perds la personnalisation par fiche — donc l'essentiel de l'avantage. NVIDIA NIM rend ça gratuit : il n'y a plus de raison de s'en priver.",
     how: [
-      "Installe Ollama, puis : ollama pull qwen2.5:3b",
-      "Dans .env.local : OLLAMA_URL=http://localhost:11434 et OLLAMA_MODEL=qwen2.5:3b",
-      "Redémarre. Teste sur l'Agent ALPHA : pose-lui une question sur une fiche.",
+      "Le plus rapide et GRATUIT : crée une clé sur build.nvidia.com (programme développeur, sans carte bancaire), puis dans .env.local : NVIDIA_API_KEY=nvapi-… — tu as un modèle 70B en deux minutes.",
+      "Le plus privé : installe Ollama (ollama pull qwen2.5:3b) puis OLLAMA_MODEL=qwen2.5:3b. Rien ne sort de la machine, mais le modèle est bien plus petit.",
+      "Les deux peuvent coexister : Ollama passe en premier, NVIDIA prend le relais s'il échoue. Redémarre, puis teste sur l'Agent ALPHA.",
     ],
     href: "/agent",
     hrefLabel: "Tester l'Agent",

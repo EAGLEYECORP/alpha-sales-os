@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { verticalById, verticalForSector } from "@/lib/playbook";
 import type { Sector } from "@/lib/types";
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "prospect et history requis" }, { status: 400 });
   }
 
-  if (!ollamaConfigured() && !process.env.ANTHROPIC_API_KEY) {
+  if (!ollamaConfigured() && !nvidiaConfigured() && !process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ ...localEngine(body), engine: "local" });
   }
 
@@ -85,6 +86,21 @@ status="gagne" si le commercial vient d'obtenir un RDV d'audit daté ; "perdu" s
       return NextResponse.json({ ...parsed, engine: `ollama (${ollamaModel()})` });
     } catch (e) {
       console.error("sparring ollama fallback:", e);
+      if (!nvidiaConfigured() && !process.env.ANTHROPIC_API_KEY) return NextResponse.json({ ...localEngine(body), engine: "local" });
+    }
+  }
+
+  // NVIDIA NIM avant Anthropic : gratuit, et un 70B tient très bien le rôle.
+  if (nvidiaConfigured()) {
+    try {
+      const text = await nvidiaChat([{ role: "user", content: prompt }], { temperature: 0.5, maxTokens: 400 });
+      const a = text.indexOf("{");
+      const b = text.lastIndexOf("}");
+      const parsed = JSON.parse(text.slice(a, b + 1)) as SparringReply;
+      if (!parsed.prospect) throw new Error("réponse vide");
+      return NextResponse.json({ ...parsed, engine: `nvidia (${nvidiaModel()})` });
+    } catch (e) {
+      console.error("sparring nvidia fallback:", e);
       if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ ...localEngine(body), engine: "local" });
     }
   }

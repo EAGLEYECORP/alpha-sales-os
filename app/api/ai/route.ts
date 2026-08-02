@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prospect } from "@/lib/types";
-import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { runAI } from "@/lib/ai-engine";
 import { playbookPrompt } from "@/lib/playbook";
 import { prescripteurPrompt } from "@/lib/prescripteurs";
 import {
@@ -188,41 +188,18 @@ export async function POST(request: NextRequest) {
       ? `${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
       : `${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
 
-  // IA locale (Ollama) prioritaire — consignes compactes pour un petit modèle.
-  if (ollamaConfigured()) {
-    try {
-      const text = await ollamaChat(
-        [
-          { role: "system", content: system },
-          { role: "user", content: buildPrompt(body) },
-        ],
-        { temperature: 0.3, maxTokens: 1200 }
-      );
-      return NextResponse.json({ text, engine: `ollama (${ollamaModel()})` });
-    } catch (e) {
-      console.error("Ollama error, falling back:", e);
-      // continue vers Anthropic ou templates
-    }
-  }
-
-  // No key → deterministic Hormozi template engine (app works offline).
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ text: fallback(body), engine: "template" });
-  }
-
   try {
-    const { generateText } = await import("ai");
-    const { anthropic } = await import("@ai-sdk/anthropic");
-    const { text } = await generateText({
-      model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
-      system,
-      prompt: buildPrompt(body),
-      maxTokens: 2000,
-    });
-    return NextResponse.json({ text, engine: "claude" });
+    const { text, engine } = await runAI(
+      [
+        { role: "system", content: system },
+        { role: "user", content: buildPrompt(body) },
+      ],
+      { temperature: 0.3, maxTokens: 2000 }
+    );
+    return NextResponse.json({ text, engine });
   } catch (e) {
-    // API failure → degrade gracefully to the template engine.
-    console.error("AI route error, falling back to templates:", e);
+    // Aucun moteur n'a répondu → moteur de templates. L'app marche sans IA.
+    console.error("Cascade IA indisponible, repli templates:", e);
     return NextResponse.json({ text: fallback(body), engine: "template" });
   }
 }

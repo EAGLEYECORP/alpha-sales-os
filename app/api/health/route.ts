@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,10 +23,11 @@ export async function GET() {
     runtime: `node ${process.version}`,
     capabilities: {
       ai: {
-        configured: has("OLLAMA_MODEL") || has("ANTHROPIC_API_KEY"),
-        model: has("OLLAMA_MODEL")
-          ? `ollama:${env.OLLAMA_MODEL} (local)`
-          : env.AI_MODEL || "claude-opus-4-8",
+        configured: aiAvailable(),
+        // Le moteur qui répondra RÉELLEMENT, pas celui qu'on espère.
+        model: aiEngineName(),
+        /** Tous les moteurs branchés, dans l'ordre d'essai. */
+        engines: aiEngines(),
       },
       email: {
         configured: email,

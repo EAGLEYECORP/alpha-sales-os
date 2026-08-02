@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractDebrief, parseFrenchDate, type DebriefDraft } from "@/lib/debrief";
-import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { aiAvailable, runAIJson } from "@/lib/ai-engine";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -91,20 +91,22 @@ export async function POST(request: NextRequest) {
 
   const base = extractDebrief(transcript);
 
-  if (!ollamaConfigured()) {
+  if (!aiAvailable()) {
     return NextResponse.json({ draft: base, engine: "déterministe (hors-ligne)" });
   }
 
   try {
-    const text = await ollamaChat(
+    const { data, engine } = await runAIJson<Refinement>(
       [
         { role: "system", content: SYSTEM },
         { role: "user", content: transcript },
       ],
-      { temperature: 0.1, maxTokens: 500, json: true }
+      { temperature: 0.1, maxTokens: 500 }
     );
-    const parsed = JSON.parse(text) as Refinement;
-    return NextResponse.json({ draft: merge(base, parsed), engine: `ollama (${ollamaModel()})` });
+    // JSON invalide → on garde l'extraction déterministe, qui a déjà
+    // l'essentiel. Un affinage raté ne doit pas coûter le débrief.
+    if (!data) return NextResponse.json({ draft: base, engine: `${engine} — sortie illisible, extraction déterministe conservée` });
+    return NextResponse.json({ draft: merge(base, data), engine });
   } catch (e) {
     // Un modèle qui rend du JSON invalide ne doit pas coûter le débrief :
     // le déterministe a déjà tout ce qui compte.
