@@ -98,6 +98,7 @@ const defaultSettings: AppSettings = {
   commissionPct: 30,
   role: "solo",
   businessRules: DEFAULT_BUSINESS_RULES,
+  bookingUrl: "",
   apiKeys: [],
   supabaseSync: false,
   onboarded: false,

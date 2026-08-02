@@ -79,7 +79,7 @@ export function SendBar({
           ? [
               {
                 filename: `audit-${prospect.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`,
-                contentBase64: btoa(unescape(encodeURIComponent(renderAuditDoc(prospect, settings.closerName)))),
+                contentBase64: btoa(unescape(encodeURIComponent(renderAuditDoc(prospect, settings.closerName, settings.bookingUrl)))),
                 contentType: "text/html; charset=utf-8",
               },
             ]

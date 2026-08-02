@@ -27,11 +27,14 @@ const STEP_TONE: Record<LinkedinStep, string> = {
 };
 
 export default function LinkedinPage() {
-  const { prospects, addEvent, logActivity } = useAlpha();
+  const { prospects, addEvent, logActivity, settings } = useAlpha();
   const [city, setCity] = useState("Lyon 6");
   const [copied, setCopied] = useState<string | null>(null);
 
-  const queue = useMemo(() => buildLinkedinQueue(prospects, { city }), [prospects, city]);
+  const queue = useMemo(
+    () => buildLinkedinQueue(prospects, { city, bookingUrl: settings.bookingUrl }),
+    [prospects, city, settings.bookingUrl]
+  );
   const today = linkedinTouchesToday(prospects);
   const remaining = Math.max(0, LINKEDIN_DAILY_SAFE - today);
   const ready = queue.filter((t) => t.ready);

@@ -322,6 +322,20 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
+            <label className="label">Lien de réservation (Cal.com, Calendly…)</label>
+            <input
+              className="input"
+              placeholder="https://cal.com/eagleye/audit-15min"
+              value={settings.bookingUrl ?? ""}
+              onChange={(e) => patchSettings({ bookingUrl: e.target.value.trim() })}
+            />
+            <p className="mt-1 text-[11.5px] text-paper-faint">
+              C&apos;est la pièce qui te donne des <strong className="text-paper-dim">RDV en autonomie</strong> : elle
+              ajoute un bouton « Réserver un créneau » dans tes emails, tes messages LinkedIn et l&apos;audit cadeau.
+              Le prospect pose le rendez-vous lui-même, pendant que tu es sur le terrain.
+            </p>
+          </div>
+          <div>
             <label className="label">Mode</label>
             <div className="flex gap-2">
               {(["solo", "team"] as const).map((r) => (

@@ -205,13 +205,13 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
   const openGift = () => {
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(renderAuditDoc(p, settings.closerName));
+    w.document.write(renderAuditDoc(p, settings.closerName, settings.bookingUrl));
     w.document.close();
     setGiftOpened(true);
   };
 
   const downloadGift = () => {
-    const blob = new Blob([renderAuditDoc(p, settings.closerName)], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([renderAuditDoc(p, settings.closerName, settings.bookingUrl)], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `audit-${p.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`;

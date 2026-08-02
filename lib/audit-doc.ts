@@ -42,7 +42,7 @@ function row(label: string, value?: string): string {
   return `<tr><td class="lbl">${esc(label)}</td><td>${esc(value)}</td></tr>`;
 }
 
-export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
+export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string): string {
   const d = p.deepAudit;
   const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const taxMonthly = p.ignoranceTax > 0 ? p.ignoranceTax : null;
@@ -140,6 +140,7 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE"): string {
       <p><strong>La suite, si vous le souhaitez :</strong> 20 minutes, nous venons vous montrer — sur un téléphone,
       en conditions réelles — à quoi ressemblerait ${esc(p.company)} avec ces points corrigés. Sans engagement,
       et vous gardez cet audit quoi qu'il arrive.</p>
+      ${bookingUrl?.trim() ? `<p style="margin-top:14px;"><a href="${esc(bookingUrl.trim())}" style="display:inline-block;background:${CARD};color:${INK};text-decoration:none;border-radius:100px;padding:12px 24px;font-weight:600;font-size:14.5px;">Choisir un créneau →</a></p>` : ""}
     </div>
 
     <footer>

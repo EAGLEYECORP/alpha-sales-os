@@ -47,6 +47,15 @@ Répondez simplement « AUDIT » et je vous l'envoie.
 
 Zakaria — EAGLEYE CORP, Lyon`;
 
+/** Ajoute l'invitation à réserver quand un lien de réservation existe. */
+const withBooking = (text: string, url?: string) =>
+  url?.trim()
+    ? text.replace(
+        "Répondez simplement « AUDIT » et je vous l'envoie.",
+        "Répondez simplement « AUDIT » et je vous l'envoie.\n\nOu prenez directement 15 minutes dans mon agenda, au moment qui vous arrange :"
+      )
+    : text;
+
 interface Result {
   sent: number;
   skipped: number;
@@ -61,7 +70,7 @@ const fill = (t: string, p: Prospect) =>
     .replaceAll("{ville}", p.city);
 
 export default function NewsletterPage() {
-  const { prospects, addEvent, logActivity } = useAlpha();
+  const { prospects, addEvent, logActivity, settings } = useAlpha();
   const [sector, setSector] = useState<Sector | "tous">("tous");
   const [city, setCity] = useState("");
   const [subject, setSubject] = useState(DEFAULT_SUBJECT);
@@ -97,7 +106,9 @@ export default function NewsletterPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           subject: sample ? fill(subject, sample) : subject,
-          body: sample ? fill(body, sample) : body,
+          body: withBooking(sample ? fill(body, sample) : body, settings.bookingUrl),
+          ctaLabel: settings.bookingUrl?.trim() ? "Réserver 15 minutes" : undefined,
+          ctaUrl: settings.bookingUrl?.trim() || undefined,
         }),
       });
       setPreview(await res.json());
@@ -124,7 +135,11 @@ export default function NewsletterPage() {
             channel: "email",
             to: p.email,
             subject: fill(subject, p),
-            body: fill(body, p),
+            body: withBooking(fill(body, p), settings.bookingUrl),
+            // Le bouton de réservation : c'est lui qui produit des RDV
+            // pendant que tu es ailleurs.
+            ctaLabel: settings.bookingUrl?.trim() ? "Réserver 15 minutes" : undefined,
+            ctaUrl: settings.bookingUrl?.trim() || undefined,
             prospectId: p.id,
             campaignId: "newsletter",
           }),

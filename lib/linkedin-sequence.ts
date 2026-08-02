@@ -51,10 +51,13 @@ export function inviteText(p: Prospect): string {
  * Le message post-connexion : le critère, UNE question de diagnostic,
  * et la proposition d'audit — proposée, jamais imposée.
  */
-export function messageText(p: Prospect): string {
+export function messageText(p: Prospect, bookingUrl?: string): string {
   const v = verticalForProspect(p);
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
   const diag = v?.diagnostic[0] ?? "Quand tout le monde est occupé et que le téléphone sonne, il se passe quoi chez vous ?";
+  const booking = bookingUrl?.trim()
+    ? ["", `Ou prenez directement 15 minutes dans mon agenda : ${bookingUrl.trim()}`]
+    : [];
   return [
     `${hi}`,
     ``,
@@ -65,6 +68,7 @@ export function messageText(p: Prospect): string {
     `Une seule question, celle qui m'intéresse vraiment : ${diag}`,
     ``,
     `Si le sujet vous parle, je prépare pour ${p.company} un audit de votre accueil téléphonique — ce que vous captez, ce qui vous échappe, et ce que ça représente. C'est offert et il est à vous, avec ou sans suite. Dites-moi juste « oui » et je vous l'envoie.`,
+    ...booking,
     ``,
     `Zakaria — EAGLEYE CORP, Lyon`,
   ].join("\n");
@@ -87,9 +91,9 @@ export function relanceText(p: Prospect): string {
   ].join("\n");
 }
 
-export function textForStep(p: Prospect, step: LinkedinStep): string {
+export function textForStep(p: Prospect, step: LinkedinStep, bookingUrl?: string): string {
   if (step === "invitation") return inviteText(p);
-  if (step === "message") return messageText(p);
+  if (step === "message") return messageText(p, bookingUrl);
   if (step === "relance") return relanceText(p);
   return "";
 }
@@ -121,7 +125,10 @@ function linkedinEvents(p: Prospect) {
  * Construit la file du jour : qui en est où dans la séquence, et qui
  * est réellement « mûr » (cadence respectée).
  */
-export function buildLinkedinQueue(prospects: Prospect[], filter?: { city?: string }): LinkedinTarget[] {
+export function buildLinkedinQueue(
+  prospects: Prospect[],
+  filter?: { city?: string; bookingUrl?: string }
+): LinkedinTarget[] {
   const city = filter?.city?.trim().toLowerCase();
 
   return prospects
@@ -135,7 +142,15 @@ export function buildLinkedinQueue(prospects: Prospect[], filter?: { city?: stri
       const needed = DELAY[step];
       const ready = step !== "termine" && (lastTouchDays === null || lastTouchDays >= needed);
       const waitDays = ready || step === "termine" ? 0 : Math.max(0, needed - (lastTouchDays ?? 0));
-      return { prospect: p, step, touches, lastTouchDays, text: textForStep(p, step), ready, waitDays };
+      return {
+        prospect: p,
+        step,
+        touches,
+        lastTouchDays,
+        text: textForStep(p, step, filter?.bookingUrl),
+        ready,
+        waitDays,
+      };
     })
     .sort((a, b) => {
       // Les mûrs d'abord, puis l'étape la plus avancée (on finit ce qu'on a commencé).

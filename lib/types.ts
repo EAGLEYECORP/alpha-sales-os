@@ -327,6 +327,12 @@ export interface AppSettings {
   role: "solo" | "team";
   /** Free-text business rules injected into every AI prompt */
   businessRules: string;
+  /**
+   * Lien de réservation public (Cal.com, Calendly…). C'est LA pièce qui
+   * permet à un prospect de poser un RDV sans toi — donc d'obtenir des
+   * rendez-vous pendant que tu es sur le terrain. Vide = pas de bouton.
+   */
+  bookingUrl?: string;
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
   /** First-run choice made (demo vs real data) */
