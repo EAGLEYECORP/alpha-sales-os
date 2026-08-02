@@ -97,6 +97,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Le critère, jamais le volume. Et deux questions de diagnostic, puis tu te tais : le silence fait le travail.",
   },
   {
+    path: "/outbox",
+    title: "Boîte d'envoi — ALPHA rédige, tu envoies",
+    role: "Les emails du jour, personnalisés par le playbook, prêts à partir de TA messagerie. Aucun SMTP à configurer : l'app ouvre Gmail pré-rempli, c'est toi qui cliques « Envoyer ».",
+    steps: [
+      "Renseigne ton compte Gmail expéditeur en haut — sinon Gmail rédige depuis le dernier compte utilisé.",
+      "« Relire » pour ajuster l'objet et le corps, puis « Ouvrir dans Gmail ». Envoie depuis Gmail.",
+      "Reviens et clique « J'ai envoyé » : c'est la seule chose que l'app ne peut pas constater seule.",
+    ],
+    tip: "Les clics sont tracés, les ouvertures non — un message en texte brut n'a pas de pixel. La réponse reste le seul indicateur qui décide.",
+  },
+  {
     path: "/newsletter",
     title: "Newsletter — le moteur du « tout le temps »",
     role: "Une lettre régulière qui apporte une observation de terrain et ne vend rien. Son seul appel à l'action : « voulez-vous l'audit de votre accueil ? ». C'est elle qui fabrique le flux d'entrée.",

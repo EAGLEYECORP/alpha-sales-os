@@ -20,6 +20,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 | /debrief | Débrief vocal post-terrain : l'opérateur parle 40 s, l'app extrait interlocuteur, freins et prochaine étape DATÉE, puis écrit dans la fiche après relecture |
 | /appels | Session d'appels : une verticale, son script terrain, l'angle de chaque fiche. Les statuts consignent la touche |
 | /linkedin | Machine LinkedIn : séquence invitation → J+2 message → J+4 relance, quota 25/jour |
+| /outbox | Boîte d'envoi MANUELLE : ALPHA rédige le message personnalisé, ouvre Gmail pré-rempli, l'opérateur clique Envoyer lui-même puis consigne. Aucun SMTP requis |
 | /newsletter | La lettre hebdomadaire (une seule par semaine) |
 | /closer | Closer OS terrain : tournée du jour, navigation, brief tactique, Mode Closing |
 | /prospects/{id} | La fiche : audit, Taxe d'Ignorance, croyances, objections, historique, envoi tracké |
@@ -45,6 +46,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Vérifier que les mails arrivent → **/settings**, panneau Délivrabilité. Jamais d'envoi depuis une boîte grand public : SPF/DKIM/DMARC n'y appartiennent pas à l'expéditeur.
 - Lire ouvertures et clics → fiche du prospect onglet Tracking, ou **/campaigns** pour le global. Ordre de fiabilité : réponse > clic > ouverture.
 - Consigner un rendez-vous qu'on vient de faire → **/debrief**, à la voix.
+- Envoyer les emails du jour sans SMTP → **/outbox** : « Ouvrir dans Gmail », puis « J'ai envoyé » pour consigner la touche.
 - Être soufflé pendant un appel → bouton « Assistant d'appel » dans **/appels** ou **/closer** : il reconnaît l'objection et affiche la réponse du playbook.`;
 
 export const AGENT_LIMITS = `## Ce que tu ne fais JAMAIS

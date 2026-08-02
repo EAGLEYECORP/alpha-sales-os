@@ -216,6 +216,55 @@ export async function createTrackedEmail(
   return { id, html: withPixel };
 }
 
+/**
+ * Variante TEXTE BRUT — pour les messages que l'opérateur envoie lui-même
+ * depuis sa propre messagerie (Gmail, client de bureau).
+ *
+ * Deux différences assumées avec la version HTML :
+ *  · pas de pixel. Un message en texte brut n'a pas d'images : les
+ *    OUVERTURES sont donc invisibles. On ne les invente pas, on les perd.
+ *  · les liens nus sont réécrits en liens tracés — le CLIC, lui, reste
+ *    mesurable, et c'est le seul des deux qui demandait un geste humain.
+ *
+ * L'enregistrement est créé quand même : il alimente l'anti-doublon
+ * « déjà contacté » et la fiche de suivi, même sans ouverture.
+ */
+export async function createTrackedText(
+  rawText: string,
+  baseUrl: string,
+  meta: TrackingMeta = {}
+): Promise<{ id: string; text: string }> {
+  const id = newId();
+  const base = baseUrl.replace(/\/+$/, "");
+  const links: TrackedLink[] = [];
+
+  // URL nue, bornée à la ponctuation de fin de phrase — un point collé à la
+  // fin d'une URL appartient à la phrase, pas au lien.
+  const text = rawText.replace(/https?:\/\/[^\s<>()]+[^\s<>().,;:!?]/g, (url) => {
+    let link = links.find((l) => l.url === url);
+    if (!link) {
+      link = { idx: links.length, url, clicks: 0 };
+      links.push(link);
+    }
+    return `${base}/api/track/click/${id}?l=${link.idx}`;
+  });
+
+  await persist({
+    id,
+    channel: meta.channel ?? "email",
+    prospectId: meta.prospectId,
+    campaignId: meta.campaignId,
+    email: meta.email?.toLowerCase().trim(),
+    subject: meta.subject,
+    createdAt: new Date().toISOString(),
+    opens: 0,
+    clicks: 0,
+    links,
+  });
+
+  return { id, text };
+}
+
 // ── Événements ─────────────────────────────────────────────────────────
 async function forwardWebhook(type: "open" | "click", rec: TrackingRecord): Promise<void> {
   const url = process.env.TRACKING_WEBHOOK_URL;

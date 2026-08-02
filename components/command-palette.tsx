@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Activity, BarChart3, Bot, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
-  Gem, Linkedin, Navigation, Newspaper, PhoneCall, ScrollText, Search, Settings, Sprout, Swords, User,
+  Gem, Linkedin, Navigation, Newspaper, PhoneCall, ScrollText, Search, Send, Settings, Sprout, Swords, User,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { StageBadge } from "@/components/ui/stage-badge";
@@ -23,6 +23,7 @@ const PAGES = [
   { href: "/agent", label: "Agent ALPHA", icon: Bot },
   { href: "/templates", label: "Templates", icon: ScrollText },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
+  { href: "/outbox", label: "Boîte d'envoi (manuel)", icon: Send },
   { href: "/newsletter", label: "Newsletter", icon: Newspaper },
   { href: "/kpis", label: "KPIs", icon: Gauge },
   { href: "/preuves", label: "Preuves", icon: Gem },

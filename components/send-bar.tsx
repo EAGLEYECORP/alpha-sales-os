@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Gift, Linkedin, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { Check, ExternalLink, Gift, Linkedin, Mail, MessageCircle, Smartphone } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
 import { renderAuditDoc } from "@/lib/audit-doc";
 import { auditDepth } from "@/lib/milestones";
 import { linkedinUrl, linkedinTouchesToday, LINKEDIN_DAILY_SAFE } from "@/lib/linkedin";
+import { clipboardText, composeFitsInUrl, gmailComposeUrl } from "@/lib/mail-compose";
 import { cn } from "@/lib/utils";
 
 /** 06 12 34 56 78 → 33612345678 (format wa.me / SMS international) */
@@ -44,6 +45,7 @@ export function SendBar({
   const [error, setError] = useState("");
   const [attachAudit, setAttachAudit] = useState(false);
   const [liCopied, setLiCopied] = useState(false);
+  const [gmailOpened, setGmailOpened] = useState(false);
   // On ne propose l'audit que s'il a assez de matière (≥ 40 % de profondeur).
   const auditReady = auditDepth(prospect).score >= 40;
   // Quota LinkedIn du jour (anti-restriction) — le multi-canal permet le volume.
@@ -111,6 +113,41 @@ export function SendBar({
     }
   };
 
+  /**
+   * Envoi manuel : on enregistre le message (anti-doublon + liens tracés),
+   * puis on ouvre Gmail pré-rempli. Rien ne part sans un clic humain dans
+   * la messagerie — d'où l'absence de consignation ici : elle a lieu quand
+   * l'opérateur confirme, dans la Boîte d'envoi.
+   */
+  const openGmail = async () => {
+    if (!prospect.email) return;
+    let draft = { to: prospect.email, subject, body };
+    try {
+      const res = await fetch("/api/compose", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...draft, prospectId: prospect.id }),
+      });
+      const json = await res.json();
+      if (res.ok && typeof json.body === "string") draft = { ...draft, body: json.body };
+    } catch {
+      /* serveur injoignable → le message part quand même, sans liens tracés */
+    }
+    const sender = (() => {
+      try {
+        return localStorage.getItem("alpha_manual_sender") ?? undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    const url = composeFitsInUrl(draft, sender)
+      ? gmailComposeUrl(draft, sender)
+      : (void navigator.clipboard.writeText(clipboardText(draft)), gmailComposeUrl({ ...draft, body: "" }, sender));
+    window.open(url, "_blank", "noopener");
+    setGmailOpened(true);
+    setTimeout(() => setGmailOpened(false), 6000);
+  };
+
   const openWhatsApp = () => {
     if (!prospect.phone) return;
     window.open(`https://wa.me/${toIntlPhone(prospect.phone)}?text=${encodeURIComponent(body)}`, "_blank");
@@ -173,6 +210,16 @@ export function SendBar({
         >
           {status === "sent" ? <Check size={13} className="text-signal-green" /> : <Mail size={13} />}
           {status === "sending" ? "Envoi…" : status === "sent" ? "Envoyé ✓" : "Email"}
+        </button>
+      )}
+      {prospect.email && (
+        <button
+          className={btn}
+          title={`Ouvre la fenêtre de rédaction Gmail pré-remplie pour ${prospect.email}. C'est TOI qui cliques « Envoyer » — aucun SMTP requis.`}
+          onClick={openGmail}
+        >
+          {gmailOpened ? <Check size={13} className="text-signal-green" /> : <ExternalLink size={13} />}
+          {gmailOpened ? "Ouvert — envoie, puis reviens" : "Gmail"}
         </button>
       )}
       {prospect.phone && (

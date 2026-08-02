@@ -93,6 +93,89 @@ qui n'est jamais acceptable, c'est d'envoyer *depuis* `@gmail.com`.
 
 ---
 
+## 1 ter. Le mode qui marche AUJOURD'HUI : ALPHA rédige, tu envoies
+
+C'est le compromis juste, et ce n'est pas un pis-aller. `/outbox` prépare les
+messages du jour, personnalisés par le playbook, et ouvre **ta** fenêtre de
+rédaction Gmail pré-remplie. Tu relis, tu cliques « Envoyer » **dans Gmail**.
+Puis « J'ai envoyé » dans ALPHA, et la touche entre dans le CRM.
+
+C'est exactement le geste de la machine LinkedIn : l'app prépare, l'humain
+envoie.
+
+### Pourquoi ça change tout par rapport à l'envoi SMTP depuis Gmail
+
+Les objections du §1 portaient sur **l'envoi automatisé en volume** depuis une
+adresse grand public : plafond SMTP, conditions d'usage, réputation. Rien de
+tout ça ne s'applique ici, parce qu'il ne s'agit plus d'envoi automatisé :
+
+| | SMTP automatisé | `/outbox` manuel |
+|---|---|---|
+| Qui appuie sur Envoyer | l'app | toi, dans Gmail |
+| Volume | 40+/jour, en salve | 5/jour, un par un |
+| Conditions d'usage Gmail | prospection en masse → risque de suspension | correspondance ordinaire |
+| Format | HTML | texte brut |
+| Dans tes « Messages envoyés » | non | oui, avec le fil |
+
+Cinq messages écrits un par un, relus, envoyés à la main depuis ta boîte, ce
+n'est pas de la prospection en masse. C'est de la correspondance — et Gmail
+la traite comme telle.
+
+### Ce que tu gagnes
+
+- **Rien à configurer.** Pas de `SMTP_*`, pas de mot de passe d'application.
+  Ça marche maintenant, sur `eagleyecorp.ad@gmail.com` comme sur n'importe
+  quelle adresse.
+- **Le message est bon.** Personnalisé par la verticale du playbook, posture
+  pull, sortie STOP incluse. En texte brut — ce qui, pour un premier contact,
+  bat le HTML : ça ressemble à un humain qui écrit.
+- **L'anti-doublon fonctionne.** ALPHA enregistre le message avant d'ouvrir
+  Gmail. Si tu as déjà écrit à cette adresse dans les 14 jours, il te le dit.
+- **Les clics sont tracés.** Les liens nus sont réécrits en liens tracés.
+- **La réponse arrive dans ta boîte**, dans le bon fil, comme n'importe quel
+  échange.
+
+### Ce que tu perds, et il faut le savoir
+
+- **Les ouvertures.** Un message en texte brut n'a pas d'images, donc pas de
+  pixel. Elles ne sont pas mesurées — et l'app affiche « non mesuré » plutôt
+  qu'un zéro qui ressemblerait à un échec. Rappel de l'ordre de fiabilité :
+  **réponse > clic > ouverture**.
+- **La charte graphique.** Pas de mise en page CALM, pas de logo aigle. Pour
+  un premier contact froid, c'est un gain déguisé en perte.
+- **Le geste manuel.** Cinq ouvertures d'onglet par jour, cinq clics
+  « Envoyer », cinq « J'ai envoyé ». Compte trois minutes.
+
+### Le seul piège : « J'ai envoyé »
+
+C'est la seule chose que l'app ne peut pas constater seule. Si tu ne cliques
+pas, la touche n'existe pas : la fiche te sera reproposée demain, et le CRM
+mentira sur ce que tu as fait. **Clique-le au retour de Gmail, pas plus tard.**
+
+Et n'invente pas l'inverse : ne clique pas « J'ai envoyé » avant d'avoir
+réellement envoyé. La carte reste visible après le clic — précisément pour que
+tu voies ce que tu viens de consigner.
+
+### Le compte expéditeur
+
+Renseigne `eagleyecorp.ad@gmail.com` en haut de `/outbox`. Sans lui, Gmail
+rédige depuis le dernier compte Google utilisé dans le navigateur — l'erreur
+qu'on ne remarque qu'après avoir cliqué Envoyer.
+
+### Quand `eagleye.fr` arrive lundi
+
+Rien à jeter. Deux options qui coexistent :
+
+- **garder `/outbox`** pour les 5 à 15 messages à forte valeur, écrits un par
+  un — c'est là que les réponses se gagnent ;
+- **brancher le SMTP OVH** pour le volume et la newsletter, avec la charte, le
+  pixel d'ouverture et la montée en charge automatique.
+
+Le plus probable : les deux. Le manuel pour les meilleures fiches, le SMTP
+pour la lettre hebdomadaire.
+
+---
+
 ## 1 bis. Le cas transitoire : une adresse sur un domaine qui n'est pas le tien
 
 Situation réelle d'août 2026 : `eagleye.fr` arrive lundi soir, et en attendant
