@@ -27,8 +27,11 @@ import { emailRamp } from "./email-ramp";
 /** Objectif quotidien par défaut, toutes touches confondues. */
 export const DEFAULT_DAILY_TARGET = 60;
 
-/** Plafonds journaliers soutenables pour UN opérateur (une boîte, un profil). */
-export const EMAIL_DAILY_SAFE = 40; // au-delà, la réputation d'envoi décroche
+/**
+ * Plafond journalier des appels pour UN opérateur.
+ * L'équivalent email n'est PAS une constante : il dépend de la montée en
+ * charge de la boîte (voir lib/email-ramp.ts, RAMP_CEILING pour la croisière).
+ */
 export const CALL_DAILY_SAFE = 30; // au-delà, la qualité de conversation décroche
 
 const TOUCH_KINDS = ["appel", "visite", "email", "whatsapp", "linkedin", "demo", "meeting"] as const;

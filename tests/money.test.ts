@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 
 import { estimateLeak, verticalForProspect, verticalForSector, VERTICALS } from "../lib/playbook";
 import { proofStats } from "../lib/proof";
-import { RAMP_START } from "../lib/email-ramp";
-import { buildDailyPlan, touchesToday, EMAIL_DAILY_SAFE, CALL_DAILY_SAFE } from "../lib/daily-plan";
+import { RAMP_CEILING, RAMP_START } from "../lib/email-ramp";
+import { buildDailyPlan, touchesToday, CALL_DAILY_SAFE } from "../lib/daily-plan";
 import { heat, heatTone } from "../lib/closer";
 import { LINKEDIN_DAILY_SAFE } from "../lib/linkedin";
 import { prospect, daysAgo, todayAt } from "./fixtures";
@@ -133,7 +133,7 @@ test("buildDailyPlan — les plafonds ne sont jamais dépassés", () => {
   // L'email n'a pas de plafond fixe : il suit la montée en charge réelle de
   // la boîte. Ici aucun envoi n'a jamais été consigné, donc palier de départ.
   assert.equal(plan.channels.find((c) => c.id === "email")!.capacity, RAMP_START);
-  assert.ok(RAMP_START < EMAIL_DAILY_SAFE, "le palier de départ reste sous le plafond de croisière");
+  assert.ok(RAMP_START < RAMP_CEILING, "le palier de départ reste sous le plafond de croisière");
 });
 
 test("buildDailyPlan — le plafond restant décroît avec ce qui est déjà fait", () => {
