@@ -31,6 +31,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Si ce n'est pas dans les Routines, ce n'est pas prioritaire aujourd'hui.",
   },
   {
+    path: "/demarrage",
+    title: "Prise en main — le chemin, dans l'ordre",
+    role: "La réponse à « je fais quoi maintenant ? ». Seize étapes en quatre phases — brancher, charger, lancer, tenir — dont la plupart se cochent toutes seules à partir de tes vraies données.",
+    steps: [
+      "Lis l'encadré du haut : c'est la seule chose à faire maintenant. Le bouton t'y emmène.",
+      "Fais-la, reviens, clique « Réévaluer ». L'étape suivante s'ouvre d'elle-même.",
+      "N'ouvre pas la phase suivante avant d'avoir fini la précédente : l'ordre est ce qui rend la suite possible.",
+    ],
+    tip: "Une case qu'on coche soi-même ment ; un compteur de fiches ne ment pas. Si une étape reste rouge alors que tu l'as faite, c'est la donnée qui a raison.",
+  },
+  {
     path: "/pilote",
     title: "Pilote automatique — ce qui tourne, ce qui t'attend",
     role: "La réponse à « est-ce que ça tourne tout seul ? ». En haut : l'état des six organes autonomes. À droite : la file de décision, chiffrée en minutes — tes 20 % humains.",

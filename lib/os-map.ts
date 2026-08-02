@@ -13,6 +13,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 
 | Chemin | À quoi ça sert |
 |---|---|
+| /demarrage | Prise en main : le chemin en 16 étapes (brancher → charger → lancer → tenir), la plupart vérifiées automatiquement sur les vraies données. À citer chaque fois qu'on demande « je fais quoi maintenant ? » alors que l'installation n'est pas finie |
 | /pilote | L'écran du matin : état de la machine, file de décision chiffrée en minutes, volume du jour par canal |
 | / | Dashboard : les 4 vitaux + les Routines (ce qui fait avancer le pipe) |
 | /pipeline | Kanban par étape ; on n'y déplace une carte que quand la réalité a changé |
@@ -38,6 +39,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - S'entraîner avant un RDV → fiche, bouton **Sparring**.
 - Dérouler le closing pendant le RDV → fiche ou /closer, bouton **Mode Closing**.
 - Savoir quoi faire maintenant → **/pilote**, file de décision.
+- Débuter, ou reprendre après une pause → **/demarrage**, l'étape en cours est en haut de l'écran.
 - Trouver le prochain appel → **/appels**, les prioritaires sont en tête.`;
 
 export const AGENT_LIMITS = `## Ce que tu ne fais JAMAIS
