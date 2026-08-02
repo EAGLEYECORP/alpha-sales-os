@@ -120,7 +120,91 @@ combiné.
 
 ---
 
-## VI. Les rituels de qualité
+## VI. Les six règles d'efficacité
+
+Le temps ne se perd pas dans les tâches, il se perd **entre** les tâches.
+
+1. **Grouper par nature, jamais par prospect.** Tous les LinkedIn dans
+   un bloc, tous les appels dans un autre. Passer d'un canal à l'autre
+   pour « finir » un prospect coûte trois minutes de recalage à chaque
+   bascule. Un bloc de 25 appels prend moins de temps que 25 appels
+   dispersés dans la journée.
+2. **Le bloc d'appels ne s'interrompt pas.** Pas d'email, pas de
+   notification, pas de « je vérifie juste ». Un appel raté par
+   distraction coûte plus qu'une heure gagnée ailleurs.
+3. **Consigner dans les dix secondes qui suivent.** Pas en fin de
+   journée : à chaud, le statut est exact et l'angle du prochain appel
+   est juste. Consigné plus tard, il est romancé.
+4. **Ne jamais préparer ce que la machine prépare.** L'angle, l'ordre,
+   la cadence, le script : c'est fait. Relire ≠ refaire. Si on réécrit
+   le script de la verticale à chaque appel, on a perdu l'outil.
+5. **Le bon appareil au bon moment.** Téléphone (PWA) sur le terrain —
+   Closer OS et consignation. Ordinateur pour le bloc d'appels et les
+   audits. Ne pas faire d'audit sur téléphone : on bâcle.
+6. **⌘K plutôt que la souris.** Chaque navigation gagnée est une
+   seconde d'attention conservée. Sur 200 navigations par jour, c'est un
+   bloc d'appels.
+
+**Le seul rendement qui compte** : le nombre de conversations réelles
+par jour. Tout ce qui ne l'augmente pas est du confort.
+
+---
+
+## VII. Ta part — ce que l'OS ne fera jamais
+
+La machine fait tout le reste. Ceci ne se délègue pas, ni à elle, ni à
+personne.
+
+### Avant la conversation
+
+- **Choisir qui mérite le temps.** L'OS trie 600 fiches par chaleur ; il
+  ne sait pas qu'un atelier vaut le détour parce que le gérant est le
+  cousin d'un client. Le jugement de ciblage est humain.
+- **Aller voir.** Entrer dans l'atelier, le cabinet, la salle. Aucune
+  donnée publique ne remplace dix minutes sur place.
+- **Lever les inconnues.** L'audit dit « à confirmer sur place ». C'est
+  une consigne, pas une décoration : chaque estimation doit devenir un
+  vrai chiffre en rendez-vous.
+
+### Pendant la conversation
+
+- **Décrocher, et parler.** Le ton, le rythme, le silence tenu trois
+  secondes de plus, l'hésitation qu'on entend dans la voix.
+- **Créer la confiance.** Les vingt minutes où quelqu'un décide de te
+  faire confiance ne s'automatisent pas — c'est là que le prix se
+  justifie tout seul.
+- **Faire la démo.** Sortir le téléphone, montrer, se taire.
+- **Calibrer le prix sur la personne.** La grille donne une fourchette ;
+  le choix à l'intérieur dépend de ce que tu as compris de lui.
+- **Dire non.** Refuser un client qui va coûter plus qu'il ne rapporte.
+  L'OS le gardera dans le pipe indéfiniment sans jamais te prévenir.
+
+### Après la conversation
+
+- **Tenir la parole.** Livrer ce qui a été vendu. L'OS suit la
+  livraison ; il ne livre pas.
+- **Demander le témoignage et la recommandation.** Ça se demande de
+  vive voix, au bon moment — juste après un résultat visible.
+- **Gérer un mécontentement.** Un client déçu se récupère par un appel,
+  jamais par un workflow.
+
+### En permanence
+
+- **La régularité.** Publier chaque semaine, appeler chaque jour. Aucune
+  machine ne te fera tenir la cadence — et c'est elle, pas l'outil, qui
+  décide du résultat.
+- **Le jugement sur quoi changer.** L'OS montre les symptômes ; leur
+  interprétation, et la décision de ne changer qu'une variable, sont à
+  toi.
+- **Le réseau physique.** Lyon est une ville de bouche-à-oreille. Un café
+  avec un expert-comptable vaut trois cents emails.
+
+> **La règle simple :** si ça engage ta parole, ton argent, ou la
+> confiance de quelqu'un — c'est à toi. Tout le reste est à la machine.
+
+---
+
+## VIII. Les rituels de qualité
 
 **L'audit est un produit.** Cinq audits vraiment creusés par semaine
 valent mieux que vingt superficiels. Chaque donnée porte son niveau de
@@ -145,7 +229,7 @@ lent, c'est se contredire.
 
 ---
 
-## VII. Les capacités — et pourquoi on ne les dépasse pas
+## IX. Les capacités — et pourquoi on ne les dépasse pas
 
 | Canal | Plafond/jour | Raison |
 |---|---|---|
@@ -167,7 +251,7 @@ Détail complet et modèle de conversion : `CHIFFRES.md`.
 
 ---
 
-## VIII. Les sept péchés
+## X. Les sept péchés
 
 1. **Mélanger les verticales.** On n'apprend rien et on ne devient
    référent nulle part.
@@ -185,7 +269,7 @@ Détail complet et modèle de conversion : `CHIFFRES.md`.
 
 ---
 
-## IX. Quand changer quelque chose
+## XI. Quand changer quelque chose
 
 **Une variable à la fois, jamais deux.** Et seulement quand le canal
 concerné a dépassé 200 touches.
@@ -201,7 +285,7 @@ concerné a dépassé 200 touches.
 
 ---
 
-## X. Le test d'autonomie
+## XII. Le test d’autonomie
 
 Fermer l'app deux jours. Revenir. Si les réponses entrantes sont là avec
 un brouillon prêt, si le tracking a compté, si le Sheet est à jour et si
@@ -216,7 +300,7 @@ Mise en marche continue : `AUTOPILOTE.md`.
 
 ---
 
-## XI. Où trouver le reste
+## XIII. Où trouver le reste
 
 | Sujet | Document |
 |---|---|
@@ -234,7 +318,7 @@ Mise en marche continue : `AUTOPILOTE.md`.
 
 ---
 
-## XII. La seule phrase à retenir
+## XIV. La seule phrase à retenir
 
 > **La machine fait tout, sauf la conversation. C'est exactement pour ça
 > qu'elle a de la valeur.**

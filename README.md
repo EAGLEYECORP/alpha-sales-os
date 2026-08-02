@@ -239,8 +239,9 @@ Page **Agent ALPHA** : chat en streaming branché sur l'état réel complet (dea
 
 📖 **[`docs/BIBLE.md`](./docs/BIBLE.md) — la Bible de la bonne utilisation.**
 Le seul document à relire quand on ne sait plus quoi faire de sa journée :
-les dix commandements, le premier mois dans l'ordre, la journée type, quel
-écran à quel moment, les sept péchés, et quand changer quelque chose.
+les dix commandements, le premier mois dans l'ordre, la journée type, les
+règles d'efficacité, **ce que l'OS ne fera jamais** (la part humaine, qui
+ne se délègue pas), les sept péchés, et quand changer quelque chose.
 **À lire en premier** — les guides ci-dessous traitent de l'installation et
 de l'architecture, celui-là traite de l'usage.
 
