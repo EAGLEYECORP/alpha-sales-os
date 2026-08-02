@@ -42,6 +42,8 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Savoir quoi faire maintenant → **/pilote**, file de décision.
 - Débuter, ou reprendre après une pause → **/demarrage**, l'étape en cours est en haut de l'écran.
 - Trouver le prochain appel → **/appels**, les prioritaires sont en tête.
+- Vérifier que les mails arrivent → **/settings**, panneau Délivrabilité. Jamais d'envoi depuis une boîte grand public : SPF/DKIM/DMARC n'y appartiennent pas à l'expéditeur.
+- Lire ouvertures et clics → fiche du prospect onglet Tracking, ou **/campaigns** pour le global. Ordre de fiabilité : réponse > clic > ouverture.
 - Consigner un rendez-vous qu'on vient de faire → **/debrief**, à la voix.
 - Être soufflé pendant un appel → bouton « Assistant d'appel » dans **/appels** ou **/closer** : il reconnaît l'objection et affiche la réponse du playbook.`;
 

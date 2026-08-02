@@ -48,6 +48,14 @@ Redémarre l'app. L'organe « Envoi email » passe au vert dans `/pilote`.
 
 ### 1.2 Publier SPF, DKIM et DMARC — 20 min
 **L'étape que tout le monde saute, et celle qui coûte le plus cher.**
+
+> **Préalable non négociable : envoie depuis TON domaine.** SPF, DKIM et DMARC
+> se publient sur un domaine que tu contrôles. Depuis `@gmail.com`,
+> `@outlook.com` ou `@orange.fr`, ces enregistrements appartiennent au
+> fournisseur : tu ne peux rien y publier, et l'ancienneté de ton compte
+> personnel ne transfère aucune réputation à de la prospection. ALPHA rend un
+> verdict **bloquant** dans ce cas. Détail complet : `docs/ENVOI.md`.
+
 Sans ces enregistrements, les mails partent mais n'arrivent pas — et aucune
 alerte ne remonte. Tu conclurais que ton message est mauvais alors que
 personne ne l'a reçu.
@@ -127,6 +135,10 @@ domaine et tu perds tout d'un coup.
 | 3 | 15 |
 | … | … |
 | 8 | 40 — plafond, on n'y touche plus |
+
+Tu n'as rien à calculer : `/pilote` → *Volume du jour* applique le palier tout
+seul, à partir de la date de ton premier envoi consigné. Et pour aller au-delà
+de 40/jour il faudrait plusieurs boîtes en rotation — voir `docs/ENVOI.md` §2.
 
 ### 3.2 Première session d'appels
 L'appel est le canal qui signe. Bloque 45 minutes sans interruption : **15
@@ -209,6 +221,8 @@ Tu as arrêté deux semaines ? Ne recommence pas de zéro.
 | Face à la concurrence, et Alpha Voice | `docs/MARCHE.md` |
 | Le playbook terrain par verticale | `docs/TERRAIN.md` |
 | L'installation technique détaillée | `docs/INSTALLATION.md` |
+| Adresse d'envoi, rythme, tracking | `docs/ENVOI.md` |
+| Le débrief vocal et l'assistant d'appel | `docs/VOIX.md` |
 
 ---
 

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { estimateLeak, verticalForProspect, verticalForSector, VERTICALS } from "../lib/playbook";
 import { proofStats } from "../lib/proof";
+import { RAMP_START } from "../lib/email-ramp";
 import { buildDailyPlan, touchesToday, EMAIL_DAILY_SAFE, CALL_DAILY_SAFE } from "../lib/daily-plan";
 import { heat, heatTone } from "../lib/closer";
 import { LINKEDIN_DAILY_SAFE } from "../lib/linkedin";
@@ -128,8 +129,11 @@ test("buildDailyPlan — les plafonds ne sont jamais dépassés", () => {
     assert.ok(c.todo <= c.capacity, `${c.label} : ${c.todo} > plafond ${c.capacity}`);
   }
   assert.equal(plan.channels.find((c) => c.id === "linkedin")!.capacity, LINKEDIN_DAILY_SAFE);
-  assert.equal(plan.channels.find((c) => c.id === "email")!.capacity, EMAIL_DAILY_SAFE);
   assert.equal(plan.channels.find((c) => c.id === "appel")!.capacity, CALL_DAILY_SAFE);
+  // L'email n'a pas de plafond fixe : il suit la montée en charge réelle de
+  // la boîte. Ici aucun envoi n'a jamais été consigné, donc palier de départ.
+  assert.equal(plan.channels.find((c) => c.id === "email")!.capacity, RAMP_START);
+  assert.ok(RAMP_START < EMAIL_DAILY_SAFE, "le palier de départ reste sous le plafond de croisière");
 });
 
 test("buildDailyPlan — le plafond restant décroît avec ce qui est déjà fait", () => {
@@ -144,7 +148,11 @@ test("buildDailyPlan — le plafond restant décroît avec ce qui est déjà fai
   const plan = buildDailyPlan(fiches, 60);
   const email = plan.channels.find((c) => c.id === "email")!;
   assert.equal(email.done, 10);
-  assert.equal(email.todo, EMAIL_DAILY_SAFE - 10, "capacité restante = plafond − déjà fait");
+  // Le premier envoi datant d'aujourd'hui, la boîte est au palier de départ.
+  // Dix envois déjà partis dépassent déjà ce palier : il ne reste rien, et
+  // l'app ne doit surtout pas en proposer davantage.
+  assert.equal(email.capacity, RAMP_START);
+  assert.equal(email.todo, 0, "au-delà du palier du jour, on n'en propose plus");
 });
 
 test("buildDailyPlan — un pipe vide dit que l'objectif est hors de portée", () => {

@@ -33,6 +33,19 @@ interface Check {
 /** Domaine strict : pas de schéma, pas de chemin, pas d'IP littérale. */
 const DOMAIN_RE = /^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))+$/;
 
+/**
+ * Boîtes grand public partagées. Leurs SPF, DKIM et DMARC appartiennent au
+ * fournisseur, pas à l'expéditeur : les lire et annoncer « tout est bon »
+ * serait un contresens — on ne peut RIEN y publier, et l'ancienneté d'un
+ * compte personnel ne transfère aucune réputation à de la prospection.
+ */
+const SHARED_MAILBOX = new Set([
+  "gmail.com", "googlemail.com", "outlook.com", "outlook.fr", "hotmail.com", "hotmail.fr",
+  "live.com", "live.fr", "msn.com", "yahoo.com", "yahoo.fr", "ymail.com", "aol.com",
+  "icloud.com", "me.com", "mac.com", "proton.me", "protonmail.com", "gmx.com", "gmx.fr",
+  "free.fr", "orange.fr", "wanadoo.fr", "sfr.fr", "laposte.net", "bbox.fr", "numericable.fr",
+]);
+
 function domainFromEnv(): string | null {
   const raw = process.env.SMTP_FROM || process.env.SMTP_USER || "";
   const addr = raw.match(/<([^>]+)>/)?.[1] ?? raw;
@@ -85,6 +98,30 @@ export async function GET(request: NextRequest) {
       { error: "Aucun domaine d'envoi : renseigne SMTP_FROM (ou passe ?domain=)." },
       { status: 400 }
     );
+  }
+
+  // Boîte grand public : inutile d'aller lire des enregistrements qui ne
+  // sont pas les tiens. Le verdict est connu d'avance, et il est bloquant.
+  if (SHARED_MAILBOX.has(domain)) {
+    return NextResponse.json({
+      domain,
+      checkedAt: new Date().toISOString(),
+      verdict: "bloquant",
+      manquants: 1,
+      attention: 0,
+      inconnus: 0,
+      sharedMailbox: true,
+      checks: [
+        {
+          id: "domaine-partage",
+          label: "Domaine d'envoi",
+          level: "manquant",
+          value: `${domain} — boîte grand public, partagée par des millions de comptes`,
+          why: `Les SPF, DKIM et DMARC de ${domain} appartiennent au fournisseur : tu ne peux rien y publier, et rien ne t'y identifie. L'ancienneté de ton compte personnel ne transfère aucune réputation à de la prospection : la réputation se construit par schéma d'envoi, et une boîte qui n'a jamais fait de sortant se fait filtrer dès qu'elle s'y met. S'ajoutent un plafond dur (~100 emails/jour en SMTP sur un compte gratuit) et le fait que la prospection non sollicitée depuis une adresse grand public est contraire aux conditions d'usage de ces services.`,
+          fix: "Envoie depuis TON domaine (ex. contact@eagleye.fr) : là, SPF, DKIM et DMARC t'appartiennent, la marque est cohérente, et la réputation se construit chez toi. Le fournisseur (OVH, Google Workspace…) reste le transporteur — c'est le domaine du From qui compte.",
+        },
+      ],
+    });
   }
 
   const [spfLookup, dmarcLookup, mxLookup] = await Promise.all([

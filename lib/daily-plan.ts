@@ -3,6 +3,7 @@ import { LINKEDIN_DAILY_SAFE, linkedinTouchesToday } from "./linkedin";
 import { buildLinkedinQueue } from "./linkedin-sequence";
 import { buildCallSession } from "./call-session";
 import { VERTICALS } from "./playbook";
+import { emailRamp } from "./email-ramp";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -97,7 +98,10 @@ export function buildDailyPlan(prospects: Prospect[], target = DEFAULT_DAILY_TAR
   const liReady = buildLinkedinQueue(prospects).filter((t) => t.ready).length;
   const liCapacity = LINKEDIN_DAILY_SAFE;
 
-  // Email — plafond de réputation, et fiches avec email non encore touchées ce jour.
+  // Email — le plafond n'est pas fixe : il dépend de la montée en charge
+  // réelle de la boîte. Afficher 40 dès le premier jour reviendrait à
+  // conseiller exactement ce qui grille un domaine.
+  const ramp = emailRamp(prospects);
   const mailDone = emailsToday(prospects);
   const mailReady = active.filter(
     (p) => p.email?.trim() && !p.events.some((e) => isToday(e.date) && e.kind === "email")
@@ -131,7 +135,7 @@ export function buildDailyPlan(prospects: Prospect[], target = DEFAULT_DAILY_TAR
 
   const channels = [
     mk("linkedin", "LinkedIn", liDone, liCapacity, liReady, "/linkedin", "Au-delà de 25 actions/jour, les comptes se font restreindre."),
-    mk("email", "Email", mailDone, EMAIL_DAILY_SAFE, mailReady, "/newsletter", "Au-delà de 40/jour sur une seule boîte, la réputation d'envoi décroche."),
+    mk("email", "Email", mailDone, ramp.today, mailReady, "/newsletter", ramp.why),
     mk("appel", "Appels & visites", callDone, CALL_DAILY_SAFE, callReady, "/appels", "Au-delà de 30 appels, la qualité de conversation chute — et c'est elle qui signe."),
   ];
 

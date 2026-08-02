@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MailOpen, MousePointerClick, RefreshCw, Send, TrendingUp } from "lucide-react";
+import { Info, MailOpen, MousePointerClick, RefreshCw, Send, TrendingUp } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Sector } from "@/lib/types";
 import { cn, dateTimeFr } from "@/lib/utils";
@@ -72,6 +72,32 @@ function useStats(qs: string) {
   return { data, loading, error, reload: load };
 }
 
+/**
+ * Le taux d'ouverture ment, et il faut le dire à l'écran.
+ *
+ * Apple Mail Privacy Protection précharge les images de tous les messages,
+ * ouverts ou non ; Gmail les fait passer par son proxy. Résultat : des
+ * ouvertures comptées pour des messages que personne n'a lus, et des
+ * ouvertures manquées chez ceux qui bloquent les images. Un taux
+ * d'ouverture est un indicateur de tendance, pas une mesure.
+ *
+ * Le clic, lui, demande un geste humain délibéré. C'est le seul des deux
+ * sur lequel on prend une décision — et la réponse reste au-dessus des
+ * deux.
+ */
+function RateCaveat() {
+  return (
+    <p className="mt-2 flex items-start gap-1.5 text-[11px] text-paper-faint">
+      <Info size={12} className="mt-0.5 shrink-0" />
+      <span>
+        Le <b>taux d&apos;ouverture</b> est indicatif : Apple et Gmail préchargent les images, ce qui gonfle les
+        ouvertures et en masque d&apos;autres. Le <b>taux de clic</b> demande un geste réel — c&apos;est lui qui décide.
+        Et une réponse vaut plus que les deux.
+      </span>
+    </p>
+  );
+}
+
 /* ── Tuiles KPI ────────────────────────────────────────────────────── */
 function Tiles({ s }: { s: Summary }) {
   const tiles = [
@@ -136,6 +162,7 @@ export function ClientTrackingStats({ prospectId }: { prospectId: string }) {
 
       <div className="mt-3">
         <Tiles s={data} />
+        <RateCaveat />
       </div>
 
       {error && <p className="mt-3 text-[12px] text-signal-red">{error}</p>}
@@ -241,6 +268,7 @@ export function IndustryTrackingStats() {
 
       <div className="mt-3">
         <Tiles s={data} />
+        <RateCaveat />
       </div>
 
       {error && <p className="mt-3 text-[12px] text-signal-red">{error}</p>}
