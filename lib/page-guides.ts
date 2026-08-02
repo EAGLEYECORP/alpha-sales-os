@@ -31,6 +31,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Si ce n'est pas dans les Routines, ce n'est pas prioritaire aujourd'hui.",
   },
   {
+    path: "/pilote",
+    title: "Pilote automatique — ce qui tourne, ce qui t'attend",
+    role: "La réponse à « est-ce que ça tourne tout seul ? ». En haut : l'état des six organes autonomes. À droite : la file de décision, chiffrée en minutes — tes 20 % humains.",
+    steps: [
+      "Regarde le verdict : tous les organes au vert = tout ce qui peut être autonome l'est.",
+      "Vide la file de décision de haut en bas — chaque ligne t'emmène au bon endroit.",
+      "Un organe rouge ? La cause est écrite en clair : corrige-la dans Réglages.",
+    ],
+    tip: "Objectif : moins de 45 minutes de décision par jour. Au-delà de 90, la file s'est accumulée — traite d'abord les urgentes.",
+  },
+  {
     path: "/pipeline",
     title: "Pipeline — la vérité du deal flow",
     role: "Toutes tes fiches, par étape du cycle. Une carte = un deal ; sa colonne = où il en est VRAIMENT (pas où tu aimerais qu'il soit).",

@@ -10,6 +10,7 @@ import {
   Bot,
   CalendarDays,
   ClipboardCheck,
+  Cpu,
   Gauge,
   Gem,
   Kanban,
@@ -42,6 +43,7 @@ import { N8nAutoSync } from "@/components/n8n-autosync";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
+  { href: "/pilote", label: "Pilote", icon: Cpu },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/closer", label: "Closer OS", icon: Navigation },
   { href: "/appels", label: "Appels", icon: PhoneCall },
