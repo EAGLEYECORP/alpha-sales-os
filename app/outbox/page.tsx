@@ -26,6 +26,7 @@ import {
   type OutboxTarget,
 } from "@/lib/mail-compose";
 import { stageById } from "@/lib/hormozi";
+import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const SENDER_KEY = "alpha_manual_sender";
@@ -313,13 +314,7 @@ export default function OutboxPage() {
       )}
 
       {list.length === 0 ? (
-        <p className="card px-4 py-8 text-center text-sm text-paper-faint">
-          Rien à envoyer aujourd&apos;hui — soit le palier est atteint, soit aucune fiche active n&apos;a
-          d&apos;adresse email.{" "}
-          <Link href="/settings" className="text-bronze-400 hover:underline">
-            Importer des fiches →
-          </Link>
-        </p>
+        <EmptyOutbox prospects={prospects} done={doneToday} ramp={ramp.today} />
       ) : (
         <ul className="space-y-2">
           {list.map((target) => {
@@ -420,5 +415,66 @@ export default function OutboxPage() {
         n&apos;existe pas et la fiche te sera reproposée demain.
       </p>
     </div>
+  );
+}
+
+/**
+ * File vide — DIRE POURQUOI.
+ *
+ * « Soit le palier est atteint, soit aucune fiche n'a d'email » : l'app
+ * connaît la réponse, il n'y a aucune raison de laisser l'opérateur
+ * deviner. Trois causes distinctes, trois diagnostics, et à chaque fois
+ * l'action qui débloque — jamais un cul-de-sac.
+ */
+function EmptyOutbox({ prospects, done, ramp }: { prospects: Prospect[]; done: number; ramp: number }) {
+  const actifs = prospects.filter((p) => p.stage !== "signe" && p.stage !== "perdu");
+  const avecEmail = actifs.filter((p) => /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test((p.email ?? "").trim()));
+  const avecTel = actifs.filter((p) => p.phone?.trim()).length;
+
+  if (actifs.length === 0)
+    return (
+      <p className="card px-4 py-8 text-center text-sm text-paper-faint">
+        Aucune fiche active. Le pipe est vide — c&apos;est le seul goulot que l&apos;outil ne peut pas lever.{" "}
+        <Link href="/settings" className="text-bronze-400 hover:underline">
+          Importer des fiches →
+        </Link>
+      </p>
+    );
+
+  if (avecEmail.length === 0)
+    return (
+      <section className="card border-signal-amber/40 p-4">
+        <p className="flex items-start gap-2 text-[13px] text-paper">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-signal-amber" />
+          <span>
+            <b>
+              {actifs.length} fiches actives, aucune avec adresse email.
+            </b>{" "}
+            Ce canal ne peut rien faire aujourd&apos;hui — mais ce n&apos;est pas bloquant : {avecTel} d&apos;entre
+            elles ont un téléphone, et l&apos;appel est le canal qui signe.
+          </span>
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/appels" className="btn-bronze px-3 py-2 text-[13px]">
+            Passer aux appels <ArrowRight size={13} />
+          </Link>
+          <Link href="/linkedin" className="btn-ghost px-3 py-2 text-[13px]">
+            LinkedIn <ArrowRight size={13} />
+          </Link>
+          <Link href="/pipeline" className="btn-ghost px-3 py-2 text-[13px]">
+            Compléter les emails <ArrowRight size={13} />
+          </Link>
+        </div>
+      </section>
+    );
+
+  return (
+    <p className="card px-4 py-8 text-center text-sm text-paper-faint">
+      Palier du jour atteint : {done}/{ramp} envoyés. C&apos;est volontaire — au-delà, la réputation d&apos;envoi
+      décroche.{" "}
+      <Link href="/appels" className="text-bronze-400 hover:underline">
+        Bascule sur les appels →
+      </Link>
+    </p>
   );
 }
