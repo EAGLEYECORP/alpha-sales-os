@@ -68,6 +68,10 @@ export default function PilotePage() {
   const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
   const [n8n, setN8n] = useState(false);
+  /** Verdict DNS du domaine d'envoi — null tant qu'on n'a pas de réponse. */
+  const [dns, setDns] = useState<{ domain: string; verdict: string; manquants: number; inconnus: number } | null>(
+    null
+  );
 
   const load = () => {
     setLoading(true);
@@ -76,6 +80,10 @@ export default function PilotePage() {
       .then(setHealth)
       .catch(() => setHealth(null))
       .finally(() => setLoading(false));
+    fetch("/api/deliverability/dns")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setDns)
+      .catch(() => setDns(null));
   };
 
   useEffect(() => {
@@ -141,6 +149,19 @@ export default function PilotePage() {
       ok: Boolean(c?.tracking?.baseUrl),
       detail: c?.tracking?.baseUrl ? `URL publique OK · ${c.tracking.persistence}` : "TRACKING_BASE_URL absente",
       autonomous: "Compte ouvertures et clics même quand l'app locale est éteinte.",
+    },
+    {
+      label: "Délivrabilité",
+      ok: Boolean(dns && dns.manquants === 0 && dns.inconnus === 0),
+      detail: dns
+        ? dns.manquants > 0
+          ? `${dns.domain} · ${dns.manquants} enregistrement(s) DNS manquant(s)`
+          : dns.inconnus > 0
+            ? `${dns.domain} · vérification non concluante (DNS injoignable)`
+            : `${dns.domain} · ${dns.verdict}`
+        : "domaine d'envoi inconnu (SMTP_FROM)",
+      autonomous:
+        "SPF, DKIM et DMARC décident si tes mails arrivent en boîte de réception. Détail et correctifs dans Réglages.",
     },
     {
       label: "Mémoire durable",

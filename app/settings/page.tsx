@@ -15,6 +15,7 @@ import { cn, sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
 import { SystemStatus } from "@/components/settings/system-status";
+import { Deliverability } from "@/components/settings/deliverability";
 import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
@@ -233,6 +234,9 @@ export default function SettingsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* System status — what's configured, what's missing */}
         <SystemStatus />
+
+        {/* Délivrabilité — DNS du domaine d'envoi (SPF / DKIM / DMARC) */}
+        <Deliverability />
 
         {/* n8n — the app is a dashboard onto the n8n memory */}
         <section className="card p-4 lg:col-span-2">
