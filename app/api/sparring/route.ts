@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { verticalById, verticalForSector } from "@/lib/playbook";
+import type { Sector } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,6 +22,8 @@ interface SparringRequest {
   };
   history: { role: "closer" | "prospect"; text: string }[];
   businessRules: string;
+  /** verticale du playbook terrain (défaut : déduite du secteur) */
+  verticalId?: string;
 }
 
 interface SparringReply {
@@ -47,7 +51,16 @@ export async function POST(request: NextRequest) {
     .map((m) => `${m.role === "closer" ? "COMMERCIAL" : "PROSPECT"}: ${m.text}`)
     .join("\n");
 
-  const prompt = `Tu joues un patron de commerce lyonnais sceptique et pressé : ${body.prospect.name}, gérant de ${body.prospect.company} (${body.prospect.sector}).
+  // Le playbook terrain rend le sparring réaliste : le prospect joué par
+  // l'IA sort les VRAIES objections entendues sur le terrain, et le coach
+  // corrige selon la méthode maison (pas selon des généralités de vente).
+  const v =
+    verticalById(body.verticalId ?? "") ?? verticalForSector(body.prospect.sector as Sector);
+  const fieldBlock = v
+    ? `\nVerticale : ${v.label}. Douleur structurelle : ${v.structuralPain}\nObjections RÉELLES de ce métier (sers-t'en en priorité, dans tes mots) : ${v.objections.map((o) => `« ${o.q} »`).join(" ; ")}\nLe coach corrige selon la méthode maison : permission d'abord, ciblage par critère jamais par volume, observation posée en question, deux questions puis silence, une seule capacité à la bascule, CTA en choix fermé, jamais de chiffre € ni de note Google à froid.`
+    : "";
+
+  const prompt = `Tu joues un patron de commerce lyonnais sceptique et pressé : ${body.prospect.name}, gérant de ${body.prospect.company} (${body.prospect.sector}).${fieldBlock}
 Un commercial d'EAGLEYE CORP (sites web + IA pour commerces) essaie de te convaincre d'accepter un audit gratuit de 20 minutes.
 Reste DANS LE PERSONNAGE : méfiant mais juste. S'il répond bien (douleur, preuve, next step daté, zéro jargon), tu t'adoucis. S'il pitche le produit, parle prix trop tôt ou reste vague, tu durcis.
 Contexte réel du prospect : ${body.prospect.pitch || "commerce local sans vraie présence en ligne"}.

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Prospect } from "@/lib/types";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { playbookPrompt } from "@/lib/playbook";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -25,6 +26,8 @@ interface AiRequest {
   inboundMessage?: string;
   /** résumé de la tournée du jour (task = briefing) */
   tourSummary?: string;
+  /** verticale du playbook terrain à injecter (défaut : déduite du secteur) */
+  verticalId?: string;
 }
 
 const SYSTEM = `Tu es le copilote de vente d'EAGLEYE CORP (agence lyonnaise : sites premium + overlays IA pour restaurants, pubs, ambulances, artisans).
@@ -151,12 +154,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "tourSummary requis pour le briefing" }, { status: 400 });
   }
 
+  // Le playbook terrain entre dans le système : c'est lui qui fait la
+  // différence entre un conseil générique et la méthode maison.
+  const system = `${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
+
   // IA locale (Ollama) prioritaire — consignes compactes pour un petit modèle.
   if (ollamaConfigured()) {
     try {
       const text = await ollamaChat(
         [
-          { role: "system", content: SYSTEM },
+          { role: "system", content: system },
           { role: "user", content: buildPrompt(body) },
         ],
         { temperature: 0.3, maxTokens: 1200 }
@@ -178,7 +185,7 @@ export async function POST(request: NextRequest) {
     const { anthropic } = await import("@ai-sdk/anthropic");
     const { text } = await generateText({
       model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
-      system: SYSTEM,
+      system,
       prompt: buildPrompt(body),
       maxTokens: 2000,
     });
