@@ -4,6 +4,10 @@ import { useRef, useState } from "react";
 import { Bot, CircleStop, Send, Sparkles } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { weightedValue, nextBestAction } from "@/lib/hormozi";
+import { computeRoutines } from "@/lib/routines";
+import { buildDailyPlan } from "@/lib/daily-plan";
+import { proofStats } from "@/lib/proof";
+import { verticalForProspect } from "@/lib/playbook";
 import { isOverdue } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 import { cn } from "@/lib/utils";
@@ -14,14 +18,16 @@ interface ChatMessage {
 }
 
 const QUICK_PROMPTS = [
-  "Prépare ma journée : priorités, retards, RDV.",
+  "Prépare ma journée : par quoi je commence, dans quel ordre ?",
   "Quels deals sont en danger et pourquoi ?",
-  "Rédige la relance la plus urgente.",
   "Analyse le deal le plus chaud et donne-moi le plan de closing.",
+  "Est-ce que je vais atteindre mon volume aujourd'hui ? Sinon, qu'est-ce qui manque ?",
+  "Rédige la relance la plus urgente.",
+  "Où est-ce que je perds le plus dans mon pipe en ce moment ?",
 ];
 
 export default function AgentPage() {
-  const { prospects, meetings, campaigns, settings } = useAlpha();
+  const { prospects, meetings, campaigns, drafts, settings } = useAlpha();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -31,15 +37,44 @@ export default function AgentPage() {
   /** Compact live snapshot — real data only, capped for token budget. */
   const buildContext = () => {
     const active = prospects.filter((p) => !["perdu"].includes(p.stage));
+    // Conscience de situation : ce que l'opérateur voit sur son écran du
+    // matin. Sans ça, l'agent connaît les fiches mais ignore ce qui
+    // bloque, ce qui reste à faire aujourd'hui, et ce qui a été produit.
+    const routines = computeRoutines({ prospects, meetings, campaigns, drafts });
+    const plan = buildDailyPlan(prospects);
+    const preuves = proofStats(prospects, meetings, settings.commissionPct);
     return JSON.stringify({
       date: new Date().toISOString(),
+      fileDeDecision: {
+        total: routines.length,
+        urgentes: routines.filter((r) => r.priority === "haute").length,
+        top: routines.slice(0, 12).map((r) => ({ quoi: r.title, pourquoi: r.detail, ou: r.href })),
+      },
+      volumeDuJour: {
+        faites: plan.done,
+        objectif: plan.target,
+        parCanal: plan.channels.map((c) => ({ canal: c.label, faites: c.done, plafond: c.capacity, pretes: c.ready, aFaire: c.todo, ou: c.href })),
+        carburant: plan.fuel,
+        objectifAtteignable: plan.reachable,
+      },
+      preuves: {
+        caEncaisse: preuves.encaisse,
+        taxeRendueMensuelle: preuves.taxeRendueMensuelle,
+        signes: preuves.signes,
+        tauxClosing: preuves.closingRate,
+        cycleMedianJours: preuves.cycleJours,
+        touchesTotal: preuves.touchesTotal,
+        temoignages: preuves.temoignages.length,
+      },
       mrrSigned: prospects.filter((p) => p.stage === "signe").reduce((s, p) => s + p.monthlyValue, 0),
       pipeWeighted: prospects.reduce((s, p) => s + weightedValue(p), 0),
       prospects: active.slice(0, 40).map((p) => ({
         id: p.id,
+        fiche: `/prospects/${p.id}`,
         company: p.company,
         name: p.name,
         sector: p.sector,
+        verticale: verticalForProspect(p)?.label,
         city: p.city,
         stage: p.stage,
         trust: p.trust,

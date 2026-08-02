@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
+import { playbookPrompt } from "@/lib/playbook";
+import { AGENT_LIMITS, OS_MAP } from "@/lib/os-map";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -36,10 +38,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "messages requis" }, { status: 400 });
   }
 
+  // Un assistant vaut ce que vaut son contexte. Quatre couches, dans
+  // l'ordre d'importance : la méthode terrain (le playbook, qui le fait
+  // parler comme la maison), la carte de l'app (pour guider vers le bon
+  // écran), ses propres limites, puis l'état réel du pipe.
   const system = [
     SYSTEM_BASE,
+    "\n" + playbookPrompt(),
+    "\n" + OS_MAP,
+    "\n" + AGENT_LIMITS,
     "\n## Règles business de l'agence\n" + (body.businessRules ?? ""),
-    "\n## État du pipeline (données réelles, JSON)\n" + (body.context ?? "{}").slice(0, 30000),
+    "\n## État réel de l'OS (JSON — la seule source de chiffres)\n" + (body.context ?? "{}").slice(0, 30000),
   ].join("\n");
 
   if (ollamaConfigured()) {

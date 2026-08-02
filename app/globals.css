@@ -167,4 +167,9 @@ html.light {
   .prose-alpha p { @apply my-2; }
   .prose-alpha hr { @apply border-ink-700 my-3; }
   .prose-alpha em { @apply text-paper-faint; }
+  /* Liens internes cités par l'agent : on doit voir qu'on peut cliquer. */
+  .alpha-link {
+    @apply font-mono text-[0.92em] text-bronze-400 underline decoration-bronze-700 underline-offset-2 transition-colors;
+  }
+  .alpha-link:hover { @apply text-bronze-300 decoration-bronze-400; }
 }
