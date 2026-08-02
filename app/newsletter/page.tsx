@@ -1,0 +1,314 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { AlertTriangle, CheckCircle2, Eye, Loader2, Mail, Send, ShieldAlert, Users } from "lucide-react";
+import { useAlpha } from "@/lib/store";
+import type { Prospect, Sector } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+/**
+ * Newsletter — le moteur du « tout le temps ».
+ *
+ * Une lettre régulière qui apporte une observation de terrain, sans rien
+ * vendre, et dont le seul appel à l'action est : « voulez-vous l'audit de
+ * votre accueil ? ». L'audit ne part JAMAIS d'office — il s'envoie
+ * ensuite, depuis la fiche, quand la personne a dit oui.
+ *
+ * Différence avec les Campagnes : ici le contenu est IDENTIQUE pour tous
+ * (une lettre), donc on le relit UNE fois et on confirme une fois. La
+ * doctrine « rien ne part sans revue humaine » est respectée : tu vois
+ * le rendu final et la liste exacte des destinataires avant d'envoyer.
+ */
+
+const SECTORS: { id: Sector | "tous"; label: string }[] = [
+  { id: "tous", label: "Tous" },
+  { id: "restaurant", label: "Restaurants" },
+  { id: "pub", label: "Bars & pubs" },
+  { id: "ambulance", label: "Ambulances" },
+  { id: "artisan", label: "Artisans" },
+  { id: "autre", label: "Autres" },
+];
+
+const DEFAULT_SUBJECT = "Ce que j'observe sur les accueils téléphoniques à Lyon";
+
+const DEFAULT_BODY = `Bonjour {prenom},
+
+Depuis quelques semaines, j'appelle des commerces et des cabinets lyonnais à des heures normales. Pas pour vendre : pour écouter ce qui se passe quand le téléphone sonne.
+
+Ce que j'observe revient toujours au même endroit. Ce n'est pas que les gens répondent mal — c'est que personne n'est disponible au moment exact où le client appelle. Pendant le service, sur le chantier, en rendez-vous, entre midi et deux.
+
+Et le client qui n'a personne au bout du fil ne rappelle pas. Il appelle le suivant. L'entreprise ne saura jamais qu'il a existé : aucune trace, aucun avis, aucune statistique. C'est une perte parfaitement invisible — c'est ce qui la rend dangereuse.
+
+Je publie ici ce que je constate, métier par métier.
+
+Si vous voulez savoir ce que ça donne chez {commerce} précisément, je prépare un audit de votre accueil téléphonique : ce que vous captez, ce qui vous échappe, et ce que ça représente sur un mois. C'est offert, et le document est à vous — avec ou sans suite.
+
+Répondez simplement « AUDIT » et je vous l'envoie.
+
+Zakaria — EAGLEYE CORP, Lyon`;
+
+interface Result {
+  sent: number;
+  skipped: number;
+  failed: number;
+  errors: string[];
+}
+
+const fill = (t: string, p: Prospect) =>
+  t
+    .replaceAll("{prenom}", p.name?.split(" ")[0] || "bonjour")
+    .replaceAll("{commerce}", p.company)
+    .replaceAll("{ville}", p.city);
+
+export default function NewsletterPage() {
+  const { prospects, addEvent, logActivity } = useAlpha();
+  const [sector, setSector] = useState<Sector | "tous">("tous");
+  const [city, setCity] = useState("");
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
+  const [body, setBody] = useState(DEFAULT_BODY);
+  const [preview, setPreview] = useState<{ html: string; lint: { level: string; warnings: string[] } } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<Result | null>(null);
+
+  /**
+   * L'audience : fiches avec email, filtrées.
+   * Les désinscrits sont exclus par l'étape « perdu » — c'est le workflow
+   * n8n alpha-inbound qui bascule une réponse STOP vers cette étape.
+   */
+  const audience = useMemo(
+    () =>
+      prospects
+        .filter((p) => p.stage !== "perdu")
+        .filter((p) => p.email?.trim())
+        .filter((p) => (sector === "tous" ? true : p.sector === sector))
+        .filter((p) => (city.trim() ? p.city.toLowerCase().includes(city.trim().toLowerCase()) : true)),
+    [prospects, sector, city]
+  );
+
+  const loadPreview = async () => {
+    setPreviewing(true);
+    try {
+      const sample = audience[0];
+      const res = await fetch("/api/email/preview", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          subject: sample ? fill(subject, sample) : subject,
+          body: sample ? fill(body, sample) : body,
+        }),
+      });
+      setPreview(await res.json());
+    } catch {
+      /* réseau indisponible */
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const send = async () => {
+    setSending(true);
+    setConfirming(false);
+    setProgress(0);
+    const r: Result = { sent: 0, skipped: 0, failed: 0, errors: [] };
+
+    for (let i = 0; i < audience.length; i++) {
+      const p = audience[i];
+      try {
+        const res = await fetch("/api/send", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            channel: "email",
+            to: p.email,
+            subject: fill(subject, p),
+            body: fill(body, p),
+            prospectId: p.id,
+            campaignId: "newsletter",
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          r.sent++;
+          addEvent(p.id, {
+            date: new Date().toISOString(),
+            kind: "email",
+            summary: `Newsletter — ${fill(subject, p)}`,
+          });
+        } else if (res.status === 409 || data.alreadyContacted) {
+          r.skipped++; // dédup « déjà contacté » : c'est une protection, pas une erreur
+        } else {
+          r.failed++;
+          if (r.errors.length < 3) r.errors.push(`${p.company} : ${data.error ?? res.status}`);
+          if (res.status === 429) {
+            r.errors.push("Limite horaire atteinte — reprends l'envoi plus tard.");
+            setProgress(i + 1);
+            break;
+          }
+        }
+      } catch {
+        r.failed++;
+        if (r.errors.length < 3) r.errors.push(`${p.company} : réseau indisponible`);
+      }
+      setProgress(i + 1);
+    }
+
+    logActivity({ kind: "campagne", message: `Newsletter envoyée — ${r.sent} destinataire(s), ${r.skipped} ignoré(s)` });
+    setResult(r);
+    setSending(false);
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-up">
+      <header>
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">Le moteur du « tout le temps »</p>
+        <h1 className="font-display text-2xl font-bold text-paper">Newsletter</h1>
+        <p className="text-sm text-paper-faint">
+          Une observation de terrain, aucune vente. Le seul appel à l&apos;action : « voulez-vous l&apos;audit ? »
+        </p>
+      </header>
+
+      {/* Audience */}
+      <section className="card space-y-3 p-4">
+        <p className="flex items-center gap-2 font-display text-sm font-bold text-paper">
+          <Users size={15} className="text-bronze-400" /> Audience
+          <span className="font-mono text-[12px] font-normal text-bronze-300">{audience.length} destinataire(s)</span>
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {SECTORS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSector(s.id)}
+              className={cn(
+                "chip transition-colors",
+                s.id === sector ? "border-gold bg-gold font-semibold text-goldink" : "border-ink-600 text-paper-faint hover:text-paper"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="label mb-0 shrink-0">Ville / quartier</label>
+          <input className="input w-auto min-w-44" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Lyon 6 (vide = tous)" />
+          <p className="text-[11.5px] text-paper-faint">
+            Fiches actives avec email, désinscrits exclus. Les déjà-contactés récents seront ignorés automatiquement.
+          </p>
+        </div>
+      </section>
+
+      {/* Composition */}
+      <section className="card space-y-3 p-4">
+        <p className="flex items-center gap-2 font-display text-sm font-bold text-paper">
+          <Mail size={15} className="text-bronze-400" /> La lettre
+        </p>
+        <div>
+          <label className="label">Objet</label>
+          <input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Corps — variables : {"{prenom} {commerce} {ville}"}</label>
+          <textarea className="input min-h-[280px] font-body text-[13px] leading-relaxed" value={body} onChange={(e) => setBody(e.target.value)} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="btn-ghost px-3 py-1.5 text-[12px]" onClick={loadPreview} disabled={previewing}>
+            {previewing ? <Loader2 size={13} className="animate-spin" /> : <Eye size={13} />} Aperçu réel
+          </button>
+          {preview && (
+            <span
+              className={cn(
+                "chip",
+                preview.lint.level === "ok"
+                  ? "border-signal-green/40 text-signal-green"
+                  : preview.lint.level === "risque"
+                    ? "border-signal-red/50 text-signal-red"
+                    : "border-bronze-700 text-bronze-400"
+              )}
+              title={preview.lint.warnings.join(" · ")}
+            >
+              <ShieldAlert size={11} /> anti-spam : {preview.lint.level}
+            </span>
+          )}
+        </div>
+        {preview && (
+          <iframe title="aperçu newsletter" sandbox="" srcDoc={preview.html} className="h-96 w-full rounded-xl border border-ink-700 bg-white" />
+        )}
+      </section>
+
+      {/* Envoi */}
+      <section className="card space-y-3 p-4">
+        {!confirming && !sending && !result && (
+          <button className="btn-bronze" onClick={() => setConfirming(true)} disabled={audience.length === 0 || !subject.trim() || !body.trim()}>
+            <Send size={15} /> Envoyer à {audience.length} destinataire(s)
+          </button>
+        )}
+
+        {confirming && (
+          <div className="space-y-3 rounded-xl border border-bronze-700/60 bg-bronze-900/20 p-4">
+            <p className="flex items-center gap-2 font-display text-sm font-bold text-paper">
+              <AlertTriangle size={15} className="text-bronze-400" /> Dernière vérification
+            </p>
+            <p className="text-[13px] leading-relaxed text-paper-dim">
+              Tu vas envoyer <strong className="text-paper">« {subject} »</strong> à <strong className="text-paper">{audience.length} destinataire(s)</strong>.
+              Chaque email part avec le pied RGPD, le lien de désinscription STOP et le tracking. L&apos;audit n&apos;est joint à aucun d&apos;eux —
+              il partira depuis la fiche, quand la personne aura répondu.
+            </p>
+            <div className="max-h-32 overflow-y-auto rounded-lg border border-ink-700 bg-ink-900 p-2.5 font-mono text-[11px] text-paper-faint">
+              {audience.map((p) => (
+                <div key={p.id}>{p.company} — {p.email}</div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button className="btn-bronze" onClick={send}>
+                <Send size={15} /> Confirmer l&apos;envoi
+              </button>
+              <button className="btn-ghost" onClick={() => setConfirming(false)}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {sending && (
+          <div className="space-y-2">
+            <p className="flex items-center gap-2 text-[13px] text-paper">
+              <Loader2 size={14} className="animate-spin text-bronze-400" /> Envoi en cours — {progress}/{audience.length}
+            </p>
+            <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
+              <div className="h-full rounded-full bg-bronze-400 transition-all" style={{ width: `${(progress / Math.max(1, audience.length)) * 100}%` }} />
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div className="space-y-2">
+            <p className="flex items-center gap-2 font-display text-sm font-bold text-paper">
+              <CheckCircle2 size={15} className="text-signal-green" /> Envoi terminé
+            </p>
+            <p className="text-[13px] text-paper-dim">
+              <strong className="text-signal-green">{result.sent} envoyé(s)</strong>
+              {result.skipped > 0 && <> · {result.skipped} ignoré(s) (déjà contactés récemment)</>}
+              {result.failed > 0 && <> · <span className="text-signal-red">{result.failed} en échec</span></>}
+            </p>
+            {result.errors.length > 0 && (
+              <ul className="space-y-0.5 text-[12px] text-signal-red">
+                {result.errors.map((e, i) => (
+                  <li key={i}>⚠ {e}</li>
+                ))}
+              </ul>
+            )}
+            <button className="btn-ghost" onClick={() => { setResult(null); setProgress(0); }}>
+              Préparer une autre lettre
+            </button>
+          </div>
+        )}
+      </section>
+
+      <p className="text-center text-[11px] text-paper-faint">
+        Chaque envoi est tracké et consigné dans la fiche. Une réponse « AUDIT » ? Ouvre la fiche → onglet Audit → joins le cadeau.
+      </p>
+    </div>
+  );
+}

@@ -64,6 +64,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Le critère, jamais le volume. Et deux questions de diagnostic, puis tu te tais : le silence fait le travail.",
   },
   {
+    path: "/newsletter",
+    title: "Newsletter — le moteur du « tout le temps »",
+    role: "Une lettre régulière qui apporte une observation de terrain et ne vend rien. Son seul appel à l'action : « voulez-vous l'audit de votre accueil ? ». C'est elle qui fabrique le flux d'entrée.",
+    steps: [
+      "Choisis l'audience (secteur, ville) — tu vois le nombre exact de destinataires.",
+      "Écris l'observation, pas l'argumentaire. « Aperçu réel » montre le rendu final et le score anti-spam.",
+      "Confirme : tu relis la liste complète avant que quoi que ce soit ne parte.",
+    ],
+    tip: "L'audit ne part jamais avec la lettre. Il s'envoie depuis la fiche, après un « oui » — c'est ce qui en fait un cadeau.",
+  },
+  {
     path: "/linkedin",
     title: "Machine LinkedIn — assistée, jamais automatisée",
     role: "La séquence de la campagne : invitation, puis message deux jours après, puis relance. L'app prépare le texte et ouvre le bon profil ; c'est toi qui colles et envoies — donc zéro risque de restriction.",

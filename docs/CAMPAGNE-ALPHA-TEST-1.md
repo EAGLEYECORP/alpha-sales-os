@@ -43,6 +43,16 @@ Publication régulière (LinkedIn + newsletter)
 L'audit n'est **jamais** envoyé d'office. Il se mérite par un « oui »,
 même tiède. C'est ce qui en fait un cadeau et pas une pièce jointe.
 
+**Où ça se pilote dans l'app :**
+
+| Étape de la mécanique | Page |
+|---|---|
+| La lettre régulière (le « tout le temps ») | **Newsletter** (`/newsletter`) |
+| Les invitations et messages LinkedIn | **LinkedIn** (`/linkedin`) |
+| Les appels préparés | **Appels** (`/appels`) |
+| L'audit personnalisé, après un « oui » | fiche → onglet Audit → cadeau |
+| Les chiffres du test | **Preuves** (`/preuves`) et **KPIs** |
+
 ## 3. Le périmètre du test
 
 - **Territoire :** Lyon 6e (Brotteaux, Foch, Part-Dieu ouest).
@@ -107,6 +117,7 @@ L'app prépare le texte, ouvre le bon profil et consigne la touche.
 | 8h30 | Publier le post de lancement | LinkedIn |
 | 9h00 | Vérifier les 25 fiches Lyon 6 (nom, contact, verticale) | `/pipeline` |
 | 9h15 | 10 invitations LinkedIn | `/linkedin` |
+| 9h45 | Envoyer la lettre n° 1 au segment Lyon 6 | `/newsletter` |
 | 10h00 | Session d'appels sur les fiches les plus chaudes | `/appels` |
 | 12h00 | Répondre à TOUS les commentaires et messages | LinkedIn |
 | 14h00 | Envoyer les audits demandés le matin | fiche → Audit → cadeau |
