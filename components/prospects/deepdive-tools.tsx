@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Circle, Download, ExternalLink, Gift, GraduationCap, Import, Loader2, Sparkles, X } from "lucide-react";
+import { CheckCircle2, Circle, Download, ExternalLink, Gift, GraduationCap, Import, Loader2, Ruler, Sparkles, X } from "lucide-react";
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
 import { renderAuditDoc } from "@/lib/audit-doc";
+import { verticalForProspect } from "@/lib/playbook";
 import { cn, uid } from "@/lib/utils";
 
 /**
@@ -164,6 +165,34 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
     setMsg("✓ Fiche mise à jour — la source est conservée en pièce jointe. Vérifie la Taxe d'Ignorance.");
   };
 
+  /**
+   * Repères du métier — pré-remplit la douleur chiffrée avec les
+   * paramètres de la verticale du playbook, UNIQUEMENT là où la fiche
+   * est vide. Doctrine : ce sont des ordres de grandeur diagnostiques,
+   * jamais des chiffres audités — à valider avec ses vrais nombres.
+   */
+  const applyBenchmark = () => {
+    const v = verticalForProspect(p);
+    if (!v) {
+      setMsg("Aucune verticale rattachée à cette fiche.");
+      return;
+    }
+    const d = p.deepAudit;
+    const deepAudit: Prospect["deepAudit"] = {
+      ...d,
+      missedCallsPerWeek: d.missedCallsPerWeek ?? Math.round((v.leak.callsPerMonth * v.leak.missRate) / 4.33),
+      avgTicket: d.avgTicket ?? v.leak.avgTicket,
+      conversionRate: d.conversionRate ?? Math.round(v.leak.convertRate * 100),
+      updatedAt: new Date().toISOString(),
+    };
+    const tax =
+      deepAudit.missedCallsPerWeek && deepAudit.avgTicket
+        ? Math.round(deepAudit.missedCallsPerWeek * 4.33 * ((deepAudit.conversionRate ?? 30) / 100) * deepAudit.avgTicket)
+        : p.ignoranceTax;
+    patch(p.id, { deepAudit, ignoranceTax: tax });
+    setMsg(`✓ Repères « ${v.label} » appliqués aux champs vides — estimation à valider avec ses vrais chiffres.`);
+  };
+
   const attachRaw = () => {
     patch(p.id, {
       notes: `${p.notes ? p.notes + "\n" : ""}[${new Date().toISOString().slice(0, 10)} — recherche brute]\n${research.slice(0, 1500)}`,
@@ -257,7 +286,14 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
           <Import size={15} className="text-bronze-400" /> Importer une recherche
           <span className="text-[11px] font-normal text-paper-faint">(Perplexity, ChatGPT, tes notes — l&apos;IA structure, tu relis, tu appliques)</span>
         </h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="btn-ghost px-2.5 py-1.5 text-[12px]"
+            onClick={applyBenchmark}
+            title="Pré-remplit la douleur chiffrée avec les repères de son métier (playbook terrain) — uniquement les champs vides, à valider ensuite avec ses vrais chiffres"
+          >
+            <Ruler size={13} /> Repères du métier
+          </button>
           <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={openGift} title="Ouvrir l'audit cadeau dans un onglet">
             <ExternalLink size={13} /> Aperçu audit cadeau
           </button>
