@@ -8,6 +8,7 @@ import {
   BadgeEuro,
   BarChart3,
   Bot,
+  CalendarCheck,
   CalendarDays,
   ClipboardCheck,
   Cpu,
@@ -47,6 +48,7 @@ import { N8nAutoSync } from "@/components/n8n-autosync";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
+  { href: "/aujourdhui", label: "Aujourd'hui", icon: CalendarCheck },
   { href: "/demarrage", label: "Prise en main", icon: Footprints },
   { href: "/pilote", label: "Pilote", icon: Cpu },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
@@ -74,7 +76,7 @@ const NAV = [
 
 // Sur téléphone, le Closer OS remplace Templates : c'est LE compagnon terrain.
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/", "/pipeline", "/closer", "/debrief", "/settings"].includes(n.href)
+  ["/aujourdhui", "/pipeline", "/closer", "/debrief", "/settings"].includes(n.href)
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {

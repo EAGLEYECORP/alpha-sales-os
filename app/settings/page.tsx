@@ -22,7 +22,7 @@ import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
 
 export default function SettingsPage() {
-  const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, prospects } = useAlpha();
+  const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, loadPipelineJuillet, prospects } = useAlpha();
   const importRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [sheetUrl, setSheetUrl] = useState("");
@@ -485,6 +485,17 @@ export default function SettingsPage() {
                   onClick={() => confirm("Restaurer les données de démo Lyon ? Les données actuelles seront perdues.") && resetToSeed()}
                 >
                   <RotateCcw size={14} /> Restaurer la démo
+                </button>
+                <button
+                  className="btn-bronze px-2.5 py-1.5 text-[12px]"
+                  title="Charge les 16 fiches réelles de juillet 2026 (Scintia · Lyon) avec leurs rendez-vous datés. Remplace les données actuelles."
+                  onClick={() =>
+                    confirm(
+                      "Charger le pipeline RÉEL de juillet 2026 ?\n\n16 fiches, 6 rendez-vous datés (***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08, closings de septembre).\n\nLes données actuelles seront remplacées."
+                    ) && loadPipelineJuillet()
+                  }
+                >
+                  <Download size={13} /> Charger mon pipeline juillet
                 </button>
               </div>
               <label className="label mt-4 flex items-center gap-1.5"><Webhook size={13} className="text-bronze-400" /> Webhook entrant (réponses)</label>

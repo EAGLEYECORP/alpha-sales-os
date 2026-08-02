@@ -31,6 +31,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "Si ce n'est pas dans les Routines, ce n'est pas prioritaire aujourd'hui.",
   },
   {
+    path: "/aujourdhui",
+    title: "Aujourd'hui — urgent et important, calculés",
+    role: "Eisenhower appliqué à ton vrai pipeline. L'urgence vient des échéances réelles (rendez-vous, prochaines étapes datées, âge du dernier contact), l'importance de l'argent pondéré en jeu. Rien n'est déclaré : impossible de se mentir en cochant « prioritaire ».",
+    steps: [
+      "Fais le cadran « urgent ET important » en premier. Si tu ne fais que ça, la journée est réussie.",
+      "Regarde le cadran « urgent, pas important » : c'est le piège qui remplit les journées sans faire avancer le pipe. Groupe-le, expédie-le.",
+      "« Important, pas urgent » construit le mois prochain — bloque du temps, sinon ça ne se fera jamais.",
+    ],
+    tip: "Un rendez-vous se prépare la VEILLE. Le préparer le matin même, c'est arriver avec ce qu'on avait déjà.",
+  },
+  {
     path: "/demarrage",
     title: "Prise en main — le chemin, dans l'ordre",
     role: "La réponse à « je fais quoi maintenant ? ». Seize étapes en quatre phases — brancher, charger, lancer, tenir — dont la plupart se cochent toutes seules à partir de tes vraies données.",

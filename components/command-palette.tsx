@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  Activity, BarChart3, Bot, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
+  Activity, BarChart3, Bot, CalendarCheck, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
   Gem, Handshake, Linkedin, Navigation, Newspaper, PhoneCall, ScrollText, Search, Send, Settings, Sprout, Swords, User,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 const PAGES = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
+  { href: "/aujourdhui", label: "Aujourd'hui (urgent / important)", icon: CalendarCheck },
   { href: "/demarrage", label: "Prise en main", icon: Footprints },
   { href: "/pilote", label: "Pilote automatique", icon: Cpu },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },

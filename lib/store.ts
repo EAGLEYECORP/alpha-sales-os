@@ -103,6 +103,8 @@ interface AlphaState {
   clearAllData: () => void;
   exportData: () => string;
   resetToSeed: () => void;
+  /** Charge le pipeline réel de juillet 2026 (Scintia · Lyon) — remplace tout. */
+  loadPipelineJuillet: () => void;
 }
 
 const defaultSettings: AppSettings = {
@@ -492,6 +494,27 @@ export const useAlpha = create<AlphaState>()(
       exportData: () => {
         const { prospects, campaigns, meetings, nurture, competitors, activities, settings } = get();
         return JSON.stringify({ exportedAt: new Date().toISOString(), prospects, campaigns, meetings, nurture, competitors, activities, settings }, null, 2);
+      },
+
+      loadPipelineJuillet: () => {
+        const { pipelineJuillet } = require("./pipeline-juillet") as typeof import("./pipeline-juillet");
+        const { prospects, meetings } = pipelineJuillet();
+        set((s) => ({
+          prospects,
+          meetings,
+          campaigns: [],
+          drafts: [],
+          activities: [
+            {
+              id: uid(),
+              date: new Date().toISOString(),
+              kind: "systeme" as const,
+              message: `Pipeline réel de juillet 2026 chargé — ${prospects.length} fiches, ${meetings.length} rendez-vous`,
+            },
+            ...s.activities,
+          ],
+          settings: { ...s.settings, onboarded: true },
+        }));
       },
 
       resetToSeed: () =>

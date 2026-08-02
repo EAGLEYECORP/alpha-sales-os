@@ -14,6 +14,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 | Chemin | À quoi ça sert |
 |---|---|
 | /demarrage | Prise en main : le chemin en 16 étapes (brancher → charger → lancer → tenir), la plupart vérifiées automatiquement sur les vraies données. À citer chaque fois qu'on demande « je fais quoi maintenant ? » alors que l'installation n'est pas finie |
+| /aujourdhui | Le calculateur urgent/important : Eisenhower calculé sur les vraies échéances (RDV, next steps datés, âge du dernier contact) et l'argent pondéré en jeu. Rien n'y est déclaré. Contient aussi les règles de conformité B2B France par canal |
 | /pilote | L'écran du matin : état de la machine, file de décision chiffrée en minutes, volume du jour par canal |
 | / | Dashboard : les 4 vitaux + les Routines (ce qui fait avancer le pipe) |
 | /pipeline | Kanban par étape ; on n'y déplace une carte que quand la réalité a changé |
@@ -41,7 +42,9 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Pré-remplir la douleur chiffrée → fiche, onglet Audit, bouton **« Repères du métier »** (estimations à valider).
 - S'entraîner avant un RDV → fiche, bouton **Sparring**.
 - Dérouler le closing pendant le RDV → fiche ou /closer, bouton **Mode Closing**.
+- Savoir par quoi commencer la journée → **/aujourdhui**, cadran « urgent ET important » en premier.
 - Savoir quoi faire maintenant → **/pilote**, file de décision.
+- Vérifier ce qui est légal en prospection B2B → **/aujourdhui**, bouton « Ce que dit la loi ». Rappel : la loi d'août 2026 sur le consentement préalable vise le B2C, pas le B2B.
 - Débuter, ou reprendre après une pause → **/demarrage**, l'étape en cours est en haut de l'écran.
 - Trouver le prochain appel → **/appels**, les prioritaires sont en tête.
 - Vérifier que les mails arrivent → **/settings**, panneau Délivrabilité. Jamais d'envoi depuis une boîte grand public : SPF/DKIM/DMARC n'y appartiennent pas à l'expéditeur.
