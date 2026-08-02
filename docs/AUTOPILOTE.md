@@ -96,6 +96,41 @@ repo). À faire le jour où tu ne veux plus dépendre de ton portable, ou
 quand un deuxième opérateur arrive. Pas avant : c'est une dépense et une
 surface d'attaque en plus pour zéro gain aujourd'hui.
 
+## 3 bis. Le volume — l'arithmétique, sans illusion
+
+L'objectif n'est pas « le plus possible », c'est **le plus soutenable**.
+
+```
+1 client signé      ≈  5 à 10 vraies conversations
+1 conversation      ≈ 10 à 20 touches utiles
+─────────────────────────────────────────────────
+1 client            ≈ 50 à 200 touches
+2 à 4 clients/mois  ≈ 60 à 90 touches PAR JOUR
+```
+
+Ces 60 à 90 touches sont réparties par la page **Pilote**, section
+« Volume du jour », avec les plafonds réels d'un opérateur seul :
+
+| Canal | Plafond/jour | Pourquoi ce plafond |
+|---|---|---|
+| LinkedIn | **25** | Au-delà, les comptes se font restreindre. |
+| Email | **40** | Au-delà, sur une seule boîte, la réputation d'envoi décroche. |
+| Appels & visites | **30** | Au-delà, la qualité de conversation chute — et c'est elle qui signe. |
+
+**95 touches/jour de capacité théorique**, soit ~2 000 par mois. C'est
+largement au-dessus du seuil de rentabilité — le plafond n'est donc
+jamais la machine.
+
+**Le vrai facteur limitant, c'est le carburant.** Pour tenir 90 touches
+par jour, il faut ~400 à 600 fiches actives dans le pipe. En dessous, la
+page Pilote le dit explicitement : « le pipe ne contient pas assez de
+carburant ». La réponse n'est jamais d'augmenter les quotas — c'est
+d'importer une nouvelle liste (formulaire de sourcing n8n, Maps/Pappers,
+Apollo, export CSV).
+
+> Augmenter les plafonds au lieu du carburant, c'est griller le domaine
+> et le profil — et perdre les deux d'un coup, sans rien récupérer.
+
 ## 4. Le rituel quotidien — tes 20 %
 
 La page **Pilote** (`/pilote`) chiffre ton temps de décision du jour.

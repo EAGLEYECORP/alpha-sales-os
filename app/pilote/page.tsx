@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   Cpu,
+  Gauge,
   Loader2,
   RefreshCw,
   XCircle,
@@ -16,7 +17,10 @@ import {
 import { useAlpha } from "@/lib/store";
 import { CATEGORY_META, computeRoutines, type Routine } from "@/lib/routines";
 import { n8nConnected } from "@/lib/n8n";
+import { DEFAULT_DAILY_TARGET, buildDailyPlan } from "@/lib/daily-plan";
 import { cn } from "@/lib/utils";
+
+const TARGET_KEY = "alpha_daily_target";
 
 /**
  * Pilote automatique — la réponse à « est-ce que ça tourne tout seul ? ».
@@ -83,6 +87,25 @@ export default function PilotePage() {
     () => computeRoutines({ prospects, meetings, campaigns, drafts }),
     [prospects, meetings, campaigns, drafts]
   );
+
+  // Objectif de volume — réglable, gardé dans le navigateur.
+  const [target, setTarget] = useState(DEFAULT_DAILY_TARGET);
+  useEffect(() => {
+    const raw = Number(localStorage.getItem(TARGET_KEY));
+    if (Number.isFinite(raw) && raw > 0) setTarget(raw);
+  }, []);
+  const changeTarget = (n: number) => {
+    const v = Math.max(10, Math.min(200, Math.round(n)));
+    setTarget(v);
+    try {
+      localStorage.setItem(TARGET_KEY, String(v));
+    } catch {
+      /* stockage indisponible — l'objectif repart au défaut */
+    }
+  };
+
+  const plan = useMemo(() => buildDailyPlan(prospects, target), [prospects, target]);
+  const pct = Math.min(100, Math.round((plan.done / Math.max(1, plan.target)) * 100));
 
   const urgent = routines.filter((r) => r.priority === "haute");
   const minutes = routines.reduce((sum, r) => sum + (MINUTES[r.category] ?? 2), 0);
@@ -178,6 +201,75 @@ export default function PilotePage() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Le volume du jour — le moteur de rentabilité */}
+      <section className="card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="flex items-center gap-2 font-display text-sm font-bold text-paper">
+            <Gauge size={15} className="text-bronze-400" /> Volume du jour
+          </p>
+          <div className="flex items-center gap-2">
+            <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-paper-faint">Objectif</label>
+            <input
+              type="number"
+              className="input w-20 py-1 text-center font-mono text-[13px]"
+              value={target}
+              min={10}
+              max={200}
+              onChange={(e) => changeTarget(Number(e.target.value))}
+            />
+            <span className="font-mono text-[11px] text-paper-faint">touches/jour</span>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-baseline gap-3">
+          <span className="font-display text-3xl font-extrabold text-paper">{plan.done}</span>
+          <span className="font-mono text-[13px] text-paper-faint">/ {plan.target} touches</span>
+          <span className={cn("chip ml-auto", plan.reachable ? "border-signal-green/40 text-signal-green" : "border-signal-amber/60 text-signal-amber")}>
+            {plan.reachable ? `${plan.todo} exécutables maintenant` : `objectif hors de portée — ${plan.todo} dispo`}
+          </span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink-800">
+          <div
+            className={cn("h-full rounded-full transition-all", pct >= 100 ? "bg-signal-green" : "bg-bronze-400")}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {plan.channels.map((c) => (
+            <Link
+              key={c.id}
+              href={c.href}
+              className="rounded-xl border border-ink-700 p-3.5 transition-colors hover:border-bronze-700 hover:bg-ink-800"
+            >
+              <p className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-paper-faint">
+                {c.label}
+                <span className={cn(c.done >= c.capacity ? "text-signal-red" : "text-paper-faint")}>
+                  {c.done}/{c.capacity}
+                </span>
+              </p>
+              <p className="mt-1 font-display text-2xl font-extrabold text-bronze-400">
+                {c.todo}
+                <span className="ml-1 text-[12px] font-normal text-paper-faint">à faire</span>
+              </p>
+              <p className="mt-0.5 text-[11px] text-paper-faint">
+                {c.ready} fiche(s) prête(s)
+                {c.done >= c.capacity && <span className="text-signal-red"> · plafond atteint</span>}
+              </p>
+              <p className="mt-1.5 text-[10.5px] leading-relaxed text-paper-faint">{c.why}</p>
+            </Link>
+          ))}
+        </div>
+
+        {!plan.reachable && (
+          <p className="mt-3 rounded-xl border border-signal-amber/50 bg-signal-amber/5 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-signal-amber">
+            Le pipe ne contient pas assez de carburant pour ton objectif ({plan.fuel} fiche(s) active(s)).
+            Le facteur limitant n&apos;est pas la machine, c&apos;est le nombre de prospects —{" "}
+            <Link href="/settings" className="underline underline-offset-2">importe une nouvelle liste</Link>.
+          </p>
+        )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
