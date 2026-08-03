@@ -25,6 +25,8 @@ import {
   type ComposeDraft,
   type OutboxTarget,
 } from "@/lib/mail-compose";
+import { renderEmail, plainText } from "@/lib/email-html";
+import type { DraftContent } from "@/lib/gmail-draft";
 import { stageById } from "@/lib/hormozi";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -53,6 +55,11 @@ export default function OutboxPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [testTo, setTestTo] = useState("");
   const [testMsg, setTestMsg] = useState("");
+  // Brouillons Gmail HTML : capacité serveur + état de dépôt.
+  const [gmailReady, setGmailReady] = useState<boolean | null>(null);
+  const [drafting, setDrafting] = useState<Record<string, boolean>>({});
+  const [batchDrafting, setBatchDrafting] = useState(false);
+  const [draftMsg, setDraftMsg] = useState("");
 
   useEffect(() => {
     try {
@@ -62,6 +69,15 @@ export default function OutboxPage() {
     } catch {
       /* stockage indisponible — le compte se choisira dans Gmail */
     }
+  }, []);
+
+  // Le serveur sait-il déposer des brouillons (IMAP configuré) ? La sonde
+  // décide si le bouton dépose vraiment ou explique comment l'activer.
+  useEffect(() => {
+    fetch("/api/gmail/draft")
+      .then((r) => r.json())
+      .then((j) => setGmailReady(Boolean(j.imap)))
+      .catch(() => setGmailReady(false));
   }, []);
 
   const changeSender = (v: string) => {
@@ -196,8 +212,82 @@ export default function OutboxPage() {
     );
   };
 
+  /**
+   * Le contenu HTML « calme » d'un brouillon, rendu depuis le texte ACTUEL
+   * de la carte (sujet + corps édités compris) — ce que tu relis est ce qui
+   * sera déposé. Le logo aigle est servi en PNG public par l'app.
+   */
+  const contentFromDraft = (d: ComposeDraft): DraftContent => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const opts = {
+      subject: d.subject,
+      body: d.body,
+      closerName: settings.closerName?.trim() || "Zakaria",
+      addressLine: settings.agencyName?.trim() ? `${settings.agencyName.trim()} — Lyon, France` : undefined,
+      logoUrl: origin ? `${origin}/email-eagle.png` : undefined,
+    };
+    return { to: d.to, subject: d.subject, html: renderEmail(opts), text: plainText(opts) };
+  };
+
+  /** Prévisualiser le rendu HTML réel dans un nouvel onglet (aucun dépôt). */
+  const previewHtml = (d: ComposeDraft) => {
+    const { html } = contentFromDraft(d);
+    const w = window.open("", "_blank", "noopener");
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
+  };
+
+  /**
+   * Dépose des brouillons HTML dans Gmail via le serveur (IMAP APPEND).
+   * Rien ne PART : un brouillon n'est pas un envoi. On ne consigne donc
+   * aucune touche au CRM — la touche naîtra quand tu cliqueras « Envoyer »
+   * dans Gmail, puis « J'ai envoyé » ici.
+   */
+  const createDrafts = async (items: DraftContent[]): Promise<{ created: number; total: number } | null> => {
+    if (items.length === 0) return { created: 0, total: 0 };
+    try {
+      const res = await fetch("/api/gmail/draft", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ drafts: items }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setDraftMsg(json.error ?? "Dépôt impossible.");
+        return null;
+      }
+      const failed = (json.results ?? []).filter((r: { ok: boolean }) => !r.ok);
+      setDraftMsg(
+        `${json.created}/${json.total} brouillon${json.total > 1 ? "s" : ""} déposé${json.created > 1 ? "s" : ""} dans Gmail — ouvre tes brouillons, relis, envoie.` +
+          (failed.length ? ` (${failed.length} échec : ${failed[0].error})` : "")
+      );
+      return { created: json.created, total: json.total };
+    } catch {
+      setDraftMsg("Serveur injoignable — brouillon non déposé.");
+      return null;
+    }
+  };
+
+  const createOne = async (id: string, base: ComposeDraft) => {
+    setDraftMsg("");
+    setDrafting((s) => ({ ...s, [id]: true }));
+    await createDrafts([contentFromDraft(draftFor(id, base))]);
+    setDrafting((s) => ({ ...s, [id]: false }));
+  };
+
+  const createBatch = async () => {
+    setDraftMsg("");
+    setBatchDrafting(true);
+    const items = list.filter((t) => !t.demo).map((t) => contentFromDraft(draftFor(t.prospect.id, t.draft)));
+    await createDrafts(items);
+    setBatchDrafting(false);
+  };
+
   const doneToday = Object.keys(sent).length;
   const demoCount = list.filter((t) => t.demo).length;
+  const sendableCount = list.filter((t) => !t.demo).length;
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -265,6 +355,50 @@ export default function OutboxPage() {
           Le message reprend la première fiche de la file, avec son texte exact — seule l&apos;adresse change. Rien
           n&apos;est consigné au CRM : c&apos;est un test, pas une touche.
         </p>
+      </section>
+
+      {/* Brouillons Gmail HTML — la DA « calme », prête à envoyer d'un clic */}
+      <section className="card border-bronze-700 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+              <Mail size={15} className="text-bronze-400" /> Brouillons Gmail HTML — prêts à envoyer
+            </h2>
+            <p className="mt-1 max-w-2xl text-[12px] text-paper-dim">
+              Dépose le message dans tes <b className="text-paper">brouillons Gmail</b>, en HTML « calme » (la marque
+              Eagleye), un prospect ou tout le lot. Rien ne part : tu ouvres Gmail, tu relis, tu cliques{" "}
+              <b className="text-paper">Envoyer</b>. Le même mot de passe d&apos;application Gmail que l&apos;envoi —
+              aucun réglage de plus.
+            </p>
+          </div>
+          <button
+            className="btn-bronze px-3 py-2 text-[13px]"
+            onClick={() => void createBatch()}
+            disabled={batchDrafting || sendableCount === 0 || gmailReady === false}
+            title={
+              gmailReady === false
+                ? "IMAP non configuré — renseigne SMTP_USER / SMTP_PASS."
+                : sendableCount === 0
+                  ? "Aucune fiche déposable (démo ou sans email)."
+                  : undefined
+            }
+          >
+            <Mail size={14} />{" "}
+            {batchDrafting
+              ? "Dépôt en cours…"
+              : `Créer ${sendableCount} brouillon${sendableCount > 1 ? "s" : ""} HTML`}
+          </button>
+        </div>
+        {gmailReady === false && (
+          <p className="mt-2 flex items-start gap-1.5 rounded-md border border-signal-amber/30 bg-signal-amber/5 p-2 text-[11px] text-signal-amber">
+            <Info size={12} className="mt-0.5 shrink-0" />
+            Dépôt automatique non branché. Renseigne <code className="text-paper">SMTP_USER</code> et{" "}
+            <code className="text-paper">SMTP_PASS</code> (mot de passe d&apos;application Gmail) dans{" "}
+            <code className="text-paper">.env.local</code> — le même identifiant sert à envoyer et à brouillonner. En
+            attendant, « Prévisualiser » sur chaque fiche montre le rendu exact.
+          </p>
+        )}
+        {draftMsg && <p className="mt-2 text-[12px] text-paper-faint">{draftMsg}</p>}
       </section>
 
       {/* Ce que ce mode fait et ne fait pas — dit une fois, en haut */}
@@ -391,6 +525,27 @@ export default function OutboxPage() {
                   </button>
                   <button className="btn-ghost px-3 py-2 text-[13px]" onClick={() => void copy(p.id, base)}>
                     <Copy size={13} /> {copied === p.id ? "Copié ✓" : "Copier"}
+                  </button>
+                  <button
+                    className="btn-ghost px-3 py-2 text-[13px]"
+                    onClick={() => previewHtml(d)}
+                    title="Voir le rendu HTML « calme » dans un onglet"
+                  >
+                    <Mail size={13} /> Prévisualiser
+                  </button>
+                  <button
+                    className="btn-ghost px-3 py-2 text-[13px]"
+                    onClick={() => void createOne(p.id, base)}
+                    disabled={blocked || drafting[p.id] || gmailReady === false}
+                    title={
+                      gmailReady === false
+                        ? "IMAP non configuré — renseigne SMTP_USER / SMTP_PASS."
+                        : blocked
+                          ? "Adresse de démonstration — inventée."
+                          : "Déposer un brouillon HTML dans Gmail"
+                    }
+                  >
+                    <Mail size={13} /> {drafting[p.id] ? "Dépôt…" : "Brouillon HTML"}
                   </button>
                   <button
                     className={cn("px-3 py-2 text-[13px]", isSent ? "btn-ghost" : "btn-bronze")}
