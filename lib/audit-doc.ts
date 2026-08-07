@@ -31,38 +31,8 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-const eur = (n: number) => n.toLocaleString("fr-FR") + " €";
-
-function li(items: string[]): string {
-  return items.map((t) => `<li>${esc(t)}</li>`).join("");
-}
-
-function row(label: string, value?: string): string {
-  if (!value?.trim()) return "";
-  return `<tr><td class="lbl">${esc(label)}</td><td>${esc(value)}</td></tr>`;
-}
-
-export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string): string {
-  const d = p.deepAudit;
-  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-  const taxMonthly = p.ignoranceTax > 0 ? p.ignoranceTax : null;
-  const taxYearly = taxMonthly ? taxMonthly * 12 : null;
-  const taxDetail =
-    d.missedCallsPerWeek !== undefined && d.avgTicket !== undefined
-      ? `${d.missedCallsPerWeek} demande(s) manquée(s)/semaine × ${eur(d.avgTicket)} de valeur moyenne${d.conversionRate ? ` × ${d.conversionRate} % de conversion` : ""}`
-      : null;
-  const problems = p.problems.length ? p.problems : [];
-
-  return `<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Audit de présence — ${esc(p.company)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-<style>
+/** Feuille de style commune — partagée par l'audit unique et le lot (bundle). */
+const AUDIT_STYLE = `
   * { box-sizing: border-box; margin: 0; }
   body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; background: ${BG}; color: ${INK}; line-height: 1.65; }
   .page { max-width: 760px; margin: 0 auto; padding: 40px 28px 60px; }
@@ -93,62 +63,130 @@ export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE", bookingUrl?:
   footer { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: ${SAGE}; text-align: center; margin-top: 28px; }
   .print { position: fixed; top: 14px; right: 14px; font-family: 'Inter', Arial, sans-serif; font-size: 12px; background: ${INK}; color: ${CARD}; border: none; border-radius: 100px; padding: 9px 18px; cursor: pointer; font-weight: 500; }
   .soft-note { background: ${BG_DEEP}; border-radius: 12px; padding: 10px 16px; font-style: italic; color: ${INK_SOFT}; font-size: 13px; }
-  @media print { .print { display: none; } body { background: #fff; } .page { padding: 0; } .sheet { border: none; } }
-</style>
+  @media print { .print { display: none; } body { background: #fff; } .page { padding: 0 0 24px; } .sheet { border: none; } .page.brk { page-break-after: always; } }`;
+
+const AUDIT_HEAD = (title: string) => `<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${esc(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>${AUDIT_STYLE}</style>`;
+
+/**
+ * Le corps de l'audit (la « feuille ») — sans <head> ni bouton d'impression.
+ * Réutilisé tel quel par l'audit unique et par le lot multi-fiches.
+ */
+export function renderAuditSheet(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string): string {
+  const d = p.deepAudit;
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const taxMonthly = p.ignoranceTax > 0 ? p.ignoranceTax : null;
+  const taxYearly = taxMonthly ? taxMonthly * 12 : null;
+  const taxDetail =
+    d.missedCallsPerWeek !== undefined && d.avgTicket !== undefined
+      ? `${d.missedCallsPerWeek} demande(s) manquée(s)/semaine × ${eur(d.avgTicket)} de valeur moyenne${d.conversionRate ? ` × ${d.conversionRate} % de conversion` : ""}`
+      : null;
+  const problems = p.problems.length ? p.problems : [];
+
+  return `<div class="sheet">
+      <header class="doc">
+        <span class="mark">${EAGLE_SVG}</span>
+        <div>
+          <div class="brand">Eagleye</div>
+          <div class="sub">Audit de présence — offert</div>
+        </div>
+      </header>
+      <h1>${esc(p.company)}</h1>
+      <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — EAGLEYE CORP, Lyon</p>
+      <div class="rule"></div>
+
+      <h2>Votre position sur votre marché</h2>
+      <table class="facts">
+        ${row("Note Google", d.googleRating !== undefined ? `${d.googleRating}/5 (${d.googleReviews ?? "?"} avis)` : undefined)}
+        ${row("Site web", d.websiteState)}
+        ${row("Réseaux sociaux", d.socialState)}
+        ${row("Concurrence locale", d.localCompetition)}
+        ${row("Votre process actuel", d.currentProcess)}
+      </table>
+      ${!d.websiteState && d.googleRating === undefined ? `<p class="soft-note" style="margin-top:10px;">(Sections complétées lors de l'audit terrain.)</p>` : ""}
+
+      ${taxMonthly ? `
+      <h2>Ce que l'inaction vous coûte</h2>
+      <div class="tax">
+        <span class="big">≈ ${eur(taxMonthly)}</span> <span class="per">/ mois — soit ${eur(taxYearly as number)} / an</span>
+        ${taxDetail ? `<p style="margin-top:8px;font-size:12.5px;">Base de calcul : ${esc(taxDetail)}. Estimation prudente, à affiner ensemble avec vos vrais chiffres.</p>` : ""}
+      </div>` : ""}
+
+      ${problems.length ? `
+      <h2>Ce que nous avons constaté</h2>
+      <ul>${li(problems)}</ul>` : ""}
+
+      ${p.solution.trim() ? `
+      <h2>Ce que font les mieux placés — et ce que nous recommandons</h2>
+      <p class="reco">${esc(p.solution)}</p>` : ""}
+
+      <div class="cta">
+        <p><strong>La suite, si vous le souhaitez :</strong> 20 minutes, nous venons vous montrer — sur un téléphone,
+        en conditions réelles — à quoi ressemblerait ${esc(p.company)} avec ces points corrigés. Sans engagement,
+        et vous gardez cet audit quoi qu'il arrive.</p>
+        ${bookingUrl?.trim() ? `<p style="margin-top:14px;"><a href="${esc(bookingUrl.trim())}" style="display:inline-block;background:${CARD};color:${INK};text-decoration:none;border-radius:100px;padding:12px 24px;font-weight:600;font-size:14.5px;">Choisir un créneau →</a></p>` : ""}
+      </div>
+
+      <footer>
+        Eagleye Corp — Lyon · Cet audit vous est offert · Données publiques, chiffres à valider ensemble<br />
+        <span style="text-transform:none;letter-spacing:.02em;">Généré avec <em style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:${INK};">Alpha Sales OS</em><span style="color:${INK};">®</span></span>
+      </footer>
+    </div>`;
+}
+
+const eur = (n: number) => n.toLocaleString("fr-FR") + " €";
+
+function li(items: string[]): string {
+  return items.map((t) => `<li>${esc(t)}</li>`).join("");
+}
+
+function row(label: string, value?: string): string {
+  if (!value?.trim()) return "";
+  return `<tr><td class="lbl">${esc(label)}</td><td>${esc(value)}</td></tr>`;
+}
+
+export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string): string {
+  return `<!doctype html>
+<html lang="fr">
+<head>
+${AUDIT_HEAD(`Audit de présence — ${p.company}`)}
 </head>
 <body>
 <button class="print" onclick="window.print()">Imprimer / PDF</button>
 <div class="page">
-  <div class="sheet">
-    <header class="doc">
-      <span class="mark">${EAGLE_SVG}</span>
-      <div>
-        <div class="brand">Eagleye</div>
-        <div class="sub">Audit de présence — offert</div>
-      </div>
-    </header>
-    <h1>${esc(p.company)}</h1>
-    <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — EAGLEYE CORP, Lyon</p>
-    <div class="rule"></div>
-
-    <h2>Votre position sur votre marché</h2>
-    <table class="facts">
-      ${row("Note Google", d.googleRating !== undefined ? `${d.googleRating}/5 (${d.googleReviews ?? "?"} avis)` : undefined)}
-      ${row("Site web", d.websiteState)}
-      ${row("Réseaux sociaux", d.socialState)}
-      ${row("Concurrence locale", d.localCompetition)}
-      ${row("Votre process actuel", d.currentProcess)}
-    </table>
-    ${!d.websiteState && d.googleRating === undefined ? `<p class="soft-note" style="margin-top:10px;">(Sections complétées lors de l'audit terrain.)</p>` : ""}
-
-    ${taxMonthly ? `
-    <h2>Ce que l'inaction vous coûte</h2>
-    <div class="tax">
-      <span class="big">≈ ${eur(taxMonthly)}</span> <span class="per">/ mois — soit ${eur(taxYearly as number)} / an</span>
-      ${taxDetail ? `<p style="margin-top:8px;font-size:12.5px;">Base de calcul : ${esc(taxDetail)}. Estimation prudente, à affiner ensemble avec vos vrais chiffres.</p>` : ""}
-    </div>` : ""}
-
-    ${problems.length ? `
-    <h2>Ce que nous avons constaté</h2>
-    <ul>${li(problems)}</ul>` : ""}
-
-    ${p.solution.trim() ? `
-    <h2>Ce que font les mieux placés — et ce que nous recommandons</h2>
-    <p class="reco">${esc(p.solution)}</p>` : ""}
-
-    <div class="cta">
-      <p><strong>La suite, si vous le souhaitez :</strong> 20 minutes, nous venons vous montrer — sur un téléphone,
-      en conditions réelles — à quoi ressemblerait ${esc(p.company)} avec ces points corrigés. Sans engagement,
-      et vous gardez cet audit quoi qu'il arrive.</p>
-      ${bookingUrl?.trim() ? `<p style="margin-top:14px;"><a href="${esc(bookingUrl.trim())}" style="display:inline-block;background:${CARD};color:${INK};text-decoration:none;border-radius:100px;padding:12px 24px;font-weight:600;font-size:14.5px;">Choisir un créneau →</a></p>` : ""}
-    </div>
-
-    <footer>
-      Eagleye Corp — Lyon · Cet audit vous est offert · Données publiques, chiffres à valider ensemble<br />
-      <span style="text-transform:none;letter-spacing:.02em;">Généré avec <em style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:${INK};">Alpha Sales OS</em><span style="color:${INK};">®</span></span>
-    </footer>
-  </div>
+  ${renderAuditSheet(p, closerName, bookingUrl)}
 </div>
+</body>
+</html>`;
+}
+
+/**
+ * Le LOT — un seul document imprimable qui enchaîne les audits de plusieurs
+ * fiches, une par page (saut de page à l'impression). « Imprimer / PDF »
+ * produit un PDF multi-pages : un audit par prospect, prêts à joindre.
+ */
+export function renderAuditBundle(prospects: Prospect[], closerName = "EAGLEYE", bookingUrl?: string): string {
+  const sheets = prospects
+    .map((p, i) => `<div class="page${i < prospects.length - 1 ? " brk" : ""}">
+  ${renderAuditSheet(p, closerName, bookingUrl)}
+</div>`)
+    .join("\n");
+  const title = prospects.length === 1
+    ? `Audit de présence — ${prospects[0].company}`
+    : `Audits de présence — ${prospects.length} fiches`;
+  return `<!doctype html>
+<html lang="fr">
+<head>
+${AUDIT_HEAD(title)}
+</head>
+<body>
+<button class="print" onclick="window.print()">Imprimer / PDF (${prospects.length})</button>
+${sheets}
 </body>
 </html>`;
 }

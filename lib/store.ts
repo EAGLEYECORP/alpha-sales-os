@@ -105,6 +105,8 @@ interface AlphaState {
   resetToSeed: () => void;
   /** Charge le pipeline réel de juillet 2026 (Scintia · Lyon) — remplace tout. */
   loadPipelineJuillet: () => void;
+  /** Ajoute les prospects ICP Callflow (Sheets réels) — fusionne, n'efface rien. */
+  loadProspectsICP: () => { added: number; updated: number };
 }
 
 const defaultSettings: AppSettings = {
@@ -515,6 +517,14 @@ export const useAlpha = create<AlphaState>()(
           ],
           settings: { ...s.settings, onboarded: true },
         }));
+      },
+
+      loadProspectsICP: () => {
+        const { csvToProspects } = require("./csv") as typeof import("./csv");
+        const { PROSPECTS_ICP_CSV } = require("./prospects-icp") as typeof import("./prospects-icp");
+        const { prospects } = csvToProspects(PROSPECTS_ICP_CSV);
+        // Fusionne (ajoute / met à jour) — n'efface pas le pipeline existant.
+        return get().importProspects(prospects);
       },
 
       resetToSeed: () =>

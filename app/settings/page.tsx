@@ -22,7 +22,7 @@ import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
 
 export default function SettingsPage() {
-  const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, loadPipelineJuillet, prospects } = useAlpha();
+  const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, loadPipelineJuillet, loadProspectsICP, prospects } = useAlpha();
   const importRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [sheetUrl, setSheetUrl] = useState("");
@@ -496,6 +496,16 @@ export default function SettingsPage() {
                   }
                 >
                   <Download size={13} /> Charger mon pipeline juillet
+                </button>
+                <button
+                  className="btn-bronze px-2.5 py-1.5 text-[12px]"
+                  title="Ajoute 20 prospects ICP Callflow tirés de tes feuilles réelles (Lyon 6 & 7 : garages, artisans, immobilier, auto-école, spa…). Fusionne — n'efface rien."
+                  onClick={() => {
+                    const { added, updated } = loadProspectsICP();
+                    setImportMsg(`✓ Prospects ICP Callflow chargés : ${added} nouveau(x), ${updated} mis à jour. Cible d'abord ceux avec un email (Boîte d'envoi) et appelle les autres.`);
+                  }}
+                >
+                  <Download size={13} /> Prospects ICP (Callflow)
                 </button>
               </div>
               <label className="label mt-4 flex items-center gap-1.5"><Webhook size={13} className="text-bronze-400" /> Webhook entrant (réponses)</label>
