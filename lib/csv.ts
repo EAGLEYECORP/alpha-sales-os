@@ -131,6 +131,15 @@ export function csvToProspects(text: string): CsvImportResult {
     const stage = (STAGES.find((s) => s.id === strip(rec.stage ?? "") || strip(s.label) === strip(rec.stage ?? ""))?.id ?? "prospect") as Stage;
     const now = new Date().toISOString();
 
+    // Quand le métier de la feuille (« garage », « immobilier », « auto-école »,
+    // « plombier »…) ne rentre pas dans l'enum secteur, il tomberait dans
+    // « autre » et la fiche perdrait sa verticale. On garde le mot dans les
+    // notes : c'est ce que lit verticalForProspect pour rattacher le playbook.
+    const rawSector = rec.sector?.trim();
+    const notes = rawSector && sector === "autre" && !new RegExp(rawSector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(rec.notes ?? "")
+      ? [`Métier : ${rawSector}.`, rec.notes].filter(Boolean).join(" ")
+      : (rec.notes ?? "");
+
     prospects.push({
       ...prospectDefaults,
       id: uid(),
@@ -160,7 +169,7 @@ export function csvToProspects(text: string): CsvImportResult {
         ...(rec.typeTag ? [rec.typeTag.replace(/^[·\s]+/, "")] : []),
       ],
       attachments: [],
-      notes: rec.notes ?? "",
+      notes,
       delivery: parseDelivery(rec.delivery ?? "") ?? prospectDefaults.delivery,
       satisfaction: num(rec.satisfaction ?? ""),
       upsell: rec.upsell ? { note: rec.upsell, status: "identifie" as const } : undefined,

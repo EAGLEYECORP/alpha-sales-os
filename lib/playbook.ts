@@ -452,10 +452,14 @@ export function verticalForProspect(p: Pick<Prospect, "sector" | "notes">): Vert
     v.id === "immobilier"
       ? /immobil|agence|mandat|syndic|régie|regie/.test(hay)
       : v.id === "auto-ecole"
-        ? /auto-?école|auto-?ecole|permis|conduite/.test(hay)
+        ? /auto-?école|auto-?ecole|permis|conduite|moniteur/.test(hay)
         : v.id === "garage-carrosserie"
           ? /garage|carross|mécanic|mecanic|peinture auto/.test(hay)
-          : /dentaire|cabinet|médical|medical|centre de santé|kiné|kine/.test(hay)
+          : v.id === "artisan-batiment"
+            ? /plomb|électric|electric|menuis|serrur|chauffag|couvreu|maçon|macon|peintre|rénov|renov|artisan|bâtiment|batiment|dépann|depann/.test(hay)
+            : v.id === "sante-cabinet"
+              ? /dentaire|cabinet|médical|medical|centre de santé|kiné|kine|ostéo|osteo|labo/.test(hay)
+              : false
   );
   return byWord ?? verticalForSector(p.sector);
 }

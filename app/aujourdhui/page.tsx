@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  BellRing,
   Check,
   Clock,
   Mail,
@@ -36,10 +37,45 @@ export default function AujourdhuiPage() {
   const { prospects, meetings } = useAlpha();
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [loi, setLoi] = useState(false);
+  const [digestReady, setDigestReady] = useState<boolean | null>(null);
+  const [digestMsg, setDigestMsg] = useState("");
+  const [sending, setSending] = useState(false);
 
   const j = useMemo(() => construireJournee({ prospects, meetings }), [prospects, meetings]);
   const restant = j.taches.filter((t) => t.quadrant === "faire" && !done[t.id]);
   const minutesRestantes = restant.reduce((s, t) => s + t.minutes, 0);
+
+  // Le récap urgent peut-il partir sur ton téléphone (SMS/email) ?
+  useEffect(() => {
+    fetch("/api/digest")
+      .then((r) => r.json())
+      .then((d) => setDigestReady(Boolean(d.sms || d.email)))
+      .catch(() => setDigestReady(false));
+  }, []);
+
+  const sendDigest = async () => {
+    setSending(true);
+    setDigestMsg("");
+    try {
+      const res = await fetch("/api/digest", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prospects, meetings, force: true }),
+      });
+      const d = await res.json();
+      setDigestMsg(
+        !res.ok
+          ? d.error ?? "Envoi impossible."
+          : d.sent
+            ? `✓ Récap envoyé par ${d.channel === "sms" ? "SMS" : "email"} — ${d.digest.count} priorité(s).`
+            : "Rien de critique à envoyer aujourd'hui."
+      );
+    } catch {
+      setDigestMsg("Serveur injoignable.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   const heure = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60 ? `${min % 60} min` : ""}`.trim() : `${min} min`);
 
@@ -66,8 +102,20 @@ export default function AujourdhuiPage() {
               En jeu <b className="ml-1 font-display text-base text-bronze-400">{eur(Math.round(j.valeurEnJeu))}</b>
             </span>
           )}
+          {digestReady && (
+            <button
+              className="btn-ghost px-2.5 py-1.5 text-[12px] normal-case tracking-normal"
+              onClick={() => void sendDigest()}
+              disabled={sending || restant.length === 0}
+              title={restant.length === 0 ? "Rien de critique à envoyer" : "M'envoyer les priorités du jour sur mon téléphone"}
+            >
+              <BellRing size={13} /> {sending ? "Envoi…" : "M'envoyer le récap"}
+            </button>
+          )}
         </div>
       </header>
+
+      {digestMsg && <p className="px-1 text-[12px] text-paper-dim">{digestMsg}</p>}
 
       {/* La fenêtre d'appel — pas une règle de droit, une règle de terrain */}
       <section
