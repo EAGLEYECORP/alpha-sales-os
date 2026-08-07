@@ -105,9 +105,11 @@ export function useSpeech(opts: { lang?: string; continuous?: boolean } = {}): U
       const code = e?.error ?? "inconnue";
       if (code === "no-speech" || code === "aborted") return; // bruit normal
       setError(
-        code === "not-allowed"
-          ? "Micro refusé — autorise le microphone dans la barre d'adresse."
-          : `Reconnaissance vocale : ${code}`
+        code === "not-allowed" || code === "service-not-allowed"
+          ? "Micro refusé. Touche le cadenas (ou « aA ») à côté de l'adresse → Autorisations du site → Microphone → Autoriser."
+          : code === "network"
+            ? "La reconnaissance vocale n'a pas pu joindre le service (elle passe par Google sur Chrome). Vérifie ta connexion, ou tape ton débrief."
+            : `Reconnaissance vocale : ${code}`
       );
       wanted.current = false;
       setListening(false);
@@ -130,11 +132,54 @@ export function useSpeech(opts: { lang?: string; continuous?: boolean } = {}): U
     return rec;
   }, [lang, continuous]);
 
-  const start = useCallback(() => {
+  /**
+   * Démarre l'écoute. Deux garde-fous AVANT de lancer la reconnaissance,
+   * parce que « Micro refusé » cache presque toujours l'une de ces causes :
+   *
+   *  1. Contexte non sécurisé. La Web Speech API n'existe QUE sur HTTPS
+   *     (ou localhost). Sur téléphone via une IP `http://…:3000`, le micro
+   *     est refusé sans explication utile. C'est exactement le « ça marche
+   *     pas en local » : il faut l'app EN LIGNE (HTTPS), pas l'IP locale.
+   *
+   *  2. Permission micro. On la demande explicitement via getUserMedia —
+   *     ça déclenche une vraie invite système, fiable sur Android, là où
+   *     un simple `recognition.start()` échoue en silence. On relâche le
+   *     flux aussitôt : la reconnaissance gère son propre micro.
+   */
+  const start = useCallback(async () => {
     setError("");
+
+    if (typeof window !== "undefined" && window.isSecureContext === false) {
+      setError(
+        "Le micro exige une connexion sécurisée (HTTPS). Ouvre l'app EN LIGNE (l'adresse en https://…), pas l'adresse locale du téléphone."
+      );
+      return;
+    }
+
+    // Invite de permission fiable (surtout sur mobile). Absente en HTTP.
+    const md = typeof navigator !== "undefined" ? navigator.mediaDevices : undefined;
+    if (md?.getUserMedia) {
+      try {
+        const stream = await md.getUserMedia({ audio: true });
+        stream.getTracks().forEach((t) => t.stop());
+      } catch (e) {
+        const name = (e as { name?: string })?.name ?? "";
+        setError(
+          name === "NotAllowedError" || name === "SecurityError"
+            ? "Micro refusé. Touche le cadenas (ou « aA ») à côté de l'adresse → Autorisations du site → Microphone → Autoriser, puis réessaie."
+            : name === "NotFoundError"
+              ? "Aucun micro détecté sur cet appareil."
+              : "Micro indisponible — vérifie les autorisations du navigateur, ou tape ton débrief."
+        );
+        wanted.current = false;
+        setListening(false);
+        return;
+      }
+    }
+
     if (!ref.current) ref.current = build();
     if (!ref.current) {
-      setError("Ce navigateur ne sait pas transcrire. Utilise Chrome, ou tape ton débrief.");
+      setError("Ce navigateur ne sait pas transcrire (Firefox notamment). Utilise Chrome/Edge, ou tape ton débrief.");
       return;
     }
     wanted.current = true;
