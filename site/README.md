@@ -9,6 +9,8 @@ Fichiers :
 - `index.html` — la page (CSS et logo en ligne, aucune dépendance sauf les
   polices Google). Thème clair/sombre, bascule mémorisée.
 - `eagleye-logo.svg` — le logo aigle, autonome (encre `#0E0E0D`).
+- `favicon.svg` · `favicon-32.png` · `apple-touch-icon.png` — icônes d'onglet.
+- `og.png` — image de partage social (1200×630), aux couleurs de la charte.
 - `netlify.toml` — publication du dossier tel quel + en-têtes de sécurité.
 
 ## Mettre en ligne sur Netlify — 2 minutes
@@ -31,7 +33,5 @@ Fichiers :
 ## Ce qu'il reste à faire à la main
 
 - Brancher le domaine `eagleyecorp.fr` (DNS).
-- *(optionnel)* Ajouter une image `og.png` (1200×630) pour les partages, et la
-  référencer dans `index.html` (`og:image`).
 - Le bouton « Réserver une démo » ouvre un email vers `contact@eagleyecorp.fr`.
   Remplace-le par ton lien Cal.com quand il est prêt.
