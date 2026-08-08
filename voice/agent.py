@@ -113,30 +113,54 @@ class AlphaVoice(Agent):
 
 
 def build_tts():
-    """La voix de l'agent. Fish Audio si FISH_API_KEY est présent (voix
-    multilingues de qualité, bon français), sinon OpenAI en repli.
+    """La voix de l'agent. Trois fournisseurs, choisis dans cet ordre :
 
-    Pour le meilleur français : choisis une voix française dans la
-    bibliothèque fish.audio, copie son « reference id » et mets-le dans
-    FISH_VOICE_ID. Sans ça, la voix par défaut du plugin est utilisée.
+      · fish   — Fish Audio (voix multilingues, bon français ; voix clonée
+                 via FISH_VOICE_ID). Défaut si FISH_API_KEY est présent.
+      · piper  — Piper auto-hébergé (100 % gratuit, illimité), pour quand le
+                 crédit Fish est épuisé. Actif si PIPER_TTS_URL est renseigné
+                 (et Fish absent), ou VOICE_TTS_PROVIDER=piper.
+      · openai — repli payant.
+
+    Force le choix avec VOICE_TTS_PROVIDER = fish | piper | openai.
     """
-    if os.getenv("FISH_API_KEY"):
+    provider = os.getenv("VOICE_TTS_PROVIDER", "").strip().lower()
+    if not provider:
+        provider = "fish" if os.getenv("FISH_API_KEY") else ("piper" if os.getenv("PIPER_TTS_URL") else "openai")
+
+    if provider == "fish":
         try:
             from livekit.plugins import fishaudio
         except ImportError as e:  # plugin absent
             raise RuntimeError(
-                'FISH_API_KEY est défini mais le plugin manque — '
-                'installe-le : pip install "livekit-agents[fishaudio]"'
+                'FISH activé mais le plugin manque — pip install "livekit-agents[fishaudio]"'
             ) from e
         kwargs = {}
         ref = os.getenv("FISH_VOICE_ID")
         if ref:
-            kwargs["reference_id"] = ref
+            kwargs["reference_id"] = ref  # la voix clonée / choisie
         model = os.getenv("FISH_MODEL")
         if model:
             kwargs["model"] = model
         logger.info("TTS : Fish Audio%s", f" (voix {ref})" if ref else " (voix par défaut)")
         return fishaudio.TTS(**kwargs)
+
+    if provider == "piper":
+        url = os.getenv("PIPER_TTS_URL")
+        if not url:
+            raise RuntimeError("VOICE_TTS_PROVIDER=piper mais PIPER_TTS_URL absent (serveur Piper auto-hébergé).")
+        # Plugin communautaire — pip install livekit-plugins-piper-tts.
+        # L'API exacte peut varier selon la version : ajuste base_url/voice
+        # au premier essai (l'agent journalise l'erreur si un nom diffère).
+        try:
+            from livekit.plugins import piper  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(
+                "Piper activé mais le plugin manque — pip install livekit-plugins-piper-tts"
+            ) from e
+        logger.info("TTS : Piper local (%s)", url)
+        return piper.TTS(base_url=url, voice=os.getenv("PIPER_VOICE", "fr_FR-siwis-medium"))
+
     logger.info("TTS : OpenAI (%s)", os.getenv("VOICE_TTS_VOICE", "alloy"))
     return openai.TTS(voice=os.getenv("VOICE_TTS_VOICE", "alloy"))
 
