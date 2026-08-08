@@ -142,9 +142,20 @@ Chaque alerte donne la correction, pas seulement le reproche.
 
 ## Ce qu'il faut savoir avant de compter dessus
 
-**Navigateur.** La transcription utilise la Web Speech API : **Chrome et Edge
-la savent, Firefox non.** Partout, le repli clavier existe — bouton « Écrire
-au clavier » sur le débrief, script complet au-dessus de l'assistant.
+**Navigateur.** La transcription du navigateur utilise la Web Speech API :
+**Chrome, Edge et Safari la savent ; Chromium, Brave et Firefox non** (ils
+n'embarquent pas la clé du service vocal de Google — l'erreur y est « network »,
+pas un vrai problème réseau). Deux replis, partout : le bouton **« Écrire au
+clavier »**, et — dès que la transcription serveur est branchée — le bouton
+**« Dicter (serveur) »**.
+
+**Transcription serveur — marche sur TOUS les navigateurs.** Le Débrief peut
+enregistrer l'audio (MediaRecorder, universel) et le transcrire côté serveur,
+ce qui contourne entièrement la Web Speech API. On branche un fournisseur ASR :
+`DEEPGRAM_API_KEY` (palier gratuit) ou un endpoint Whisper compatible OpenAI
+(`WHISPER_API_URL` + `WHISPER_API_KEY`). Route : `app/api/transcribe`, capture :
+`components/voice/use-recorder.ts`. Sans clé, le bouton n'apparaît pas et le
+repli clavier reste.
 
 **Ce n'est pas 100 % local.** Sur Chrome de bureau, la reconnaissance transite
 par les serveurs de Google. C'est acceptable ici — tu dictes TES propres

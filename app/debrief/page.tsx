@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,12 +10,14 @@ import {
   Loader2,
   Mic,
   Save,
+  Server,
   Square,
   Trash2,
   Wand2,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { useSpeech } from "@/components/voice/use-speech";
+import { useRecorder } from "@/components/voice/use-recorder";
 import { extractDebrief, type DebriefDraft } from "@/lib/debrief";
 import { stageById } from "@/lib/hormozi";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,26 @@ import { cn } from "@/lib/utils";
 export default function DebriefPage() {
   const { prospects, addEvent, setNextStep, moveStage, patchProspect } = useAlpha();
   const speech = useSpeech({ lang: "fr-FR", continuous: true });
+  const recorder = useRecorder();
+
+  // La transcription serveur (marche sur TOUS les navigateurs) est-elle branchée ?
+  const [serverASR, setServerASR] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/transcribe")
+      .then((r) => r.json())
+      .then((d) => setServerASR(Boolean(d.configured)))
+      .catch(() => setServerASR(false));
+  }, []);
+
+  // Enregistrer → transcrire côté serveur → ajouter au texte (même champ que la voix).
+  const dicterServeur = async () => {
+    if (recorder.recording) {
+      const t = await recorder.stop();
+      if (t) speech.setTranscript([speech.transcript, t].filter(Boolean).join(" ").trim());
+    } else {
+      void recorder.start();
+    }
+  };
 
   const [prospectId, setProspectId] = useState("");
   const [draft, setDraft] = useState<DebriefDraft | null>(null);
@@ -167,17 +189,38 @@ export default function DebriefPage() {
       <section className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-sm font-semibold text-paper">Ce que tu racontes</h2>
-          <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => setTyping((v) => !v)}>
-            <Keyboard size={13} /> {typing ? "Revenir au micro" : "Écrire au clavier"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {serverASR && !typing && (
+              <button
+                className={cn("px-2.5 py-1.5 text-[12px]", recorder.recording ? "btn-bronze animate-pulse" : "btn-ghost")}
+                onClick={() => void dicterServeur()}
+                disabled={recorder.transcribing}
+                title="Dicter via le serveur — marche sur tous les navigateurs (Chromium, Brave, Firefox…)"
+              >
+                {recorder.transcribing ? (
+                  <><Loader2 size={13} className="animate-spin" /> Transcription…</>
+                ) : recorder.recording ? (
+                  <><Square size={13} /> Arrêter</>
+                ) : (
+                  <><Server size={13} /> Dicter (serveur)</>
+                )}
+              </button>
+            )}
+            <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => setTyping((v) => !v)}>
+              <Keyboard size={13} /> {typing ? "Revenir au micro" : "Écrire au clavier"}
+            </button>
+          </div>
         </div>
 
         {speech.supported === false && !typing && (
           <p className="mt-2 flex items-start gap-1.5 text-[12px] text-signal-amber">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-            Ce navigateur ne sait pas transcrire (Chrome et Edge le savent, pas Firefox). Écris ton débrief.
+            {serverASR
+              ? "La dictée du navigateur n'est pas dispo ici — utilise « Dicter (serveur) », ça marche partout."
+              : "Ce navigateur ne sait pas transcrire (Chrome et Edge le savent, pas Firefox). Écris ton débrief, ou branche la transcription serveur (docs)."}
           </p>
         )}
+        {recorder.error && <p className="mt-2 text-[12px] text-signal-red">{recorder.error}</p>}
 
         {typing || speech.supported === false ? (
           <textarea
@@ -218,7 +261,12 @@ export default function DebriefPage() {
           </>
         )}
 
-        {speech.error && <p className="mt-2 text-[12px] text-signal-red">{speech.error}</p>}
+        {speech.error && (
+          <p className="mt-2 text-[12px] text-signal-red">
+            {speech.error}
+            {serverASR && " — ou clique « Dicter (serveur) » en haut, ça marche ici."}
+          </p>
+        )}
 
         <div className="mt-3 flex flex-wrap gap-2">
           <button className="btn-bronze px-3 py-2 text-[13px]" onClick={analyse} disabled={busy || text.length < 10}>
@@ -380,9 +428,9 @@ export default function DebriefPage() {
       )}
 
       <p className="px-1 text-[11px] text-paper-faint">
-        La transcription se fait dans ton navigateur (Chrome/Edge). L&apos;extraction tourne d&apos;abord sans IA —
-        déterministe, hors-ligne, elle ne peut pas inventer de date. Si Ollama est branché, il affine le résumé et le
-        nom, jamais la date.
+        Le micro du navigateur marche sur Chrome, Edge et Safari. Sur les autres (Chromium, Brave, Firefox),{" "}
+        {serverASR ? "« Dicter (serveur) » prend le relais et marche partout." : "branche la transcription serveur (docs/VOIX.md) ou écris ton débrief."}{" "}
+        L&apos;extraction tourne d&apos;abord sans IA — déterministe, hors-ligne, elle ne peut pas inventer de date.
       </p>
     </div>
   );
