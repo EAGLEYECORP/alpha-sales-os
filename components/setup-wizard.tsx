@@ -73,6 +73,9 @@ WEBHOOK_SECRET=le-même-que-local-et-n8n
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
 SUPABASE_SERVICE_ROLE_KEY=eyJ…
+# — Enforcement serveur du JWT (API de données exigent un compte) —
+REQUIRE_AUTH=1
+SUPABASE_JWT_SECRET=le-JWT-Secret-du-projet
 # — Optionnel : transcription serveur (débrief) + appels voix —
 DEEPGRAM_API_KEY=
 LIVEKIT_URL=

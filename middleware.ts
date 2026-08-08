@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
+import {
+  JWT_COOKIE,
+  serverAuthEnforced,
+  serverAuthMisconfigured,
+  verifySupabaseJwt,
+} from "@/lib/supabase-jwt";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -132,6 +138,31 @@ export async function middleware(req: NextRequest) {
       url.pathname = "/gate";
       url.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
       return NextResponse.redirect(url);
+    }
+  }
+
+  // ── 0bis. Enforcement JWT PAR COMPTE (opt-in REQUIRE_AUTH) ──────────
+  // Vérifie côté serveur, sur les API sensibles, que l'appelant a une session
+  // Supabase valide (cookie miroir posé par AuthSync). C'est la frontière
+  // serveur du multi-locataire : même en contournant le gate client, aucune
+  // API de données ne répond sans jeton signé valide. Pages : laissées à
+  // SITE_PASSWORD + AuthGate (le formulaire de connexion doit rester joignable).
+  const isGatedApi = pathname.startsWith("/api/") && !startsWithAny(pathname, PUBLIC_PREFIXES);
+  if (isGatedApi) {
+    if (serverAuthMisconfigured()) {
+      // REQUIRE_AUTH demandé sans secret de vérification → on refuse plutôt que
+      // de servir des données sans pouvoir prouver l'identité (fail-closed).
+      return NextResponse.json(
+        { error: "Authentification serveur mal configurée (SUPABASE_JWT_SECRET manquant)." },
+        { status: 503 }
+      );
+    }
+    if (serverAuthEnforced()) {
+      const jwt = req.cookies.get(JWT_COOKIE)?.value ?? "";
+      const payload = jwt ? await verifySupabaseJwt(jwt, process.env.SUPABASE_JWT_SECRET as string) : null;
+      if (!payload?.sub) {
+        return NextResponse.json({ error: "Compte requis — connecte-toi." }, { status: 401 });
+      }
     }
   }
 

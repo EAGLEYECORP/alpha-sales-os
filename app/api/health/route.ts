@@ -50,7 +50,13 @@ export async function GET() {
       },
       // Auth multi-locataire : possible dès que Supabase (public) est là —
       // soit via env, soit lié au runtime (invisible ici, d'où le "ou").
-      auth: { serverEnv: supabasePublic },
+      auth: {
+        serverEnv: supabasePublic,
+        // Enforcement serveur du JWT par compte (REQUIRE_AUTH + secret présent).
+        serverEnforced: has("SUPABASE_JWT_SECRET") && /^(1|true|yes)$/i.test(String(env.REQUIRE_AUTH ?? "")),
+        // REQUIRE_AUTH demandé mais secret absent → misconfiguration (fail-closed).
+        misconfigured: !has("SUPABASE_JWT_SECRET") && /^(1|true|yes)$/i.test(String(env.REQUIRE_AUTH ?? "")),
+      },
       voice: {
         // Dispatch d'appel sortant vers LiveKit (l'agent Python + Fish TTS
         // tournent ailleurs, avec leurs propres clés — pas sur Vercel).

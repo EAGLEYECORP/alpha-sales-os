@@ -45,6 +45,7 @@ import { eur, relativeFr } from "@/lib/utils";
 import { weightedValue } from "@/lib/hormozi";
 import { LockGate } from "@/components/security/lock-gate";
 import { AuthGate } from "@/components/security/auth-gate";
+import { AuthSync } from "@/components/security/auth-sync";
 import { Onboarding } from "@/components/onboarding";
 import { OperatorTour } from "@/components/tour/operator-tour";
 import { PageGuide } from "@/components/page-guide";
@@ -160,6 +161,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <>
+    <AuthSync />
     <AuthGate>
     <LockGate>
     <Onboarding />
@@ -320,5 +323,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
     </LockGate>
     </AuthGate>
+    </>
   );
 }

@@ -20,7 +20,7 @@ interface Health {
       maxSendsPerHour: number;
     };
     supabase: { publicEnv: boolean; serviceRole: boolean };
-    auth?: { serverEnv: boolean };
+    auth?: { serverEnv: boolean; serverEnforced?: boolean; misconfigured?: boolean };
     voice?: { livekit: boolean };
     transcription?: { configured: boolean; provider: string };
     alerts?: { sms: boolean; email: boolean };
@@ -95,7 +95,13 @@ SITE_PASSWORD=
 # ── Supabase (sync + comptes multi-locataires + persistance tracking) ──
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=`;
+SUPABASE_SERVICE_ROLE_KEY=
+
+# ── Enforcement serveur du JWT par compte (SaaS multi-locataire) ──
+# Mets REQUIRE_AUTH=1 ET le JWT Secret du projet (Supabase → Settings → API →
+# JWT Secret) pour que les API de données exigent un compte valide côté serveur.
+REQUIRE_AUTH=
+SUPABASE_JWT_SECRET=`;
 
 function Dot({ level }: { level: Level }) {
   if (level === "ok") return <CheckCircle2 size={15} className="shrink-0 text-signal-green" />;
@@ -309,7 +315,19 @@ export function SystemStatus() {
             {
               label: sbLinked ? "Comptes multi-locataires possibles" : "Comptes multi-locataires (nécessite Supabase)",
               level: sbLinked ? "ok" : "off",
-              hint: "Active « Exiger un compte » (section Sécurité) pour vendre l'OS à d'autres commerciaux. À prouver à deux comptes avant de facturer.",
+              hint: "Active « Exiger un compte » (section Sécurité) pour vendre l'OS à d'autres commerciaux. À prouver à deux comptes avant de facturer (npm run verify:rls).",
+              optional: true,
+            },
+            {
+              label: c.auth?.misconfigured
+                ? "⚠ Enforcement JWT demandé SANS secret (SUPABASE_JWT_SECRET)"
+                : c.auth?.serverEnforced
+                  ? "Enforcement serveur JWT actif (API par compte)"
+                  : "Enforcement serveur JWT (REQUIRE_AUTH + SUPABASE_JWT_SECRET)",
+              level: c.auth?.misconfigured ? "warn" : c.auth?.serverEnforced ? "ok" : "off",
+              hint: c.auth?.misconfigured
+                ? "REQUIRE_AUTH est activé mais SUPABASE_JWT_SECRET manque : les API sensibles répondent 503 (fail-closed). Ajoute le JWT Secret (Supabase → Settings → API)."
+                : "Vérifie la signature du jeton Supabase côté serveur : les API de données exigent un compte valide, même si le gate client est contourné.",
               optional: true,
             },
           ],

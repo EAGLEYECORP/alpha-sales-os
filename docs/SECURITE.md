@@ -40,10 +40,14 @@ C'est **le chantier n°1**, non négociable avant le premier client payant :
    données d'un autre. ⚠ **À activer et à tester avec DEUX comptes réels avant
    de facturer** — l'isolation se prouve, elle ne se suppose pas.
 3. **Session** — la porte `SITE_PASSWORD` reste, doublée du mur de connexion
-   par compte (`AuthGate`). Prochaine étape : enforcement **100 % côté serveur**
-   — le middleware vérifie le JWT Supabase (cookie de session) au lieu de se
-   fier au gate client. Tant que ce n'est pas fait, le mur de compte est une
-   barrière UI, pas une frontière serveur.
+   par compte (`AuthGate`). ✅ **Enforcement serveur fait** : le middleware
+   vérifie la **signature HS256** du JWT Supabase (cookie miroir posé par
+   `AuthSync`, `lib/supabase-jwt.ts`) sur toutes les API de données. Opt-in via
+   `REQUIRE_AUTH=1` + `SUPABASE_JWT_SECRET`. Même en contournant le gate client,
+   aucune API ne répond sans jeton signé valide (401), et une config
+   incomplète échoue **fermée** (503, jamais ouverte). Prouvé : 7 tests
+   unitaires (signature, expiration, `alg:none`, falsification) + smoke test
+   live des 3 états.
 4. **Facturation liée au compte** — le Stripe Payment Link devient un
    abonnement rattaché à l'utilisateur (webhook Stripe → statut du compte).
    ⏳ **Reste à faire.**
@@ -63,7 +67,9 @@ middleware + webhook Stripe) sont la condition pour facturer en confiance.
       avant tout client payant.
 - [ ] Tables service-role (`tracking_messages`/`inbound_events`/`crm_records`)
       à scoper par locataire (user_id + routes serveur) — détaillé dans PREUVE-RLS.md.
-- [ ] Enforcement serveur : JWT Supabase vérifié dans le middleware.
+- [x] **Enforcement serveur : JWT Supabase (HS256) vérifié dans le middleware**
+      — `REQUIRE_AUTH=1` + `SUPABASE_JWT_SECRET`. Fail-closed. 7 tests + smoke
+      test live. Reste à activer sur ton déploiement et vérifier de bout en bout.
 - [ ] **Dépendances** : `next`/`sharp` portent des CVE (libvips) corrigées
       seulement par Next 16 (changement cassant). Planifier la montée de
       version et re-tester. `npm audit` : 9 restantes, 3 hautes.
@@ -89,6 +95,13 @@ middleware + webhook Stripe) sont la condition pour facturer en confiance.
 
 ## Ce qui vient d'être fait dans ce passage
 
+- **Enforcement serveur du JWT** : `lib/supabase-jwt.ts` (vérif HS256 edge-safe
+  via Web Crypto, garde anti `alg:none`, marge d'horloge), `AuthSync` (mirroir
+  du jeton Supabase localStorage → cookie lisible par le middleware),
+  `middleware.ts` (401 sans jeton valide sur les API de données, 503 fail-closed
+  si mal configuré). Activation : `REQUIRE_AUTH=1` + `SUPABASE_JWT_SECRET`
+  (Supabase → Settings → API → JWT Secret). 7 tests unitaires + smoke test live
+  des 3 états (503 / 401 / 200).
 - **Auth multi-locataire (couche identité)** : `lib/auth.ts` (inscription /
   connexion / déconnexion / session sur Supabase Auth), `AuthGate` (mur de
   connexion par compte, rendu par défaut ouvert comme le LockGate pour ne jamais
