@@ -18,7 +18,11 @@ const nextConfig: NextConfig = {
         { key: "X-Frame-Options", value: "DENY" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+        // microphone=(self) : le Débrief terrain et l'assistant d'appel
+        // utilisent le micro (Web Speech API) SUR NOTRE PROPRE origine. Le
+        // laisser à () le désactivait partout, y compris pour nous — le micro
+        // restait « refusé » sur le site déployé quoi qu'autorise l'utilisateur.
+        { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(), interest-cohort=()" },
         // HTTPS forcé (ignoré sur localhost) — protège contre le downgrade/MITM
         { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         // Isolation de la fenêtre + pas de fuite cross-origin ; CORP cross-origin
