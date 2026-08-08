@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Clock, Copy, Loader2, PhoneOutgoing, ShieldCheck, Square, Volume2, X } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { CALL_MODES, COLD_CALLING_REFUSED, type CallMode } from "@/lib/voice-script";
+import { CALL_MODES, DO_NOT_CALL_TAG, type CallMode } from "@/lib/voice-script";
 import { VERTICALS, verticalForProspect } from "@/lib/playbook";
 import { speak, stopSpeak, getTtsProvider, setTtsProvider, type TtsProvider } from "@/lib/browser-tts";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
  * démo sortante ; la décision est documentée et assumée.
  */
 export default function VoicePage() {
-  const { prospects, settings } = useAlpha();
+  const { prospects, settings, patchProspect } = useAlpha();
   const [mode, setMode] = useState<CallMode>("demo-sortante");
   const [prospectId, setProspectId] = useState("");
   const [phone, setPhone] = useState("");
@@ -62,6 +62,19 @@ export default function VoicePage() {
   const prospect = prospects.find((p) => p.id === prospectId) ?? null;
   const vertical = prospect ? verticalForProspect(prospect) : null;
 
+  // Prospection B2B : confirmation professionnelle + droit d'opposition.
+  const [confirmB2B, setConfirmB2B] = useState(false);
+  const optedOut = Boolean(prospect?.tags?.includes(DO_NOT_CALL_TAG));
+  const isProspection = mode === "prospection-b2b";
+  const blockedByCompliance = isProspection && (!confirmB2B || optedOut);
+  useEffect(() => setConfirmB2B(false), [prospectId, mode]);
+
+  const markDoNotCall = () => {
+    if (!prospect) return;
+    const tags = prospect.tags.includes(DO_NOT_CALL_TAG) ? prospect.tags : [...prospect.tags, DO_NOT_CALL_TAG];
+    patchProspect(prospect.id, { tags });
+  };
+
   const payload = useMemo(
     () => ({
       mode,
@@ -70,8 +83,10 @@ export default function VoicePage() {
       verticalId: vertical?.id,
       agentName,
       onBehalfOf: settings.agencyName || "EAGLEYE CORP",
+      isProfessional: confirmB2B,
+      optedOut: Boolean(prospect?.tags?.includes(DO_NOT_CALL_TAG)),
     }),
-    [mode, phone, prospect, vertical, agentName, settings.agencyName]
+    [mode, phone, prospect, vertical, agentName, settings.agencyName, confirmB2B]
   );
 
   // Relecture permanente : on voit ce que dirait l'agent avant tout appel.
@@ -159,8 +174,11 @@ export default function VoicePage() {
             </li>
           ))}
         </ul>
-        <p className="mt-2 flex items-start gap-1.5 text-[11px] text-signal-amber">
-          <X size={12} className="mt-0.5 shrink-0" /> {COLD_CALLING_REFUSED}
+        <p className="mt-2 flex items-start gap-1.5 text-[11px] text-paper-faint">
+          <ShieldCheck size={12} className="mt-0.5 shrink-0 text-signal-amber" /> La prospection B2B est désormais
+          disponible, <b className="text-paper">sous conditions strictes</b> (cible entreprise confirmée, divulgation,
+          opposition, horaires, une fiche à la fois). Le démarchage grand public reste exclu. La doctrine maison
+          préfère toujours la démonstration au premier contact — mais la décision t&apos;appartient.
         </p>
       </section>
 
@@ -202,8 +220,50 @@ export default function VoicePage() {
           </div>
         </div>
 
+        {isProspection && (
+          <div className="mt-4 rounded-lg border border-signal-amber/40 bg-signal-amber/5 p-3">
+            <p className="flex items-center gap-2 font-display text-[13px] font-semibold text-paper">
+              <ShieldCheck size={14} className="text-signal-amber" /> Conformité — prospection B2B
+            </p>
+            <p className="mt-1 text-[11.5px] text-paper-dim">
+              La prospection vocale n&apos;est licite qu&apos;en <b className="text-paper">B2B</b> (hors Bloctel, réservé
+              aux particuliers), au titre de l&apos;intérêt légitime, avec divulgation IA et droit d&apos;opposition
+              immédiat. Elle se lance <b className="text-paper">fiche par fiche</b>, jamais en masse.
+            </p>
+            {optedOut ? (
+              <p className="mt-2 flex items-start gap-1.5 text-[12px] text-signal-red">
+                <X size={13} className="mt-0.5 shrink-0" /> Cette fiche s&apos;est opposée (« ne pas appeler ») — l&apos;appel
+                est bloqué, définitivement.
+              </p>
+            ) : (
+              <label className="mt-2 flex cursor-pointer items-start gap-2 text-[12.5px] text-paper">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 accent-bronze-500"
+                  checked={confirmB2B}
+                  onChange={(e) => setConfirmB2B(e.target.checked)}
+                />
+                <span>
+                  Je confirme que <b>{prospect?.company || "cette cible"}</b> est une <b>entreprise</b>, que ses
+                  coordonnées viennent de sources publiques (annuaires, site), et que l&apos;horaire est ouvré.
+                </span>
+              </label>
+            )}
+            {prospect && !optedOut && (
+              <button className="btn-ghost mt-2 px-2.5 py-1.5 text-[11.5px]" onClick={markDoNotCall}>
+                <X size={12} /> Marquer « ne pas appeler » (opposition)
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button className="btn-bronze px-3 py-2 text-[13px]" onClick={() => void call(false)} disabled={busy}>
+          <button
+            className="btn-bronze px-3 py-2 text-[13px]"
+            onClick={() => void call(false)}
+            disabled={busy || blockedByCompliance}
+            title={blockedByCompliance ? "Confirme la conformité B2B (et lève l'opposition) avant de lancer." : undefined}
+          >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <PhoneOutgoing size={14} />} Lancer l&apos;appel
           </button>
           {win && !win.allowed && (

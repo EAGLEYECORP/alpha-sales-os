@@ -7,6 +7,7 @@ import {
   CALL_MODES,
   DISCLOSURE_REQUIREMENTS,
   disclosure,
+  outboundComplianceGate,
   toE164,
   type CallMode,
   type VoiceConfig,
@@ -29,7 +30,7 @@ const cfg = (over: Partial<VoiceConfig> = {}): VoiceConfig => ({
   ...over,
 });
 
-const ALL_MODES: CallMode[] = ["demo-entrante", "demo-sortante", "rappel-entrant"];
+const ALL_MODES: CallMode[] = ["demo-entrante", "demo-sortante", "rappel-entrant", "prospection-b2b"];
 
 test("divulgation — les trois mentions imposées sont présentes", () => {
   const d = disclosure(cfg());
@@ -86,16 +87,27 @@ test("script — le playbook de la verticale entre dans le contexte", () => {
   assert.match(avec, /Contexte métier/);
 });
 
-test("modes — le démarchage à froid n'est pas exposé", () => {
-  // Techniquement identique à la démo sortante. C'est une décision, pas
-  // une limite : voir docs/MARCHE.md §4.2.
+test("modes — chaque mode expose une base légale, prospection incluse", () => {
   const ids = CALL_MODES.map((m) => m.id);
-  assert.ok(!ids.some((id) => /froid|cold|prospection/i.test(id)));
   assert.deepEqual(ids.sort(), [...ALL_MODES].sort());
+  assert.ok(ids.includes("prospection-b2b"), "la prospection B2B est désormais exposée");
   for (const m of CALL_MODES) {
     assert.equal(m.allowed, true);
     assert.ok(m.legal.length > 60, `${m.id} : la base légale doit être explicitée`);
   }
+});
+
+test("prospection B2B — la porte de conformité tranche (dur, non forçable)", () => {
+  // Sans confirmation « cible professionnelle », la prospection ne part pas.
+  assert.equal(outboundComplianceGate({ mode: "prospection-b2b", isProfessional: false }).ok, false);
+  // Avec la confirmation B2B, elle passe.
+  assert.equal(outboundComplianceGate({ mode: "prospection-b2b", isProfessional: true }).ok, true);
+  // Une fiche qui s'est opposée est bloquée, quel que soit le mode.
+  assert.equal(outboundComplianceGate({ mode: "prospection-b2b", isProfessional: true, optedOut: true }).ok, false);
+  assert.equal(outboundComplianceGate({ mode: "rappel-entrant", optedOut: true }).ok, false);
+  // Les modes démo/rappel ne réclament pas de confirmation professionnelle.
+  assert.equal(outboundComplianceGate({ mode: "demo-sortante" }).ok, true);
+  assert.equal(outboundComplianceGate({ mode: "demo-entrante" }).ok, true);
 });
 
 test("numéro — conversion en E.164, et refus de ce qui n'en est pas un", () => {

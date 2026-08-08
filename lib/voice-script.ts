@@ -46,7 +46,9 @@ export type CallMode =
   /** L'agent appelle le prospect pour lui faire vivre la démonstration. Sur rendez-vous. */
   | "demo-sortante"
   /** Rappel d'un prospect qui a laissé ses coordonnées. Il a initié le contact. */
-  | "rappel-entrant";
+  | "rappel-entrant"
+  /** Prospection commerciale B2B sortante — sous conditions strictes (voir la porte de conformité). */
+  | "prospection-b2b";
 
 export interface CallModeMeta {
   id: CallMode;
@@ -82,6 +84,14 @@ export const CALL_MODES: CallModeMeta[] = [
     what: "Rappelle quelqu'un qui a laissé ses coordonnées — formulaire, appel manqué, demande d'audit.",
     legal:
       "La personne a initié la relation. Licite en B2B au titre de l'intérêt légitime, avec divulgation IA et droit d'opposition immédiat.",
+    allowed: true,
+  },
+  {
+    id: "prospection-b2b",
+    label: "Prospection B2B — sortante, sous conditions",
+    what: "Premier contact commercial vers une ENTREPRISE, pour proposer un audit ou une démonstration. Se lance fiche par fiche, jamais en masse.",
+    legal:
+      "Licite au titre de l'intérêt légitime (RGPD) — hors champ Bloctel, réservé aux consommateurs. Conditions cumulatives : cible professionnelle confirmée, coordonnées de source publique, divulgation IA (art. 50) dès la 1re phrase, droit d'opposition immédiat et enregistré, horaires ouvrés, aucune relance non sollicitée.",
     allowed: true,
   },
 ];
@@ -152,6 +162,15 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
       v ? `Vocabulaire du métier : ${v.criterion}` : "",
       `Tu ne parles JAMAIS de prix. Tu ne cherches pas à convaincre : tu montres, et tu rends la main.`
     );
+  } else if (cfg.mode === "prospection-b2b") {
+    corps.push(
+      `Tu appelles ${company}, une ENTREPRISE, dans le cadre d'une prospection commerciale B2B pour le compte de ${cfg.onBehalfOf}.`,
+      `Après la divulgation, tu dis en UNE phrase pourquoi tu appelles : proposer un audit de leur accueil téléphonique. Puis tu poses une seule question courte et tu écoutes.`,
+      v ? `Angle métier : ${v.structuralPain}` : "",
+      `Tu précises, si on te le demande, que leurs coordonnées PROFESSIONNELLES proviennent de sources publiques (annuaires, site web).`,
+      `Droit d'opposition, prioritaire : dès que la personne montre qu'elle ne veut pas être appelée — même à demi-mot — tu confirmes qu'elle ne sera plus contactée, tu la remercies et tu raccroches. Immédiat, définitif, sans insister.`,
+      `Tu ne parles JAMAIS de prix. Tu ne relances pas. Au mieux, tu proposes un rendez-vous court avec un humain, et tu rends la main.`
+    );
   } else {
     corps.push(
       `Tu rappelles une personne qui a laissé ses coordonnées à ${cfg.onBehalfOf}.`,
@@ -211,4 +230,33 @@ export function callAllowedNow(now = new Date()): { allowed: boolean; why: strin
   if (h >= 12 && h < 14)
     return { allowed: false, why: "Pause déjeuner — taux de décroché au plancher." };
   return { allowed: true, why: "Fenêtre professionnelle ouverte." };
+}
+
+/** Tag de fiche marquant un droit d'opposition exercé — ne plus appeler. */
+export const DO_NOT_CALL_TAG = "ne-pas-appeler";
+
+export interface OutboundGateInput {
+  mode: CallMode;
+  /** La cible est-elle confirmée professionnelle (B2B) ? */
+  isProfessional?: boolean;
+  /** La fiche a-t-elle exercé son droit d'opposition (tag ne-pas-appeler) ? */
+  optedOut?: boolean;
+  now?: Date;
+}
+
+/**
+ * La porte de conformité de la prospection sortante — les conditions DURES,
+ * non contournables (l'horaire, lui, est traité à part car forçable
+ * explicitement). Les autres modes (démo/rappel) ne sont pas de la
+ * prospection à froid et passent, sous réserve du droit d'opposition.
+ */
+export function outboundComplianceGate(i: OutboundGateInput): { ok: boolean; blockers: string[] } {
+  const blockers: string[] = [];
+  if (i.optedOut) {
+    blockers.push("Droit d'opposition exercé (« ne pas appeler ») — cette fiche ne doit jamais être rappelée.");
+  }
+  if (i.mode === "prospection-b2b" && !i.isProfessional) {
+    blockers.push("Cible non confirmée comme professionnelle. La prospection vocale vers un particulier n'est pas autorisée.");
+  }
+  return { ok: blockers.length === 0, blockers };
 }

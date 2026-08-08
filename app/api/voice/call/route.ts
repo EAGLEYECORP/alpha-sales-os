@@ -4,6 +4,7 @@ import {
   auditScript,
   buildVoiceScript,
   callAllowedNow,
+  outboundComplianceGate,
   toE164,
   type CallMode,
   type VoiceConfig,
@@ -46,10 +47,14 @@ interface Body {
   force?: boolean;
   /** Ne rien déclencher : rendre le script et le verdict. */
   dryRun?: boolean;
+  /** Prospection B2B : la cible est-elle confirmée professionnelle ? */
+  isProfessional?: boolean;
+  /** La fiche a-t-elle exercé son droit d'opposition (ne pas appeler) ? */
+  optedOut?: boolean;
 }
 
-/** Modes exposés. Le démarchage à froid est absent, par décision. */
-const ALLOWED_MODES: CallMode[] = ["demo-entrante", "demo-sortante", "rappel-entrant"];
+/** Modes exposés. Le démarchage grand public reste absent. */
+const ALLOWED_MODES: CallMode[] = ["demo-entrante", "demo-sortante", "rappel-entrant", "prospection-b2b"];
 
 function livekitConfigured(): boolean {
   return Boolean(
@@ -93,6 +98,23 @@ export async function POST(request: NextRequest) {
         error: "Script non conforme — aucun appel ne partira.",
         manquantes: audit.manquantes,
         why: "L'article 50 du règlement européen sur l'IA impose que l'agent se déclare artificiel et dise pour le compte de qui il agit.",
+      },
+      { status: 422 }
+    );
+  }
+
+  // ── Porte 2 bis : conformité DURE (non forçable) ──
+  // Droit d'opposition toujours ; en prospection B2B, cible professionnelle
+  // confirmée. Ce sont des conditions de licéité, pas des préférences : on
+  // ne les contourne pas avec `force`.
+  const gate = outboundComplianceGate({ mode, isProfessional: body.isProfessional, optedOut: body.optedOut });
+  if (!gate.ok) {
+    return NextResponse.json(
+      {
+        error: "Conditions de conformité non réunies — aucun appel ne partira.",
+        blockers: gate.blockers,
+        why: "La prospection vocale n'est licite qu'en B2B (hors Bloctel), cible confirmée, et jamais vers une fiche qui s'est opposée.",
+        script,
       },
       { status: 422 }
     );
