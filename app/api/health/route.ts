@@ -48,6 +48,24 @@ export async function GET() {
         publicEnv: supabasePublic,
         serviceRole: has("SUPABASE_SERVICE_ROLE_KEY"),
       },
+      // Auth multi-locataire : possible dès que Supabase (public) est là —
+      // soit via env, soit lié au runtime (invisible ici, d'où le "ou").
+      auth: { serverEnv: supabasePublic },
+      voice: {
+        // Dispatch d'appel sortant vers LiveKit (l'agent Python + Fish TTS
+        // tournent ailleurs, avec leurs propres clés — pas sur Vercel).
+        livekit: has("LIVEKIT_URL") && has("LIVEKIT_API_KEY") && has("LIVEKIT_API_SECRET"),
+      },
+      transcription: {
+        // Transcription serveur (débrief terrain, dictée) — navigateur-agnostique.
+        configured: has("DEEPGRAM_API_KEY") || has("WHISPER_API_KEY"),
+        provider: has("DEEPGRAM_API_KEY") ? "deepgram" : has("WHISPER_API_KEY") ? "whisper" : "aucun",
+      },
+      alerts: {
+        // Récap urgent par SMS / email (destinataire figé côté serveur).
+        sms: has("TEXTBELT_KEY") && has("ALERT_PHONE"),
+        email: has("SMTP_HOST") && has("DIGEST_EMAIL"),
+      },
       access: {
         // porte d'accès serveur active (mot de passe requis pour toute l'UI)
         gated: has("SITE_PASSWORD"),

@@ -61,15 +61,23 @@ export ALPHA_ALERT_EMAIL="ton@email.fr"
 npx n8n`;
 
 // Variables à coller sur Vercel (Settings → Environment Variables).
-// Rôle du déploiement : réceptionniste de tracking 24/7 + porte d'accès.
-// PAS de SMTP ni d'Ollama sur Vercel — l'envoi et l'IA restent locaux.
-const VERCEL_ENV = `SITE_PASSWORD=choisis-un-mot-de-passe-FORT
+// Rôle du déploiement : réceptionniste de tracking 24/7 + porte d'accès +
+// comptes (Supabase Auth). PAS de SMTP ni d'Ollama sur Vercel — l'envoi et
+// l'IA locale restent sur ta machine.
+const VERCEL_ENV = `# — Indispensables —
+SITE_PASSWORD=choisis-un-mot-de-passe-FORT
 TRACKING_BASE_URL=https://TON-APP.vercel.app
 APP_BASE_URL=https://TON-APP.vercel.app
 WEBHOOK_SECRET=le-même-que-local-et-n8n
+# — Comptes multi-locataires (revente SaaS) + persistance tracking —
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
-SUPABASE_SERVICE_ROLE_KEY=eyJ…`;
+SUPABASE_SERVICE_ROLE_KEY=eyJ…
+# — Optionnel : transcription serveur (débrief) + appels voix —
+DEEPGRAM_API_KEY=
+LIVEKIT_URL=
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=`;
 
 const WORKFLOWS: { file: string; map: string; activate: boolean }[] = [
   { file: "alpha-dashboard-api", map: "Sheets (credential + ID du Sheet) · Webhook : CORS", activate: true },
@@ -538,6 +546,14 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                   ajoutez aussi <code className="code">SUPABASE_SERVICE_ROLE_KEY</code> dans le <code className="code">.env.local</code>{" "}
                   (clé <strong className="text-paper-dim">service_role</strong>, jamais dans le navigateur).
                 </p>
+                {sbLinked && (
+                  <p className="mt-2 rounded-lg border border-bronze-700/50 bg-bronze-900/10 px-3 py-2 text-[11.5px] text-paper-dim">
+                    🔐 <strong className="text-paper">Revente à d&apos;autres commerciaux ?</strong> Supabase lié, tu peux
+                    activer les <strong className="text-paper-dim">comptes multi-locataires</strong> :{" "}
+                    <strong className="text-paper-dim">Réglages → Sécurité → « Exiger un compte »</strong>. Chaque commercial
+                    n&apos;aura accès qu&apos;à ses données (isolation RLS). À prouver à deux comptes avant de facturer.
+                  </p>
+                )}
               </div>
             )}
 

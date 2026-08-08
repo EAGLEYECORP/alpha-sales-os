@@ -20,6 +20,10 @@ interface Health {
       maxSendsPerHour: number;
     };
     supabase: { publicEnv: boolean; serviceRole: boolean };
+    auth?: { serverEnv: boolean };
+    voice?: { livekit: boolean };
+    transcription?: { configured: boolean; provider: string };
+    alerts?: { sms: boolean; email: boolean };
     access: { gated: boolean; publicHost: boolean };
     branding: { closerName: boolean };
   };
@@ -68,10 +72,27 @@ TRACKING_WEBHOOK_URL=
 # ── Webhooks entrants (réponses + STOP) ──
 WEBHOOK_SECRET=
 
+# ── Transcription serveur (débrief terrain, dictée — tout navigateur) ──
+# Option A : Deepgram (rapide, français). Option B : Whisper (OpenAI-compatible).
+DEEPGRAM_API_KEY=
+WHISPER_API_URL=
+WHISPER_API_KEY=
+WHISPER_MODEL=whisper-1
+
+# ── Alertes « super urgent » (récap SMS / email) ──
+# SMS : réutilise TEXTBELT_KEY ci-dessus. Destinataires figés côté serveur :
+ALERT_PHONE=
+DIGEST_EMAIL=
+
+# ── Appels voix sortants (dispatch LiveKit ; l'agent Python tourne ailleurs) ──
+LIVEKIT_URL=
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+
 # ── Porte d'accès (OBLIGATOIRE si déployé en public / Vercel) ──
 SITE_PASSWORD=
 
-# ── Supabase (sync + auth + persistance tracking) ──
+# ── Supabase (sync + comptes multi-locataires + persistance tracking) ──
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=`;
@@ -225,6 +246,35 @@ export function SystemStatus() {
           ],
         },
         {
+          title: "Voix, transcription & alertes",
+          items: [
+            {
+              label: c.voice?.livekit ? "Appels sortants (LiveKit)" : "Appels sortants (LIVEKIT_URL / API_KEY / API_SECRET)",
+              level: c.voice?.livekit ? "ok" : "off",
+              hint: "Pour dispatcher un appel voix. L'agent Python (voice/) et sa TTS Fish Audio tournent sur ta machine/serveur, avec leurs propres clés — pas sur Vercel.",
+              optional: true,
+            },
+            {
+              label: c.transcription?.configured ? `Transcription serveur (${c.transcription.provider})` : "Transcription (DEEPGRAM_API_KEY ou WHISPER_API_KEY)",
+              level: c.transcription?.configured ? "ok" : "off",
+              hint: "Débrief terrain + dictée, fonctionne sur tout navigateur (Chromium inclus). Sinon, repli reconnaissance vocale du navigateur.",
+              optional: true,
+            },
+            {
+              label: c.alerts?.sms ? "Alerte urgente SMS" : "Alerte SMS (TEXTBELT_KEY + ALERT_PHONE)",
+              level: c.alerts?.sms ? "ok" : "off",
+              hint: "Récap « super urgent » poussé par SMS. Destinataire figé côté serveur.",
+              optional: true,
+            },
+            {
+              label: c.alerts?.email ? "Alerte urgente email" : "Alerte email (SMTP + DIGEST_EMAIL)",
+              level: c.alerts?.email ? "ok" : "off",
+              hint: "Même récap urgent, par email.",
+              optional: true,
+            },
+          ],
+        },
+        {
           title: "Accès (déploiement public)",
           items: [
             {
@@ -254,6 +304,12 @@ export function SystemStatus() {
               label: c.supabase.serviceRole ? "Service role (serveur)" : "Service role (SUPABASE_SERVICE_ROLE_KEY)",
               level: c.supabase.serviceRole ? "ok" : "off",
               hint: "Persiste tracking + réponses entrantes côté serveur.",
+              optional: true,
+            },
+            {
+              label: sbLinked ? "Comptes multi-locataires possibles" : "Comptes multi-locataires (nécessite Supabase)",
+              level: sbLinked ? "ok" : "off",
+              hint: "Active « Exiger un compte » (section Sécurité) pour vendre l'OS à d'autres commerciaux. À prouver à deux comptes avant de facturer.",
               optional: true,
             },
           ],
