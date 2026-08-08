@@ -108,7 +108,7 @@ export function useSpeech(opts: { lang?: string; continuous?: boolean } = {}): U
         code === "not-allowed" || code === "service-not-allowed"
           ? "Micro refusé. Touche le cadenas (ou « aA ») à côté de l'adresse → Autorisations du site → Microphone → Autoriser."
           : code === "network"
-            ? "La reconnaissance vocale n'a pas pu joindre le service (elle passe par Google sur Chrome). Vérifie ta connexion, ou tape ton débrief."
+            ? "Ce navigateur n'a pas le service vocal de Google (le cas de Chromium et de Brave, qui n'embarquent pas la clé). Utilise Google Chrome, Edge ou Safari — ou « Écrire au clavier », le résultat est identique."
             : `Reconnaissance vocale : ${code}`
       );
       wanted.current = false;
