@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
-import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
+import { runAI } from "@/lib/ai-engine";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -98,58 +97,28 @@ export async function POST(request: NextRequest) {
 
   const prompt = extractPrompt(research, body.company, body.city, body.sector);
 
-  if (ollamaConfigured()) {
-    try {
-      const text = await ollamaChat(
-        [
-          { role: "system", content: EXTRACT_SYSTEM },
-          { role: "user", content: prompt },
-        ],
-        { temperature: 0.2, maxTokens: 900, json: true }
-      );
-      const data = parseLoose(text);
-      if (data) return NextResponse.json({ data, engine: `ollama (${ollamaModel()})` });
-    } catch (e) {
-      console.error("extract: Ollama error", e);
-    }
+  // Cascade unifiée (Ollama → NVIDIA → Claude) via runAI, avec sortie JSON.
+  // parseLoose reste le garde-fou « sorties structurées » (façon Outlines) :
+  // il coerce, borne, omet l'inconnu, et rejette une extraction vide.
+  try {
+    const { text, engine } = await runAI(
+      [
+        { role: "system", content: EXTRACT_SYSTEM },
+        { role: "user", content: prompt },
+      ],
+      { temperature: 0.2, maxTokens: 1200, json: true }
+    );
+    const data = parseLoose(text);
+    if (data) return NextResponse.json({ data, engine });
+    // JSON reçu mais inexploitable → l'UI bascule sur « joindre en brut ».
+    return NextResponse.json(
+      { error: "L'IA n'a pas renvoyé de structure exploitable — utilise « Joindre en brut »." },
+      { status: 422 }
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Aucune IA disponible pour structurer — utilise « Joindre en brut » (le texte ira dans les notes + pièces jointes)." },
+      { status: 501 }
+    );
   }
-
-  // NVIDIA NIM — gratuit, avant Anthropic.
-  if (nvidiaConfigured()) {
-    try {
-      const text = await nvidiaChat(
-        [
-          { role: "system", content: EXTRACT_SYSTEM },
-          { role: "user", content: prompt },
-        ],
-        { temperature: 0.2, maxTokens: 900 }
-      );
-      const data = parseLoose(text);
-      if (data) return NextResponse.json({ data, engine: `nvidia (${nvidiaModel()})` });
-    } catch (e) {
-      console.error("NVIDIA extract error, falling back:", e);
-    }
-  }
-
-  if (process.env.ANTHROPIC_API_KEY) {
-    try {
-      const { generateText } = await import("ai");
-      const { anthropic } = await import("@ai-sdk/anthropic");
-      const { text } = await generateText({
-        model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
-        system: EXTRACT_SYSTEM,
-        prompt,
-        maxTokens: 1200,
-      });
-      const data = parseLoose(text);
-      if (data) return NextResponse.json({ data, engine: "claude" });
-    } catch (e) {
-      console.error("extract: Anthropic error", e);
-    }
-  }
-
-  return NextResponse.json(
-    { error: "Aucune IA disponible pour structurer — utilise « Joindre en brut » (le texte ira dans les notes + pièces jointes)." },
-    { status: 501 }
-  );
 }

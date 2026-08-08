@@ -3,6 +3,7 @@ import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { playbookPrompt } from "@/lib/playbook";
 import { AGENT_LIMITS, OS_MAP } from "@/lib/os-map";
+import { compressContext } from "@/lib/ai-context";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -49,7 +50,10 @@ export async function POST(request: NextRequest) {
     "\n" + OS_MAP,
     "\n" + AGENT_LIMITS,
     "\n## Règles business de l'agence\n" + (body.businessRules ?? ""),
-    "\n## État réel de l'OS (JSON — la seule source de chiffres)\n" + (body.context ?? "{}").slice(0, 30000),
+    // Contexte pipe : dégraissé avant l'appel (économie de tokens sur le palier
+    // payant) — garde la tête (le plus récent en JSON compact) et borne à 30k.
+    "\n## État réel de l'OS (JSON — la seule source de chiffres)\n" +
+      compressContext(body.context ?? "{}", { maxChars: 30000, headRatio: 0.7 }),
   ].join("\n");
 
   if (ollamaConfigured()) {

@@ -26,12 +26,29 @@ export function BillingCard({ email }: { email: string | null }) {
   const [error, setError] = useState<string | null>(null);
 
   const owner = isOwnerEmail(email);
+  const [notice, setNotice] = useState<{ tone: "ok" | "neutral"; text: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
-    getSubscription()
-      .then((s) => alive && setSub(s))
-      .finally(() => alive && setLoading(false));
+    const load = () =>
+      getSubscription()
+        .then((s) => alive && setSub(s))
+        .finally(() => alive && setLoading(false));
+    void load();
+
+    // Retour de Stripe : le webhook peut écrire le statut avec un léger décalage
+    // → on affiche un mot et on relit une fois après quelques secondes.
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const ab = params.get("abonnement");
+    if (ab === "ok") {
+      setNotice({ tone: "ok", text: "Paiement reçu — activation du compte en cours…" });
+      const t = setTimeout(load, 4000);
+      return () => {
+        alive = false;
+        clearTimeout(t);
+      };
+    }
+    if (ab === "annule") setNotice({ tone: "neutral", text: "Paiement annulé — aucun débit." });
     return () => {
       alive = false;
     };
@@ -70,6 +87,19 @@ export function BillingCard({ email }: { email: string | null }) {
       <p className="flex items-center gap-2 text-sm font-medium text-paper">
         <CreditCard size={15} className="text-bronze-400" /> Abonnement
       </p>
+
+      {notice && (
+        <p
+          className={cn(
+            "mt-2 rounded-lg border px-3 py-2 text-[12px]",
+            notice.tone === "ok"
+              ? "border-signal-green/40 bg-signal-green/5 text-signal-green"
+              : "border-ink-700 bg-ink-850 text-paper-dim"
+          )}
+        >
+          {notice.text}
+        </p>
+      )}
 
       {loading ? (
         <p className="mt-3 flex items-center gap-2 text-[13px] text-paper-faint">
