@@ -35,6 +35,13 @@ const INTERNAL = [
   "/api/track/stats",
   "/api/track/contacted",
   "/api/crm/patch",
+  // Endpoints sensibles ajoutés (envoi/dépôt/appel/transcription) : même
+  // origine exigée, en plus de la porte d'accès.
+  "/api/digest",
+  "/api/gmail/draft",
+  "/api/transcribe",
+  "/api/voice/call",
+  "/api/debrief",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers
