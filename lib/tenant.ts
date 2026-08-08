@@ -24,12 +24,17 @@ import { JWT_COOKIE, verifySupabaseJwt } from "./supabase-jwt";
 
 /** Locataire courant d'après le JWT signé, ou null si non authentifié. */
 export async function getTenantId(req: NextRequest): Promise<string | null> {
+  return (await getTenant(req))?.id ?? null;
+}
+
+/** Locataire courant avec son email (claims du JWT signé), ou null. */
+export async function getTenant(req: NextRequest): Promise<{ id: string; email: string | null } | null> {
   const secret = process.env.SUPABASE_JWT_SECRET;
   if (!secret) return null;
   const jwt = req.cookies.get(JWT_COOKIE)?.value;
   if (!jwt) return null;
   const payload = await verifySupabaseJwt(jwt, secret);
-  return payload?.sub ?? null;
+  return payload?.sub ? { id: payload.sub, email: payload.email ?? null } : null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

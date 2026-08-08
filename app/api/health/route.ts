@@ -72,6 +72,14 @@ export async function GET() {
         sms: has("TEXTBELT_KEY") && has("ALERT_PHONE"),
         email: has("SMTP_HOST") && has("DIGEST_EMAIL"),
       },
+      billing: {
+        // Facturation Stripe (revente SaaS). Booléens uniquement.
+        configured: has("STRIPE_SECRET_KEY"),
+        webhook: has("STRIPE_WEBHOOK_SECRET"),
+        prices: has("STRIPE_PRICE_SOLO") || has("STRIPE_PRICE_PRO"),
+        // Abonnement exigé pour envoyer (garde-fou opt-in).
+        enforced: /^(1|true|yes)$/i.test(String(env.REQUIRE_SUBSCRIPTION ?? "")),
+      },
       access: {
         // porte d'accès serveur active (mot de passe requis pour toute l'UI)
         gated: has("SITE_PASSWORD"),

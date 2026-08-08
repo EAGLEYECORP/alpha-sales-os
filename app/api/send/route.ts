@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { createTrackedEmail, countRecentSends, contactedEmails } from "@/lib/tracking";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
-import { getTenantId } from "@/lib/tenant";
+import { getTenant } from "@/lib/tenant";
+import { accountHasAccess } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -93,6 +94,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "champs to et body requis" }, { status: 400 });
   }
 
+  // Locataire courant (multi-compte) : identité + accès. Résolu une fois, réutilisé.
+  const tenant = await getTenant(request);
+  const tenantId = tenant?.id ?? null;
+
+  // Garde-fou facturation (opt-in REQUIRE_SUBSCRIPTION) : envoyer est l'action
+  // qui a de la valeur → on exige un abonnement actif (le propriétaire passe
+  // toujours). En solo / facturation non exigée : sans effet.
+  if (!(await accountHasAccess(tenantId, tenant?.email ?? null))) {
+    return NextResponse.json(
+      { error: "Abonnement requis pour envoyer — voir /compte.", needsSubscription: true },
+      { status: 402 }
+    );
+  }
+
   if (body.channel === "email") {
     const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
     if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
@@ -104,9 +119,8 @@ export async function POST(request: NextRequest) {
 
     const to = body.to.trim();
 
-    // Locataire courant (multi-compte) : borne rate-limit, dédup et tracking à
-    // SON périmètre. En solo (pas de compte), null → comportement d'origine.
-    const tenantId = await getTenantId(request);
+    // Le tenantId (résolu plus haut) borne rate-limit, dédup et tracking à SON
+    // périmètre. En solo (pas de compte), null → comportement d'origine.
 
     // Rate-limit anti-pic (durable) : nb d'emails partis dans la dernière heure.
     const recent = await countRecentSends("email", 3600_000, tenantId);

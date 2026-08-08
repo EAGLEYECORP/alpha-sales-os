@@ -48,6 +48,8 @@ const INTERNAL = [
   "/api/transcribe",
   "/api/voice/call",
   "/api/debrief",
+  // Facturation : création de session Checkout / portail par le compte connecté.
+  "/api/billing",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers
@@ -56,6 +58,8 @@ const PUBLIC_PREFIXES = [
   "/api/track/open",
   "/api/track/click",
   "/api/webhooks/inbound",
+  // Webhook Stripe : appelé par Stripe (aucune session), protégé par signature.
+  "/api/webhooks/stripe",
   "/api/health",
   "/gate",
   "/api/gate",

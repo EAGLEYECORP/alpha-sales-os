@@ -24,6 +24,7 @@ interface Health {
     voice?: { livekit: boolean };
     transcription?: { configured: boolean; provider: string };
     alerts?: { sms: boolean; email: boolean };
+    billing?: { configured: boolean; webhook: boolean; prices: boolean; enforced: boolean };
     access: { gated: boolean; publicHost: boolean };
     branding: { closerName: boolean };
   };
@@ -101,7 +102,19 @@ SUPABASE_SERVICE_ROLE_KEY=
 # Mets REQUIRE_AUTH=1 ET le JWT Secret du projet (Supabase → Settings → API →
 # JWT Secret) pour que les API de données exigent un compte valide côté serveur.
 REQUIRE_AUTH=
-SUPABASE_JWT_SECRET=`;
+SUPABASE_JWT_SECRET=
+
+# ── Facturation Stripe (revente SaaS : abonnements Solo/Pro) ──
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_SOLO=price_xxx      # ID de prix Stripe (abonnement 79 €/mois)
+STRIPE_PRICE_PRO=price_xxx       # ID de prix Stripe (abonnement 149 €/mois)
+# Accès permanent du propriétaire (jamais bloqué par la facture) ; côté serveur.
+OWNER_EMAILS=contact@eagleyecorp.fr
+# Idem exposé au navigateur (badge « accès propriétaire » sur /compte).
+NEXT_PUBLIC_OWNER_EMAILS=contact@eagleyecorp.fr
+# Exiger un abonnement actif pour envoyer (garde-fou opt-in).
+REQUIRE_SUBSCRIPTION=`;
 
 function Dot({ level }: { level: Level }) {
   if (level === "ok") return <CheckCircle2 size={15} className="shrink-0 text-signal-green" />;
@@ -276,6 +289,35 @@ export function SystemStatus() {
               label: c.alerts?.email ? "Alerte urgente email" : "Alerte email (SMTP + DIGEST_EMAIL)",
               level: c.alerts?.email ? "ok" : "off",
               hint: "Même récap urgent, par email.",
+              optional: true,
+            },
+          ],
+        },
+        {
+          title: "Facturation (revente SaaS)",
+          items: [
+            {
+              label: c.billing?.configured ? "Stripe configuré" : "Stripe (STRIPE_SECRET_KEY)",
+              level: c.billing?.configured ? "ok" : "off",
+              hint: "Abonnements Solo/Pro pour revendre l'OS. Sans Stripe, la page /compte affiche les plans mais le paiement est inactif.",
+              optional: true,
+            },
+            {
+              label: c.billing?.prices ? "Prix Solo/Pro liés" : "Prix (STRIPE_PRICE_SOLO / STRIPE_PRICE_PRO)",
+              level: c.billing?.prices ? "ok" : "off",
+              hint: "IDs de prix Stripe (mode abonnement) pour chaque plan.",
+              optional: true,
+            },
+            {
+              label: c.billing?.webhook ? "Webhook Stripe signé" : "Webhook (STRIPE_WEBHOOK_SECRET)",
+              level: c.billing?.webhook ? "ok" : "off",
+              hint: "Vérifie la signature des événements Stripe. Sans lui, le statut d'abonnement ne se met pas à jour.",
+              optional: true,
+            },
+            {
+              label: c.billing?.enforced ? "Abonnement exigé pour envoyer" : "Garde-fou abonnement (REQUIRE_SUBSCRIPTION)",
+              level: c.billing?.enforced ? "ok" : "off",
+              hint: "Quand actif, l'envoi exige un abonnement valide (le propriétaire OWNER_EMAILS passe toujours).",
               optional: true,
             },
           ],

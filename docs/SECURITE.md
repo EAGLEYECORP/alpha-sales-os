@@ -48,12 +48,18 @@ C'est **le chantier n°1**, non négociable avant le premier client payant :
    incomplète échoue **fermée** (503, jamais ouverte). Prouvé : 7 tests
    unitaires (signature, expiration, `alg:none`, falsification) + smoke test
    live des 3 états.
-4. **Facturation liée au compte** — le Stripe Payment Link devient un
-   abonnement rattaché à l'utilisateur (webhook Stripe → statut du compte).
-   ⏳ **Reste à faire.**
+4. **Facturation liée au compte** — abonnement Stripe rattaché à l'utilisateur.
+   ✅ **Fait** : Checkout + portail (`/api/billing/*`), webhook signé à la main
+   (`/api/webhooks/stripe`, HMAC-SHA256 vérifié), table `subscriptions`
+   (RLS self-select), page `/compte` (statut + S'abonner + Gérer), **accès
+   propriétaire permanent** (`OWNER_EMAILS`), garde-fou d'envoi opt-in
+   (`REQUIRE_SUBSCRIPTION=1` → 402 sans abonnement). 9 tests + smoke test live
+   du webhook. ⚠ Reste à valider le parcours réel avec tes clés Stripe
+   (`docs/FACTURATION.md`).
 
-Le socle identité est posé ; les deux briques serveur qui restent (JWT dans le
-middleware + webhook Stripe) sont la condition pour facturer en confiance.
+Les 4 briques SaaS sont posées (identité, isolation, frontière serveur,
+facturation) ; il reste à les **prouver contre les vrais services** (Supabase +
+Stripe) avant le premier client payant.
 
 ---
 

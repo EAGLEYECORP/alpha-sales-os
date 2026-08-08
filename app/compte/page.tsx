@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { LogOut, ShieldCheck, UserCog, Users } from "lucide-react";
 import { authAvailable, getCurrentUser, onAuthChange, signOut, type AuthUser } from "@/lib/auth";
 import { useAlpha } from "@/lib/store";
+import { BillingCard } from "@/components/billing/billing-card";
 
 /**
  * Compte — gestion de l'identité multi-locataire.
@@ -106,6 +107,8 @@ export default function ComptePage() {
           </Link>
         </section>
       )}
+
+      {available && ready && user && <BillingCard email={user.email} />}
 
       <p className="px-1 text-[10.5px] italic text-paper-faint">
         ⚠ L&apos;isolation par compte doit être prouvée à deux comptes réels avant de facturer un client (docs/SECURITE.md).

@@ -186,6 +186,26 @@ create index if not exists crm_records_unsynced_idx on public.crm_records (synce
 create index if not exists crm_records_user_unsynced_idx on public.crm_records (user_id, synced_to_sheet, updated_at desc);
 alter table public.crm_records enable row level security;
 
+-- Abonnements (facturation Stripe) --------------------------------------------
+-- Écrit par le webhook /api/webhooks/stripe (SERVICE ROLE) ; lu par le compte
+-- lui-même. Une ligne par commercial, clé = user_id. La RLS autorise la LECTURE
+-- de SA propre ligne (le navigateur affiche son statut avec anon + JWT) ; les
+-- écritures passent uniquement par le service role (le webhook).
+create table if not exists public.subscriptions (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  email text,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  plan text,
+  status text not null default 'inactive',
+  current_period_end timestamptz,
+  updated_at timestamptz not null default now()
+);
+alter table public.subscriptions enable row level security;
+drop policy if exists "sub select own" on public.subscriptions;
+create policy "sub select own" on public.subscriptions for select using (auth.uid() = user_id);
+-- pas de policy insert/update/delete : réservé au service role (webhook Stripe)
+
 -- Realtime -------------------------------------------------------------------
 -- Dashboard → Database → Replication → enable for prospects/meetings if you
 -- want live team sync, then subscribe client-side with sb.channel(...).
