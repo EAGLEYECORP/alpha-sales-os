@@ -112,6 +112,35 @@ class AlphaVoice(Agent):
         super().__init__(instructions=script)
 
 
+def build_tts():
+    """La voix de l'agent. Fish Audio si FISH_API_KEY est présent (voix
+    multilingues de qualité, bon français), sinon OpenAI en repli.
+
+    Pour le meilleur français : choisis une voix française dans la
+    bibliothèque fish.audio, copie son « reference id » et mets-le dans
+    FISH_VOICE_ID. Sans ça, la voix par défaut du plugin est utilisée.
+    """
+    if os.getenv("FISH_API_KEY"):
+        try:
+            from livekit.plugins import fishaudio
+        except ImportError as e:  # plugin absent
+            raise RuntimeError(
+                'FISH_API_KEY est défini mais le plugin manque — '
+                'installe-le : pip install "livekit-agents[fishaudio]"'
+            ) from e
+        kwargs = {}
+        ref = os.getenv("FISH_VOICE_ID")
+        if ref:
+            kwargs["reference_id"] = ref
+        model = os.getenv("FISH_MODEL")
+        if model:
+            kwargs["model"] = model
+        logger.info("TTS : Fish Audio%s", f" (voix {ref})" if ref else " (voix par défaut)")
+        return fishaudio.TTS(**kwargs)
+    logger.info("TTS : OpenAI (%s)", os.getenv("VOICE_TTS_VOICE", "alloy"))
+    return openai.TTS(voice=os.getenv("VOICE_TTS_VOICE", "alloy"))
+
+
 async def entrypoint(ctx: JobContext) -> None:
     """
     Point d'entrée. Les métadonnées du job portent tout :
@@ -152,7 +181,7 @@ async def entrypoint(ctx: JobContext) -> None:
             api_key=os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY"),
             temperature=0.4,
         ),
-        tts=openai.TTS(voice=os.getenv("VOICE_TTS_VOICE", "alloy")),
+        tts=build_tts(),
         vad=silero.VAD.load(),
     )
 

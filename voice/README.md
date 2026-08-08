@@ -71,10 +71,14 @@ python agent.py dev              # l'agent écoute les dispatches
 | [LiveKit Cloud](https://cloud.livekit.io) | transport temps réel + SIP | palier gratuit généreux |
 | [Deepgram](https://deepgram.com) | transcription française | crédits offerts à l'inscription |
 | [NVIDIA NIM](https://build.nvidia.com) | le modèle | **gratuit** — la même clé que le reste d'ALPHA |
+| [Fish Audio](https://fish.audio) | la voix (TTS) — bon français | palier peu coûteux |
 
-La synthèse vocale passe par le plugin OpenAI. Pour rester sur une pile
-entièrement gratuite, remplace `openai.TTS` par un plugin local (Piper,
-Kokoro) dans `agent.py`.
+**La voix (TTS).** Par défaut, si `FISH_API_KEY` est présent, l'agent parle
+avec **Fish Audio** (voix multilingues, bon français) ; sinon il retombe sur
+OpenAI. Pour la meilleure prononciation, choisis une voix française dans la
+bibliothèque fish.audio, copie son *reference id* et mets-le dans
+`FISH_VOICE_ID`. `build_tts()` dans `agent.py` fait la bascule automatiquement.
+Pile 100 % gratuite : remplace le TTS par un plugin local (Piper, Kokoro).
 
 ### 3. Le trunk SIP (seulement pour les appels sortants)
 
