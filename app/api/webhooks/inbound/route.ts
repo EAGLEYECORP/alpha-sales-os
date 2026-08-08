@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { InboundEvent } from "@/lib/types";
+import { getTenantId, tenantFromInbound } from "@/lib/tenant";
 
 export const runtime = "nodejs";
 
@@ -65,8 +66,16 @@ export async function POST(request: NextRequest) {
   const email = String(body.email ?? "").trim();
   if (!email) return NextResponse.json({ error: "champ email requis" }, { status: 400 });
 
+  // Rattachement au locataire (multi-compte) : déclaratif, fourni par le
+  // provider (?t=<user_id> ou body.userId/tenant). Forme UUID validée ; sinon
+  // null → pool non attribué (comportement solo). Voir docs/PREUVE-RLS.md.
+  const tenantId = tenantFromInbound(
+    request.nextUrl.searchParams.get("t") ?? body.userId ?? body.tenant
+  );
+
   const ev: InboundEvent = {
     id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+    userId: tenantId ?? undefined,
     receivedAt: new Date().toISOString(),
     type: VALID_TYPES.has(String(body.type)) ? (String(body.type) as InboundEvent["type"]) : "autre",
     email,
@@ -80,6 +89,7 @@ export async function POST(request: NextRequest) {
   if (sb) {
     const { error } = await sb.from("inbound_events").insert({
       id: ev.id,
+      user_id: tenantId,
       received_at: ev.receivedAt,
       type: ev.type,
       email: ev.email,
@@ -100,17 +110,24 @@ export async function GET(request: NextRequest) {
   if (!canReadEvents(request)) {
     return NextResponse.json({ error: "lecture réservée à l'app (même origine) ou au porteur du secret" }, { status: 401 });
   }
+  // Le commercial connecté ne lit QUE ses réponses (multi-compte). Un appelant
+  // au secret sans session (n8n/admin) n'a pas de locataire → lecture globale.
+  const tenantId = await getTenantId(request);
+
   const sb = serviceClient();
   if (sb) {
-    const { data, error } = await sb
+    let q = sb
       .from("inbound_events")
       .select("*")
       .eq("processed", false)
       .order("received_at", { ascending: false })
       .limit(100);
+    if (tenantId) q = q.eq("user_id", tenantId);
+    const { data, error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     const events: InboundEvent[] = (data ?? []).map((r) => ({
       id: r.id,
+      userId: r.user_id ?? undefined,
       receivedAt: r.received_at,
       type: r.type,
       email: r.email,
@@ -122,7 +139,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ events, store: "supabase" });
   }
   return NextResponse.json({
-    events: memoryStore.filter((e) => !e.processed).slice(-100).reverse(),
+    events: memoryStore
+      .filter((e) => !e.processed && (!tenantId || e.userId === tenantId))
+      .slice(-100)
+      .reverse(),
     store: "memory",
   });
 }
@@ -138,12 +158,19 @@ export async function PATCH(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
+  // Un commercial n'acquitte que SES événements (multi-compte). Secret sans
+  // session → pas de restriction (n8n/admin).
+  const tenantId = await getTenantId(request);
+
   const sb = serviceClient();
   if (sb) {
-    const { error } = await sb.from("inbound_events").update({ processed: true }).in("id", ids);
+    let q = sb.from("inbound_events").update({ processed: true }).in("id", ids);
+    if (tenantId) q = q.eq("user_id", tenantId);
+    const { error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
-    for (const ev of memoryStore) if (ids.includes(ev.id)) ev.processed = true;
+    for (const ev of memoryStore)
+      if (ids.includes(ev.id) && (!tenantId || ev.userId === tenantId)) ev.processed = true;
   }
   return NextResponse.json({ ok: true, acked: ids.length });
 }

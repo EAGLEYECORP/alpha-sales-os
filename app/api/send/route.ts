@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { createTrackedEmail, countRecentSends, contactedEmails } from "@/lib/tracking";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
+import { getTenantId } from "@/lib/tenant";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -103,8 +104,12 @@ export async function POST(request: NextRequest) {
 
     const to = body.to.trim();
 
+    // Locataire courant (multi-compte) : borne rate-limit, dédup et tracking à
+    // SON périmètre. En solo (pas de compte), null → comportement d'origine.
+    const tenantId = await getTenantId(request);
+
     // Rate-limit anti-pic (durable) : nb d'emails partis dans la dernière heure.
-    const recent = await countRecentSends("email", 3600_000);
+    const recent = await countRecentSends("email", 3600_000, tenantId);
     if (recent >= maxSendsPerHour()) {
       return NextResponse.json(
         { error: `Limite d'envoi atteinte (${maxSendsPerHour()}/h, anti-spam). Réessaie plus tard.` },
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
     // refroidissement (partagé entre instances via Supabase). force:true passe outre.
     const cooldownDays = Number(process.env.CONTACT_COOLDOWN_DAYS ?? 14);
     if (cooldownDays > 0 && !body.force) {
-      const already = await contactedEmails([to], cooldownDays * 86_400_000);
+      const already = await contactedEmails([to], cooldownDays * 86_400_000, tenantId);
       if (already.has(to.toLowerCase())) {
         return NextResponse.json(
           { error: `Déjà contacté dans les ${cooldownDays} derniers jours — renvoie avec force:true si nécessaire.`, alreadyContacted: true },
@@ -158,6 +163,7 @@ export async function POST(request: NextRequest) {
       prospectId: body.prospectId,
       campaignId: body.campaignId,
       subject,
+      userId: tenantId ?? undefined,
     });
 
     try {

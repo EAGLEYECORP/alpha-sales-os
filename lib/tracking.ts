@@ -26,6 +26,8 @@ export interface TrackedLink {
 
 export interface TrackingRecord {
   id: string;
+  /** Locataire propriétaire (multi-locataire). null/undefined = pool solo. */
+  userId?: string;
   channel: "email" | "sms";
   prospectId?: string;
   campaignId?: string;
@@ -45,6 +47,8 @@ export interface TrackingMeta {
   campaignId?: string;
   email?: string;
   subject?: string;
+  /** Locataire (user_id) qui envoie — estampillé pour l'isolation multi-compte. */
+  userId?: string;
 }
 
 // ── Stores ─────────────────────────────────────────────────────────────
@@ -71,25 +75,37 @@ export function persistenceMode(): "supabase" | "memory" {
  * Durable via Supabase, sinon compté en mémoire. Chaque envoi crée une ligne
  * tracking_messages, donc le compteur est partagé entre instances.
  */
-export async function countRecentSends(channel: "email" | "sms", sinceMs: number): Promise<number> {
+export async function countRecentSends(
+  channel: "email" | "sms",
+  sinceMs: number,
+  userId?: string | null
+): Promise<number> {
   const since = new Date(Date.now() - sinceMs).toISOString();
   const sb = serviceClient();
   if (sb) {
-    const { count } = await sb
+    let q = sb
       .from("tracking_messages")
       .select("id", { count: "exact", head: true })
       .eq("channel", channel)
       .gte("created_at", since);
+    if (userId) q = q.eq("user_id", userId);
+    const { count } = await q;
     return count ?? 0;
   }
-  return [...memory.values()].filter((r) => r.channel === channel && r.createdAt > since).length;
+  return [...memory.values()].filter(
+    (r) => r.channel === channel && r.createdAt > since && (!userId || r.userId === userId)
+  ).length;
 }
 
 /**
  * Parmi `emails`, lesquels ont DÉJÀ été contactés depuis `sinceMs` (dédup
  * durable « qui a déjà été contacté »). Comparaison en minuscules.
  */
-export async function contactedEmails(emails: string[], sinceMs: number): Promise<Set<string>> {
+export async function contactedEmails(
+  emails: string[],
+  sinceMs: number,
+  userId?: string | null
+): Promise<Set<string>> {
   const uniq = [...new Set(emails.map((e) => e.toLowerCase().trim()).filter(Boolean))];
   const set = new Set<string>();
   if (uniq.length === 0) return set;
@@ -98,14 +114,16 @@ export async function contactedEmails(emails: string[], sinceMs: number): Promis
   if (sb) {
     for (let i = 0; i < uniq.length; i += 200) {
       const chunk = uniq.slice(i, i + 200);
-      const { data } = await sb.from("tracking_messages").select("email").in("email", chunk).gte("created_at", since);
+      let q = sb.from("tracking_messages").select("email").in("email", chunk).gte("created_at", since);
+      if (userId) q = q.eq("user_id", userId);
+      const { data } = await q;
       for (const r of data ?? []) if (r.email) set.add(String(r.email).toLowerCase());
     }
   } else {
     const want = new Set(uniq);
     for (const r of memory.values()) {
       const e = r.email?.toLowerCase();
-      if (e && want.has(e) && r.createdAt > since) set.add(e);
+      if (e && want.has(e) && r.createdAt > since && (!userId || r.userId === userId)) set.add(e);
     }
   }
   return set;
@@ -122,6 +140,7 @@ async function persist(rec: TrackingRecord): Promise<void> {
   if (!sb) return;
   await sb.from("tracking_messages").upsert({
     id: rec.id,
+    user_id: rec.userId ?? null,
     channel: rec.channel,
     prospect_id: rec.prospectId ?? null,
     campaign_id: rec.campaignId ?? null,
@@ -139,6 +158,7 @@ async function persist(rec: TrackingRecord): Promise<void> {
 function fromRow(r: Record<string, unknown>): TrackingRecord {
   return {
     id: String(r.id),
+    userId: (r.user_id as string) ?? undefined,
     channel: (r.channel as TrackingRecord["channel"]) ?? "email",
     prospectId: (r.prospect_id as string) ?? undefined,
     campaignId: (r.campaign_id as string) ?? undefined,
@@ -202,6 +222,7 @@ export async function createTrackedEmail(
 
   const rec: TrackingRecord = {
     id,
+    userId: meta.userId,
     channel: meta.channel ?? "email",
     prospectId: meta.prospectId,
     campaignId: meta.campaignId,
@@ -251,6 +272,7 @@ export async function createTrackedText(
 
   await persist({
     id,
+    userId: meta.userId,
     channel: meta.channel ?? "email",
     prospectId: meta.prospectId,
     campaignId: meta.campaignId,
@@ -330,11 +352,12 @@ export interface StatsSummary {
   records: TrackingRecord[];
 }
 
-export async function getStats(filter: StatsFilter = {}): Promise<StatsSummary> {
+export async function getStats(filter: StatsFilter = {}, userId?: string | null): Promise<StatsSummary> {
   let records: TrackingRecord[] = [];
   const sb = serviceClient();
   if (sb) {
     let q = sb.from("tracking_messages").select("*").order("created_at", { ascending: false }).limit(500);
+    if (userId) q = q.eq("user_id", userId);
     if (filter.prospectId) q = q.eq("prospect_id", filter.prospectId);
     if (filter.campaignId) q = q.eq("campaign_id", filter.campaignId);
     if (filter.messageId) q = q.eq("id", filter.messageId);
@@ -344,6 +367,7 @@ export async function getStats(filter: StatsFilter = {}): Promise<StatsSummary> 
     records = [...memory.values()]
       .filter(
         (r) =>
+          (!userId || r.userId === userId) &&
           (!filter.prospectId || r.prospectId === filter.prospectId) &&
           (!filter.campaignId || r.campaignId === filter.campaignId) &&
           (!filter.messageId || r.id === filter.messageId)

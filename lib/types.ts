@@ -101,6 +101,8 @@ export interface DeepAudit {
 /** Inbound webhook event (email reply/open, WhatsApp, form…). */
 export interface InboundEvent {
   id: string;
+  /** Locataire (user_id) auquel l'événement est rattaché ; absent = pool solo. */
+  userId?: string;
   receivedAt: string;
   type: "email.reply" | "email.open" | "whatsapp.reply" | "form.submit" | "autre";
   email: string;

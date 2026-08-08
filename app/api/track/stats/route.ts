@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStats } from "@/lib/tracking";
+import { getTenantId } from "@/lib/tenant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,11 +15,16 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   try {
-    const stats = await getStats({
-      prospectId: sp.get("prospectId") ?? undefined,
-      campaignId: sp.get("campaignId") ?? undefined,
-      messageId: sp.get("messageId") ?? undefined,
-    });
+    // Chaque commercial ne voit QUE ses stats (multi-compte). Solo → null.
+    const tenantId = await getTenantId(req);
+    const stats = await getStats(
+      {
+        prospectId: sp.get("prospectId") ?? undefined,
+        campaignId: sp.get("campaignId") ?? undefined,
+        messageId: sp.get("messageId") ?? undefined,
+      },
+      tenantId
+    );
     return NextResponse.json(stats);
   } catch (e) {
     return NextResponse.json(

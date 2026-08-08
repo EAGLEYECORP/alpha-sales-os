@@ -107,16 +107,15 @@ create policy "audit select own" on public.audit_log for select using (auth.uid(
 create policy "audit insert own" on public.audit_log for insert with check (auth.uid() = user_id);
 -- no update/delete policies: audit log is append-only
 
--- ⚠ MULTI-LOCATAIRE — À LIRE AVANT DE VENDRE À PLUSIEURS COMMERCIAUX
+-- ⚠ MULTI-LOCATAIRE — tables SERVICE ROLE (contournent la RLS)
 -- Les 3 tables ci-dessous (inbound_events, tracking_messages, crm_records)
--- sont écrites/lues par le SERVICE ROLE (qui CONTOURNE la RLS) et n'ont PAS
--- de colonne user_id. Elles forment donc un POOL PARTAGÉ entre tous les
--- locataires. Ce n'est pas une faille RLS (aucun client ne peut les lire),
--- mais tant que ces tables n'ont pas de user_id ET que les routes serveur ne
--- filtrent pas dessus, le tracking/CRM d'un commercial serait visible par un
--- autre côté serveur. En mono-locataire (usage solo actuel) : sans effet.
--- Avant la revente : ajouter user_id ici + scoper /api/send, /api/track/*,
--- /api/crm/patch, /api/webhooks/inbound par locataire. (Voir docs/PREUVE-RLS.md.)
+-- sont écrites/lues par le SERVICE ROLE. Elles portent désormais un `user_id`
+-- (nullable) : les routes serveur (/api/send, /api/track/*, /api/crm/patch,
+-- /api/webhooks/inbound) l'estampillent depuis le JWT du commercial (lib/
+-- tenant.ts) et FILTRENT leurs lectures dessus. Isolation applicative, pas RLS
+-- (le service role l'ignore de toute façon). En mode solo (sans compte),
+-- user_id reste null → pool unique, comportement d'origine. Détails et limites
+-- (attribution des webhooks entrants) dans docs/PREUVE-RLS.md.
 
 -- Inbound webhook events -------------------------------------------------
 -- Written by the /api/webhooks/inbound route using the SERVICE ROLE key
@@ -124,6 +123,7 @@ create policy "audit insert own" on public.audit_log for insert with check (auth
 -- clients cannot touch it; only the service role bypasses RLS.
 create table if not exists public.inbound_events (
   id text primary key,
+  user_id uuid references auth.users (id) on delete cascade,
   received_at timestamptz not null default now(),
   type text not null,
   email text not null,
@@ -132,7 +132,10 @@ create table if not exists public.inbound_events (
   message text not null default '',
   processed boolean not null default false
 );
+-- Ajoute la colonne sur une base déjà créée (idempotent).
+alter table public.inbound_events add column if not exists user_id uuid references auth.users (id) on delete cascade;
 create index if not exists inbound_unprocessed_idx on public.inbound_events (processed, received_at desc);
+create index if not exists inbound_user_idx on public.inbound_events (user_id, processed, received_at desc);
 alter table public.inbound_events enable row level security;
 
 -- Tracking email/DM (ouvertures & clics) --------------------------------
@@ -141,6 +144,7 @@ alter table public.inbound_events enable row level security;
 -- tracés [{ idx, url, clicks }].
 create table if not exists public.tracking_messages (
   id text primary key,
+  user_id uuid references auth.users (id) on delete cascade,
   channel text not null default 'email',
   prospect_id text,
   campaign_id text,
@@ -153,12 +157,15 @@ create table if not exists public.tracking_messages (
   last_click_at timestamptz,
   links jsonb not null default '[]'::jsonb
 );
+alter table public.tracking_messages add column if not exists user_id uuid references auth.users (id) on delete cascade;
 create index if not exists tracking_prospect_idx on public.tracking_messages (prospect_id, created_at desc);
 create index if not exists tracking_campaign_idx on public.tracking_messages (campaign_id, created_at desc);
--- rate-limit durable (comptage par canal sur la dernière heure)
+-- rate-limit durable (comptage par canal sur la dernière heure), scopé locataire
 create index if not exists tracking_channel_created_idx on public.tracking_messages (channel, created_at desc);
+create index if not exists tracking_user_channel_idx on public.tracking_messages (user_id, channel, created_at desc);
 -- dédup « déjà contacté » (email minuscule + fenêtre de refroidissement)
 create index if not exists tracking_email_created_idx on public.tracking_messages (email, created_at desc);
+create index if not exists tracking_user_email_idx on public.tracking_messages (user_id, email, created_at desc);
 alter table public.tracking_messages enable row level security;
 
 -- CRM centralisé (infos critiques app → Supabase → Google Sheets) ------------
@@ -168,12 +175,15 @@ alter table public.tracking_messages enable row level security;
 -- à true. `data` = ligne CRM (clés alignées sur le schéma Sheets).
 create table if not exists public.crm_records (
   id text primary key,
+  user_id uuid references auth.users (id) on delete cascade,
   company text,
   data jsonb not null default '{}'::jsonb,
   synced_to_sheet boolean not null default false,
   updated_at timestamptz not null default now()
 );
+alter table public.crm_records add column if not exists user_id uuid references auth.users (id) on delete cascade;
 create index if not exists crm_records_unsynced_idx on public.crm_records (synced_to_sheet, updated_at desc);
+create index if not exists crm_records_user_unsynced_idx on public.crm_records (user_id, synced_to_sheet, updated_at desc);
 alter table public.crm_records enable row level security;
 
 -- Realtime -------------------------------------------------------------------

@@ -84,29 +84,50 @@ relance.
 
 ---
 
-## ⚠ Le trou connu — à combler AVANT la revente réelle
+## Les tables service-role — désormais cloisonnées par locataire
 
-La RLS protège les tables que le navigateur touche directement
-(`prospects`, `campaigns`, `meetings`, `activities`, `audit_log`, storage).
-**C'est ce que cette preuve couvre, et c'est solide.**
-
-Mais trois tables sont écrites/lues par la **clé service_role**, qui **contourne
-la RLS** par conception, et **n'ont pas de colonne `user_id`** :
+Trois tables sont écrites/lues par la **clé service_role**, qui **contourne la
+RLS** par conception :
 
 - `tracking_messages` — ouvertures / clics des emails
 - `inbound_events` — réponses entrantes
 - `crm_records` — pont vers Google Sheets
 
-Aujourd'hui (usage **solo**), c'est sans effet : un seul locataire. Mais dès que
-tu vends à plusieurs commerciaux, ces pools sont **partagés** : côté serveur,
-le tracking de l'un pourrait être lu par un autre. Ce n'est pas une faille RLS
-(aucun client ne peut les lire), c'est une **isolation applicative** à ajouter :
+Elles portent maintenant une colonne **`user_id`**, et les routes serveur
+l'estampillent depuis le **JWT signé** du commercial (`lib/tenant.ts`) puis
+**filtrent** leurs lectures dessus. Concrètement (prouvé par les tests du
+chemin mémoire, `tests/tracking-tenant.test.ts`) :
 
-1. Ajouter `user_id uuid` (ou `org_id`) à ces trois tables + politiques RLS.
-2. Scoper les routes serveur qui les utilisent — `/api/send`, `/api/track/*`,
-   `/api/crm/patch`, `/api/webhooks/inbound` — par locataire (l'identifiant
-   vient de la session, pas d'un paramètre client).
+- `/api/send` — le **rate-limit** et la **dédup « déjà contacté »** comptent
+  par compte : un commercial n'épuise pas le quota d'un autre et ne bloque pas
+  ses relances ; le message tracké est estampillé `user_id`.
+- `/api/track/stats` — chaque commercial ne voit **que ses** ouvertures/clics.
+  (Les endpoints `/api/track/open|click` restent anonymes — ils incrémentent
+  une ligne précise déjà rattachée à son locataire, aucun filtrage requis.)
+- `/api/crm/patch` — chaque enregistrement CRM porte le `user_id`.
+- `/api/webhooks/inbound` — la lecture (GET) et l'acquittement (PATCH) par
+  l'app sont scopés au compte connecté.
 
-Tant que ce chantier n'est pas fait, **reste en mono-locataire** (toi seul) ou
-**un projet Supabase par client**. La preuve ci-dessus reste la condition côté
-données utilisateur ; celle-ci est la condition côté données serveur.
+**En mode solo (sans compte), `user_id` reste `null`** → pool unique,
+comportement d'origine inchangé. L'isolation s'active dès que les comptes sont
+en place.
+
+### La nuance honnête sur les webhooks ENTRANTS
+
+Un webhook entrant (réponse d'un prospect) arrive d'un **fournisseur externe**
+authentifié par un **secret partagé**, sans session. Impossible d'en déduire le
+locataire tout seul. L'attribution est donc **déclarative** : chaque commercial
+configure SON provider pour inclure SON identifiant —
+`POST /api/webhooks/inbound?t=<user_id>` (ou `userId`/`tenant` dans le corps).
+On valide la **forme UUID** ; sans identifiant valide, l'événement tombe dans le
+pool non attribué (comme en solo) — on n'invente jamais un rattachement. Pour
+un vrai multi-client, documente cet `?t=` dans la config provider de chaque
+commercial.
+
+### Ce qui reste (hors périmètre données)
+
+`crm_records` est **relu par le n8n** de l'opérateur (via service_role) pour
+pousser vers Google Sheets. En vrai multi-client mutualisé, ce n8n doit lui
+aussi filtrer `user_id` — mais l'architecture n8n/Sheets est **par opérateur**,
+donc à cadrer selon ton modèle (un n8n par client, ou un n8n central qui
+filtre). La colonne `user_id` est là pour le permettre.

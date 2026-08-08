@@ -65,8 +65,11 @@ middleware + webhook Stripe) sont la condition pour facturer en confiance.
       `supabase/verify-isolation.mjs`) + procédure `docs/PREUVE-RLS.md`. Il
       RESTE à l'exécuter contre ton vrai projet à deux comptes → verdict VERT
       avant tout client payant.
-- [ ] Tables service-role (`tracking_messages`/`inbound_events`/`crm_records`)
-      à scoper par locataire (user_id + routes serveur) — détaillé dans PREUVE-RLS.md.
+- [x] **Tables service-role scopées par locataire** — `user_id` sur
+      `tracking_messages`/`inbound_events`/`crm_records`, estampillé depuis le
+      JWT et filtré dans `/api/send`, `/api/track/stats`, `/api/crm/patch`,
+      `/api/webhooks/inbound` (`lib/tenant.ts`). 4 tests. Attribution des
+      webhooks entrants = déclarative (`?t=<user_id>`), détaillée dans PREUVE-RLS.md.
 - [x] **Enforcement serveur : JWT Supabase (HS256) vérifié dans le middleware**
       — `REQUIRE_AUTH=1` + `SUPABASE_JWT_SECRET`. Fail-closed. 7 tests + smoke
       test live. Reste à activer sur ton déploiement et vérifier de bout en bout.

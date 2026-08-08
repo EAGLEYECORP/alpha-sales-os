@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getTenantId } from "@/lib/tenant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,8 +37,13 @@ export async function POST(req: NextRequest) {
   const sb = serviceClient();
   if (!sb) return NextResponse.json({ ok: true, persisted: "none" });
 
+  // Estampille le locataire (multi-compte) : le CRM d'un commercial ne se
+  // mélange pas avec celui d'un autre. Solo → null (pool unique d'origine).
+  const tenantId = await getTenantId(req);
+
   const { error } = await sb.from("crm_records").upsert({
     id,
+    user_id: tenantId,
     company: body.company ?? id,
     data: body.data,
     updated_at: new Date().toISOString(),
