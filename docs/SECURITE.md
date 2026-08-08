@@ -57,7 +57,12 @@ middleware + webhook Stripe) sont la condition pour facturer en confiance.
 
 **Avant le premier client :**
 - [x] Auth multi-locataire — comptes Supabase, mur de connexion, page `/compte`.
-- [ ] **Isolation RLS testée à deux comptes réels** (le code est là, la preuve non).
+- [x] **Preuve d'isolation RLS outillée** — `npm run verify:rls` (script
+      `supabase/verify-isolation.mjs`) + procédure `docs/PREUVE-RLS.md`. Il
+      RESTE à l'exécuter contre ton vrai projet à deux comptes → verdict VERT
+      avant tout client payant.
+- [ ] Tables service-role (`tracking_messages`/`inbound_events`/`crm_records`)
+      à scoper par locataire (user_id + routes serveur) — détaillé dans PREUVE-RLS.md.
 - [ ] Enforcement serveur : JWT Supabase vérifié dans le middleware.
 - [ ] **Dépendances** : `next`/`sharp` portent des CVE (libvips) corrigées
       seulement par Next 16 (changement cassant). Planifier la montée de

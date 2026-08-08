@@ -11,7 +11,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:rls": "node supabase/verify-isolation.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

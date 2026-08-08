@@ -92,7 +92,11 @@ begin
     execute format('drop policy if exists "own rows delete" on public.%I', t);
     execute format('create policy "own rows select" on public.%I for select using (auth.uid() = user_id)', t);
     execute format('create policy "own rows insert" on public.%I for insert with check (auth.uid() = user_id)', t);
-    execute format('create policy "own rows update" on public.%I for update using (auth.uid() = user_id)', t);
+    -- UPDATE : `using` filtre les lignes modifiables (les tiennes) ET `with
+    -- check` interdit de réaffecter la ligne à un autre user_id. Postgres
+    -- réutiliserait `using` comme check par défaut, mais on l'écrit noir sur
+    -- blanc — l'isolation se prouve, elle ne se déduit pas.
+    execute format('create policy "own rows update" on public.%I for update using (auth.uid() = user_id) with check (auth.uid() = user_id)', t);
     execute format('create policy "own rows delete" on public.%I for delete using (auth.uid() = user_id)', t);
   end loop;
 end $$;
@@ -102,6 +106,17 @@ drop policy if exists "audit insert own" on public.audit_log;
 create policy "audit select own" on public.audit_log for select using (auth.uid() = user_id);
 create policy "audit insert own" on public.audit_log for insert with check (auth.uid() = user_id);
 -- no update/delete policies: audit log is append-only
+
+-- ⚠ MULTI-LOCATAIRE — À LIRE AVANT DE VENDRE À PLUSIEURS COMMERCIAUX
+-- Les 3 tables ci-dessous (inbound_events, tracking_messages, crm_records)
+-- sont écrites/lues par le SERVICE ROLE (qui CONTOURNE la RLS) et n'ont PAS
+-- de colonne user_id. Elles forment donc un POOL PARTAGÉ entre tous les
+-- locataires. Ce n'est pas une faille RLS (aucun client ne peut les lire),
+-- mais tant que ces tables n'ont pas de user_id ET que les routes serveur ne
+-- filtrent pas dessus, le tracking/CRM d'un commercial serait visible par un
+-- autre côté serveur. En mono-locataire (usage solo actuel) : sans effet.
+-- Avant la revente : ajouter user_id ici + scoper /api/send, /api/track/*,
+-- /api/crm/patch, /api/webhooks/inbound par locataire. (Voir docs/PREUVE-RLS.md.)
 
 -- Inbound webhook events -------------------------------------------------
 -- Written by the /api/webhooks/inbound route using the SERVICE ROLE key
