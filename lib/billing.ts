@@ -41,14 +41,18 @@ export function subActive(status: string | null | undefined): boolean {
   return Boolean(status && ACTIVE.has(status));
 }
 
-/** Emails « propriétaires » — accès permanent, indépendant de tout abonnement. */
+/**
+ * Emails « propriétaires » — accès permanent, indépendant de tout abonnement.
+ * Formes acceptées : adresse exacte, ou domaine entier `@eagleyecorp.fr`.
+ */
 export function isOwnerEmail(email: string | null | undefined): boolean {
   if (!email) return false;
-  const list = (process.env.NEXT_PUBLIC_OWNER_EMAILS ?? "")
+  const addr = email.trim().toLowerCase();
+  return (process.env.NEXT_PUBLIC_OWNER_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return list.includes(email.trim().toLowerCase());
+    .filter(Boolean)
+    .some((e) => (e.startsWith("@") ? addr.endsWith(e) : addr === e));
 }
 
 /** Lit l'abonnement du compte connecté (ou null si non lié / non abonné). */

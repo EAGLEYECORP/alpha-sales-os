@@ -57,12 +57,24 @@ export function subscriptionEnforced(): boolean {
 
 /** Email propriétaire (côté serveur) — accès permanent, hors facturation. */
 export function isOwnerServer(email: string | null | undefined): boolean {
+  return matchesOwnerList(email, process.env.OWNER_EMAILS);
+}
+
+/**
+ * Un email est-il « propriétaire » d'après une liste ? Deux formes acceptées :
+ *  · adresse exacte  : `zak@eagleyecorp.fr`
+ *  · domaine entier  : `@eagleyecorp.fr` → toute adresse de ce domaine.
+ * Insensible à la casse. « EAGLEYECORP ET MOI » = mets `@eagleyecorp.fr` + ton
+ * adresse perso.
+ */
+export function matchesOwnerList(email: string | null | undefined, raw: string | null | undefined): boolean {
   if (!email) return false;
-  const list = (process.env.OWNER_EMAILS ?? "")
+  const addr = email.trim().toLowerCase();
+  const entries = (raw ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return list.includes(email.trim().toLowerCase());
+  return entries.some((e) => (e.startsWith("@") ? addr.endsWith(e) : addr === e));
 }
 
 /** Statut d'abonnement d'un compte (service role), donne-t-il accès ? */

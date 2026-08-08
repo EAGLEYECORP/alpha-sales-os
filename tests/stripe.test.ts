@@ -55,7 +55,7 @@ test("stripe — statuts qui donnent accès", () => {
   for (const s of ["canceled", "unpaid", "inactive", "", null, undefined]) assert.equal(statusGrantsAccess(s), false, String(s));
 });
 
-test("stripe — allowlist propriétaire (insensible à la casse)", () => {
+test("stripe — allowlist propriétaire (adresse exacte, insensible à la casse)", () => {
   process.env.OWNER_EMAILS = "Boss@Eagleye.fr, autre@x.fr";
   assert.equal(isOwnerServer("boss@eagleye.fr"), true);
   assert.equal(isOwnerServer("BOSS@EAGLEYE.FR"), true);
@@ -63,6 +63,16 @@ test("stripe — allowlist propriétaire (insensible à la casse)", () => {
   assert.equal(isOwnerServer(null), false);
   delete process.env.OWNER_EMAILS;
   assert.equal(isOwnerServer("boss@eagleye.fr"), false, "sans allowlist, personne n'est proprio");
+});
+
+test("stripe — allowlist propriétaire par DOMAINE entier (@eagleyecorp.fr)", () => {
+  process.env.OWNER_EMAILS = "@eagleyecorp.fr, eagleyecorp.ad@gmail.com";
+  assert.equal(isOwnerServer("zak@eagleyecorp.fr"), true, "tout le domaine passe");
+  assert.equal(isOwnerServer("nimportequi@eagleyecorp.fr"), true);
+  assert.equal(isOwnerServer("eagleyecorp.ad@gmail.com"), true, "adresse perso exacte");
+  assert.equal(isOwnerServer("zak@eagleyecorp.fr.pirate.com"), false, "pas de faux domaine");
+  assert.equal(isOwnerServer("client@gmail.com"), false);
+  delete process.env.OWNER_EMAILS;
 });
 
 test("stripe — résolution plan ↔ prix depuis l'env", () => {

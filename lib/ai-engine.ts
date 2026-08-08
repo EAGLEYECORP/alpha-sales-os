@@ -1,5 +1,6 @@
 import { ollamaChat, ollamaConfigured, ollamaModel } from "./ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "./nvidia";
+import { compressMessages, estimateTokens, type CompressOptions } from "./ai-context";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -37,6 +38,8 @@ export interface AiResult {
   text: string;
   /** Le moteur qui a effectivement répondu — jamais celui qu'on espérait. */
   engine: string;
+  /** Tokens d'entrée estimés (après compression éventuelle) — indicatif, pour le suivi de coût. */
+  promptTokens?: number;
 }
 
 export interface AiOptions {
@@ -44,6 +47,12 @@ export interface AiOptions {
   maxTokens?: number;
   /** Demande une sortie JSON quand le moteur sait le faire. */
   json?: boolean;
+  /**
+   * Compression opt-in du contexte avant l'appel (économie de tokens sur le
+   * palier payant). Absent = aucun changement. Idéal quand on injecte un gros
+   * dossier prospect + doctrine (agent, sparring).
+   */
+  compress?: CompressOptions;
 }
 
 /** Au moins un moteur est-il configuré ? */
@@ -75,10 +84,15 @@ export function aiEngines(): string[] {
 export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promise<AiResult> {
   const errors: string[] = [];
 
+  // Compression opt-in du contexte AVANT tout appel (économie de tokens). Sans
+  // opts.compress, `msgs` est exactement `messages` — aucun changement.
+  const msgs = opts.compress ? compressMessages(messages, opts.compress) : messages;
+  const promptTokens = msgs.reduce((n, m) => n + estimateTokens(m.content), 0);
+
   if (ollamaConfigured()) {
     try {
-      const text = await ollamaChat(messages, opts);
-      return { text, engine: `ollama (${ollamaModel()})` };
+      const text = await ollamaChat(msgs, opts);
+      return { text, engine: `ollama (${ollamaModel()})`, promptTokens };
     } catch (e) {
       errors.push(`ollama: ${e instanceof Error ? e.message : e}`);
     }
@@ -86,8 +100,8 @@ export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promis
 
   if (nvidiaConfigured()) {
     try {
-      const text = await nvidiaChat(messages, { temperature: opts.temperature, maxTokens: opts.maxTokens });
-      return { text, engine: `nvidia (${nvidiaModel()})` };
+      const text = await nvidiaChat(msgs, { temperature: opts.temperature, maxTokens: opts.maxTokens });
+      return { text, engine: `nvidia (${nvidiaModel()})`, promptTokens };
     } catch (e) {
       errors.push(`nvidia: ${e instanceof Error ? e.message : e}`);
     }
@@ -98,8 +112,8 @@ export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promis
       const { generateText } = await import("ai");
       const { anthropic } = await import("@ai-sdk/anthropic");
       // L'API Anthropic sépare le message système du reste.
-      const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
-      const prompt = messages.filter((m) => m.role !== "system").map((m) => m.content).join("\n\n");
+      const system = msgs.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+      const prompt = msgs.filter((m) => m.role !== "system").map((m) => m.content).join("\n\n");
       const { text } = await generateText({
         model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
         system: system || undefined,
@@ -107,7 +121,7 @@ export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promis
         maxTokens: opts.maxTokens ?? 2000,
         temperature: opts.temperature,
       });
-      return { text, engine: "claude" };
+      return { text, engine: "claude", promptTokens };
     } catch (e) {
       errors.push(`claude: ${e instanceof Error ? e.message : e}`);
     }

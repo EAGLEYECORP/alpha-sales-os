@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAlpha, useHydrated } from "@/lib/store";
-import { authAvailable, getCurrentUser, onAuthChange, signIn, signUp, type AuthUser } from "@/lib/auth";
+import { authAvailable, getCurrentUser, onAuthChange, resetPassword, signIn, signUp, type AuthUser } from "@/lib/auth";
 import { Eagle } from "@/components/eagle";
 
 /**
@@ -80,6 +80,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // Sinon onAuthChange met à jour la session et la porte s'ouvre.
   };
 
+  const forgot = async () => {
+    if (!email.trim()) {
+      setError("Entre ton email d'abord, puis « mot de passe oublié ».");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    const res = await resetPassword(email);
+    setBusy(false);
+    if (res.ok) setInfo("Email de réinitialisation envoyé — suis le lien pour choisir un nouveau mot de passe.");
+    else setError(res.error ?? "Échec de l'envoi.");
+  };
+
   return (
     <div className="grid min-h-screen place-items-center bg-ink-950 px-4">
       <div className="card w-full max-w-sm p-6 text-center">
@@ -129,6 +143,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         >
           {mode === "in" ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
         </button>
+
+        {mode === "in" && (
+          <div>
+            <button
+              className="mt-1.5 block w-full text-[11px] text-paper-faint hover:text-bronze-400"
+              onClick={forgot}
+              disabled={busy}
+            >
+              Mot de passe oublié ?
+            </button>
+          </div>
+        )}
 
         <p className="mt-4 border-t border-ink-700 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-faint">
           Eagleye Corp — Lyon · données isolées par compte

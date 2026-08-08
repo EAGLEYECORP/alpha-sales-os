@@ -110,9 +110,10 @@ STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_SOLO=price_xxx      # ID de prix Stripe (abonnement 79 €/mois)
 STRIPE_PRICE_PRO=price_xxx       # ID de prix Stripe (abonnement 149 €/mois)
 # Accès permanent du propriétaire (jamais bloqué par la facture) ; côté serveur.
-OWNER_EMAILS=contact@eagleyecorp.fr
+# Domaine entier (@eagleyecorp.fr = tout EAGLEYE) + ton adresse perso.
+OWNER_EMAILS=@eagleyecorp.fr,eagleyecorp.ad@gmail.com
 # Idem exposé au navigateur (badge « accès propriétaire » sur /compte).
-NEXT_PUBLIC_OWNER_EMAILS=contact@eagleyecorp.fr
+NEXT_PUBLIC_OWNER_EMAILS=@eagleyecorp.fr,eagleyecorp.ad@gmail.com
 # Exiger un abonnement actif pour envoyer (garde-fou opt-in).
 REQUIRE_SUBSCRIPTION=`;
 

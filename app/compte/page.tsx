@@ -6,6 +6,7 @@ import { LogOut, ShieldCheck, UserCog, Users } from "lucide-react";
 import { authAvailable, getCurrentUser, onAuthChange, signOut, type AuthUser } from "@/lib/auth";
 import { useAlpha } from "@/lib/store";
 import { BillingCard } from "@/components/billing/billing-card";
+import { ChangePassword } from "@/components/security/change-password";
 
 /**
  * Compte — gestion de l'identité multi-locataire.
@@ -86,6 +87,7 @@ export default function ComptePage() {
           <button className="btn-ghost mt-4" onClick={() => signOut()}>
             <LogOut size={14} /> Se déconnecter
           </button>
+          <ChangePassword />
           <p className="mt-3 text-[11px] text-paper-faint">
             Tes données synchronisées (Supabase) sont isolées sous ce compte via la RLS. Un autre commercial connecté
             avec son propre compte ne voit jamais tes fiches.

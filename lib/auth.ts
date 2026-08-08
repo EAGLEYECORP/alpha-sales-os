@@ -54,6 +54,23 @@ export async function signOut(): Promise<void> {
   if (sb) await sb.auth.signOut();
 }
 
+/** Envoie un email de réinitialisation de mot de passe. */
+export async function resetPassword(email: string): Promise<AuthResult> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/compte` : undefined;
+  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/** Change le mot de passe du compte connecté (après le lien de récupération, ou volontairement). */
+export async function updatePassword(newPassword: string): Promise<AuthResult> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: "Supabase n'est pas lié." };
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const sb = getSupabase();
   if (!sb) return null;
