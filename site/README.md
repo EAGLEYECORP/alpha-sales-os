@@ -35,3 +35,10 @@ Fichiers :
 - Brancher le domaine `eagleyecorp.fr` (DNS).
 - Le bouton « Réserver une démo » ouvre un email vers `contact@eagleyecorp.fr`.
   Remplace-le par ton lien Cal.com quand il est prêt.
+- **Abonnements (paiement)** : les boutons « Commencer » / « S'abonner » de la
+  section Tarifs pointent vers `https://buy.stripe.com/REMPLACE_SOLO` et
+  `…REMPLACE_PRO`. Crée un **Stripe Payment Link** par offre
+  (dashboard.stripe.com → Paiements → Liens de paiement, en mode abonnement),
+  puis colle chaque URL à la place. Les tarifs (79 € / 149 € / sur devis) sont
+  des **propositions à valider** — édite-les dans `index.html` (section
+  `#tarifs`) selon ton offre.
