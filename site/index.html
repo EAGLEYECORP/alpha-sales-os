@@ -26,8 +26,9 @@
   --accent:#D2402F; --accent-ink:#F4F2ED;
   --good:#4F8A5B;
   --shadow:0 1px 0 rgba(14,14,13,.04), 0 18px 40px -24px rgba(14,14,13,.28);
+  /* Panneau « doctrine » — inverse en clair, surélevé en sombre. */
+  --panel-bg:#0E0E0D; --panel-text:#F4F2ED; --panel-muted:#9C978D; --panel-line:rgba(244,242,237,.12);
 }
-:root:not([data-theme="light"]){ }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --paper:#0D0C0A; --paper-2:#141210; --raised:#181613;
@@ -36,6 +37,7 @@
     --accent:#E5564E; --accent-ink:#0D0C0A;
     --good:#6FB47C;
     --shadow:0 1px 0 rgba(0,0,0,.4), 0 24px 50px -28px rgba(0,0,0,.7);
+    --panel-bg:#17140F; --panel-text:#F1ECE2; --panel-muted:#928D83; --panel-line:rgba(241,236,226,.14);
   }
 }
 :root[data-theme="dark"]{
@@ -45,6 +47,7 @@
   --accent:#E5564E; --accent-ink:#0D0C0A;
   --good:#6FB47C;
   --shadow:0 1px 0 rgba(0,0,0,.4), 0 24px 50px -28px rgba(0,0,0,.7);
+  --panel-bg:#17140F; --panel-text:#F1ECE2; --panel-muted:#928D83; --panel-line:rgba(241,236,226,.14);
 }
 
 html{scroll-behavior:smooth}
@@ -132,19 +135,14 @@ section.band{padding:64px 0;border-top:1px solid var(--line)}
 @media(max-width:520px){.feat{grid-template-columns:1fr}}
 
 /* doctrine */
-.doctrine{background:var(--ink);color:var(--paper);border-radius:20px;padding:52px 44px;position:relative;overflow:hidden}
-:root[data-theme="dark"] .doctrine,:root:not([data-theme="light"]) .doctrine{background:var(--paper-2);border:1px solid var(--line)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .doctrine{background:var(--paper-2);border:1px solid var(--line)}}
-.doctrine h2{color:var(--paper);font-size:clamp(24px,3.4vw,34px)}
-:root:not([data-theme="light"]) .doctrine h2{color:var(--ink)}
-.doctrine .eyebrow{color:var(--graphite-l)}
+.doctrine{background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-line);border-radius:20px;padding:52px 44px;position:relative;overflow:hidden}
+.doctrine h2{color:var(--panel-text);font-size:clamp(24px,3.4vw,34px)}
+.doctrine .eyebrow{color:var(--panel-muted)}
 .dlist{display:grid;grid-template-columns:1fr 1fr;gap:26px 40px;margin-top:34px}
-.d{display:flex;gap:14px;align-items:flex-start;color:var(--paper)}
-:root:not([data-theme="light"]) .d{color:var(--ink)}
+.d{display:flex;gap:14px;align-items:flex-start;color:var(--panel-text)}
 .d .num{font-family:"JetBrains Mono";font-size:11px;color:var(--accent);padding-top:3px;flex:none;width:26px}
 .d b{font-family:"Bricolage Grotesque";font-weight:700;font-size:16px;display:block;letter-spacing:-.01em}
-.d p{font-size:13px;color:var(--graphite-l);margin-top:5px;line-height:1.55}
-:root:not([data-theme="light"]) .d p{color:var(--graphite)}
+.d p{font-size:13px;color:var(--panel-muted);margin-top:5px;line-height:1.55}
 @media(max-width:680px){.doctrine{padding:38px 24px}.dlist{grid-template-columns:1fr;gap:22px}}
 
 /* steps */
@@ -171,9 +169,11 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
 .foot .legal{font-family:"JetBrains Mono";font-size:10.5px;letter-spacing:.05em;color:var(--graphite);line-height:1.9;text-align:right}
 @media(max-width:600px){.foot{flex-direction:column}.foot .legal{text-align:left}}
 
-.reveal{opacity:0;transform:translateY(14px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
-.reveal.in{opacity:1;transform:none}
-@media (prefers-reduced-motion: reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+/* Entrée en CSS pur (aucune dépendance JS) : l'animation finit toujours à
+   l'état visible (fill both), donc rien ne peut rester caché. */
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.reveal{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion: reduce){.reveal{animation:none}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
@@ -377,9 +377,6 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
     root.setAttribute("data-theme",next);
     try{localStorage.setItem(K,next);}catch(e){}
   });
-  // Révélations au scroll
-  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}})},{rootMargin:"0px 0px -8% 0px",threshold:.08});
-  document.querySelectorAll(".reveal").forEach(function(el,i){el.style.transitionDelay=(Math.min(i,6)*40)+"ms";io.observe(el);});
 })();
 </script>
 </body>
