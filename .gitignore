@@ -30,3 +30,8 @@ yarn-error.log*
 
 # Sortie de compilation des tests
 /.test-build/
+
+# Python (agent vocal)
+__pycache__/
+*.pyc
+voice/.venv/

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Clock, Copy, Loader2, PhoneOutgoing, ShieldCheck, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Copy, Loader2, PhoneOutgoing, ShieldCheck, Square, Volume2, X } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { CALL_MODES, COLD_CALLING_REFUSED, type CallMode } from "@/lib/voice-script";
 import { VERTICALS, verticalForProspect } from "@/lib/playbook";
+import { speak, stopSpeak, getTtsProvider, setTtsProvider, type TtsProvider } from "@/lib/browser-tts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,6 +30,34 @@ export default function VoicePage() {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [script, setScript] = useState("");
   const [copied, setCopied] = useState(false);
+  // Écoute du script dans le navigateur (aperçu gratuit — pas la voix de l'appel).
+  const [speaking, setSpeaking] = useState(false);
+  const [ttsProvider, setProvider] = useState<TtsProvider>("puter");
+  const [ttsMsg, setTtsMsg] = useState("");
+  useEffect(() => setProvider(getTtsProvider()), []);
+  useEffect(() => () => stopSpeak(), []);
+
+  const ecouter = async () => {
+    if (speaking) {
+      stopSpeak();
+      setSpeaking(false);
+      return;
+    }
+    setTtsMsg("");
+    setSpeaking(true);
+    try {
+      await speak(script, { lang: "fr-FR", provider: ttsProvider, onended: () => setSpeaking(false) });
+    } catch (e) {
+      setSpeaking(false);
+      setTtsMsg(e instanceof Error ? e.message : "Lecture impossible.");
+    }
+  };
+  const changeProvider = (p: TtsProvider) => {
+    stopSpeak();
+    setSpeaking(false);
+    setProvider(p);
+    setTtsProvider(p);
+  };
 
   const prospect = prospects.find((p) => p.id === prospectId) ?? null;
   const vertical = prospect ? verticalForProspect(prospect) : null;
@@ -220,6 +249,23 @@ export default function VoicePage() {
                   {audit.ok ? "conforme art. 50" : "non conforme"}
                 </span>
               )}
+              <select
+                className="input px-1.5 py-1 text-[11px]"
+                value={ttsProvider}
+                onChange={(e) => changeProvider(e.target.value as TtsProvider)}
+                title="Voix d'écoute (aperçu navigateur, gratuit)"
+                aria-label="Fournisseur de voix"
+              >
+                <option value="puter">Voix : Puter (gratuit)</option>
+                <option value="navigateur">Voix : navigateur</option>
+              </select>
+              <button
+                className={cn("px-2.5 py-1.5 text-[12px]", speaking ? "btn-bronze" : "btn-ghost")}
+                onClick={() => void ecouter()}
+                title="Écouter le script dans le navigateur (aperçu — pas la voix de l'appel réel)"
+              >
+                {speaking ? <><Square size={12} /> Arrêter</> : <><Volume2 size={12} /> Écouter</>}
+              </button>
               <button
                 className="btn-ghost px-2.5 py-1.5 text-[12px]"
                 onClick={() => {
@@ -232,9 +278,15 @@ export default function VoicePage() {
               </button>
             </div>
           </div>
+          {ttsMsg && <p className="mt-2 text-[11px] text-signal-amber">{ttsMsg}</p>}
           <pre className="mt-2 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg border border-ink-700 bg-ink-850 p-3 font-sans text-[12.5px] leading-relaxed text-paper">
             {script}
           </pre>
+          <p className="mt-2 text-[10.5px] text-paper-faint">
+            « Écouter » lit le script dans ton navigateur (aperçu gratuit et illimité via Puter, ou la voix du
+            navigateur). Ce n&apos;est pas la voix de l&apos;appel réel — celle-là est synthétisée côté serveur
+            (Fish Audio) par <code className="font-mono text-bronze-400">voice/agent.py</code>.
+          </p>
         </section>
       )}
 

@@ -36,15 +36,20 @@ const nextConfig: NextConfig = {
           key: "Content-Security-Policy",
           value: [
             "default-src 'self'",
-            // Next.js hydration + Tailwind runtime styles need inline; fonts via Google
-            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+            // Next.js hydration + Tailwind runtime styles need inline; fonts via Google.
+            // js.puter.com : synthèse vocale gratuite (bouton « Écouter » sur /voice).
+            `script-src 'self' 'unsafe-inline' https://js.puter.com https://*.puter.com${isDev ? " 'unsafe-eval'" : ""}`,
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob:",
             // canvas-confetti spawns a blob: worker
             "worker-src 'self' blob:",
+            // Puter lit l'audio de synthèse (blob / *.puter.com).
+            "media-src 'self' blob: https://*.puter.com",
+            // Puter ouvre une iframe d'authentification sur puter.com.
+            "frame-src https://*.puter.com",
             // Thin-client : le navigateur appelle le webhook n8n de l'utilisateur
-            // (domaine arbitraire) + Supabase. HTTPS partout, plus localhost en dev.
+            // (domaine arbitraire) + Supabase + Puter. HTTPS partout, plus localhost en dev.
             "connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:*",
             "frame-ancestors 'none'",
             "base-uri 'self'",
