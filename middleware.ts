@@ -50,6 +50,9 @@ const INTERNAL = [
   "/api/debrief",
   // Facturation : création de session Checkout / portail par le compte connecté.
   "/api/billing",
+  // Studio contenu (posts sociaux) + rendu vidéo : même origine.
+  "/api/social",
+  "/api/video",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers

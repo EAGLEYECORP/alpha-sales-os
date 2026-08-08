@@ -80,6 +80,11 @@ export async function GET() {
         // Abonnement exigé pour envoyer (garde-fou opt-in).
         enforced: /^(1|true|yes)$/i.test(String(env.REQUIRE_SUBSCRIPTION ?? "")),
       },
+      video: {
+        // Rendu vidéo pour le contenu social (Studio social).
+        json2video: has("JSON2VIDEO_API_KEY"),
+        endpoint: has("VIDEO_GEN_ENDPOINT"),
+      },
       access: {
         // porte d'accès serveur active (mot de passe requis pour toute l'UI)
         gated: has("SITE_PASSWORD"),
