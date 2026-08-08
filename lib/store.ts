@@ -43,6 +43,8 @@ interface AlphaState {
   competitors: Competitor[];
   activities: Activity[];
   auditLog: AuditLogEntry[];
+  /** Ids de paiements dont TA part (payout) a été versée. */
+  settledPayouts: string[];
   settings: AppSettings;
   /** File de brouillons de campagne en attente de relecture avant envoi. */
   drafts: CampaignDraft[];
@@ -96,6 +98,8 @@ interface AlphaState {
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
+  /** Bascule « ta part versée » sur un paiement (payout). */
+  togglePayoutSettled: (paymentId: string) => void;
   importData: (json: string) => { ok: boolean; error?: string };
   /** Merge imported prospects: match by email or company (case-insensitive). */
   importProspects: (list: Prospect[]) => { added: number; updated: number };
@@ -161,6 +165,7 @@ export const useAlpha = create<AlphaState>()(
       competitors: seedCompetitors,
       activities: seedActivities,
       auditLog: [],
+      settledPayouts: [],
       settings: defaultSettings,
       drafts: [],
       customScripts: [],
@@ -403,6 +408,13 @@ export const useAlpha = create<AlphaState>()(
 
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
+      togglePayoutSettled: (paymentId) =>
+        set((s) => ({
+          settledPayouts: s.settledPayouts.includes(paymentId)
+            ? s.settledPayouts.filter((x) => x !== paymentId)
+            : [...s.settledPayouts, paymentId],
+        })),
+
       importData: (json) => {
         try {
           const data = JSON.parse(json);
@@ -554,6 +566,7 @@ export const useAlpha = create<AlphaState>()(
           drafts: s.drafts ?? [],
           customScripts: s.customScripts ?? [],
           partners: s.partners ?? [],
+          settledPayouts: s.settledPayouts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
       },
