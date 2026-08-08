@@ -36,6 +36,7 @@ import {
   Sprout,
   Swords,
   Trophy,
+  UserCog,
 } from "lucide-react";
 import { Eagle } from "@/components/eagle";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ import { useAlpha } from "@/lib/store";
 import { eur, relativeFr } from "@/lib/utils";
 import { weightedValue } from "@/lib/hormozi";
 import { LockGate } from "@/components/security/lock-gate";
+import { AuthGate } from "@/components/security/auth-gate";
 import { Onboarding } from "@/components/onboarding";
 import { OperatorTour } from "@/components/tour/operator-tour";
 import { PageGuide } from "@/components/page-guide";
@@ -79,6 +81,7 @@ const NAV = [
   { href: "/intel", label: "Concurrents", icon: Swords },
   { href: "/activity", label: "Activité", icon: Activity },
   { href: "/recette", label: "Recette", icon: ClipboardCheck },
+  { href: "/compte", label: "Compte", icon: UserCog },
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
@@ -157,6 +160,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <AuthGate>
     <LockGate>
     <Onboarding />
     <OperatorTour />
@@ -315,5 +319,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
     </div>
     </LockGate>
+    </AuthGate>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Cable, Cloud, CloudOff, Compass, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, PlugZap, Plus, RefreshCw, RotateCcw, ShieldCheck, Table2, Trash2, Upload, Wand2, Webhook } from "lucide-react";
+import { Cable, Cloud, CloudOff, Compass, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, PlugZap, Plus, RefreshCw, RotateCcw, ShieldCheck, Table2, Trash2, Upload, UserCog, Users, Wand2, Webhook } from "lucide-react";
+import Link from "next/link";
 import { useAlpha } from "@/lib/store";
 import {
   pushSnapshot,
@@ -10,6 +11,7 @@ import {
   supabaseConfigSource,
   setSupabaseConfig,
   clearSupabaseConfig,
+  supabaseEnabled,
 } from "@/lib/supabase";
 import { cn, sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
@@ -583,6 +585,48 @@ export default function SettingsPage() {
                 <li>✓ Export chiffrable : les données restent locales tant que la sync n&apos;est pas activée</li>
               </ul>
             </div>
+          </div>
+
+          {/* Compte multi-locataire (SaaS) — exiger une connexion Supabase */}
+          <div className="mt-4 rounded-xl border border-ink-700 bg-ink-900/40 p-3.5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-sm font-medium text-paper">
+                  <Users size={14} className="text-bronze-400" /> Compte multi-locataire (SaaS)
+                </p>
+                <p className="mt-1 text-[11px] text-paper-faint">
+                  Exige un compte (email + mot de passe) pour ouvrir l&apos;app. Chaque commercial ne voit que ses
+                  données — isolation par compte (RLS Supabase). Nécessaire pour revendre l&apos;OS à d&apos;autres
+                  commerciaux.
+                </p>
+              </div>
+              <Link href="/compte" className="btn-ghost shrink-0">
+                <UserCog size={14} /> Gérer le compte
+              </Link>
+            </div>
+
+            {supabaseEnabled() ? (
+              <label className="mt-3 flex items-center gap-2 text-sm text-paper-dim">
+                <input
+                  type="checkbox"
+                  className="accent-bronze-500"
+                  checked={Boolean(settings.security.requireAuth)}
+                  onChange={(e) =>
+                    patchSettings({ security: { ...settings.security, requireAuth: e.target.checked } })
+                  }
+                />
+                Exiger un compte pour ouvrir l&apos;app
+              </label>
+            ) : (
+              <p className="mt-3 text-[11px] text-signal-amber">
+                Lie d&apos;abord Supabase (section ci-dessous) pour activer les comptes. Sans lien, ce réglage reste
+                sans effet.
+              </p>
+            )}
+            <p className="mt-2 text-[10.5px] italic text-paper-faint">
+              ⚠ À prouver à deux comptes avant de facturer un client — l&apos;isolation RLS se vérifie, elle ne se
+              suppose pas (docs/SECURITE.md).
+            </p>
           </div>
         </section>
 

@@ -342,6 +342,8 @@ export interface AppSettings {
     pinHash: string | null;
     /** Require PIN on every app open */
     autoLock: boolean;
+    /** SaaS multi-locataire : exiger un compte Supabase (email + mot de passe) pour ouvrir l'app */
+    requireAuth?: boolean;
   };
 }
 

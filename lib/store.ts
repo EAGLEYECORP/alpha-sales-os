@@ -124,7 +124,7 @@ const defaultSettings: AppSettings = {
   apiKeys: [],
   supabaseSync: false,
   onboarded: false,
-  security: { pinHash: null, autoLock: false },
+  security: { pinHash: null, autoLock: false, requireAuth: false },
 };
 
 /* Normalizers: fill fields added in later schema versions so old

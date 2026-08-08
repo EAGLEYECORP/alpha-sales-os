@@ -32,25 +32,33 @@ tous le même mot de passe et — pire — potentiellement la même base.
 
 C'est **le chantier n°1**, non négociable avant le premier client payant :
 
-1. **Comptes individuels** — Supabase Auth (email + mot de passe, ou magic
-   link). Chaque commercial a son compte.
-2. **Isolation par locataire** — chaque ligne porte `user_id` (ou `org_id`) ;
-   la RLS (déjà écrite dans le schéma) garantit qu'un client ne voit jamais les
-   données d'un autre. À activer et à **tester** avec deux comptes.
-3. **Session** — remplacer la porte `SITE_PASSWORD` par la session Supabase ;
-   le middleware vérifie le JWT au lieu du cookie partagé.
+1. **Comptes individuels** — Supabase Auth (email + mot de passe). Chaque
+   commercial a son compte. ✅ **Fait** (`lib/auth.ts`, `components/security/auth-gate.tsx`,
+   page `/compte`, réglage « Exiger un compte » dans Réglages → Sécurité).
+2. **Isolation par locataire** — chaque ligne porte `user_id` ; la RLS (déjà
+   écrite dans `supabase/schema.sql`) garantit qu'un client ne voit jamais les
+   données d'un autre. ⚠ **À activer et à tester avec DEUX comptes réels avant
+   de facturer** — l'isolation se prouve, elle ne se suppose pas.
+3. **Session** — la porte `SITE_PASSWORD` reste, doublée du mur de connexion
+   par compte (`AuthGate`). Prochaine étape : enforcement **100 % côté serveur**
+   — le middleware vérifie le JWT Supabase (cookie de session) au lieu de se
+   fier au gate client. Tant que ce n'est pas fait, le mur de compte est une
+   barrière UI, pas une frontière serveur.
 4. **Facturation liée au compte** — le Stripe Payment Link devient un
    abonnement rattaché à l'utilisateur (webhook Stripe → statut du compte).
+   ⏳ **Reste à faire.**
 
-C'est un vrai build (auth + migration du local-first vers le multi-tenant), pas
-un commit. Je peux le démarrer dès que tu dis go.
+Le socle identité est posé ; les deux briques serveur qui restent (JWT dans le
+middleware + webhook Stripe) sont la condition pour facturer en confiance.
 
 ---
 
 ## Le reste de la feuille de route (par priorité)
 
 **Avant le premier client :**
-- [ ] Auth multi-locataire + isolation RLS testée (ci-dessus).
+- [x] Auth multi-locataire — comptes Supabase, mur de connexion, page `/compte`.
+- [ ] **Isolation RLS testée à deux comptes réels** (le code est là, la preuve non).
+- [ ] Enforcement serveur : JWT Supabase vérifié dans le middleware.
 - [ ] **Dépendances** : `next`/`sharp` portent des CVE (libvips) corrigées
       seulement par Next 16 (changement cassant). Planifier la montée de
       version et re-tester. `npm audit` : 9 restantes, 3 hautes.
@@ -76,11 +84,21 @@ un commit. Je peux le démarrer dès que tu dis go.
 
 ## Ce qui vient d'être fait dans ce passage
 
+- **Auth multi-locataire (couche identité)** : `lib/auth.ts` (inscription /
+  connexion / déconnexion / session sur Supabase Auth), `AuthGate` (mur de
+  connexion par compte, rendu par défaut ouvert comme le LockGate pour ne jamais
+  blanchir l'app), page `/compte` (compte connecté + déconnexion), réglage
+  « Exiger un compte » (Réglages → Sécurité, actif seulement si Supabase lié).
 - Endpoints sensibles ajoutés à la protection **même-origine** (anti-CSRF) :
   `digest`, `gmail/draft`, `transcribe`, `voice/call`, `debrief`.
 - `npm audit fix` (correctifs non cassants appliqués).
 - `/.well-known/security.txt` pour la divulgation responsable.
 - Ce document, comme feuille de route honnête.
+
+**Non prouvé (à ne pas oublier) :** l'auth n'a pas été testée contre un vrai
+projet Supabase dans l'environnement de build. Avant de facturer : créer deux
+comptes, vérifier que chacun ne voit que ses données (RLS), puis passer
+l'enforcement côté serveur (JWT dans le middleware).
 
 ---
 
