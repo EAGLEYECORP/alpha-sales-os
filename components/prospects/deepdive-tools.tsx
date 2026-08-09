@@ -5,6 +5,7 @@ import { CheckCircle2, Circle, Download, ExternalLink, Gift, Globe, GraduationCa
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
 import { renderAuditDoc } from "@/lib/audit-doc";
+import { mergeAudit, prospectSiteUrl } from "@/lib/audit-apply";
 import { verticalForProspect } from "@/lib/playbook";
 import { cn, uid } from "@/lib/utils";
 
@@ -80,10 +81,7 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
   const [appliedOnce, setAppliedOnce] = useState(false);
   const [giftOpened, setGiftOpened] = useState(false);
   // Audit automatique depuis le site : URL pré-remplie si websiteState en contient une.
-  const [siteUrl, setSiteUrl] = useState(() => {
-    const m = (p.deepAudit?.websiteState ?? "").match(/https?:\/\/[^\s)]+/i);
-    return m ? m[0] : "";
-  });
+  const [siteUrl, setSiteUrl] = useState(() => prospectSiteUrl(p) ?? "");
   const [genBusy, setGenBusy] = useState(false);
   const [auditSource, setAuditSource] = useState<string | null>(null);
 
@@ -162,44 +160,10 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
 
   const applyExtract = () => {
     if (!extracted) return;
-    const x = extracted;
-    const d = p.deepAudit;
-    const deepAudit: Prospect["deepAudit"] = {
-      ...d,
-      googleRating: x.rating ?? d.googleRating,
-      googleReviews: x.reviews ?? d.googleReviews,
-      websiteState: x.websiteState ?? d.websiteState,
-      socialState: x.socialState ?? d.socialState,
-      localCompetition: x.localCompetition ?? d.localCompetition,
-      currentProcess: x.currentProcess ?? d.currentProcess,
-      missedCallsPerWeek: x.missedCallsPerWeek ?? d.missedCallsPerWeek,
-      avgTicket: x.avgTicket ?? d.avgTicket,
-      updatedAt: new Date().toISOString(),
-    };
-    // Taxe d'Ignorance recalculée si on a la douleur chiffrée (conv 30 % par défaut).
-    const tax =
-      deepAudit.missedCallsPerWeek && deepAudit.avgTicket
-        ? Math.round(deepAudit.missedCallsPerWeek * 4.33 * ((deepAudit.conversionRate ?? 30) / 100) * deepAudit.avgTicket)
-        : p.ignoranceTax;
-    const mergedProblems = [...p.problems];
-    for (const pb of x.problems ?? []) if (!mergedProblems.some((e) => e.toLowerCase() === pb.toLowerCase())) mergedProblems.push(pb);
-    const noteLines = [
-      auditSource ? `Audit auto depuis ${auditSource}` : "",
-      x.marketPosition ? `Position marché : ${x.marketPosition}` : "",
-      x.audience ? `Son offre parle à : ${x.audience}` : "",
-      x.summary ? `Résumé recherche : ${x.summary}` : "",
-    ].filter(Boolean);
-    // Source conservée en pièce jointe uniquement pour une recherche COLLÉE
-    // (l'audit auto depuis le site n'a pas de texte brut à joindre — la
-    // provenance est notée ci-dessus).
-    const label = auditSource ? "audit auto (site)" : "recherche importée";
+    // Fusion conservatrice centralisée (partagée avec la génération en lot).
+    // La pièce jointe reste spécifique à une recherche COLLÉE.
     patch(p.id, {
-      deepAudit,
-      ignoranceTax: tax,
-      problems: mergedProblems,
-      solution: p.solution.trim() ? p.solution : x.solution ?? p.solution,
-      personalizedOffer: p.personalizedOffer.trim() ? p.personalizedOffer : x.personalizedOffer ?? p.personalizedOffer,
-      notes: noteLines.length ? `${p.notes ? p.notes + "\n" : ""}[${new Date().toISOString().slice(0, 10)} — ${label}]\n${noteLines.join("\n")}` : p.notes,
+      ...mergeAudit(p, extracted, auditSource),
       attachments: research.trim().length >= 40 ? [...p.attachments, researchAttachment(research)] : p.attachments,
     });
     setExtracted(null);

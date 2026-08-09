@@ -25,6 +25,8 @@ interface Health {
     transcription?: { configured: boolean; provider: string };
     alerts?: { sms: boolean; email: boolean };
     billing?: { configured: boolean; webhook: boolean; prices: boolean; enforced: boolean };
+    video?: { json2video: boolean; endpoint: boolean };
+    audit?: { scrapeEndpoint: boolean };
     access: { gated: boolean; publicHost: boolean };
     branding: { closerName: boolean };
   };
@@ -334,6 +336,31 @@ export function SystemStatus() {
               label: c.billing?.enforced ? "Abonnement exigé pour envoyer" : "Garde-fou abonnement (REQUIRE_SUBSCRIPTION)",
               level: c.billing?.enforced ? "ok" : "off",
               hint: "Quand actif, l'envoi exige un abonnement valide (le propriétaire OWNER_EMAILS passe toujours).",
+              optional: true,
+            },
+          ],
+        },
+        {
+          title: "Contenu & audit auto",
+          items: [
+            {
+              label: c.audit?.scrapeEndpoint ? "Audit auto : scraper branché (sites JS/anti-bot OK)" : "Audit auto : fetch direct (sites simples)",
+              level: "ok", // toujours disponible : le fetch direct ne demande rien
+              hint: c.audit?.scrapeEndpoint
+                ? undefined
+                : "Le bouton « Générer l'audit depuis le site » marche sans rien pour les sites simples. Pour les sites JS/anti-bot, branche SCRAPE_ENDPOINT (Firecrawl / Crawl4AI / Camoufox auto-hébergé).",
+              optional: true,
+            },
+            {
+              label: c.video?.json2video ? "Rendu vidéo (json2video)" : "Vidéo Studio social (JSON2VIDEO_API_KEY)",
+              level: c.video?.json2video ? "ok" : "off",
+              hint: "Studio social — rendu par gabarit, sans GPU.",
+              optional: true,
+            },
+            {
+              label: c.video?.endpoint ? "Text-to-video (endpoint GPU)" : "Text-to-video (VIDEO_GEN_ENDPOINT)",
+              level: c.video?.endpoint ? "ok" : "off",
+              hint: "HunyuanVideo hébergé / Replicate — optionnel, hors app.",
               optional: true,
             },
           ],

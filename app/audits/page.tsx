@@ -9,6 +9,7 @@ import { withMetierBenchmark, auditReadiness, auditFilename } from "@/lib/audit-
 import { stageById } from "@/lib/hormozi";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { BulkSiteAudit } from "@/components/audits/bulk-site-audit";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -92,6 +93,9 @@ export default function AuditsPage() {
           </span>
         </div>
       </header>
+
+      {/* Audit auto en lot — remplit les données de fiche depuis les sites */}
+      <BulkSiteAudit />
 
       {/* Ce que c'est */}
       <section className="card border-ink-700 p-4">
