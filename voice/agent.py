@@ -77,6 +77,36 @@ class DisclosureError(RuntimeError):
     """Le script ne porte pas les mentions imposées par l'article 50."""
 
 
+# ── Accueil ENTRANT par défaut ────────────────────────────────────────
+#
+# Un appel entrant n'apporte pas de script construit par ALPHA (il n'y a pas
+# de dispatch sortant). Sans script, l'agent refuserait de démarrer et
+# l'appelant entendrait le silence. Ce script d'accueil est donc conforme
+# d'origine (art. 50 : se déclare artificiel + nomme son mandant) et sert de
+# repli quand aucun script n'est fourni sur un appel entrant.
+DEFAULT_INBOUND_SCRIPT = """## Première phrase
+Bonjour, je suis ALPHA, un assistant vocal — une intelligence artificielle, pas une personne. Je réponds pour le compte de EAGLEYE CORP.
+
+## Ton rôle
+Tu es l'accueil téléphonique d'EAGLEYE CORP (Lyon), agence d'automatisation IA
+pour la vente. Reste bref, poli, chaleureux, en français. Tu ne conclus pas de
+vente : tu qualifies et tu prends le relais humain.
+
+## Ce que tu fais
+1. Demande le nom de la personne et l'entreprise.
+2. Demande la raison de l'appel en une phrase.
+3. Propose un rappel par un conseiller ou la prise d'un rendez-vous.
+4. Recueille un moyen de rappel (téléphone ou e-mail) et l'horaire qui l'arrange.
+5. Résume ce que tu as noté, remercie, et raccroche proprement.
+
+## Règles
+- Si on te demande si tu es un robot : confirme-le simplement, sans détour.
+- Si la demande dépasse la prise de message (litige, urgence, technique) :
+  dis que tu transmets à un humain qui rappellera.
+- Ne promets aucun prix, délai ou engagement ferme.
+"""
+
+
 def audit_script(script: str) -> None:
     """Refuse de démarrer si une mention manque. Bruyant, volontairement."""
     missing = [label for label, pattern in DISCLOSURE_REQUIREMENTS if not pattern.search(script)]
@@ -182,6 +212,13 @@ async def entrypoint(ctx: JobContext) -> None:
     script: str = meta.get("script", "")
     phone: str | None = meta.get("phone")
     company: str = meta.get("company", "inconnu")
+
+    # Appel ENTRANT sans script → on sert l'accueil par défaut (déjà conforme).
+    # Appel SORTANT sans script → on laisse échouer : un appel de démo/rappel
+    # doit porter le script produit par ALPHA, jamais un accueil générique.
+    if not script and not phone:
+        script = DEFAULT_INBOUND_SCRIPT
+        logger.info("Appel entrant — accueil par défaut (aucun script fourni).")
 
     try:
         agent = AlphaVoice(script)
