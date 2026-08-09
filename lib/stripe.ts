@@ -94,10 +94,24 @@ async function accountSubscriptionActive(userId: string): Promise<boolean> {
  * - sinon : abonnement actif requis.
  */
 export async function accountHasAccess(userId: string | null, email: string | null): Promise<boolean> {
-  if (!subscriptionEnforced()) return true;
-  if (isOwnerServer(email)) return true;
-  if (!userId) return false;
-  return accountSubscriptionActive(userId);
+  const t = await accountTier(userId, email);
+  return t !== "anon"; // free autorisé sous quota, géré par l'appelant
+}
+
+/**
+ * Palier effectif du compte, pour appliquer le freemium :
+ *  - "unmetered" : facturation non exigée (solo/local) → aucun quota ;
+ *  - "owner"     : propriétaire (OWNER_EMAILS) → illimité ;
+ *  - "active"    : abonnement actif → illimité (usage loyal) ;
+ *  - "free"      : compte sans abonnement → bornes du gratuit (quota mensuel) ;
+ *  - "anon"      : facturation exigée mais aucun compte identifié → bloqué.
+ */
+export type AccountTier = "unmetered" | "owner" | "active" | "free" | "anon";
+export async function accountTier(userId: string | null, email: string | null): Promise<AccountTier> {
+  if (!subscriptionEnforced()) return "unmetered";
+  if (isOwnerServer(email)) return "owner";
+  if (!userId) return "anon";
+  return (await accountSubscriptionActive(userId)) ? "active" : "free";
 }
 
 /** Plan correspondant à un ID de prix Stripe (résolution inverse, pour le webhook). */

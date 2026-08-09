@@ -3,7 +3,8 @@ import { renderEmail, plainText } from "@/lib/email-html";
 import { createTrackedEmail, countRecentSends, contactedEmails } from "@/lib/tracking";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
 import { getTenant } from "@/lib/tenant";
-import { accountHasAccess } from "@/lib/stripe";
+import { accountTier } from "@/lib/stripe";
+import { FREE_TIER, startOfMonthMs } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -98,14 +99,30 @@ export async function POST(request: NextRequest) {
   const tenant = await getTenant(request);
   const tenantId = tenant?.id ?? null;
 
-  // Garde-fou facturation (opt-in REQUIRE_SUBSCRIPTION) : envoyer est l'action
-  // qui a de la valeur → on exige un abonnement actif (le propriétaire passe
-  // toujours). En solo / facturation non exigée : sans effet.
-  if (!(await accountHasAccess(tenantId, tenant?.email ?? null))) {
+  // Freemium (opt-in REQUIRE_SUBSCRIPTION). Envoyer est l'action à valeur :
+  //  · unmetered/owner/active → illimité (usage loyal) ;
+  //  · anon (aucun compte)    → bloqué ;
+  //  · free                   → autorisé jusqu'au quota mensuel, puis 402.
+  // Solo / facturation non exigée : « unmetered » → aucun effet.
+  const tier = await accountTier(tenantId, tenant?.email ?? null);
+  if (tier === "anon") {
     return NextResponse.json(
-      { error: "Abonnement requis pour envoyer — voir /compte.", needsSubscription: true },
+      { error: "Compte requis pour envoyer — connecte-toi (/compte).", needsSubscription: true },
       { status: 402 }
     );
+  }
+  if (tier === "free" && body.channel === "email" && tenantId) {
+    const usedThisMonth = await countRecentSends("email", Date.now() - startOfMonthMs(), tenantId);
+    if (usedThisMonth >= FREE_TIER.emailsPerMonth) {
+      return NextResponse.json(
+        {
+          error: `Quota gratuit atteint (${FREE_TIER.emailsPerMonth} e-mails/mois). Passe à Solo ou Pro pour continuer — /compte.`,
+          needsSubscription: true,
+          quota: { used: usedThisMonth, limit: FREE_TIER.emailsPerMonth },
+        },
+        { status: 402 }
+      );
+    }
   }
 
   if (body.channel === "email") {

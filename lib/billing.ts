@@ -28,23 +28,8 @@ export const PLAN_UI: Record<Plan, { name: string; monthly: number; blurb: strin
   },
 };
 
-/**
- * Formule GRATUITE (freemium) — le socle local-first, sans carte. Bornée en
- * VOLUME (pas en valeur). Voir legal/OFFRE-FREEMIUM.md. Les seuils sont
- * indicatifs ; l'enforcement des quotas est un lot produit à part.
- */
-export const FREE_TIER = {
-  name: "Gratuit",
-  maxProspects: 50,
-  emailsPerMonth: 20,
-  features: [
-    "CRM + pipeline complet",
-    "Rédaction par templates (hors-ligne)",
-    "Studio social (templates)",
-    "Local-first — tes données, tes clés",
-  ],
-  excluded: ["IA cloud", "Tracking durable", "Voix / transcription", "Synchro multi-appareils"],
-} as const;
+// Source unique des limites du gratuit (partagée serveur/client).
+export { FREE_TIER } from "./plans";
 
 export interface Subscription {
   userId: string;
