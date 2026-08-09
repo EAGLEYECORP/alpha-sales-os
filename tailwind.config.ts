@@ -35,11 +35,13 @@ const config: Config = {
         // Fixed solid-gold fill + the dark ink that always sits on it.
         gold: "#E8C98A",
         goldink: "#1B1408",
+        // Signaux : tokens qui s'assombrissent en clair (lisibles sur crème),
+        // gardent l'éclat en sombre. Le rouge EST le vermillon de marque.
         signal: {
-          green: "#86C06A",
-          red: "#E5564E",
-          amber: "#E0AC46",
-          blue: "#6AA0D8",
+          green: "rgb(var(--signal-green) / <alpha-value>)",
+          red: "rgb(var(--signal-red) / <alpha-value>)",
+          amber: "rgb(var(--signal-amber) / <alpha-value>)",
+          blue: "rgb(var(--signal-blue) / <alpha-value>)",
         },
       },
       fontFamily: {
