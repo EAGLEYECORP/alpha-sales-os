@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Bot, CircleStop, Send, Sparkles } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { buildIdentity } from "@/lib/identity";
 import { weightedValue, nextBestAction } from "@/lib/hormozi";
 import { computeRoutines } from "@/lib/routines";
 import { buildDailyPlan } from "@/lib/daily-plan";
@@ -137,6 +138,7 @@ export default function AgentPage() {
           messages: nextMessages,
           context: buildContext(),
           businessRules: settings.businessRules,
+          identity: buildIdentity(settings),
         }),
       });
       const contentType = res.headers.get("content-type") ?? "";

@@ -36,7 +36,13 @@ export default function SocialPage() {
       const res = await fetch("/api/social/draft", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ topic, angle }),
+        body: JSON.stringify({
+          topic,
+          angle,
+          agencyName: settings.agencyName,
+          offerLine: settings.offer?.whatYouSell,
+          valueProp: settings.offer?.valueProp,
+        }),
       });
       const json = await res.json();
       if (!res.ok) setErr(json.error ?? "Échec.");

@@ -19,9 +19,11 @@ interface AgentRequest {
   messages: { role: "user" | "assistant"; content: string }[];
   context: string; // compact JSON snapshot built client-side
   businessRules: string;
+  /** Identité + offre du compte (white-label) — l'agent parle au nom de CE compte. */
+  identity?: string;
 }
 
-const SYSTEM_BASE = `Tu es ALPHA, l'agent commercial conversationnel d'EAGLEYE CORP (Lyon).
+const SYSTEM_BASE = `Tu es ALPHA, l'agent commercial conversationnel de l'agence (identité ci-dessous).
 Tu as accès à l'état complet du pipeline (fourni en contexte JSON). Tu aides le closer à :
 - préparer sa journée (priorités, next steps en retard, RDV)
 - analyser un deal (croyances, obstacles/objections, Taxe d'Ignorance)
@@ -46,6 +48,7 @@ export async function POST(request: NextRequest) {
   // écran), ses propres limites, puis l'état réel du pipe.
   const system = [
     SYSTEM_BASE,
+    body.identity ? "\n" + body.identity : "",
     "\n" + playbookPrompt(),
     "\n" + OS_MAP,
     "\n" + AGENT_LIMITS,

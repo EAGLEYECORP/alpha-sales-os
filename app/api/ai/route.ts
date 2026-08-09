@@ -22,6 +22,8 @@ interface AiRequest {
   /** Requis pour toutes les tâches sauf `briefing` (qui porte sur la tournée). */
   prospect?: Prospect;
   businessRules: string;
+  /** Identité + offre du compte (white-label). */
+  identity?: string;
   objection?: string;
   /** inbound message to answer (task = reply) */
   inboundMessage?: string;
@@ -35,7 +37,7 @@ interface AiRequest {
   question?: string;
 }
 
-const SYSTEM = `Tu es le copilote de vente d'EAGLEYE CORP (agence lyonnaise : sites premium + overlays IA pour restaurants, pubs, ambulances, artisans).
+const SYSTEM = `Tu es le copilote de vente de l'agence (son identité et son offre te sont données en tête).
 Doctrine Hormozi non négociable :
 - La décision EST le produit. Émotion d'abord (démo mobile avant le prix), logique ensuite.
 - OBSTACLES (pré-offre) ≠ OBJECTIONS (post-offre / Red Zone). Ne jamais confondre.
@@ -183,10 +185,11 @@ export async function POST(request: NextRequest) {
 
   // Le playbook terrain entre dans le système : c'est lui qui fait la
   // différence entre un conseil générique et la méthode maison.
+  const idBlock = body.identity ? `${body.identity}\n\n` : "";
   const system =
     body.task === "prescripteur"
-      ? `${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
-      : `${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
+      ? `${idBlock}${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
+      : `${idBlock}${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
 
   try {
     const { text, engine } = await runAI(

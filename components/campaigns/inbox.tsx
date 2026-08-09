@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bot, Check, ClipboardPaste, Inbox, RefreshCw, UserPlus } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { buildIdentity } from "@/lib/identity";
 import type { InboundEvent, Prospect } from "@/lib/types";
 import { prospectDefaults } from "@/lib/seed";
 import { dateTimeFr, daysAhead, uid } from "@/lib/utils";
@@ -170,6 +171,7 @@ export function InboundInbox() {
           task: "reply",
           prospect: p ?? { ...prospectDefaults, id: "x", company: ev.name ?? ev.email, name: ev.name ?? "", sector: "autre", city: "", stage: "contact", trust: 25, auditScore: 0, conviction: 8, monthlyValue: 0, setupValue: 0, probability: 15, ignoranceTax: 0, croyances: { produit: 5, soutien: 5, pourLui: 3 }, obstacles: [], objections: [], events: [], demoShownBeforePrice: false, nextStep: null, tags: [], attachments: [], notes: "", problems: [], createdAt: "", updatedAt: "" },
           businessRules: settings.businessRules,
+          identity: buildIdentity(settings),
           inboundMessage: ev.message,
         }),
       });

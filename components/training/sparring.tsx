@@ -60,6 +60,8 @@ export function Sparring({ p, onClose }: { p: Prospect; onClose: () => void }) {
           },
           history: next.map((m) => ({ role: m.role, text: m.text.replace(/\*/g, "") })),
           businessRules: settings.businessRules,
+          agencyName: settings.agencyName,
+          offerLine: settings.offer?.whatYouSell,
         }),
       });
       const data = await res.json();

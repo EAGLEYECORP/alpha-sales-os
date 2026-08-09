@@ -25,6 +25,9 @@ interface SparringRequest {
   businessRules: string;
   /** verticale du playbook terrain (défaut : déduite du secteur) */
   verticalId?: string;
+  /** Nom de l'agence + ce qu'elle vend (white-label). */
+  agencyName?: string;
+  offerLine?: string;
 }
 
 interface SparringReply {
@@ -61,8 +64,10 @@ export async function POST(request: NextRequest) {
     ? `\nVerticale : ${v.label}. Douleur structurelle : ${v.structuralPain}\nObjections RÉELLES de ce métier (sers-t'en en priorité, dans tes mots) : ${v.objections.map((o) => `« ${o.q} »`).join(" ; ")}\nLe coach corrige selon la méthode maison : permission d'abord, ciblage par critère jamais par volume, observation posée en question, deux questions puis silence, une seule capacité à la bascule, CTA en choix fermé, jamais de chiffre € ni de note Google à froid.`
     : "";
 
+  const agency = body.agencyName?.trim() || "l'agence";
+  const offer = body.offerLine?.trim() || "ses services aux commerces";
   const prompt = `Tu joues un patron de commerce lyonnais sceptique et pressé : ${body.prospect.name}, gérant de ${body.prospect.company} (${body.prospect.sector}).${fieldBlock}
-Un commercial d'EAGLEYE CORP (sites web + IA pour commerces) essaie de te convaincre d'accepter un audit gratuit de 20 minutes.
+Un commercial de ${agency} (${offer}) essaie de te convaincre d'accepter un audit gratuit de 20 minutes.
 Reste DANS LE PERSONNAGE : méfiant mais juste. S'il répond bien (douleur, preuve, next step daté, zéro jargon), tu t'adoucis. S'il pitche le produit, parle prix trop tôt ou reste vague, tu durcis.
 Contexte réel du prospect : ${body.prospect.pitch || "commerce local sans vraie présence en ligne"}.
 Ses objections favorites : ${body.prospect.objections.join(" ; ") || "pas le temps, trop cher, j'ai déjà ce qu'il faut"}.

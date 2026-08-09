@@ -27,6 +27,7 @@ import {
   Video,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { buildIdentity } from "@/lib/identity";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
 import {
   BLAME_LAYERS,
@@ -1156,6 +1157,7 @@ const COACH_TASKS = [
 ] as const;
 
 function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
+  const settings = useAlpha((s) => s.settings);
   const [output, setOutput] = useState("");
   const [engine, setEngine] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
@@ -1168,7 +1170,7 @@ function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, prospect: p, businessRules: rules, ...extra }),
+        body: JSON.stringify({ task, prospect: p, businessRules: rules, identity: buildIdentity(settings), ...extra }),
       });
       const data = await res.json();
       setOutput(data.text ?? data.error ?? "Erreur");

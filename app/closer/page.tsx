@@ -16,6 +16,7 @@ import {
   Target,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { buildIdentity } from "@/lib/identity";
 import type { Prospect } from "@/lib/types";
 import { cn, eur } from "@/lib/utils";
 import { stageById, weightedValue } from "@/lib/hormozi";
@@ -128,7 +129,7 @@ export default function CloserPage() {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task: "briefing", tourSummary: tourSummary(tour), businessRules: settings.businessRules }),
+        body: JSON.stringify({ task: "briefing", tourSummary: tourSummary(tour), businessRules: settings.businessRules, identity: buildIdentity(settings) }),
       });
       const data = await res.json();
       if (data.text) {
