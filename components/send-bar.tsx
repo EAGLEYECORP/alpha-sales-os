@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ExternalLink, Gift, Linkedin, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { Check, ExternalLink, Gift, Linkedin, Mail, MessageCircle, Smartphone, TrendingUp } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
-import { renderAuditDoc } from "@/lib/audit-doc";
+import { renderAuditDoc, renderRecoveryDoc } from "@/lib/audit-doc";
 import { auditDepth } from "@/lib/milestones";
 import { linkedinUrl, linkedinTouchesToday, LINKEDIN_DAILY_SAFE } from "@/lib/linkedin";
 import { clipboardText, composeFitsInUrl, gmailComposeUrl } from "@/lib/mail-compose";
@@ -46,10 +46,13 @@ export function SendBar({
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
   const [attachAudit, setAttachAudit] = useState(false);
+  const [attachRecovery, setAttachRecovery] = useState(false);
   const [liCopied, setLiCopied] = useState(false);
   const [gmailOpened, setGmailOpened] = useState(false);
   // On ne propose l'audit que s'il a assez de matière (≥ 40 % de profondeur).
   const auditReady = auditDepth(prospect).score >= 40;
+  // La projection n'a de sens qu'avec la douleur chiffrée (manqués + panier).
+  const recoveryReady = (prospect.deepAudit.missedCallsPerWeek ?? 0) > 0 && (prospect.deepAudit.avgTicket ?? 0) > 0;
   // Quota LinkedIn du jour (anti-restriction) — le multi-canal permet le volume.
   const liToday = linkedinTouchesToday(prospects);
   const liOver = liToday >= LINKEDIN_DAILY_SAFE;
@@ -80,16 +83,32 @@ export function SendBar({
     setNeedsUpgrade(false);
     setDuplicate(false);
     try {
-      const attachments =
-        channel === "email" && attachAudit && auditReady
-          ? [
-              {
-                filename: `audit-${prospect.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`,
-                contentBase64: btoa(unescape(encodeURIComponent(renderAuditDoc(prospect, settings.closerName, settings.bookingUrl)))),
-                contentType: "text/html; charset=utf-8",
-              },
-            ]
-          : undefined;
+      const slug = prospect.company.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const htmlB64 = (html: string) => btoa(unescape(encodeURIComponent(html)));
+      const atts: { filename: string; contentBase64: string; contentType: string }[] = [];
+      if (channel === "email" && attachAudit && auditReady) {
+        atts.push({
+          filename: `audit-${slug}.html`,
+          contentBase64: htmlB64(renderAuditDoc(prospect, settings.closerName, settings.bookingUrl)),
+          contentType: "text/html; charset=utf-8",
+        });
+      }
+      if (channel === "email" && attachRecovery && recoveryReady) {
+        const d = prospect.deepAudit;
+        atts.push({
+          filename: `projection-${slug}.html`,
+          contentBase64: htmlB64(
+            renderRecoveryDoc(
+              prospect,
+              { missedPerWeek: d.missedCallsPerWeek ?? 0, avgTicket: d.avgTicket ?? 0, conversionPct: d.conversionRate ?? 30 },
+              settings.closerName,
+              settings.bookingUrl
+            )
+          ),
+          contentType: "text/html; charset=utf-8",
+        });
+      }
+      const attachments = atts.length ? atts : undefined;
       const res = await fetch("/api/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,6 +225,29 @@ export function SendBar({
             onChange={(e) => setAttachAudit(e.target.checked)}
           />
           <Gift size={12} /> Audit cadeau
+        </label>
+      )}
+      {offerAudit && prospect.email && caps?.email && (
+        <label
+          className={cn(
+            "flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11.5px]",
+            attachRecovery ? "border-bronze-600 text-bronze-300" : "border-ink-600 text-paper-faint",
+            !recoveryReady && "cursor-not-allowed opacity-50"
+          )}
+          title={
+            recoveryReady
+              ? "Joindre la projection « ce que tu récupères » (HTML brandé, imprimable). Personnalisée sur les chiffres de la fiche (appels manqués × panier × conversion)."
+              : "Complète la douleur chiffrée (appels manqués/sem + panier moyen dans l'onglet Audit) pour proposer la projection."
+          }
+        >
+          <input
+            type="checkbox"
+            className="accent-bronze-500"
+            checked={attachRecovery}
+            disabled={!recoveryReady}
+            onChange={(e) => setAttachRecovery(e.target.checked)}
+          />
+          <TrendingUp size={12} /> Projection
         </label>
       )}
       {prospect.email && (
