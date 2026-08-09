@@ -341,6 +341,45 @@ export default function SettingsPage() {
               Le prospect pose le rendez-vous lui-même, pendant que tu es sur le terrain.
             </p>
           </div>
+
+          {/* Mon offre — white-label : ce que CE compte vend (docs + branding) */}
+          <div className="rounded-xl border border-bronze-700/40 bg-bronze-900/10 p-3">
+            <p className="text-[12px] font-medium text-paper">Mon offre — ce que je vends</p>
+            <p className="mt-0.5 text-[11px] text-paper-faint">
+              Le nom d&apos;agence ci-dessus + ces champs personnalisent tes documents (audit, projection). Chez EAGLEYE,
+              tu vends Alpha Sales OS ; un autre commercial met la sienne.
+            </p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <div>
+                <label className="label">Ville (sur les documents)</label>
+                <input
+                  className="input"
+                  placeholder="Lyon"
+                  value={settings.offer?.city ?? ""}
+                  onChange={(e) => patchSettings({ offer: { city: e.target.value, whatYouSell: settings.offer?.whatYouSell ?? "", valueProp: settings.offer?.valueProp ?? "" } })}
+                />
+              </div>
+              <div>
+                <label className="label">Ce que tu vends (une ligne)</label>
+                <input
+                  className="input"
+                  placeholder="Alpha Sales OS — l'OS de vente terrain"
+                  value={settings.offer?.whatYouSell ?? ""}
+                  onChange={(e) => patchSettings({ offer: { city: settings.offer?.city ?? "", whatYouSell: e.target.value, valueProp: settings.offer?.valueProp ?? "" } })}
+                />
+              </div>
+            </div>
+            <div className="mt-2">
+              <label className="label">Ta proposition de valeur (une phrase)</label>
+              <input
+                className="input"
+                placeholder="Zéro lead perdu, la machine tourne 24/7."
+                value={settings.offer?.valueProp ?? ""}
+                onChange={(e) => patchSettings({ offer: { city: settings.offer?.city ?? "", whatYouSell: settings.offer?.whatYouSell ?? "", valueProp: e.target.value } })}
+              />
+            </div>
+          </div>
+
           <div>
             <label className="label">Mode</label>
             <div className="flex gap-2">

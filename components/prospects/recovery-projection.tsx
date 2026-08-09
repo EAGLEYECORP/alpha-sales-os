@@ -5,7 +5,7 @@ import { Download, ExternalLink, Info, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import type { Prospect } from "@/lib/types";
 import { recovery } from "@/lib/recovery";
-import { renderRecoveryDoc } from "@/lib/audit-doc";
+import { renderRecoveryDoc, brandFromSettings } from "@/lib/audit-doc";
 import { useAlpha } from "@/lib/store";
 import { eur } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export function RecoveryProjection({ p }: { p: Prospect }) {
   const input = { missedPerWeek: missed, avgTicket: ticket, conversionPct: conv };
   const r = useMemo(() => recovery(input), [missed, ticket, conv]);
 
-  const doc = () => renderRecoveryDoc(p, input, settings.closerName, settings.bookingUrl);
+  const doc = () => renderRecoveryDoc(p, input, settings.closerName, settings.bookingUrl, brandFromSettings(settings));
   const openDoc = () => {
     const w = window.open("", "_blank");
     if (!w) return;

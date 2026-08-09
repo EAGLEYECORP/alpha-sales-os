@@ -324,6 +324,19 @@ export interface Activity {
 export interface AppSettings {
   agencyName: string;
   closerName: string;
+  /**
+   * L'offre du compte — CE QU'IL VEND. White-label : chez EAGLEYE, Alpha Sales
+   * OS vend Alpha Sales OS ; un commercial revendeur configure SA propre offre.
+   * Alimente les documents (audit/projection) et, à terme, les prompts IA.
+   */
+  offer?: {
+    /** Ville affichée dans les documents (défaut « Lyon »). */
+    city: string;
+    /** Ce que tu vends, en une ligne (ex. « des sites premium + accueil IA »). */
+    whatYouSell: string;
+    /** Ta proposition de valeur en une phrase. */
+    valueProp: string;
+  };
   targetMRR: number;
   commissionPct: number;
   role: "solo" | "team";

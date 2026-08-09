@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, Gift, Linkedin, Mail, MessageCircle, Smartphone, TrendingUp } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
-import { renderAuditDoc, renderRecoveryDoc } from "@/lib/audit-doc";
+import { renderAuditDoc, renderRecoveryDoc, brandFromSettings } from "@/lib/audit-doc";
 import { auditDepth } from "@/lib/milestones";
 import { linkedinUrl, linkedinTouchesToday, LINKEDIN_DAILY_SAFE } from "@/lib/linkedin";
 import { clipboardText, composeFitsInUrl, gmailComposeUrl } from "@/lib/mail-compose";
@@ -89,7 +89,7 @@ export function SendBar({
       if (channel === "email" && attachAudit && auditReady) {
         atts.push({
           filename: `audit-${slug}.html`,
-          contentBase64: htmlB64(renderAuditDoc(prospect, settings.closerName, settings.bookingUrl)),
+          contentBase64: htmlB64(renderAuditDoc(prospect, settings.closerName, settings.bookingUrl, brandFromSettings(settings))),
           contentType: "text/html; charset=utf-8",
         });
       }
@@ -102,7 +102,8 @@ export function SendBar({
               prospect,
               { missedPerWeek: d.missedCallsPerWeek ?? 0, avgTicket: d.avgTicket ?? 0, conversionPct: d.conversionRate ?? 30 },
               settings.closerName,
-              settings.bookingUrl
+              settings.bookingUrl,
+              brandFromSettings(settings)
             )
           ),
           contentType: "text/html; charset=utf-8",

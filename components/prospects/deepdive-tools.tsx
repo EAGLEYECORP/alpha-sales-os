@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Circle, Download, ExternalLink, Gift, Globe, GraduationCap, Import, Loader2, Ruler, Sparkles, X } from "lucide-react";
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
-import { renderAuditDoc } from "@/lib/audit-doc";
+import { renderAuditDoc, brandFromSettings } from "@/lib/audit-doc";
 import { mergeAudit, prospectSiteUrl } from "@/lib/audit-apply";
 import { verticalForProspect } from "@/lib/playbook";
 import { cn, uid } from "@/lib/utils";
@@ -213,13 +213,13 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
   const openGift = () => {
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(renderAuditDoc(p, settings.closerName, settings.bookingUrl));
+    w.document.write(renderAuditDoc(p, settings.closerName, settings.bookingUrl, brandFromSettings(settings)));
     w.document.close();
     setGiftOpened(true);
   };
 
   const downloadGift = () => {
-    const blob = new Blob([renderAuditDoc(p, settings.closerName, settings.bookingUrl)], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([renderAuditDoc(p, settings.closerName, settings.bookingUrl, brandFromSettings(settings))], { type: "text/html;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `audit-${p.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.html`;

@@ -32,6 +32,18 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** Marque affichée sur les documents (white-label). Défaut : EAGLEYE. */
+export interface DocBrand {
+  name: string;
+  city: string;
+}
+const DEFAULT_BRAND: DocBrand = { name: "Eagleye", city: "Lyon" };
+
+/** Construit la marque du document depuis les réglages du compte (white-label). */
+export function brandFromSettings(s: { agencyName?: string; offer?: { city?: string } }): DocBrand {
+  return { name: s.agencyName?.trim() || "Eagleye", city: s.offer?.city?.trim() || "Lyon" };
+}
+
 /** Feuille de style commune — partagée par l'audit unique et le lot (bundle). */
 const AUDIT_STYLE = `
   * { box-sizing: border-box; margin: 0; }
@@ -78,7 +90,7 @@ const AUDIT_HEAD = (title: string) => `<meta charset="utf-8" />
  * Le corps de l'audit (la « feuille ») — sans <head> ni bouton d'impression.
  * Réutilisé tel quel par l'audit unique et par le lot multi-fiches.
  */
-export function renderAuditSheet(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string): string {
+export function renderAuditSheet(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string, brand: DocBrand = DEFAULT_BRAND): string {
   const d = p.deepAudit;
   const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const taxMonthly = p.ignoranceTax > 0 ? p.ignoranceTax : null;
@@ -93,12 +105,12 @@ export function renderAuditSheet(p: Prospect, closerName = "EAGLEYE", bookingUrl
       <header class="doc">
         <span class="mark">${EAGLE_SVG}</span>
         <div>
-          <div class="brand">Eagleye</div>
+          <div class="brand">${esc(brand.name)}</div>
           <div class="sub">Audit de présence — offert</div>
         </div>
       </header>
       <h1>${esc(p.company)}</h1>
-      <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — EAGLEYE CORP, Lyon</p>
+      <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — ${esc(brand.name)}, ${esc(brand.city)}</p>
       <div class="rule"></div>
 
       <h2>Votre position sur votre marché</h2>
@@ -134,7 +146,7 @@ export function renderAuditSheet(p: Prospect, closerName = "EAGLEYE", bookingUrl
       </div>
 
       <footer>
-        Eagleye Corp — Lyon · Cet audit vous est offert · Données publiques, chiffres à valider ensemble<br />
+        ${esc(brand.name)} — ${esc(brand.city)} · Cet audit vous est offert · Données publiques, chiffres à valider ensemble<br />
         <span style="text-transform:none;letter-spacing:.02em;">Généré avec <em style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:${INK};">Alpha Sales OS</em><span style="color:${INK};">®</span></span>
       </footer>
     </div>`;
@@ -151,7 +163,7 @@ function row(label: string, value?: string): string {
   return `<tr><td class="lbl">${esc(label)}</td><td>${esc(value)}</td></tr>`;
 }
 
-export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string): string {
+export function renderAuditDoc(p: Prospect, closerName = "EAGLEYE", bookingUrl?: string, brand: DocBrand = DEFAULT_BRAND): string {
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -160,7 +172,7 @@ ${AUDIT_HEAD(`Audit de présence — ${p.company}`)}
 <body>
 <button class="print" onclick="window.print()">Imprimer / PDF</button>
 <div class="page">
-  ${renderAuditSheet(p, closerName, bookingUrl)}
+  ${renderAuditSheet(p, closerName, bookingUrl, brand)}
 </div>
 </body>
 </html>`;
@@ -177,7 +189,8 @@ export function renderRecoveryDoc(
   p: Prospect,
   input: RecoveryInput,
   closerName = "EAGLEYE",
-  bookingUrl?: string
+  bookingUrl?: string,
+  brand: DocBrand = DEFAULT_BRAND
 ): string {
   const r = recovery(input);
   const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -185,12 +198,12 @@ export function renderRecoveryDoc(
       <header class="doc">
         <span class="mark">${EAGLE_SVG}</span>
         <div>
-          <div class="brand">Eagleye</div>
+          <div class="brand">${esc(brand.name)}</div>
           <div class="sub">Projection — ce que vous récupérez</div>
         </div>
       </header>
       <h1>${esc(p.company || "Votre entreprise")}</h1>
-      <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — EAGLEYE CORP, Lyon</p>
+      <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — ${esc(brand.name)}, ${esc(brand.city)}</p>
       <div class="rule"></div>
 
       <h2>Sur vos chiffres</h2>
@@ -216,7 +229,7 @@ export function renderRecoveryDoc(
       </div>
 
       <footer>
-        Eagleye Corp — Lyon · Projection offerte · Estimation sur vos chiffres, à valider ensemble<br />
+        ${esc(brand.name)} — ${esc(brand.city)} · Projection offerte · Estimation sur vos chiffres, à valider ensemble<br />
         <span style="text-transform:none;letter-spacing:.02em;">Généré avec <em style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:${INK};">Alpha Sales OS</em><span style="color:${INK};">®</span></span>
       </footer>
     </div>`;
@@ -239,10 +252,10 @@ ${AUDIT_HEAD(`Projection — ${p.company || "votre entreprise"}`)}
  * fiches, une par page (saut de page à l'impression). « Imprimer / PDF »
  * produit un PDF multi-pages : un audit par prospect, prêts à joindre.
  */
-export function renderAuditBundle(prospects: Prospect[], closerName = "EAGLEYE", bookingUrl?: string): string {
+export function renderAuditBundle(prospects: Prospect[], closerName = "EAGLEYE", bookingUrl?: string, brand: DocBrand = DEFAULT_BRAND): string {
   const sheets = prospects
     .map((p, i) => `<div class="page${i < prospects.length - 1 ? " brk" : ""}">
-  ${renderAuditSheet(p, closerName, bookingUrl)}
+  ${renderAuditSheet(p, closerName, bookingUrl, brand)}
 </div>`)
     .join("\n");
   const title = prospects.length === 1

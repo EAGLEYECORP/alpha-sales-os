@@ -116,6 +116,12 @@ interface AlphaState {
 const defaultSettings: AppSettings = {
   agencyName: "EAGLEYE CORP",
   closerName: "Le Closer",
+  // Défaut EAGLEYE : Alpha Sales OS se vend lui-même. Un revendeur remplace.
+  offer: {
+    city: "Lyon",
+    whatYouSell: "Alpha Sales OS — l'OS de vente terrain",
+    valueProp: "On outille les forces de vente avec l'automatisation IA : zéro lead perdu, la machine tourne 24/7.",
+  },
   targetMRR: 5000,
   commissionPct: 30,
   role: "solo",

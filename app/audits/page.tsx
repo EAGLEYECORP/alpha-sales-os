@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, Circle, Download, ExternalLink, FileText, Gift, Info, Ruler } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { renderAuditDoc, renderAuditBundle } from "@/lib/audit-doc";
+import { renderAuditDoc, renderAuditBundle, brandFromSettings } from "@/lib/audit-doc";
 import { withMetierBenchmark, auditReadiness, auditFilename } from "@/lib/audit-batch";
 import { stageById } from "@/lib/hormozi";
 import type { Prospect } from "@/lib/types";
@@ -72,12 +72,12 @@ export default function AuditsPage() {
 
   const generateBundle = () => {
     if (chosen.length === 0) return;
-    openDoc(renderAuditBundle(chosen.map(prep), settings.closerName, settings.bookingUrl));
+    openDoc(renderAuditBundle(chosen.map(prep), settings.closerName, settings.bookingUrl, brandFromSettings(settings)));
   };
   const downloadBundle = () => {
     if (chosen.length === 0) return;
     const name = chosen.length === 1 ? auditFilename(chosen[0]) : `audits-${chosen.length}-fiches.html`;
-    download(renderAuditBundle(chosen.map(prep), settings.closerName, settings.bookingUrl), name);
+    download(renderAuditBundle(chosen.map(prep), settings.closerName, settings.bookingUrl, brandFromSettings(settings)), name);
   };
 
   return (
@@ -103,7 +103,7 @@ export default function AuditsPage() {
           <Info size={15} className="text-bronze-400" /> Un document offert, pas une plaquette de vente
         </h2>
         <p className="mt-1.5 max-w-3xl text-[12px] text-paper-dim">
-          L&apos;audit de présence est brandé Eagleye, sans jargon, et se termine sur une invitation douce. Génère-le pour{" "}
+          L&apos;audit de présence est brandé à ta marque, sans jargon, et se termine sur une invitation douce. Génère-le pour{" "}
           <b className="text-paper">une fiche ou tout un lot</b> : un PDF, un audit par page. À joindre à ton premier
           email, ou à laisser après une visite. La Taxe d&apos;Ignorance affichée est une <b className="text-paper">estimation</b>{" "}
           — le document le dit lui-même.
@@ -168,14 +168,14 @@ export default function AuditsPage() {
                   <div className="flex shrink-0 flex-wrap gap-1.5">
                     <button
                       className="btn-ghost px-2.5 py-1.5 text-[12px]"
-                      onClick={() => openDoc(renderAuditDoc(prepped, settings.closerName, settings.bookingUrl))}
+                      onClick={() => openDoc(renderAuditDoc(prepped, settings.closerName, settings.bookingUrl, brandFromSettings(settings)))}
                       title="Aperçu de l'audit dans un onglet"
                     >
                       <ExternalLink size={13} /> Aperçu
                     </button>
                     <button
                       className="btn-ghost px-2.5 py-1.5 text-[12px]"
-                      onClick={() => download(renderAuditDoc(prepped, settings.closerName, settings.bookingUrl), auditFilename(p))}
+                      onClick={() => download(renderAuditDoc(prepped, settings.closerName, settings.bookingUrl, brandFromSettings(settings)), auditFilename(p))}
                       title="Télécharger l'audit (.html, imprimable en PDF)"
                     >
                       <Download size={13} /> <Gift size={13} />
