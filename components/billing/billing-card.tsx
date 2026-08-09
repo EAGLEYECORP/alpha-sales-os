@@ -28,6 +28,7 @@ export function BillingCard({ email }: { email: string | null }) {
 
   const owner = isOwnerEmail(email);
   const [notice, setNotice] = useState<{ tone: "ok" | "neutral"; text: string } | null>(null);
+  const [usage, setUsage] = useState<{ tier: string; emailsUsed: number; emailsLimit: number | null } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -36,6 +37,11 @@ export function BillingCard({ email }: { email: string | null }) {
         .then((s) => alive && setSub(s))
         .finally(() => alive && setLoading(false));
     void load();
+    // Consommation du mois (jauge de quota) — silencieux si indisponible.
+    fetch("/api/billing/usage")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => alive && u && setUsage(u))
+      .catch(() => {});
 
     // Retour de Stripe : le webhook peut écrire le statut avec un léger décalage
     // → on affiche un mot et on relit une fois après quelques secondes.
@@ -139,6 +145,39 @@ export function BillingCard({ email }: { email: string | null }) {
               Inclus : {FREE_TIER.features.join(" · ")}. Passe au payant pour :{" "}
               {FREE_TIER.excluded.join(", ")}.
             </p>
+
+            {/* Jauge de quota : n'apparaît qu'en palier « free » réellement compté. */}
+            {usage?.tier === "free" && usage.emailsLimit != null && (() => {
+              const pct = Math.min(100, Math.round((usage.emailsUsed / usage.emailsLimit) * 100));
+              const over = usage.emailsUsed >= usage.emailsLimit;
+              const near = !over && usage.emailsUsed >= usage.emailsLimit * 0.8;
+              return (
+                <div className="mt-2.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-paper-faint">E-mails ce mois</span>
+                    <span className={cn("font-mono tabular-nums", over ? "text-signal-red" : near ? "text-signal-amber" : "text-paper-dim")}>
+                      {usage.emailsUsed}/{usage.emailsLimit}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-800">
+                    <div
+                      className={cn("h-full rounded-full transition-all", over ? "bg-signal-red" : near ? "bg-signal-amber" : "bg-signal-green")}
+                      style={{ width: `${Math.max(4, pct)}%` }}
+                    />
+                  </div>
+                  {(over || near) && (
+                    <p className={cn("mt-1 text-[10.5px]", over ? "text-signal-red" : "text-signal-amber")}>
+                      {over
+                        ? "Quota atteint — passe à Solo ou Pro pour continuer d'envoyer."
+                        : "Bientôt au quota — pense à passer au payant."}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            {usage?.tier === "unmetered" && (
+              <p className="mt-2 text-[11px] text-paper-faint">Envois illimités — mode local (facturation non activée).</p>
+            )}
           </div>
           <p className="mt-3 text-[13px] text-paper-dim">
             Choisis un plan pour débloquer l&apos;OS en continu.

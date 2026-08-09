@@ -43,6 +43,8 @@ export function SendBar({
   const [caps, setCaps] = useState(capsCache);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+  const [needsUpgrade, setNeedsUpgrade] = useState(false);
+  const [duplicate, setDuplicate] = useState(false);
   const [attachAudit, setAttachAudit] = useState(false);
   const [liCopied, setLiCopied] = useState(false);
   const [gmailOpened, setGmailOpened] = useState(false);
@@ -72,9 +74,11 @@ export function SendBar({
     logActivity({ kind: "campagne", message: `${label} envoyé à ${prospect.company}`, prospectId: prospect.id });
   };
 
-  const send = async (channel: "email" | "sms") => {
+  const send = async (channel: "email" | "sms", force = false) => {
     setStatus("sending");
     setError("");
+    setNeedsUpgrade(false);
+    setDuplicate(false);
     try {
       const attachments =
         channel === "email" && attachAudit && auditReady
@@ -96,11 +100,14 @@ export function SendBar({
           body,
           prospectId: prospect.id,
           attachments,
+          force,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? `Erreur ${res.status}`);
+        setNeedsUpgrade(Boolean(data.needsSubscription));
+        setDuplicate(Boolean(data.alreadyContacted));
         setStatus("error");
         return;
       }
@@ -249,7 +256,29 @@ export function SendBar({
       {!prospect.email && !prospect.phone && (
         <span className="text-[11px] text-paper-faint">ni email ni téléphone — il reste LinkedIn ↑</span>
       )}
-      {status === "error" && <span className="text-[11px] text-signal-red">{error}</span>}
+      {status === "error" &&
+        (needsUpgrade ? (
+          <a
+            href="/compte"
+            className="inline-flex items-center gap-1 rounded-lg border border-signal-amber/40 bg-signal-amber/10 px-2 py-1 text-[11px] text-signal-amber hover:border-signal-amber/70"
+            title="Voir les formules et passer au payant"
+          >
+            {error} → Gérer l&apos;abonnement
+          </a>
+        ) : duplicate ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-signal-amber">
+            {error}
+            <button
+              className="rounded-lg border border-signal-amber/40 bg-signal-amber/10 px-2 py-0.5 hover:border-signal-amber/70"
+              onClick={() => send("email", true)}
+              title="Passe outre le refroidissement anti-doublon et renvoie maintenant"
+            >
+              Renvoyer quand même
+            </button>
+          </span>
+        ) : (
+          <span className="text-[11px] text-signal-red">{error}</span>
+        ))}
     </div>
   );
 }
