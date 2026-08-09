@@ -1,4 +1,5 @@
 import type { Prospect } from "./types";
+import { recovery, type RecoveryInput } from "./recovery";
 import { EAGLE_SVG } from "@/components/eagle";
 
 /**
@@ -160,6 +161,74 @@ ${AUDIT_HEAD(`Audit de présence — ${p.company}`)}
 <button class="print" onclick="window.print()">Imprimer / PDF</button>
 <div class="page">
   ${renderAuditSheet(p, closerName, bookingUrl)}
+</div>
+</body>
+</html>`;
+}
+
+/**
+ * « Projette-toi » IMPRIMABLE — le document à laisser au prospect.
+ *
+ * Personnalisé à CHAQUE prospect (ses chiffres) et aux valeurs ajustées en RDV
+ * (les curseurs). Même DA calme qu'un audit cadeau : on montre ce qui se perd,
+ * sobrement, puis ce qu'on récupère. C'est une ESTIMATION, dit noir sur blanc.
+ */
+export function renderRecoveryDoc(
+  p: Prospect,
+  input: RecoveryInput,
+  closerName = "EAGLEYE",
+  bookingUrl?: string
+): string {
+  const r = recovery(input);
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const sheet = `<div class="sheet">
+      <header class="doc">
+        <span class="mark">${EAGLE_SVG}</span>
+        <div>
+          <div class="brand">Eagleye</div>
+          <div class="sub">Projection — ce que vous récupérez</div>
+        </div>
+      </header>
+      <h1>${esc(p.company || "Votre entreprise")}</h1>
+      <p class="meta">${esc(p.city)} · ${date} · préparé par ${esc(closerName)} — EAGLEYE CORP, Lyon</p>
+      <div class="rule"></div>
+
+      <h2>Sur vos chiffres</h2>
+      <table class="facts">
+        <tr><td class="lbl">Contacts manqués / semaine</td><td>${input.missedPerWeek}</td></tr>
+        <tr><td class="lbl">Panier moyen d'une vente</td><td>${eur(input.avgTicket)}</td></tr>
+        <tr><td class="lbl">Part qui aurait converti</td><td>${input.conversionPct} %</td></tr>
+      </table>
+
+      <h2>Ce que vous laissez sur la table</h2>
+      <div class="tax">
+        <span class="big">≈ ${eur(r.perMonth)}</span> <span class="per">/ mois — soit ${eur(r.perYear)} / an</span>
+        <p style="margin-top:8px;font-size:12.5px;">Base : ${input.missedPerWeek} contact(s) manqué(s)/semaine × ${input.conversionPct} % de conversion × ${eur(input.avgTicket)} — ${r.salesPerMonth.toFixed(1)} vente(s)/mois perdue(s).</p>
+      </div>
+
+      <h2>Ce qu'on change</h2>
+      <p class="reco">Un système qui rappelle chaque contact manqué et relance sans oubli, 24 h/24, 7 j/7 — c'est ce montant que vous visez à récupérer, sans embaucher.</p>
+      <p class="soft-note" style="margin-top:14px;">Ce chiffre est une <strong>estimation</strong> basée sur vos données ci-dessus, <strong>pas une garantie</strong>. Ce qu'on garantit : le procédé — plus aucun contact perdu, la machine tourne 24/7. Le montant réel dépend de vos vrais chiffres, qu'on affine ensemble.</p>
+
+      <div class="cta">
+        <p><strong>La suite, si vous le souhaitez :</strong> 20 minutes, on vous montre en conditions réelles à quoi ressemble ${esc(p.company || "votre accueil")} avec ce manque comblé. Sans engagement — et vous gardez cette projection.</p>
+        ${bookingUrl?.trim() ? `<p style="margin-top:14px;"><a href="${esc(bookingUrl.trim())}" style="display:inline-block;background:${CARD};color:${INK};text-decoration:none;border-radius:100px;padding:12px 24px;font-weight:600;font-size:14.5px;">Choisir un créneau →</a></p>` : ""}
+      </div>
+
+      <footer>
+        Eagleye Corp — Lyon · Projection offerte · Estimation sur vos chiffres, à valider ensemble<br />
+        <span style="text-transform:none;letter-spacing:.02em;">Généré avec <em style="font-family:'Fraunces',Georgia,serif;font-size:12px;color:${INK};">Alpha Sales OS</em><span style="color:${INK};">®</span></span>
+      </footer>
+    </div>`;
+  return `<!doctype html>
+<html lang="fr">
+<head>
+${AUDIT_HEAD(`Projection — ${p.company || "votre entreprise"}`)}
+</head>
+<body>
+<button class="print" onclick="window.print()">Imprimer / PDF</button>
+<div class="page">
+  ${sheet}
 </div>
 </body>
 </html>`;
