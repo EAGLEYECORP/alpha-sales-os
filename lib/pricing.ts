@@ -113,6 +113,95 @@ export interface CalcResult {
   clientRoiPerf: number; // (CA gardé an1) / (coût an1)
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * Économie « vendre Alpha Sales OS » (SaaS) — quand c'est EAGLEYE qui vend
+ * le logiciel, pas le modèle proximité. Les chiffres que Papa réclame :
+ * MRR, ARR, CAC, LTV, break-even, cash-flow, valeur du temps.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface SaasEconInput {
+  /** Abonnement mensuel par client (€). */
+  pricePerMonth: number;
+  /** Frais de setup one-shot par client (€). */
+  setupFee: number;
+  /** Nombre de clients visés. */
+  clients: number;
+  /** Rétention moyenne (mois) — durée de vie d'un client. */
+  retentionMonths: number;
+  /** Heures de TON temps pour signer un client. */
+  hoursPerClient: number;
+  /** Valeur de ton heure (€) — le « true value of your time ». */
+  hourValue: number;
+  /** Coût d'acquisition hors temps, par client (liste, outils…) en €. */
+  acqCostPerClient: number;
+  /** Coûts fixes mensuels d'infra (Vercel, Supabase, Stripe…) en €. */
+  fixedMonthly: number;
+}
+
+export interface SaasEconResult {
+  mrr: number;
+  arr: number;
+  setupCash: number;
+  /** Cash encaissé le 1er mois (setups + 1er MRR). */
+  month1Cash: number;
+  /** Coût d'acquisition d'un client (temps + hors-temps). */
+  cacPerClient: number;
+  /** Part « temps » dans le CAC (le levier de Papa). */
+  timeShareOfCac: number;
+  /** Valeur vie client (setup + abonnement × rétention). */
+  ltvPerClient: number;
+  ltvCac: number;
+  /** Clients nécessaires pour couvrir l'infra fixe. */
+  breakEvenClientsInfra: number;
+  /** Investissement-temps total (tous clients). */
+  timeInvestTotal: number;
+  /** Mois de MRR pour rembourser ton temps. */
+  timePaybackMonths: number;
+}
+
+export const defaultSaasInput: SaasEconInput = {
+  pricePerMonth: 290,
+  setupFee: 490,
+  clients: 10,
+  retentionMonths: 12,
+  hoursPerClient: 5,
+  hourValue: 50,
+  acqCostPerClient: 25,
+  fixedMonthly: 120,
+};
+
+export function calcSaas(input: SaasEconInput): SaasEconResult {
+  const clients = Math.max(0, input.clients);
+  const timePerClient = Math.max(0, input.hoursPerClient) * Math.max(0, input.hourValue);
+  const mrr = clients * input.pricePerMonth;
+  const arr = mrr * 12;
+  const setupCash = clients * input.setupFee;
+  const month1Cash = setupCash + mrr;
+
+  const cacPerClient = input.acqCostPerClient + timePerClient;
+  const timeShareOfCac = cacPerClient > 0 ? timePerClient / cacPerClient : 0;
+  const ltvPerClient = input.pricePerMonth * input.retentionMonths + input.setupFee;
+  const ltvCac = cacPerClient > 0 ? ltvPerClient / cacPerClient : 0;
+  const breakEvenClientsInfra = input.pricePerMonth > 0 ? input.fixedMonthly / input.pricePerMonth : 0;
+  const timeInvestTotal = clients * timePerClient;
+  const timePaybackMonths = mrr > 0 ? timeInvestTotal / mrr : 0;
+
+  return {
+    mrr,
+    arr,
+    setupCash,
+    month1Cash,
+    cacPerClient,
+    timeShareOfCac,
+    ltvPerClient,
+    ltvCac,
+    breakEvenClientsInfra,
+    timeInvestTotal,
+    timePaybackMonths,
+  };
+}
+
 export function calc(input: CalcInput, pricing: PricingConfig = defaultPricing): CalcResult {
   const prospects = Math.max(0, input.prospects);
   const meetings = prospects * (input.replyRate / 100);

@@ -111,3 +111,48 @@ premier ne sert à rien.
 
 C'est le seul goulot d'étranglement réel — ni la machine, ni les
 messages, ni les quotas.
+
+---
+
+## 5. Vendre Alpha Sales OS — unit economics (le mot de Papa)
+
+> « Know your ROI, cash flow, CAC, LTV, break-even, and the true value of
+> your time. » Voici ces chiffres pour **EAGLEYE qui vend le logiciel**.
+> Calculés par `calcSaas()` (`lib/pricing.ts`) ; pilotables en direct sur
+> **/offre → onglet « Vendre Alpha Sales OS »**.
+
+**Cas de base** (à caler) : abonnement **290 €/mois**, setup **490 €**,
+rétention **12 mois**, cible **10 clients**. Coûts : ton temps **5 h/client
+à 50 €/h**, acquisition hors-temps **25 €/client**, infra fixe **120 €/mois**.
+
+| Métrique | Formule | Cas de base |
+|---|---|---|
+| **MRR** | clients × prix | **2 900 €/mois** |
+| **ARR** | MRR × 12 | **34 800 €** |
+| **Cash mois 1** | setups + 1er MRR | **7 800 €** |
+| **CAC / client** | acq. + (heures × valeur heure) | **~275 €** (≈ 90 % ton temps) |
+| **LTV / client** | setup + prix × rétention | **~3 970 €** |
+| **LTV : CAC** | LTV ÷ CAC | **~14 : 1** (cible > 3:1) |
+| **Break-even infra** | infra fixe ÷ prix | **1 client** |
+| **Remboursement de ton temps** | temps total ÷ MRR | **~1 mois** |
+
+### Sensibilité au prix (10 clients)
+
+| Prix/mois | MRR | ARR | LTV/client | LTV:CAC |
+|---|---|---|---|---|
+| 149 € | 1 490 € | 17 880 € | ~2 280 € | ~8 : 1 |
+| **290 €** | **2 900 €** | **34 800 €** | **~3 970 €** | **~14 : 1** |
+| 490 € | 4 900 € | 58 800 € | ~6 370 € | ~23 : 1 |
+| 990 € | 9 900 € | 118 800 € | ~12 370 € | ~45 : 1 |
+
+**Les deux seuls leviers qui comptent :** le **prix** (il déplace tout) et
+la **valeur de ton temps** (90 % du CAC) — c'est exactement ce qu'Alpha
+Sales OS réduit en automatisant l'outreach.
+
+### La franchise sur « 5M »
+
+10 clients ≈ **2 900 €/mois de MRR ≈ 35 k€ ARR**. C'est la **preuve** que la
+machine signe, pas la destination. Les 5 M/mois à 290 €/client = **~17 000
+clients** : c'est le jeu des **revendeurs white-label** (chacun apporte ses
+propres clients), pas une campagne à 10 signatures. On enchaîne les deux,
+on ne les confond pas.

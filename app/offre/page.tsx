@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BadgeEuro, Check, Crown, Handshake, TrendingUp } from "lucide-react";
+import { BadgeEuro, Check, Crown, Handshake, Rocket, TrendingUp } from "lucide-react";
 import { cn, eur } from "@/lib/utils";
-import { calc, defaultPricing, type CalcInput } from "@/lib/pricing";
+import { calc, calcSaas, defaultPricing, defaultSaasInput, type CalcInput, type SaasEconInput } from "@/lib/pricing";
 import { useAlpha } from "@/lib/store";
 
 export default function OffrePage() {
@@ -21,15 +21,40 @@ export default function OffrePage() {
   const r = useMemo(() => calc(input, pricing), [input, pricing]);
   const set = (patch: Partial<CalcInput>) => setInput((s) => ({ ...s, ...patch }));
 
+  // Mode « vendre Alpha Sales OS » (SaaS) — l'économie de TON business, pas
+  // l'offre montrée au prospect. Interne, pour décider et pour la démo.
+  const [mode, setMode] = useState<"client" | "saas">("client");
+
   return (
     <div className="space-y-6 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Offre &amp; Tarifs</h1>
-        <p className="text-sm text-paper-faint">
-          Outreach ultra-qualifié, exécuté pour vous. On ne remplit pas une base — on remplit un agenda.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-paper">Offre &amp; Tarifs</h1>
+          <p className="text-sm text-paper-faint">
+            {mode === "client"
+              ? "Outreach ultra-qualifié, exécuté pour vous. On ne remplit pas une base — on remplit un agenda."
+              : "L'économie de ton business : ce que rapporte de vendre Alpha Sales OS. CAC · LTV · break-even · cash-flow."}
+          </p>
+        </div>
+        <div className="flex rounded-lg border border-ink-700 bg-ink-900 p-0.5 text-[12px]">
+          <button
+            className={cn("rounded-md px-3 py-1.5 font-medium transition", mode === "client" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
+            onClick={() => setMode("client")}
+          >
+            Offre client
+          </button>
+          <button
+            className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "saas" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
+            onClick={() => setMode("saas")}
+          >
+            <Rocket size={13} /> Vendre Alpha Sales OS
+          </button>
+        </div>
       </header>
 
+      {mode === "saas" && <SaasEconomics />}
+
+      {mode === "client" && <>
       {/* Deux modèles */}
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card relative overflow-hidden p-5">
@@ -168,6 +193,91 @@ export default function OffrePage() {
         <strong className="text-paper-dim">Estimation, pas une garantie</strong> — basée sur les hypothèses saisies, sans
         valeur d&apos;engagement. On garantit le procédé (zéro lead perdu, 24/7), jamais un montant de CA. Chiffres calés
         sur les standards du marché ; devis personnalisé selon secteur et volume.
+      </p>
+      </>}
+    </div>
+  );
+}
+
+function SaasEconomics() {
+  const [i, setI] = useState<SaasEconInput>(defaultSaasInput);
+  const s = useMemo(() => calcSaas(i), [i]);
+  const set = (patch: Partial<SaasEconInput>) => setI((prev) => ({ ...prev, ...patch }));
+
+  const ratioTone = s.ltvCac >= 3 ? "text-signal-green" : s.ltvCac >= 1 ? "text-bronze-400" : "text-signal-red";
+
+  return (
+    <div className="space-y-4">
+      <section className="card p-5">
+        <div className="flex items-center gap-2">
+          <Rocket size={18} className="text-bronze-400" />
+          <h2 className="font-display text-base font-bold text-paper">Économie « je vends Alpha Sales OS »</h2>
+        </div>
+        <p className="mt-1 text-[12px] text-paper-faint">
+          Bouge le prix et le nombre de clients : MRR, CAC, LTV, break-even et cash-flow se recalculent. Les hypothèses de
+          coût (ton temps, la liste, l&apos;infra) sont ajustables — c&apos;est ton tableau de bord de décision.
+        </p>
+
+        <div className="mt-4 grid gap-6 lg:grid-cols-[340px_1fr]">
+          {/* Entrées */}
+          <div className="space-y-4">
+            <Slider label="Prix / client / mois" value={i.pricePerMonth} min={49} max={1500} step={10} onChange={(v) => set({ pricePerMonth: v })} fmt={(v) => eur(v)} />
+            <Slider label="Setup / client (one-shot)" value={i.setupFee} min={0} max={5000} step={50} onChange={(v) => set({ setupFee: v })} fmt={(v) => eur(v)} />
+            <Slider label="Clients visés" value={i.clients} min={1} max={100} step={1} onChange={(v) => set({ clients: v })} fmt={(v) => String(v)} />
+            <Slider label="Rétention moyenne" value={i.retentionMonths} min={1} max={48} step={1} onChange={(v) => set({ retentionMonths: v })} fmt={(v) => `${v} mois`} />
+            <div className="rounded-lg border border-ink-700 bg-ink-900/50 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-wider text-paper-faint">Hypothèses de coût</p>
+              <div className="space-y-3">
+                <Slider label="Heures de ton temps / client signé" value={i.hoursPerClient} min={0} max={40} step={0.5} onChange={(v) => set({ hoursPerClient: v })} fmt={(v) => `${v} h`} />
+                <Slider label="Valeur de ton heure" value={i.hourValue} min={0} max={300} step={5} onChange={(v) => set({ hourValue: v })} fmt={(v) => eur(v)} />
+                <Slider label="Coût acquisition hors-temps / client" value={i.acqCostPerClient} min={0} max={500} step={5} onChange={(v) => set({ acqCostPerClient: v })} fmt={(v) => eur(v)} />
+                <Slider label="Infra fixe / mois" value={i.fixedMonthly} min={0} max={1000} step={10} onChange={(v) => set({ fixedMonthly: v })} fmt={(v) => eur(v)} />
+              </div>
+            </div>
+          </div>
+
+          {/* Sorties */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              <Metric label="MRR" value={eur(Math.round(s.mrr))} accent />
+              <Metric label="ARR" value={eur(Math.round(s.arr))} />
+              <Metric label="Cash mois 1" value={eur(Math.round(s.month1Cash))} accent />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+                <p className="font-display text-sm font-semibold text-paper">Unit economics</p>
+                <table className="mt-2 w-full text-[13px]">
+                  <tbody>
+                    <tr><td className="py-1 text-paper-faint">CAC / client</td><td className="py-1 text-right font-mono text-paper">{eur(Math.round(s.cacPerClient))}</td></tr>
+                    <tr><td className="py-1 text-paper-faint">dont ton temps</td><td className="py-1 text-right font-mono text-paper-dim">{Math.round(s.timeShareOfCac * 100)} %</td></tr>
+                    <tr><td className="py-1 text-paper-faint">LTV / client</td><td className="py-1 text-right font-mono text-paper">{eur(Math.round(s.ltvPerClient))}</td></tr>
+                    <tr><td className="py-1 text-paper-faint">LTV : CAC</td><td className={cn("py-1 text-right font-mono font-bold", ratioTone)}>{s.ltvCac.toFixed(1)} : 1</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+                <p className="font-display text-sm font-semibold text-paper">Seuils</p>
+                <table className="mt-2 w-full text-[13px]">
+                  <tbody>
+                    <tr><td className="py-1 text-paper-faint">Break-even infra</td><td className="py-1 text-right font-mono text-paper">{s.breakEvenClientsInfra <= 0 ? "—" : `${Math.ceil(s.breakEvenClientsInfra)} client${Math.ceil(s.breakEvenClientsInfra) > 1 ? "s" : ""}`}</td></tr>
+                    <tr><td className="py-1 text-paper-faint">Investissement-temps</td><td className="py-1 text-right font-mono text-paper">{eur(Math.round(s.timeInvestTotal))}</td></tr>
+                    <tr><td className="py-1 text-paper-faint">Remboursé en</td><td className="py-1 text-right font-mono text-paper">{s.timePaybackMonths <= 0 ? "—" : `${s.timePaybackMonths.toFixed(1)} mois`}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className={cn("rounded-lg border px-4 py-3 text-[13px]", s.ltvCac >= 3 ? "border-signal-green/40 bg-signal-green/5 text-paper-dim" : "border-bronze-700/50 bg-bronze-900/20 text-paper-dim")}>
+              {s.ltvCac >= 3 ? (
+                <>Ratio <strong className="text-paper">LTV:CAC de {s.ltvCac.toFixed(1)}:1</strong> — sain (cible &gt; 3:1). Ton CAC est à <strong className="text-paper">{Math.round(s.timeShareOfCac * 100)} %</strong> du temps : c&apos;est exactement ce qu&apos;Alpha Sales OS réduit.</>
+              ) : (
+                <>Ratio <strong className="text-paper">LTV:CAC de {s.ltvCac.toFixed(1)}:1</strong> — sous la cible de 3:1. Monte le prix ou la rétention, ou baisse le temps par client (ce que l&apos;OS automatise).</>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+      <p className="mx-auto max-w-2xl text-center text-[11px] text-paper-faint">
+        <strong className="text-paper-dim">Projection interne, pas une promesse</strong> — 10 clients ≈ {eur(Math.round(defaultSaasInput.pricePerMonth * defaultSaasInput.clients))}/mois de MRR. C&apos;est ta preuve, pas ta destination : les gros paliers viennent des revendeurs qui apportent chacun leurs clients.
       </p>
     </div>
   );

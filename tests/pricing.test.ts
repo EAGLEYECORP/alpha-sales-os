@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calc, tierFor, defaultPricing, type PricingConfig, type CalcInput } from "../lib/pricing";
+import { calc, tierFor, calcSaas, defaultSaasInput, defaultPricing, type PricingConfig, type CalcInput } from "../lib/pricing";
 
 const INPUT: CalcInput = { prospects: 500, replyRate: 8, closeRate: 25, avgSale: 6000 };
 
@@ -59,4 +59,45 @@ test("pricing — le défaut partagé n'est jamais muté par calc", () => {
   calc(INPUT);
   calc({ ...INPUT, prospects: 9000 }, defaultPricing);
   assert.equal(JSON.stringify(defaultPricing), before);
+});
+
+// ── SaaS economics (vendre Alpha Sales OS) ──────────────────────────────
+test("saas — cas de base : MRR, ARR, cash mois 1", () => {
+  const s = calcSaas(defaultSaasInput);
+  assert.equal(s.mrr, 2900); // 10 × 290
+  assert.equal(s.arr, 34800);
+  assert.equal(s.setupCash, 4900); // 10 × 490
+  assert.equal(s.month1Cash, 7800); // 4900 + 2900
+});
+
+test("saas — CAC dominé par le temps, LTV et ratio cohérents", () => {
+  const s = calcSaas(defaultSaasInput);
+  // CAC = 25 (hors-temps) + 5h × 50€ = 275
+  assert.equal(s.cacPerClient, 275);
+  // temps = 250 sur 275
+  assert.ok(Math.abs(s.timeShareOfCac - 250 / 275) < 1e-9);
+  // LTV = 490 setup + 290 × 12 = 3970
+  assert.equal(s.ltvPerClient, 3970);
+  assert.ok(Math.abs(s.ltvCac - 3970 / 275) < 1e-9);
+});
+
+test("saas — seuils : break-even infra et remboursement du temps", () => {
+  const s = calcSaas(defaultSaasInput);
+  // infra 120 / prix 290
+  assert.ok(Math.abs(s.breakEvenClientsInfra - 120 / 290) < 1e-9);
+  // temps total = 10 × 5h × 50€ = 2500 ; payback = 2500 / 2900 mois
+  assert.equal(s.timeInvestTotal, 2500);
+  assert.ok(Math.abs(s.timePaybackMonths - 2500 / 2900) < 1e-9);
+});
+
+test("saas — le prix déplace tout (sensibilité)", () => {
+  const hi = calcSaas({ ...defaultSaasInput, pricePerMonth: 490 });
+  assert.equal(hi.mrr, 4900);
+  assert.ok(hi.ltvCac > calcSaas(defaultSaasInput).ltvCac);
+});
+
+test("saas — zéro client ne divise jamais par zéro", () => {
+  const s = calcSaas({ ...defaultSaasInput, clients: 0 });
+  assert.equal(s.mrr, 0);
+  assert.equal(s.timePaybackMonths, 0); // pas de NaN/Infinity
 });
