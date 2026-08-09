@@ -123,7 +123,14 @@ JSON2VIDEO_API_KEY=
 # Endpoint text-to-video GPU (HunyuanVideo hébergé, Replicate, fal…) :
 # POST { prompt } → { url } ou { id }. HunyuanVideo NE tourne PAS dans l'app.
 VIDEO_GEN_ENDPOINT=
-VIDEO_GEN_KEY=`;
+VIDEO_GEN_KEY=
+
+# ── Audit auto depuis le site (optionnel) ──
+# Le fetch direct marche pour les sites simples sans rien. Pour les sites
+# JS/anti-bot, branche un scraper (Firecrawl/Crawl4AI/Camoufox auto-hébergé) :
+# POST { url } → { text | markdown | html }. Ne tourne PAS dans l'app (navigateur).
+SCRAPE_ENDPOINT=
+SCRAPE_KEY=`;
 
 function Dot({ level }: { level: Level }) {
   if (level === "ok") return <CheckCircle2 size={15} className="shrink-0 text-signal-green" />;

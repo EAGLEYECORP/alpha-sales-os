@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Circle, Download, ExternalLink, Gift, GraduationCap, Import, Loader2, Ruler, Sparkles, X } from "lucide-react";
+import { CheckCircle2, Circle, Download, ExternalLink, Gift, Globe, GraduationCap, Import, Loader2, Ruler, Sparkles, X } from "lucide-react";
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
 import { renderAuditDoc } from "@/lib/audit-doc";
@@ -79,6 +79,13 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
   const [coach, setCoach] = useState(false);
   const [appliedOnce, setAppliedOnce] = useState(false);
   const [giftOpened, setGiftOpened] = useState(false);
+  // Audit automatique depuis le site : URL pré-remplie si websiteState en contient une.
+  const [siteUrl, setSiteUrl] = useState(() => {
+    const m = (p.deepAudit?.websiteState ?? "").match(/https?:\/\/[^\s)]+/i);
+    return m ? m[0] : "";
+  });
+  const [genBusy, setGenBusy] = useState(false);
+  const [auditSource, setAuditSource] = useState<string | null>(null);
 
   // La visite du deep-dive s'ouvre UNE fois (premier prospect travaillé).
   useEffect(() => {
@@ -98,10 +105,41 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
     }
   };
 
+  /** Audit complet auto : récupère le site du prospect et le structure. */
+  const generateFromSite = async () => {
+    if (!siteUrl.trim()) {
+      setMsg("Donne l'URL du site du prospect (ex. https://…).");
+      return;
+    }
+    setGenBusy(true);
+    setMsg("");
+    setExtracted(null);
+    try {
+      const res = await fetch("/api/audit/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: siteUrl, company: p.company, city: p.city, sector: p.sector }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Génération impossible.");
+      } else {
+        setExtracted(data.data as Extracted);
+        setAuditSource(siteUrl);
+        setMsg(`Audit généré depuis le site (${data.source}) par ${data.engine} — relis puis applique.`);
+      }
+    } catch (e) {
+      setMsg(`Erreur : ${e instanceof Error ? e.message : "réseau"}`);
+    } finally {
+      setGenBusy(false);
+    }
+  };
+
   const runExtract = async () => {
     setBusy(true);
     setMsg("");
     setExtracted(null);
+    setAuditSource(null);
     try {
       const res = await fetch("/api/audit/extract", {
         method: "POST",
@@ -146,23 +184,29 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
     const mergedProblems = [...p.problems];
     for (const pb of x.problems ?? []) if (!mergedProblems.some((e) => e.toLowerCase() === pb.toLowerCase())) mergedProblems.push(pb);
     const noteLines = [
+      auditSource ? `Audit auto depuis ${auditSource}` : "",
       x.marketPosition ? `Position marché : ${x.marketPosition}` : "",
       x.audience ? `Son offre parle à : ${x.audience}` : "",
       x.summary ? `Résumé recherche : ${x.summary}` : "",
     ].filter(Boolean);
+    // Source conservée en pièce jointe uniquement pour une recherche COLLÉE
+    // (l'audit auto depuis le site n'a pas de texte brut à joindre — la
+    // provenance est notée ci-dessus).
+    const label = auditSource ? "audit auto (site)" : "recherche importée";
     patch(p.id, {
       deepAudit,
       ignoranceTax: tax,
       problems: mergedProblems,
       solution: p.solution.trim() ? p.solution : x.solution ?? p.solution,
       personalizedOffer: p.personalizedOffer.trim() ? p.personalizedOffer : x.personalizedOffer ?? p.personalizedOffer,
-      notes: noteLines.length ? `${p.notes ? p.notes + "\n" : ""}[${new Date().toISOString().slice(0, 10)} — recherche importée]\n${noteLines.join("\n")}` : p.notes,
-      attachments: [...p.attachments, researchAttachment(research)],
+      notes: noteLines.length ? `${p.notes ? p.notes + "\n" : ""}[${new Date().toISOString().slice(0, 10)} — ${label}]\n${noteLines.join("\n")}` : p.notes,
+      attachments: research.trim().length >= 40 ? [...p.attachments, researchAttachment(research)] : p.attachments,
     });
     setExtracted(null);
     setResearch("");
+    setAuditSource(null);
     setAppliedOnce(true);
-    setMsg("✓ Fiche mise à jour — la source est conservée en pièce jointe. Vérifie la Taxe d'Ignorance.");
+    setMsg("✓ Fiche mise à jour. Vérifie la Taxe d'Ignorance.");
   };
 
   /**
@@ -303,9 +347,33 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
         </div>
       </div>
 
+      {/* Audit COMPLET automatique — depuis le site du prospect (sans copier-coller) */}
+      <div className="mt-3 rounded-lg border border-bronze-700/50 bg-bronze-900/10 p-2.5">
+        <p className="flex items-center gap-1.5 text-[12px] font-medium text-paper">
+          <Globe size={13} className="text-bronze-400" /> Générer l&apos;audit complet depuis le site
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <input
+            className="input flex-1 min-w-[180px] font-mono text-[12px]"
+            placeholder="https://site-du-prospect.fr"
+            value={siteUrl}
+            onChange={(e) => setSiteUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !genBusy && generateFromSite()}
+          />
+          <button className="btn-bronze px-3 py-1.5 text-[12px]" onClick={generateFromSite} disabled={genBusy || !siteUrl.trim()}>
+            {genBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+            {genBusy ? "Analyse du site…" : "Générer l'audit"}
+          </button>
+        </div>
+        <p className="mt-1 text-[10.5px] text-paper-faint">
+          Récupère la page du prospect et la structure automatiquement. Sites JS/anti-bot : branche un{" "}
+          <code className="code">SCRAPE_ENDPOINT</code> (Firecrawl/Crawl4AI/Camoufox). Tu relis avant d&apos;appliquer.
+        </p>
+      </div>
+
       <textarea
         className="input mt-3 min-h-[110px] font-mono text-[12px]"
-        placeholder={`Colle ici ta recherche sur ${p.company} (deep-dive Perplexity, analyse marché, notes terrain…) — puis « Structurer avec l'IA ».`}
+        placeholder={`… ou colle ta recherche sur ${p.company} (deep-dive Perplexity, analyse marché, notes terrain…) — puis « Structurer avec l'IA ».`}
         value={research}
         onChange={(e) => setResearch(e.target.value)}
       />

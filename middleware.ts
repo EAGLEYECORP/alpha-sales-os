@@ -36,6 +36,7 @@ const INTERNAL = [
   "/api/agent",
   "/api/sparring",
   "/api/audit/extract",
+  "/api/audit/generate",
   "/api/email/preview",
   "/api/import/sheet",
   "/api/track/stats",

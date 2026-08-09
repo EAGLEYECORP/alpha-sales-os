@@ -85,6 +85,11 @@ export async function GET() {
         json2video: has("JSON2VIDEO_API_KEY"),
         endpoint: has("VIDEO_GEN_ENDPOINT"),
       },
+      audit: {
+        // Audit auto depuis le site : fetch direct toujours dispo ; endpoint
+        // scraper (Firecrawl/Crawl4AI/Camoufox) optionnel pour les sites durs.
+        scrapeEndpoint: has("SCRAPE_ENDPOINT"),
+      },
       access: {
         // porte d'accès serveur active (mot de passe requis pour toute l'UI)
         gated: has("SITE_PASSWORD"),
