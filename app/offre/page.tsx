@@ -158,8 +158,10 @@ export default function OffrePage() {
         </div>
       </section>
 
-      <p className="text-center text-[11px] text-paper-faint">
-        Chiffres indicatifs, calés sur les standards du marché (agences outbound + SaaS de prospection). Devis personnalisé selon secteur et volume.
+      <p className="mx-auto max-w-2xl text-center text-[11px] text-paper-faint">
+        <strong className="text-paper-dim">Estimation, pas une garantie</strong> — basée sur les hypothèses saisies, sans
+        valeur d&apos;engagement. On garantit le procédé (zéro lead perdu, 24/7), jamais un montant de CA. Chiffres calés
+        sur les standards du marché ; devis personnalisé selon secteur et volume.
       </p>
     </div>
   );
