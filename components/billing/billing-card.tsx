@@ -9,6 +9,7 @@ import {
   isOwnerEmail,
   subActive,
   PLAN_UI,
+  FREE_TIER,
   type Plan,
   type Subscription,
 } from "@/lib/billing";
@@ -127,8 +128,20 @@ export function BillingCard({ email }: { email: string | null }) {
         </div>
       ) : (
         <div className="mt-3">
-          <p className="text-[13px] text-paper-dim">
-            Aucun abonnement actif. Choisis un plan pour débloquer l&apos;OS en continu.
+          <div className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+            <p className="flex items-center justify-between text-[13px] font-medium text-paper">
+              <span>Formule {FREE_TIER.name} <span className="text-[11px] text-signal-green">· active</span></span>
+              <span className="font-mono text-[11px] text-paper-faint">
+                {FREE_TIER.maxProspects} fiches · {FREE_TIER.emailsPerMonth} envois/mois
+              </span>
+            </p>
+            <p className="mt-1 text-[11px] text-paper-faint">
+              Inclus : {FREE_TIER.features.join(" · ")}. Passe au payant pour :{" "}
+              {FREE_TIER.excluded.join(", ")}.
+            </p>
+          </div>
+          <p className="mt-3 text-[13px] text-paper-dim">
+            Choisis un plan pour débloquer l&apos;OS en continu.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {(Object.keys(PLAN_UI) as Plan[]).map((p) => (
