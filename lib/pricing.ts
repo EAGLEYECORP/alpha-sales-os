@@ -63,9 +63,27 @@ export const TIERS: Tier[] = [
   },
 ];
 
-export function tierFor(prospects: number): Tier {
-  return TIERS.find((t) => prospects <= t.maxProspects) ?? TIERS[TIERS.length - 1];
+export function tierFor(prospects: number, tiers: Tier[] = TIERS): Tier {
+  return tiers.find((t) => prospects <= t.maxProspects) ?? tiers[tiers.length - 1];
 }
+
+/**
+ * Tarification d'un compte (white-label). Chaque compte peut définir SES prix ;
+ * défaut = le modèle EAGLEYE (constantes ci-dessus).
+ */
+export interface PricingConfig {
+  /** Frais de setup one-shot (€). */
+  setupFee: number;
+  /** Part sur le CA généré, en POURCENT (ex. 30). */
+  revSharePct: number;
+  tiers: Tier[];
+}
+
+export const defaultPricing: PricingConfig = {
+  setupFee: SETUP_FEE,
+  revSharePct: REV_SHARE * 100,
+  tiers: TIERS,
+};
 
 export interface CalcInput {
   /** Prospects contactés / mois. */
@@ -95,19 +113,20 @@ export interface CalcResult {
   clientRoiPerf: number; // (CA gardé an1) / (coût an1)
 }
 
-export function calc(input: CalcInput): CalcResult {
+export function calc(input: CalcInput, pricing: PricingConfig = defaultPricing): CalcResult {
   const prospects = Math.max(0, input.prospects);
   const meetings = prospects * (input.replyRate / 100);
   const sales = meetings * (input.closeRate / 100);
   const revenue = sales * input.avgSale;
 
-  const perfCut = revenue * REV_SHARE;
+  const revShare = pricing.revSharePct / 100;
+  const perfCut = revenue * revShare;
   const clientKeepsPerf = revenue - perfCut;
-  const perfYear1 = SETUP_FEE + perfCut * 12;
+  const perfYear1 = pricing.setupFee + perfCut * 12;
 
-  const tier = tierFor(prospects);
+  const tier = tierFor(prospects, pricing.tiers);
   const subMonthly = tier.monthly;
-  const subYear1 = subMonthly === null ? null : SETUP_FEE + subMonthly * 12;
+  const subYear1 = subMonthly === null ? null : pricing.setupFee + subMonthly * 12;
 
   let cheaperForClient: CalcResult["cheaperForClient"];
   if (subYear1 === null) cheaperForClient = "devis";

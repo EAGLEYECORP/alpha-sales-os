@@ -352,6 +352,8 @@ export interface AppSettings {
   supabaseSync: boolean;
   /** First-run choice made (demo vs real data) */
   onboarded: boolean;
+  /** Tarifs du compte (white-label). Absent = modèle EAGLEYE par défaut. */
+  pricing?: import("./pricing").PricingConfig;
   security: {
     /** SHA-256 of the app-lock PIN; null = no lock */
     pinHash: string | null;

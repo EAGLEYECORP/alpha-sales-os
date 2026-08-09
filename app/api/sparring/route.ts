@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
   const agency = body.agencyName?.trim() || "l'agence";
   const offer = body.offerLine?.trim() || "ses services aux commerces";
-  const prompt = `Tu joues un patron de commerce lyonnais sceptique et pressé : ${body.prospect.name}, gérant de ${body.prospect.company} (${body.prospect.sector}).${fieldBlock}
+  const prompt = `Tu joues un patron de commerce local sceptique et pressé : ${body.prospect.name}, gérant de ${body.prospect.company} (${body.prospect.sector}).${fieldBlock}
 Un commercial de ${agency} (${offer}) essaie de te convaincre d'accepter un audit gratuit de 20 minutes.
 Reste DANS LE PERSONNAGE : méfiant mais juste. S'il répond bien (douleur, preuve, next step daté, zéro jargon), tu t'adoucis. S'il pitche le produit, parle prix trop tôt ou reste vague, tu durcis.
 Contexte réel du prospect : ${body.prospect.pitch || "commerce local sans vraie présence en ligne"}.

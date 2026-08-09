@@ -3,16 +3,22 @@
 import { useMemo, useState } from "react";
 import { BadgeEuro, Check, Crown, Handshake, TrendingUp } from "lucide-react";
 import { cn, eur } from "@/lib/utils";
-import { SETUP_FEE, REV_SHARE, TIERS, calc, type CalcInput } from "@/lib/pricing";
+import { calc, defaultPricing, type CalcInput } from "@/lib/pricing";
+import { useAlpha } from "@/lib/store";
 
 export default function OffrePage() {
+  // Tarifs du compte (white-label) — défaut = modèle EAGLEYE.
+  const pricing = useAlpha((s) => s.settings.pricing) ?? defaultPricing;
+  const SETUP_FEE = pricing.setupFee;
+  const REV_SHARE = pricing.revSharePct / 100;
+  const TIERS = pricing.tiers;
   const [input, setInput] = useState<CalcInput>({
     prospects: 500,
     replyRate: 8,
     closeRate: 25,
     avgSale: 6000,
   });
-  const r = useMemo(() => calc(input), [input]);
+  const r = useMemo(() => calc(input, pricing), [input, pricing]);
   const set = (patch: Partial<CalcInput>) => setInput((s) => ({ ...s, ...patch }));
 
   return (

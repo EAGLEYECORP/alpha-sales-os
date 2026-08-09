@@ -34,11 +34,15 @@
   (agent Python) prend `VOICE_BRAND_NAME`/`VOICE_BRAND_CITY` (défaut EAGLEYE).
 - **Documents prospect** (audit / projection / lot) : ✅ **Fait** (marque du compte).
 
+- **Page `/offre`** (tarifs + calculateur ROI) : ✅ **Fait**. Setup, part sur CA
+  et paliers viennent de `settings.pricing` (`Réglages → Tarifs — mon offre`,
+  `components/settings/pricing-editor.tsx`). Absent → modèle EAGLEYE par défaut
+  (`defaultPricing`). Un revendeur saisit SES prix ; « Revenir au modèle par
+  défaut » efface l'override. `calc()` et `tierFor()` prennent la config en
+  paramètre (couvert par `tests/pricing.test.ts`).
+
 ## ⏳ Ce qui reste EAGLEYE-spécifique
 
-- **Page `/offre`** : le calculateur et les paliers (setup 2 500 €, 30 %,
-  Starter/Growth/Scale de `lib/pricing.ts`) sont le modèle **d'EAGLEYE**. Pour un
-  revendeur, ce sont SES prix — à rendre configurables (ou masquer selon le rôle).
 - **Seed / démo** : les prospects de démonstration et certains libellés restent
   orientés EAGLEYE (sans impact pour un revendeur qui charge ses vraies données).
 
@@ -46,8 +50,8 @@
 
 1. ✅ Documents prospect white-label + config « Mon offre ».
 2. ✅ Prompts IA + divulgation voix au nom du compte.
-3. `/offre` : prix configurables par compte (ou séparer « le modèle EAGLEYE » du
-   « ton offre à toi ») — dernier gros morceau EAGLEYE-spécifique.
+3. ✅ `/offre` : prix configurables par compte (`settings.pricing`).
 
-> L'IA et la voix parlent maintenant au nom du compte. Il reste la page Tarifs à
-> rendre configurable pour un white-label complet.
+> Documents, prompts IA, voix et tarifs parlent maintenant au nom du compte.
+> Le white-label est complet côté produit ; seul le seed de démo reste orienté
+> EAGLEYE (sans impact sur un compte revendeur qui charge ses vraies données).
