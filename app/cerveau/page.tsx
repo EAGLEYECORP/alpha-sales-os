@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Brain, Plus, Search, Trash2, Link2, Sparkles, Loader2, Download, X } from "lucide-react";
+import { Brain, Plus, Search, Trash2, Link2, Sparkles, Loader2, Download, X, Network, ListTree, FileDown, Unlink } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { search, backlinks, extractLinks, contextFromNotes, type KnowledgeNote } from "@/lib/knowledge";
 import { cn, relativeFr } from "@/lib/utils";
 import { Synapse } from "@/components/cerveau/synapse";
+import { KnowledgeGraph } from "@/components/cerveau/graph";
 
 export default function CerveauPage() {
   const notes = useAlpha((s) => s.notes);
@@ -16,12 +17,46 @@ export default function CerveauPage() {
 
   const [q, setQ] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(notes[0]?.id ?? null);
+  const [view, setView] = useState<"liste" | "graphe">("liste");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [orphansOnly, setOrphansOnly] = useState(false);
 
-  // Liste : recherche RAG si requête, sinon les plus récentes.
+  // Santé du vault : liens résolus, orphelines, tags.
+  const { edgeCount, orphanIds, allTags } = useMemo(() => {
+    const byTitle = new Map(notes.map((n) => [n.title.trim().toLowerCase(), n.id]));
+    const connected = new Set<string>();
+    let edges = 0;
+    for (const n of notes) {
+      for (const l of extractLinks(n.body)) {
+        const t = byTitle.get(l.trim().toLowerCase());
+        if (t && t !== n.id) { edges += 1; connected.add(n.id); connected.add(t); }
+      }
+    }
+    return {
+      edgeCount: edges,
+      orphanIds: new Set(notes.filter((n) => !connected.has(n.id)).map((n) => n.id)),
+      allTags: Array.from(new Set(notes.flatMap((n) => n.tags))).sort(),
+    };
+  }, [notes]);
+
+  // Liste : recherche RAG si requête, sinon les plus récentes ; puis filtres.
   const list = useMemo(() => {
-    if (q.trim()) return search(q, notes, 30).map((s) => s.note);
-    return [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  }, [q, notes]);
+    let base = q.trim() ? search(q, notes, 50).map((s) => s.note) : [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    if (tagFilter) base = base.filter((n) => n.tags.includes(tagFilter));
+    if (orphansOnly) base = base.filter((n) => orphanIds.has(n.id));
+    return base;
+  }, [q, notes, tagFilter, orphansOnly, orphanIds]);
+
+  const exportMd = () => {
+    const md = notes
+      .map((n) => `# ${n.title}\n\n${n.tags.length ? `Tags : ${n.tags.join(", ")}\n\n` : ""}${n.body}\n`)
+      .join("\n---\n\n");
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `cerveau-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+  };
 
   const selected = notes.find((n) => n.id === selectedId) ?? null;
 
@@ -68,14 +103,50 @@ export default function CerveauPage() {
           </h1>
           <p className="max-w-xl text-sm text-paper-faint">Toutes tes infos au même endroit — cherchées par pertinence, reliées en <code className="font-mono text-bronze-400">[[wikilinks]]</code>, interrogeables.</p>
         </div>
-        <div className="relative z-10 flex gap-2">
+        <div className="relative z-10 flex flex-wrap gap-2">
+          <button className="btn-ghost" onClick={exportMd} title="Exporter en Markdown (Obsidian-compatible)"><FileDown size={14} /> Exporter</button>
           <button className="btn-ghost" onClick={ingestProspects}><Download size={14} /> Aspirer mes prospects</button>
           <button className="btn-bronze" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
         </div>
       </header>
 
-      <AskBrain notes={notes} settings={settings} onOpen={(id) => setSelectedId(id)} />
+      <AskBrain notes={notes} settings={settings} onOpen={(id) => { setSelectedId(id); setView("liste"); }} />
 
+      {/* Barre de contrôle : vue, tags, orphelines, stats */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex rounded-lg border border-ink-700 bg-ink-900 p-0.5 text-[12px]">
+          <button className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5", view === "liste" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")} onClick={() => setView("liste")}>
+            <ListTree size={13} /> Liste
+          </button>
+          <button className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5", view === "graphe" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")} onClick={() => setView("graphe")}>
+            <Network size={13} /> Graphe
+          </button>
+        </div>
+        {allTags.slice(0, 12).map((t) => (
+          <button
+            key={t}
+            className={cn("chip", tagFilter === t ? "border-bronze-500 bg-bronze-900/40 text-bronze-300" : "border-ink-600 text-paper-faint hover:text-paper")}
+            onClick={() => setTagFilter(tagFilter === t ? null : t)}
+          >
+            {t}
+          </button>
+        ))}
+        <button
+          className={cn("chip flex items-center gap-1", orphansOnly ? "border-signal-amber/60 bg-signal-amber/10 text-signal-amber" : "border-ink-600 text-paper-faint hover:text-paper")}
+          onClick={() => setOrphansOnly((v) => !v)}
+          title="Notes reliées à aucune autre"
+        >
+          <Unlink size={12} /> orphelines {orphanIds.size > 0 && `(${orphanIds.size})`}
+        </button>
+        <span className="ml-auto font-mono text-[11px] text-paper-faint">{notes.length} notes · {edgeCount} liens</span>
+      </div>
+
+      {view === "graphe" ? (
+        <div>
+          <KnowledgeGraph notes={notes} selectedId={selectedId} onOpen={(id) => { setSelectedId(id); setView("liste"); }} />
+          <p className="mt-2 text-center text-[11px] text-paper-faint">Chaque point = une note · les lignes = les <code className="font-mono text-bronze-400">[[wikilinks]]</code>. Clique un nœud pour l&apos;ouvrir.</p>
+        </div>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
         {/* Colonne gauche : recherche + liste */}
         <div className="space-y-2">
@@ -128,6 +199,7 @@ export default function CerveauPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -151,6 +223,17 @@ function NoteEditor({
   const links = extractLinks(body);
   const back = backlinks(note.title, notes);
 
+  // Suggestions de liens : notes proches (RAG) pas encore reliées.
+  const related = useMemo(() => {
+    const linked = new Set(extractLinks(body).map((l) => l.toLowerCase()));
+    return search(`${title} ${body}`, notes.filter((n) => n.id !== note.id), 8)
+      .map((s) => s.note)
+      .filter((n) => !linked.has(n.title.toLowerCase()))
+      .slice(0, 4);
+  }, [title, body, notes, note.id]);
+
+  const addLink = (t: string) => setBody((b) => `${b}${b && !b.endsWith("\n") ? "\n" : ""}Voir [[${t}]].`);
+
   return (
     <div className="space-y-3">
       <section className="card p-4">
@@ -168,6 +251,21 @@ function NoteEditor({
         />
         <p className="mt-1 text-[11px] text-paper-faint">Maj {relativeFr(note.updatedAt)} · {note.source}</p>
       </section>
+
+      {related.length > 0 && (
+        <div className="card p-3">
+          <p className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-paper-faint">
+            <Sparkles size={12} className="text-bronze-400" /> Notes similaires à relier
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {related.map((n) => (
+              <button key={n.id} className="chip border-bronze-700/50 text-bronze-400 hover:bg-bronze-900/30" onClick={() => addLink(n.title)} title="Insérer un lien vers cette note">
+                + {n.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {(links.length > 0 || back.length > 0) && (
         <div className="grid gap-3 sm:grid-cols-2">
