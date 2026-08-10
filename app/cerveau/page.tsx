@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { search, backlinks, extractLinks, contextFromNotes, type KnowledgeNote } from "@/lib/knowledge";
 import { cn, relativeFr } from "@/lib/utils";
+import { Synapse } from "@/components/cerveau/synapse";
 
 export default function CerveauPage() {
   const notes = useAlpha((s) => s.notes);
@@ -57,15 +58,17 @@ export default function CerveauPage() {
 
   return (
     <div className="animate-fade-up space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+      <header className="relative flex flex-wrap items-end justify-between gap-3 overflow-hidden rounded-2xl border border-ink-700 bg-ink-900/60 p-5">
+        <Synapse />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950/70 via-ink-950/30 to-transparent" />
+        <div className="relative z-10">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">RAG · zéro dépendance · hors-ligne</p>
           <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
-            <Brain size={22} className="text-bronze-400" /> Cerveau
+            <Brain size={22} className="animate-pulse text-bronze-400" style={{ filter: "drop-shadow(0 0 6px rgba(210,64,47,0.5))" }} /> Cerveau
           </h1>
-          <p className="text-sm text-paper-faint">Toutes tes infos au même endroit — cherchées par pertinence, reliées en <code className="font-mono text-bronze-400">[[wikilinks]]</code>, interrogeables.</p>
+          <p className="max-w-xl text-sm text-paper-faint">Toutes tes infos au même endroit — cherchées par pertinence, reliées en <code className="font-mono text-bronze-400">[[wikilinks]]</code>, interrogeables.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="relative z-10 flex gap-2">
           <button className="btn-ghost" onClick={ingestProspects}><Download size={14} /> Aspirer mes prospects</button>
           <button className="btn-bronze" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
         </div>
