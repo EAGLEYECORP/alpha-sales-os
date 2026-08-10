@@ -9,6 +9,7 @@ import {
   Bot,
   CalendarPlus,
   ClipboardList,
+  Crosshair,
   FileSignature,
   FileText,
   Layers,
@@ -28,6 +29,7 @@ import {
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
+import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
 import {
   BLAME_LAYERS,
@@ -591,6 +593,71 @@ function DoctrineTab({
   );
 }
 
+/* ── Routage d'offre : quelle offre EAGLEYE pour ce prospect ────────── */
+
+const OFFER_BAR: Record<EagleyeOffer, string> = {
+  "alpha-sales-os": "bg-bronze-500",
+  callflow: "bg-signal-green",
+  "visibilite-growth": "bg-signal-amber",
+};
+
+function OfferRecommendation({ p }: { p: Prospect }) {
+  const a = p.deepAudit;
+  const m = matchOffer({
+    sector: String(p.sector),
+    missedCallsPerWeek: a.missedCallsPerWeek,
+    googleRating: a.googleRating,
+    googleReviews: a.googleReviews,
+    websiteState: a.websiteState,
+    socialState: a.socialState,
+    monthlyValue: p.monthlyValue,
+    avgTicket: a.avgTicket,
+  });
+  const maxScore = Math.max(1, ...Object.values(m.scores));
+  const noSignal = Math.max(...Object.values(m.scores)) <= 0;
+  const order: EagleyeOffer[] = ["alpha-sales-os", "callflow", "visibilite-growth"];
+  const reasons = m.reasons[m.primary];
+
+  return (
+    <section className="card p-4 lg:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <Crosshair size={15} className="text-bronze-400" /> Offre recommandée
+        </h2>
+        {!noSignal && <span className="chip border-gold/50 bg-gold/10 text-bronze-400">{OFFER_LABELS[m.primary].split(" — ")[0]}</span>}
+      </div>
+
+      {noSignal ? (
+        <p className="mt-2 text-[12px] text-paper-faint">
+          Renseigne l&apos;audit ci-dessus (appels ratés, site, avis, secteur) — l&apos;app route alors ce prospect vers Callflow, Alpha Sales OS ou une offre Visibilité/Growth.
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-[13px] text-bronze-400">{m.pitch}</p>
+          <div className="mt-3 space-y-2">
+            {order.map((o) => (
+              <div key={o} className="flex items-center gap-3">
+                <span className={cn("w-40 shrink-0 text-[11px]", o === m.primary ? "font-medium text-paper" : "text-paper-faint")}>
+                  {OFFER_LABELS[o].split(" — ")[0]}
+                </span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink-800">
+                  <div className={cn("h-full rounded-full", OFFER_BAR[o], o !== m.primary && "opacity-40")} style={{ width: `${(m.scores[o] / maxScore) * 100}%` }} />
+                </div>
+                <span className="w-6 shrink-0 text-right font-mono text-[11px] text-paper-faint">{m.scores[o]}</span>
+              </div>
+            ))}
+          </div>
+          {reasons.length > 0 && (
+            <p className="mt-3 text-[11.5px] text-paper-dim">
+              <span className="text-paper-faint">Pourquoi :</span> {reasons.join(" · ")}.
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 /* ── Audit & Offre tab: problems → solution → personalized offer ────── */
 
 function AuditTab({
@@ -703,6 +770,10 @@ function AuditTab({
           )}
         </div>
       </section>
+
+      {/* Routage d'offre — quelle offre EAGLEYE pour ce prospect (lib/offer-match) */}
+      <OfferRecommendation p={p} />
+
       <section className="card p-4">
         <h2 className="font-display text-sm font-semibold text-paper">
           Problèmes identifiés <span className="text-[11px] font-normal text-paper-faint">(audit profond terrain)</span>
