@@ -121,38 +121,41 @@ messages, ni les quotas.
 > Calculés par `calcSaas()` (`lib/pricing.ts`) ; pilotables en direct sur
 > **/offre → onglet « Vendre Alpha Sales OS »**.
 
-**Cas de base** (à caler) : abonnement **290 €/mois**, setup **490 €**,
+**La preuve de concept, énoncée par Zakaria : `2 500 € d'installation × 10
+clients = 25 000 €`.** C'est du **cash encaissé**, avant même le récurrent.
+
+**Cas de base** : installation **2 500 €**, abonnement **290 €/mois**,
 rétention **12 mois**, cible **10 clients**. Coûts : ton temps **5 h/client
 à 50 €/h**, acquisition hors-temps **25 €/client**, infra fixe **120 €/mois**.
 
 | Métrique | Formule | Cas de base |
 |---|---|---|
+| **Cash setup (la POC)** | installation × clients | **25 000 €** |
 | **MRR** | clients × prix | **2 900 €/mois** |
 | **ARR** | MRR × 12 | **34 800 €** |
-| **Cash mois 1** | setups + 1er MRR | **7 800 €** |
-| **CAC / client** | acq. + (heures × valeur heure) | **~275 €** (≈ 90 % ton temps) |
-| **LTV / client** | setup + prix × rétention | **~3 970 €** |
-| **LTV : CAC** | LTV ÷ CAC | **~14 : 1** (cible > 3:1) |
+| **Cash mois 1** | setups + 1er MRR | **27 900 €** |
+| **CAC / client** | acq. + (heures × valeur heure) | **~275 €** (≈ 91 % ton temps) |
+| **LTV / client** | setup + prix × rétention | **~5 980 €** |
+| **LTV : CAC** | LTV ÷ CAC | **~21 : 1** (cible > 3:1) |
 | **Break-even infra** | infra fixe ÷ prix | **1 client** |
-| **Remboursement de ton temps** | temps total ÷ MRR | **~1 mois** |
+| **Remboursement de ton temps** | temps total ÷ MRR | **< 1 mois** |
 
-### Sensibilité au prix (10 clients)
+### Sensibilité au prix mensuel (installation 2 500 €, 10 clients)
 
-| Prix/mois | MRR | ARR | LTV/client | LTV:CAC |
-|---|---|---|---|---|
-| 149 € | 1 490 € | 17 880 € | ~2 280 € | ~8 : 1 |
-| **290 €** | **2 900 €** | **34 800 €** | **~3 970 €** | **~14 : 1** |
-| 490 € | 4 900 € | 58 800 € | ~6 370 € | ~23 : 1 |
-| 990 € | 9 900 € | 118 800 € | ~12 370 € | ~45 : 1 |
+| Prix/mois | Cash setup | MRR | ARR | LTV/client | LTV:CAC |
+|---|---|---|---|---|---|
+| 149 € | 25 000 € | 1 490 € | 17 880 € | ~4 290 € | ~16 : 1 |
+| **290 €** | **25 000 €** | **2 900 €** | **34 800 €** | **~5 980 €** | **~21 : 1** |
+| 490 € | 25 000 € | 4 900 € | 58 800 € | ~8 380 € | ~30 : 1 |
+| 990 € | 25 000 € | 9 900 € | 118 800 € | ~14 380 € | ~52 : 1 |
 
-**Les deux seuls leviers qui comptent :** le **prix** (il déplace tout) et
-la **valeur de ton temps** (90 % du CAC) — c'est exactement ce qu'Alpha
-Sales OS réduit en automatisant l'outreach.
+**Les deux seuls leviers qui comptent :** le **prix** (il déplace le récurrent)
+et la **valeur de ton temps** (≈ 91 % du CAC) — c'est exactement ce qu'Alpha
+Sales OS réduit en automatisant l'outreach. Pilotable en direct sur
+**/offre → « Vendre Alpha Sales OS »**.
 
-### La franchise sur « 5M »
+### « 5M » — la suite, pas la POC
 
-10 clients ≈ **2 900 €/mois de MRR ≈ 35 k€ ARR**. C'est la **preuve** que la
-machine signe, pas la destination. Les 5 M/mois à 290 €/client = **~17 000
-clients** : c'est le jeu des **revendeurs white-label** (chacun apporte ses
-propres clients), pas une campagne à 10 signatures. On enchaîne les deux,
-on ne les confond pas.
+Les 10 clients = **25 k€ de cash + ~35 k€ d'ARR** : la preuve que la machine
+signe. Les paliers supérieurs viennent des **revendeurs white-label** (chacun
+apporte ses propres clients) — on enchaîne les deux, on ne les confond pas.

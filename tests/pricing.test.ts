@@ -66,8 +66,8 @@ test("saas — cas de base : MRR, ARR, cash mois 1", () => {
   const s = calcSaas(defaultSaasInput);
   assert.equal(s.mrr, 2900); // 10 × 290
   assert.equal(s.arr, 34800);
-  assert.equal(s.setupCash, 4900); // 10 × 490
-  assert.equal(s.month1Cash, 7800); // 4900 + 2900
+  assert.equal(s.setupCash, 25000); // 10 × 2500 — la preuve de concept
+  assert.equal(s.month1Cash, 27900); // 25000 + 2900
 });
 
 test("saas — CAC dominé par le temps, LTV et ratio cohérents", () => {
@@ -76,9 +76,9 @@ test("saas — CAC dominé par le temps, LTV et ratio cohérents", () => {
   assert.equal(s.cacPerClient, 275);
   // temps = 250 sur 275
   assert.ok(Math.abs(s.timeShareOfCac - 250 / 275) < 1e-9);
-  // LTV = 490 setup + 290 × 12 = 3970
-  assert.equal(s.ltvPerClient, 3970);
-  assert.ok(Math.abs(s.ltvCac - 3970 / 275) < 1e-9);
+  // LTV = 2500 setup + 290 × 12 = 5980
+  assert.equal(s.ltvPerClient, 5980);
+  assert.ok(Math.abs(s.ltvCac - 5980 / 275) < 1e-9);
 });
 
 test("saas — seuils : break-even infra et remboursement du temps", () => {

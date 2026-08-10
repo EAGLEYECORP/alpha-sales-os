@@ -162,7 +162,9 @@ export interface SaasEconResult {
 
 export const defaultSaasInput: SaasEconInput = {
   pricePerMonth: 290,
-  setupFee: 490,
+  // Installation Alpha Sales OS = 2 500 € (SETUP_FEE). 10 clients × 2 500 =
+  // 25 000 € : la vraie preuve de concept en cash, avant même le récurrent.
+  setupFee: 2500,
   clients: 10,
   retentionMonths: 12,
   hoursPerClient: 5,

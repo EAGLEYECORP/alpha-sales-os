@@ -277,7 +277,7 @@ function SaasEconomics() {
         </div>
       </section>
       <p className="mx-auto max-w-2xl text-center text-[11px] text-paper-faint">
-        <strong className="text-paper-dim">Projection interne, pas une promesse</strong> — 10 clients ≈ {eur(Math.round(defaultSaasInput.pricePerMonth * defaultSaasInput.clients))}/mois de MRR. C&apos;est ta preuve, pas ta destination : les gros paliers viennent des revendeurs qui apportent chacun leurs clients.
+        <strong className="text-paper-dim">Projection interne, pas une promesse</strong> — 10 clients ≈ {eur(Math.round(defaultSaasInput.setupFee * defaultSaasInput.clients))} d&apos;installation (la preuve de concept) + {eur(Math.round(defaultSaasInput.pricePerMonth * defaultSaasInput.clients))}/mois de récurrent. Les gros paliers viennent des revendeurs qui apportent chacun leurs clients.
       </p>
     </div>
   );
