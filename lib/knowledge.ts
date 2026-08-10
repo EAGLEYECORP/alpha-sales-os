@@ -1,0 +1,175 @@
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * Le Cerveau — RAG lexical, zéro dépendance, hors-ligne.
+ *
+ * « Obsidian + RAG » sans vector DB ni clé : les notes vivent en markdown
+ * dans le store ; la récupération se fait par score lexical (BM25) sur les
+ * mots. Rien ne sort de la machine. L'IA (optionnelle) ne fait que
+ * SYNTHÉTISER les notes récupérées — la vérité reste tes notes.
+ *
+ * Upgrade prévu (v2) : brancher des embeddings (Ollama `nomic-embed-text`)
+ * derrière la même interface `search()` — comme la cascade IA, mieux avec
+ * une clé, mais déjà utile sans.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+export interface KnowledgeNote {
+  id: string;
+  title: string;
+  /** Corps markdown. Les [[liens]] tissent le graphe (façon Obsidian). */
+  body: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  /** D'où vient la note : saisie, aspirée d'un prospect, d'un débrief… */
+  source: "manuel" | "intel" | "debrief" | "playbook" | "auto";
+}
+
+// Mots vides FR + EN : ils n'apportent aucun signal de pertinence.
+const STOP = new Set([
+  "le", "la", "les", "un", "une", "des", "du", "de", "et", "ou", "a", "au", "aux", "en", "dans", "sur", "pour", "par", "avec", "sans",
+  "ce", "cet", "cette", "ces", "son", "sa", "ses", "est", "sont", "etre", "avoir", "que", "qui", "quoi", "ne", "pas", "plus", "on",
+  "nous", "vous", "ils", "elles", "je", "tu", "il", "elle", "se", "si", "mais", "donc", "car", "ni", "y", "l", "d", "c", "s", "n", "j", "t", "m",
+  "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "is", "are", "be", "it", "this", "that", "with", "as", "at", "by",
+]);
+
+/** Minuscule + sans accents + découpage en mots utiles (≥ 2 lettres, hors stopwords). */
+export function tokenize(text: string): string[] {
+  return (text ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 2 && !STOP.has(w));
+}
+
+const WIKILINK = /\[\[([^\]]+)\]\]/g;
+
+/** Titres cités en [[lien]] dans un corps. */
+export function extractLinks(body: string): string[] {
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  WIKILINK.lastIndex = 0;
+  while ((m = WIKILINK.exec(body ?? "")) !== null) {
+    const t = m[1].trim();
+    if (t) out.push(t);
+  }
+  return Array.from(new Set(out));
+}
+
+/** Notes qui pointent vers `title` via un [[lien]] (rétroliens Obsidian). */
+export function backlinks(title: string, notes: KnowledgeNote[]): KnowledgeNote[] {
+  const norm = title.trim().toLowerCase();
+  return notes.filter((n) => extractLinks(n.body).some((l) => l.toLowerCase() === norm));
+}
+
+export interface Scored {
+  note: KnowledgeNote;
+  score: number;
+}
+
+const K1 = 1.5;
+const B = 0.75;
+const TITLE_BOOST = 2.5; // un terme dans le titre pèse plus que dans le corps.
+
+/**
+ * Recherche BM25 lexical. Retourne les notes les plus pertinentes (score > 0),
+ * triées. `k` limite le nombre de résultats.
+ */
+export function search(query: string, notes: KnowledgeNote[], k = 6): Scored[] {
+  const q = tokenize(query);
+  if (q.length === 0 || notes.length === 0) return [];
+
+  // Corpus : tokens par note (titre compté TITLE_BOOST fois) + longueurs.
+  const docs = notes.map((n) => {
+    const bodyTokens = tokenize(n.body);
+    const titleTokens = tokenize(n.title);
+    const tf = new Map<string, number>();
+    for (const t of bodyTokens) tf.set(t, (tf.get(t) ?? 0) + 1);
+    for (const t of titleTokens) tf.set(t, (tf.get(t) ?? 0) + TITLE_BOOST);
+    const len = bodyTokens.length + titleTokens.length * TITLE_BOOST;
+    return { note: n, tf, len };
+  });
+
+  const N = docs.length;
+  const avgdl = docs.reduce((s, d) => s + d.len, 0) / N || 1;
+  const qTerms = Array.from(new Set(q));
+
+  // df par terme de requête.
+  const df = new Map<string, number>();
+  for (const t of qTerms) {
+    let c = 0;
+    for (const d of docs) if (d.tf.has(t)) c += 1;
+    df.set(t, c);
+  }
+
+  const scored: Scored[] = docs.map((d) => {
+    let score = 0;
+    for (const t of qTerms) {
+      const f = d.tf.get(t) ?? 0;
+      if (f === 0) continue;
+      const n = df.get(t) ?? 0;
+      const idf = Math.log(1 + (N - n + 0.5) / (n + 0.5));
+      score += idf * ((f * (K1 + 1)) / (f + K1 * (1 - B + (B * d.len) / avgdl)));
+    }
+    return { note: d.note, score };
+  });
+
+  return scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k);
+}
+
+/** Notes de départ — le socle du Cerveau (offre, chiffres, doctrine de routage). */
+export const seedKnowledge: KnowledgeNote[] = [
+  {
+    id: "seed-offre",
+    title: "Offre — Alpha Sales OS",
+    body: "L'OS de vente intelligent pour forces de vente et agences. Installation 2 500 €, abonnement dès 290 €/mois.\n\nPromesse : zéro lead perdu, la machine tourne 24/7. On outille le closing, on ne remplit pas une base — on remplit un agenda.\n\nVoir [[Chiffres — preuve de concept]] et [[Routage d'offre]].",
+    tags: ["offre", "alpha-sales-os"],
+    createdAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-08-10T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "seed-chiffres",
+    title: "Chiffres — preuve de concept",
+    body: "Preuve de concept = 2 500 € d'installation × 10 clients = **25 000 €** de cash.\n\n- MRR à 290 €/mois × 10 = 2 900 €/mois (~35 k€ ARR)\n- CAC ~275 €/client (≈ 91 % ton temps) · LTV ~5 980 € · LTV:CAC ~21:1\n- Break-even infra : 1 client\n\nLes « 5M » viennent des revendeurs white-label, pas d'une campagne à 10 signatures.",
+    tags: ["chiffres", "economie"],
+    createdAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-08-10T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "seed-routage",
+    title: "Routage d'offre",
+    body: "Après l'audit, on route le prospect :\n\n- Appels manqués / métier téléphone → **ScintIA Callflow**\n- Leads & deals à structurer → **Alpha Sales OS**\n- Invisible en ligne (pas de site, peu d'avis) → **Visibilité / Growth** (offre personnalisée)\n\nPersonne ne sort les mains vides. Voir [[Play — Permis Lyon]].",
+    tags: ["doctrine", "routage"],
+    createdAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-08-10T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "seed-permis",
+    title: "Play — Permis Lyon",
+    body: "ICP à déclencheur : un maître d'œuvre nommé sur un permis de construire EN COURS est en pleine activité — le bon moment pour l'approcher.\n\nn8n tire les permis (data.grandlyon.com) → pousse les MOE dans l'app → audit → [[Routage d'offre]] → séquence.",
+    tags: ["play", "prospection", "lyon"],
+    createdAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-08-10T00:00:00.000Z",
+    source: "playbook",
+  },
+];
+
+/** Contexte compact des notes récupérées, à injecter dans un prompt IA. */
+export function contextFromNotes(scored: Scored[], maxChars = 3000): string {
+  const blocks: string[] = [];
+  let used = 0;
+  for (const { note } of scored) {
+    const block = `## ${note.title}\n${note.body.trim()}`;
+    if (used + block.length > maxChars) break;
+    blocks.push(block);
+    used += block.length;
+  }
+  return blocks.join("\n\n");
+}

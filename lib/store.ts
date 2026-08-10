@@ -32,6 +32,7 @@ import {
   DEFAULT_BUSINESS_RULES,
 } from "./seed";
 import { stageById, signingBlockers } from "./hormozi";
+import { seedKnowledge, type KnowledgeNote } from "./knowledge";
 import { uid } from "./utils";
 
 interface AlphaState {
@@ -56,6 +57,8 @@ interface AlphaState {
    * ni dans les taux de conversion. Les mélanger fausserait tout.
    */
   partners: Partner[];
+  /** Le Cerveau — notes markdown (RAG lexical, façon Obsidian). */
+  notes: KnowledgeNote[];
 
   // prospects
   upsertProspect: (p: Prospect) => void;
@@ -95,6 +98,11 @@ interface AlphaState {
   // scripts manuels
   upsertCustomScript: (sc: CustomScript) => void;
   deleteCustomScript: (id: string) => void;
+
+  // cerveau (knowledge base)
+  /** Crée ou met à jour une note ; renvoie son id. */
+  upsertNote: (note: Partial<KnowledgeNote> & { title: string; body: string }) => string;
+  deleteNote: (id: string) => void;
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
@@ -176,6 +184,7 @@ export const useAlpha = create<AlphaState>()(
       drafts: [],
       customScripts: [],
       partners: [],
+      notes: seedKnowledge,
 
       upsertProspect: (p) =>
         set((s) => {
@@ -412,6 +421,26 @@ export const useAlpha = create<AlphaState>()(
       deleteCustomScript: (id) =>
         set((s) => ({ customScripts: s.customScripts.filter((x) => x.id !== id) })),
 
+      upsertNote: (note) => {
+        const now = new Date().toISOString();
+        const id = note.id ?? uid();
+        set((s) => {
+          const exists = s.notes.some((n) => n.id === id);
+          const next: KnowledgeNote = {
+            id,
+            title: note.title,
+            body: note.body,
+            tags: note.tags ?? [],
+            source: note.source ?? "manuel",
+            createdAt: exists ? s.notes.find((n) => n.id === id)!.createdAt : now,
+            updatedAt: now,
+          };
+          return { notes: exists ? s.notes.map((n) => (n.id === id ? next : n)) : [next, ...s.notes] };
+        });
+        return id;
+      },
+      deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       togglePayoutSettled: (paymentId) =>
@@ -560,7 +589,7 @@ export const useAlpha = create<AlphaState>()(
     }),
     {
       name: "alpha-sales-os-v2",
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => localStorage),
       migrate: (persisted) => {
         const s = persisted as Partial<AlphaState>;
@@ -572,6 +601,8 @@ export const useAlpha = create<AlphaState>()(
           drafts: s.drafts ?? [],
           customScripts: s.customScripts ?? [],
           partners: s.partners ?? [],
+          // Cerveau : socle de notes si le store précède la v5.
+          notes: s.notes ?? seedKnowledge,
           settledPayouts: s.settledPayouts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
