@@ -31,6 +31,7 @@ import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { search, contextFromNotes } from "@/lib/knowledge";
+import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
 import {
   BLAME_LAYERS,
@@ -122,12 +123,15 @@ export default function ProspectDetailPage() {
 
   return (
     <div className="space-y-5 animate-fade-up">
-      <div className="flex items-center gap-2 text-sm text-paper-faint">
-        <Link href="/pipeline" className="flex items-center gap-1 hover:text-paper">
-          <ArrowLeft size={14} /> Pipeline
-        </Link>
-        <span>/</span>
-        <span className="text-paper">{p.company}</span>
+      <div className="flex items-center justify-between gap-2 text-sm text-paper-faint">
+        <div className="flex items-center gap-2">
+          <Link href="/pipeline" className="flex items-center gap-1 hover:text-paper">
+            <ArrowLeft size={14} /> Pipeline
+          </Link>
+          <span>/</span>
+          <span className="text-paper">{p.company}</span>
+        </div>
+        <AlphaLiveButton prospect={p} />
       </div>
 
       {/* Header card */}
