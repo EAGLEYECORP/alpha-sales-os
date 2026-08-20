@@ -7,6 +7,7 @@ import { useAlpha } from "@/lib/store";
 import type { Meeting, MeetingChannel, MeetingKind } from "@/lib/types";
 import { cn, dateTimeFr, daysAhead, isOverdue, relativeFr, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { AlphaLiveButton } from "@/components/live/alpha-live";
 
 const KIND_LABEL: Record<MeetingKind, string> = {
   audit: "Audit terrain",
@@ -37,9 +38,12 @@ export default function MeetingsPage() {
             La démo mobile AVANT le prix — chaque RDV a un objectif d&apos;étape unique.
           </p>
         </div>
-        <button className="btn-bronze" onClick={() => setAdding(true)}>
-          <Plus size={15} /> RDV
-        </button>
+        <div className="flex items-center gap-2">
+          <AlphaLiveButton />
+          <button className="btn-bronze" onClick={() => setAdding(true)}>
+            <Plus size={15} /> RDV
+          </button>
+        </div>
       </header>
 
       <section className="space-y-2">

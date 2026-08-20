@@ -11,8 +11,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
-/** Frais de setup one-shot (audit, séquences, infra, délivrabilité). */
-export const SETUP_FEE = 2500;
+/** Frais de setup one-shot (build : numéros, agent vocal, scripts, infra, délivrabilité, CRM). */
+export const SETUP_FEE = 10000;
 
 /** Part EAGLEYE sur le CA généré (modèle Performance). */
 export const REV_SHARE = 0.3;
@@ -32,26 +32,26 @@ export const TIERS: Tier[] = [
   {
     id: "starter",
     name: "Starter",
-    maxProspects: 250,
-    monthly: 490,
-    blurb: "Lancer une machine à RDV",
-    features: ["Jusqu'à 250 prospects/mois", "1 secteur ciblé", "Emails HTML + tracking", "Relecture avant envoi"],
+    maxProspects: 1000,
+    monthly: 1000,
+    blurb: "Une machine à RDV qui tourne",
+    features: ["Jusqu'à 1 000 prospects/mois", "Agent vocal IA + email", "Doctrine de closing", "Relance automatique (jusqu'à 5×)"],
   },
   {
     id: "growth",
     name: "Growth",
-    maxProspects: 1000,
-    monthly: 1490,
+    maxProspects: 5000,
+    monthly: 2500,
     blurb: "Le flux de RDV en continu",
-    features: ["Jusqu'à 1 000 prospects/mois", "Multi-canal (email + DM)", "Agent IA + doctrine de closing", "Délivrabilité gérée"],
+    features: ["Jusqu'à 5 000 prospects/mois", "Multi-canal (voix + email + DM)", "Délivrabilité gérée", "Reporting du pipe"],
   },
   {
     id: "scale",
     name: "Scale",
-    maxProspects: 5000,
-    monthly: 3900,
+    maxProspects: 20000,
+    monthly: 5000,
     blurb: "Plusieurs secteurs en parallèle",
-    features: ["Jusqu'à 5 000 prospects/mois", "Multi-secteurs / multi-marchés", "Reporting par industrie", "Priorité support"],
+    features: ["Jusqu'à 20 000 prospects/mois", "Multi-secteurs / multi-marchés", "Reporting par industrie", "Priorité support"],
   },
   {
     id: "enterprise",
@@ -161,10 +161,11 @@ export interface SaasEconResult {
 }
 
 export const defaultSaasInput: SaasEconInput = {
-  pricePerMonth: 290,
-  // Installation Alpha Sales OS = 2 500 € (SETUP_FEE). 10 clients × 2 500 =
-  // 25 000 € : la vraie preuve de concept en cash, avant même le récurrent.
-  setupFee: 2500,
+  // Mensuel adossé au volume/téléphonie (cf. lib/telephony.ts) — dès 1 000 €.
+  pricePerMonth: 1000,
+  // Installation Alpha Sales OS = 10 000 € (SETUP_FEE). 10 clients × 10 000 =
+  // 100 000 € : la preuve de concept en cash, avant même le récurrent.
+  setupFee: 10000,
   clients: 10,
   retentionMonths: 12,
   hoursPerClient: 5,

@@ -10,11 +10,11 @@ test("pricing — calc utilise le modèle par défaut (EAGLEYE)", () => {
   assert.equal(Math.round(r.meetings), 40);
   assert.equal(r.sales, 10);
   assert.equal(r.revenue, 60000);
-  // Part par défaut = 30 % ; setup 2 500 €.
+  // Part par défaut = 30 % ; setup 10 000 €.
   assert.equal(r.perfCut, 18000);
-  assert.equal(r.perfYear1, 2500 + 18000 * 12);
-  // 500 prospects → palier Growth (≤ 1000).
-  assert.equal(r.tier.id, "growth");
+  assert.equal(r.perfYear1, 10000 + 18000 * 12);
+  // 500 prospects → palier Starter (≤ 1000).
+  assert.equal(r.tier.id, "starter");
 });
 
 test("pricing — calc respecte les tarifs custom d'un revendeur", () => {
@@ -39,15 +39,16 @@ test("pricing — calc respecte les tarifs custom d'un revendeur", () => {
 
 test("pricing — tierFor sélectionne le premier palier couvrant le volume", () => {
   assert.equal(tierFor(100, defaultPricing.tiers).id, "starter");
-  assert.equal(tierFor(250, defaultPricing.tiers).id, "starter");
-  assert.equal(tierFor(251, defaultPricing.tiers).id, "growth");
-  assert.equal(tierFor(5000, defaultPricing.tiers).id, "scale");
+  assert.equal(tierFor(1000, defaultPricing.tiers).id, "starter");
+  assert.equal(tierFor(1500, defaultPricing.tiers).id, "growth");
+  assert.equal(tierFor(5000, defaultPricing.tiers).id, "growth");
+  assert.equal(tierFor(6000, defaultPricing.tiers).id, "scale");
   // Au-delà du dernier palier fini → Enterprise (dernier).
   assert.equal(tierFor(99999, defaultPricing.tiers).id, "enterprise");
 });
 
 test("pricing — Enterprise (monthly null) passe la comparaison en « devis »", () => {
-  const r = calc({ ...INPUT, prospects: 8000 }, defaultPricing);
+  const r = calc({ ...INPUT, prospects: 25000 }, defaultPricing);
   assert.equal(r.tier.id, "enterprise");
   assert.equal(r.subMonthly, null);
   assert.equal(r.subYear1, null);
@@ -64,10 +65,10 @@ test("pricing — le défaut partagé n'est jamais muté par calc", () => {
 // ── SaaS economics (vendre Alpha Sales OS) ──────────────────────────────
 test("saas — cas de base : MRR, ARR, cash mois 1", () => {
   const s = calcSaas(defaultSaasInput);
-  assert.equal(s.mrr, 2900); // 10 × 290
-  assert.equal(s.arr, 34800);
-  assert.equal(s.setupCash, 25000); // 10 × 2500 — la preuve de concept
-  assert.equal(s.month1Cash, 27900); // 25000 + 2900
+  assert.equal(s.mrr, 10000); // 10 × 1000
+  assert.equal(s.arr, 120000);
+  assert.equal(s.setupCash, 100000); // 10 × 10000 — la preuve de concept
+  assert.equal(s.month1Cash, 110000); // 100000 + 10000
 });
 
 test("saas — CAC dominé par le temps, LTV et ratio cohérents", () => {
@@ -76,23 +77,23 @@ test("saas — CAC dominé par le temps, LTV et ratio cohérents", () => {
   assert.equal(s.cacPerClient, 275);
   // temps = 250 sur 275
   assert.ok(Math.abs(s.timeShareOfCac - 250 / 275) < 1e-9);
-  // LTV = 2500 setup + 290 × 12 = 5980
-  assert.equal(s.ltvPerClient, 5980);
-  assert.ok(Math.abs(s.ltvCac - 5980 / 275) < 1e-9);
+  // LTV = 10000 setup + 1000 × 12 = 22000
+  assert.equal(s.ltvPerClient, 22000);
+  assert.ok(Math.abs(s.ltvCac - 22000 / 275) < 1e-9);
 });
 
 test("saas — seuils : break-even infra et remboursement du temps", () => {
   const s = calcSaas(defaultSaasInput);
-  // infra 120 / prix 290
-  assert.ok(Math.abs(s.breakEvenClientsInfra - 120 / 290) < 1e-9);
-  // temps total = 10 × 5h × 50€ = 2500 ; payback = 2500 / 2900 mois
+  // infra 120 / prix 1000
+  assert.ok(Math.abs(s.breakEvenClientsInfra - 120 / 1000) < 1e-9);
+  // temps total = 10 × 5h × 50€ = 2500 ; payback = 2500 / 10000 mois
   assert.equal(s.timeInvestTotal, 2500);
-  assert.ok(Math.abs(s.timePaybackMonths - 2500 / 2900) < 1e-9);
+  assert.ok(Math.abs(s.timePaybackMonths - 2500 / 10000) < 1e-9);
 });
 
 test("saas — le prix déplace tout (sensibilité)", () => {
-  const hi = calcSaas({ ...defaultSaasInput, pricePerMonth: 490 });
-  assert.equal(hi.mrr, 4900);
+  const hi = calcSaas({ ...defaultSaasInput, pricePerMonth: 2000 });
+  assert.equal(hi.mrr, 20000);
   assert.ok(hi.ltvCac > calcSaas(defaultSaasInput).ltvCac);
 });
 

@@ -33,6 +33,7 @@ import {
   tourSummary,
 } from "@/lib/closer";
 import { useCountUp } from "@/lib/use-count-up";
+import { AlphaLiveButton } from "@/components/live/alpha-live";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { Sparring } from "@/components/training/sparring";
 import { LiveAssist } from "@/components/voice/live-assist";
@@ -171,6 +172,7 @@ export default function CloserPage() {
               {eur(Math.round(potentialAnim))}
             </p>
           </div>
+          <AlphaLiveButton prospect={nextStop?.prospect} />
         </div>
       </header>
 

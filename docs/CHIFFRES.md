@@ -121,41 +121,53 @@ messages, ni les quotas.
 > Calculés par `calcSaas()` (`lib/pricing.ts`) ; pilotables en direct sur
 > **/offre → onglet « Vendre Alpha Sales OS »**.
 
-**La preuve de concept, énoncée par Zakaria : `2 500 € d'installation × 10
-clients = 25 000 €`.** C'est du **cash encaissé**, avant même le récurrent.
+**La preuve de concept : `10 000 € d'installation × 10 clients = 100 000 €`.**
+Du **cash encaissé**, avant même le récurrent.
 
-**Cas de base** : installation **2 500 €**, abonnement **290 €/mois**,
+**Cas de base** : installation **10 000 €**, abonnement **dès 1 000 €/mois**,
 rétention **12 mois**, cible **10 clients**. Coûts : ton temps **5 h/client
 à 50 €/h**, acquisition hors-temps **25 €/client**, infra fixe **120 €/mois**.
 
 | Métrique | Formule | Cas de base |
 |---|---|---|
-| **Cash setup (la POC)** | installation × clients | **25 000 €** |
-| **MRR** | clients × prix | **2 900 €/mois** |
-| **ARR** | MRR × 12 | **34 800 €** |
-| **Cash mois 1** | setups + 1er MRR | **27 900 €** |
+| **Cash setup (la POC)** | installation × clients | **100 000 €** |
+| **MRR** | clients × prix | **10 000 €/mois** |
+| **ARR** | MRR × 12 | **120 000 €** |
+| **Cash mois 1** | setups + 1er MRR | **110 000 €** |
 | **CAC / client** | acq. + (heures × valeur heure) | **~275 €** (≈ 91 % ton temps) |
-| **LTV / client** | setup + prix × rétention | **~5 980 €** |
-| **LTV : CAC** | LTV ÷ CAC | **~21 : 1** (cible > 3:1) |
+| **LTV / client** | setup + prix × rétention | **~22 000 €** |
+| **LTV : CAC** | LTV ÷ CAC | **~80 : 1** (cible > 3:1) |
 | **Break-even infra** | infra fixe ÷ prix | **1 client** |
-| **Remboursement de ton temps** | temps total ÷ MRR | **< 1 mois** |
 
-### Sensibilité au prix mensuel (installation 2 500 €, 10 clients)
+### Pourquoi 1 000 €+/mois se défend — la base téléphonie & volume
 
-| Prix/mois | Cash setup | MRR | ARR | LTV/client | LTV:CAC |
-|---|---|---|---|---|---|
-| 149 € | 25 000 € | 1 490 € | 17 880 € | ~4 290 € | ~16 : 1 |
-| **290 €** | **25 000 €** | **2 900 €** | **34 800 €** | **~5 980 €** | **~21 : 1** |
-| 490 € | 25 000 € | 4 900 € | 58 800 € | ~8 380 € | ~30 : 1 |
-| 990 € | 25 000 € | 9 900 € | 118 800 € | ~14 380 € | ~52 : 1 |
+Le mensuel n'est pas au doigt mouillé : il tient sur le **coût réel des appels**
+(`calcTelephony`, `lib/telephony.ts`). Volume type : **1 000 prospects en
+10 jours, 5 relances = 5 000 tentatives**.
 
-**Les deux seuls leviers qui comptent :** le **prix** (il déplace le récurrent)
-et la **valeur de ton temps** (≈ 91 % du CAC) — c'est exactement ce qu'Alpha
-Sales OS réduit en automatisant l'outreach. Pilotable en direct sur
-**/offre → « Vendre Alpha Sales OS »**.
+| Poste | Hypothèse | Coût |
+|---|---|---|
+| Minutes | 5 000 × 1,1 min | 5 500 min |
+| Téléphonie (VoIP) | 0,02 €/min | **110 €** |
+| IA voix (STT+TTS+LLM) | 0,12 €/min | **660 €** |
+| **Coût direct total** | | **~770 €** |
+| Coût / prospect | | **0,77 €** |
+
+→ À **1 000 €/mois**, marge positive sur le coût direct **et** ça remplace un
+commercial au téléphone (**~3 500 €/mois** chargé). Le paliers montent avec le
+volume (`lib/pricing.ts`) : Starter 1 000 € (≤ 1 000 prospects), Growth 2 500 €
+(≤ 5 000), Scale 5 000 € (≤ 20 000), Enterprise sur devis.
+
+### Sensibilité au prix mensuel (installation 10 000 €, 10 clients)
+
+| Prix/mois | Cash setup | MRR | ARR | LTV/client |
+|---|---|---|---|---|
+| **1 000 €** | **100 000 €** | **10 000 €** | **120 000 €** | **~22 000 €** |
+| 2 500 € | 100 000 € | 25 000 € | 300 000 € | ~40 000 € |
+| 5 000 € | 100 000 € | 50 000 € | 600 000 € | ~70 000 € |
 
 ### « 5M » — la suite, pas la POC
 
-Les 10 clients = **25 k€ de cash + ~35 k€ d'ARR** : la preuve que la machine
+Les 10 clients = **100 k€ de cash + ~120 k€ d'ARR** : la preuve que la machine
 signe. Les paliers supérieurs viennent des **revendeurs white-label** (chacun
 apporte ses propres clients) — on enchaîne les deux, on ne les confond pas.

@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BadgeEuro, Check, Crown, Handshake, Rocket, TrendingUp } from "lucide-react";
+import { BadgeEuro, Check, Crown, Handshake, PhoneCall, Rocket, TrendingUp } from "lucide-react";
 import { cn, eur } from "@/lib/utils";
 import { calc, calcSaas, defaultPricing, defaultSaasInput, type CalcInput, type SaasEconInput } from "@/lib/pricing";
+import { calcTelephony, defaultTelephony, type TelephonyInput } from "@/lib/telephony";
 import { useAlpha } from "@/lib/store";
 
 export default function OffrePage() {
@@ -221,8 +222,8 @@ function SaasEconomics() {
         <div className="mt-4 grid gap-6 lg:grid-cols-[340px_1fr]">
           {/* Entrées */}
           <div className="space-y-4">
-            <Slider label="Prix / client / mois" value={i.pricePerMonth} min={49} max={1500} step={10} onChange={(v) => set({ pricePerMonth: v })} fmt={(v) => eur(v)} />
-            <Slider label="Setup / client (one-shot)" value={i.setupFee} min={0} max={5000} step={50} onChange={(v) => set({ setupFee: v })} fmt={(v) => eur(v)} />
+            <Slider label="Prix / client / mois" value={i.pricePerMonth} min={200} max={6000} step={50} onChange={(v) => set({ pricePerMonth: v })} fmt={(v) => eur(v)} />
+            <Slider label="Setup / client (one-shot)" value={i.setupFee} min={0} max={30000} step={500} onChange={(v) => set({ setupFee: v })} fmt={(v) => eur(v)} />
             <Slider label="Clients visés" value={i.clients} min={1} max={100} step={1} onChange={(v) => set({ clients: v })} fmt={(v) => String(v)} />
             <Slider label="Rétention moyenne" value={i.retentionMonths} min={1} max={48} step={1} onChange={(v) => set({ retentionMonths: v })} fmt={(v) => `${v} mois`} />
             <div className="rounded-lg border border-ink-700 bg-ink-900/50 p-3">
@@ -276,10 +277,71 @@ function SaasEconomics() {
           </div>
         </div>
       </section>
+
+      <TelephonyBasis monthlyPrice={i.pricePerMonth} />
+
       <p className="mx-auto max-w-2xl text-center text-[11px] text-paper-faint">
-        <strong className="text-paper-dim">Projection interne, pas une promesse</strong> — 10 clients ≈ {eur(Math.round(defaultSaasInput.setupFee * defaultSaasInput.clients))} d&apos;installation (la preuve de concept) + {eur(Math.round(defaultSaasInput.pricePerMonth * defaultSaasInput.clients))}/mois de récurrent. Les gros paliers viennent des revendeurs qui apportent chacun leurs clients.
+        <strong className="text-paper-dim">Projection interne, pas une promesse</strong> — 10 clients ≈ {eur(Math.round(defaultSaasInput.setupFee * defaultSaasInput.clients))} d&apos;installation (la preuve de concept) + {eur(Math.round(defaultSaasInput.pricePerMonth * defaultSaasInput.clients))}/mois de récurrent. Le mensuel est calé sur le volume/téléphonie (ci-dessus) et remplace un commercial au téléphone. Les gros paliers viennent des revendeurs.
       </p>
     </div>
+  );
+}
+
+function TelephonyBasis({ monthlyPrice }: { monthlyPrice: number }) {
+  const [t, setT] = useState<TelephonyInput>(defaultTelephony);
+  const r = useMemo(() => calcTelephony(t), [t]);
+  const set = (patch: Partial<TelephonyInput>) => setT((prev) => ({ ...prev, ...patch }));
+  const margin = monthlyPrice - r.totalCost;
+  const marginPct = monthlyPrice > 0 ? margin / monthlyPrice : 0;
+
+  return (
+    <section className="card p-5">
+      <div className="flex items-center gap-2">
+        <PhoneCall size={18} className="text-bronze-400" />
+        <h2 className="font-display text-base font-bold text-paper">Base de prix — volume &amp; téléphonie</h2>
+      </div>
+      <p className="mt-1 text-[12px] text-paper-faint">
+        Le mensuel n&apos;est pas au doigt mouillé : il tient sur le <strong className="text-paper-dim">coût réel des appels</strong>.
+        Exemple type : <strong className="text-paper-dim">1 000 prospects en 10 jours, 5 relances</strong> = 5 000 tentatives.
+      </p>
+
+      <div className="mt-4 grid gap-6 lg:grid-cols-[340px_1fr]">
+        <div className="space-y-4">
+          <Slider label="Prospects (uniques)" value={t.prospects} min={100} max={10000} step={100} onChange={(v) => set({ prospects: v })} fmt={(v) => v.toLocaleString("fr-FR")} />
+          <Slider label="Fenêtre de campagne" value={t.days} min={1} max={30} step={1} onChange={(v) => set({ days: v })} fmt={(v) => `${v} jours`} />
+          <Slider label="Relances par prospect" value={t.recalls} min={1} max={10} step={1} onChange={(v) => set({ recalls: v })} fmt={(v) => `${v}×`} />
+          <div className="rounded-lg border border-ink-700 bg-ink-900/50 p-3 space-y-3">
+            <p className="text-[10px] uppercase tracking-wider text-paper-faint">Coûts unitaires</p>
+            <Slider label="Minutes / tentative" value={t.minutesPerAttempt} min={0.3} max={4} step={0.1} onChange={(v) => set({ minutesPerAttempt: v })} fmt={(v) => `${v.toFixed(1)} min`} />
+            <Slider label="VoIP / min (€)" value={t.telcoPerMin} min={0} max={0.2} step={0.005} onChange={(v) => set({ telcoPerMin: v })} fmt={(v) => `${v.toFixed(3)} €`} />
+            <Slider label="IA / min (STT+TTS+LLM, 0 = humain)" value={t.aiPerMin} min={0} max={0.5} step={0.01} onChange={(v) => set({ aiPerMin: v })} fmt={(v) => `${v.toFixed(2)} €`} />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <Metric label="Tentatives" value={Math.round(r.attempts).toLocaleString("fr-FR")} />
+            <Metric label="Par jour" value={Math.round(r.attemptsPerDay).toLocaleString("fr-FR")} />
+            <Metric label="Minutes" value={Math.round(r.totalMinutes).toLocaleString("fr-FR")} />
+          </div>
+          <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+            <p className="font-display text-sm font-semibold text-paper">Coût direct de la campagne</p>
+            <table className="mt-2 w-full text-[13px]">
+              <tbody>
+                <tr><td className="py-1 text-paper-faint">Téléphonie (VoIP)</td><td className="py-1 text-right font-mono text-paper">{eur(Math.round(r.telcoCost))}</td></tr>
+                <tr><td className="py-1 text-paper-faint">IA (voix)</td><td className="py-1 text-right font-mono text-paper">{eur(Math.round(r.aiCost))}</td></tr>
+                <tr className="border-t border-ink-700"><td className="py-1 font-medium text-paper">Total direct</td><td className="py-1 text-right font-mono font-bold text-bronze-400">{eur(Math.round(r.totalCost))}</td></tr>
+                <tr><td className="py-1 text-paper-faint">Coût / prospect</td><td className="py-1 text-right font-mono text-paper-dim">{r.costPerProspect.toFixed(2)} €</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div className={cn("rounded-lg border px-4 py-3 text-[13px]", margin > 0 ? "border-signal-green/40 bg-signal-green/5 text-paper-dim" : "border-signal-red/40 bg-signal-red/5 text-paper-dim")}>
+            À <strong className="text-paper">{eur(monthlyPrice)}/mois</strong>, marge sur coût direct : <strong className={margin > 0 ? "text-signal-green" : "text-signal-red"}>{eur(Math.round(margin))}</strong> ({Math.round(marginPct * 100)} %).
+            {margin > 0 && <> Et ça remplace un commercial au téléphone (~3 500 €/mois chargé) — c&apos;est l&apos;argument.</>}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
