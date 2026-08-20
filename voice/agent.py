@@ -65,9 +65,9 @@ try:
 except ImportError:
     fishaudio = None  # type: ignore
 try:
-    from livekit.plugins import piper  # type: ignore
+    from livekit.plugins import piper_tts  # type: ignore
 except ImportError:
-    piper = None  # type: ignore
+    piper_tts = None  # type: ignore
 
 load_dotenv()
 
@@ -205,13 +205,14 @@ def build_tts():
         if not url:
             raise RuntimeError("VOICE_TTS_PROVIDER=piper mais PIPER_TTS_URL absent (serveur Piper auto-hébergé).")
         # Plugin communautaire — pip install livekit-plugins-piper-tts.
-        # Importé en haut (thread principal) ; None si absent.
-        if piper is None:
+        # Module = piper_tts ; l'URL du serveur Piper est POSITIONNELLE (la voix
+        # est choisie par le serveur au lancement, pas par le plugin).
+        if piper_tts is None:
             raise RuntimeError(
                 "Piper activé mais le plugin manque — pip install livekit-plugins-piper-tts"
             )
         logger.info("TTS : Piper local (%s)", url)
-        return piper.TTS(base_url=url, voice=os.getenv("PIPER_VOICE", "fr_FR-siwis-medium"))
+        return piper_tts.TTS(url)
 
     # Repli OpenAI TTS → api.openai.com. Piège fréquent : y coller une clé NVIDIA.
     key = os.getenv("OPENAI_API_KEY", "").strip()
