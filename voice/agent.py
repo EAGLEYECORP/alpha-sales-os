@@ -198,6 +198,62 @@ def build_tts():
     return openai.TTS(voice=os.getenv("VOICE_TTS_VOICE", "alloy"))
 
 
+def build_llm():
+    """Le LLM de l'agent — endpoint COMPATIBLE OpenAI, joignable CÔTÉ SERVEUR.
+
+    Une seule option à configurer, cohérente (base_url + modèle + clé) :
+      · NVIDIA NIM (défaut, gratuit) : base_url .../v1, modèle meta/llama-3.3-70b-instruct,
+        clé NVIDIA_API_KEY (nvapi-…).
+      · OpenAI : base_url https://api.openai.com/v1, modèle gpt-4o-mini, clé OPENAI_API_KEY.
+      · Ollama local : base_url http://localhost:11434/v1, modèle tiré localement,
+        aucune clé requise (on en passe une factice, Ollama l'ignore).
+
+    ⚠ Puter (js.puter.com) n'est PAS utilisable ici : c'est un SDK NAVIGATEUR,
+    sans endpoint serveur — il ne sert qu'au bouton « Écouter » du web. Ne cherche
+    pas d'« URL Puter » pour l'agent : il n'y en a pas.
+    """
+    base_url = os.getenv("VOICE_BASE_URL", "https://integrate.api.nvidia.com/v1").strip()
+    model = os.getenv("VOICE_MODEL", "meta/llama-3.3-70b-instruct").strip()
+    host = base_url.lower()
+    is_local = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0"))
+
+    # Clé choisie SELON l'endpoint — la cause n°1 des échecs est une clé qui ne
+    # correspond pas au base_url (clé OpenAI envoyée à NVIDIA, ou l'inverse).
+    if "openai.com" in host:
+        api_key, provider = os.getenv("OPENAI_API_KEY"), "OpenAI"
+    elif "nvidia" in host:
+        api_key, provider = os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY"), "NVIDIA NIM"
+    elif is_local:
+        api_key, provider = os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY") or "local", "local (Ollama/compatible)"
+    else:
+        api_key, provider = os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY"), "compatible OpenAI"
+
+    # Les deux fautes les plus courantes, dites EN CLAIR avant le premier appel.
+    if not api_key and not is_local:
+        raise RuntimeError(
+            f"LLM vocal : aucune clé API pour {provider} ({base_url}). "
+            "Renseigne NVIDIA_API_KEY (gratuit, défaut) ou OPENAI_API_KEY dans voice/.env."
+        )
+    if "openai.com" in host and "/" in model:
+        logger.warning(
+            "LLM vocal : base_url OpenAI mais VOICE_MODEL=« %s » ressemble à un modèle NVIDIA "
+            "→ OpenAI renverra 404. Mets VOICE_MODEL=gpt-4o-mini, ou repasse VOICE_BASE_URL sur NVIDIA NIM.",
+            model,
+        )
+    if "nvidia" in host and model.startswith("gpt-"):
+        logger.warning(
+            "LLM vocal : base_url NVIDIA mais VOICE_MODEL=« %s » est un modèle OpenAI "
+            "→ NVIDIA renverra une erreur. Utilise un modèle NIM (ex. meta/llama-3.3-70b-instruct).",
+            model,
+        )
+
+    logger.info(
+        "LLM vocal : %s · base_url=%s · modèle=%s · clé=%s",
+        provider, base_url, model, "OK" if (api_key and api_key != "local") else "aucune (local)",
+    )
+    return openai.LLM(model=model, base_url=base_url, api_key=api_key, temperature=0.4)
+
+
 async def entrypoint(ctx: JobContext) -> None:
     """
     Point d'entrée. Les métadonnées du job portent tout :
@@ -237,14 +293,10 @@ async def entrypoint(ctx: JobContext) -> None:
         # Reconnaissance : français, ponctuation activée pour que le modèle
         # comprenne les questions.
         stt=deepgram.STT(model="nova-2-general", language="fr"),
-        # LLM : compatible OpenAI, donc NVIDIA NIM fonctionne tel quel —
-        # même moteur que le reste d'ALPHA, même clé.
-        llm=openai.LLM(
-            model=os.getenv("VOICE_MODEL", "meta/llama-3.3-70b-instruct"),
-            base_url=os.getenv("VOICE_BASE_URL", "https://integrate.api.nvidia.com/v1"),
-            api_key=os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY"),
-            temperature=0.4,
-        ),
+        # LLM : compatible OpenAI (NVIDIA NIM / OpenAI / Ollama). build_llm()
+        # choisit la clé selon l'endpoint, journalise la config et alarme sur
+        # les mismatch (la cause n°1 du « LLM can't be fetched »).
+        llm=build_llm(),
         tts=build_tts(),
         vad=silero.VAD.load(),
     )
