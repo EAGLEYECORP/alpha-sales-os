@@ -56,6 +56,19 @@ from livekit import agents, api, rtc
 from livekit.agents import Agent, AgentSession, JobContext, RoomInputOptions, WorkerOptions, cli
 from livekit.plugins import deepgram, openai, silero
 
+# Les plugins DOIVENT s'enregistrer sur le thread principal (à l'import du
+# module), pas paresseusement dans build_tts() qui tourne dans le thread du job
+# (sinon « Plugins must be registered on the main thread »). Fish et Piper sont
+# optionnels : import gardé, on vérifie la présence au moment du choix.
+try:
+    from livekit.plugins import fishaudio  # type: ignore
+except ImportError:
+    fishaudio = None  # type: ignore
+try:
+    from livekit.plugins import piper  # type: ignore
+except ImportError:
+    piper = None  # type: ignore
+
 load_dotenv()
 
 logger = logging.getLogger("alpha-voice")
@@ -162,12 +175,10 @@ def build_tts():
         provider = "fish" if os.getenv("FISH_API_KEY") else ("piper" if os.getenv("PIPER_TTS_URL") else "openai")
 
     if provider == "fish":
-        try:
-            from livekit.plugins import fishaudio
-        except ImportError as e:  # plugin absent
+        if fishaudio is None:
             raise RuntimeError(
                 'FISH activé mais le plugin manque — pip install "livekit-agents[fishaudio]"'
-            ) from e
+            )
         kwargs = {}
         ref = os.getenv("FISH_VOICE_ID")
         if ref:
@@ -194,14 +205,11 @@ def build_tts():
         if not url:
             raise RuntimeError("VOICE_TTS_PROVIDER=piper mais PIPER_TTS_URL absent (serveur Piper auto-hébergé).")
         # Plugin communautaire — pip install livekit-plugins-piper-tts.
-        # L'API exacte peut varier selon la version : ajuste base_url/voice
-        # au premier essai (l'agent journalise l'erreur si un nom diffère).
-        try:
-            from livekit.plugins import piper  # type: ignore
-        except ImportError as e:
+        # Importé en haut (thread principal) ; None si absent.
+        if piper is None:
             raise RuntimeError(
                 "Piper activé mais le plugin manque — pip install livekit-plugins-piper-tts"
-            ) from e
+            )
         logger.info("TTS : Piper local (%s)", url)
         return piper.TTS(base_url=url, voice=os.getenv("PIPER_VOICE", "fr_FR-siwis-medium"))
 
