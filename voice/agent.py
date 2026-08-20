@@ -248,14 +248,19 @@ def build_llm():
 
     # Clé choisie SELON l'endpoint — la cause n°1 des échecs est une clé qui ne
     # correspond pas au base_url (clé OpenAI envoyée à NVIDIA, ou l'inverse).
+    # VOICE_API_KEY = clé générique, prioritaire (n'importe quel endpoint
+    # compatible OpenAI : Groq, Cerebras, Together…). Sinon, clé par fournisseur.
+    generic = os.getenv("VOICE_API_KEY")
     if "openai.com" in host:
-        api_key, provider = os.getenv("OPENAI_API_KEY"), "OpenAI"
+        api_key, provider = generic or os.getenv("OPENAI_API_KEY"), "OpenAI"
+    elif "groq.com" in host:
+        api_key, provider = generic or os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY"), "Groq"
     elif "nvidia" in host:
-        api_key, provider = os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY"), "NVIDIA NIM"
+        api_key, provider = generic or os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY"), "NVIDIA NIM"
     elif is_local:
-        api_key, provider = os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY") or "local", "local (Ollama/compatible)"
+        api_key, provider = generic or os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY") or "local", "local (Ollama/compatible)"
     else:
-        api_key, provider = os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY"), "compatible OpenAI"
+        api_key, provider = generic or os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY"), "compatible OpenAI"
 
     # Les deux fautes les plus courantes, dites EN CLAIR avant le premier appel.
     if not api_key and not is_local:
