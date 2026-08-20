@@ -171,7 +171,18 @@ def build_tts():
         kwargs = {}
         ref = os.getenv("FISH_VOICE_ID")
         if ref:
-            kwargs["reference_id"] = ref  # la voix clonée / choisie
+            # Le nom du paramètre a changé selon la version du plugin :
+            # anciennes → reference_id, récentes → voice_id. On détecte celui
+            # que la TTS installée accepte (fin des « unexpected keyword »).
+            import inspect
+
+            params = inspect.signature(fishaudio.TTS.__init__).parameters
+            if "reference_id" in params:
+                kwargs["reference_id"] = ref
+            elif "voice_id" in params:
+                kwargs["voice_id"] = ref
+            else:
+                kwargs["reference_id"] = ref  # défaut si signature en **kwargs
         model = os.getenv("FISH_MODEL")
         if model:
             kwargs["model"] = model
