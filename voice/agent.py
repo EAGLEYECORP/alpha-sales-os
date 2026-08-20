@@ -236,14 +236,16 @@ def build_llm():
         )
     if "openai.com" in host and "/" in model:
         logger.warning(
-            "LLM vocal : base_url OpenAI mais VOICE_MODEL=« %s » ressemble à un modèle NVIDIA "
+            "LLM vocal : base_url OpenAI mais VOICE_MODEL=« %s » a un namespace (id NIM) "
             "→ OpenAI renverra 404. Mets VOICE_MODEL=gpt-4o-mini, ou repasse VOICE_BASE_URL sur NVIDIA NIM.",
             model,
         )
-    if "nvidia" in host and model.startswith("gpt-"):
+    if "nvidia" in host and "/" not in model:
+        # NVIDIA NIM attend un id NAMESPACÉ (vendor/model). « gpt-oss-20b » seul
+        # → 404 ; il faut « openai/gpt-oss-20b ». C'est le piège n°1.
         logger.warning(
-            "LLM vocal : base_url NVIDIA mais VOICE_MODEL=« %s » est un modèle OpenAI "
-            "→ NVIDIA renverra une erreur. Utilise un modèle NIM (ex. meta/llama-3.3-70b-instruct).",
+            "LLM vocal : VOICE_MODEL=« %s » sans namespace — NVIDIA NIM attend un id complet "
+            "(ex. openai/gpt-oss-20b, meta/llama-3.3-70b-instruct) → 404 probable. Ajoute le préfixe.",
             model,
         )
 
