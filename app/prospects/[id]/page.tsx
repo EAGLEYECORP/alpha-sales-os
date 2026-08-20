@@ -30,6 +30,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
+import { search, contextFromNotes } from "@/lib/knowledge";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
 import {
   BLAME_LAYERS,
@@ -1229,6 +1230,7 @@ const COACH_TASKS = [
 
 function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
   const settings = useAlpha((s) => s.settings);
+  const notes = useAlpha((s) => s.notes);
   const [output, setOutput] = useState("");
   const [engine, setEngine] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
@@ -1241,7 +1243,14 @@ function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, prospect: p, businessRules: rules, identity: buildIdentity(settings), ...extra }),
+        body: JSON.stringify({
+          task,
+          prospect: p,
+          businessRules: rules,
+          identity: buildIdentity(settings),
+          brainContext: contextFromNotes(search(`${p.company} ${p.sector} ${p.problems.join(" ")} ${p.solution ?? ""} ${objection}`, notes)),
+          ...extra,
+        }),
       });
       const data = await res.json();
       setOutput(data.text ?? data.error ?? "Erreur");

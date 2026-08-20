@@ -21,6 +21,8 @@ interface AgentRequest {
   businessRules: string;
   /** Identité + offre du compte (white-label) — l'agent parle au nom de CE compte. */
   identity?: string;
+  /** Extraits du Cerveau (RAG) récupérés côté client — l'agent s'y appuie. */
+  brainContext?: string;
 }
 
 const SYSTEM_BASE = `Tu es ALPHA, l'agent commercial conversationnel de l'agence (identité ci-dessous).
@@ -53,6 +55,7 @@ export async function POST(request: NextRequest) {
     "\n" + OS_MAP,
     "\n" + AGENT_LIMITS,
     "\n## Règles business de l'agence\n" + (body.businessRules ?? ""),
+    body.brainContext ? "\n## Cerveau — notes de l'opérateur (appuie-toi dessus, cite les titres)\n" + body.brainContext : "",
     // Contexte pipe : dégraissé avant l'appel (économie de tokens sur le palier
     // payant) — garde la tête (le plus récent en JSON compact) et borne à 30k.
     "\n## État réel de l'OS (JSON — la seule source de chiffres)\n" +

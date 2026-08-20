@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Bot, CircleStop, Send, Sparkles } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
+import { search, contextFromNotes } from "@/lib/knowledge";
 import { weightedValue, nextBestAction } from "@/lib/hormozi";
 import { computeRoutines } from "@/lib/routines";
 import { buildDailyPlan } from "@/lib/daily-plan";
@@ -28,7 +29,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AgentPage() {
-  const { prospects, meetings, campaigns, drafts, settings } = useAlpha();
+  const { prospects, meetings, campaigns, drafts, settings, notes } = useAlpha();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -139,6 +140,7 @@ export default function AgentPage() {
           context: buildContext(),
           businessRules: settings.businessRules,
           identity: buildIdentity(settings),
+          brainContext: contextFromNotes(search(text, notes)),
         }),
       });
       const contentType = res.headers.get("content-type") ?? "";

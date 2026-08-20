@@ -24,6 +24,8 @@ interface AiRequest {
   businessRules: string;
   /** Identité + offre du compte (white-label). */
   identity?: string;
+  /** Extraits du Cerveau (RAG) récupérés côté client. */
+  brainContext?: string;
   objection?: string;
   /** inbound message to answer (task = reply) */
   inboundMessage?: string;
@@ -186,10 +188,11 @@ export async function POST(request: NextRequest) {
   // Le playbook terrain entre dans le système : c'est lui qui fait la
   // différence entre un conseil générique et la méthode maison.
   const idBlock = body.identity ? `${body.identity}\n\n` : "";
+  const brainBlock = body.brainContext ? `\n\n## Cerveau — notes de l'opérateur (appuie-toi dessus)\n${body.brainContext}` : "";
   const system =
-    body.task === "prescripteur"
+    (body.task === "prescripteur"
       ? `${idBlock}${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
-      : `${idBlock}${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`;
+      : `${idBlock}${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`) + brainBlock;
 
   try {
     const { text, engine } = await runAI(
