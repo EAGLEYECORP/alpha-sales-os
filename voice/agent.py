@@ -194,6 +194,16 @@ def build_tts():
         logger.info("TTS : Piper local (%s)", url)
         return piper.TTS(base_url=url, voice=os.getenv("PIPER_VOICE", "fr_FR-siwis-medium"))
 
+    # Repli OpenAI TTS → api.openai.com. Piège fréquent : y coller une clé NVIDIA.
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key or key.startswith("nvapi-"):
+        raise RuntimeError(
+            "TTS OpenAI sélectionnée mais OPENAI_API_KEY est absente ou invalide "
+            "(une clé « nvapi- » est une clé NVIDIA, PAS OpenAI — elle ne peut pas "
+            "faire parler l'agent). Donne une VRAIE voix, gratuite : Fish "
+            "(FISH_API_KEY, voix FR) ou Piper auto-hébergé (PIPER_TTS_URL). "
+            "NVIDIA ne sert pas la TTS OpenAI. Voir voice/.env.example."
+        )
     logger.info("TTS : OpenAI (%s)", os.getenv("VOICE_TTS_VOICE", "alloy"))
     return openai.TTS(voice=os.getenv("VOICE_TTS_VOICE", "alloy"))
 
