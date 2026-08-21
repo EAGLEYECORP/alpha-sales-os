@@ -96,6 +96,38 @@ export interface MasterPlan {
 
 const filled = (v: string | undefined | null) => Boolean((v ?? "").trim());
 
+/** Il a décroché / répondu. */
+const ANSWERED = /r[ée]pond|a rappel[ée]|rappelle|d[ée]croch|[ée]chang|discut|vu (?:à|a) \d|visite|rdv obtenu|accord/i;
+/** Il refuse d'être recontacté. */
+const OPPOSED = /ne plus (?:me |nous )?(?:appeler|contacter)|stop|opposition|ne pas rappeler|d[ée]sinscri/i;
+/** Numéro mort. */
+const INVALID = /num[ée]ro (?:invalide|faux|ne (?:fonctionne|marche) pas)|injoignable|t[ée]l[ée]phone ne (?:fonctionne|marche) pas/i;
+
+/**
+ * Les tentatives d'appel déduites de la timeline — pour que la cadence
+ * fonctionne sans double saisie. On lit le RÉSULTAT dans le résumé de
+ * l'événement : c'est ce que le commercial a écrit sur le terrain.
+ *
+ * En cas de doute on retombe sur « sans-reponse » : le pire serait de croire
+ * qu'il a répondu (on arrêterait la cadence à tort et le dossier dormirait).
+ */
+export function attemptsFromEvents(p: Prospect): CallAttempt[] {
+  return (p.events ?? [])
+    .filter((e) => e.kind === "appel")
+    .map((e) => {
+      const s = e.summary ?? "";
+      const outcome = OPPOSED.test(s)
+        ? "opposition"
+        : INVALID.test(s)
+          ? "invalide"
+          : ANSWERED.test(s)
+            ? "repondu"
+            : "sans-reponse";
+      return { at: e.date, outcome } as CallAttempt;
+    })
+    .sort((a, b) => a.at.localeCompare(b.at));
+}
+
 /**
  * Le plan complet d'un prospect.
  * `attempts` : historique d'appels (pour l'état de la cadence Callflow).
@@ -106,7 +138,8 @@ export function masterRappel(
   opts: { now?: Date; attempts?: CallAttempt[]; accountId?: string } = {}
 ): MasterPlan {
   const now = opts.now ?? new Date();
-  const attempts = opts.attempts ?? [];
+  // Sans historique fourni, on le déduit de la timeline : zéro double saisie.
+  const attempts = opts.attempts ?? attemptsFromEvents(p);
   const signs = vitalSigns(p, now);
   const cadence = cadenceFor(attempts, now);
   const win = signs.bestWindow.at;

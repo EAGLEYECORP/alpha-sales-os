@@ -31,6 +31,7 @@ import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
+import { MasterPanel } from "@/components/prospects/master-panel";
 import { search, contextFromNotes } from "@/lib/knowledge";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
@@ -782,6 +783,9 @@ function AuditTab({
           )}
         </div>
       </section>
+
+      {/* MASTER RAPPEL — quoi faire maintenant, qui le fait, est-ce que ça tourne */}
+      <MasterPanel p={p} />
 
       {/* Routage d'offre — quelle offre EAGLEYE pour ce prospect (lib/offer-match) */}
       <OfferRecommendation p={p} />
