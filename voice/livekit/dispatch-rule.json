@@ -1,0 +1,5 @@
+{
+  "name": "Inbound -> Alpha",
+  "rule": { "dispatchRuleIndividual": { "roomPrefix": "inbound" } },
+  "roomConfig": { "agents": [ { "agentName": "alpha-voice" } ] }
+}
