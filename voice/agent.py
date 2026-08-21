@@ -302,6 +302,71 @@ server = AgentServer()
 
 
 @server.rtc_session(agent_name="alpha-voice")
+class SessionReporter:
+    """Pousse la session d'appel vers ALPHA SALES, en direct.
+
+    Trois événements : `start`, `turn` (chaque tour de parole transcrit),
+    `end`. La transcription vient de Deepgram, déjà payée pour le STT — on
+    ne dépense donc rien de plus pour obtenir l'historique de conversation.
+
+    RÈGLE : le journal ne doit JAMAIS casser un appel. Tout échec réseau est
+    avalé et journalisé. Un appel qui se coupe parce que le CRM ne répond pas
+    serait un bug bien plus grave que l'absence de trace.
+
+    Sans ALPHA_SESSION_URL configurée, l'objet est inerte (mode local).
+    """
+
+    def __init__(self, session_id: str, room: str, direction: str, meta: dict) -> None:
+        self.url = os.getenv("ALPHA_SESSION_URL", "").strip()
+        self.secret = os.getenv("VOICE_WEBHOOK_SECRET", "").strip()
+        self.id = session_id
+        self.room = room
+        self.direction = direction
+        self.meta = meta
+        self.enabled = bool(self.url)
+
+    async def _post(self, payload: dict) -> None:
+        if not self.enabled:
+            return
+        payload = {"id": self.id, **payload}
+        try:
+            import urllib.request
+
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(self.url, data=data, method="POST")
+            req.add_header("Content-Type", "application/json")
+            if self.secret:
+                req.add_header("x-voice-secret", self.secret)
+            # Appel bloquant déporté dans un thread : la boucle audio ne doit
+            # jamais attendre le réseau.
+            await asyncio.to_thread(urllib.request.urlopen, req, timeout=5)
+        except Exception as e:  # noqa: BLE001 — on avale TOUT, c'est voulu
+            logger.warning("Journal de session indisponible (%s) — l'appel continue.", e)
+
+    async def start(self) -> None:
+        await self._post(
+            {
+                "event": "start",
+                "room": self.room,
+                "direction": self.direction,
+                "prospectId": self.meta.get("prospectId"),
+                "accountId": self.meta.get("accountId"),
+                "peer": self.meta.get("phone"),
+                # L'enregistrement audio n'est PAS activé par défaut : il exige
+                # d'informer l'interlocuteur (mention distincte de l'art. 50).
+                "recordingAnnounced": False,
+            }
+        )
+
+    async def turn(self, speaker: str, text: str) -> None:
+        if not text or not text.strip():
+            return
+        await self._post({"event": "turn", "speaker": speaker, "text": text.strip()})
+
+    async def end(self, outcome: str | None = None, error: str | None = None) -> None:
+        await self._post({"event": "end", "outcome": outcome, "error": error})
+
+
 async def entrypoint(ctx: JobContext) -> None:
     """
     Point d'entrée. Les métadonnées du job portent tout :
@@ -385,20 +450,51 @@ async def entrypoint(ctx: JobContext) -> None:
             ctx.shutdown()
             return
 
-    await session.start(
-        room=ctx.room,
-        agent=agent,
-        room_input_options=RoomInputOptions(),
+    # ── Journal de session : visible en direct dans ALPHA SALES ──
+    reporter = SessionReporter(
+        session_id=ctx.room.name,
+        room=ctx.room.name,
+        direction="sortant" if phone else "entrant",
+        meta=meta,
     )
+    await reporter.start()
 
-    # ── LA divulgation — prononcée par le code, pas par le modèle ──
-    #
-    # allow_interruptions=False : même si l'interlocuteur parle en même
-    # temps, la phrase va au bout. C'est ce qui rend l'obligation tenue.
-    await session.say(first_sentence(script), allow_interruptions=False)
+    # Chaque tour de parole transcrit part vers ALPHA. C'est CE flux qui
+    # constitue l'historique de conversation réinjecté au prochain contact.
+    @session.on("conversation_item_added")
+    def _on_item(ev) -> None:  # noqa: ANN001 — type interne au SDK
+        try:
+            item = getattr(ev, "item", ev)
+            role = str(getattr(item, "role", "") or "")
+            text = getattr(item, "text_content", None) or getattr(item, "content", "")
+            if isinstance(text, (list, tuple)):
+                text = " ".join(str(x) for x in text)
+            speaker = "agent" if role == "assistant" else "prospect"
+            asyncio.create_task(reporter.turn(speaker, str(text)))
+        except Exception as e:  # noqa: BLE001 — jamais casser l'appel
+            logger.debug("Tour non journalisé : %s", e)
 
-    # Le modèle prend la main ensuite, avec le script en instructions.
-    await session.generate_reply()
+    try:
+        await session.start(
+            room=ctx.room,
+            agent=agent,
+            room_input_options=RoomInputOptions(),
+        )
+
+        # ── LA divulgation — prononcée par le code, pas par le modèle ──
+        #
+        # allow_interruptions=False : même si l'interlocuteur parle en même
+        # temps, la phrase va au bout. C'est ce qui rend l'obligation tenue.
+        await session.say(first_sentence(script), allow_interruptions=False)
+
+        # Le modèle prend la main ensuite, avec le script en instructions.
+        await session.generate_reply()
+    except Exception as e:  # noqa: BLE001
+        await reporter.end(outcome=None, error=str(e))
+        raise
+    else:
+        # L'agent a parlé et rendu la main : quelqu'un était bien au bout du fil.
+        await reporter.end(outcome="repondu")
 
 
 if __name__ == "__main__":
