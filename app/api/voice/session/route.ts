@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CallSession, TranscriptTurn, CallDirection, Speaker } from "@/lib/call-log";
 import { liveSessions } from "@/lib/call-log";
+import { applyOutcome } from "@/lib/call-outcome";
+import type { Prospect } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -98,6 +100,33 @@ async function persist(s: CallSession): Promise<void> {
   if (!db) return;
   const { error } = await db.from("call_sessions").upsert(toRow(s), { onConflict: "id" });
   if (error) console.warn("call_sessions upsert:", error.message);
+}
+
+/**
+ * Reporte le resultat de la session sur la fiche prospect (Supabase).
+ * Silencieux si la fiche est introuvable ou si Supabase n'est pas configure :
+ * un retour de resultat qui echoue ne doit jamais faire echouer la fin d'appel.
+ */
+async function reconcile(s: CallSession): Promise<{ matched: boolean; learned: number; optOut: boolean } | null> {
+  if (!s.prospectId) return null;
+  const db = serviceClient();
+  if (!db) return null;
+  try {
+    const { data } = await db.from("prospects").select("data").eq("id", s.prospectId).maybeSingle();
+    const p = (data as { data?: Prospect } | null)?.data;
+    if (!p) return null;
+
+    const r = applyOutcome(p, s);
+    const { error } = await db.from("prospects").update({ data: r.prospect }).eq("id", s.prospectId);
+    if (error) {
+      console.warn("reconcile prospect:", error.message);
+      return null;
+    }
+    return { matched: r.matched, learned: r.learned.length, optOut: r.optOut };
+  } catch (e) {
+    console.warn("reconcile:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 function authorized(req: NextRequest): boolean {
@@ -211,7 +240,12 @@ export async function POST(req: NextRequest) {
       if (s.recordingAnnounced) s.recordingUrl = str(b.recordingUrl);
     }
     await persist(s);
-    return NextResponse.json({ ok: true, session: s });
+    // ── La boucle se ferme ici ──
+    // Le resultat reel remonte dans la fiche : l'evenement « en attente »
+    // pose par l'autopilote devient « repondu » / « opposition » / etc.
+    // Sans ce retour, la cadence rappellerait quelqu'un qui a decroche.
+    const reconciled = await reconcile(s);
+    return NextResponse.json({ ok: true, session: s, ...(reconciled ? { fiche: reconciled } : {}) });
   }
 
   return NextResponse.json({ error: "event inconnu (start | turn | end)" }, { status: 400 });
