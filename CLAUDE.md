@@ -34,6 +34,20 @@ change l'identité + l'offre + la commission, **pas** les données.
 **Règle de routage (négociée, définitive)** : faisable par nous → EAGLEYE ·
 Callflow → ScintIA · > 40 k → Nuwacom.
 
+### L'ESCALIER — le check de CHAQUE prospect (`lib/ladder.ts`)
+Cascade, pas aiguillage : un prospect peut déclencher plusieurs marches, et
+chacune revient à un compte. On monte **une marche à la fois**, jamais tout d'un
+coup.
+1. **Visibilité** détectée → **EAGLEYE** (30 %).
+2. **Volume de demandes très élevé** → **Callflow / ScintIA** (30 % + 10 % mensuel).
+3. **Automatisation demandée en plus** → **EAGLEYE** (30 %). *Argument clé* :
+   Callflow est le **point d'entrée** — il capte l'info exacte sur chaque
+   appelant, donc l'automatisation qui suit coûte **moins de setup** (les données
+   sont déjà là, le process est cartographié). Cet argument n'est servi QUE si
+   Callflow est effectivement en amont.
+4. **Trop gros pour nous (> 40 k)** → **NUWACOM** : le gros devis justifie les
+   **15 %**, puis **100 % de toute la maintenance mensuelle**.
+
 **Nuwacom** : sites `nuwacom.fr` / `nuwacom.com/en`. CEO **Christophe** (visio
 faite, réglo). Fort en Allemagne + Benelux, **entre sur le marché FR**. Le
 contrat se dresse **après le cadrage** → levier de négociation. Doctrine :

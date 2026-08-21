@@ -1,6 +1,7 @@
 import type { Prospect } from "./types";
 import { getAccount, routeAccount } from "./accounts";
 import { matchOffer, type EagleyeOffer, OFFER_LABELS } from "./offer-match";
+import { buildLadder, ladderPitch, type LadderResult } from "./ladder";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -45,6 +46,12 @@ export interface DeepDive {
   angle: string;
   /** Ce qu'on cherche à obtenir à ce stade (un seul objectif par appel). */
   objective: string;
+  /**
+   * L'ESCALIER : toutes les marches déclenchées, dans l'ordre, avec le compte
+   * qui porte chacune. Un prospect vaut souvent PLUSIEURS marches — c'est là
+   * qu'est la valeur vie client.
+   */
+  ladder: LadderResult;
   /** Vrai si l'IA a affiné ; faux = déterministe. */
   refined: boolean;
 }
@@ -62,9 +69,14 @@ function filled(v: string | undefined | null): boolean {
  * `accountId` = le compte depuis lequel on travaille (il contraint l'offre) ;
  * le routage, lui, peut désigner un AUTRE compte si le deal ne nous revient pas.
  */
-export function deepDive(p: Prospect, accountId = "eagleye"): DeepDive {
+export function deepDive(
+  p: Prospect,
+  accountId = "eagleye",
+  opts: { automationWanted?: boolean } = {}
+): DeepDive {
   const a = p.deepAudit ?? {};
   const account = getAccount(accountId);
+  const ladder = buildLadder(p, opts);
 
   // ── 1. Quelle offre ? (contrainte aux offres autorisées du compte) ──
   const m = matchOffer(
@@ -151,13 +163,18 @@ export function deepDive(p: Prospect, accountId = "eagleye"): DeepDive {
     gaps,
     angle,
     objective,
+    ladder,
     refined: false,
   };
 }
 
 /** Deep-dive d'un lot importé, trié du plus chaud au plus froid. */
-export function deepDiveBatch(list: Prospect[], accountId = "eagleye"): DeepDive[] {
-  return list.map((p) => deepDive(p, accountId)).sort((a, b) => b.score - a.score);
+export function deepDiveBatch(
+  list: Prospect[],
+  accountId = "eagleye",
+  opts: { automationWanted?: boolean } = {}
+): DeepDive[] {
+  return list.map((p) => deepDive(p, accountId, opts)).sort((a, b) => b.score - a.score);
 }
 
 /**
@@ -174,6 +191,19 @@ export function briefForScript(d: DeepDive, p: Prospect): string {
   if (d.signals.length) lines.push(`Ce que tu sais déjà (à utiliser, pas à réciter) : ${d.signals.join(" · ")}.`);
   if (d.gaps.length) lines.push(`Ce que tu dois APPRENDRE : ${d.gaps.join(" · ")}.`);
   lines.push(`Angle d'ouverture : ${d.angle}`);
-  lines.push("Tu ne récites pas ces informations : tu t'en sers pour poser LA bonne question et écouter.");
+
+  // L'escalier : on n'empile pas les offres d'un coup. On entre par la 1re
+  // marche, et on ne monte que si le prospect confirme le besoin suivant.
+  const pitch = ladderPitch(d.ladder);
+  if (pitch) {
+    lines.push(
+      "",
+      "Escalier des besoins (ordre imposé — tu montes UNE marche à la fois, et seulement si la précédente est acquise) :",
+      pitch,
+      "Tu ne déballes jamais les marches suivantes d'emblée : tu valides le besoin du moment, puis tu ouvres la suite."
+    );
+  }
+
+  lines.push("", "Tu ne récites pas ces informations : tu t'en sers pour poser LA bonne question et écouter.");
   return lines.join("\n");
 }

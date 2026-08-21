@@ -173,9 +173,13 @@ export const ACCOUNTS: Account[] = [
         key: "transformation",
         label: "Gros chantier / transformation (> 40 k)",
         commissionPct: 15,
+        // Le gros devis justifie les 15 % ; la MAINTENANCE mensuelle qui suit
+        // revient à 100 % chez nous — c'est là qu'est la rente du chantier.
+        recurringPct: 100,
         minHT: 40000,
         note:
-          "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 %. " +
+          "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 % sur le devis. " +
+          "PUIS 100 % de tous les services de maintenance mensuels. " +
           "En dessous : EAGLEYE le fait (meilleur levier). Contrat dressé APRÈS le cadrage.",
       },
     ],
