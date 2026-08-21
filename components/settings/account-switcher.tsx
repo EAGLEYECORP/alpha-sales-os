@@ -78,22 +78,57 @@ export function AccountSwitcher() {
         })}
       </div>
 
-      {/* Résumé du compte actif : offres autorisées + client parfait (ICP). */}
+      {/* Résumé du compte actif : commissions par offre + client parfait (ICP). */}
       <div className="rounded-xl border border-line/50 bg-surface/30 p-3 text-[11.5px]">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-paper-faint">Offres autorisées :</span>
+        <p className="font-medium text-paper">Commissions par offre</p>
+        <ul className="mt-1 space-y-1">
+          {active.offerings.map((o) => (
+            <li key={o.key} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-paper-dim">{o.label}</span>
+              <span className="rounded-full bg-bronze-900/25 px-1.5 py-0.5 text-[10.5px] text-bronze-300">
+                {o.commissionPct}%{o.recurringPct != null ? ` + ${o.recurringPct}% mensuel` : ""}
+              </span>
+              {o.setupHT != null && (
+                <span className="text-[10.5px] text-paper-faint">setup {o.setupHT.toLocaleString("fr-FR")} € HT</span>
+              )}
+              {(o.minHT != null || o.maxHT != null) && (
+                <span className="text-[10.5px] text-paper-faint">
+                  {o.minHT != null ? `≥ ${o.minHT.toLocaleString("fr-FR")} €` : ""}
+                  {o.minHT != null && o.maxHT != null ? " · " : ""}
+                  {o.maxHT != null ? `< ${o.maxHT.toLocaleString("fr-FR")} €` : ""}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-paper-faint">Routeur d&apos;offre :</span>
           {active.offers.map((o) => (
-            <span key={o} className="rounded-full bg-bronze-900/25 px-2 py-0.5 text-[10.5px] text-bronze-300">
-              {OFFER_LABELS[o]}
+            <span key={o} className="rounded-full bg-surface px-2 py-0.5 text-[10.5px] text-paper-dim">
+              {OFFER_LABELS[o].split(" — ")[0]}
             </span>
           ))}
         </div>
+
         <p className="mt-2 text-paper-dim">
           <strong className="text-paper">Client parfait :</strong> {icp.label} — {icp.buyer}.
         </p>
         <p className="mt-0.5 text-paper-faint">
           {icp.sector} · {icp.companySize} · {icp.geo}
         </p>
+        {active.sites?.length ? (
+          <p className="mt-1 text-[11px] text-paper-faint">
+            {active.sites.map((s, i) => (
+              <span key={s}>
+                {i > 0 ? " · " : ""}
+                <a href={s} target="_blank" rel="noreferrer" className="text-bronze-400 hover:underline">
+                  {s.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                </a>
+              </span>
+            ))}
+          </p>
+        ) : null}
         {active.note && <p className="mt-1.5 text-[11px] italic text-paper-faint">{active.note}</p>}
       </div>
     </section>

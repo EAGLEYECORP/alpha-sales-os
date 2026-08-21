@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP } from "../lib/accounts";
+import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, commissionFor } from "../lib/accounts";
 import { matchOffer } from "../lib/offer-match";
 
 test("accounts — le portefeuille contient EAGLEYE (maître), ScintIA, Nuwacom", () => {
@@ -21,11 +21,40 @@ test("accounts — ScintIA ne propose QUE callflow", () => {
   assert.equal(m.primary, "callflow");
 });
 
-test("accounts — Nuwacom : commission 15 %, objectif 5 500 €, ex-ScintIA Lab", () => {
+test("accounts — Nuwacom : commission 15 %, plancher 20 k, cœur 30-50 k, entrée FR", () => {
   const n = getAccount("nuwacom");
   assert.equal(n.commissionPct, 15);
-  assert.equal(n.targetPerProject, 5500);
-  assert.ok(/lab/i.test(n.note ?? ""));
+  assert.equal(n.targetPerProject, 30000);
+  assert.match(n.note ?? "", /Allemagne|Benelux|Christophe/);
+  const transfo = n.offerings.find((o) => o.key === "transformation");
+  assert.equal(transfo?.minHT, 20000);
+});
+
+test("accounts — commission Callflow : 30 % du setup, 10 % du mensuel", () => {
+  const setup = commissionFor("scintia", { amountHT: 990 });
+  assert.equal(setup.offering.key, "callflow");
+  assert.equal(setup.pct, 30);
+  assert.equal(setup.amount, 297); // 30 % de 990
+  const monthly = commissionFor("scintia", { amountHT: 300, recurring: true });
+  assert.equal(monthly.pct, 10);
+  assert.equal(monthly.amount, 30);
+});
+
+test("accounts — un projet ScintIA < 6 k route vers le Lab à 15 %", () => {
+  const lab = commissionFor("scintia", { amountHT: 4000 });
+  assert.equal(lab.offering.key, "scintia-lab");
+  assert.equal(lab.pct, 15);
+  assert.equal(lab.amount, 600);
+});
+
+test("accounts — Nuwacom : 15 % dès 20 k (idéal 30-50 k)", () => {
+  const deal = commissionFor("nuwacom", { amountHT: 40000 });
+  assert.equal(deal.offering.key, "transformation");
+  assert.equal(deal.pct, 15);
+  assert.equal(deal.amount, 6000);
+  // Sous le plancher : pas d'offre bornée ne matche → repli taux vitrine 15 %.
+  const tooSmall = commissionFor("nuwacom", { amountHT: 8000 });
+  assert.equal(tooSmall.pct, 15);
 });
 
 test("accounts — l'ICP Nuwacom cible l'assurance 25-2000 en transformation digitale", () => {

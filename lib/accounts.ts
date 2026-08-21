@@ -27,6 +27,30 @@ import type { EagleyeOffer } from "./offer-match";
 
 export type AccountKind = "master" | "client";
 
+/**
+ * Une OFFRE COMMERCIALE d'un compte, avec sa règle de commission propre.
+ * La commission n'est pas la même selon l'offre ni selon la TAILLE du projet :
+ *   • ScintIA Callflow  → 30 % du setup + 10 % du mensuel récurrent.
+ *   • ScintIA Lab       → 15 %, uniquement les projets < 6 000 € HT.
+ *   • Nuwacom           → 15 %, à partir de 20 000 € HT (idéal 30-50 k).
+ * `minHT`/`maxHT` bornent l'ÉLIGIBILITÉ d'un projet à cette offre.
+ */
+export interface Offering {
+  key: string;
+  label: string;
+  /** Prix setup / one-shot public (€ HT), si productisé. */
+  setupHT?: number;
+  /** % prélevé sur le one-shot / setup. */
+  commissionPct: number;
+  /** % prélevé sur le mensuel récurrent (abonnement), si applicable. */
+  recurringPct?: number;
+  /** Plancher d'éligibilité du projet (€ HT). */
+  minHT?: number;
+  /** Plafond d'éligibilité du projet (€ HT). */
+  maxHT?: number;
+  note?: string;
+}
+
 export interface Account {
   /** Slug stable — la clé stockée dans settings.accountId. */
   id: string;
@@ -35,6 +59,8 @@ export interface Account {
   /** master = EAGLEYE (gère tout) ; client = marque revendue. */
   kind: AccountKind;
   city: string;
+  /** Sites officiels de la marque (référence, jamais scrapés en dur). */
+  sites?: string[];
   /** Ce que le compte vend, en une ligne. */
   whatYouSell: string;
   /** Sa proposition de valeur. */
@@ -45,8 +71,15 @@ export interface Account {
    * pointe ailleurs. Vide/absent = les trois (cas du maître).
    */
   offers: EagleyeOffer[];
-  /** Part prélevée par EAGLEYE sur chaque vente de ce compte (%). */
+  /**
+   * Taux « vitrine » du compte — celui appliqué par défaut dans la page
+   * Payouts (settings.commissionPct). C'est l'offre PRINCIPALE du compte
+   * (Callflow 30 % pour ScintIA, 15 % pour Nuwacom). Les taux fins par
+   * offre/taille vivent dans `offerings` (voir commissionFor()).
+   */
   commissionPct: number;
+  /** Les offres commerciales du compte + leurs règles de commission. */
+  offerings: Offering[];
   /** Objectif minimal de valeur par projet (€), s'il existe. */
   targetPerProject?: number;
   /** ICP semé pour ce compte (surcharge le squelette déduit de l'offre). */
@@ -71,6 +104,9 @@ export const ACCOUNTS: Account[] = [
     // Le maître voit et propose tout — c'est lui qui arbitre l'offre.
     offers: ["alpha-sales-os", "callflow", "visibilite-growth"],
     commissionPct: 30,
+    offerings: [
+      { key: "alpha-sales-os", label: "Alpha Sales OS", setupHT: 10000, commissionPct: 30, recurringPct: 10 },
+    ],
     note: "Compte maître — l'interface qui pilote tous les autres.",
   },
   {
@@ -78,27 +114,55 @@ export const ACCOUNTS: Account[] = [
     name: "ScintIA",
     kind: "client",
     city: "Lyon",
+    sites: ["https://scintia.ai/", "https://scintiacallflow.ai/"],
     whatYouSell: "ScintIA Callflow — l'accueil & la relance au téléphone par IA",
     valueProp:
       "Chaque appel manqué est un client qui appelle le concurrent. ScintIA répond à votre place, 24/7, et prend le rendez-vous.",
-    // Callflow UNIQUEMENT — le « ScintIA Lab » a été retiré (→ Nuwacom).
+    // Callflow productisé (routeur d'offre). ScintIA Lab = projets sur mesure < 6 k.
     offers: ["callflow"],
-    commissionPct: 30,
+    commissionPct: 30, // vitrine = l'offre Callflow
+    offerings: [
+      {
+        key: "callflow",
+        label: "ScintIA Callflow",
+        setupHT: 990,
+        commissionPct: 30,
+        recurringPct: 10,
+        note: "990 € HT de setup → 30 % ; + 10 % sur l'abonnement mensuel.",
+      },
+      {
+        key: "scintia-lab",
+        label: "ScintIA Lab (sur mesure)",
+        commissionPct: 15,
+        maxHT: 6000,
+        note: "Projets sur mesure < 6 000 € HT → 15 %. Au-delà de 20 k : c'est Nuwacom.",
+      },
+    ],
     targetPerProject: 990, // setup Callflow public (lib/pipeline-juillet.ts)
-    note: "Offre Callflow seule. Le pipe réel de juillet 2026 tourne sur ce compte.",
+    note: "Callflow (990 € HT, 30 % + 10 % mensuel) + ScintIA Lab (15 %, < 6 k). Pipe juillet 2026 ici.",
   },
   {
     id: "nuwacom",
     name: "Nuwacom",
     kind: "client",
     city: "Lyon",
+    sites: ["https://nuwacom.fr/", "https://nuwacom.com/en"],
     whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",
     valueProp:
       "On transforme un process assurance manuel et lent en parcours digital mesurable : moins de friction, plus de contrats traités.",
-    // L'ex-« ScintIA Lab » : l'offre transformation / croissance.
+    // Gros projets de transformation (assurance) : l'offre visibilité/growth + l'OS.
     offers: ["visibilite-growth", "alpha-sales-os"],
     commissionPct: 15,
-    targetPerProject: 5500,
+    offerings: [
+      {
+        key: "transformation",
+        label: "Transformation digitale",
+        commissionPct: 15,
+        minHT: 20000,
+        note: "À partir de 20 000 € HT (preneur), cœur de cible 30-50 k €. 15 %.",
+      },
+    ],
+    targetPerProject: 30000, // idéal 30-50 k ; plancher pris 20 k
     icp: {
       label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
       buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
@@ -124,14 +188,15 @@ export const ACCOUNTS: Account[] = [
         "Événements assurance / assurtech",
       ],
       disqualifiers: [
-        "Moins de 25 salariés (budget projet insuffisant pour ≥ 5 500 €)",
+        "Budget projet < 20 000 € HT (sous le plancher Nuwacom → oriente vers ScintIA Lab)",
+        "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
         "Aucun sponsor au comité de direction",
         "Chantier gelé / DSI en refonte de core system bloquante",
       ],
       angle:
         "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
     },
-    note: "Ex-« ScintIA Lab ». Commission 15 %. Objectif ≥ 5 500 €/projet.",
+    note: "Entrée sur le marché FR (déjà fort en Allemagne + Benelux). CEO Christophe. Projets ≥ 20 k € HT (idéal 30-50 k), 15 %.",
   },
 ];
 
@@ -174,4 +239,52 @@ export function accountICP(id: string): ICP {
   const a = getAccount(id);
   const offer = { agencyName: a.name, whatYouSell: a.whatYouSell, valueProp: a.valueProp, city: a.city };
   return a.icp ? mergeICP(offer, a.icp) : deriveICP(offer);
+}
+
+export interface CommissionQuote {
+  offering: Offering;
+  /** % appliqué (recurring si `recurring`, sinon setup/one-shot). */
+  pct: number;
+  /** Montant de la commission sur `amountHT`. */
+  amount: number;
+}
+
+/**
+ * La commission EXACTE d'une vente : on choisit l'offre du compte dont les
+ * bornes (`minHT`/`maxHT`) contiennent le montant, puis on applique le bon
+ * taux (récurrent vs setup). C'est ce qui distingue un Callflow (30 % + 10 %
+ * mensuel) d'un ScintIA Lab (15 %, < 6 k) ou d'un Nuwacom (15 %, ≥ 20 k).
+ *
+ * Repli : si aucune offre ne matche la taille (trou 6-20 k chez ScintIA, ou
+ * compte sans offerings), on retombe sur le taux vitrine du compte — jamais
+ * d'erreur silencieuse, on facture toujours QUELQUE chose de traçable.
+ */
+export function commissionFor(
+  accountId: string,
+  opts: { amountHT: number; recurring?: boolean; offeringKey?: string }
+): CommissionQuote {
+  const a = getAccount(accountId);
+  const amt = Math.max(0, opts.amountHT || 0);
+  const fits = (o: Offering) => (o.minHT == null || amt >= o.minHT) && (o.maxHT == null || amt <= o.maxHT);
+
+  // 1. La vente NOMME son offre → autorité absolue (le montant seul est ambigu :
+  //    990 € peut être un setup Callflow OU un petit projet Lab).
+  // 2. Sinon récurrent → l'offre à abonnement (celle qui a un recurringPct).
+  // 3. Sinon setup exact → l'offre productisée dont le prix colle.
+  // 4. Sinon on route par la TAILLE (bornes min/max) — Lab < 6 k, Nuwacom ≥ 20 k.
+  // 5. Repli : 1re offre, ou taux vitrine du compte. Jamais d'erreur muette.
+  const picked =
+    (opts.offeringKey && a.offerings.find((o) => o.key === opts.offeringKey)) ||
+    (opts.recurring && a.offerings.find((o) => o.recurringPct != null)) ||
+    (!opts.recurring && a.offerings.find((o) => o.setupHT != null && o.setupHT === amt)) ||
+    a.offerings.filter((o) => o.minHT != null || o.maxHT != null).find(fits) ||
+    a.offerings.find(fits) ||
+    a.offerings[0];
+
+  if (!picked) {
+    const pct = a.commissionPct;
+    return { offering: { key: "default", label: a.name, commissionPct: pct }, pct, amount: Math.round((amt * pct) / 100) };
+  }
+  const pct = opts.recurring && picked.recurringPct != null ? picked.recurringPct : picked.commissionPct;
+  return { offering: picked, pct, amount: Math.round((amt * pct) / 100) };
 }
