@@ -67,6 +67,9 @@ const PUBLIC_PREFIXES = [
   "/api/health",
   "/gate",
   "/api/gate",
+  // Vitrine publique : c'est une page de VENTE, elle doit être lisible sans
+  // mot de passe. Aucune donnée client n'y transite (pas de store, pas d'API).
+  "/vitrine",
 ];
 
 function startsWithAny(path: string, prefixes: string[]): boolean {

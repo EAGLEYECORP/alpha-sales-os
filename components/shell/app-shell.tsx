@@ -148,7 +148,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // L'écran de connexion (/gate) vit HORS du shell : pas de sidebar, pas
   // d'assistant, pas de visite guidée par-dessus le mot de passe.
-  if (pathname === "/gate") return <>{children}</>;
+  // La vitrine publique aussi : un prospect ne doit JAMAIS voir la navigation
+  // interne ni deviner qu'il existe un outil derrière.
+  if (pathname === "/gate" || pathname === "/vitrine") return <>{children}</>;
 
   if (!mounted) {
     return (
