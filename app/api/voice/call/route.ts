@@ -51,6 +51,17 @@ interface Body {
   isProfessional?: boolean;
   /** La fiche a-t-elle exercé son droit d'opposition (ne pas appeler) ? */
   optedOut?: boolean;
+  /**
+   * Brief personnalisé issu du deep-dive (lib/deep-dive → briefForScript).
+   * C'est LUI qui rend l'appel unique : signaux connus, trous à combler,
+   * historique de conversation, objectif du jour. Sans lui, l'agent récite
+   * un script générique — et un script générique ne convertit pas.
+   */
+  prospectBrief?: string;
+  /** Fiche appelée — trace la session dans le journal d'appels. */
+  prospectId?: string;
+  /** Compte au nom duquel on appelle (portefeuille white-label). */
+  accountId?: string;
 }
 
 /** Modes exposés. Le démarchage grand public reste absent. */
@@ -86,6 +97,7 @@ export async function POST(request: NextRequest) {
     onBehalfOf: body.onBehalfOf?.trim() || "EAGLEYE CORP",
     company: body.company?.trim(),
     verticalId: body.verticalId,
+    prospectBrief: body.prospectBrief,
   };
 
   const script = buildVoiceScript(cfg);
@@ -161,6 +173,10 @@ export async function POST(request: NextRequest) {
       phone,
       script,
       company: cfg.company ?? "",
+      // Rattache la session au prospect : sans ça, la transcription arrive
+      // orpheline et l'historique de conversation ne se constitue jamais.
+      prospectId: body.prospectId ?? "",
+      accountId: body.accountId ?? "",
     });
     return NextResponse.json({ dispatched: true, room, dispatchId, script, audit, phone });
   } catch (e) {

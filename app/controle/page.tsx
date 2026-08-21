@@ -8,6 +8,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { masterRappelAll, type MasterPlan } from "@/lib/master-rappel";
 import { buildCampaignRun, skipBreakdown, SKIP_LABELS } from "@/lib/campaign-runner";
+import { CampaignRunner } from "@/components/controle/runner";
 import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 export default function ControlePage() {
   const prospects = useAlpha((s) => s.prospects);
   const accountId = useAlpha((s) => s.settings.accountId);
+  const agencyName = useAlpha((s) => s.settings.agencyName);
 
   const [sessions, setSessions] = useState<CallSession[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -131,8 +133,19 @@ export default function ControlePage() {
           conversation décroche.
         </p>
 
+        {/* Le lanceur — manuel ou auto, avec armement explicite */}
+        <div className="mt-3">
+          <CampaignRunner
+            queue={run.queue}
+            windowOpen={run.windowOpen}
+            windowWhy={run.windowWhy}
+            accountId={accountId}
+            agencyName={agencyName}
+          />
+        </div>
+
         {run.queue.length > 0 && (
-          <ol className="mt-2 space-y-1.5">
+          <ol className="mt-3 space-y-1.5">
             {run.queue.slice(0, 12).map((t) => (
               <li key={t.prospectId} className="flex flex-wrap items-baseline gap-2 text-[11.5px]">
                 <span className="font-mono text-[10.5px] text-paper-faint">#{t.rank}</span>
