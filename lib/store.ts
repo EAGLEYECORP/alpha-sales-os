@@ -33,6 +33,7 @@ import {
 } from "./seed";
 import { stageById, signingBlockers } from "./hormozi";
 import { seedKnowledge, type KnowledgeNote } from "./knowledge";
+import { applyAccount } from "./accounts";
 import { uid } from "./utils";
 
 interface AlphaState {
@@ -106,6 +107,8 @@ interface AlphaState {
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
+  /** Bascule le compte white-label actif (identité + offre + commission). */
+  switchAccount: (accountId: string) => void;
   /** Bascule « ta part versée » sur un paiement (payout). */
   togglePayoutSettled: (paymentId: string) => void;
   importData: (json: string) => { ok: boolean; error?: string };
@@ -122,6 +125,7 @@ interface AlphaState {
 }
 
 const defaultSettings: AppSettings = {
+  accountId: "eagleye",
   agencyName: "EAGLEYE CORP",
   closerName: "Le Closer",
   // Défaut EAGLEYE : Alpha Sales OS se vend lui-même. Un revendeur remplace.
@@ -442,6 +446,9 @@ export const useAlpha = create<AlphaState>()(
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
 
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+
+      switchAccount: (accountId) =>
+        set((s) => ({ settings: { ...s.settings, ...applyAccount(accountId) } })),
 
       togglePayoutSettled: (paymentId) =>
         set((s) => ({

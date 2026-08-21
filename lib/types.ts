@@ -322,6 +322,13 @@ export interface Activity {
 }
 
 export interface AppSettings {
+  /**
+   * Compte white-label actif dans le portefeuille du compte maître (EAGLEYE).
+   * Absent = compte maître par défaut. Voir lib/accounts.ts — le maître bascule
+   * d'un compte à l'autre, chaque bascule applique l'identité + la commission +
+   * l'ICP de CE compte. L'usage solo n'est jamais impacté (champ optionnel).
+   */
+  accountId?: string;
   agencyName: string;
   closerName: string;
   /**

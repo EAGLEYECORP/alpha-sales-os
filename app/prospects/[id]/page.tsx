@@ -30,6 +30,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
+import { getAccount } from "@/lib/accounts";
 import { search, contextFromNotes } from "@/lib/knowledge";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
@@ -608,16 +609,22 @@ const OFFER_BAR: Record<EagleyeOffer, string> = {
 
 function OfferRecommendation({ p }: { p: Prospect }) {
   const a = p.deepAudit;
-  const m = matchOffer({
-    sector: String(p.sector),
-    missedCallsPerWeek: a.missedCallsPerWeek,
-    googleRating: a.googleRating,
-    googleReviews: a.googleReviews,
-    websiteState: a.websiteState,
-    socialState: a.socialState,
-    monthlyValue: p.monthlyValue,
-    avgTicket: a.avgTicket,
-  });
+  // Le compte actif contraint l'offre : un compte mono-offre (ScintIA =
+  // callflow seul) ne recommande jamais une offre qu'il ne vend pas.
+  const accountId = useAlpha((s) => s.settings.accountId);
+  const m = matchOffer(
+    {
+      sector: String(p.sector),
+      missedCallsPerWeek: a.missedCallsPerWeek,
+      googleRating: a.googleRating,
+      googleReviews: a.googleReviews,
+      websiteState: a.websiteState,
+      socialState: a.socialState,
+      monthlyValue: p.monthlyValue,
+      avgTicket: a.avgTicket,
+    },
+    getAccount(accountId).offers
+  );
   const maxScore = Math.max(1, ...Object.values(m.scores));
   const noSignal = Math.max(...Object.values(m.scores)) <= 0;
   const order: EagleyeOffer[] = ["alpha-sales-os", "callflow", "visibilite-growth"];

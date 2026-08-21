@@ -7,6 +7,7 @@ import { useAlpha } from "@/lib/store";
 import { matchObjections, matchAlarms, verticalById } from "@/lib/live-assist";
 import { verticalForProspect } from "@/lib/playbook";
 import { matchOffer, OFFER_LABELS } from "@/lib/offer-match";
+import { getAccount } from "@/lib/accounts";
 import { search } from "@/lib/knowledge";
 import type { Prospect } from "@/lib/types";
 
@@ -83,6 +84,7 @@ export function AlphaLiveButton({ prospect }: { prospect?: Prospect }) {
 /** Le copilote live — réutilisé par le PiP (app web) ET la fenêtre transparente (Electron, route /overlay). */
 export function LiveCopilot({ prospect, onClose }: { prospect?: Prospect; onClose?: () => void }) {
   const notes = useAlpha((s) => s.notes);
+  const accountId = useAlpha((s) => s.settings.accountId);
   const [heard, setHeard] = useState("");
   const [listening, setListening] = useState(false);
   const recRef = useRef<{ stop: () => void } | null>(null);
@@ -98,17 +100,20 @@ export function LiveCopilot({ prospect, onClose }: { prospect?: Prospect; onClos
   const offer = useMemo(() => {
     if (!prospect) return null;
     const a = prospect.deepAudit;
-    return matchOffer({
-      sector: String(prospect.sector),
-      missedCallsPerWeek: a?.missedCallsPerWeek,
-      googleRating: a?.googleRating,
-      googleReviews: a?.googleReviews,
-      websiteState: a?.websiteState,
-      socialState: a?.socialState,
-      monthlyValue: prospect.monthlyValue,
-      avgTicket: a?.avgTicket,
-    });
-  }, [prospect]);
+    return matchOffer(
+      {
+        sector: String(prospect.sector),
+        missedCallsPerWeek: a?.missedCallsPerWeek,
+        googleRating: a?.googleRating,
+        googleReviews: a?.googleReviews,
+        websiteState: a?.websiteState,
+        socialState: a?.socialState,
+        monthlyValue: prospect.monthlyValue,
+        avgTicket: a?.avgTicket,
+      },
+      getAccount(accountId).offers
+    );
+  }, [prospect, accountId]);
 
   // Dictée (Web Speech API) — feature-detect, sinon on tape.
   const toggleMic = () => {

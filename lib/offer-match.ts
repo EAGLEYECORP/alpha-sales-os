@@ -74,7 +74,13 @@ function weakSocial(state?: string): boolean {
   return !t || t === "aucun" || t === "aucune" || t.includes("faible") || t.includes("inactif") || t.includes("abandon");
 }
 
-export function matchOffer(sig: OfferSignals): OfferMatch {
+/**
+ * @param allowed  Offres autorisées pour le compte courant (lib/accounts.ts).
+ *   Un compte mono-offre (ScintIA = callflow seul) ne doit JAMAIS se voir
+ *   proposer autre chose, même si l'audit pointe ailleurs. Absent/vide = les
+ *   trois (compte maître). Un `allowed` d'une seule offre force cette offre.
+ */
+export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMatch {
   const scores: Record<EagleyeOffer, number> = { "alpha-sales-os": 0, callflow: 0, "visibilite-growth": 0 };
   const reasons: Record<EagleyeOffer, string[]> = { "alpha-sales-os": [], callflow: [], "visibilite-growth": [] };
 
@@ -99,14 +105,21 @@ export function matchOffer(sig: OfferSignals): OfferMatch {
 
   // Classement. Départage stable : callflow > visibilité > alpha (le plus
   // « proximité » d'abord, cohérent avec le pipe Scintia), à score égal.
-  const order: EagleyeOffer[] = ["callflow", "visibilite-growth", "alpha-sales-os"];
-  let primary: EagleyeOffer = "alpha-sales-os";
+  // On ne classe QUE parmi les offres autorisées du compte.
+  const fullOrder: EagleyeOffer[] = ["callflow", "visibilite-growth", "alpha-sales-os"];
+  const permitted = allowed && allowed.length ? allowed : fullOrder;
+  const order = fullOrder.filter((o) => permitted.includes(o));
+  // Repli défensif : un `allowed` vide après filtre → on garde tout.
+  const ranking = order.length ? order : fullOrder;
+
+  let primary: EagleyeOffer = ranking[0];
   let best = -1;
-  for (const o of order) {
+  for (const o of ranking) {
     if (scores[o] > best) { best = scores[o]; primary = o; }
   }
-  // Aucun signal du tout → défaut neutre = Alpha Sales OS (l'offre maison).
-  if (best <= 0) primary = "alpha-sales-os";
+  // Aucun signal → défaut = 1re offre autorisée (Alpha Sales OS pour le maître,
+  // callflow pour un compte Callflow-seul : jamais une offre interdite).
+  if (best <= 0) primary = ranking.includes("alpha-sales-os") ? "alpha-sales-os" : ranking[0];
 
   return { primary, label: OFFER_LABELS[primary], scores, reasons, pitch: OFFER_PITCH[primary] };
 }

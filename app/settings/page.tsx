@@ -21,6 +21,7 @@ import { Deliverability } from "@/components/settings/deliverability";
 import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { PricingEditor } from "@/components/settings/pricing-editor";
 import { IcpGenerator } from "@/components/settings/icp-generator";
+import { AccountSwitcher } from "@/components/settings/account-switcher";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
@@ -307,6 +308,9 @@ export default function SettingsPage() {
 
         {/* Dictionnaire CRM — toutes les variables suivies par Google Sheets */}
         <CrmDictionary />
+
+        {/* Portefeuille de comptes white-label (le maître pilote les autres) */}
+        <AccountSwitcher />
 
         {/* Agency */}
         <section className="card space-y-3 p-4">
