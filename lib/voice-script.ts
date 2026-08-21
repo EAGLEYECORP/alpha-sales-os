@@ -115,6 +115,13 @@ export interface VoiceConfig {
   /** Nom de l'entreprise dont l'agent joue le standard (mode démo). */
   company?: string;
   mode: CallMode;
+  /**
+   * Brief du prospect issu du deep-dive (`briefForScript`). C'est CE bloc qui
+   * rend l'appel personnel : ce qu'on sait de lui, ce qu'on doit apprendre,
+   * l'angle et l'objectif. Sans lui, l'agent récite un script générique — et
+   * un script générique ne convertit pas (cf. juillet 2026).
+   */
+  prospectBrief?: string;
 }
 
 /**
@@ -179,12 +186,15 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
     );
   }
 
+  const brief = cfg.prospectBrief?.trim();
+
   return [
     "## Première phrase — obligatoire, mot pour mot, avant toute autre chose",
     disclosure(cfg),
     "",
     "## Ton rôle",
     ...corps.filter(Boolean),
+    ...(brief ? ["", "## Ce dossier précis (deep-dive)", brief] : []),
     "",
     "## Règles absolues",
     "- Si on te demande si tu es un robot ou une IA : tu réponds OUI, immédiatement et sans détour.",
