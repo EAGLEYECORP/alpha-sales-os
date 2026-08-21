@@ -105,9 +105,29 @@ export const ACCOUNTS: Account[] = [
     offers: ["alpha-sales-os", "callflow", "visibilite-growth"],
     commissionPct: 30,
     offerings: [
-      { key: "alpha-sales-os", label: "Alpha Sales OS", setupHT: 10000, commissionPct: 30, recurringPct: 10 },
+      {
+        key: "alpha-sales-os-vip",
+        label: "Alpha Sales OS — VIP",
+        setupHT: 10000,
+        commissionPct: 30,
+        recurringPct: 10,
+        note: "Offre haute : 10 000 € VIP. Sinon 30 % + frais de setup sur devis.",
+      },
+      {
+        key: "visibilite",
+        label: "Visibilité / Growth (sites, présence)",
+        commissionPct: 30,
+        note: "TOUT ce qui est visibilité est à EAGLEYE — faisable par nous.",
+      },
+      {
+        key: "digitalisation",
+        label: "Digitalisation / transformation < 40 k",
+        commissionPct: 30,
+        maxHT: 40000,
+        note: "Ex-« ScintIA Lab » : récupéré par EAGLEYE. Au-delà de 40 k → Nuwacom.",
+      },
     ],
-    note: "Compte maître — l'interface qui pilote tous les autres.",
+    note: "Compte maître. Prend TOUT ce qui est faisable par nous : visibilité, digitalisation < 40 k, ex-ScintIA Lab.",
   },
   {
     id: "scintia",
@@ -118,9 +138,10 @@ export const ACCOUNTS: Account[] = [
     whatYouSell: "ScintIA Callflow — l'accueil & la relance au téléphone par IA",
     valueProp:
       "Chaque appel manqué est un client qui appelle le concurrent. ScintIA répond à votre place, 24/7, et prend le rendez-vous.",
-    // Callflow productisé (routeur d'offre). ScintIA Lab = projets sur mesure < 6 k.
+    // Callflow UNIQUEMENT — négocié : ScintIA se concentre sur Callflow comme
+    // PRODUIT. Le « ScintIA Lab » est repassé à EAGLEYE.
     offers: ["callflow"],
-    commissionPct: 30, // vitrine = l'offre Callflow
+    commissionPct: 30,
     offerings: [
       {
         key: "callflow",
@@ -130,16 +151,9 @@ export const ACCOUNTS: Account[] = [
         recurringPct: 10,
         note: "990 € HT de setup → 30 % ; + 10 % sur l'abonnement mensuel.",
       },
-      {
-        key: "scintia-lab",
-        label: "ScintIA Lab (sur mesure)",
-        commissionPct: 15,
-        maxHT: 6000,
-        note: "Projets sur mesure < 6 000 € HT → 15 %. Au-delà de 20 k : c'est Nuwacom.",
-      },
     ],
     targetPerProject: 990, // setup Callflow public (lib/pipeline-juillet.ts)
-    note: "Callflow (990 € HT, 30 % + 10 % mensuel) + ScintIA Lab (15 %, < 6 k). Pipe juillet 2026 ici.",
+    note: "Callflow SEUL, vendu comme un produit (990 € HT, 30 % + 10 % mensuel). Pipe juillet 2026 ici.",
   },
   {
     id: "nuwacom",
@@ -150,19 +164,22 @@ export const ACCOUNTS: Account[] = [
     whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",
     valueProp:
       "On transforme un process assurance manuel et lent en parcours digital mesurable : moins de friction, plus de contrats traités.",
-    // Gros projets de transformation (assurance) : l'offre visibilité/growth + l'OS.
+    // GROS chantiers seulement (> 40 k) : en dessous, c'est faisable par nous
+    // et ça reste chez EAGLEYE. Au-dessus, c'est trop lourd pour nous.
     offers: ["visibilite-growth", "alpha-sales-os"],
     commissionPct: 15,
     offerings: [
       {
         key: "transformation",
-        label: "Transformation digitale",
+        label: "Gros chantier / transformation (> 40 k)",
         commissionPct: 15,
-        minHT: 20000,
-        note: "À partir de 20 000 € HT (preneur), cœur de cible 30-50 k €. 15 %.",
+        minHT: 40000,
+        note:
+          "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 %. " +
+          "En dessous : EAGLEYE le fait (meilleur levier). Contrat dressé APRÈS le cadrage.",
       },
     ],
-    targetPerProject: 30000, // idéal 30-50 k ; plancher pris 20 k
+    targetPerProject: 40000, // plancher de routage : sous 40 k, EAGLEYE le fait
     icp: {
       label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
       buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
@@ -188,7 +205,7 @@ export const ACCOUNTS: Account[] = [
         "Événements assurance / assurtech",
       ],
       disqualifiers: [
-        "Budget projet < 20 000 € HT (sous le plancher Nuwacom → oriente vers ScintIA Lab)",
+        "Budget projet < 40 000 € HT → faisable par nous, ça reste chez EAGLEYE",
         "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
         "Aucun sponsor au comité de direction",
         "Chantier gelé / DSI en refonte de core system bloquante",
@@ -196,7 +213,10 @@ export const ACCOUNTS: Account[] = [
       angle:
         "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
     },
-    note: "Entrée sur le marché FR (déjà fort en Allemagne + Benelux). CEO Christophe. Projets ≥ 20 k € HT (idéal 30-50 k), 15 %.",
+    note:
+      "Entrée sur le marché FR (déjà fort en Allemagne + Benelux). CEO Christophe (visio faite, réglo). " +
+      "Chantiers > 40 k, 15 %. Contrat dressé APRÈS le cadrage = levier. Si un open-source ou nous-mêmes " +
+      "pouvons le faire vite → on le fait nous ; si trop lourd (ou refusé par eux) → leur plateforme.",
   },
 ];
 
@@ -239,6 +259,46 @@ export function accountICP(id: string): ICP {
   const a = getAccount(id);
   const offer = { agencyName: a.name, whatYouSell: a.whatYouSell, valueProp: a.valueProp, city: a.city };
   return a.icp ? mergeICP(offer, a.icp) : deriveICP(offer);
+}
+
+/** Seuil au-delà duquel un chantier devient trop lourd pour nous (€ HT). */
+export const NUWACOM_THRESHOLD_HT = 40000;
+
+export interface AccountRoute {
+  accountId: string;
+  accountName: string;
+  reason: string;
+}
+
+/**
+ * LA règle de routage (négociée, définitive) — qui encaisse quel deal :
+ *
+ *   1. Callflow (accueil/relance téléphone) ................ → ScintIA
+ *   2. Chantier > 40 k € HT (trop lourd pour nous) ......... → Nuwacom
+ *   3. TOUT le reste, faisable par nous .................... → EAGLEYE
+ *      (visibilité/sites/growth, digitalisation < 40 k, ex-« ScintIA Lab »)
+ *
+ * Le défaut est EAGLEYE, volontairement : on garde tout ce qu'on sait faire —
+ * c'est la marge la plus haute et le meilleur levier de négociation. On ne
+ * sous-traite que ce qu'on ne peut pas porter.
+ */
+export function routeAccount(deal: { offer?: EagleyeOffer; amountHT?: number }): AccountRoute {
+  if (deal.offer === "callflow") {
+    return { accountId: "scintia", accountName: "ScintIA", reason: "Callflow — produit ScintIA." };
+  }
+  const amt = deal.amountHT ?? 0;
+  if (amt > NUWACOM_THRESHOLD_HT) {
+    return {
+      accountId: "nuwacom",
+      accountName: "Nuwacom",
+      reason: `Chantier ${amt.toLocaleString("fr-FR")} € > ${NUWACOM_THRESHOLD_HT.toLocaleString("fr-FR")} € — trop lourd pour nous.`,
+    };
+  }
+  return {
+    accountId: "eagleye",
+    accountName: "EAGLEYE CORP",
+    reason: "Faisable par nous — on le garde (marge + levier).",
+  };
 }
 
 export interface CommissionQuote {

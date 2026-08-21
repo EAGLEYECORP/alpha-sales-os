@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, commissionFor } from "../lib/accounts";
+import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, commissionFor, routeAccount } from "../lib/accounts";
 import { matchOffer } from "../lib/offer-match";
 
 test("accounts — le portefeuille contient EAGLEYE (maître), ScintIA, Nuwacom", () => {
@@ -21,13 +21,37 @@ test("accounts — ScintIA ne propose QUE callflow", () => {
   assert.equal(m.primary, "callflow");
 });
 
-test("accounts — Nuwacom : commission 15 %, plancher 20 k, cœur 30-50 k, entrée FR", () => {
+test("accounts — Nuwacom : commission 15 %, plancher 40 k, entrée FR", () => {
   const n = getAccount("nuwacom");
   assert.equal(n.commissionPct, 15);
-  assert.equal(n.targetPerProject, 30000);
+  assert.equal(n.targetPerProject, 40000);
   assert.match(n.note ?? "", /Allemagne|Benelux|Christophe/);
   const transfo = n.offerings.find((o) => o.key === "transformation");
-  assert.equal(transfo?.minHT, 20000);
+  assert.equal(transfo?.minHT, 40000);
+});
+
+test("accounts — ScintIA n'a QUE Callflow (le Lab est repassé à EAGLEYE)", () => {
+  const s = getAccount("scintia");
+  assert.equal(s.offerings.length, 1);
+  assert.equal(s.offerings[0].key, "callflow");
+  assert.equal(s.offerings.some((o) => /lab/i.test(o.key)), false);
+  // Et EAGLEYE porte bien la digitalisation < 40 k (l'ex-Lab).
+  const e = getAccount("eagleye");
+  const digi = e.offerings.find((o) => o.key === "digitalisation");
+  assert.equal(digi?.maxHT, 40000);
+  assert.ok(e.offerings.some((o) => o.key === "visibilite"), "la visibilité est à EAGLEYE");
+});
+
+test("routage — Callflow → ScintIA · > 40 k → Nuwacom · le reste → EAGLEYE", () => {
+  assert.equal(routeAccount({ offer: "callflow", amountHT: 990 }).accountId, "scintia");
+  // Callflow reste à ScintIA même sur un gros montant : l'offre prime.
+  assert.equal(routeAccount({ offer: "callflow", amountHT: 90000 }).accountId, "scintia");
+  assert.equal(routeAccount({ offer: "visibilite-growth", amountHT: 60000 }).accountId, "nuwacom");
+  // Pile au seuil : 40 k reste faisable par nous.
+  assert.equal(routeAccount({ offer: "alpha-sales-os", amountHT: 40000 }).accountId, "eagleye");
+  assert.equal(routeAccount({ offer: "visibilite-growth", amountHT: 3000 }).accountId, "eagleye");
+  // Sans info : on garde le deal (défaut = EAGLEYE).
+  assert.equal(routeAccount({}).accountId, "eagleye");
 });
 
 test("accounts — commission Callflow : 30 % du setup, 10 % du mensuel", () => {
@@ -40,21 +64,17 @@ test("accounts — commission Callflow : 30 % du setup, 10 % du mensuel", () => 
   assert.equal(monthly.amount, 30);
 });
 
-test("accounts — un projet ScintIA < 6 k route vers le Lab à 15 %", () => {
-  const lab = commissionFor("scintia", { amountHT: 4000 });
-  assert.equal(lab.offering.key, "scintia-lab");
-  assert.equal(lab.pct, 15);
-  assert.equal(lab.amount, 600);
+test("accounts — la digitalisation < 40 k est à EAGLEYE, à 30 %", () => {
+  const digi = commissionFor("eagleye", { amountHT: 12000, offeringKey: "digitalisation" });
+  assert.equal(digi.pct, 30);
+  assert.equal(digi.amount, 3600);
 });
 
-test("accounts — Nuwacom : 15 % dès 20 k (idéal 30-50 k)", () => {
-  const deal = commissionFor("nuwacom", { amountHT: 40000 });
+test("accounts — Nuwacom : 15 % au-delà de 40 k", () => {
+  const deal = commissionFor("nuwacom", { amountHT: 60000 });
   assert.equal(deal.offering.key, "transformation");
   assert.equal(deal.pct, 15);
-  assert.equal(deal.amount, 6000);
-  // Sous le plancher : pas d'offre bornée ne matche → repli taux vitrine 15 %.
-  const tooSmall = commissionFor("nuwacom", { amountHT: 8000 });
-  assert.equal(tooSmall.pct, 15);
+  assert.equal(deal.amount, 9000);
 });
 
 test("accounts — l'ICP Nuwacom cible l'assurance 25-2000 en transformation digitale", () => {
