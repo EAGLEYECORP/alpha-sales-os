@@ -74,3 +74,41 @@ test("knowledge — le socle de départ est cohérent et relié", () => {
   const bl = backlinks("Routage d'offre", seedKnowledge);
   assert.ok(bl.length >= 1);
 });
+
+test("cerveau — les notes sont cloisonnées par compte", async () => {
+  const { notesForAccount, seedScintia, seedKnowledge } = await import("../lib/knowledge");
+  const all = [...seedKnowledge, ...seedScintia];
+
+  // Depuis ScintIA : ses notes + les communes, jamais celles d'un autre compte.
+  const vueScintia = notesForAccount(all, "scintia");
+  assert.ok(vueScintia.some((n) => n.accountId === "scintia"));
+  assert.ok(vueScintia.some((n) => !n.accountId), "les notes communes restent visibles");
+  assert.equal(
+    vueScintia.some((n) => n.accountId && n.accountId !== "scintia"),
+    false,
+    "aucune note d'un autre compte ne doit fuiter"
+  );
+
+  // Depuis EAGLEYE (client, non maître) : pas les notes ScintIA.
+  const vueEagleye = notesForAccount(all, "eagleye");
+  assert.equal(vueEagleye.some((n) => n.accountId === "scintia"), false);
+
+  // Depuis le MAÎTRE : tout le portefeuille.
+  assert.equal(notesForAccount(all, "eagleye", true).length, all.length);
+});
+
+test("cerveau — ScintIA est semé avec les chiffres RÉELS de juillet", async () => {
+  const { seedScintia, search } = await import("../lib/knowledge");
+  assert.ok(seedScintia.length >= 4);
+  assert.ok(seedScintia.every((n) => n.accountId === "scintia"));
+
+  // La leçon de juillet est retrouvable — c'est elle qui pilote la doctrine.
+  const hits = search("audit taux plomberie appels", seedScintia, 3);
+  assert.ok(hits.length > 0);
+  assert.match(hits[0].note.body, /26/, "les 26 appels sans audit doivent être dans la note");
+
+  // La cadence exigée par ScintIA est présente et exacte.
+  const cadence = seedScintia.find((n) => /cadence/i.test(n.title))!;
+  assert.match(cadence.body, /5 rappels sur 2 jours/);
+  assert.match(cadence.body, /ARRÊTE/);
+});

@@ -4,16 +4,24 @@ import { useMemo, useState } from "react";
 import { Brain, Plus, Search, Trash2, Link2, Sparkles, Loader2, Download, X, Network, ListTree, FileDown, Unlink } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
-import { search, backlinks, extractLinks, contextFromNotes, type KnowledgeNote } from "@/lib/knowledge";
+import { search, backlinks, extractLinks, contextFromNotes, notesForAccount, type KnowledgeNote } from "@/lib/knowledge";
+import { getAccount } from "@/lib/accounts";
 import { cn, relativeFr } from "@/lib/utils";
 import { Synapse } from "@/components/cerveau/synapse";
 import { KnowledgeGraph } from "@/components/cerveau/graph";
 import { FileImport } from "@/components/cerveau/file-import";
 
 export default function CerveauPage() {
-  const notes = useAlpha((s) => s.notes);
+  const allNotes = useAlpha((s) => s.notes);
   const prospects = useAlpha((s) => s.prospects);
   const settings = useAlpha((s) => s.settings);
+  // Le Cerveau est cloisonné par compte : depuis ScintIA on ne voit que ses
+  // notes + les communes. Depuis le MAÎTRE, on voit tout le portefeuille.
+  const account = getAccount(settings.accountId);
+  const notes = useMemo(
+    () => notesForAccount(allNotes, account.id, account.kind === "master"),
+    [allNotes, account]
+  );
   const { upsertNote, deleteNote } = useAlpha();
 
   const [q, setQ] = useState("");

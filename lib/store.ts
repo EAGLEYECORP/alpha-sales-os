@@ -32,7 +32,7 @@ import {
   DEFAULT_BUSINESS_RULES,
 } from "./seed";
 import { stageById, signingBlockers } from "./hormozi";
-import { seedKnowledge, type KnowledgeNote } from "./knowledge";
+import { seedKnowledge, seedScintia, type KnowledgeNote } from "./knowledge";
 import { applyAccount } from "./accounts";
 import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
@@ -189,7 +189,7 @@ export const useAlpha = create<AlphaState>()(
       drafts: [],
       customScripts: [],
       partners: [],
-      notes: seedKnowledge,
+      notes: [...seedKnowledge, ...seedScintia],
 
       upsertProspect: (p) =>
         set((s) => {
@@ -437,6 +437,10 @@ export const useAlpha = create<AlphaState>()(
             body: note.body,
             tags: note.tags ?? [],
             source: note.source ?? "manuel",
+            // Portée : le compte fourni, sinon celui de la note existante,
+            // sinon le compte ACTIF. Une note créée depuis ScintIA reste à
+            // ScintIA — sans ça, tout retomberait dans le pot commun.
+            accountId: note.accountId ?? s.notes.find((n) => n.id === id)?.accountId ?? s.settings.accountId,
             createdAt: exists ? s.notes.find((n) => n.id === id)!.createdAt : now,
             updatedAt: now,
           };
@@ -616,7 +620,7 @@ export const useAlpha = create<AlphaState>()(
           customScripts: s.customScripts ?? [],
           partners: s.partners ?? [],
           // Cerveau : socle de notes si le store précède la v5.
-          notes: s.notes ?? seedKnowledge,
+          notes: s.notes ?? [...seedKnowledge, ...seedScintia],
           settledPayouts: s.settledPayouts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;

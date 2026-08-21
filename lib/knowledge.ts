@@ -23,6 +23,30 @@ export interface KnowledgeNote {
   updatedAt: string;
   /** D'où vient la note : saisie, aspirée d'un prospect, d'un débrief… */
   source: "manuel" | "intel" | "debrief" | "playbook" | "auto";
+  /**
+   * Compte propriétaire de la note. ABSENT = note COMMUNE, visible depuis
+   * tous les comptes (la doctrine, les chiffres maison, le routage).
+   *
+   * Pourquoi cloisonner : le contexte d'un appel ScintIA ne doit pas être
+   * pollué par les notes Nuwacom — sinon l'agent mélange deux marques dans
+   * la même phrase. C'est une frontière d'IDENTITÉ COMMERCIALE, pas de
+   * sécurité (le vrai cloisonnement des données reste la RLS + le JWT).
+   */
+  accountId?: string;
+}
+
+/**
+ * Les notes visibles depuis un compte : les siennes + les communes.
+ * Depuis le compte MAÎTRE, on voit tout — c'est lui qui pilote le portefeuille
+ * et qui doit pouvoir relire n'importe quelle marque.
+ */
+export function notesForAccount(
+  notes: KnowledgeNote[],
+  accountId: string | undefined,
+  isMaster = false
+): KnowledgeNote[] {
+  if (isMaster) return notes;
+  return notes.filter((n) => !n.accountId || n.accountId === (accountId ?? "eagleye"));
 }
 
 // Mots vides FR + EN : ils n'apportent aucun signal de pertinence.
@@ -157,6 +181,102 @@ export const seedKnowledge: KnowledgeNote[] = [
     tags: ["play", "prospection", "lyon"],
     createdAt: "2026-08-10T00:00:00.000Z",
     updatedAt: "2026-08-10T00:00:00.000Z",
+    source: "playbook",
+  },
+];
+
+/**
+ * Notes propres au compte ScintIA — le pipe réel de juillet 2026.
+ *
+ * Ce ne sont pas des exemples : ce sont les chiffres du dossier commercial.
+ * Ils servent de contexte à CHAQUE échange fait au nom de ScintIA — l'agent
+ * sait ce qui a marché, ce qui a échoué, et pourquoi.
+ */
+export const seedScintia: KnowledgeNote[] = [
+  {
+    id: "sc-juillet-chiffres",
+    accountId: "scintia",
+    title: "Juillet 2026 — ce que le mois a réellement produit",
+    body:
+      "78 prospects travaillés · 51 dans l'univers · 132 appels · 18 audits · 24 SMS.\n" +
+      "Résultat : 6 RDV obtenus, 7 opportunités, 5 940 € de pipeline installation, **0 gagné**.\n\n" +
+      "Taux travaillés → RDV : 11,8 %.\n\n" +
+      "La lecture qui compte : voir [[Juillet 2026 — l'audit fait la différence]].",
+    tags: ["scintia", "chiffres", "juillet-2026"],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "sc-juillet-lecon",
+    accountId: "scintia",
+    title: "Juillet 2026 — l'audit fait la différence",
+    body:
+      "Par secteur (prospects · appels · audits · opportunités) :\n\n" +
+      "- Auto-école : 3 · 7 · 2 · **3** — le meilleur ratio, de loin\n" +
+      "- Immobilier : 8 · 10 · 4 · **2**\n" +
+      "- Garage/Carrosserie : 18 · 34 · 1 · **2**\n" +
+      "- Médical/Dentaire : 10 · 13 · 5 · 0\n" +
+      "- Dépannage/Plomberie : 14 · **26** · **0** · **0**\n" +
+      "- Ambulance : 8 · 14 · 1 · 0\n\n" +
+      "**La leçon** : là où un AUDIT est parti, le taux monte. Là où il n'y a eu que " +
+      "des appels, il reste à zéro. 26 appels en plomberie sans une seule pièce écrite " +
+      "n'ont rien produit.\n\n" +
+      "Conséquence opérationnelle : aucun prospect ne va en séquence sans audit écrit.",
+    tags: ["scintia", "doctrine", "audit"],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "sc-callflow-tarifs",
+    accountId: "scintia",
+    title: "Callflow — tarifs publics",
+    body:
+      "Installation : **990 € HT**.\n\n" +
+      "Paliers minutes (abonnement mensuel) :\n" +
+      "- 250 min — 59 € (~100 appels courts)\n" +
+      "- 500 min — 115 € (~200 appels)\n" +
+      "- 750 min — 169 € (~300 appels)\n" +
+      "- 1 000 min — 219 € (~400 appels)\n" +
+      "- 1 500 min — 319 € (~600 appels)\n\n" +
+      "Commission EAGLEYE : 30 % du setup + 10 % du mensuel.\n" +
+      "Jamais de prix avant la démo. Voir [[Cadence de relance Callflow]].",
+    tags: ["scintia", "tarifs", "callflow"],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "sc-cadence",
+    accountId: "scintia",
+    title: "Cadence de relance Callflow",
+    body:
+      "Exigée par ScintIA, non négociable :\n\n" +
+      "Après le premier appel sans réponse → **5 rappels sur 2 jours** (3 h, 8 h, 24 h, 32 h, 48 h).\n\n" +
+      "**Dès qu'il répond** : Alpha Voice ARRÊTE d'appeler, met à jour le pipeline, et passe " +
+      "la main à l'humain (closer).\n\n" +
+      "Opposition (« ne me rappelez plus ») ou numéro invalide : arrêt DÉFINITIF immédiat, " +
+      "prioritaire sur la cadence.",
+    tags: ["scintia", "doctrine", "cadence"],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "sc-closing",
+    accountId: "scintia",
+    title: "ScintIA — rituel de closing",
+    body:
+      "Quand le prospect est prêt : envoyer la **PROPOSITION COMMERCIALE** depuis " +
+      "`z.tazi@scintia.ai`, via le panel `https://sales.scintiacallflow.ai/`.\n\n" +
+      "Se tromper de rituel (envoyer un devis EAGLEYE sur un deal ScintIA) fait perdre " +
+      "le deal au dernier mètre.\n\n" +
+      "ScintIA vend Callflow comme un **produit** — c'est leur seule offre. " +
+      "Tout le reste (visibilité, digitalisation < 40 k) revient à EAGLEYE.",
+    tags: ["scintia", "closing"],
+    createdAt: "2026-08-21T00:00:00.000Z",
+    updatedAt: "2026-08-21T00:00:00.000Z",
     source: "playbook",
   },
 ];
