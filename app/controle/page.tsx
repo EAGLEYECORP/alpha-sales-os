@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { masterRappelAll, type MasterPlan } from "@/lib/master-rappel";
+import { buildCampaignRun, skipBreakdown, SKIP_LABELS } from "@/lib/campaign-runner";
 import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,9 @@ export default function ControlePage() {
     () => masterRappelAll(prospects, { now, accountId }),
     [prospects, now, accountId]
   );
+  // La file d'appels : qui appeler, dans quel ordre, et qui NE PAS appeler.
+  const run = useMemo(() => buildCampaignRun(prospects, { now, accountId }), [prospects, now, accountId]);
+  const breakdown = useMemo(() => skipBreakdown(run), [run]);
 
   async function load() {
     setLoading(true);
@@ -108,6 +112,58 @@ export default function ControlePage() {
               <SessionRow key={s.id} s={s} open={openId === s.id} onToggle={() => setOpenId(openId === s.id ? null : s.id)} />
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* ── 1bis. La file d'appels de la campagne ── */}
+      <section className="card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <Zap size={15} className="text-bronze-400" /> File d&apos;appels
+          </h2>
+          <span className={cn("text-[11px]", run.windowOpen ? "text-signal-green" : "text-signal-amber")}>
+            {run.windowOpen ? "fenêtre ouverte" : run.windowWhy}
+          </span>
+        </div>
+        <p className="mt-1 text-[11.5px] text-paper-dim">{run.summary}</p>
+        <p className="mt-0.5 text-[11px] text-paper-faint">
+          Plafond {run.dailyCap} appels/jour · {run.alreadyToday} déjà passé(s) — au-delà, la qualité de
+          conversation décroche.
+        </p>
+
+        {run.queue.length > 0 && (
+          <ol className="mt-2 space-y-1.5">
+            {run.queue.slice(0, 12).map((t) => (
+              <li key={t.prospectId} className="flex flex-wrap items-baseline gap-2 text-[11.5px]">
+                <span className="font-mono text-[10.5px] text-paper-faint">#{t.rank}</span>
+                <Link href={`/prospects/${t.prospectId}`} className="text-paper hover:text-bronze-400">
+                  {t.company}
+                </Link>
+                <span className="font-mono text-[10.5px] text-bronze-400">{t.phone}</span>
+                {t.recallIndex > 0 && (
+                  <span className="rounded-full bg-bronze-900/25 px-1.5 py-0.5 text-[10px] text-bronze-300">
+                    rappel {t.recallIndex + 1}/5
+                  </span>
+                )}
+                <span className="text-[10.5px] text-paper-faint">prio {t.priority}</span>
+                <span className="w-full text-[11px] text-paper-faint">→ {t.objective}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        {/* Ce qui bloque le volume — la vraie information d'une campagne. */}
+        {breakdown.length > 0 && (
+          <div className="mt-3 border-t border-line/40 pt-2">
+            <p className="text-[11px] uppercase tracking-wider text-paper-faint">Écartés — et pourquoi</p>
+            <ul className="mt-1 grid gap-0.5 sm:grid-cols-2">
+              {breakdown.map((b) => (
+                <li key={b.reason} className="text-[11.5px] text-paper-dim">
+                  <span className="font-mono text-signal-amber">{b.count}</span> — {SKIP_LABELS[b.reason]}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 
