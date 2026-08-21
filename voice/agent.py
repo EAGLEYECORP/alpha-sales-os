@@ -53,7 +53,7 @@ import re
 
 from dotenv import load_dotenv
 from livekit import agents, api, rtc
-from livekit.agents import Agent, AgentSession, JobContext, RoomInputOptions, WorkerOptions, cli
+from livekit.agents import Agent, AgentSession, AgentServer, JobContext, RoomInputOptions, WorkerOptions, cli
 from livekit.plugins import deepgram, openai, silero
 
 # Les plugins DOIVENT s'enregistrer sur le thread principal (à l'import du
@@ -291,12 +291,26 @@ def build_llm():
     return openai.LLM(model=model, base_url=base_url, api_key=api_key, temperature=0.4)
 
 
+# AgentServer : requis par le CLI moderne « lk agent dev » (découverte de la
+# variable `server` au niveau module). Le `python agent.py` classique passe, lui,
+# par cli.run_app(WorkerOptions(...)) plus bas — les deux enregistrent le worker
+# sous le nom « alpha-voice », donc les dispatches (entrants comme sortants) le
+# visent nommément.
+server = AgentServer()
+
+
+@server.rtc_session(agent_name="alpha-voice")
 async def entrypoint(ctx: JobContext) -> None:
     """
     Point d'entrée. Les métadonnées du job portent tout :
         phone    numéro E.164 à appeler (absent = appel entrant)
         script   le script complet, produit par ALPHA
         company  nom affiché dans les journaux
+
+    Entrant  : la Dispatch Rule LiveKit crée la room, y bridge l'appelant SIP
+               et dispatch cet agent dedans. Pas de `phone` → accueil par défaut.
+    Sortant  : ALPHA fournit `phone` + `script` ; on compose via le trunk SIP,
+               on attend le décroché, puis la divulgation part.
     """
     raw = ctx.job.metadata or "{}"
     try:
@@ -325,6 +339,13 @@ async def entrypoint(ctx: JobContext) -> None:
         return
 
     await ctx.connect()
+
+    # Visibilité inbound : trace chaque participant qui rejoint la room. Sur un
+    # vrai appel entrant tu dois voir « Participant : sip_… » — si rien n'arrive,
+    # c'est la Dispatch Rule LiveKit qui ne bridge pas l'appelant (pas le code).
+    @ctx.room.on("participant_connected")
+    def _on_participant(p: rtc.RemoteParticipant) -> None:
+        logger.info("Participant : %s (kind=%s)", p.identity, p.kind)
 
     session = AgentSession(
         # Reconnaissance : français, ponctuation activée pour que le modèle
