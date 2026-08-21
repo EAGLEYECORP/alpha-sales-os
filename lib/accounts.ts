@@ -28,6 +28,20 @@ import type { EagleyeOffer } from "./offer-match";
 export type AccountKind = "master" | "client";
 
 /**
+ * Niveau de service d'un compte.
+ *
+ * Décision structurante : EAGLEYE (notre compte) tourne en `interne` — accès
+ * total, aucune limite, c'est l'atelier. TOUT compte client entre directement
+ * en `vip`, jamais en offre d'appel dégradée.
+ *
+ * Pourquoi pas de palier bas : une version bridée crée un client qui juge le
+ * produit sur ce qu'il ne peut pas faire, puis négocie pour l'obtenir. Mieux
+ * vaut un client qui paie le prix fort et reçoit tout — et un « non » franc à
+ * celui qui ne peut pas suivre.
+ */
+export type AccountTier = "interne" | "vip";
+
+/**
  * Une OFFRE COMMERCIALE d'un compte, avec sa règle de commission propre.
  * La commission n'est pas la même selon l'offre ni selon la TAILLE du projet :
  *   • ScintIA Callflow  → 30 % du setup + 10 % du mensuel récurrent.
@@ -58,6 +72,8 @@ export interface Account {
   name: string;
   /** master = EAGLEYE (gère tout) ; client = marque revendue. */
   kind: AccountKind;
+  /** Niveau de service. EAGLEYE = interne ; tout client = vip d'emblée. */
+  tier: AccountTier;
   city: string;
   /** Sites officiels de la marque (référence, jamais scrapés en dur). */
   sites?: string[];
@@ -114,6 +130,7 @@ export const ACCOUNTS: Account[] = [
     id: "eagleye",
     name: "EAGLEYE CORP",
     kind: "master",
+    tier: "interne",
     city: "Lyon",
     whatYouSell: "Alpha Sales OS — l'OS de vente terrain",
     valueProp:
@@ -154,6 +171,7 @@ export const ACCOUNTS: Account[] = [
     id: "scintia",
     name: "ScintIA",
     kind: "client",
+    tier: "vip",
     city: "Lyon",
     sites: ["https://scintia.ai/", "https://scintiacallflow.ai/"],
     whatYouSell: "ScintIA Callflow — l'accueil & la relance au téléphone par IA",
@@ -185,6 +203,7 @@ export const ACCOUNTS: Account[] = [
     id: "nuwacom",
     name: "Nuwacom",
     kind: "client",
+    tier: "vip",
     city: "Lyon",
     sites: ["https://nuwacom.fr/", "https://nuwacom.com/en"],
     whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",

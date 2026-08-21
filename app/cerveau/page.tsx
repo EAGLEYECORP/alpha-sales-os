@@ -8,6 +8,7 @@ import { search, backlinks, extractLinks, contextFromNotes, type KnowledgeNote }
 import { cn, relativeFr } from "@/lib/utils";
 import { Synapse } from "@/components/cerveau/synapse";
 import { KnowledgeGraph } from "@/components/cerveau/graph";
+import { FileImport } from "@/components/cerveau/file-import";
 
 export default function CerveauPage() {
   const notes = useAlpha((s) => s.notes);
@@ -111,6 +112,9 @@ export default function CerveauPage() {
       </header>
 
       <AskBrain notes={notes} settings={settings} onOpen={(id) => { setSelectedId(id); setView("liste"); }} />
+
+      {/* Import de fichiers — audits PDF, emails .html, comptes rendus */}
+      <FileImport onImported={(ids) => { if (ids[0]) { setSelectedId(ids[0]); setView("liste"); } }} />
 
       {/* Barre de contrôle : vue, tags, orphelines, stats */}
       <div className="flex flex-wrap items-center gap-2">
