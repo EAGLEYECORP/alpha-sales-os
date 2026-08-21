@@ -62,6 +62,9 @@ const readyProspect = (over: Partial<Prospect> = {}) =>
     monthlyValue: 115,
     demoShownBeforePrice: true,
     croyances: { produit: 9, soutien: 9, pourLui: 9 },
+    // Un prospect réellement prêt a une date de déblocage CONFIRMÉE :
+    // sans elle, un « oui » n'est qu'une intention.
+    funding: { availableAt: ago(-1), channel: "virement", approver: "le gérant", confirmed: true },
     nextStep: { date: ago(-2), action: "RDV closing" },
     events: [ev({ date: ago(2), kind: "visite", summary: "Démo faite, devis construit ensemble" })],
     ...over,

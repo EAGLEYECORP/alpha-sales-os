@@ -194,6 +194,26 @@ export interface Prospect {
   preferredChannel?: string;
   /** URL du profil LinkedIn (personne ou page entreprise) — canal de prospection. */
   linkedin?: string;
+  /**
+   * DÉBLOCAGE DES FONDS — la réponse la plus décisive du cycle, et la plus
+   * souvent oubliée. Un « oui » sans date de déblocage n'est pas une vente :
+   * c'est une intention. On note QUAND la compta peut payer et PAR QUEL canal,
+   * puis on relance sur CETTE date, pas au hasard.
+   */
+  funding?: {
+    /** Date à laquelle les fonds peuvent être débloqués (ISO). */
+    availableAt?: string;
+    /** Virement, prélèvement, CB, mandat administratif, leasing… */
+    channel?: string;
+    /** Qui valide côté compta / direction financière. */
+    approver?: string;
+    /** Contrainte réelle : clôture, budget annuel, trésorerie, délai interne. */
+    constraint?: string;
+    /** Le point de relance calé sur cette date (ISO). */
+    followUpAt?: string;
+    /** Confirmé par le prospect, ou simple supposition de notre part ? */
+    confirmed?: boolean;
+  };
   /** Suivi de satisfaction 0–100 (post-livraison). */
   satisfaction?: number;
   /** Témoignage / avis obtenu. */

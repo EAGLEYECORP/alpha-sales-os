@@ -22,6 +22,8 @@ import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { PricingEditor } from "@/components/settings/pricing-editor";
 import { IcpGenerator } from "@/components/settings/icp-generator";
 import { AccountSwitcher } from "@/components/settings/account-switcher";
+import { ImportTriagePanel } from "@/components/settings/import-triage";
+import { triageImport, type ImportTriage } from "@/lib/import-triage";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
@@ -32,6 +34,7 @@ export default function SettingsPage() {
   const csvRef = useRef<HTMLInputElement>(null);
   const [sheetUrl, setSheetUrl] = useState("");
   const [importMsg, setImportMsg] = useState("");
+  const [triage, setTriage] = useState<ImportTriage | null>(null);
   const [syncMsg, setSyncMsg] = useState("");
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
@@ -161,6 +164,8 @@ export default function SettingsPage() {
     }
     const { added, updated } = importProspects(parsed);
     setImportMsg(`✓ Import réussi : ${added} nouveau(x), ${updated} mis à jour, ${skipped} ligne(s) ignorée(s).`);
+    // Deep-dive immédiat : le verdict du lot AVANT de lancer quoi que ce soit.
+    setTriage(triageImport(parsed, settings.accountId));
   };
 
   const doImportCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -509,6 +514,7 @@ export default function SettingsPage() {
                 Colonnes reconnues : commerce, nom, secteur, ville, téléphone, email, étape, abonnement, setup, taxe, note Google, avis, appels ratés, panier moyen, conversion, site, réseaux, concurrence, process, problèmes (séparés par |), notes.
               </p>
               {importMsg && <p className="mt-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-[12px] text-paper-dim">{importMsg}</p>}
+              {triage && <ImportTriagePanel t={triage} />}
             </div>
             <div>
               <label className="label">Exports & remise à zéro</label>

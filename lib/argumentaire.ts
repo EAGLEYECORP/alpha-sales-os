@@ -58,6 +58,11 @@ export interface Argumentaire {
   intro: string;
   /** 2. Les questions qui font constater le problème (pas plus de 3-4). */
   questions: string[];
+  /**
+   * 2bis. Les questions de DÉBLOCAGE DES FONDS — à poser après l'accord de
+   * principe. C'est ce qui transforme un « oui » en date de virement.
+   */
+  budgetQuestions: string[];
   /** 3. La norme du marché dont il est sorti. */
   marketStandard: string[];
   /** 4. Ce que l'inaction lui coûte. */
@@ -173,6 +178,23 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     "Et ceux qui ne rappellent pas — vous pensez qu'ils font quoi ?",
   ];
 
+  // ── Questions BUDGET : le déblocage réel, pas l'accord de principe ──
+  // Un « oui » sans date de déblocage n'est pas une vente. Ces questions se
+  // posent APRÈS l'accord de principe, jamais avant : posées trop tôt, elles
+  // transforment une découverte en négociation.
+  const budgetQuestions = [
+    p.funding?.availableAt
+      ? `Vous m'aviez dit que les fonds se débloquent vers le ${new Date(p.funding.availableAt).toLocaleDateString("fr-FR")} — c'est toujours d'actualité ?`
+      : "Côté compta, à partir de quand vous pouvez débloquer les fonds ?",
+    p.funding?.channel
+      ? `On reste sur ${p.funding.channel} pour le règlement ?`
+      : "Vous réglez par quel canal habituellement — virement, prélèvement, autre ?",
+    p.funding?.approver
+      ? `C'est toujours ${p.funding.approver} qui valide ?`
+      : "Qui valide la dépense de votre côté, en dehors de vous ?",
+    "Il y a une contrainte de calendrier — clôture, budget annuel, trésorerie — dont je devrais tenir compte ?",
+  ];
+
   // ── 3. La norme du marché ──
   const marketStandard = [
     "Aujourd'hui un client qui n'obtient pas de réponse appelle le suivant dans les 5 minutes — il n'attend plus.",
@@ -260,6 +282,7 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     accountName: account.name,
     intro,
     questions,
+    budgetQuestions,
     marketStandard,
     losses,
     offer: { what, price: priceLine(account.id, p), ladder },
@@ -282,6 +305,9 @@ export function argumentaireText(g: Argumentaire): string {
     "",
     "## 2. Questions qui font constater (poser, puis SE TAIRE)",
     bullets(g.questions),
+    "",
+    "## 2bis. Déblocage des fonds (APRÈS l'accord de principe)",
+    bullets(g.budgetQuestions),
     "",
     "## 3. Ce qui se fait dans le marché",
     bullets(g.marketStandard),

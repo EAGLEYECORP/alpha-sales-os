@@ -145,6 +145,16 @@ export function vitalSigns(p: Prospect, now: Date = new Date()): VitalSigns {
       ok: (p.setupValue ?? 0) > 0 || (p.monthlyValue ?? 0) > 0,
       why: "Sans montant, il n'y a ni devis ni décision possible.",
     },
+    {
+      id: "deblocage",
+      label: "Déblocage des fonds confirmé",
+      ok: Boolean(p.funding?.availableAt && p.funding?.confirmed),
+      why: p.funding?.availableAt
+        ? p.funding.confirmed
+          ? `Fonds disponibles le ${new Date(p.funding.availableAt).toLocaleDateString("fr-FR")}${p.funding.channel ? ` par ${p.funding.channel}` : ""}.`
+          : "Date de déblocage supposée, jamais confirmée par lui — à valider avant de compter le deal."
+        : "Un « oui » sans date de déblocage n'est pas une vente : c'est une intention. Demande à partir de quand la compta peut payer, et par quel canal.",
+    },
   ];
 
   const okCount = vitals.filter((v) => v.ok).length;
@@ -227,6 +237,19 @@ function computeWindow(i: {
 
   if (p.nextStep?.date) {
     return { at: p.nextStep.date, why: `Rendez-vous déjà calé : ${p.nextStep.action}. On ne double pas un créneau existant.` };
+  }
+  // Le déblocage des fonds prime sur toute cadence : relancer AVANT que la
+  // compta puisse payer, c'est se faire dire non pour une raison mécanique.
+  const funds = p.funding?.availableAt ? new Date(p.funding.availableAt) : null;
+  if (funds && funds.getTime() > now.getTime()) {
+    return {
+      at: p.funding!.followUpAt ?? funds.toISOString(),
+      why:
+        `Fonds débloquables le ${funds.toLocaleDateString("fr-FR")}` +
+        `${p.funding!.channel ? ` (${p.funding!.channel})` : ""}` +
+        `${p.funding!.approver ? `, validés par ${p.funding!.approver}` : ""}. ` +
+        "Relancer avant cette date, c'est se faire refuser pour une raison purement mécanique.",
+    };
   }
   if (readiness >= 70 && fatigueLevel !== "sature") {
     return { at: now.toISOString(), why: "Il est prêt : on ne fait pas attendre un acheteur." };

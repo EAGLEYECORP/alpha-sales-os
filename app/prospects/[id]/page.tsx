@@ -32,6 +32,7 @@ import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
 import { MasterPanel } from "@/components/prospects/master-panel";
+import { FundingEditor } from "@/components/prospects/funding-editor";
 import { search, contextFromNotes } from "@/lib/knowledge";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
@@ -786,6 +787,9 @@ function AuditTab({
 
       {/* MASTER RAPPEL — quoi faire maintenant, qui le fait, est-ce que ça tourne */}
       <MasterPanel p={p} />
+
+      {/* Déblocage des fonds — ce qui transforme un « oui » en virement */}
+      <FundingEditor p={p} />
 
       {/* Routage d'offre — quelle offre EAGLEYE pour ce prospect (lib/offer-match) */}
       <OfferRecommendation p={p} />

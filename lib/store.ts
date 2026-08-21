@@ -34,6 +34,7 @@ import {
 import { stageById, signingBlockers } from "./hormozi";
 import { seedKnowledge, type KnowledgeNote } from "./knowledge";
 import { applyAccount } from "./accounts";
+import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
 
 interface AlphaState {
@@ -515,8 +516,14 @@ export const useAlpha = create<AlphaState>()(
                 upsell: p.upsell ?? next[idx].upsell,
                 updatedAt: new Date().toISOString(),
               };
+              // L'audit a pu s'enrichir à l'import : on recalcule sa complétude
+              // (jamais à la baisse — un audit fait à la main reste acquis).
+              next[idx].auditScore = Math.max(next[idx].auditScore, auditCompleteness(next[idx]));
               updated++;
             } else {
+              // Score d'audit HONNÊTE : ce qu'on sait réellement de la fiche.
+              // Sans ça, une fiche vide passerait pour exploitable.
+              if (!p.auditScore) p.auditScore = auditCompleteness(p);
               next.unshift(p);
               added++;
             }

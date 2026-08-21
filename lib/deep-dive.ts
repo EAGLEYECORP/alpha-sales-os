@@ -168,6 +168,29 @@ export function deepDive(
   };
 }
 
+/**
+ * Complétude de l'audit (0-100) — la mesure HONNÊTE de ce qu'on sait.
+ *
+ * Elle alimente `auditScore`, donc la checklist « deep-dive présent ». Mettre
+ * un score arbitraire ferait croire qu'une fiche est exploitable alors qu'elle
+ * est vide — et l'agent partirait en appel sans matière.
+ */
+export function auditCompleteness(p: Prospect): number {
+  const a = p.deepAudit ?? {};
+  // Pondéré : ce qui sert à VENDRE pèse plus que ce qui décore.
+  const checks: [boolean, number][] = [
+    [a.missedCallsPerWeek !== undefined, 25], // le chiffre qui fait mal
+    [filled(a.currentProcess), 20], // comment ils font aujourd'hui
+    [a.avgTicket !== undefined, 15], // permet de chiffrer la perte
+    [filled(a.websiteState), 10],
+    [filled(a.socialState), 5],
+    [a.googleRating !== undefined || a.googleReviews !== undefined, 10],
+    [filled(a.localCompetition), 5],
+    [filled(p.email) || filled(p.phone), 10], // sans contact, rien n'est actionnable
+  ];
+  return checks.reduce((s, [ok, w]) => s + (ok ? w : 0), 0);
+}
+
 /** Deep-dive d'un lot importé, trié du plus chaud au plus froid. */
 export function deepDiveBatch(
   list: Prospect[],
