@@ -14,6 +14,75 @@ Ce n'est pas un CRM avec des citations Hormozi — les règles sont **exécutée
 - **Taxe d'Ignorance** : chiffrée par prospect, cumulée dans le temps, injectée dans les scripts et les templates d'emails.
 - **Confettis bronze** sur « Signé ». Évidemment.
 
+
+## Trajectoire — 0 → 10 M€ et French Tech 2030
+
+> Écran vivant : **`/trajectoire`**. Modules : `lib/paliers.ts` (blueprint),
+> `lib/opportunites.ts` (argent hors client), `lib/voice-costs.ts` (coût usine).
+
+### ⏱ French Tech 2030 — dépôt avant le **4 septembre 2026, 23h59** (heure de Paris)
+
+3e promotion. Accompagnement 12 mois : optimisation du financement, mise en
+relation stratégique, simplification administrative. Résultats annoncés en
+octobre 2026. Domaines prioritaires : **IA**, quantique, cybersécurité, spatial,
+robotique, électronique, infrastructures numériques, santé, énergie.
+
+```
+21 août ─────────────────────────────────────────────────► 4 sept.  ►  octobre
+   │         │            │             │            │        │           │
+   J-14      J-11         J-7           J-4          J-2     DÉPÔT     résultats
+   │         │            │             │            │        │
+   ▼         ▼            ▼             ▼            ▼        ▼
+ Vérifier  Pitch de   Traction      Rédaction    Relecture  Dépôt
+ le dépôt  SOUVE-     RÉELLE        du dossier   à froid    (incomplet
+ encore    RAINETÉ    (clients,     (problème,   + pièces   = rejeté)
+ ouvert    (où vivent  CA encaissé,  solution,   jointes
+           les données, pipeline —   marché,
+           quelle       jamais des   différen-
+           dépendance   projections)  ciation)
+           supprimée)
+```
+
+**Adéquation : plausible, pas gagnée d'avance.** L'IA est bien un domaine
+prioritaire et l'argument de souveraineté est réel (zéro dépendance runtime,
+données hébergeables en France, pile vocale auto-hébergeable). Mais le programme
+vise plutôt la deep-tech de souveraineté que le logiciel de vente : le dossier
+se défend sur *« l'automatisation commerciale ne doit pas dépendre d'acteurs
+américains »*, **pas** sur la liste des fonctionnalités.
+
+### Les 4 paliers — une seule contrainte à la fois
+
+| Palier | La contrainte unique | Porte de sortie mesurable |
+|---|---|---|
+| **0 → 100 k€** | Trouver des clients qui **paient**, à la main | 10 paiements encaissés · un canal ≥ 30 % · CAC < 25 % du panier |
+| **100 k → 1 M€** | Sortir la vente **de ta tête** | 3 deals fermés sans le fondateur · 50 % des RDV automatiques · MRR ≥ 20 % |
+| **1 M → 3,5 M€** | Livrer sans se noyer | 80 % des livraisons sans toi · churn < 3 %/mois · satisfaction ≥ 80 |
+| **3,5 M → 10 M€** | Croître **par les autres** | 50 % du CA via comptes/partenaires · 30 jours sans toi, chiffres à l'appui |
+
+Chaque palier porte aussi son **« ce qu'on ne fait PAS encore »** — le piège
+classique de l'étape (recruter trop tôt, refondre le produit, lever des fonds
+pour masquer un problème de livraison).
+
+### La barre du jour — ce qui se double vraiment
+
+> **Doubler le chiffre d'affaires chaque jour est arithmétiquement impossible :
+> 2³⁰ = 1 073 741 824.** Partir de 1 € et doubler quotidiennement donnerait un
+> milliard en un mois. Vendre cette idée fait abandonner au jour 6, quand la
+> courbe casse.
+
+Ce qui se double, c'est le **levier** : le rendement d'une même heure de travail.
+`/trajectoire` mesure quatre ratios chaque jour et **nomme le goulot** :
+
+| Ratio | Seuil | Ce que ça dit |
+|---|---|---|
+| **% automatisé** | ≥ 40 % | En dessous, tu es la machine |
+| **Taux de contact** | ≥ 10 % | En dessous, c'est le ciblage ou l'accroche |
+| **Conversation → RDV** | ≥ 25 % | En dessous, c'est le script |
+| **Touches/heure** | ≥ 10 | En dessous, la file est trop courte |
+
+La réalité compensée : **+1 %/jour composé = ×37,8 en un an. +2 %/jour = ×1 377.**
+C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
+
 ## Stack
 
 | Couche | Choix |
