@@ -34,6 +34,7 @@ import { getAccount } from "@/lib/accounts";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
+import { CheckpointsPanel } from "@/components/prospects/checkpoints-panel";
 import { search, contextFromNotes } from "@/lib/knowledge";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
@@ -788,6 +789,9 @@ function AuditTab({
 
       {/* MASTER RAPPEL — quoi faire maintenant, qui le fait, est-ce que ça tourne */}
       <MasterPanel p={p} />
+
+      {/* Checkpoints humains — les portes que la machine ne franchit pas seule */}
+      <CheckpointsPanel p={p} />
 
       {/* Historique de conversation — les transcriptions réinjectées au prochain appel */}
       <CallHistory prospectId={p.id} />

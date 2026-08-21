@@ -10,6 +10,7 @@ import { masterRappelAll, type MasterPlan } from "@/lib/master-rappel";
 import { buildCampaignRun, skipBreakdown, SKIP_LABELS } from "@/lib/campaign-runner";
 import { CampaignRunner } from "@/components/controle/runner";
 import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
+import { pipelineCoverage } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,6 +42,14 @@ export default function ControlePage() {
   // La file d'appels : qui appeler, dans quel ordre, et qui NE PAS appeler.
   const run = useMemo(() => buildCampaignRun(prospects, { now, accountId }), [prospects, now, accountId]);
   const breakdown = useMemo(() => skipBreakdown(run), [run]);
+  // Où le pipeline est troué : le point qui bloque le plus de fiches.
+  const coverage = useMemo(() => {
+    const declared: Record<string, string[]> = {};
+    for (const p of prospects) {
+      declared[p.id] = (p.tags ?? []).filter((x) => x.startsWith("cp:")).map((x) => x.slice(3));
+    }
+    return pipelineCoverage(prospects, declared);
+  }, [prospects]);
 
   async function load() {
     setLoading(true);
@@ -116,6 +125,24 @@ export default function ControlePage() {
           </ul>
         )}
       </section>
+
+      {/* Couverture du pipeline — le point qui bloque le plus de fiches */}
+      {coverage.total > 0 && coverage.topBlocker && (
+        <section className="card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <AlertTriangle size={15} className="text-signal-amber" /> Ce qui bloque le pipeline
+          </h2>
+          <p className="mt-1 text-[12px] text-paper">
+            <strong className="text-signal-amber">{coverage.topBlocker.count} fiche(s)</strong> bloquées
+            par le même point : <strong>{coverage.topBlocker.label}</strong>.
+          </p>
+          <p className="mt-0.5 text-[11.5px] text-paper-faint">{coverage.topBlocker.why}</p>
+          <p className="mt-1.5 text-[11px] text-paper-faint">
+            {coverage.ready}/{coverage.total} fiches peuvent avancer · couverture moyenne{" "}
+            {coverage.coverage}%. Corriger ce point vaut mieux que traiter les fiches une par une.
+          </p>
+        </section>
+      )}
 
       {/* ── 1bis. La file d'appels de la campagne ── */}
       <section className="card p-4">
