@@ -82,6 +82,23 @@ export interface Account {
   offerings: Offering[];
   /** Objectif minimal de valeur par projet (€), s'il existe. */
   targetPerProject?: number;
+  /**
+   * Comment on CLOSE sur ce compte. Chaque marque a son rituel de signature :
+   * un devis EAGLEYE, une proposition via le panel ScintIA, un cadrage avec le
+   * CEO de Nuwacom. Se tromper de rituel = perdre le deal au dernier mètre.
+   */
+  closing?: {
+    /** L'acte précis à poser quand le prospect est prêt. */
+    action: string;
+    /** Adresse d'expédition officielle pour ce compte. */
+    fromEmail?: string;
+    /** Outil à utiliser (panel de vente, espace devis…). */
+    panelUrl?: string;
+    /** Personne à impliquer (ex. le CEO côté Nuwacom). */
+    contactName?: string;
+    /** Fuseau de la personne à impliquer — évite de proposer un créneau absurde. */
+    timezone?: string;
+  };
   /** ICP semé pour ce compte (surcharge le squelette déduit de l'offre). */
   icp?: Partial<ICP>;
   /** Une ligne pour l'humain — d'où vient le compte, son statut. */
@@ -127,6 +144,10 @@ export const ACCOUNTS: Account[] = [
         note: "Ex-« ScintIA Lab » : récupéré par EAGLEYE. Au-delà de 40 k → Nuwacom.",
       },
     ],
+    closing: {
+      action: "Envoyer le DEVIS EAGLEYE CORP (chiffré, daté, avec la date de décision convenue).",
+      fromEmail: "contact@eagleyecorp.fr",
+    },
     note: "Compte maître. Prend TOUT ce qui est faisable par nous : visibilité, digitalisation < 40 k, ex-ScintIA Lab.",
   },
   {
@@ -153,6 +174,11 @@ export const ACCOUNTS: Account[] = [
       },
     ],
     targetPerProject: 990, // setup Callflow public (lib/pipeline-juillet.ts)
+    closing: {
+      action: "Envoyer la PROPOSITION COMMERCIALE depuis le panel de vente ScintIA Callflow.",
+      fromEmail: "z.tazi@scintia.ai",
+      panelUrl: "https://sales.scintiacallflow.ai/",
+    },
     note: "Callflow SEUL, vendu comme un produit (990 € HT, 30 % + 10 % mensuel). Pipe juillet 2026 ici.",
   },
   {
@@ -184,6 +210,13 @@ export const ACCOUNTS: Account[] = [
       },
     ],
     targetPerProject: 40000, // plancher de routage : sous 40 k, EAGLEYE le fait
+    closing: {
+      action:
+        "Caler le RDV de CADRAGE avec Christophe (CEO Nuwacom). Le contrat se dresse APRÈS ce cadrage — " +
+        "c'est là qu'est le levier de négociation.",
+      contactName: "Christophe (CEO Nuwacom)",
+      timezone: "Europe/Luxembourg",
+    },
     icp: {
       label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
       buyer: "Directeur transformation / DSI / directeur général / responsable innovation",

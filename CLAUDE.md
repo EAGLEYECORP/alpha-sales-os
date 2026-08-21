@@ -80,6 +80,28 @@ concentrer sur Callflow comme produit.
   réponse → **5 rappels sur 2 jours**. Dès qu'il répond : Alpha Voice **arrête**,
   met à jour le pipeline, et **passe la main à l'humain** (closer).
 
+## Rituels de closing (par compte) — `Account.closing`
+Se tromper de rituel = perdre le deal au dernier mètre.
+- **EAGLEYE** → DEVIS EAGLEYE CORP, envoyé depuis `contact@eagleyecorp.fr`.
+- **ScintIA** → PROPOSITION COMMERCIALE depuis `z.tazi@scintia.ai` via le panel
+  `https://sales.scintiacallflow.ai/`.
+- **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
+  **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
+
+## MASTER RAPPEL (`lib/master-rappel.ts` + `lib/vital-signs.ts`)
+Pour chaque prospect, à chaque instant : **signaux vitaux** (prêt à signer ?),
+**fatigue** (saturé ?), **fenêtre** (quand revenir sans l'agacer), **actions
+séparées humain / Alpha**, **checklist « ça tourne + Alpha reçoit la donnée »**,
+et le **plan de comms** (quoi dire, quand, comment, à quelle fréquence).
+Règles dures :
+- La fréquence suit la **réactivité**, jamais le calendrier. Prêt → tous les
+  jours ; saturé → silence de 7-21 j puis **raison NEUVE** (jamais « je me
+  permets de relancer »).
+- Le compteur de saturation **repart à zéro dès qu'il répond**.
+- 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré).
+- Jamais de prix avant la démo. Jamais de closing sur un vital au rouge.
+  Jamais doubler un RDV déjà calé.
+
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
   Elles sont à **rotate**. Ne JAMAIS écrire une clé collée dans un fichier, un
