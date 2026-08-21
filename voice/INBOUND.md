@@ -97,7 +97,7 @@ Participant : sip_XXXX (kind=SIP)
 |---|---|---|
 | `room disconnected while waiting for participant` sans avoir appelé | room de test `lk agent dev`, aucun appelant | normal — **appelle** le numéro pour un vrai test |
 | Tu appelles mais **aucun** `Participant : sip_…` | la Dispatch Rule ne bridge pas / mauvais numéro de trunk | revois trunk `numbers` + `room_config.agents` |
-| `Participant : sip_…` mais pas de voix | LLM/TTS (voir logs `LLM vocal :` / `TTS :`) | clé/latence (Groq recommandé), crédit Fish |
+| `Participant : sip_…` mais pas de voix | LLM/TTS (voir logs `LLM vocal :` / `TTS :`) | clé/latence (défaut NVIDIA + openai/gpt-oss-20b, sans latence), crédit Fish |
 | Appelant seul, agent jamais dispatché | `room_config.agents` absent de la règle | ajoute `{"agent_name":"alpha-voice"}` |
 
 ## Note conformité (art. 50)

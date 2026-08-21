@@ -232,8 +232,10 @@ def build_llm():
     """Le LLM de l'agent — endpoint COMPATIBLE OpenAI, joignable CÔTÉ SERVEUR.
 
     Une seule option à configurer, cohérente (base_url + modèle + clé) :
-      · NVIDIA NIM (défaut, gratuit) : base_url .../v1, modèle meta/llama-3.3-70b-instruct,
-        clé NVIDIA_API_KEY (nvapi-…).
+      · NVIDIA NIM (défaut, gratuit) : base_url .../v1, modèle openai/gpt-oss-20b,
+        clé NVIDIA_API_KEY (nvapi-…). Ce petit modèle répond SANS latence en
+        conversation (testé terrain) — contrairement au 70B qui fait la file
+        d'attente sur l'offre gratuite. Garde le namespace « openai/ ».
       · OpenAI : base_url https://api.openai.com/v1, modèle gpt-4o-mini, clé OPENAI_API_KEY.
       · Ollama local : base_url http://localhost:11434/v1, modèle tiré localement,
         aucune clé requise (on en passe une factice, Ollama l'ignore).
@@ -243,7 +245,7 @@ def build_llm():
     pas d'« URL Puter » pour l'agent : il n'y en a pas.
     """
     base_url = os.getenv("VOICE_BASE_URL", "https://integrate.api.nvidia.com/v1").strip()
-    model = os.getenv("VOICE_MODEL", "meta/llama-3.3-70b-instruct").strip()
+    model = os.getenv("VOICE_MODEL", "openai/gpt-oss-20b").strip()
     host = base_url.lower()
     is_local = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0"))
 
