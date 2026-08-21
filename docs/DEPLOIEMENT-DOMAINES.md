@@ -3,6 +3,12 @@
 > Hébergeur DNS : **Amen.fr**. Hébergement applicatif : **Vercel**.
 > À faire une fois, dans cet ordre.
 
+> ⚠ **Rien de tout ça n'est un prérequis.** L'application tourne déjà sur
+> l'URL `*.vercel.app` fournie par Vercel, et l'autopilote comme le journal
+> d'appels fonctionnent avec. Les domaines ci-dessous sont un CONFORT
+> (crédibilité, mémorisation), pas une condition technique — à faire quand tu
+> as le temps, pas avant d'encaisser.
+
 ## L'architecture retenue
 
 | Domaine | Sert | Public ? |

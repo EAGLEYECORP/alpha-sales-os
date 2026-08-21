@@ -38,6 +38,30 @@ Plafond **dur** : `MAX_CALLS_PER_TICK = 5`, non contournable même en passant
 `force` n'existe pas sur cette route. Un humain peut décider d'appeler un
 samedi ; une machine, non.
 
+## Quelle URL utiliser ?
+
+**Tu n'as pas besoin du sous-domaine pour que ça marche.** Vercel attribue déjà
+une URL à ton projet, du type `alpha-sales-os-xxxx.vercel.app`. On l'appelle
+`$APP` dans ce document.
+
+Pour la trouver : dashboard Vercel → ton projet → l'URL affichée en haut
+(« Domains » ou le bouton *Visit*). Ou en ligne de commande :
+
+```bash
+npx vercel ls
+```
+
+Pose-la une fois dans ton terminal pour coller les commandes plus bas :
+
+```bash
+export APP="https://ton-projet.vercel.app"
+export CRON_SECRET="..."
+```
+
+Le jour où `alphasalesos.eagleyecorp.fr` existera (voir
+`DEPLOIEMENT-DOMAINES.md`), **rien à changer dans le code** : tu remplaces
+juste l'URL dans le nœud n8n. L'ancienne continue de fonctionner.
+
 ## Le planificateur : n8n, pas Vercel Cron
 
 **Vercel Cron n'envoie que des requêtes GET.** Ici, `GET` renvoie l'**état de
@@ -50,7 +74,7 @@ L'exécution est en **POST**. Utilise n8n (déjà branché dans l'app) :
 **Nœud HTTP Request** :
 
 ```
-POST https://alphasalesos.eagleyecorp.fr/api/campaign/tick?accountId=eagleye&max=5
+POST $APP/api/campaign/tick?accountId=eagleye&max=5
 Header: Authorization: Bearer <CRON_SECRET>
 ```
 
@@ -60,13 +84,13 @@ Header: Authorization: Bearer <CRON_SECRET>
 2. Vérifier la config, **sans rien déclencher** :
    ```bash
    curl -H "Authorization: Bearer $CRON_SECRET" \
-     https://alphasalesos.eagleyecorp.fr/api/campaign/tick
+     $APP/api/campaign/tick
    ```
    Doit répondre `autopilot: "désarmé (simulation)"` et `supabase: "configuré"`.
 3. **Simuler** un tick réel et lire `wouldCall` :
    ```bash
    curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
-     https://alphasalesos.eagleyecorp.fr/api/campaign/tick
+     $APP/api/campaign/tick
    ```
    Regarde la liste. Ce sont de **vraies personnes** qui seront appelées.
 4. Seulement si la liste te convient : poser `CAMPAIGN_AUTOPILOT=on`.
