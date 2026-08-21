@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowRight, Check, Clock, Minus, Phone, ShieldCheck, X } from "lucide-react";
-import { BRICKS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks } from "@/lib/bricks";
+import { BRICKS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "@/lib/bricks";
 import { cn } from "@/lib/utils";
 
 /**
@@ -162,6 +162,49 @@ export default function VitrinePage() {
               après le cadrage — jamais un forfait sorti d&apos;un catalogue.
             </p>
           </div>
+        </div>
+
+        {/* Alpha Voice sortant — au volume, sans engagement */}
+        <div className="rounded-2xl border border-line/50 p-5">
+          <h3 className="font-display text-sm font-semibold text-paper">
+            Alpha Voice sortant — au volume, <span className="text-bronze-400">sans engagement</span>
+          </h3>
+          <p className="mt-1 text-[13px] text-paper-dim">
+            Vous payez les appels passés, pas une licence. On commence petit, on prouve que ça convertit,
+            et on monte seulement après.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-4">
+            {OUTBOUND_TIERS.map((t) => (
+              <div
+                key={t.calls}
+                className={cn(
+                  "rounded-xl border p-3",
+                  t.perThousandHT < OUTBOUND_UNIT_HT
+                    ? "border-bronze-500/60 bg-bronze-900/15"
+                    : "border-line/50 bg-surface/30"
+                )}
+              >
+                <p className="font-display text-[13px] font-semibold text-paper">
+                  {t.calls.toLocaleString("fr-FR")} appels
+                </p>
+                <p className="mt-1 font-display text-xl font-bold text-bronze-400">
+                  {t.monthlyHT.toLocaleString("fr-FR")} €
+                </p>
+                <p className="text-[11px] text-paper-faint">HT / mois</p>
+                {t.perThousandHT < OUTBOUND_UNIT_HT && (
+                  <p className="mt-1 text-[11px] text-signal-green">
+                    le 4<sup>e</sup> millier offert
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[13px] leading-relaxed text-paper-dim">
+            <strong className="text-paper">Le volume n&apos;a de valeur qu&apos;après le réglage.</strong> Tant que
+            le ciblage et la conversation ne sont pas optimisés, multiplier les appels ne fait que brûler
+            votre fichier plus vite. C&apos;est pour ça qu&apos;on ouvre le palier 4 000 seulement une fois
+            que ça convertit — et pas avant.
+          </p>
         </div>
 
         {/* Prix à la carte — le sélecteur qui fait l'addition */}

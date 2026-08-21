@@ -38,6 +38,83 @@ export interface Brick {
 }
 
 /**
+ * ── ALPHA VOICE SORTANT — tarification au VOLUME D'APPELS ──
+ *
+ * L'abonnement sortant se paie au millier d'appels, **sans engagement**.
+ * Unité de base : 1 000 appels = 364 € HT/mois.
+ *
+ * Le palier 4 000 est volontairement cassé : il coûte le prix de 3 000
+ * (le 4e millier est offert). Ce n'est pas une remise de volume gratuite —
+ * c'est le palier de MONTÉE EN CHARGE, celui qu'on ouvre une fois que le
+ * ciblage et la conversation sont optimisés. Tant que ça ne convertit pas,
+ * multiplier les appels ne fait que brûler du fichier plus vite : le volume
+ * n'a de valeur qu'après le réglage.
+ */
+export const OUTBOUND_UNIT_CALLS = 1000;
+export const OUTBOUND_UNIT_HT = 364;
+
+export interface OutboundTier {
+  calls: number;
+  monthlyHT: number;
+  /** Prix ramené au millier d'appels — ce qui rend la remise lisible. */
+  perThousandHT: number;
+  note?: string;
+}
+
+export const OUTBOUND_TIERS: OutboundTier[] = [
+  { calls: 1000, monthlyHT: 364, perThousandHT: 364, note: "Le palier d'entrée : on prouve que ça convertit." },
+  { calls: 2000, monthlyHT: 728, perThousandHT: 364 },
+  { calls: 3000, monthlyHT: 1092, perThousandHT: 364 },
+  {
+    calls: 4000,
+    monthlyHT: 1092,
+    perThousandHT: 273,
+    note: "Palier de montée en charge : le 4e millier est offert. À ouvrir SEULEMENT une fois le ciblage et la conversation réglés.",
+  },
+];
+
+export interface OutboundQuote {
+  calls: number;
+  monthlyHT: number;
+  perThousandHT: number;
+  /** Le palier appliqué, si le volume tombe pile dessus. */
+  tier?: OutboundTier;
+  note?: string;
+}
+
+/**
+ * Le prix mensuel du sortant pour un volume d'appels.
+ *
+ * Sous 4 000 : multiples du millier (364 €). À 4 000 : 1 092 € (4e millier
+ * offert). Au-delà : on repart du palier 4 000 et chaque millier
+ * supplémentaire est facturé à l'unité — la courbe reste monotone, jamais
+ * un volume plus grand ne coûte moins cher qu'un volume plus petit.
+ */
+export function outboundPrice(calls: number): OutboundQuote {
+  const c = Math.max(0, Math.ceil(calls));
+  if (c === 0) return { calls: 0, monthlyHT: 0, perThousandHT: 0 };
+
+  const exact = OUTBOUND_TIERS.find((t) => t.calls === c);
+  if (exact) {
+    return { calls: c, monthlyHT: exact.monthlyHT, perThousandHT: exact.perThousandHT, tier: exact, note: exact.note };
+  }
+
+  const thousands = Math.ceil(c / OUTBOUND_UNIT_CALLS);
+  const top = OUTBOUND_TIERS[OUTBOUND_TIERS.length - 1];
+  const monthlyHT =
+    c > top.calls
+      ? top.monthlyHT + (thousands - top.calls / OUTBOUND_UNIT_CALLS) * OUTBOUND_UNIT_HT
+      : thousands * OUTBOUND_UNIT_HT;
+
+  return {
+    calls: c,
+    monthlyHT,
+    perThousandHT: Math.round(monthlyHT / (c / OUTBOUND_UNIT_CALLS)),
+    note: c % OUTBOUND_UNIT_CALLS !== 0 ? `Facturé au millier entamé (${thousands} × ${OUTBOUND_UNIT_HT} € HT).` : undefined,
+  };
+}
+
+/**
  * Le catalogue. Les prix sont calibrés pour que l'addition de 3 briques
  * dépasse le pack — c'est volontaire et c'est le moteur de l'upsell.
  */
@@ -47,7 +124,9 @@ export const BRICKS: Brick[] = [
     label: "Alpha Voice",
     what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant et sortant, 24/7.",
     setupHT: 3500,
-    monthlyHT: 390,
+    // Palier d'entrée du sortant : 1 000 appels/mois. Au-delà, voir
+    // OUTBOUND_TIERS — le prix suit le volume, sans engagement.
+    monthlyHT: OUTBOUND_UNIT_HT,
     why:
       "C'est la brique la plus lourde à installer : téléphonie SIP, reconnaissance vocale, synthèse, " +
       "modèle conversationnel et conformité article 50. Une fois posée, elle travaille toutes les nuits et tous les week-ends.",
