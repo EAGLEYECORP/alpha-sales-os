@@ -93,6 +93,12 @@ export interface RunOptions {
   dailyCap?: number;
   /** Forcer hors fenêtre horaire (démo calée un samedi, ça arrive). */
   forceWindow?: boolean;
+  /**
+   * Historique de conversation par prospect (transcriptions des appels
+   * précédents, via conversationContext()). Injecté dans le brief : c'est ce
+   * qui rend le contexte CUMULATIF d'un appel à l'autre.
+   */
+  historyByProspect?: Record<string, string>;
 }
 
 const isSameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
@@ -188,7 +194,7 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
 
     const argu = buildArgumentaire(p, accountId);
     const brief = [
-      briefForScript(dive, p),
+      briefForScript(dive, p, opts.historyByProspect?.[p.id]),
       "",
       "Questions qui font constater (poser, puis SE TAIRE) :",
       ...argu.questions.map((q) => `- ${q}`),

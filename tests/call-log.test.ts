@@ -87,3 +87,34 @@ test("call-log — les sessions vivantes sortent triées, les mortes sont exclue
   const out = liveSessions([live1, dead, live2], NOW);
   assert.deepEqual(out.map((s) => s.id), ["b", "a"]);
 });
+
+test("brief — l'historique des appels précédents est réinjecté, sans faire répéter", async () => {
+  const { deepDive, briefForScript } = await import("../lib/deep-dive");
+  const { conversationContext } = await import("../lib/call-log");
+  const p = {
+    id: "p1", name: "Marc", company: "Test SARL", sector: "artisan", city: "Lyon",
+    phone: "0478000000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 60,
+    conviction: 5, monthlyValue: 0, setupValue: 0, probability: 20, ignoranceTax: 0,
+    croyances: { produit: 5, soutien: 5, pourLui: 5 }, obstacles: [], objections: [], events: [],
+    demoShownBeforePrice: false, nextStep: null, tags: [], attachments: [], notes: "",
+    deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: 7 },
+    problems: [], solution: "", personalizedOffer: "", payments: [], contract: { status: "aucun" },
+    delivery: "non-demarre", createdAt: T0, updatedAt: T0,
+  } as unknown as Parameters<typeof deepDive>[0];
+
+  const hist = conversationContext([
+    session({
+      turns: [
+        { at: at(0), speaker: "agent", text: "Vous perdez combien d'appels ?" },
+        { at: at(1), speaker: "prospect", text: "Une dizaine par semaine, facile." },
+      ],
+    }),
+  ]);
+  const brief = briefForScript(deepDive(p), p, hist);
+  assert.match(brief, /Ce qui s'est DÉJÀ dit avec lui/);
+  assert.match(brief, /Une dizaine par semaine/);
+  assert.match(brief, /ne le refais pas répéter/i);
+
+  // Sans historique, aucune section vide ne pollue le brief.
+  assert.doesNotMatch(briefForScript(deepDive(p), p), /DÉJÀ dit/);
+});

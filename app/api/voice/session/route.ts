@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CallSession, TranscriptTurn, CallDirection, Speaker } from "@/lib/call-log";
 import { liveSessions } from "@/lib/call-log";
 
@@ -13,11 +14,22 @@ export const runtime = "nodejs";
  * GET  : l'app lit les sessions (vivantes ou toutes) pour la salle de
  *        contrôle et l'historique de conversation d'une fiche.
  *
- * Stockage : mémoire de process. C'est assumé et documenté — le journal
- * survit à la session mais pas à un redéploiement, et ne se partage pas
- * entre instances serverless. Pour du durable, il faudra une table Supabase
- * (même schéma que `CallSession`) ; le module `lib/call-log.ts` est déjà
- * découplé pour ça. Ne pas prétendre que c'est persistant.
+ * Stockage : Supabase (table `call_sessions`) dès que SUPABASE_SERVICE_ROLE_KEY
+ * est configurée, sinon mémoire de process. La transcription EST l'historique
+ * de conversation : la perdre à chaque redéploiement viderait de sa substance
+ * la personnalisation des appels suivants.
+ *
+ * La mémoire reste alimentée dans les deux cas — elle sert de cache de lecture
+ * et de repli si Supabase tombe : un journal indisponible ne doit jamais
+ * empêcher un appel d'être tracé.
+ *
+ * Table attendue (à créer une fois) :
+ *   create table call_sessions (
+ *     id text primary key, room text, prospect_id text, account_id text,
+ *     direction text, peer text, started_at timestamptz, ended_at timestamptz,
+ *     state text, turns jsonb default '[]'::jsonb, outcome text,
+ *     recording_announced boolean default false, recording_url text, error text
+ *   );
  *
  * Sécurité : l'agent s'authentifie avec VOICE_WEBHOOK_SECRET. Sans secret
  * configuré, la route n'accepte QUE les appels locaux (dev) — un journal
@@ -28,6 +40,65 @@ export const runtime = "nodejs";
 const SESSIONS = new Map<string, CallSession>();
 /** Garde-fou mémoire : au-delà, on jette les plus anciennes terminées. */
 const MAX_SESSIONS = 500;
+
+function serviceClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+/** CallSession → ligne Supabase (snake_case). */
+function toRow(s: CallSession) {
+  return {
+    id: s.id,
+    room: s.room,
+    prospect_id: s.prospectId ?? null,
+    account_id: s.accountId ?? null,
+    direction: s.direction,
+    peer: s.peer ?? null,
+    started_at: s.startedAt,
+    ended_at: s.endedAt ?? null,
+    state: s.state,
+    turns: s.turns,
+    outcome: s.outcome ?? null,
+    recording_announced: s.recordingAnnounced ?? false,
+    recording_url: s.recordingUrl ?? null,
+    error: s.error ?? null,
+  };
+}
+
+/** Ligne Supabase → CallSession. */
+function fromRow(r: Record<string, unknown>): CallSession {
+  return {
+    id: String(r.id),
+    room: String(r.room ?? r.id),
+    prospectId: (r.prospect_id as string) ?? undefined,
+    accountId: (r.account_id as string) ?? undefined,
+    direction: (r.direction as CallDirection) ?? "entrant",
+    peer: (r.peer as string) ?? undefined,
+    startedAt: String(r.started_at),
+    endedAt: (r.ended_at as string) ?? undefined,
+    state: (r.state as CallSession["state"]) ?? "terminee",
+    turns: Array.isArray(r.turns) ? (r.turns as TranscriptTurn[]) : [],
+    outcome: (r.outcome as CallSession["outcome"]) ?? undefined,
+    recordingAnnounced: Boolean(r.recording_announced),
+    recordingUrl: (r.recording_url as string) ?? undefined,
+    error: (r.error as string) ?? undefined,
+  };
+}
+
+/**
+ * Écriture durable, sans jamais bloquer l'appelant. Un échec Supabase est
+ * journalisé et la session reste en mémoire : on préfère un journal partiel
+ * à un agent qui se bloque sur une écriture.
+ */
+async function persist(s: CallSession): Promise<void> {
+  const db = serviceClient();
+  if (!db) return;
+  const { error } = await db.from("call_sessions").upsert(toRow(s), { onConflict: "id" });
+  if (error) console.warn("call_sessions upsert:", error.message);
+}
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.VOICE_WEBHOOK_SECRET;
@@ -96,10 +167,24 @@ export async function POST(req: NextRequest) {
     };
     SESSIONS.set(id, session);
     prune();
+    await persist(session);
     return NextResponse.json({ ok: true, session });
   }
 
-  const s = SESSIONS.get(id);
+  // Réhydratation : en serverless, `start` et `turn` peuvent tomber sur DEUX
+  // instances différentes. Sans ce rattrapage, la mémoire de la seconde est
+  // vide et TOUTE la transcription serait perdue avec un 404.
+  let s = SESSIONS.get(id);
+  if (!s) {
+    const db = serviceClient();
+    if (db) {
+      const { data } = await db.from("call_sessions").select("*").eq("id", id).maybeSingle();
+      if (data) {
+        s = fromRow(data as Record<string, unknown>);
+        SESSIONS.set(id, s);
+      }
+    }
+  }
   if (!s) return NextResponse.json({ error: "session inconnue" }, { status: 404 });
 
   if (b.event === "turn") {
@@ -112,6 +197,7 @@ export async function POST(req: NextRequest) {
       ...(typeof b.confidence === "number" ? { confidence: b.confidence } : {}),
     };
     s.turns.push(turn);
+    await persist(s);
     return NextResponse.json({ ok: true, turns: s.turns.length });
   }
 
@@ -124,6 +210,7 @@ export async function POST(req: NextRequest) {
       // On n'expose un enregistrement que s'il a été ANNONCÉ à l'interlocuteur.
       if (s.recordingAnnounced) s.recordingUrl = str(b.recordingUrl);
     }
+    await persist(s);
     return NextResponse.json({ ok: true, session: s });
   }
 
@@ -138,14 +225,31 @@ export async function GET(req: NextRequest) {
   const prospectId = url.searchParams.get("prospectId");
   const onlyLive = url.searchParams.get("live") === "1";
 
+  // Supabase est la source de vérité quand elle est configurée ; la mémoire
+  // sert de repli si la base tombe (un journal muet vaut mieux qu'une page morte).
   let all = [...SESSIONS.values()];
+  const db = serviceClient();
+  if (db) {
+    const q = db.from("call_sessions").select("*").order("started_at", { ascending: false }).limit(200);
+    const { data, error } = prospectId ? await q.eq("prospect_id", prospectId) : await q;
+    if (error) console.warn("call_sessions select:", error.message);
+    else if (data) {
+      // Fusion : la mémoire peut porter une session en cours pas encore relue.
+      const byId = new Map(data.map((r) => [String(r.id), fromRow(r as Record<string, unknown>)]));
+      for (const s of SESSIONS.values()) byId.set(s.id, s);
+      all = [...byId.values()];
+    }
+  }
   if (prospectId) all = all.filter((s) => s.prospectId === prospectId);
   if (onlyLive) all = liveSessions(all);
   else all.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
+  const durable = Boolean(serviceClient());
   return NextResponse.json({
     sessions: all,
-    persistence: "memoire",
-    warning: "Journal en mémoire de process : perdu au redéploiement, non partagé entre instances.",
+    persistence: durable ? "supabase" : "memoire",
+    ...(durable
+      ? {}
+      : { warning: "Journal en mémoire de process : perdu au redéploiement, non partagé entre instances." }),
   });
 }

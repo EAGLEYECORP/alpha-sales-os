@@ -205,7 +205,7 @@ export function deepDiveBatch(
  * l'appel personnel : l'agent sait à qui il parle, ce qu'il sait déjà, ce
  * qu'il doit apprendre, et ce qu'il vient chercher.
  */
-export function briefForScript(d: DeepDive, p: Prospect): string {
+export function briefForScript(d: DeepDive, p: Prospect, history?: string): string {
   const lines = [
     `Interlocuteur : ${p.name || "(nom inconnu)"} — ${p.company}${p.city ? `, ${p.city}` : ""}.`,
     `Offre pertinente : ${d.offerLabel}.`,
@@ -224,6 +224,18 @@ export function briefForScript(d: DeepDive, p: Prospect): string {
       "Escalier des besoins (ordre imposé — tu montes UNE marche à la fois, et seulement si la précédente est acquise) :",
       pitch,
       "Tu ne déballes jamais les marches suivantes d'emblée : tu valides le besoin du moment, puis tu ouvres la suite."
+    );
+  }
+
+  // L'historique des appels précédents. C'est LUI qui rend le contexte
+  // cumulatif : à chaque échange l'agent en sait plus, sans qu'on ressaisisse
+  // quoi que ce soit. Sans ça, chaque appel repart de zéro et le prospect a
+  // l'impression de parler à quelqu'un qui ne l'écoute jamais.
+  if (history?.trim()) {
+    lines.push(
+      "",
+      "Ce qui s'est DÉJÀ dit avec lui (ne le refais pas répéter — appuie-toi dessus) :",
+      history.trim()
     );
   }
 
