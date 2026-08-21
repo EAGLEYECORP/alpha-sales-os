@@ -11,13 +11,15 @@ import {
 } from "@/lib/paliers";
 import { prioritized, urgency, daysLeft, type Opportunity } from "@/lib/opportunites";
 import { cn } from "@/lib/utils";
+import { DailyBar } from "@/components/standard/daily-bar";
 
 /**
  * TRAJECTOIRE — où on en est, ce qui bloque, et ce qu'on fait aujourd'hui.
  *
  * Trois écrans en un :
  *   1. le PALIER courant, calculé sur le cash réellement encaissé ;
- *   2. la BARRE DU JOUR — le levier, mesuré, avec le goulot nommé ;
+ *   2. la BARRE DU JOUR (ce qui doit être fait) puis le LEVIER (le rendement,
+ *      mesuré, avec le goulot nommé) ;
  *   3. les OPPORTUNITÉS qui ferment bientôt (French Tech 2030 en tête).
  *
  * Le CA vient des paiements réels du CRM, jamais d'une saisie déclarative :
@@ -41,7 +43,7 @@ export default function TrajectoirePage() {
   const progress = palierProgress(cashed);
   const opportunities = useMemo(() => prioritized(now), [now]);
 
-  // La barre du jour — saisie rapide, calcul immédiat.
+  // Le levier — saisie rapide, calcul immédiat.
   const [input, setInput] = useState<LeverageInput>({
     hours: 8,
     touches: 0,
@@ -118,11 +120,14 @@ export default function TrajectoirePage() {
         </div>
       </section>
 
-      {/* ── 2. LA BARRE DU JOUR ── */}
+      {/* La barre du jour — ce qui doit être vrai avant de fermer la journée */}
+      <DailyBar />
+
+      {/* ── 2. LE LEVIER ── */}
       <section className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
-            <Gauge size={15} className="text-bronze-400" /> La barre du jour
+            <Gauge size={15} className="text-bronze-400" /> Le levier du jour
           </h2>
           <span
             className={cn(

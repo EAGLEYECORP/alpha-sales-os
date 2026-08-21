@@ -34,6 +34,7 @@ import {
 import { stageById, signingBlockers } from "./hormozi";
 import { seedKnowledge, seedScintia, type KnowledgeNote } from "./knowledge";
 import { applyAccount } from "./accounts";
+import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
 
@@ -61,6 +62,8 @@ interface AlphaState {
   partners: Partner[];
   /** Le Cerveau — notes markdown (RAG lexical, façon Obsidian). */
   notes: KnowledgeNote[];
+  /** Historique de la barre du jour — ce qui fait la série. */
+  standardLog: StandardDay[];
 
   // prospects
   upsertProspect: (p: Prospect) => void;
@@ -105,6 +108,11 @@ interface AlphaState {
   /** Crée ou met à jour une note ; renvoie son id. */
   upsertNote: (note: Partial<KnowledgeNote> & { title: string; body: string }) => string;
   deleteNote: (id: string) => void;
+
+  /** Coche/décoche un item de la barre du jour. */
+  toggleStandardItem: (itemId: string, held: boolean) => void;
+  /** Fige le verdict du jour (barre tenue ou non). */
+  setStandardHeld: (held: boolean) => void;
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
@@ -190,6 +198,7 @@ export const useAlpha = create<AlphaState>()(
       customScripts: [],
       partners: [],
       notes: [...seedKnowledge, ...seedScintia],
+      standardLog: [],
 
       upsertProspect: (p) =>
         set((s) => {
@@ -450,6 +459,29 @@ export const useAlpha = create<AlphaState>()(
       },
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
 
+      toggleStandardItem: (itemId, held) =>
+        set((s) => {
+          const today = new Date().toISOString().slice(0, 10);
+          const idx = s.standardLog.findIndex((d) => d.date === today);
+          const day = idx >= 0 ? s.standardLog[idx] : { date: today, checked: [] as string[] };
+          const checked = day.checked.includes(itemId)
+            ? day.checked.filter((x) => x !== itemId)
+            : [...day.checked, itemId];
+          const next = { ...day, checked, held };
+          const log = idx >= 0 ? s.standardLog.map((d, i) => (i === idx ? next : d)) : [next, ...s.standardLog];
+          // On garde un an d'historique : au-delà, la série n'a plus d'usage
+          // et le store gonfle pour rien.
+          return { standardLog: log.slice(0, 400) };
+        }),
+
+      setStandardHeld: (held) =>
+        set((s) => {
+          const today = new Date().toISOString().slice(0, 10);
+          const idx = s.standardLog.findIndex((d) => d.date === today);
+          if (idx < 0) return { standardLog: [{ date: today, checked: [], held }, ...s.standardLog] };
+          return { standardLog: s.standardLog.map((d, i) => (i === idx ? { ...d, held } : d)) };
+        }),
+
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       switchAccount: (accountId) =>
@@ -621,6 +653,7 @@ export const useAlpha = create<AlphaState>()(
           partners: s.partners ?? [],
           // Cerveau : socle de notes si le store précède la v5.
           notes: s.notes ?? [...seedKnowledge, ...seedScintia],
+          standardLog: s.standardLog ?? [],
           settledPayouts: s.settledPayouts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
         } as AlphaState;
