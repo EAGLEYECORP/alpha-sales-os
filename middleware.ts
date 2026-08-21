@@ -70,6 +70,11 @@ const PUBLIC_PREFIXES = [
   // Vitrine publique : c'est une page de VENTE, elle doit être lisible sans
   // mot de passe. Aucune donnée client n'y transite (pas de store, pas d'API).
   "/vitrine",
+  // API publique v1 : appelée par des tiers (n8n, CRM client) qui n'ont pas
+  // le cookie SITE_PASSWORD. Elle porte sa PROPRE authentification par clé
+  // (ALPHA_API_KEYS) et refuse tout si aucune clé n'est configurée — ce n'est
+  // donc pas un trou, c'est une porte différente.
+  "/api/v1",
 ];
 
 function startsWithAny(path: string, prefixes: string[]): boolean {
