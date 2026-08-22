@@ -39,7 +39,16 @@ export default function GatePage() {
         window.location.assign(next.startsWith("/") ? next : "/");
       } else {
         const d = await res.json().catch(() => ({}));
-        setError(d.error || "Accès refusé.");
+        // Le compteur de tentatives doit se VOIR : un opérateur qui se trompe
+        // trois fois doit savoir qu'il approche du blocage, et un blocage muet
+        // ressemble à une panne.
+        const suffixe =
+          typeof d.reessayerDansSec === "number"
+            ? ` Réessaie dans ${d.reessayerDansSec > 60 ? `${Math.ceil(d.reessayerDansSec / 60)} min` : `${d.reessayerDansSec} s`}.`
+            : typeof d.restant === "number"
+              ? ` ${d.restant} essai${d.restant > 1 ? "s" : ""} avant blocage.`
+              : "";
+        setError((d.error || "Accès refusé.") + suffixe);
         setPassword("");
       }
     } catch {

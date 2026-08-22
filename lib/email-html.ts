@@ -89,8 +89,23 @@ function bodyToHtml(body: string): string {
 
 /** Bouton « bulletproof » (rendu correct jusque dans Outlook via VML).
  *  DA calme : pastille sauge arrondie, texte blanc cassé — doux, jamais criard. */
+/**
+ * Un href sûr : schéma autorisé, puis échappement.
+ *
+ * `esc()` seul empêche de sortir de l'attribut, pas d'y mettre
+ * `javascript:…` — qui reste intact après échappement. Inerte dans la plupart
+ * des clients mail, mais ce même rendu est copié et ouvert dans un navigateur
+ * via /api/email/preview. Un schéma non prévu devient donc un lien mort ("#")
+ * plutôt qu'un exécutable.
+ */
+function safeHref(url: string): string {
+  const raw = (url ?? "").trim();
+  if (!/^(https?:|mailto:|tel:)/i.test(raw)) return "#";
+  return esc(raw);
+}
+
 function button(label: string, url: string): string {
-  const safeUrl = esc(url);
+  const safeUrl = safeHref(url);
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;"><tbody><tr><td>
   <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeUrl}" style="height:46px;v-text-anchor:middle;width:260px;" arcsize="50%" strokecolor="${SAGE}" fillcolor="${SAGE}"><w:anchorlock/><center style="color:${CARD};font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${esc(
     label

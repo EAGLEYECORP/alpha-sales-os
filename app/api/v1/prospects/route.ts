@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
 import { normalizeBatch, KNOWN_FIELDS } from "@/lib/api-ingest";
 import { triageImport } from "@/lib/import-triage";
+import { safeEqual } from "@/lib/access";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -43,7 +44,13 @@ function authorized(req: NextRequest): boolean {
   if (keys.length === 0) return false;
   const header = req.headers.get("authorization") ?? "";
   const provided = header.startsWith("Bearer ") ? header.slice(7).trim() : (req.headers.get("x-api-key") ?? "").trim();
-  return provided.length > 0 && keys.includes(provided);
+  if (provided.length === 0) return false;
+  // Comparaison à temps constant sur CHAQUE clé : `includes` s'arrête au
+  // premier caractère différent. On teste tout, sans court-circuit, pour ne
+  // pas signaler par la durée combien de caractères sont justes.
+  let ok = false;
+  for (const k of keys) if (safeEqual(provided, k)) ok = true;
+  return ok;
 }
 
 const unauthorized = () =>
