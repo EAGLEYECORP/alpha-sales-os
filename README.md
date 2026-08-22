@@ -1,8 +1,33 @@
 # ALPHA SALES OS® — EAGLEYE CORP
 
-Système d'exploitation commercial **Hormozi-natif** pour agence lyonnaise (sites premium + overlays IA pour restaurants, pubs, ambulances, artisans). Monochrome bronze, encre & papier, dark only.
+**L'OS de vente qui sort le savoir commercial de la tête des gens pour le mettre dans un système.**
 
-> La décision EST le produit. Émotion d'abord (démo mobile avant le prix), logique ensuite.
+Alpha Sales OS trouve les prospects, les audite, les appelle, les relance, tient
+l'historique de chaque conversation et dit à l'humain quoi faire — pour lui,
+maintenant. Next.js 15 · React 19 · TypeScript strict · **zéro dépendance
+runtime** (crypto, CSV, PDF, RAG : tout est fait main).
+
+> La décision EST le produit. Émotion d'abord (démo avant le prix), logique ensuite.
+
+## À qui ça s'adresse
+
+L'OS a démarré pour le commerce de proximité lyonnais. Ce n'est plus le marché.
+Une fois les briques posées, il s'installe pour des **organisations** — et
+chacune achète pour une raison différente. Catalogue complet dans
+[`lib/segments.ts`](./lib/segments.ts).
+
+| Segment | Ce qui fait mal | Brique d'entrée |
+|---|---|---|
+| **Équipe terrain** — toiture, isolation, photovoltaïque, porte-à-porte (3 à 50 commerciaux) | L'écart entre le meilleur vendeur et les autres est énorme, et son savoir reste dans sa tête | **Alpha Live** + CRM |
+| **Centre d'appels** — plateaux, qualification, relation client (5 à 200 postes) | Les équipes brûlent leur énergie sur des appels qui ne décrochent pas | **Alpha Voice** |
+| **Agence & services B2B** (1 à 30 personnes) | Le closing dépend du fondateur : le chiffre plafonne à ses heures | CRM + Campagnes + Cerveau |
+| **Réseau, franchise, groupement** (10 à 500 points de vente) | Le discours se dilue en s'éloignant du siège | CRM + Alpha Live + Pilotage |
+| **Commerce local** — garages, artisans, santé (1 à 10 personnes) | Chaque appel manqué part chez le concurrent, sans qu'on le sache | **Alpha Voice** (Callflow) |
+| **Assurance en transformation** (25 à 2 000 salariés) | Parcours fragmentés, frictions non chiffrables | CRM + Cerveau + Pilotage |
+
+Chaque segment porte ses **déclencheurs** (quand approcher), son **angle** (qui
+nomme SA douleur, pas notre produit) et ses **disqualifiants** — dire non vite
+vaut mieux que traîner un dossier qui ne signera pas.
 
 ## Doctrine encodée dans le logiciel
 
@@ -91,40 +116,84 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 | UI | Tailwind CSS, composants maison style shadcn, lucide-react, Bricolage Grotesque / Inter / JetBrains Mono |
 | État | Zustand + persistance localStorage (local-first, zéro backend requis) |
 | Data | TanStack Table (vue liste), Recharts (funnel, forecast MRR, secteurs) |
-| IA | Vercel AI SDK + `@ai-sdk/anthropic` (Claude `claude-opus-4-8`) avec **fallback moteur de templates Hormozi hors-ligne** |
+| IA (texte) | Endpoint compatible OpenAI (NVIDIA NIM / Groq / Ollama) avec **fallback moteur de templates hors-ligne** |
+| **Alpha Voice** | LiveKit Agents (Python) · Deepgram STT · LLM compatible OpenAI · Fish Audio TTS · Silero VAD · SIP Telnyx |
+| RAG | BM25 lexical fait main (`lib/knowledge.ts`) — pas de base vectorielle, pas de clé |
 | Cloud (optionnel) | Supabase : auth lien magique, Postgres + RLS, Storage, Realtime |
 
 ## Structure du projet
 
+`90 modules · 40 pages · 33 routes API · 51 composants · 446 tests`
+
 ```
 alpha-sales-os/
 ├── app/
-│   ├── layout.tsx              # Shell global (sidebar + bottom nav mobile), fonts, PWA meta
-│   ├── page.tsx                # Dashboard : KPIs, funnel, forecast MRR, heatmap Oignon, taxe cumulée
-│   ├── pipeline/page.tsx       # Kanban drag-drop + vue liste TanStack + filtres + actions bulk
-│   ├── prospects/[id]/page.tsx # Fiche : Doctrine (3C, obstacles, objections) / Timeline / AI Coach / Templates / Fichiers
-│   ├── campaigns/page.tsx      # Séquences email/WhatsApp/appel + stats + générateur de lead magnet
-│   ├── meetings/page.tsx       # RDV avec liens Cal.com, rappels, résultats
-│   ├── nurture/page.tsx        # Séquences perdus-90j & referrals-signés
-│   ├── intel/page.tsx          # Fiches concurrents avec « notre contre »
-│   ├── activity/page.tsx       # Fil d'activité global + journal d'audit (mode équipe)
-│   ├── settings/page.tsx       # Règles business (injectées IA), coffre à clés, export/import, sync Supabase
-│   ├── login/page.tsx          # Lien magique Supabase (ou mode local)
-│   └── api/ai/route.ts         # Claude via Vercel AI SDK, fallback templates
-├── components/
-│   ├── shell/app-shell.tsx     # Sidebar responsive + bottom nav
-│   ├── pipeline/{kanban,prospect-form}.tsx
-│   ├── charts.tsx              # Recharts, palette bronze séquentielle
-│   └── ui/{modal,progress-ring,stage-badge,markdown}.tsx
-├── lib/
-│   ├── types.ts                # Modèle de domaine complet
-│   ├── hormozi.ts              # Doctrine : étapes, bibliothèques obstacles/objections, gates, NBA, moteur fallback
-│   ├── store.ts                # Zustand + persist + audit log
-│   ├── seed.ts                 # Données de démo Lyon (7 prospects, campagnes, RDV, concurrents)
-│   ├── supabase.ts             # Client optionnel + sync snapshot
-│   └── utils.ts, confetti.ts
-└── supabase/schema.sql         # Tables + RLS + storage + audit log
+│   ├── page.tsx                 # Dashboard : KPIs, funnel, forecast, taxe cumulée
+│   ├── vitrine/                 # ⭐ Page de VENTE publique (hors mot de passe)
+│   ├── controle/                # ⭐ Salle de contrôle : appels en cours, file, blocages
+│   ├── trajectoire/             # ⭐ Palier 0→10 M, barre du jour, opportunités
+│   ├── pipeline/ · prospects/   # Kanban, fiche complète (master rappel, checkpoints)
+│   ├── cerveau/                 # RAG lexical + import de fichiers (PDF/DOCX/HTML)
+│   ├── voice/ · appels/         # Alpha Voice : scripts, conformité, sessions
+│   ├── campaigns/ · outbox/     # Séquences, relecture avant envoi
+│   └── api/
+│       ├── v1/prospects         # ⭐ API publique (clé) — ingestion + triage
+│       ├── campaign/tick        # ⭐ Autopilote (cron n8n, triple verrou)
+│       ├── voice/{call,session} # Dispatch + journal de sessions/transcriptions
+│       └── track/ · webhooks/   # Ouvertures, clics, réponses entrantes
+├── lib/                         # Modules PURS et testés
+│   ├── accounts · ladder        # Portefeuille white-label + l'ESCALIER de routage
+│   ├── segments · icp           # ⭐ À qui on vend, et pourquoi
+│   ├── deep-dive · import-triage# Audit à l'import, verdict d'un lot
+│   ├── vital-signs · master-rappel · checkpoints
+│   ├── argumentaire · lead-magnet
+│   ├── call-cadence · campaign-runner · campaign-tick · call-outcome
+│   ├── call-log · file-extract  # Transcriptions ; PDF/DOCX sans dépendance
+│   ├── bricks · pricing · voice-costs · paliers · opportunites
+│   └── knowledge · store · types
+├── voice/                       # Agent Python (LiveKit) + guides SIP
+├── tests/                       # 43 fichiers, 446 tests (node:test)
+└── docs/                        # Déploiement, API v1, autopilote, roadmap
 ```
+
+### Les briques vendables
+
+Chaque brique se vend seule (`lib/bricks.ts`) ; l'addition des huit dépasse
+largement le pack — c'est l'ancrage.
+
+| Brique | Installation | Mensuel |
+|---|---|---|
+| **Alpha Voice** — agent vocal entrant/sortant, 24/7 | 3 500 € | 364 € (1 000 appels) |
+| **Campagnes & outreach** | 2 500 € | 290 € |
+| **Le Cerveau (RAG)** | 2 500 € | 240 € |
+| **CRM & Pipeline** | 2 000 € | 190 € |
+| **Audits automatisés** | 1 800 € | 150 € |
+| **Tracking & délivrabilité** | 1 500 € | 140 € |
+| **Closer OS & Alpha Live** | 1 500 € | 140 € |
+| **Salle de contrôle & KPIs** | 1 200 € | 120 € |
+| **PACK COMPLET** | **10 000 €** | **1 000 €** |
+
+Ou **30 % + frais d'installation** sur devis. **Cadrage obligatoire** avant
+tout chiffrage. Alpha Voice sortant se paie au volume, sans engagement :
+1 000 appels 364 € · 4 000 appels 1 092 € (le 4ᵉ millier offert).
+
+### Ce que le système REFUSE de faire
+
+La doctrine n'est pas dans des commentaires, elle est **exécutée** :
+
+- **Article 50 (EU AI Act)** — la divulgation IA est prononcée par le code,
+  non interruptible. `audit_script` refuse un script non conforme : l'appel
+  n'a pas lieu.
+- **Anti-harcèlement** — l'autopilote écrit la tentative **avant** d'appeler.
+  Si l'écriture échoue, l'appel ne part pas. On préfère perdre un appel que
+  d'en répéter un.
+- **Dès qu'il répond**, Alpha Voice s'arrête et passe la main à l'humain.
+- **Opposition** (« ne me rappelez plus ») → arrêt définitif, prioritaire sur
+  tout le reste.
+- **Jamais de prix avant la démo**, jamais de closing sur un signal vital au
+  rouge, jamais de relance sur un prospect saturé.
+- **Aucun chiffre inventé** : sans données, l'argumentaire dit « je ne vous
+  annonce pas de chiffre » au lieu d'estimer.
 
 ## Données réelles (pas de mock)
 
@@ -161,15 +230,22 @@ RUNBOOK avec statut vert/ambre/rouge + garde-fou petit échantillon),
 no-brainer à dérouler en RDV) et le **comparatif par campagne** (où investir
 l'effort, trié par LTV).
 
-## Offre & Tarifs (modèle économique)
+## Offre & Tarifs
 
-Page **Offre & Tarifs** (`app/offre`, `lib/pricing.ts`) : deux modèles calés
-sur les standards du marché — **Performance** (setup + 30 % du CA généré,
-incitations alignées) et **Abonnement** (setup + mensuel par paliers de
-prospects : Starter / Growth / Scale / Enterprise). Un **calculateur de ROI**
-interactif projette RDV → ventes → CA, compare le coût an 1 des deux modèles et
-recommande le plus avantageux — à dérouler en RDV pour rendre la décision
-chiffrée.
+Les prix vivent dans `lib/bricks.ts` — **une seule source**. La vitrine, le
+devis et le catalogue lisent le même fichier : impossible qu'ils divergent.
+Voir la grille des briques plus haut.
+
+**Le coût usine est chiffré** (`lib/voice-costs.ts`), tarifs fournisseurs
+relevés en août 2026, chaque ligne portant sa source. À 1 000 appels/mois :
+≈ 88 € de coût pour 364 € encaissés. Le poste dominant n'est pas la
+téléphonie, c'est le **fixe** (57 €/mois) — d'où l'effet d'échelle : le premier
+client porte tout, le dixième est quasi gratuit.
+
+> ⚠ **NVIDIA NIM gratuit est interdit en production** (licence : développement,
+> test, recherche et évaluation uniquement). Le modèle de coût retient donc un
+> LLM payant — c'est le seul chiffrage honnête. Migrer coûte moins de 3 € pour
+> 1 000 appels.
 
 ## Thème clair / sombre
 

@@ -15,6 +15,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import type { Segment } from "./segments";
+
 export interface OfferInput {
   agencyName?: string;
   whatYouSell?: string;
@@ -56,6 +58,27 @@ const has = (s: string | undefined, ...needles: string[]) => {
  * Squelette déterministe. On infère la FAMILLE d'ICP depuis les mots de
  * l'offre, puis on remplit un cadre solide que l'IA (ou l'humain) affine.
  */
+/**
+ * L'ICP d'un SEGMENT précis (lib/segments.ts) — c'est la voie à privilégier
+ * quand on sait à qui on parle. `deriveICP` reste le repli générique quand on
+ * ne connaît que l'offre du compte.
+ */
+export function icpForSegment(s: Segment, city?: string): ICP {
+  return {
+    label: s.label,
+    buyer: s.buyer,
+    sector: s.examples.join(" · "),
+    companySize: s.teamSize,
+    geo: city?.trim() ? `${city.trim()} puis élargissement` : "local d'abord, puis national",
+    pains: [s.corePain, ...s.pains].slice(0, 5),
+    triggers: s.triggers,
+    channels: ["Email personnalisé + relance", "LinkedIn (décideur)", "Appel direct", "Prescripteurs"],
+    disqualifiers: s.disqualifiers,
+    angle: s.angle,
+    refined: false,
+  };
+}
+
 export function deriveICP(offer: OfferInput): ICP {
   const sells = offer.whatYouSell ?? "";
   const vp = offer.valueProp ?? "";
@@ -63,32 +86,42 @@ export function deriveICP(offer: OfferInput): ICP {
   const geo = offer.city?.trim() ? `${offer.city.trim()} puis élargissement` : "local d'abord, puis national";
 
   // Famille 1 — outil / logiciel de vente (le cas EAGLEYE : vendre Alpha Sales OS).
+  //
+  // ⚠ Correction d'une erreur d'origine : l'ICP était écrit autour du seul
+  // petit artisan lyonnais. Une fois les briques posées (Alpha Voice, Alpha
+  // Live, le Cerveau), l'OS s'installe pour des ORGANISATIONS — équipes
+  // terrain, centres d'appels, réseaux. Le squelette couvre donc désormais
+  // tout le spectre ; `icpForSegment()` sert quand on sait à qui on parle.
   if (has(both, "alpha sales", "os de vente", "crm", "logiciel", "saas", "outil", "prospection", "outreach", "commercial")) {
     return {
-      label: "Force de vente qui perd des leads faute de suivi",
-      buyer: "Dirigeant / directeur commercial / closer indépendant / patron d'agence",
-      sector: "Agences (web, marketing, immo), sociétés de services B2B, forces de vente externalisées",
-      companySize: "1-50 salariés (TPE/PME avec au moins un commercial)",
+      label: "Organisation dont la vente dépend de personnes, pas d'un système",
+      buyer: "Directeur commercial · dirigeant · responsable de plateau ou de réseau",
+      sector:
+        "Équipes terrain (toiture, isolation, photovoltaïque) · centres d'appels · agences et services B2B · " +
+        "réseaux et franchises · commerces dépendants du téléphone",
+      companySize: "De 1 commercial à 200 postes — le pivot est l'équipe, pas le chiffre d'affaires",
       geo,
       pains: [
-        "Des leads qui tombent entre les mailles — aucun suivi systématique",
-        "Le closing dépend d'une personne, rien n'est outillé ni reproductible",
+        "L'écart entre le meilleur vendeur et les autres est énorme, et son savoir reste dans sa tête",
+        "Des leads qui tombent entre les mailles — aucune relance systématique",
+        "Le closing dépend d'une personne : le chiffre plafonne à son nombre d'heures",
+        "Ce qui se dit en rendez-vous ou au téléphone n'est jamais écrit",
         "Pas de visibilité chiffrée sur le pipe (ni CAC, ni taux de passage)",
-        "Trop de temps perdu en tâches d'outreach manuel",
       ],
       triggers: [
-        "Recrute un commercial (hiring sales)",
-        "Se plaint publiquement de son CRM / de sa prospection",
-        "Lance une nouvelle offre ou un nouveau marché",
-        "Croissance récente = besoin de structurer la vente",
+        "Recrute des commerciaux (annonces en ligne) ou subit du turnover",
+        "Achète des leads à un fournisseur — le coût par lead est connu et douloureux",
+        "Se plaint publiquement de son CRM ou de sa prospection",
+        "Ouvre une zone, un point de vente, ou lance une nouvelle offre",
+        "Un directeur commercial vient d'arriver",
       ],
       channels: ["Email personnalisé + relance", "LinkedIn (invitation → message)", "Prescripteurs (agences, experts-comptables)", "Démo vocale live"],
       disqualifiers: [
-        "Zéro commercial et aucune intention de vendre activement",
+        "Aucun commercial et aucune intention de vendre activement",
         "Déjà équipé d'un OS complet et satisfait",
-        "Cherche un outil gratuit à tout prix (mauvais payeur)",
+        "Cherche l'outil le moins cher — ce ne sera jamais nous",
       ],
-      angle: "« Vous avez des leads. Le problème n'est pas d'en avoir plus — c'est de n'en perdre aucun. »",
+      angle: "« Votre meilleur vendeur sait quoi dire. Les autres improvisent. C'est ça qu'on corrige. »",
       refined: false,
     };
   }

@@ -44,9 +44,11 @@ export type AccountTier = "interne" | "vip";
 /**
  * Une OFFRE COMMERCIALE d'un compte, avec sa règle de commission propre.
  * La commission n'est pas la même selon l'offre ni selon la TAILLE du projet :
- *   • ScintIA Callflow  → 30 % du setup + 10 % du mensuel récurrent.
- *   • ScintIA Lab       → 15 %, uniquement les projets < 6 000 € HT.
- *   • Nuwacom           → 15 %, à partir de 20 000 € HT (idéal 30-50 k).
+ *   • ScintIA Callflow  → 990 € HT de setup : 30 % + 10 % du mensuel récurrent.
+ *   • EAGLEYE           → 30 % : visibilité, et digitalisation jusqu'à 40 k € HT
+ *                         (l'ex-« ScintIA Lab », récupéré à la renégociation).
+ *   • Nuwacom           → 15 % au-delà de 40 000 € HT, PUIS 100 % de toute la
+ *                         maintenance mensuelle.
  * `minHT`/`maxHT` bornent l'ÉLIGIBILITÉ d'un projet à cette offre.
  */
 export interface Offering {
