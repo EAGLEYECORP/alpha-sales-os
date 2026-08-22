@@ -54,6 +54,9 @@ const INTERNAL = [
   // Studio contenu (posts sociaux) + rendu vidéo : même origine.
   "/api/social",
   "/api/video",
+  // Notion : appelée par l'app avec les fiches du store local. Même origine
+  // exigée — le jeton Notion donne accès en écriture à un espace de travail.
+  "/api/notion",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers

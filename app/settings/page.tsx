@@ -18,6 +18,7 @@ import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
 import { SystemStatus } from "@/components/settings/system-status";
 import { PushToggle } from "@/components/settings/push-toggle";
+import { NotionPush } from "@/components/settings/notion-push";
 import { Deliverability } from "@/components/settings/deliverability";
 import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { PricingEditor } from "@/components/settings/pricing-editor";
@@ -415,6 +416,8 @@ export default function SettingsPage() {
         <PricingEditor />
 
         <PushToggle />
+
+        <NotionPush />
 
         {/* API keys vault */}
         <section className="card p-4">

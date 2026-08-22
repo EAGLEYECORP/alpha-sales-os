@@ -2,7 +2,7 @@
 
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, sécurité) ;
 > ce fichier porte le PLAN et l'AVANCEMENT RÉEL.
-> Dernière révision : 2026-08-22 · 503 tests verts · `tsc` clean · `next build` OK.
+> Dernière révision : 2026-08-22 · 550 tests verts · `tsc` clean · `next build` OK.
 
 ## Le but, dit franchement
 Zakaria a besoin de **ventes encaissées**, pas de features. Tout ce qui suit est
@@ -71,6 +71,12 @@ classé par « ça rapproche d'un virement bancaire ».
       limites du gratuit avec les deux verrous de licence.
 - [x] **Scripts des deux nouveaux marchés** (`lib/playbook.ts`) — équipes
       commerciales terrain et centres d'appels, ouverture → objections.
+- [x] **Notifications hors-app** (Web Push, RFC 8291/8292 faites main) — le
+      serveur pousse app fermée. Chiffrement testé contre le vecteur de la RFC.
+- [x] **Calendrier** (`lib/ics.ts`) — fichier .ics et flux abonnable, vers
+      Google, Outlook/Teams et Apple. Sens unique, assumé.
+- [x] **Notion** (`lib/notion.ts`) — envoi du pipeline, sans OAuth. Ni notes
+      libres ni transcriptions ne partent.
 
 ---
 
@@ -90,12 +96,14 @@ classé par « ça rapproche d'un virement bancaire ».
 - [ ] DNS Amen + domaines Vercel (confort, pas prérequis).
 
 ### Pas encore construit
-- [ ] **Calendrier** (Teams / Google Meet) et **CRM externe** (Notion) — exige
-      de l'OAuth non testable depuis la sandbox. n8n fait le pont via l'API v1.
-- [ ] **Notifications hors-app** — service worker + Web Push. Aujourd'hui les
-      rappels ne partent que pendant que l'app est ouverte, et c'est dit à
-      l'écran.
-- [ ] **Vidéo de lancement** — prompts écrits, génération non lancée.
+- [ ] **Calendrier bidirectionnel** (API Google / Microsoft) — exige de l'OAuth
+      non testable ici, et créerait le lien Meet/Teams. Le flux iCal couvre le
+      sens ALPHA → agenda, qui est celui qui sert tous les jours.
+- [ ] **Notion en lecture** — aujourd'hui ALPHA écrit, Notion lit. Le sens
+      inverse demande d'arbitrer les conflits, et cet arbitrage s'écrit mal
+      sans vrais cas.
+- [ ] **Vidéo de lancement** — la vidéo d'ouverture est en place (provisoire) ;
+      la version finale reste à produire.
 - [ ] Tests sur les modules d'affichage (les modules métier, le store, la
       structure de navigation et la frontière de conformité vocale sont
       couverts).
@@ -118,7 +126,7 @@ classé par « ça rapproche d'un virement bancaire ».
 
 ## Limites — à redire, parce qu'elles ne bougent pas
 1. **Rien n'a été testé en conditions réelles.** Le proxy de la sandbox bloque
-   Telnyx, LiveKit, Vercel et Supabase. Les 503 tests prouvent que la logique
+   Telnyx, LiveKit, Vercel et Supabase. Les 550 tests prouvent que la logique
    est cohérente ; ils ne prouvent pas qu'un appel part.
 2. **Aucune automatisation ne closera à ta place.** L'OS source, qualifie,
    appelle, relance et prépare. La signature reste humaine.
