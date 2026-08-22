@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CallSession, TranscriptTurn, CallDirection, Speaker } from "@/lib/call-log";
 import { liveSessions } from "@/lib/call-log";
 import { applyOutcome } from "@/lib/call-outcome";
+import { safeEqual } from "@/lib/access";
 import type { Prospect } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -34,8 +35,10 @@ export const runtime = "nodejs";
  *   );
  *
  * Sécurité : l'agent s'authentifie avec VOICE_WEBHOOK_SECRET. Sans secret
- * configuré, la route n'accepte QUE les appels locaux (dev) — un journal
- * d'appels ouvert au monde serait une fuite de données personnelles.
+ * configuré, la route n'accepte QUE le mode développement (NODE_ENV) — un
+ * journal d'appels ouvert au monde serait une fuite de données personnelles.
+ * Poser VOICE_WEBHOOK_SECRET est donc obligatoire en production : sans lui,
+ * la route refuse tout, y compris l'agent.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -132,10 +135,17 @@ async function reconcile(s: CallSession): Promise<{ matched: boolean; learned: n
 function authorized(req: NextRequest): boolean {
   const secret = process.env.VOICE_WEBHOOK_SECRET;
   const provided = req.headers.get("x-voice-secret");
-  if (secret) return provided === secret;
-  // Pas de secret configuré : on tolère seulement le local (poste de dev).
-  const host = req.headers.get("host") ?? "";
-  return host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  // Temps constant : ce secret ouvre les transcriptions d'appels.
+  if (secret) return Boolean(provided) && safeEqual(provided!, secret);
+
+  // Pas de secret configuré : tolérance au poste de développement UNIQUEMENT.
+  //
+  // ⚠ La version précédente lisait l'en-tête `Host` pour décider si on était en
+  // local. `Host` est fourni par le client : `curl -H "Host: localhost" …`
+  // contre le déploiement public suffisait à lire et écrire les sessions
+  // d'appels et leurs transcriptions. On se fie maintenant à NODE_ENV, qui est
+  // posé par le serveur et qu'un appelant ne peut pas toucher.
+  return process.env.NODE_ENV !== "production";
 }
 
 function prune() {

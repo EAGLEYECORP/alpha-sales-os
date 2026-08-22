@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
 import { buildCampaignRun } from "@/lib/campaign-runner";
 import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-tick";
+import { safeEqual } from "@/lib/access";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -47,8 +48,10 @@ function authorized(req: NextRequest): boolean {
   // Pas de secret configuré = la route n'existe pas. Volontaire.
   if (!secret) return false;
   const header = req.headers.get("authorization") ?? "";
-  const provided = header.startsWith("Bearer ") ? header.slice(7) : req.headers.get("x-cron-secret") ?? "";
-  return provided === secret;
+  const provided = (header.startsWith("Bearer ") ? header.slice(7) : req.headers.get("x-cron-secret") ?? "").trim();
+  // Temps constant : ce secret déclenche des appels téléphoniques réels, il ne
+  // doit pas révéler par la durée combien de caractères sont justes.
+  return provided.length > 0 && safeEqual(provided, secret);
 }
 
 const armed = () => (process.env.CAMPAIGN_AUTOPILOT ?? "").trim().toLowerCase() === "on";
