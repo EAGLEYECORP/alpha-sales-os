@@ -32,44 +32,81 @@ export const FORMAT_LABELS: Record<TemplateFormat, string> = {
   appel: "📞 Appel",
 };
 
-/** L'angle de chaque industrie : douleur, preuve locale, exemple de perte. */
+/**
+ * Les industries couvertes par la bibliothèque de scripts.
+ *
+ * Plus large que l'enum `Sector` de la fiche (hérité du marché d'origine) :
+ * Alpha Live s'installe chez une équipe de porte-à-porte et Alpha Voice sur un
+ * plateau d'appels. Sans angle dédié, ces deux marchés n'avaient aucun script.
+ */
+export type AngleKey = Exclude<Sector, "autre"> | "equipe-terrain" | "centre-appels";
+
+/**
+ * L'angle de chaque industrie : douleur, mécanisme, exemple de perte.
+ *
+ * ⚠ AUCUNE RÉFÉRENCE CLIENT ICI. Ces textes partent tels quels dans un email
+ * ou sont lus au téléphone. Y écrire « une menuiserie de Caluire reçoit 9
+ * demandes de devis par mois » quand ce client n'existe pas, ce n'est pas une
+ * formule commerciale : c'est une allégation fausse destinée à provoquer un
+ * achat — pratique commerciale trompeuse (art. L121-2 du code de la
+ * consommation). Et c'est le contraire de la doctrine du reste du repo, qui
+ * refuse partout d'avancer un chiffre non vérifié.
+ *
+ * `mechanism` explique donc POURQUOI ça marche, ce qui est vrai sans client.
+ * Dès qu'une vraie référence existe, elle se passe à `buildTemplates({ proof })`
+ * et remplace le mécanisme partout — c'est le seul chemin autorisé.
+ */
 const SECTOR_ANGLES: Record<
-  Exclude<Sector, "autre">,
-  { label: string; pain: string; proof: string; night: string; lossUnit: string }
+  AngleKey,
+  { label: string; pain: string; mechanism: string; night: string; lossUnit: string }
 > = {
   restaurant: {
     label: "Restaurants",
     pain: "des tables vides en semaine et des appels ratés pendant le service",
-    proof: "un bouchon de la Croix-Rousse prend maintenant ses réservations à 23h, pendant que le patron dort",
+    mechanism: "pendant le coup de feu, personne ne peut décrocher — l'accueil, lui, prend la réservation et vous l'envoie par SMS",
     night: "hier soir à 22h, des gens cherchaient où manger dans votre quartier — et sont allés chez celui qui répond",
     lossUnit: "couverts",
   },
   pub: {
     label: "Pubs & bars",
     pain: "des mardis et mercredis à moitié vides pendant que vos événements restent invisibles",
-    proof: "un pub du Vieux Lyon remplit ses soirées quiz à 80 % avec un simple agenda en ligne + relances WhatsApp",
+    mechanism: "une soirée annoncée seulement sur l'ardoise ne touche que ceux qui passent devant ; annoncée et relancée, elle touche ceux qui sont déjà venus",
     night: "vos soirées sont annoncées à la craie — ceux qui ne passent pas devant ne viendront jamais",
     lossUnit: "clients de soirée",
   },
   ambulance: {
     label: "Ambulances",
     pain: "des demandes de transport qui arrivent la nuit et que personne ne voit",
-    proof: "une société de Villeurbanne récupère 12 transports programmés par mois grâce à un standard qui répond 24/7",
+    mechanism: "un transport programmé se décide en une minute au téléphone ; s'il n'y a personne, il se décide chez le suivant",
     night: "entre 20h et 7h, votre standard dort — pas les demandes",
     lossUnit: "transports",
   },
   artisan: {
     label: "Artisans",
     pain: "une dizaine d'appels manqués par semaine pendant que vous êtes sur chantier",
-    proof: "une menuiserie de Caluire reçoit maintenant 9 demandes de devis qualifiées par mois, sans décrocher le téléphone",
+    mechanism: "sur un chantier, un appel manqué ne laisse aucune trace — l'accueil décroche, prend la demande et vous l'envoie",
     night: "7 appelants sur 10 ne rappellent pas : ils prennent le devis du suivant",
     lossUnit: "devis",
+  },
+  "equipe-terrain": {
+    label: "Équipes terrain",
+    pain: "des devis partis que plus personne ne relance, et des « rappelez-moi en septembre » qui vivent dans la tête des commerciaux",
+    mechanism: "ce qui n'est pas écrit n'est pas relancé ; la trace se crée depuis la voiture, à la voix, et la relance se programme toute seule",
+    night: "le jour où un commercial part, son secteur repart de zéro",
+    lossUnit: "devis non relancés",
+  },
+  "centre-appels": {
+    label: "Centres d'appels",
+    pain: "des heures de conseillers formés passées sur de la qualification et de la relance qui ne demandent aucune compétence humaine",
+    mechanism: "l'IA annonce qu'elle est une IA, qualifie, et passe la main dès que l'appel devient intéressant — vos conseillers ne font plus que ce qui a de la valeur",
+    night: "vos pics de charge débordent pendant que vos heures creuses coûtent plein tarif",
+    lossUnit: "heures de production",
   },
 };
 
 export interface ScriptTemplate {
   id: string;
-  sector: Exclude<Sector, "autre">;
+  sector: AngleKey;
   group: StageGroup;
   format: TemplateFormat;
   title: string;
@@ -100,12 +137,12 @@ Je ne vends rien par email. Je vous propose 20 minutes sur place : je mesure ce 
 
 Mardi 15h ou jeudi 10h ?
 
-{closer} — EAGLEYE, Lyon`,
+{closer} — {agence}`,
     tip: "Zéro mention du produit, zéro prix. L'objectif unique : un créneau daté.",
   },
   {
     group: "premier-contact", format: "dm", title: "DM court — curiosité + créneau",
-    body: `Bonjour {prenom} 👋 {closer}, d'EAGLEYE (Lyon). Une question directe : {night_court} ? C'est le cas pour la plupart des {secteur_bas} du coin. J'ai un truc à vous montrer sur mon téléphone, 2 minutes, pas un pitch. Je passe mardi 15h ou jeudi 10h ?`,
+    body: `Bonjour {prenom} 👋 {closer}, de {agence}. Une question directe : {night_court} ? C'est le cas pour la plupart des {secteur_bas} du coin. J'ai un truc à vous montrer sur mon téléphone, 2 minutes, pas un pitch. Je passe mardi 15h ou jeudi 10h ?`,
     tip: "Un DM se lit en 5 secondes. Une question, une preuve, deux créneaux. Rien d'autre.",
   },
   {
@@ -141,7 +178,7 @@ Confirmé pour {jour}. Concrètement, en 20 minutes je vais chiffrer trois chose
 
 Vous gardez le document, quoi qu'il arrive. À {jour} !
 
-{closer} — EAGLEYE`,
+{closer} — {agence}`,
     tip: "L'audit crée la dette de réciprocité : on donne les chiffres AVANT de proposer quoi que ce soit.",
   },
   {
@@ -178,7 +215,7 @@ Suite à l'audit, j'ai préparé quelque chose de spécifique à {commerce}. Pas
 
 Je passe {jour} — plutôt début ou fin d'après-midi ?
 
-{closer} — EAGLEYE`,
+{closer} — {agence}`,
     tip: "Ne JAMAIS envoyer la maquette par email. L'émotion se vit en face, sur SON téléphone.",
   },
   {
@@ -217,7 +254,7 @@ Je ne remets pas l'offre par écrit — on l'a vue ensemble et les conditions so
 
 Demain {heure1} ou {heure2} ?
 
-{closer} — EAGLEYE`,
+{closer} — {agence}`,
     tip: "Une décision différée est une décision. L'email sert à obtenir l'appel, pas à négocier.",
   },
   {
@@ -249,7 +286,7 @@ Demain {heure1} ou {heure2} ?
     group: "apres-signature", format: "email", title: "Bienvenue + le rail des 30 jours",
     body: `Objet : C'est parti, {prenom} 🦅
 
-Bienvenue chez EAGLEYE !
+Bienvenue chez {agence} !
 
 Voilà exactement ce qui se passe maintenant :
 · J+3 : votre site en prévisualisation
@@ -258,7 +295,7 @@ Voilà exactement ce qui se passe maintenant :
 
 Vous n'avez rien à faire d'autre que valider. Mon numéro direct : je réponds.
 
-{closer} — EAGLEYE`,
+{closer} — {agence}`,
     tip: "La croyance n°2 (« tu me soutiens ») se prouve dans les 7 premiers jours. Sur-communiquer.",
   },
   {
@@ -297,7 +334,7 @@ Promis, je ne revends rien. Trois choses que les meilleurs {secteur_bas} de {vil
 
 Si un jour vous voulez la version complète, vous savez où me trouver.
 
-{closer} — EAGLEYE`,
+{closer} — {agence}`,
     tip: "Donner sans demander. C'est ce qui rend le retour à J+90 naturel et attendu.",
   },
   {
@@ -308,7 +345,7 @@ Si un jour vous voulez la version complète, vous savez où me trouver.
   {
     group: "reconquete", format: "appel", title: "J+90 — le rappel sans pression",
     body: `1. L'OUVERTURE HONNÊTE
-« {prenom}, {closer} d'EAGLEYE. Il y a 3 mois vous m'aviez dit non — c'était peut-être la bonne décision à ce moment-là. J'appelle juste pour savoir : où en êtes-vous ? »
+« {prenom}, {closer} de {agence}. Il y a 3 mois vous m'aviez dit non — c'était peut-être la bonne décision à ce moment-là. J'appelle juste pour savoir : où en êtes-vous ? »
 
 2. ÉCOUTER (vraiment)
 S'il a pris une solution low-cost : « Et ça vous apporte des clients, concrètement ? » (souvent : non)
@@ -319,10 +356,23 @@ S'il a pris une solution low-cost : « Et ça vous apporte des clients, concrèt
   },
 ];
 
-/** Compose la bibliothèque complète : cadres × secteurs. */
-export function buildTemplates(): ScriptTemplate[] {
+export interface TemplateOptions {
+  /**
+   * Une VRAIE référence client, telle qu'elle peut être prouvée si le prospect
+   * la demande. Vide tant qu'il n'y en a pas : on retombe alors sur le
+   * mécanisme, qui est vrai sans client. On ne fabrique jamais de preuve.
+   */
+  proof?: string;
+  /** Nom de l'agence signataire — white-label, jamais « EAGLEYE » en dur. */
+  agency?: string;
+}
+
+/** Compose la bibliothèque complète : cadres × industries. */
+export function buildTemplates(opts: TemplateOptions = {}): ScriptTemplate[] {
+  const realProof = opts.proof?.trim();
+  const agency = opts.agency?.trim() || "l'agence";
   const out: ScriptTemplate[] = [];
-  for (const [sectorId, angle] of Object.entries(SECTOR_ANGLES) as [Exclude<Sector, "autre">, (typeof SECTOR_ANGLES)[keyof typeof SECTOR_ANGLES]][]) {
+  for (const [sectorId, angle] of Object.entries(SECTOR_ANGLES) as [AngleKey, (typeof SECTOR_ANGLES)[AngleKey]][]) {
     for (const f of FRAMES) {
       out.push({
         id: `${sectorId}-${f.group}-${f.format}`,
@@ -333,28 +383,45 @@ export function buildTemplates(): ScriptTemplate[] {
         tip: f.tip,
         body: f.body
           .replaceAll("{pain}", angle.pain)
-          .replaceAll("{proof}", angle.proof)
+          // Une référence réelle si elle existe, sinon le mécanisme — jamais
+          // un client inventé.
+          .replaceAll("{proof}", realProof || angle.mechanism)
           .replaceAll("{night}", angle.night)
           .replaceAll("{night_court}", angle.night.split("—")[0].split(":")[0].trim().toLowerCase())
           .replaceAll("{lossUnit}", angle.lossUnit)
-          .replaceAll("{secteur_bas}", angle.label.toLowerCase()),
+          .replaceAll("{secteur_bas}", angle.label.toLowerCase())
+          .replaceAll("{agence}", agency),
       });
     }
   }
   return out;
 }
 
-export const SECTOR_LABELS: Record<Exclude<Sector, "autre">, string> = {
-  restaurant: SECTOR_ANGLES.restaurant.label,
-  pub: SECTOR_ANGLES.pub.label,
-  ambulance: SECTOR_ANGLES.ambulance.label,
-  artisan: SECTOR_ANGLES.artisan.label,
-};
+// Dérivé de la table des angles : ajouter une industrie ne demande plus de
+// penser à mettre une seconde liste à jour.
+export const SECTOR_LABELS = Object.fromEntries(
+  (Object.keys(SECTOR_ANGLES) as AngleKey[]).map((k) => [k, SECTOR_ANGLES[k].label])
+) as Record<AngleKey, string>;
 
 /** Remplit les variables avec un prospect réel (ou laisse les {…} visibles). */
 export function fillTemplate(body: string, p: Prospect | null, closerName: string): string {
   const weekly = p ? Math.round(p.ignoranceTax / 4.33) : null;
+
+  // {jour}/{heure} = le rendez-vous déjà calé. Ils vivaient dans les scripts
+  // sans que RIEN ne les remplisse : un email de confirmation partait donc avec
+  // « mardi {jour} à {heure} » dedans. La date est dans la fiche — on la prend.
+  const rdv = p?.nextStep?.date ? new Date(p.nextStep.date) : null;
+  const rdvOk = rdv && !Number.isNaN(rdv.getTime());
+  const jour = rdvOk ? rdv.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) : null;
+  // Une heure à minuit pile n'est pas une heure décidée : on ne l'affiche pas.
+  const heure =
+    rdvOk && (rdv.getHours() !== 0 || rdv.getMinutes() !== 0)
+      ? rdv.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+      : null;
+
   return body
+    .replaceAll("{jour}", jour ?? "{jour}")
+    .replaceAll("{heure}", heure ?? "{heure}")
     .replaceAll("{prenom}", p?.name.split(" ")[0] || "{prenom}")
     .replaceAll("{commerce}", p?.company || "{commerce}")
     .replaceAll("{ville}", p?.city.split("—")[0].trim() || "Lyon")

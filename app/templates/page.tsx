@@ -11,17 +11,18 @@ import {
   STAGE_GROUPS,
   buildTemplates,
   fillTemplate,
+  type AngleKey,
   type StageGroup,
   type TemplateFormat,
 } from "@/lib/templates";
-import type { Sector } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const ALL_TEMPLATES = buildTemplates();
 
 export default function TemplatesPage() {
   const { prospects, settings } = useAlpha();
-  const [sector, setSector] = useState<Exclude<Sector, "autre">>("restaurant");
+  // Le nom de l'agence vient des réglages : l'OS est white-label, un revendeur
+  // ne doit jamais envoyer un email signé du compte maître.
+  const ALL_TEMPLATES = useMemo(() => buildTemplates({ agency: settings.agencyName }), [settings.agencyName]);
+  const [sector, setSector] = useState<AngleKey>("restaurant");
   const [group, setGroup] = useState<StageGroup>("premier-contact");
   const [format, setFormat] = useState<TemplateFormat | "tous">("tous");
   const [prospectId, setProspectId] = useState<string>("");
@@ -36,7 +37,7 @@ export default function TemplatesPage() {
       ALL_TEMPLATES.filter(
         (t) => t.sector === sector && t.group === group && (format === "tous" || t.format === format)
       ),
-    [sector, group, format]
+    [ALL_TEMPLATES, sector, group, format]
   );
 
   const copy = (id: string, text: string) => {
@@ -85,7 +86,7 @@ export default function TemplatesPage() {
           <div>
             <label className="label">1 · Industrie</label>
             <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(SECTOR_LABELS) as Exclude<Sector, "autre">[]).map((s) => (
+              {(Object.keys(SECTOR_LABELS) as AngleKey[]).map((s) => (
                 <button
                   key={s}
                   onClick={() => setSector(s)}
