@@ -310,8 +310,14 @@ export function segmentsForAccount(allowedOffers: EagleyeOffer[]): Segment[] {
  * Renvoie `null` plutôt qu'un mauvais segment : un pitch adressé au mauvais
  * profil est pire qu'un pitch générique — il prouve qu'on n'a pas compris.
  */
-export function guessSegment(input: { sector?: string; headcount?: number; salesTeamSize?: number }): Segment | null {
-  const t = (input.sector ?? "").toLowerCase();
+export function guessSegment(input: {
+  sector?: string;
+  /** Texte libre où le VRAI métier atterrit à l'import (notes, société, pitch). */
+  text?: string;
+  headcount?: number;
+  salesTeamSize?: number;
+}): Segment | null {
+  const t = [input.sector, input.text].filter(Boolean).join(" ").toLowerCase();
   const has = (...needles: string[]) => needles.some((n) => t.includes(n));
 
   if (has("call center", "centre d'appel", "centre d appel", "plateau", "téléopé", "teleope", "relation client"))
@@ -322,11 +328,43 @@ export function guessSegment(input: { sector?: string; headcount?: number; sales
     return segmentById("equipe-terrain") ?? null;
   if (has("agence", "conseil", "marketing", "communication", "saas", "logiciel", "informatique"))
     return segmentById("agence-b2b") ?? null;
-  if (has("garage", "carrosserie", "artisan", "plomb", "serrur", "auto-école", "auto ecole", "immobilier", "dentaire", "ambulance", "restaurant"))
+  if (
+    has(
+      "garage", "carrosserie", "artisan", "plomb", "serrur", "auto-école", "auto ecole",
+      "immobilier", "dentaire", "ambulance", "restaurant", "restauration", "pub", "bar ",
+      "brasserie", "boulang", "coiffure", "esthé", "menuiser", "électricien", "electricien",
+      "traiteur", "hôtel", "hotel", "cabinet", "taxi", "vtc",
+    )
+  )
     return segmentById("commerce-local") ?? null;
 
   // Sans secteur parlant, la taille de l'équipe commerciale tranche.
   const team = input.salesTeamSize ?? 0;
   if (team >= 3) return segmentById("equipe-terrain") ?? null;
   return null;
+}
+
+/**
+ * Le segment d'un prospect RÉEL.
+ *
+ * Pourquoi ce détour : `Prospect.sector` est un enum de cinq valeurs hérité du
+ * marché d'origine (restaurant / pub / ambulance / artisan / autre). Un centre
+ * d'appels ou un poseur de toiture importé depuis un CSV arrive donc en
+ * « autre », et son vrai métier atterrit dans les NOTES (`lib/csv.ts` y écrit
+ * « Métier : … »). Deviner sur le seul `sector` renverrait null sur la quasi-
+ * totalité des fiches réelles — le module serait juste en théorie et inutile
+ * en pratique.
+ */
+export function guessSegmentForProspect(p: {
+  sector?: string;
+  company?: string;
+  notes?: string;
+  problems?: string[];
+  salesTeamSize?: number;
+}): Segment | null {
+  return guessSegment({
+    sector: p.sector,
+    text: [p.company, p.notes, ...(p.problems ?? [])].filter(Boolean).join(" "),
+    salesTeamSize: p.salesTeamSize,
+  });
 }

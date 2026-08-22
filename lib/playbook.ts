@@ -365,6 +365,127 @@ export const VERTICALS: VerticalPlaybook[] = [
     leak: { callsPerMonth: 140, missRate: 0.4, avgTicket: 1800, convertRate: 0.1 },
   },
   {
+    // ⚠ Ces deux verticales ne vendent PAS la même chose que les précédentes.
+    // Au-dessus, on vend à une entreprise qui rate ses appels entrants. Ici, on
+    // vend à une organisation qui a DÉJÀ des commerciaux : elle ne rate pas ses
+    // appels, elle perd ce que ses gens n'ont pas noté. Servir l'argument
+    // « vous ratez des appels » à un directeur commercial de 15 personnes, c'est
+    // se disqualifier en une phrase.
+    id: "equipe-terrain",
+    label: "Équipes commerciales terrain (porte-à-porte, rénovation)",
+    sectors: [],
+    criterion:
+      "Les organisations qui font vendre des PERSONNES sur le terrain : toiture, isolation, photovoltaïque, pompe à chaleur, menuiserie. 3 commerciaux ou plus, un secteur découpé, des tournées.",
+    structuralPain:
+      "Ce qui se dit à la porte reste dans la tête du commercial. Le « rappelez-moi en septembre » n'est écrit nulle part, le devis parti n'est relancé par personne, et le jour où le commercial part, son secteur repart de zéro. Le directeur ne pilote pas une équipe : il pilote des souvenirs.",
+    opener: [
+      {
+        label: "Barrage",
+        line: "Bonjour, je cherche le responsable de l'équipe commerciale. C'est au sujet des devis partis qui ne sont relancés par personne.",
+        note: "On nomme SA perte, pas notre outil. Transmissible en 10 secondes.",
+      },
+      { label: "Permission", line: "Je vous appelle à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
+      {
+        label: "Ciblage",
+        line: "Je travaille avec les boîtes qui ont des commerciaux sur le terrain plutôt qu'un flux d'appels entrants. Vous êtes combien à faire de la pose de rendez-vous chez le particulier ?",
+        note: "La question de taille sert au diagnostic : sous 3 commerciaux, l'argument ne tient pas.",
+      },
+      {
+        label: "Bascule",
+        line: "On installe le système qui garde ce que vos commerciaux entendent : chaque visite laisse une trace datée, chaque devis a sa relance programmée, et vous voyez le secteur de chacun sans avoir à le demander.",
+      },
+      { label: "CTA", line: "Quinze minutes pour vous montrer sur une tournée réelle — plutôt fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Un devis parti la semaine dernière et jamais rappelé — comment vous le sauriez, aujourd'hui ?",
+      "Quand un commercial s'en va, il reste quoi de son secteur ?",
+      "Le « rappelez-moi dans trois mois », il est noté où ?",
+    ],
+    mirror:
+      "Vos commerciaux ne perdent pas les affaires qu'ils rencontrent — ils perdent celles qu'ils ont bien travaillées et qu'ils n'ont pas relancées. C'est la partie la plus chère du gisement, parce qu'elle est déjà chaude.",
+    forbidden: [
+      "« Vous ratez des appels » : faux ici, et ça prouve qu'on n'a pas compris son métier.",
+      "Le mot CRM à froid : il a déjà essayé, ses commerciaux ne l'ont pas rempli, et il vous rangera là-dedans.",
+    ],
+    objections: [
+      {
+        q: "On a déjà un CRM, personne ne le remplit.",
+        a: "C'est exactement le problème qu'on traite. Si ça demande de saisir, ça ne sera pas saisi — c'est humain. Chez nous la trace se crée depuis la voiture, à la voix, en trente secondes. Ce qui n'est pas saisi n'est pas perdu.",
+      },
+      {
+        q: "Mes commerciaux ne voudront pas être fliqués.",
+        a: "Question juste. Ce qui remonte, c'est l'affaire, pas la personne — et le premier gagnant c'est le commercial : ses relances lui sont rappelées, donc il signe plus. Ceux qui râlent au début sont ceux qui réclament l'accès au bout de trois semaines.",
+      },
+      {
+        q: "On est trop peu nombreux.",
+        a: "Sous trois commerciaux, je vous le dis franchement : ça ne vaut pas l'installation, on en reparle quand vous recrutez. Vous êtes combien aujourd'hui ?",
+      },
+      {
+        q: "Ça coûte combien ?",
+        a: "Une installation, puis un abonnement dimensionné à la taille de l'équipe. C'est précisément ce qu'on cale en quinze minutes — je préfère un chiffre juste à un chiffre au hasard.",
+      },
+    ],
+    // Fuite lue en DEVIS non relancés, pas en appels manqués : c'est l'unité de
+    // perte réelle de ce métier.
+    leak: { callsPerMonth: 120, missRate: 0.35, avgTicket: 9000, convertRate: 0.12 },
+  },
+  {
+    id: "centre-appels",
+    label: "Centres d'appels & plateaux",
+    sectors: [],
+    criterion:
+      "Les plateaux de 5 positions et plus : centres d'appels, services de relation client, plateformes de prise de rendez-vous. Ils vivent au volume et à la marge par appel.",
+    structuralPain:
+      "La qualification et la relance mangent le temps des téléopérateurs les mieux payés. Les heures de pointe débordent, les heures creuses coûtent, et le turnover impose de reformer en continu des gens qui feront les mêmes appels sans intérêt.",
+    opener: [
+      {
+        label: "Barrage",
+        line: "Bonjour, je cherche le responsable du plateau ou de la production. C'est au sujet du coût des appels de qualification et de relance.",
+      },
+      { label: "Permission", line: "Appel à froid, je fais court : trente secondes, et si ce n'est pas pour vous, je raccroche." },
+      {
+        label: "Ciblage",
+        line: "Je travaille avec les plateaux où une partie des appels ne demande aucune compétence humaine — la qualification, la relance, la confirmation de rendez-vous. Vous êtes combien en position ?",
+      },
+      {
+        label: "Bascule",
+        line: "On prend cette couche-là en IA — elle se déclare comme telle dès la première phrase, elle qualifie, et elle passe l'appel à vos conseillers quand il devient intéressant. Vos gens ne font plus que ce qui a de la valeur.",
+        note: "La divulgation IA n'est pas un détail à cacher : sur ce marché, c'est un argument de conformité.",
+      },
+      { label: "CTA", line: "Quinze minutes pour chiffrer sur votre volume réel — fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Sur cent appels sortants, combien n'aboutissent à rien du tout ?",
+      "Vos pics de charge, vous les absorbez comment aujourd'hui ?",
+      "Un conseiller formé coûte combien avant d'être rentable, et il reste combien de temps ?",
+    ],
+    mirror:
+      "Vous payez au tarif d'un conseiller formé des appels qui ne demandent pas de conseiller. Ce n'est pas un problème de productivité — c'est une couche de travail qui n'a jamais eu besoin d'être humaine.",
+    forbidden: [
+      "« On remplace vos équipes » : c'est faux, et ça fait fermer la porte immédiatement.",
+      "Le prix au forfait sans son volume réel : sur ce marché, le prix se dit à la minute et au palier, chiffres en main.",
+    ],
+    objections: [
+      {
+        q: "Nos clients ne veulent pas parler à un robot.",
+        a: "Ils ne veulent pas d'un robot qui fait semblant. Le nôtre annonce qu'il est une IA à la première phrase — c'est la loi, et c'est ce qui fait tomber l'agacement. Ce qu'ils veulent, c'est ne pas attendre quatre minutes.",
+      },
+      {
+        q: "On a déjà un SVI.",
+        a: "Un SVI trie, il ne parle pas. Il ne prend pas une demande hors script et il n'a jamais qualifié personne. C'est une autre catégorie d'objet.",
+      },
+      {
+        q: "Nos scripts sont propriétaires et complexes.",
+        a: "Tant mieux : c'est ce qu'on charge. Le script est audité avant mise en service — s'il n'est pas conforme, l'agent refuse de le jouer. Ça vous protège autant que ça nous protège.",
+      },
+      {
+        q: "Et la qualité, comment vous la garantissez ?",
+        a: "Chaque appel est transcrit et relu, et le passage à l'humain est déclenché dès que l'appel sort du cadre. Vous pilotez le seuil, pas nous.",
+      },
+    ],
+    leak: { callsPerMonth: 12000, missRate: 0.2, avgTicket: 45, convertRate: 0.1 },
+  },
+  {
     id: "generique",
     label: "Autres métiers",
     sectors: ["autre"],
@@ -424,7 +545,9 @@ export function estimateLeak(v: VerticalPlaybook): {
 export function playbookPrompt(sector?: Sector, verticalId?: string): string {
   const v = (verticalId ? verticalById(verticalId) : null) ?? (sector ? verticalForSector(sector) : null);
   const lines: string[] = [
-    "## Méthode terrain EAGLEYE (non négociable — issue du terrain réel)",
+    // Pas de nom de compte en dur : l'OS est white-label, la méthode est celle
+    // de l'agence qui l'utilise.
+    "## Méthode terrain de l'agence (non négociable — issue du terrain réel)",
     ...DOCTRINE_TERRAIN.map((d) => `- ${d.rule} (${d.why})`),
   ];
   if (v) {
@@ -445,21 +568,30 @@ export function playbookPrompt(sector?: Sector, verticalId?: string): string {
   return lines.join("\n");
 }
 
-/** Verticale déduite d'une fiche (secteur, à défaut mots-clés du métier). */
+/**
+ * Mots-clés qui rattachent une fiche à une verticale.
+ *
+ * L'ORDRE EST LA RÈGLE, pas un détail de style : on descend la liste et on
+ * s'arrête au premier match. Une entreprise de 12 poseurs en porte-à-porte
+ * contient « couvreur » et « rénovation » — sans priorité, elle tomberait sur
+ * la verticale « artisan du bâtiment », qui vend à un artisan SEUL et sert
+ * l'argument « vous ratez des appels ». À un directeur commercial, cette phrase
+ * ferme la porte. Les verticales « organisation » passent donc AVANT les
+ * verticales « métier ».
+ */
+const VERTICAL_KEYWORDS: { id: string; re: RegExp }[] = [
+  { id: "centre-appels", re: /centre d'?appel|call ?center|plateau|téléopé|teleope|relation client|hotline|téléconseill|teleconseill/ },
+  { id: "equipe-terrain", re: /porte-?à-?porte|porte-?a-?porte|force de vente|équipe commerciale|equipe commerciale|commerciaux|poseur|photovolta|isolation|pompe à chaleur|pompe a chaleur/ },
+  { id: "immobilier", re: /immobil|agence|mandat|syndic|régie|regie/ },
+  { id: "auto-ecole", re: /auto-?école|auto-?ecole|permis|conduite|moniteur/ },
+  { id: "garage-carrosserie", re: /garage|carross|mécanic|mecanic|peinture auto/ },
+  { id: "artisan-batiment", re: /plomb|électric|electric|menuis|serrur|chauffag|couvreu|maçon|macon|peintre|rénov|renov|artisan|bâtiment|batiment|dépann|depann/ },
+  { id: "sante-cabinet", re: /dentaire|cabinet|médical|medical|centre de santé|kiné|kine|ostéo|osteo|labo/ },
+];
+
+/** Verticale déduite d'une fiche (mots-clés du métier, à défaut le secteur). */
 export function verticalForProspect(p: Pick<Prospect, "sector" | "notes">): VerticalPlaybook | null {
   const hay = `${p.notes ?? ""}`.toLowerCase();
-  const byWord = VERTICALS.find((v) =>
-    v.id === "immobilier"
-      ? /immobil|agence|mandat|syndic|régie|regie/.test(hay)
-      : v.id === "auto-ecole"
-        ? /auto-?école|auto-?ecole|permis|conduite|moniteur/.test(hay)
-        : v.id === "garage-carrosserie"
-          ? /garage|carross|mécanic|mecanic|peinture auto/.test(hay)
-          : v.id === "artisan-batiment"
-            ? /plomb|électric|electric|menuis|serrur|chauffag|couvreu|maçon|macon|peintre|rénov|renov|artisan|bâtiment|batiment|dépann|depann/.test(hay)
-            : v.id === "sante-cabinet"
-              ? /dentaire|cabinet|médical|medical|centre de santé|kiné|kine|ostéo|osteo|labo/.test(hay)
-              : false
-  );
-  return byWord ?? verticalForSector(p.sector);
+  const hit = VERTICAL_KEYWORDS.find((k) => k.re.test(hay));
+  return (hit ? verticalById(hit.id) : null) ?? verticalForSector(p.sector);
 }

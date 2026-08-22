@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SEGMENTS, segmentById, segmentsForBrick, segmentsForAccount, guessSegment } from "../lib/segments";
+import { SEGMENTS, segmentById, segmentsForBrick, segmentsForAccount, guessSegment, guessSegmentForProspect } from "../lib/segments";
 import { BRICKS } from "../lib/bricks";
 import { getAccount } from "../lib/accounts";
 
@@ -66,6 +66,31 @@ test("devine — sans signal clair, on renvoie null plutôt qu'un mauvais segmen
   assert.equal(guessSegment({ sector: "activité indéterminée" }), null);
   // Mais une équipe commerciale de 3+ suffit à trancher.
   assert.equal(guessSegment({ sector: "inconnu", salesTeamSize: 8 })?.id, "equipe-terrain");
+});
+
+test("devine — sur une fiche réelle, le métier vient des NOTES, pas de l'enum secteur", () => {
+  // Le cas qui compte : `sector` vaut « autre » (l'enum n'a que 5 valeurs) et
+  // le vrai métier a atterri dans les notes à l'import CSV.
+  const poseur = guessSegmentForProspect({
+    sector: "autre",
+    company: "Toitures du Rhône",
+    notes: "Métier : couverture et isolation. 12 commerciaux en porte-à-porte.",
+  });
+  assert.equal(poseur?.id, "equipe-terrain");
+
+  const plateau = guessSegmentForProspect({
+    sector: "autre",
+    company: "Groupe Sélénis",
+    notes: "Métier : centre d'appels, 60 positions.",
+  });
+  assert.equal(plateau?.id, "centre-appels");
+
+  // Et le marché d'origine ne doit pas régresser : « pub » manquait au filtre.
+  assert.equal(guessSegmentForProspect({ sector: "pub", company: "The Smoking Dog" })?.id, "commerce-local");
+  assert.equal(guessSegmentForProspect({ sector: "ambulance" })?.id, "commerce-local");
+
+  // Rien de parlant nulle part → toujours null, jamais un segment au hasard.
+  assert.equal(guessSegmentForProspect({ sector: "autre", company: "SARL Dupont", notes: "" }), null);
 });
 
 test("segments — chaque angle nomme LEUR problème, pas notre produit", () => {

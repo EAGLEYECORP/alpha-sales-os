@@ -39,7 +39,7 @@ export function extractPrompt(research: string, company?: string, city?: string,
 ${research.slice(0, 12_000)}
 """
 Extrais en JSON (clés optionnelles — omets ce qui est inconnu) :
-{"rating":4.2,"reviews":87,"websiteState":"site daté de 2015, pas mobile","socialState":"Instagram inactif depuis 2023","localCompetition":"3 concurrents mieux notés dans 500 m","currentProcess":"le gérant répond lui-même, sous 48h","missedCallsPerWeek":10,"avgTicket":60,"problems":["invisible sur Google Maps","aucun avis récent"],"solution":"site premium + overlay IA de réponse","personalizedOffer":"pack visibilité + réactivité 24/7","marketPosition":"milieu de tableau local, en perte de vitesse","audience":"propriétaires bailleurs 45-65 ans du 6e arr.","summary":"résumé en 2 phrases"}`;
+{"rating":4.2,"reviews":87,"websiteState":"site daté de 2015, pas mobile","socialState":"LinkedIn inactif depuis 2023","localCompetition":"3 concurrents mieux référencés sur la même requête","currentProcess":"les demandes arrivent par téléphone, personne ne les trace","missedCallsPerWeek":10,"avgTicket":60,"problems":["aucun suivi des demandes entrantes","relances laissées à la mémoire des commerciaux"],"solution":"réponse systématique aux entrants + suivi des relances","personalizedOffer":"ce que le texte justifie, rien de plus","marketPosition":"milieu de tableau sur son marché, en perte de vitesse","audience":"qui achète réellement, d'après le texte","summary":"résumé en 2 phrases"}`;
 }
 
 /** Nettoyage tolérant : le petit modèle entoure parfois le JSON de texte. */

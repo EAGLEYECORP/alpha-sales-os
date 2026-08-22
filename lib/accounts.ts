@@ -370,10 +370,12 @@ export interface CommissionQuote {
 /**
  * La commission EXACTE d'une vente : on choisit l'offre du compte dont les
  * bornes (`minHT`/`maxHT`) contiennent le montant, puis on applique le bon
- * taux (récurrent vs setup). C'est ce qui distingue un Callflow (30 % + 10 %
- * mensuel) d'un ScintIA Lab (15 %, < 6 k) ou d'un Nuwacom (15 %, ≥ 20 k).
+ * taux (récurrent vs setup). C'est ce qui distingue un Callflow ScintIA
+ * (30 % du setup + 10 % du mensuel) d'une digitalisation EAGLEYE (30 %,
+ * jusqu'à 40 k) ou d'un chantier Nuwacom (15 % au-delà de 40 k, puis 100 %
+ * de la maintenance mensuelle).
  *
- * Repli : si aucune offre ne matche la taille (trou 6-20 k chez ScintIA, ou
+ * Repli : si aucune offre ne matche la taille (montant hors des bornes, ou
  * compte sans offerings), on retombe sur le taux vitrine du compte — jamais
  * d'erreur silencieuse, on facture toujours QUELQUE chose de traçable.
  */

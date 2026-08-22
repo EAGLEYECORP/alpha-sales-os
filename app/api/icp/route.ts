@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAIJson } from "@/lib/ai-engine";
 import { deriveICP, mergeICP, icpSystemPrompt, icpUserPrompt, type ICP, type OfferInput } from "@/lib/icp";
+import { clipDoctrine } from "@/lib/identity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   const offer: OfferInput = body.offer ?? {};
 
-  const system = [body.identity?.trim(), icpSystemPrompt(), body.businessRules?.trim() ? `Doctrine du compte :\n${body.businessRules.trim().slice(0, 1200)}` : ""]
+  const system = [body.identity?.trim(), icpSystemPrompt(), body.businessRules?.trim() ? `Doctrine du compte :\n${clipDoctrine(body.businessRules)}` : ""]
     .filter(Boolean)
     .join("\n\n");
 

@@ -31,6 +31,8 @@ import { useAlpha } from "@/lib/store";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
+import { guessSegmentForProspect } from "@/lib/segments";
+import { BRICKS } from "@/lib/bricks";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
@@ -353,6 +355,70 @@ export default function ProspectDetailPage() {
 
 /* ── Doctrine tab: croyances, obstacles, objections ─────────────────── */
 
+/**
+ * Le segment détecté — qui il est AVANT quoi lui dire.
+ *
+ * Sans ça, l'opérateur sert le même angle à un bouchon lyonnais et à un plateau
+ * de 60 positions. Le module renvoie `null` quand il ne sait pas : on affiche
+ * alors ce qu'il faut écrire pour qu'il sache, plutôt qu'un segment inventé.
+ */
+function SegmentCard({ p }: { p: Prospect }) {
+  const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
+
+  if (!seg) {
+    return (
+      <section className="card p-4 lg:col-span-2">
+        <h2 className="font-display text-sm font-semibold text-paper">Segment — non identifié</h2>
+        <p className="mt-1 text-[12px] text-paper-faint">
+          Rien dans la fiche ne dit à qui on parle. Écris le métier réel dans les <strong className="text-paper">notes</strong> (ex. « Métier :
+          centre d&apos;appels, 60 positions » ou « couverture, 12 commerciaux en porte-à-porte ») — l&apos;angle, les briques d&apos;entrée et
+          les disqualifiants s&apos;affichent ensuite tout seuls. Tant que c&apos;est vide, aucun segment n&apos;est deviné : un angle adressé au
+          mauvais profil coûte plus cher qu&apos;un angle générique.
+        </p>
+      </section>
+    );
+  }
+
+  const bricks = seg.entryBricks.map((id) => BRICKS.find((b) => b.id === id)?.label ?? id);
+
+  return (
+    <section className="card p-4 lg:col-span-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-sm font-semibold text-paper">Segment — {seg.who}</h2>
+        <span className="text-[11px] text-paper-faint">{seg.teamSize} · décideur : {seg.buyer}</span>
+      </div>
+
+      <p className="mt-2 text-[12px] text-paper">{seg.corePain}</p>
+      <p className="mt-2 rounded-lg border border-ink-700 bg-ink-900 p-3 text-[12px] italic text-paper">{seg.angle}</p>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-paper-faint">Brique d&apos;entrée</h3>
+          <p className="mt-1 text-[12px] text-paper">{bricks.join(" + ")}</p>
+          <p className="mt-1 text-[11px] text-paper-faint">{seg.dealRange}</p>
+        </div>
+        <div>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-paper-faint">Quand l&apos;approcher</h3>
+          <ul className="mt-1 space-y-0.5 text-[12px] text-paper">
+            {seg.triggers.slice(0, 3).map((t) => (
+              <li key={t}>· {t}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          {/* Dire non vite vaut mieux que traîner un dossier qui ne signera pas. */}
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-paper-faint">Ne pas insister si</h3>
+          <ul className="mt-1 space-y-0.5 text-[12px] text-paper-faint">
+            {seg.disqualifiers.slice(0, 3).map((d) => (
+              <li key={d}>· {d}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function DoctrineTab({
   p,
   patch,
@@ -392,6 +458,8 @@ function DoctrineTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <SegmentCard p={p} />
+
       {/* 3 Croyances */}
       <section className="card p-4 lg:col-span-2">
         <h2 className="font-display text-sm font-semibold text-paper">Les 3 Croyances — toutes à 10 pour signer</h2>
@@ -854,7 +922,7 @@ function AuditTab({
           className="input mt-3 min-h-24"
           value={p.solution}
           onChange={(e) => patch(p.id, { solution: e.target.value })}
-          placeholder="Site premium + module résa 24/7 + overlay IA qui…"
+          placeholder="Ce qu'on installe chez LUI, et ce que ça règle — ex. « Alpha Live sur les 12 tournées : chaque visite laisse une trace datée, chaque devis a sa relance »"
         />
         <h2 className="mt-4 font-display text-sm font-semibold text-paper">Offre personnalisée</h2>
         <p className="mt-1 text-[11px] text-paper-faint">

@@ -29,3 +29,36 @@ export function buildIdentity(s: OfferIdentity): string {
   parts.push("Parle toujours au nom de cette agence et de cette offre — jamais d'une autre.");
   return parts.join(" ");
 }
+
+/**
+ * Budget par défaut de la doctrine dans un prompt. Assez large pour contenir
+ * la doctrine livrée (~1 900 caractères) sans la mutiler.
+ */
+export const DOCTRINE_MAX_CHARS = 2600;
+
+/**
+ * Tronque la doctrine SUR UNE FRONTIÈRE DE RÈGLE, jamais au milieu d'une
+ * phrase.
+ *
+ * Pourquoi ça compte : une doctrine coupée à l'aveugle produit une demi-règle
+ * (« ... chantier > 40 k → Nuwac ») que le modèle complète au hasard. Sur des
+ * règles qui portent des PRIX et un routage de commission, une demi-phrase est
+ * pire que rien : elle a l'air d'une consigne. On préfère perdre les dernières
+ * règles en entier — c'est pour ça qu'elles sont classées par gravité.
+ */
+export function clipDoctrine(rules: string, max: number = DOCTRINE_MAX_CHARS): string {
+  const text = rules.trim();
+  if (text.length <= max) return text;
+
+  const lines = text.split("\n");
+  const kept: string[] = [];
+  let used = 0;
+  for (const line of lines) {
+    const cost = used === 0 ? line.length : line.length + 1;
+    if (used + cost > max) break;
+    kept.push(line);
+    used += cost;
+  }
+  // Aucune règle entière ne tient : mieux vaut ne rien injecter qu'un fragment.
+  return kept.join("\n");
+}

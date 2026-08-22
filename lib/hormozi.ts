@@ -10,6 +10,8 @@ import type {
   Prospect,
   Stage,
 } from "./types";
+import { BRICKS } from "./bricks";
+import { guessSegmentForProspect } from "./segments";
 
 export const STAGES: {
   id: Stage;
@@ -96,14 +98,14 @@ export const OBJECTION_LIBRARY: {
     type: "concurrent",
     croyance: 1,
     counter:
-      "Comparer la valeur, pas le prix : overlay IA, maintenance, résultats mesurés. Moins cher = moins de résultat = plus cher au final. Sortir la fiche intel concurrent.",
+      "Comparer la valeur, pas le prix : ce qui tourne sans vous, la maintenance, les résultats mesurés. Moins cher = moins de résultat = plus cher au final. Sortir la fiche intel concurrent.",
   },
 ];
 
 export const CROYANCES_META: { key: keyof Croyances; num: 1 | 2 | 3; label: string; description: string }[] = [
-  { key: "produit", num: 1, label: "Le produit fonctionne", description: "Le site + l'overlay IA produit des résultats, point." },
-  { key: "soutien", num: 2, label: "Tu le soutiens", description: "Il croit que TOI tu seras là. Support, proximité, Lyon." },
-  { key: "pourLui", num: 3, label: "Ça marche POUR LUI", description: "Pas en général — pour SON resto, SON pub, SA tournée." },
+  { key: "produit", num: 1, label: "Le produit fonctionne", description: "Ce qu'on installe produit des résultats mesurables, point." },
+  { key: "soutien", num: 2, label: "Tu le soutiens", description: "Il croit que TOI tu seras là. Support, proximité, réactivité." },
+  { key: "pourLui", num: 3, label: "Ça marche POUR LUI", description: "Pas en général — pour SON équipe, SON plateau, SON métier." },
 ];
 
 // ── Value & forecast math ────────────────────────────────────────────
@@ -246,6 +248,21 @@ export function fallbackObjectionAnswer(objectionLabel: string, p: Prospect): st
   ].join("\n");
 }
 
+/**
+ * Les briques à recommander, déduites du SEGMENT du prospect.
+ *
+ * Avant, ce texte était figé sur « site vitrine premium + overlay IA » : le
+ * produit d'origine. Recommander ça à un plateau de 40 positions ou à une
+ * équipe de porte-à-porte, c'est se disqualifier en une ligne. Repli neutre
+ * si le segment n'est pas identifiable — on ne devine pas.
+ */
+function recommendedBricks(p: Prospect): string {
+  const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
+  if (!seg) return "Alpha Sales OS — briques à arrêter au cadrage";
+  const labels = seg.entryBricks.map((id) => BRICKS.find((b) => b.id === id)?.label ?? id);
+  return labels.length ? labels.join(" + ") : "Alpha Sales OS";
+}
+
 export function fallbackAuditNotes(p: Prospect): string {
   const hook = SECTOR_HOOKS[p.sector] ?? SECTOR_HOOKS.autre;
   return [
@@ -265,8 +282,12 @@ export function fallbackAuditNotes(p: Prospect): string {
     `3. Concurrence directe dans un rayon de 500 m : qui capte la demande ?`,
     `4. Process actuel : qui répond, quand, comment ?`,
     ``,
-    `## Recommandation EAGLEYE`,
-    `Site vitrine premium + overlay IA (${hook.dream}). Setup ${p.setupValue.toLocaleString("fr-FR")} € + ${p.monthlyValue.toLocaleString("fr-FR")} €/mois.`,
+    `## Recommandation`,
+    // Le segment, pas le secteur : une équipe de 12 poseurs en porte-à-porte et
+    // un bouchon lyonnais n'ont ni la même douleur ni la même brique d'entrée.
+    // Et surtout : PAS de nom de compte en dur — l'OS est white-label, celui qui
+    // recommande n'est pas toujours EAGLEYE.
+    `${recommendedBricks(p)} (${hook.dream}). Setup ${p.setupValue.toLocaleString("fr-FR")} € + ${p.monthlyValue.toLocaleString("fr-FR")} €/mois.`,
     `ROI attendu : la Taxe d'Ignorance seule couvre ${p.monthlyValue > 0 ? Math.round(p.ignoranceTax / p.monthlyValue) : "—"}× l'abonnement.`,
   ].join("\n");
 }

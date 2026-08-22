@@ -1,5 +1,11 @@
-// Seed data — Lyon terrain. Fictional but realistic prospects across the
-// four EAGLEYE verticals: restaurants, pubs, ambulances, artisans.
+// Seed data — Lyon terrain. Fictional but realistic prospects, used to make
+// the UI legible before the first real import.
+//
+// ⚠ These 8 records cover the ORIGINAL local-business market only (restaurant,
+// pub, ambulance, artisan). They are a demo dataset, not the ICP: the real
+// targeting lives in `lib/segments.ts` and now spans field sales teams, call
+// centres, B2B agencies, franchise networks and insurance. Do not read the
+// product's reach from this file.
 import type {
   Activity,
   Campaign,
@@ -488,18 +494,30 @@ export const seedActivities: Activity[] = [
   { id: "ac6", date: daysAgo(18), kind: "signe", message: "SIGNÉ ✓ Menuiserie Charbonnier & Fils — 1 200 € + 190 €/mois", prospectId: "p-menuiserie" },
 ];
 
-export const DEFAULT_BUSINESS_RULES = `1. La décision EST le produit. On vend une décision, pas un site.
-2. Émotion d'abord : démo mobile personnalisée AVANT toute mention de prix.
-3. Distinction stricte : OBSTACLES (pré-offre) ≠ OBJECTIONS (post-offre / Red Zone).
-4. Oignon du Blâme : Circonstances → Les Autres → Soi. On épluche, on n'argumente pas.
-5. Toujours chiffrer la Taxe d'Ignorance (€/mois perdus à ne rien faire).
-6. Les 3 Croyances à 10/10 avant de demander la signature : le produit fonctionne, tu le soutiens, ça marche POUR LUI.
+/**
+ * Doctrine par défaut du compte — modifiable dans les réglages.
+ *
+ * ⚠ Ce texte est injecté dans TOUTES les routes IA (script, coach, sparring,
+ * agent, ICP). Ce qui est faux ici devient une phrase dite à un vrai prospect,
+ * et un prix faux ici devient un prix annoncé au téléphone. Il doit donc
+ * refléter l'offre RÉELLE, pas une version antérieure du produit.
+ *
+ * L'ordre n'est pas décoratif : certaines routes tronquent ce bloc. Les règles
+ * qui coûtent un deal ou qui engagent juridiquement sont en tête.
+ */
+export const DEFAULT_BUSINESS_RULES = `1. Jamais de prix avant la démo. Un chiffre lâché trop tôt transforme la conversation en négociation.
+2. Alpha Voice annonce qu'il est une IA dès la première phrase (AI Act, art. 50). Jamais contourné, jamais adouci.
+3. La décision EST le produit. On vend une décision, pas un outil.
+4. Chiffrer ce que coûte l'inaction — avec SES chiffres à lui. Jamais un montant inventé : un chiffre faux détruit la confiance plus vite qu'un silence.
+5. OBSTACLES (avant l'offre) ≠ OBJECTIONS (après l'offre). On épluche : circonstances → les autres → soi. On n'argumente pas.
+6. Les 3 croyances à 10/10 avant de demander la signature : ça fonctionne, tu me soutiens, ça marche POUR MOI.
 7. Chaque contact se termine par un next step DATÉ. Sans exception.
-8. Conviction du closer 10/10 requise pour signer. La conviction se transfère.
-9. Cibles : restaurants, pubs, ambulances, artisans — Lyon et périphérie.
-10. Offre : site premium + overlay IA. Setup 1 200–2 400 € + 190–390 €/mois selon secteur.
-11. Ne jamais se battre sur le prix face au low-cost : se battre sur la preuve.
-12. Un perdu = nurture 90 jours. Un signé = machine à referrals semaine 1.`;
+8. L'escalier, sur CHAQUE prospect, une marche à la fois : visibilité → EAGLEYE (30 %) · volume d'appels élevé → ScintIA Callflow, 990 € HT de setup (30 % + 10 % du mensuel) · automatisation demandée en plus → EAGLEYE (30 %) · chantier > 40 k → Nuwacom (15 %, puis 100 % de la maintenance).
+9. Cibles : toute organisation dont la vente dépend de personnes plutôt que d'un système — équipes terrain (toiture, isolation, photovoltaïque en porte-à-porte), centres d'appels, agences B2B, réseaux et franchises, commerce local, assurance en transformation.
+10. Offre : Alpha Sales OS à la carte (1 200 à 3 500 € HT d'installation + 120 à 364 €/mois par brique) ou le pack complet à 10 000 € HT + 1 000 €/mois. Appels sortants : 364 €/mois les 1 000 appels, sans engagement.
+11. Cadrage obligatoire avant tout devis : visio, appel ou SMS, avec une date ET une heure décidées.
+12. La fréquence de relance suit SA réactivité, jamais le calendrier. 3 touches ignorées = changer de canal, pas insister.
+13. Un perdu = nurture 90 jours avec une raison NEUVE à chaque fois. Un signé = demande de referral dès la semaine 1.`;
 
 /**
  * Identifiants des fiches de démonstration.
@@ -513,15 +531,10 @@ export const DEFAULT_BUSINESS_RULES = `1. La décision EST le produit. On vend u
  * avertir : le coût est trop asymétrique pour être laissé au jugement
  * d'un opérateur pressé.
  */
-export const DEMO_PROSPECT_IDS: ReadonlySet<string> = new Set([
-  "p-bouchon",
-  "p-smoking-dog",
-  "p-ambulances-rhone",
-  "p-menuiserie",
-  "p-brasserie-part-dieu",
-  "p-taxi-fourviere",
-  "p-paddy",
-  "p-boulangerie",
-]);
+// DÉRIVÉ de la liste unique — surtout pas recopié. Une seconde liste tenue à
+// la main finit toujours par diverger, et ici diverger veut dire : une fiche
+// de démo qui passe le garde-fou et part en emailing vers une adresse
+// inventée.
+export const DEMO_PROSPECT_IDS: ReadonlySet<string> = new Set(SEED_PROSPECT_IDS);
 
 export const isDemoProspect = (id: string): boolean => DEMO_PROSPECT_IDS.has(id);

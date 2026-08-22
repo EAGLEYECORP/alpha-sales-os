@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { verticalById, verticalForSector } from "@/lib/playbook";
+import { clipDoctrine } from "@/lib/identity";
 import type { Sector } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -69,9 +70,9 @@ export async function POST(request: NextRequest) {
   const prompt = `Tu joues un patron de commerce local sceptique et pressé : ${body.prospect.name}, gérant de ${body.prospect.company} (${body.prospect.sector}).${fieldBlock}
 Un commercial de ${agency} (${offer}) essaie de te convaincre d'accepter un audit gratuit de 20 minutes.
 Reste DANS LE PERSONNAGE : méfiant mais juste. S'il répond bien (douleur, preuve, next step daté, zéro jargon), tu t'adoucis. S'il pitche le produit, parle prix trop tôt ou reste vague, tu durcis.
-Contexte réel du prospect : ${body.prospect.pitch || "commerce local sans vraie présence en ligne"}.
+Contexte réel du prospect : ${body.prospect.pitch || "une organisation dont la vente repose sur des personnes, sans système qui suit"}.
 Ses objections favorites : ${body.prospect.objections.join(" ; ") || "pas le temps, trop cher, j'ai déjà ce qu'il faut"}.
-Règles de vente de l'agence (le coach s'y réfère) : ${body.businessRules.slice(0, 1500)}
+Règles de vente de l'agence (le coach s'y réfère) : ${clipDoctrine(body.businessRules)}
 
 Conversation jusqu'ici :
 ${hist}
