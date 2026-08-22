@@ -188,6 +188,18 @@ export const BRICKS: Brick[] = [
     unlocks: ["/closer", "/debrief"],
   },
   {
+    id: "agent-alpha",
+    label: "Agent ALPHA",
+    what: "Le copilote conversationnel qui voit tout le pipeline : il prépare la journée, analyse un deal, écrit le message, et dit quoi faire ensuite.",
+    setupHT: 2200,
+    monthlyHT: 220,
+    why:
+      "Les autres briques produisent de la donnée ; celle-ci la lit à ta place. C'est la différence entre « avoir un CRM » et " +
+      "« ouvrir l'app le matin et savoir quoi faire » — et c'est la seule brique qui remplace une conversation avec un directeur commercial.",
+    unlocks: ["/agent", "/aujourdhui", "/decisions"],
+    passThrough: "Jetons du modèle facturés au réel — comptés et plafonnés par compte (voir /kpis).",
+  },
+  {
     id: "pilotage",
     label: "Salle de contrôle & KPIs",
     what: "Tout ce qui tourne en un écran, et les chiffres qui disent où ça bloque.",

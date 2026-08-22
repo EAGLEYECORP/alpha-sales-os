@@ -33,6 +33,7 @@ import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
 import { guessSegmentForProspect } from "@/lib/segments";
 import { BRICKS, quoteBricks, quoteText } from "@/lib/bricks";
+import { buildDeck, renderDeck } from "@/lib/deck";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
@@ -1058,6 +1059,7 @@ function CommercialTab({
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <QuoteBuilder p={p} />
+      <DeckButton p={p} />
 
       {/* Payments */}
       <section className="card p-4">
@@ -1624,6 +1626,60 @@ function FilesTab({
         ))}
         {p.attachments.length === 0 && <p className="text-sm text-paper-faint">Aucun fichier.</p>}
       </ul>
+    </section>
+  );
+}
+
+/**
+ * La présentation de CE prospect, à SON étape.
+ *
+ * Ouverte dans un onglet plutôt que téléchargée : on la montre en rendez-vous,
+ * on ne la classe pas. Les « omissions » sont affichées à l'opérateur et
+ * JAMAIS dans le document — ce sont des notes de préparation, pas du contenu
+ * client. C'est là qu'on lit « aucun prix, il n'a pas vu la démo ».
+ */
+function DeckButton({ p }: { p: Prospect }) {
+  const settings = useAlpha((s) => s.settings);
+  const deck = useMemo(() => buildDeck(p, settings.accountId ?? "eagleye"), [p, settings.accountId]);
+
+  const ouvrir = () => {
+    const html = renderDeck(deck, settings.agencyName || "EAGLEYE CORP");
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+    window.open(url, "_blank", "noopener");
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  };
+
+  return (
+    <section className="card p-4 lg:col-span-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <FileText size={15} className="text-bronze-400" /> Présentation — {deck.stageLabel}
+        </h2>
+        <span className="text-[11px] text-paper-faint">{deck.slides.length} diapositives · {deck.objective}</span>
+      </div>
+
+      <ul className="mt-2 space-y-0.5 text-[12px] text-paper">
+        {deck.slides.map((s, i) => (
+          <li key={i}>
+            <span className="font-mono text-[10px] text-paper-faint">{i + 1}.</span> {s.title}
+          </li>
+        ))}
+      </ul>
+
+      {deck.omissions.length > 0 && (
+        <div className="mt-3 rounded-lg border border-ink-700 bg-ink-900 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-paper-faint">Ce que la présentation NE dit pas</p>
+          <ul className="mt-1 space-y-0.5 text-[11.5px] text-paper-dim">
+            {deck.omissions.map((o) => (
+              <li key={o}>· {o}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <button className="btn-ghost mt-3 px-3 py-1.5 text-[12px]" onClick={ouvrir}>
+        Ouvrir la présentation
+      </button>
     </section>
   );
 }
