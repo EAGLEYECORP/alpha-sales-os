@@ -109,3 +109,57 @@ test("Alpha Live est une brique vendable à part entière", () => {
   // Elle apparaît publiquement, sans son prix.
   assert.ok(publicBricks().some((b) => b.id === "alpha-live"));
 });
+
+// ── LES AUTRES SURFACES PUBLIQUES ──────────────────────────────────────
+
+/**
+ * La vitrine n'est pas la seule chose joignable sans mot de passe. Tout ce
+ * qui figure dans PUBLIC_PREFIXES l'est aussi, et une fuite y est aussi
+ * définitive — elle est juste moins visible, donc plus durable.
+ */
+const lire = (f: string) => readFileSync(join(process.cwd(), f), "utf8");
+
+const SURFACES_PUBLIQUES = [
+  "app/gate/page.tsx",
+  "app/api/health/route.ts",
+  "public/sw.js",
+  "public/manifest.webmanifest",
+];
+
+test("surfaces publiques — aucun prix nulle part ailleurs", () => {
+  for (const f of SURFACES_PUBLIQUES) {
+    const src = sansCommentaires(lire(f));
+    assert.doesNotMatch(src, /setupHT|monthlyHT|PACK_SETUP|PACK_MONTHLY|OUTBOUND_/, `${f} : un prix a fui`);
+    // Un montant en euros écrit en dur — le format français comme l'anglais.
+    assert.doesNotMatch(src, /\d[\d\s  ]*€/, `${f} : un montant en euros est écrit en dur`);
+  }
+});
+
+test("sonde de santé — la carte de l'architecture n'est plus ouverte", () => {
+  const src = lire("app/api/health/route.ts");
+  // Aucun secret n'y fuitait — que des booléens. Mais mis bout à bout, ces
+  // booléens dessinent toute la pile : c'est exactement ce qu'on a retiré de
+  // la page de vente, et le laisser ici annulait l'effort.
+  assert.match(src, /ACCESS_COOKIE/, "le détail doit exiger le cookie d'accès");
+  assert.match(src, /safeEqual/, "comparaison à temps constant");
+  // La sonde minimale reste publique : un moniteur externe doit pouvoir
+  // vérifier que l'app répond sans détenir de secret.
+  assert.match(src, /\{ ok: true, checkedAt: new Date\(\)\.toISOString\(\) \}/);
+});
+
+test("vitrine — indexable, et avec une description tournée vers le résultat", () => {
+  // La racine porte noindex (c'est juste pour un CRM privé) et l'appliquait à
+  // TOUT — y compris à la seule page dont le travail est d'être trouvée.
+  // Comme plus haut : on juge ce qui PART, pas le commentaire qui explique
+  // pourquoi une formulation a été retirée.
+  const layout = sansCommentaires(lire("app/vitrine/layout.tsx"));
+  assert.match(layout, /robots:\s*\{\s*index:\s*true/, "la page de vente doit être indexable");
+  assert.match(layout, /openGraph/, "le premier canal est LinkedIn : un lien sans aperçu perd ses clics");
+
+  // Et le vocabulaire interne de la méthode ne part pas dans les métadonnées.
+  const racine = sansCommentaires(lire("app/layout.tsx"));
+  for (const mot of ["Hormozi", "Taxe d'Ignorance", "3 Croyances", "Red Zone"]) {
+    assert.ok(!racine.includes(mot), `« ${mot} » décrit le procédé — pas dans les métadonnées publiques`);
+    assert.ok(!layout.includes(mot), `« ${mot} » n'a rien à faire dans la description publique`);
+  }
+});

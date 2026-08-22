@@ -8,11 +8,17 @@ export const metadata: Metadata = {
     default: "ALPHA SALES OS® — EAGLEYE CORP",
     template: "%s · ALPHA SALES OS®",
   },
-  description:
-    "Système d'exploitation commercial Hormozi-natif. Pipeline, Red Zone, Taxe d'Ignorance, 3 Croyances — Lyon.",
+  // Volontairement neutre : cette description part avec CHAQUE page, y
+  // compris là où elle serait lue par un tiers. Le vocabulaire interne de la
+  // méthode (« Taxe d'Ignorance », « 3 Croyances »…) décrit le procédé à
+  // quiconque sait lire, et ne dit rien à un prospect. La vitrine porte sa
+  // propre description, tournée vers le résultat.
+  description: "Système d'exploitation commercial — EAGLEYE CORP, Lyon.",
   applicationName: "ALPHA SALES OS",
   manifest: "/manifest.webmanifest",
-  keywords: ["sales", "CRM", "Hormozi", "Lyon", "EAGLEYE"],
+  // L'app est un CRM privé : rien n'y est indexable. La vitrine SURCHARGE
+  // cette valeur dans son propre layout — sans quoi la seule page publique
+  // resterait invisible pour Google.
   robots: { index: false, follow: false },
   icons: {
     icon: [

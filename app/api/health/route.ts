@@ -1,18 +1,49 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
+import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * Diagnostic système — dit CE QUI est configuré côté serveur, sans jamais
- * exposer une valeur secrète (uniquement des booléens + quelques constantes
- * non sensibles). Sert au panneau « État du système » des Réglages : une
- * fois les identifiants en place, tout doit être vert.
+ * exposer une valeur secrète. Sert au panneau « État du système » des
+ * Réglages : une fois les identifiants en place, tout doit être vert.
+ *
+ * ── POURQUOI LE DÉTAIL EST DÉSORMAIS PROTÉGÉ ──
+ *
+ * Aucun secret ne fuitait — que des booléens. Mais mis bout à bout, ces
+ * booléens dessinent la CARTE COMPLÈTE de l'architecture : quel modèle
+ * répond, quel fournisseur de transcription, LiveKit, Stripe, Supabase, le
+ * scraper, le seuil d'envoi horaire. C'est exactement ce qu'on a retiré de
+ * la page de vente — le laisser sur une route ouverte annulait l'effort.
+ *
+ * Pire : `access.gated` et `access.publicHost` annoncent publiquement
+ * « ce déploiement tourne sans mot de passe ». C'est une invitation, pas un
+ * diagnostic.
+ *
+ * La sonde reste PUBLIQUE et minimale ({ ok, checkedAt }) : un moniteur
+ * externe doit pouvoir vérifier que l'app répond sans détenir de secret.
+ * Le détail exige le cookie d'accès du site.
  */
-export async function GET() {
+function detailAutorise(req: NextRequest, expected: string | null): boolean {
+  const sitePassword = process.env.SITE_PASSWORD;
+  // Sans porte d'accès (développement local), il n'y a rien à protéger.
+  if (!sitePassword) return true;
+  const cookie = req.cookies.get(ACCESS_COOKIE)?.value ?? "";
+  return Boolean(cookie && expected && safeEqual(cookie, expected));
+}
+
+export async function GET(req: NextRequest) {
   const env = process.env;
   const has = (k: string) => Boolean(env[k] && String(env[k]).trim());
+
+  const sitePassword = env.SITE_PASSWORD;
+  const attendu = sitePassword ? await accessToken(sitePassword) : null;
+  if (!detailAutorise(req, attendu)) {
+    // Assez pour un moniteur, rien pour un curieux.
+    return NextResponse.json({ ok: true, checkedAt: new Date().toISOString() });
+  }
 
   const email = has("SMTP_HOST") && has("SMTP_USER") && has("SMTP_PASS");
   const supabasePublic = has("NEXT_PUBLIC_SUPABASE_URL") && has("NEXT_PUBLIC_SUPABASE_ANON_KEY");
