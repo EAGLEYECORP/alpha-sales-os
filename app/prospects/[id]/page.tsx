@@ -39,6 +39,7 @@ import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
 import { CheckpointsPanel } from "@/components/prospects/checkpoints-panel";
 import { LeadMagnetPanel } from "@/components/prospects/lead-magnet-panel";
+import { OnboardingPanel } from "@/components/prospects/onboarding-panel";
 import { search, contextFromNotes } from "@/lib/knowledge";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
@@ -1058,6 +1059,7 @@ function CommercialTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <OnboardingPanel p={p} />
       <QuoteBuilder p={p} />
       <DeckButton p={p} />
 

@@ -2,7 +2,7 @@
 
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, sécurité) ;
 > ce fichier porte le PLAN et l'AVANCEMENT RÉEL.
-> Dernière révision : 2026-08-22 · 550 tests verts · `tsc` clean · `next build` OK.
+> Dernière révision : 2026-08-22 · 579 tests verts · `tsc` clean · `next build` OK.
 
 ## Le but, dit franchement
 Zakaria a besoin de **ventes encaissées**, pas de features. Tout ce qui suit est
@@ -77,6 +77,17 @@ classé par « ça rapproche d'un virement bancaire ».
       Google, Outlook/Teams et Apple. Sens unique, assumé.
 - [x] **Notion** (`lib/notion.ts`) — envoi du pipeline, sans OAuth. Ni notes
       libres ni transcriptions ne partent.
+- [x] **Présentation par prospect** (`lib/deck.ts`) — celle de SON étape.
+      Aucun prix avant l'offre, aucun chiffre inventé, rituel de closing du
+      compte en clôture.
+- [x] **Mission French Tech** (`lib/mission-french-tech.ts`) — 9 lots, porteur
+      et piège nommés, compte à rebours en jours OUVRÉS. Visible sur
+      `/trajectoire` et sur la vitrine.
+- [x] **Mise en route client** (`lib/client-onboarding.ts`) — 10 étapes datées,
+      preuve exigée, cas « essai » traité.
+- [x] **Budget de jetons** (`lib/token-budget.ts`) — coupe par priorité,
+      déduplication, mesure par route. Branché sur `/api/agent`.
+- [x] **Agent ALPHA** vendu comme brique (2 200 € + 220 €/mois).
 
 ---
 
@@ -126,14 +137,14 @@ classé par « ça rapproche d'un virement bancaire ».
 
 ## Limites — à redire, parce qu'elles ne bougent pas
 1. **Rien n'a été testé en conditions réelles.** Le proxy de la sandbox bloque
-   Telnyx, LiveKit, Vercel et Supabase. Les 550 tests prouvent que la logique
+   Telnyx, LiveKit, Vercel et Supabase. Les 579 tests prouvent que la logique
    est cohérente ; ils ne prouvent pas qu'un appel part.
 2. **Aucune automatisation ne closera à ta place.** L'OS source, qualifie,
    appelle, relance et prépare. La signature reste humaine.
 3. **Juillet 2026 : 78 prospects, 132 appels, 18 audits, 0 vente.** Le goulot
    n'était pas l'outillage. L'OS rend plus rapide un processus qui n'a pas
    encore prouvé qu'il convertit — c'est une hypothèse, pas un acquis.
-4. **95 modules pour un opérateur solo.** Ce qui n'est pas utilisé devient de
+4. **108 modules pour un opérateur solo.** Ce qui n'est pas utilisé devient de
    la dette. Mieux vaut trois écrans maîtrisés que quarante survolés.
 
 ## L'ordre qui rapporte

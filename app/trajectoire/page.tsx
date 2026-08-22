@@ -10,6 +10,7 @@ import {
   type LeverageInput,
 } from "@/lib/paliers";
 import { prioritized, urgency, daysLeft, type Opportunity } from "@/lib/opportunites";
+import { FrenchTechPanel } from "@/components/mission/french-tech-panel";
 import { cn } from "@/lib/utils";
 import { DailyBar } from "@/components/standard/daily-bar";
 
@@ -197,6 +198,8 @@ export default function TrajectoirePage() {
       </section>
 
       {/* ── 3. LES OPPORTUNITÉS ── */}
+      <FrenchTechPanel />
+
       <section className="card p-4">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
           <CalendarClock size={15} className="text-bronze-400" /> Opportunités — l&apos;argent hors client

@@ -123,7 +123,7 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 
 ## Structure du projet
 
-`95 modules · 39 pages · 34 routes API · 55 composants · 550 tests`
+`108 modules · 39 pages · 38 routes API · 63 composants · 579 tests`
 
 ```
 alpha-sales-os/
@@ -151,15 +151,17 @@ alpha-sales-os/
 │   ├── call-log · file-extract  # Transcriptions ; PDF/DOCX sans dépendance
 │   ├── bricks · pricing · voice-costs · paliers · opportunites
 │   ├── webpush · push-digest · ics · notion  # ⭐ notifications, agenda, CRM
+│   ├── deck · client-onboarding             # ⭐ présentation par étape, mise en route
+│   ├── token-budget · mission-french-tech   # ⭐ coût des prompts, dossier FT2030
 │   └── knowledge · store · types
 ├── voice/                       # Agent Python (LiveKit) + guides SIP
-├── tests/                       # 63 fichiers, 550 tests (node:test)
+├── tests/                       # 66 fichiers, 579 tests (node:test)
 └── docs/                        # Déploiement, API v1, autopilote, roadmap
 ```
 
 ### Les briques vendables
 
-Chaque brique se vend seule (`lib/bricks.ts`) ; l'addition des huit dépasse
+Chaque brique se vend seule (`lib/bricks.ts`) ; l'addition des neuf dépasse
 largement le pack — c'est l'ancrage.
 
 | Brique | Installation | Mensuel |
@@ -167,6 +169,7 @@ largement le pack — c'est l'ancrage.
 | **Alpha Voice** — agent vocal entrant/sortant, 24/7 | 3 500 € | 364 € (1 000 appels) |
 | **Campagnes & outreach** | 2 500 € | 290 € |
 | **Le Cerveau (RAG)** | 2 500 € | 240 € |
+| **Agent ALPHA** — le copilote qui lit le pipeline à ta place | 2 200 € | 220 € |
 | **CRM & Pipeline** | 2 000 € | 190 € |
 | **Audits automatisés** | 1 800 € | 150 € |
 | **Tracking & délivrabilité** | 1 500 € | 140 € |
@@ -176,7 +179,25 @@ largement le pack — c'est l'ancrage.
 
 Ou **30 % + frais d'installation** sur devis. **Cadrage obligatoire** avant
 tout chiffrage. Alpha Voice sortant se paie au volume, sans engagement :
-1 000 appels 364 € · 4 000 appels 1 092 € (le 4ᵉ millier offert).
+1 000 appels 364 € · 4 000 appels 1 092 € (le 4ᵉ millier offert). Les jetons
+du modèle utilisés par l'Agent ALPHA sont refacturés au réel, comptés et
+plafonnés par route (`lib/token-budget.ts`) — on ne cache pas un coût variable
+dans un forfait.
+
+### Mettre un client en route
+
+`lib/client-onboarding.ts` — dix étapes datées depuis la signature, chacune
+avec son porteur (nous / lui), ce qui bloque la suite, et la **preuve** qu'elle
+est finie plutôt que cochée. Visible sur la fiche dès l'étape « signé ».
+
+La signature n'est pas la fin de la vente : c'est le début du moment où on
+peut la perdre. Un client qui n'a rien vu tourner en dix jours doute, et un
+client qui doute ne recommande pas. Le parcours vise donc **un résultat
+visible au jour 7** — petit, mais réel : c'est lui qui achète les trois
+semaines suivantes.
+
+Un client d'essai suit le même parcours. Ce n'est pas un client au rabais,
+c'est un client qui n'a pas encore payé.
 
 ### Ce que le système REFUSE de faire
 

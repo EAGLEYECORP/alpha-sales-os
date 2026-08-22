@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BRICKS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "@/lib/bricks";
 import { HeroVideo } from "@/components/vitrine/hero-video";
+import { MissionSection } from "@/components/vitrine/mission-section";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -46,6 +47,7 @@ export default function VitrinePage() {
           <div className="flex items-center gap-7 text-[14px]" style={{ color: MUTED }}>
             <a href="#produit" className="hidden hover:text-[#191919] sm:inline">Produit</a>
             <a href="#tarifs" className="hidden hover:text-[#191919] sm:inline">Tarifs</a>
+            <a href="#mission" className="hidden hover:text-[#191919] sm:inline">Mission</a>
             <a
               href="#cadrage"
               className="rounded-full px-4 py-2 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
@@ -305,6 +307,8 @@ export default function VitrinePage() {
           </div>
         </section>
 
+        <Rule />
+        <MissionSection />
         <Rule />
 
         {/* ── 5. LE CADRAGE ── */}
