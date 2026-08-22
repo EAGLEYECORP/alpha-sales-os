@@ -8,6 +8,7 @@ import { CALL_MODES, DO_NOT_CALL_TAG, type CallMode } from "@/lib/voice-script";
 import { VERTICALS, verticalForProspect } from "@/lib/playbook";
 import { speak, stopSpeak, getTtsProvider, setTtsProvider, type TtsProvider } from "@/lib/browser-tts";
 import { cn } from "@/lib/utils";
+import { CostPanel } from "@/components/voice/cost-panel";
 
 /**
  * ALPHA VOICE — l'écran de commande.
@@ -349,6 +350,8 @@ export default function VoicePage() {
           </p>
         </section>
       )}
+
+      <CostPanel />
 
       <p className="px-1 text-[11px] text-paper-faint">
         L&apos;agent tourne dans un service séparé : <code className="font-mono text-bronze-400">voice/agent.py</code>{" "}

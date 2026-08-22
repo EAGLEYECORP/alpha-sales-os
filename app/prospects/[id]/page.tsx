@@ -37,6 +37,7 @@ import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
 import { CheckpointsPanel } from "@/components/prospects/checkpoints-panel";
+import { LeadMagnetPanel } from "@/components/prospects/lead-magnet-panel";
 import { search, contextFromNotes } from "@/lib/knowledge";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 import type { EventKind, Objection, Obstacle, Prospect, Stage } from "@/lib/types";
@@ -316,7 +317,12 @@ export default function ProspectDetailPage() {
       {tab === "timeline" && <TimelineTab p={p} addEvent={addEvent} />}
       {tab === "commercial" && <CommercialTab p={p} patch={patchProspect} />}
       {tab === "coach" && <CoachTab p={p} rules={settings.businessRules} />}
-      {tab === "templates" && <TemplatesTab p={p} closer={settings.closerName} />}
+      {tab === "templates" && (
+        <div className="space-y-4">
+          <LeadMagnetPanel p={p} />
+          <TemplatesTab p={p} closer={settings.closerName} />
+        </div>
+      )}
       {tab === "tracking" && <ClientTrackingStats prospectId={p.id} />}
       {tab === "fichiers" && <FilesTab p={p} patch={patchProspect} />}
 
