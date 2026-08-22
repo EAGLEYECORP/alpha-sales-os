@@ -57,6 +57,7 @@ import { PageGuide } from "@/components/page-guide";
 import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { N8nAutoSync } from "@/components/n8n-autosync";
+import { StorageAlert } from "@/components/security/storage-alert";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -417,6 +418,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+        {/* Au-dessus de tout : si le stockage local n'enregistre plus, aucune
+            autre information n'a d'importance tant que ce n'est pas réglé. */}
+        <StorageAlert />
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
 

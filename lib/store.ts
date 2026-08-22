@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { isQuotaError } from "./storage-health";
 import type {
   Activity,
   AppSettings,
@@ -180,6 +181,66 @@ const audit = (actor: string, action: string, target: string): AuditLogEntry => 
   action,
   target,
 });
+
+/**
+ * `localStorage`, mais qui DIT quand il n'écrit plus.
+ *
+ * Le quota (~5 Mo) se remplit vite : le Cerveau y met le texte intégral des
+ * PDF importés. Au dépassement, `setItem` lève et l'écriture est perdue — en
+ * silence. L'opérateur continuait sa journée, saisissait des fiches, notait
+ * ses appels, puis fermait l'onglet : tout ce qui suivait la première
+ * écriture ratée n'avait jamais existé.
+ *
+ * On ne peut pas empêcher le quota d'exister. On peut refuser qu'il échoue
+ * sans bruit : l'échec est mémorisé et remonté dans l'état, un écran le
+ * montre, et l'opérateur sait qu'il doit synchroniser ou alléger AVANT de
+ * perdre quoi que ce soit.
+ */
+const guardedLocalStorage: Storage = {
+  get length() {
+    return localStorage.length;
+  },
+  key: (i: number) => localStorage.key(i),
+  getItem: (k: string) => localStorage.getItem(k),
+  removeItem: (k: string) => localStorage.removeItem(k),
+  clear: () => localStorage.clear(),
+  setItem: (k: string, v: string) => {
+    try {
+      localStorage.setItem(k, v);
+      // Une écriture qui repasse efface l'alerte : le problème est réglé.
+      if (storageFailed) {
+        storageFailed = false;
+        notifyStorage(false);
+      }
+    } catch (e) {
+      if (isQuotaError(e)) {
+        storageFailed = true;
+        notifyStorage(true);
+        // On NE relance PAS : faire planter l'app par-dessus la perte de
+        // données n'aide personne. L'alerte, elle, est visible.
+        return;
+      }
+      throw e;
+    }
+  },
+};
+
+let storageFailed = false;
+
+/**
+ * Remontée de l'échec vers l'interface.
+ *
+ * Passe par un évènement plutôt que par `setState` : on est ici DANS
+ * l'écriture du store, et déclencher une mise à jour d'état au milieu
+ * provoquerait une nouvelle écriture, donc une boucle.
+ */
+function notifyStorage(failed: boolean): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("alpha:storage", { detail: { failed } }));
+}
+
+/** L'écriture locale est-elle en échec ? Lu par l'alerte d'interface. */
+export const storageIsFailing = (): boolean => storageFailed;
 
 export const useAlpha = create<AlphaState>()(
   persist(
@@ -640,7 +701,17 @@ export const useAlpha = create<AlphaState>()(
     {
       name: "alpha-sales-os-v2",
       version: 5,
-      storage: createJSONStorage(() => localStorage),
+      // Hors navigateur (tests, rendu serveur), on ne fournit AUCUN stockage :
+      // zustand désactive alors la persistance. C'est ce que faisait
+      // `() => localStorage` en levant une ReferenceError — en la remplaçant
+      // par un objet, il fallait rendre ce cas explicite.
+      storage: createJSONStorage(() => {
+        // Lever ici, comme le faisait `() => localStorage`, est ce que zustand
+        // attend pour désactiver la persistance : la signature exige un
+        // Storage, pas un `undefined`.
+        if (typeof localStorage === "undefined") throw new Error("localStorage indisponible");
+        return guardedLocalStorage;
+      }),
       migrate: (persisted) => {
         const s = persisted as Partial<AlphaState>;
         return {

@@ -126,6 +126,23 @@ function rateLimited(ip: string, pathname: string): boolean {
   return bump(hits, ip, MAX_PER_WINDOW);
 }
 
+/**
+ * Le jeton attendu, dérivé une seule fois par instance.
+ *
+ * `accessToken` fait un HMAC-SHA256 (importKey + sign). Le middleware tourne
+ * sur CHAQUE requête, et une seule page de l'app en déclenche une quinzaine :
+ * on recalculait donc le même HMAC quinze fois pour afficher un écran. Le
+ * mot de passe ne change pas pendant la vie du processus — on le mémorise,
+ * indexé par mot de passe pour rester correct si l'environnement change.
+ */
+let tokenCache: { password: string; token: string } | null = null;
+async function expectedToken(password: string): Promise<string> {
+  if (tokenCache?.password === password) return tokenCache.token;
+  const token = await accessToken(password);
+  tokenCache = { password, token };
+  return token;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -144,7 +161,7 @@ export async function middleware(req: NextRequest) {
   const sitePassword = process.env.SITE_PASSWORD;
   if (sitePassword && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
     const cookie = req.cookies.get(ACCESS_COOKIE)?.value ?? "";
-    const expected = await accessToken(sitePassword);
+    const expected = await expectedToken(sitePassword);
     if (!cookie || !safeEqual(cookie, expected)) {
       // API → 401 JSON ; page → redirection vers l'écran d'accès.
       if (pathname.startsWith("/api/")) {
