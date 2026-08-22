@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Banknote,
@@ -32,7 +32,7 @@ import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
 import { guessSegmentForProspect } from "@/lib/segments";
-import { BRICKS } from "@/lib/bricks";
+import { BRICKS, quoteBricks, quoteText } from "@/lib/bricks";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
@@ -951,6 +951,91 @@ const DELIVERY_LABELS: Record<Prospect["delivery"], string> = {
   maintenance: "Maintenance",
 };
 
+/**
+ * Le devis à la carte, depuis la fiche.
+ *
+ * `quoteBricks`/`quoteText` existaient depuis le début et n'étaient appelés
+ * que par les tests : pour envoyer un devis, il fallait recopier les prix à la
+ * main. C'est exactement là qu'on se trompe de montant au dernier mètre.
+ * L'ancrage sur le pack est calculé, pas plaidé : la recommandation vient du
+ * module, elle change quand l'addition change.
+ */
+function QuoteBuilder({ p }: { p: Prospect }) {
+  const settings = useAlpha((s) => s.settings);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [copied, setCopied] = useState(false);
+
+  const quote = useMemo(() => quoteBricks(picked), [picked]);
+  // L'émetteur vient des réglages du compte (white-label). Vide → le devis
+  // garde son en-tête par défaut plutôt qu'un nom tronqué.
+  const issuer = settings.agencyName?.trim()
+    ? [settings.agencyName.trim(), settings.offer?.city?.trim()].filter(Boolean).join(" · ")
+    : undefined;
+  const text = useMemo(() => (picked.length ? quoteText(quote, p.company, { issuer }) : ""), [quote, p.company, issuer, picked.length]);
+
+  const toggle = (id: string) => setPicked((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  return (
+    <section className="card p-4 lg:col-span-2">
+      <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+        <FileText size={15} className="text-bronze-400" /> Devis à la carte
+      </h2>
+      <p className="mt-0.5 text-[11px] text-paper-faint">
+        Coche ce qu&apos;il prend. Les prix viennent du catalogue — jamais recopiés à la main.
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {BRICKS.map((b) => (
+          <button
+            key={b.id}
+            onClick={() => toggle(b.id)}
+            title={b.what}
+            className={cn(
+              "chip transition-colors",
+              picked.includes(b.id)
+                ? "border-gold bg-gold font-semibold text-goldink"
+                : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
+            )}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+
+      {picked.length > 0 && (
+        <>
+          <div className="mt-3 flex flex-wrap gap-4 font-mono text-sm">
+            <span className="text-paper">{eur(quote.setupHT)} HT d&apos;installation</span>
+            <span className="text-bronze-400">{eur(quote.monthlyHT)} HT/mois</span>
+            <span className="text-paper-faint">1re année : {eur(quote.firstYearHT)} HT</span>
+          </div>
+          <p className="mt-2 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper">
+            {quote.recommendation}
+          </p>
+          <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-ink-600 bg-ink-850 p-3 text-[12px] text-paper">
+            {text}
+          </pre>
+          <button
+            className="btn-ghost mt-2 px-3 py-1.5 text-[12px]"
+            onClick={() => {
+              navigator.clipboard.writeText(text);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+          >
+            {copied ? "Copié ✓" : "Copier le devis"}
+          </button>
+          {/* Le rituel de closing dépend du compte : se tromper de rituel perd
+              le deal au dernier mètre. Il est rappelé dans le panneau maître. */}
+          <p className="mt-2 text-[11px] text-paper-faint">
+            Vérifie le rituel de closing du compte avant d&apos;envoyer — devis EAGLEYE, proposition ScintIA depuis le panel, ou RDV de cadrage Nuwacom.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
 function CommercialTab({
   p,
   patch,
@@ -966,6 +1051,8 @@ function CommercialTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <QuoteBuilder p={p} />
+
       {/* Payments */}
       <section className="card p-4">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">

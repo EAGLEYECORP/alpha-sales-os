@@ -278,10 +278,17 @@ const eur = (n: number) => `${n.toLocaleString("fr-FR")} € HT`;
  * Le devis rédigé, prêt à envoyer. Volontairement court : un devis long se
  * lit en diagonale, un devis d'une page se signe.
  */
-export function quoteText(q: BrickQuote, client: string, opts: { validityDays?: number } = {}): string {
+export function quoteText(
+  q: BrickQuote,
+  client: string,
+  // L'émetteur n'est pas toujours EAGLEYE : un revendeur white-label envoie SON
+  // devis, avec SON contact. Le figer ici, c'est envoyer nos coordonnées à
+  // travers son deal.
+  opts: { validityDays?: number; issuer?: string } = {}
+): string {
   const lines: string[] = [
     `DEVIS — ${client}`,
-    `EAGLEYE CORP · Lyon · contact@eagleyecorp.fr`,
+    opts.issuer?.trim() || "EAGLEYE CORP · Lyon · contact@eagleyecorp.fr",
     `Date : ${new Date().toLocaleDateString("fr-FR")} · Validité : ${opts.validityDays ?? 15} jours`,
     "",
     "PRESTATIONS",

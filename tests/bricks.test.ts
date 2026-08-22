@@ -118,3 +118,15 @@ test("sortant — un volume partiel est facturé au millier entamé", () => {
 test("sortant — la brique Alpha Voice démarre au palier d'entrée", () => {
   assert.equal(getBrick("alpha-voice")!.monthlyHT, OUTBOUND_UNIT_HT);
 });
+
+test("devis — l'émetteur vient du compte, jamais figé sur le maître", () => {
+  // Un revendeur white-label qui envoie SON devis avec NOS coordonnées dessus,
+  // c'est son deal qui nous revient — et sa crédibilité qui tombe.
+  const q = quoteBricks(["alpha-voice"]);
+  const revendeur = quoteText(q, "Client X", { issuer: "ScintIA · Lyon · z.tazi@scintia.ai" });
+  assert.ok(revendeur.includes("ScintIA · Lyon · z.tazi@scintia.ai"));
+  assert.ok(!revendeur.includes("EAGLEYE"), "aucune coordonnée du compte maître ne doit fuiter");
+
+  // Sans émetteur, l'en-tête par défaut reste celui du compte maître.
+  assert.ok(quoteText(q, "Client X").includes("EAGLEYE CORP"));
+});
