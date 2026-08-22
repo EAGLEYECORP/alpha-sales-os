@@ -171,6 +171,7 @@ async function stripePost(path: string, body: string): Promise<Record<string, un
   const key = stripeSecret();
   if (!key) throw new Error("STRIPE_SECRET_KEY manquant");
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
+    signal: AbortSignal.timeout(20_000),
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,

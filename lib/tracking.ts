@@ -293,6 +293,9 @@ async function forwardWebhook(type: "open" | "click", rec: TrackingRecord): Prom
   if (!url) return;
   try {
     await fetch(url, {
+      // Un webhook de tracking ne doit jamais retarder la réponse au client
+      // mail : le pixel doit revenir tout de suite, quoi qu'il arrive en face.
+      signal: AbortSignal.timeout(5_000),
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({

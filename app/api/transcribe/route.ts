@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     if (p === "deepgram") {
       const url = "https://api.deepgram.com/v1/listen?model=nova-2&language=fr&punctuate=true&smart_format=true";
       const res = await fetch(url, {
+        signal: AbortSignal.timeout(60_000),
         method: "POST",
         headers: { Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`, "Content-Type": contentType },
         body: audio,
@@ -78,6 +79,9 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.WHISPER_API_KEY}` },
       body: form,
+      // Un débrief de terrain peut faire plusieurs minutes d'audio : la borne
+      // est large, mais elle existe.
+      signal: AbortSignal.timeout(120_000),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

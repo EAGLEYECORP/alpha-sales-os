@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
     try {
       const url = process.env.TEXTBELT_URL ?? "https://textbelt.com/text";
       const res = await fetch(url, {
+        signal: AbortSignal.timeout(20_000),
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: process.env.ALERT_PHONE, message: digest.sms, key: process.env.TEXTBELT_KEY }),

@@ -62,3 +62,19 @@ test("jwt — chaîne malformée → refusé, ne jette pas", async () => {
   assert.equal(await verifySupabaseJwt("", SECRET), null);
   assert.equal(await verifySupabaseJwt("a.b", SECRET), null);
 });
+
+test("jwt — un jeton SANS expiration est refusé", async () => {
+  // La signature couvre la charge utile : seul l'émetteur légitime peut
+  // produire un jeton sans `exp`. Mais un jeton sans expiration est une clé
+  // permanente — le jour où ce secret sert aussi ailleurs, elle ne se révoque
+  // plus. On exige l'expiration au lieu de la vérifier « si elle est là ».
+  const sansExp = mintJwt({ sub: "user-A", email: "a@exemple.fr" });
+  assert.equal(await verifySupabaseJwt(sansExp, SECRET), null);
+
+  // Une expiration non numérique ne passe pas non plus.
+  const expTexte = mintJwt({ sub: "user-A", exp: "9999999999" });
+  assert.equal(await verifySupabaseJwt(expTexte, SECRET), null);
+
+  // Et le cas normal reste accepté.
+  assert.ok(await verifySupabaseJwt(mintJwt({ sub: "user-A", exp: future() }), SECRET));
+});

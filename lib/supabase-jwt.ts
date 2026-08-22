@@ -64,8 +64,15 @@ export async function verifySupabaseJwt(token: string, secret: string): Promise<
     if (!valid) return null;
 
     // Charge utile + expiration (60 s de marge d'horloge).
+    //
+    // L'expiration est EXIGÉE, pas seulement vérifiée si elle est là. Un jeton
+    // sans `exp` valait auparavant pour toujours. La signature couvre bien la
+    // charge utile, donc seul l'émetteur légitime peut en produire un — mais
+    // le jour où ce secret sert aussi à un autre outil, un jeton sans
+    // expiration devient une clé permanente. Fail-closed.
     const payload = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payloadB64))) as JwtPayload;
-    if (typeof payload.exp === "number" && Date.now() / 1000 > payload.exp + 60) return null;
+    if (typeof payload.exp !== "number") return null;
+    if (Date.now() / 1000 > payload.exp + 60) return null;
 
     return payload;
   } catch {

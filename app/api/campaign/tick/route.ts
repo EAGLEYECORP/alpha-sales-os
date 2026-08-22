@@ -139,7 +139,12 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      // Borné : l'autopilote tourne sur un cron. Un appel qui pend consomme
+      // tout le budget de la fonction, le cron repart, et on ne sait pas si
+      // l'appel précédent est parti ou non — c'est le pire état possible pour
+      // une route qui compose des numéros.
       const res = await fetch(`${base}/api/voice/call`, {
+        signal: AbortSignal.timeout(20_000),
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

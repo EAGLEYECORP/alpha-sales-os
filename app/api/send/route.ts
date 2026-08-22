@@ -238,6 +238,7 @@ export async function POST(request: NextRequest) {
     }
     try {
       const res = await fetch(url, {
+        signal: AbortSignal.timeout(30_000),
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: body.to, message: body.body, key }),
