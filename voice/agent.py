@@ -325,6 +325,22 @@ class SessionReporter:
         self.meta = meta
         self.enabled = bool(self.url)
 
+        # Deux pièges opérationnels qui coûtent tout l'historique de
+        # conversation, sans jamais faire échouer un appel — donc invisibles
+        # si on ne les dit pas ICI, au démarrage.
+        if self.enabled and not self.secret:
+            logger.error(
+                "ALPHA_SESSION_URL est configurée mais VOICE_WEBHOOK_SECRET est VIDE. "
+                "En production, /api/voice/session refuse tout appel non signé : les "
+                "transcriptions seront perdues en silence (l'appel, lui, se déroulera "
+                "normalement). Renseigne le même secret des deux côtés."
+            )
+        if self.enabled and self.url.startswith("http://") and "localhost" not in self.url and "127.0.0.1" not in self.url:
+            logger.error(
+                "ALPHA_SESSION_URL est en http:// vers un hôte distant : le secret et "
+                "les transcriptions d'appels circuleraient en clair. Passe en https://."
+            )
+
     async def _post(self, payload: dict) -> None:
         if not self.enabled:
             return
