@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BRICKS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "@/lib/bricks";
+import { HeroVideo } from "@/components/vitrine/hero-video";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -85,6 +86,13 @@ export default function VitrinePage() {
               Voir les tarifs
             </a>
           </div>
+
+          {/* La vidéo est le SEUL objet sombre de la page : sur un fond crème,
+              le contraste fait le cadrage tout seul, sans décoration. */}
+          <HeroVideo
+            line="10 secondes — ce que l'OS fait pendant que vous êtes ailleurs."
+            muted="Lecture automatique désactivée (mouvement réduit). Le film dure 10 secondes."
+          />
         </section>
 
         <Rule />
