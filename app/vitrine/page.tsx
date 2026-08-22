@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BRICKS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "@/lib/bricks";
+import { useState } from "react";
+import { PACK_MONTHLY_HT, publicBricks, PALIERS_PUBLICS, OUTBOUND_UNIT_HT, OUTBOUND_UNIT_CALLS } from "@/lib/bricks";
 import { HeroVideo } from "@/components/vitrine/hero-video";
 import { MissionSection } from "@/components/vitrine/mission-section";
 
@@ -33,8 +33,11 @@ const MUTED = "#6B6862";
 const LINE = "#DEDAD1";
 
 export default function VitrinePage() {
+  // On ne calcule PLUS de total public : le chiffrage se fait au cadrage.
+  // Voir `publicBricks()` dans lib/bricks.ts — l'ancrage par l'addition ne
+  // fonctionne que dans une conversation, pas sur une page où le prospect
+  // optimise seul.
   const [picked, setPicked] = useState<string[]>([]);
-  const quote = useMemo(() => quoteBricks(picked), [picked]);
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
@@ -186,87 +189,72 @@ export default function VitrinePage() {
         <section id="tarifs" className="py-20">
           <SectionLabel>Tarifs</SectionLabel>
           <h2 className="mt-4 font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
-            Deux façons de travailler ensemble
+            Un prix, annoncé après vous avoir écouté
           </h2>
+          <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
+            On ne vend pas un abonnement sorti d&apos;un catalogue. Le périmètre se décide au cadrage,
+            et le chiffre tombe ensuite — c&apos;est la seule façon d&apos;annoncer un montant qu&apos;on
+            tiendra.
+          </p>
 
           <div className="mt-12 grid gap-10 sm:grid-cols-2">
-            <div className="rounded-2xl p-8" style={{ background: "#FFFFFF", border: `1px solid ${LINE}` }}>
-              <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>Pack complet</p>
+            <div className="rounded-2xl p-8" style={{ background: "#FFFFFF", border: `1px solid ${ACCENT}` }}>
+              <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>L&apos;installation complète</p>
               <p className="mt-4 font-serif text-[46px] leading-none tracking-[-0.02em]">
                 10 000 <span className="text-[22px]" style={{ color: MUTED }}>€ HT</span>
               </p>
               <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
-                d&apos;installation, puis {PACK_MONTHLY_HT.toLocaleString("fr-FR")} € HT/mois
+                puis {PACK_MONTHLY_HT.toLocaleString("fr-FR")} € HT/mois
               </p>
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-                Toutes les briques. Installées, paramétrées, vos équipes formées. C&apos;est
-                l&apos;offre qui va le plus loin, et la seule où l&apos;on prend tout en charge.
+                Tout est posé, paramétré sur votre métier, vos équipes formées. C&apos;est l&apos;offre où
+                l&apos;on prend tout en charge — et celle qui va le plus loin.
               </p>
             </div>
 
             <div className="rounded-2xl p-8" style={{ border: `1px solid ${LINE}` }}>
-              <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>En partenariat</p>
+              <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>À la carte</p>
               <p className="mt-4 font-serif text-[46px] leading-none tracking-[-0.02em]">
-                30 <span className="text-[22px]" style={{ color: MUTED }}>%</span>
+                Sur mesure
               </p>
               <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
-                + les frais d&apos;installation, sur devis
+                chiffré au cadrage
               </p>
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-                On se rémunère sur ce que la machine vous rapporte. Installation locale ou cloud,
-                chiffrée après le cadrage — jamais un forfait sorti d&apos;un catalogue.
+                Vous n&apos;avez besoin que d&apos;une partie ? On installe cette partie-là, et rien
+                d&apos;autre. Beaucoup commencent comme ça.
               </p>
             </div>
           </div>
 
-          {/* Alpha Voice sortant — au volume */}
+          {/* Alpha Voice sortant — l'entrée seulement, les paliers se disent au cadrage */}
           <div className="mt-16">
             <h3 className="font-serif text-[26px] tracking-[-0.01em]">
-              Alpha Voice sortant — au volume, sans engagement
+              Alpha Voice — au volume d&apos;appels, sans engagement
             </h3>
             <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-              Vous payez les appels passés, pas une licence. On commence petit, on prouve que ça
-              convertit, et on monte seulement après.
+              Vous payez les appels passés, pas une licence. On commence à{" "}
+              <strong style={{ color: INK }}>{OUTBOUND_UNIT_HT} € HT/mois pour {OUTBOUND_UNIT_CALLS.toLocaleString("fr-FR")} appels</strong>,
+              et on ne monte qu&apos;une fois que ça convertit.
             </p>
-            <div className="mt-8 grid gap-px overflow-hidden rounded-xl sm:grid-cols-4" style={{ background: LINE }}>
-              {OUTBOUND_TIERS.map((t) => {
-                const deal = t.perThousandHT < OUTBOUND_UNIT_HT;
-                return (
-                  <div key={t.calls} className="p-6" style={{ background: deal ? "#FFFFFF" : CREAM }}>
-                    <p className="text-[14px]" style={{ color: MUTED }}>
-                      {t.calls.toLocaleString("fr-FR")} appels
-                    </p>
-                    <p className="mt-2 font-serif text-[30px] leading-none tracking-[-0.02em]">
-                      {t.monthlyHT.toLocaleString("fr-FR")} €
-                    </p>
-                    <p className="mt-1 text-[13px]" style={{ color: MUTED }}>HT / mois</p>
-                    {deal && (
-                      <p className="mt-3 text-[13px] font-medium" style={{ color: ACCENT }}>
-                        le 4ᵉ millier offert
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="mt-6 max-w-2xl text-[16px] leading-[1.65]" style={{ color: MUTED }}>
+            <p className="mt-4 max-w-2xl text-[16px] leading-[1.65]" style={{ color: MUTED }}>
               <strong style={{ color: INK }}>Le volume n&apos;a de valeur qu&apos;après le réglage.</strong>{" "}
-              Tant que le ciblage et la conversation ne sont pas optimisés, multiplier les appels ne
-              fait que brûler votre fichier plus vite. C&apos;est pour ça qu&apos;on ouvre le palier
-              4 000 une fois que ça convertit — et pas avant.
+              Tant que le ciblage et la conversation ne sont pas au point, multiplier les appels ne fait
+              que brûler votre fichier plus vite. Les paliers supérieurs existent — on les ouvre quand
+              les chiffres le justifient, pas avant.
             </p>
           </div>
 
-          {/* À la carte */}
+          {/* Les capacités — ce que ça FAIT, pas la grille tarifaire */}
           <div className="mt-16">
-            <h3 className="font-serif text-[26px] tracking-[-0.01em]">Ou seulement ce dont vous avez besoin</h3>
+            <h3 className="font-serif text-[26px] tracking-[-0.01em]">Ce qu&apos;on peut installer</h3>
             <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-              Chaque brique se prend seule. Cochez ce qui vous parle — l&apos;addition se fait toute
-              seule.
+              Chaque capacité se prend seule ou avec les autres. Cochez ce qui vous parle : on part de là
+              au cadrage, et le chiffre suit.
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {BRICKS.map((b) => {
+              {publicBricks().map((b) => {
                 const on = picked.includes(b.id);
                 return (
                   <button
@@ -280,28 +268,35 @@ export default function VitrinePage() {
                   >
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="text-[15px] font-semibold">{b.label}</span>
-                      <span className="shrink-0 text-[14px]" style={{ color: on ? ACCENT : MUTED }}>
-                        {b.setupHT.toLocaleString("fr-FR")} €
+                      <span className="shrink-0 text-[12px] uppercase tracking-[0.1em]" style={{ color: on ? ACCENT : MUTED }}>
+                        {PALIERS_PUBLICS[b.palier].label}
                       </span>
                     </div>
                     <p className="mt-2 text-[14px] leading-[1.55]" style={{ color: MUTED }}>{b.what}</p>
-                    <p className="mt-2 text-[13px]" style={{ color: MUTED }}>
-                      puis {b.monthlyHT} € HT/mois
-                    </p>
                   </button>
                 );
               })}
             </div>
 
             {picked.length > 0 && (
-              <div className="mt-8 rounded-xl p-6" style={{ background: "#FFFFFF", border: `1px solid ${LINE}` }}>
-                <p className="font-serif text-[26px] tracking-[-0.01em]">
-                  {quote.setupHT.toLocaleString("fr-FR")} € HT
-                  <span className="text-[16px] font-sans" style={{ color: MUTED }}>
-                    {" "}d&apos;installation, puis {quote.monthlyHT.toLocaleString("fr-FR")} € HT/mois
-                  </span>
+              <div className="mt-8 rounded-xl p-6" style={{ background: "#FFFFFF", border: `1px solid ${ACCENT}` }}>
+                <p className="font-serif text-[24px] leading-[1.25] tracking-[-0.01em]">
+                  {picked.length === 1
+                    ? "Une capacité — on peut commencer par là."
+                    : `${picked.length} capacités — c'est un périmètre qui se tient.`}
                 </p>
-                <p className="mt-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>{quote.recommendation}</p>
+                <p className="mt-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+                  {picked.length >= 4
+                    ? "À ce niveau, l'installation complète revient presque toujours moins cher que la somme des parties. On vous le dira au cadrage, chiffres à l'appui — y compris si c'est en votre faveur de prendre moins."
+                    : "Le chiffrage se fait après vingt minutes d'échange : on regarde votre cas, et on annonce un montant qu'on tient."}
+                </p>
+                <a
+                  href="#cadrage"
+                  className="mt-5 inline-block rounded-full px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+                  style={{ background: INK }}
+                >
+                  Chiffrer ce périmètre
+                </a>
               </div>
             )}
           </div>

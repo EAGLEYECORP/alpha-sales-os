@@ -4,18 +4,23 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * LA MISSION, EN PUBLIC — 0 → 10 M€, et où on en est vraiment.
+ * LA MISSION, EN PUBLIC — 0 → 10 M€.
  *
- * Zakaria a demandé que ça mette la pression. La seule façon honnête de
- * le faire : afficher l'écart entre l'ambition et le réel, sans le
- * maquiller. Un tableau de bord public qui montrerait une belle courbe
- * ne mettrait aucune pression — il rassurerait, ce qui est l'inverse.
+ * ⚠ CETTE PAGE VEND. Le tableau de bord qui met la pression est dans
+ * l'app (`/trajectoire`) : c'est là qu'on affiche l'écart réel, le
+ * compte à rebours et les lots en retard. Ici, on montre le CAP.
  *
- * Donc : les paliers sont affichés, l'avancement RÉEL aussi, et le fait
- * qu'on soit au tout début est écrit noir sur blanc. C'est aussi le
- * meilleur argument commercial disponible — un fournisseur qui affiche
- * ses chiffres quand ils sont petits est un fournisseur qu'on croit
- * quand ils seront grands.
+ * La distinction n'est pas cosmétique. La version précédente écrivait
+ * « on n'a pas encore prouvé qu'on convertit » et « si vous cherchez une
+ * référence de 500 clients, ce n'est pas nous ». C'est vrai, et ça n'a
+ * rien à faire sur une page dont le seul travail est d'obtenir un
+ * cadrage : on ne demande pas à un prospect d'assumer nos doutes.
+ *
+ * La règle tenue ici : ON NE MENT PAS, ON NE SE SABORDE PAS. Aucune
+ * référence inventée, aucun chiffre client qu'on n'a pas — et aucune
+ * confession spontanée non plus. Ce qui est dit est vrai et vérifiable :
+ * l'ambition, la souveraineté technique, et le fait qu'on choisisse nos
+ * clients plutôt que l'inverse.
  *
  * ── L'ANIMATION ──
  *
@@ -86,15 +91,16 @@ export function MissionSection() {
   return (
     <section ref={ref} id="mission" className="py-20">
       <p className="mb-6 text-[13px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
-        Notre mission — en public
+        Notre mission
       </p>
       <h2 className="max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
-        De 0 à 10 M€, et on affiche où on en est.
+        Une machine de vente française, de 0 à 10 M€.
       </h2>
       <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-        On candidate à French Tech 2030 sur un angle simple : l&apos;automatisation commerciale des PME
-        françaises ne devrait pas dépendre d&apos;acteurs américains. Alpha Sales OS n&apos;a aucune dépendance
-        externe, ses données peuvent rester en France, et sa brique vocale s&apos;auto-héberge.
+        Un angle simple : l&apos;automatisation commerciale des PME françaises ne devrait pas dépendre
+        d&apos;acteurs américains. Vos données peuvent rester en France, et la brique vocale
+        s&apos;héberge chez vous si vous le voulez. C&apos;est aussi ce qui nous vaut de candidater à
+        French Tech 2030.
       </p>
 
       {/* La barre : l'échelle est logarithmique, et c'est dit. */}
@@ -140,21 +146,28 @@ export function MissionSection() {
         </p>
       </div>
 
-      {/* L'écart, dit franchement. C'est ce qui met la pression — et c'est
-          aussi ce qui rend le reste croyable. */}
-      <div className="mt-12 rounded-2xl border p-6" style={{ borderColor: LINE, background: "#fff" }}>
+      {/* Ce qui est VRAI et qui fait signer : on choisit nos clients. C'est le
+          même fait que « on n'en a pas des centaines », dit du bon côté — et
+          c'est littéralement vrai : le cadrage est obligatoire et on refuse. */}
+      <div className="mt-12 rounded-2xl border p-6" style={{ borderColor: ACCENT, background: "#fff" }}>
         <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>
-          Où on en est, sans maquillage
+          Ce que ça veut dire pour vous
         </p>
         <p className="mt-3 text-[17px] leading-[1.6]" style={{ color: INK }}>
-          Premier palier. L&apos;OS est construit et testé ; il n&apos;a pas encore prouvé qu&apos;il convertit à
-          grande échelle.
+          On installe peu de clients à la fois, et on les choisit.
         </p>
         <p className="mt-3 text-[15px] leading-[1.65]" style={{ color: MUTED }}>
-          On préfère l&apos;écrire ici que de le laisser découvrir. Un fournisseur qui affiche ses chiffres
-          quand ils sont petits est un fournisseur qu&apos;on croit quand ils seront grands — et si vous
-          cherchez une référence de 500 clients, ce n&apos;est pas nous, aujourd&apos;hui.
+          Concrètement : le cadrage est obligatoire, on dit non quand ça ne matche pas, et celui qui
+          installe chez vous est celui qui a construit l&apos;outil. Ce n&apos;est pas tenable à mille
+          clients — c&apos;est exactement pour ça que ça vaut le coup d&apos;en être maintenant.
         </p>
+        <a
+          href="#cadrage"
+          className="mt-5 inline-block rounded-full px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+          style={{ background: INK }}
+        >
+          Demander un cadrage
+        </a>
       </div>
     </section>
   );

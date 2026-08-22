@@ -86,7 +86,7 @@ export const SEGMENTS: Segment[] = [
       "Le manager découvre qu'un deal est mort une semaine après",
       "Les leads coûtent cher et une partie n'est jamais rappelée",
     ],
-    entryBricks: ["closer", "crm"],
+    entryBricks: ["alpha-live", "crm"],
     offer: "alpha-sales-os",
     triggers: [
       "Recrutement de commerciaux en cours (annonces en ligne)",

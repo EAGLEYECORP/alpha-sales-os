@@ -39,8 +39,10 @@ test("segments — une brique renvoie les segments qu'elle sert", () => {
   assert.ok(voice.includes("centre-appels"));
   assert.ok(voice.includes("commerce-local"));
 
-  const closer = segmentsForBrick("closer").map((s) => s.id);
-  assert.ok(closer.includes("equipe-terrain"), "Alpha Live sert d'abord les équipes terrain");
+  // Alpha Live est la brique d'ENTRÉE des équipes terrain : c'est elle qu'ils
+  // achètent, parce qu'elle agit pendant le rendez-vous.
+  const live = segmentsForBrick("alpha-live").map((s) => s.id);
+  assert.ok(live.includes("equipe-terrain"), "Alpha Live sert d'abord les équipes terrain");
 });
 
 test("segments — un compte mono-offre ne voit que ses segments", () => {

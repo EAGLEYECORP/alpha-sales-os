@@ -179,12 +179,29 @@ export const BRICKS: Brick[] = [
     unlocks: ["/tracking", "/deliverability"],
   },
   {
+    id: "alpha-live",
+    label: "Alpha Live",
+    what:
+      "Le souffleur en direct PENDANT le rendez-vous : il écoute, reconnaît l'objection au moment où elle sort, " +
+      "et affiche la réponse et la preuve sur ton écran — sans que l'interlocuteur voie quoi que ce soit.",
+    setupHT: 1800,
+    monthlyHT: 180,
+    why:
+      "C'est la seule brique qui agit PENDANT la vente, pas avant ni après. Une objection mal traitée coûte le deal " +
+      "entier, et personne ne s'en souvient assez précisément le soir pour la corriger. Là, la réponse arrive dans la " +
+      "seconde — et un commercial junior tient une conversation de senior dès sa première semaine.",
+    unlocks: ["/closer", "/overlay"],
+    passThrough: "Minutes de transcription facturées au réel pendant les rendez-vous écoutés.",
+  },
+  {
     id: "closer",
-    label: "Closer OS & Alpha Live",
-    what: "L'assistance en direct pendant le rendez-vous : objections, angles, preuves, au moment où tu en as besoin.",
+    label: "Closer OS & débrief",
+    what: "La préparation avant le rendez-vous et le débrief après : tournée, objectif d'étape, ce qui a marché, ce qui a coûté.",
     setupHT: 1500,
     monthlyHT: 140,
-    why: "Le closing se joue sur trois phrases. Les avoir sous les yeux au bon moment vaut plus qu'une formation.",
+    why:
+      "Le closing se joue sur trois phrases. Les préparer avant et les corriger après est ce qui les rend " +
+      "reproductibles — sinon chaque rendez-vous repart de l'intuition du jour.",
     unlocks: ["/closer", "/debrief"],
   },
   {
@@ -341,4 +358,54 @@ export function quoteText(
     "Bon pour accord — date, nom, signature :"
   );
   return lines.join("\n");
+}
+
+// ── CE QUI EST PUBLIC, ET CE QUI NE L'EST PAS ──────────────────────────
+
+/**
+ * La vue PUBLIQUE d'une brique.
+ *
+ * La page de vente ne montre pas la grille de prix détaillée, et ce n'est pas
+ * de la coquetterie. Trois raisons, dans l'ordre d'importance :
+ *
+ *  1. L'ANCRAGE NE FONCTIONNE QUE DANS UNE CONVERSATION. Le mécanisme est
+ *     « il en veut trois, l'addition dépasse le pack, le pack devient
+ *     évident ». Sur une page, le prospect fait l'addition SEUL, choisit la
+ *     brique la moins chère, et l'ancrage joue contre nous.
+ *  2. Le détail du découpage est la carte du produit. Un concurrent qui la
+ *     lit sait exactement quoi construire, et à quel prix se placer.
+ *  3. Un prix affiché hors contexte se compare à un abonnement SaaS à 49 €.
+ *     Le cadrage existe précisément pour que la comparaison ne se fasse pas
+ *     là-dessus.
+ *
+ * Ce qu'on montre : ce que la brique FAIT, et un ordre de grandeur. Ce qu'on
+ * garde : le prix exact de chaque ligne, qui se dit après le cadrage.
+ *
+ * ⚠ Cette vue est DÉRIVÉE du catalogue. Une seconde liste tenue à la main
+ * finirait par annoncer publiquement un prix qui n'existe plus.
+ */
+export interface PublicBrick {
+  id: string;
+  label: string;
+  what: string;
+  /** Ordre de grandeur, jamais le montant exact. */
+  palier: "socle" | "moteur" | "cœur";
+}
+
+/** Les trois paliers, décrits une seule fois. */
+export const PALIERS_PUBLICS: Record<PublicBrick["palier"], { label: string; apartirDe: string }> = {
+  socle: { label: "Socle", apartirDe: "à partir de 1 200 € d'installation" },
+  moteur: { label: "Moteur", apartirDe: "à partir de 1 800 € d'installation" },
+  "cœur": { label: "Cœur", apartirDe: "à partir de 2 500 € d'installation" },
+};
+
+/** Le catalogue vu de l'extérieur — sans les montants ligne à ligne. */
+export function publicBricks(): PublicBrick[] {
+  return BRICKS.map((b) => ({
+    id: b.id,
+    label: b.label,
+    what: b.what,
+    // Le palier se DÉDUIT du prix réel : impossible qu'il dérive du catalogue.
+    palier: b.setupHT >= 2500 ? "cœur" : b.setupHT >= 1800 ? "moteur" : "socle",
+  }));
 }

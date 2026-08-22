@@ -161,7 +161,7 @@ alpha-sales-os/
 
 ### Les briques vendables
 
-Chaque brique se vend seule (`lib/bricks.ts`) ; l'addition des neuf dépasse
+Chaque brique se vend seule (`lib/bricks.ts`) ; l'addition des dix dépasse
 largement le pack — c'est l'ancrage.
 
 | Brique | Installation | Mensuel |
@@ -173,7 +173,8 @@ largement le pack — c'est l'ancrage.
 | **CRM & Pipeline** | 2 000 € | 190 € |
 | **Audits automatisés** | 1 800 € | 150 € |
 | **Tracking & délivrabilité** | 1 500 € | 140 € |
-| **Closer OS & Alpha Live** | 1 500 € | 140 € |
+| **Alpha Live** — le souffleur pendant le rendez-vous | 1 800 € | 180 € |
+| **Closer OS & débrief** | 1 500 € | 140 € |
 | **Salle de contrôle & KPIs** | 1 200 € | 120 € |
 | **PACK COMPLET** | **10 000 €** | **1 000 €** |
 
@@ -183,6 +184,13 @@ tout chiffrage. Alpha Voice sortant se paie au volume, sans engagement :
 du modèle utilisés par l'Agent ALPHA sont refacturés au réel, comptés et
 plafonnés par route (`lib/token-budget.ts`) — on ne cache pas un coût variable
 dans un forfait.
+
+⚠ **Cette grille est INTERNE.** La page publique montre ce que chaque capacité
+fait et un ordre de grandeur, jamais le prix ligne à ligne : l'ancrage par
+l'addition ne fonctionne que dans une conversation — sur une page, le prospect
+fait l'addition seul et choisit la brique la moins chère. `publicBricks()`
+dérive la vue publique du catalogue pour que les deux ne divergent jamais, et
+`tests/vitrine-fuite.test.ts` verrouille ce qui ne doit pas sortir.
 
 ### Mettre un client en route
 
