@@ -123,7 +123,7 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 
 ## Structure du projet
 
-`90 modules · 40 pages · 33 routes API · 51 composants · 446 tests`
+`95 modules · 39 pages · 34 routes API · 55 composants · 469 tests`
 
 ```
 alpha-sales-os/
@@ -146,13 +146,13 @@ alpha-sales-os/
 │   ├── segments · icp           # ⭐ À qui on vend, et pourquoi
 │   ├── deep-dive · import-triage# Audit à l'import, verdict d'un lot
 │   ├── vital-signs · master-rappel · checkpoints
-│   ├── argumentaire · lead-magnet
+│   ├── argumentaire · lead-magnet · templates · playbook
 │   ├── call-cadence · campaign-runner · campaign-tick · call-outcome
 │   ├── call-log · file-extract  # Transcriptions ; PDF/DOCX sans dépendance
 │   ├── bricks · pricing · voice-costs · paliers · opportunites
 │   └── knowledge · store · types
 ├── voice/                       # Agent Python (LiveKit) + guides SIP
-├── tests/                       # 43 fichiers, 446 tests (node:test)
+├── tests/                       # 51 fichiers, 469 tests (node:test)
 └── docs/                        # Déploiement, API v1, autopilote, roadmap
 ```
 

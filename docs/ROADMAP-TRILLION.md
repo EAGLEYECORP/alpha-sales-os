@@ -2,7 +2,7 @@
 
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, sécurité) ;
 > ce fichier porte le PLAN et l'AVANCEMENT RÉEL.
-> Dernière révision : 2026-08-22 · 446 tests verts · `tsc` clean · `next build` OK.
+> Dernière révision : 2026-08-22 · 469 tests verts · `tsc` clean · `next build` OK.
 
 ## Le but, dit franchement
 Zakaria a besoin de **ventes encaissées**, pas de features. Tout ce qui suit est
@@ -65,6 +65,12 @@ classé par « ça rapproche d'un virement bancaire ».
 - [x] **Trajectoire** (`/trajectoire`) — paliers 0→10 M, barre du jour,
       opportunités (French Tech).
 - [x] **API v1** (`/api/v1/prospects`) — ingestion pour n8n et CRM tiers.
+- [x] **Devis à la carte depuis la fiche** — briques cochées, montants tirés du
+      catalogue, ancrage sur le pack calculé, émetteur white-label.
+- [x] **Coût usine visible** (`/voice`) — marge en € et en %, coût d'un appel,
+      limites du gratuit avec les deux verrous de licence.
+- [x] **Scripts des deux nouveaux marchés** (`lib/playbook.ts`) — équipes
+      commerciales terrain et centres d'appels, ouverture → objections.
 
 ---
 
@@ -97,14 +103,14 @@ classé par « ça rapproche d'un virement bancaire ».
 
 ## Limites — à redire, parce qu'elles ne bougent pas
 1. **Rien n'a été testé en conditions réelles.** Le proxy de la sandbox bloque
-   Telnyx, LiveKit, Vercel et Supabase. Les 446 tests prouvent que la logique
+   Telnyx, LiveKit, Vercel et Supabase. Les 469 tests prouvent que la logique
    est cohérente ; ils ne prouvent pas qu'un appel part.
 2. **Aucune automatisation ne closera à ta place.** L'OS source, qualifie,
    appelle, relance et prépare. La signature reste humaine.
 3. **Juillet 2026 : 78 prospects, 132 appels, 18 audits, 0 vente.** Le goulot
    n'était pas l'outillage. L'OS rend plus rapide un processus qui n'a pas
    encore prouvé qu'il convertit — c'est une hypothèse, pas un acquis.
-4. **90 modules pour un opérateur solo.** Ce qui n'est pas utilisé devient de
+4. **95 modules pour un opérateur solo.** Ce qui n'est pas utilisé devient de
    la dette. Mieux vaut trois écrans maîtrisés que quarante survolés.
 
 ## L'ordre qui rapporte
