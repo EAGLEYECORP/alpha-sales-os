@@ -2,7 +2,7 @@
 
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, sécurité) ;
 > ce fichier porte le PLAN et l'AVANCEMENT RÉEL.
-> Dernière révision : 2026-08-22 · 469 tests verts · `tsc` clean · `next build` OK.
+> Dernière révision : 2026-08-22 · 503 tests verts · `tsc` clean · `next build` OK.
 
 ## Le but, dit franchement
 Zakaria a besoin de **ventes encaissées**, pas de features. Tout ce qui suit est
@@ -96,14 +96,29 @@ classé par « ça rapproche d'un virement bancaire ».
       rappels ne partent que pendant que l'app est ouverte, et c'est dit à
       l'écran.
 - [ ] **Vidéo de lancement** — prompts écrits, génération non lancée.
-- [ ] Tests sur les ~35 modules d'affichage et d'intégration (les modules
-      métier et le store sont couverts).
+- [ ] Tests sur les modules d'affichage (les modules métier, le store, la
+      structure de navigation et la frontière de conformité vocale sont
+      couverts).
+
+### La tenue (revue de sécurité + UX, août 2026)
+- [x] **Injection de prompt** (`lib/untrusted.ts`) — tout texte tiers (PDF,
+      site aspiré, réponse entrante, transcription) encadré par une balise à
+      nonce, règles rappelées APRÈS les données.
+- [x] **Fuites fermées** — lecture des réponses prospects et journal d'appels
+      s'ouvraient sur un en-tête forgé (`Sec-Fetch-Site`, `Host`).
+- [x] **SSRF** — redirections revalidées à chaque saut (site aspiré + Sheets).
+- [x] **Force brute** — compteur par IP sur la porte, secrets comparés en
+      temps constant, expiration JWT exigée.
+- [x] **Perte de données silencieuse** (`lib/storage-health.ts`) — le quota
+      localStorage sature sans rien dire ; désormais mesuré et annoncé.
+- [x] **Navigation hiérarchisée** — 4 écrans de quotidien, le reste rangé par
+      moment du métier. Un test interdit qu'une page reste non liée.
 
 ---
 
 ## Limites — à redire, parce qu'elles ne bougent pas
 1. **Rien n'a été testé en conditions réelles.** Le proxy de la sandbox bloque
-   Telnyx, LiveKit, Vercel et Supabase. Les 469 tests prouvent que la logique
+   Telnyx, LiveKit, Vercel et Supabase. Les 503 tests prouvent que la logique
    est cohérente ; ils ne prouvent pas qu'un appel part.
 2. **Aucune automatisation ne closera à ta place.** L'OS source, qualifie,
    appelle, relance et prépare. La signature reste humaine.

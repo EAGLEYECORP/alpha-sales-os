@@ -123,7 +123,7 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 
 ## Structure du projet
 
-`95 modules · 39 pages · 34 routes API · 55 composants · 469 tests`
+`95 modules · 39 pages · 34 routes API · 55 composants · 503 tests`
 
 ```
 alpha-sales-os/
@@ -152,7 +152,7 @@ alpha-sales-os/
 │   ├── bricks · pricing · voice-costs · paliers · opportunites
 │   └── knowledge · store · types
 ├── voice/                       # Agent Python (LiveKit) + guides SIP
-├── tests/                       # 51 fichiers, 469 tests (node:test)
+├── tests/                       # 57 fichiers, 503 tests (node:test)
 └── docs/                        # Déploiement, API v1, autopilote, roadmap
 ```
 
