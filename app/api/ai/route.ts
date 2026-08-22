@@ -3,6 +3,8 @@ import type { Prospect } from "@/lib/types";
 import { runAI } from "@/lib/ai-engine";
 import { playbookPrompt } from "@/lib/playbook";
 import { prescripteurPrompt } from "@/lib/prescripteurs";
+import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
+import { clipDoctrine } from "@/lib/identity";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -95,15 +97,29 @@ function buildPrompt(req: AiRequest): string {
     `- Affinité (il nous apprécie) : ${p.likeness}/100`,
     `- Obstacles ouverts : ${p.obstacles.filter((o) => !o.resolved).map((o) => o.label).join(" ; ") || "aucun"}`,
     `- Objections ouvertes : ${p.objections.filter((o) => o.status !== "traitee").map((o) => o.label).join(" ; ") || "aucune"}`,
-    `- Problèmes audités : ${p.problems.length ? p.problems.join(" ; ") : "audit non documenté"}`,
-    `- Solution conçue : ${p.solution || "—"}`,
-    `- Offre personnalisée : ${p.personalizedOffer || "—"}`,
     `- Contrat : ${p.contract.status} · Livraison : ${p.delivery}`,
-    `- Derniers contacts : ${p.events.slice(0, 3).map((e) => `[${e.kind}] ${e.summary}`).join(" | ") || "aucun"}`,
-    `- Notes : ${p.notes || "—"}`,
+    ``,
+    // Les champs LIBRES sont isolés du reste : notes importées d'un CSV,
+    // résumés d'appels transcrits, problèmes recopiés d'un audit reçu. Rien
+    // de tout ça n'est écrit par nous, et jusqu'ici c'était collé au même
+    // niveau que la doctrine — donc lisible comme une consigne.
+    `## Champs libres de la fiche`,
+    wrapUntrusted(
+      "fiche",
+      [
+        `Problèmes audités : ${p.problems.length ? p.problems.join(" ; ") : "audit non documenté"}`,
+        `Solution conçue : ${p.solution || "—"}`,
+        `Offre personnalisée : ${p.personalizedOffer || "—"}`,
+        `Derniers contacts : ${p.events.slice(0, 3).map((e) => `[${e.kind}] ${e.summary}`).join(" | ") || "aucun"}`,
+        `Notes : ${p.notes || "—"}`,
+      ].join("\n"),
+      { maxChars: 6_000 }
+    ),
     ``,
     `## Règles business de l'agence`,
-    req.businessRules,
+    clipDoctrine(req.businessRules ?? ""),
+    ``,
+    UNTRUSTED_RULES,
   ].join("\n");
 
   switch (req.task) {
@@ -118,7 +134,10 @@ function buildPrompt(req: AiRequest): string {
     case "next-action":
       return `${ctx}\n\n## Tâche\nRecommande LA prochaine meilleure action (une seule), avec le pourquoi doctrine et le timing exact.`;
     case "reply":
-      return `${ctx}\n\n## Message entrant du prospect\n« ${req.inboundMessage ?? ""} »\n\n## Tâche\nRédige LA réponse à envoyer (email ou WhatsApp selon le ton). Objectif unique : verrouiller un next step DATÉ (audit ou démo mobile). Court, chaleureux, zéro pitch produit, jamais de prix par écrit avant la démo. Termine par une question fermée à deux créneaux.`;
+      // Le message entrant est le texte le plus hostile que l'OS manipule :
+      // il arrive par webhook, écrit par quelqu'un d'extérieur, et la réponse
+      // générée part vraiment. Encadré, et la tâche est rappelée APRÈS lui.
+      return `${ctx}\n\n## Message entrant du prospect\n${wrapUntrusted("message-entrant", req.inboundMessage ?? "", { maxChars: 4_000 })}\n\n## Tâche\nRédige LA réponse à envoyer (email ou WhatsApp selon le ton). Objectif unique : verrouiller un next step DATÉ (audit ou démo mobile). Court, chaleureux, zéro pitch produit, jamais de prix par écrit avant la démo. Termine par une question fermée à deux créneaux.`;
   }
 }
 

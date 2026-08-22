@@ -34,3 +34,24 @@ test("site-fetch — safePublicUrl bloque loopback / IP privées / intranet (ant
     assert.equal(safePublicUrl(bad), null, `doit refuser : ${bad}`);
   }
 });
+
+test("site-fetch — anti-SSRF : les formes de contournement classiques sont bloquées", () => {
+  // Formes octales : « 0177.0.0.1 » vaut 127.0.0.1. L'analyseur d'URL les
+  // normalise avant nous — ce test verrouille ce comportement, parce que
+  // l'ancienne lecture manuelle (Number("0177") = 177) l'aurait laissée passer.
+  assert.equal(safePublicUrl("http://0177.0.0.1/"), null);
+  // Et la normalisation joue dans les deux sens : 010 devient 8, qui est public.
+  assert.ok(safePublicUrl("http://010.0.0.1/")?.includes("8.0.0.1"));
+  // CGNAT : réseau opérateur interne, pas de l'Internet public.
+  assert.equal(safePublicUrl("http://100.64.0.1/"), null);
+  assert.equal(safePublicUrl("http://100.127.255.255/"), null);
+  // IPv4 mappée en IPv6 — le même loopback, écrit autrement.
+  assert.equal(safePublicUrl("http://[::ffff:127.0.0.1]/"), null);
+  assert.equal(safePublicUrl("http://[::]/"), null);
+  assert.equal(safePublicUrl("http://[fc00::1]/"), null);
+  // Métadonnées cloud : la cible qui donne des jetons IAM.
+  assert.equal(safePublicUrl("http://169.254.169.254/latest/meta-data/"), null);
+  // Et le public reste public.
+  assert.ok(safePublicUrl("https://100.128.0.1/"), "100.128 est hors CGNAT");
+  assert.ok(safePublicUrl("https://eagleyecorp.fr/"));
+});

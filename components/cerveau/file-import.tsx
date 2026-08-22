@@ -5,6 +5,7 @@ import { AlertTriangle, Check, FileUp, Loader2, X } from "lucide-react";
 import { extractFile, suggestTitle, type Extraction } from "@/lib/file-extract";
 import { useAlpha } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { looksLikeInjection } from "@/lib/untrusted";
 
 /**
  * IMPORT DE FICHIERS DANS LE CERVEAU — audits PDF, emails .html, comptes rendus.
@@ -22,12 +23,12 @@ export function FileImport({ onImported }: { onImported?: (ids: string[]) => voi
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
-  const [results, setResults] = useState<{ name: string; ex: Extraction; noteId?: string }[]>([]);
+  const [results, setResults] = useState<{ name: string; ex: Extraction; noteId?: string; suspect?: boolean }[]>([]);
 
   async function handle(files: FileList | null) {
     if (!files || files.length === 0) return;
     setBusy(true);
-    const out: { name: string; ex: Extraction; noteId?: string }[] = [];
+    const out: { name: string; ex: Extraction; noteId?: string; suspect?: boolean }[] = [];
     const ids: string[] = [];
 
     for (const file of Array.from(files)) {
@@ -45,7 +46,12 @@ export function FileImport({ onImported }: { onImported?: (ids: string[]) => voi
           });
           ids.push(noteId);
         }
-        out.push({ name: file.name, ex, noteId });
+        // Un document importé finit dans les prompts du Cerveau. S'il contient
+        // des tournures d'instruction (« ignore les consignes précédentes… »),
+        // l'opérateur doit le savoir : ce n'est pas un document de travail
+        // normal. On l'importe quand même — c'est SA décision, pas la nôtre —
+        // mais on ne le laisse pas passer en silence.
+        out.push({ name: file.name, ex, noteId, suspect: ex.ok && looksLikeInjection(ex.text) });
       } catch (e) {
         out.push({
           name: file.name,
@@ -129,6 +135,13 @@ export function FileImport({ onImported }: { onImported?: (ids: string[]) => voi
                   </span>
                 ) : (
                   <span className="text-signal-amber"> — {r.ex.warning}</span>
+                )}
+                {r.suspect && (
+                  <span className="mt-0.5 block text-signal-red">
+                    ⚠ Ce document contient des phrases qui ressemblent à des consignes adressées à une IA. Il est
+                    importé, mais lis-le avant de t&apos;en servir : son contenu est traité comme une donnée, jamais
+                    comme une instruction.
+                  </span>
                 )}
               </span>
             </li>

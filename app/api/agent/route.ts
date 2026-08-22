@@ -4,6 +4,8 @@ import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { playbookPrompt } from "@/lib/playbook";
 import { AGENT_LIMITS, OS_MAP } from "@/lib/os-map";
 import { compressContext } from "@/lib/ai-context";
+import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
+import { clipDoctrine } from "@/lib/identity";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -54,12 +56,25 @@ export async function POST(request: NextRequest) {
     "\n" + playbookPrompt(),
     "\n" + OS_MAP,
     "\n" + AGENT_LIMITS,
-    "\n## Règles business de l'agence\n" + (body.businessRules ?? ""),
-    body.brainContext ? "\n## Cerveau — notes de l'opérateur (appuie-toi dessus, cite les titres)\n" + body.brainContext : "",
+    "\n## Règles business de l'agence\n" + clipDoctrine(body.businessRules ?? ""),
+    // Le Cerveau contient des documents que NOUS n'avons pas écrits (audits
+    // reçus, pages aspirées). Encadré comme non fiable : une consigne posée
+    // dans un PDF ne doit pas devenir une instruction de l'agent.
+    body.brainContext
+      ? "\n## Cerveau — documents importés (appuie-toi dessus, cite les titres)\n" +
+        wrapUntrusted("cerveau", body.brainContext, { maxChars: 12_000 })
+      : "",
     // Contexte pipe : dégraissé avant l'appel (économie de tokens sur le palier
     // payant) — garde la tête (le plus récent en JSON compact) et borne à 30k.
+    // Encadré aussi : il transporte des champs libres (notes, transcriptions,
+    // messages reçus) dont le contenu vient de tiers.
     "\n## État réel de l'OS (JSON — la seule source de chiffres)\n" +
-      compressContext(body.context ?? "{}", { maxChars: 30000, headRatio: 0.7 }),
+      wrapUntrusted("fiche", compressContext(body.context ?? "{}", { maxChars: 30000, headRatio: 0.7 }), {
+        maxChars: 30_000,
+        label: "état du pipeline (contient des champs libres saisis ou reçus de tiers)",
+      }),
+    // APRÈS les données : un modèle pondère ce qui est proche de sa réponse.
+    "\n" + UNTRUSTED_RULES,
   ].join("\n");
 
   if (ollamaConfigured()) {

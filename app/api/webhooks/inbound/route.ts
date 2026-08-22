@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { InboundEvent } from "@/lib/types";
 import { getTenantId, tenantFromInbound } from "@/lib/tenant";
+import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 
 export const runtime = "nodejs";
 
@@ -34,17 +35,33 @@ function serviceClient() {
 const VALID_TYPES = new Set(["email.reply", "email.open", "whatsapp.reply", "form.submit", "autre"]);
 
 /**
- * Lecture/ack des événements : réservé à l'UI de l'app (navigateur même
- * origine) ou à un appelant qui connaît le secret. Sans ce verrou, un
- * déploiement public (Vercel/tunnel) laisserait n'importe qui LIRE les
- * réponses des prospects via GET. Le POST, lui, reste ouvert cross-origin
- * (fournisseurs/n8n) car déjà protégé par le secret.
+ * Lecture/ack des événements : réservé au porteur du secret, ou à une session
+ * de l'app réellement authentifiée.
+ *
+ * ⚠ La version précédente acceptait `Sec-Fetch-Site: same-origin` comme preuve
+ * qu'on venait de l'app. Un navigateur interdit bien à du JavaScript de poser
+ * cet en-tête — mais `curl -H "Sec-Fetch-Site: same-origin"` le pose sans
+ * effort, et cette route est exemptée de SITE_PASSWORD (elle doit rester
+ * joignable par les fournisseurs). N'importe qui sur Internet pouvait donc
+ * lire les réponses des prospects : noms, emails, contenu des messages.
+ *
+ * On vérifie maintenant le cookie d'accès du site — le même HMAC que le
+ * middleware, impossible à forger sans SITE_PASSWORD. Le POST, lui, reste
+ * ouvert cross-origin (fournisseurs, n8n) puisqu'il exige déjà le secret.
  */
-function canReadEvents(request: NextRequest): boolean {
+async function canReadEvents(request: NextRequest): Promise<boolean> {
   const secret = process.env.WEBHOOK_SECRET;
   const provided = request.headers.get("x-webhook-secret") ?? request.nextUrl.searchParams.get("secret");
-  if (secret && provided === secret) return true;
-  return request.headers.get("sec-fetch-site") === "same-origin";
+  if (secret && provided && safeEqual(provided, secret)) return true;
+
+  const sitePassword = process.env.SITE_PASSWORD;
+  // Pas de porte d'accès configurée (développement local) : on garde la
+  // lecture ouverte, sinon l'app ne fonctionne pas sur localhost.
+  if (!sitePassword) return true;
+
+  const cookie = request.cookies.get(ACCESS_COOKIE)?.value ?? "";
+  if (!cookie) return false;
+  return safeEqual(cookie, await accessToken(sitePassword));
 }
 
 export async function POST(request: NextRequest) {
@@ -55,7 +72,9 @@ export async function POST(request: NextRequest) {
       { status: 503 }
     );
   const provided = request.headers.get("x-webhook-secret") ?? request.nextUrl.searchParams.get("secret");
-  if (provided !== secret) return NextResponse.json({ error: "secret invalide" }, { status: 401 });
+  // Comparaison à temps constant : ce secret est exposé à Internet, autant ne
+  // pas offrir d'oracle de timing sur ses premiers caractères.
+  if (!provided || !safeEqual(provided, secret)) return NextResponse.json({ error: "secret invalide" }, { status: 401 });
 
   let body: Record<string, unknown>;
   try {
@@ -107,8 +126,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!canReadEvents(request)) {
-    return NextResponse.json({ error: "lecture réservée à l'app (même origine) ou au porteur du secret" }, { status: 401 });
+  if (!(await canReadEvents(request))) {
+    return NextResponse.json({ error: "lecture réservée à une session de l'app ou au porteur du secret" }, { status: 401 });
   }
   // Le commercial connecté ne lit QUE ses réponses (multi-compte). Un appelant
   // au secret sans session (n8n/admin) n'a pas de locataire → lecture globale.
@@ -148,8 +167,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  if (!canReadEvents(request)) {
-    return NextResponse.json({ error: "ack réservé à l'app (même origine) ou au porteur du secret" }, { status: 401 });
+  if (!(await canReadEvents(request))) {
+    return NextResponse.json({ error: "ack réservé à une session de l'app ou au porteur du secret" }, { status: 401 });
   }
   let ids: string[];
   try {
