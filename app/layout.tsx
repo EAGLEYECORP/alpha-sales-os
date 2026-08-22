@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/shell/app-shell";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -63,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           attributs sur <body>. Ni l'un ni l'autre ne doit faire échouer
           l'hydratation. */}
       <body suppressHydrationWarning>
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

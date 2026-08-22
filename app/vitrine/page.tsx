@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { PACK_MONTHLY_HT, publicBricks, PALIERS_PUBLICS, OUTBOUND_UNIT_HT, OUTBOUND_UNIT_CALLS } from "@/lib/bricks";
+// ⚠ On n'importe RIEN de `lib/bricks` ici. Ce module contient le catalogue
+// complet avec ses prix, et tout ce qu'une page publique importe part dans le
+// navigateur — visible en trois secondes de devtools, même si rien ne
+// l'affiche. Voir lib/public-catalogue.ts.
+import { CAPACITES, PALIERS_LABELS, PRIX_PUBLICS } from "@/lib/public-catalogue";
 import { HeroVideo } from "@/components/vitrine/hero-video";
 import { MissionSection } from "@/components/vitrine/mission-section";
 
@@ -204,7 +208,7 @@ export default function VitrinePage() {
                 10 000 <span className="text-[22px]" style={{ color: MUTED }}>€ HT</span>
               </p>
               <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
-                puis {PACK_MONTHLY_HT.toLocaleString("fr-FR")} € HT/mois
+                puis {PRIX_PUBLICS.packMensuelHT.toLocaleString("fr-FR")} € HT/mois
               </p>
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                 Tout est posé, paramétré sur votre métier, vos équipes formées. C&apos;est l&apos;offre où
@@ -234,7 +238,7 @@ export default function VitrinePage() {
             </h3>
             <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
               Vous payez les appels passés, pas une licence. On commence à{" "}
-              <strong style={{ color: INK }}>{OUTBOUND_UNIT_HT} € HT/mois pour {OUTBOUND_UNIT_CALLS.toLocaleString("fr-FR")} appels</strong>,
+              <strong style={{ color: INK }}>{PRIX_PUBLICS.sortantMensuelHT} € HT/mois pour {PRIX_PUBLICS.sortantAppels.toLocaleString("fr-FR")} appels</strong>,
               et on ne monte qu&apos;une fois que ça convertit.
             </p>
             <p className="mt-4 max-w-2xl text-[16px] leading-[1.65]" style={{ color: MUTED }}>
@@ -254,7 +258,7 @@ export default function VitrinePage() {
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {publicBricks().map((b) => {
+              {CAPACITES.map((b) => {
                 const on = picked.includes(b.id);
                 return (
                   <button
@@ -269,7 +273,7 @@ export default function VitrinePage() {
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="text-[15px] font-semibold">{b.label}</span>
                       <span className="shrink-0 text-[12px] uppercase tracking-[0.1em]" style={{ color: on ? ACCENT : MUTED }}>
-                        {PALIERS_PUBLICS[b.palier].label}
+                        {PALIERS_LABELS[b.palier]}
                       </span>
                     </div>
                     <p className="mt-2 text-[14px] leading-[1.55]" style={{ color: MUTED }}>{b.what}</p>

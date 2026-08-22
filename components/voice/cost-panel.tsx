@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { computeCosts, defaultVolume, FIXED_COSTS, FREE_TIERS, FREE_VERDICT, type CallVolumeInput } from "@/lib/voice-costs";
-import { outboundPrice } from "@/lib/bricks";
+// ⚠ Aucun import de `lib/bricks` : ce module porte la grille tarifaire, et
+// tout ce qu'un composant client importe part dans un fichier JavaScript que
+// n'importe qui peut télécharger. Le prix vient du serveur.
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,7 +20,31 @@ import { cn } from "@/lib/utils";
  */
 export function CostPanel() {
   const [v, setV] = useState<CallVolumeInput>(defaultVolume);
-  const revenue = useMemo(() => outboundPrice(v.calls).monthlyHT, [v.calls]);
+  const [revenue, setRevenue] = useState(0);
+
+  // Le chiffre d'affaires vient de la grille publique, côté SERVEUR : il n'y a
+  // qu'un seul prix dans tout le produit, et il ne descend pas dans le
+  // navigateur. Tant que la réponse n'est pas là, la marge s'affiche à zéro
+  // plutôt qu'avec un prix inventé.
+  useEffect(() => {
+    let vivant = true;
+    fetch("/api/catalogue", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ calls: v.calls }),
+    })
+      .then((r) => r.json())
+      .then((d: { sortant?: { monthlyHT: number } }) => {
+        if (vivant) setRevenue(d.sortant?.monthlyHT ?? 0);
+      })
+      .catch(() => {
+        /* hors ligne : la marge reste à zéro, ce qui se voit */
+      });
+    return () => {
+      vivant = false;
+    };
+  }, [v.calls]);
+
   const c = useMemo(() => computeCosts(v, revenue), [v, revenue]);
 
   const eur2 = (n: number) => `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;

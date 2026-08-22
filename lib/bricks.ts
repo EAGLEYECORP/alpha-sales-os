@@ -360,52 +360,15 @@ export function quoteText(
   return lines.join("\n");
 }
 
-// ── CE QUI EST PUBLIC, ET CE QUI NE L'EST PAS ──────────────────────────
-
-/**
- * La vue PUBLIQUE d'une brique.
- *
- * La page de vente ne montre pas la grille de prix détaillée, et ce n'est pas
- * de la coquetterie. Trois raisons, dans l'ordre d'importance :
- *
- *  1. L'ANCRAGE NE FONCTIONNE QUE DANS UNE CONVERSATION. Le mécanisme est
- *     « il en veut trois, l'addition dépasse le pack, le pack devient
- *     évident ». Sur une page, le prospect fait l'addition SEUL, choisit la
- *     brique la moins chère, et l'ancrage joue contre nous.
- *  2. Le détail du découpage est la carte du produit. Un concurrent qui la
- *     lit sait exactement quoi construire, et à quel prix se placer.
- *  3. Un prix affiché hors contexte se compare à un abonnement SaaS à 49 €.
- *     Le cadrage existe précisément pour que la comparaison ne se fasse pas
- *     là-dessus.
- *
- * Ce qu'on montre : ce que la brique FAIT, et un ordre de grandeur. Ce qu'on
- * garde : le prix exact de chaque ligne, qui se dit après le cadrage.
- *
- * ⚠ Cette vue est DÉRIVÉE du catalogue. Une seconde liste tenue à la main
- * finirait par annoncer publiquement un prix qui n'existe plus.
- */
-export interface PublicBrick {
-  id: string;
-  label: string;
-  what: string;
-  /** Ordre de grandeur, jamais le montant exact. */
-  palier: "socle" | "moteur" | "cœur";
-}
-
-/** Les trois paliers, décrits une seule fois. */
-export const PALIERS_PUBLICS: Record<PublicBrick["palier"], { label: string; apartirDe: string }> = {
-  socle: { label: "Socle", apartirDe: "à partir de 1 200 € d'installation" },
-  moteur: { label: "Moteur", apartirDe: "à partir de 1 800 € d'installation" },
-  "cœur": { label: "Cœur", apartirDe: "à partir de 2 500 € d'installation" },
-};
-
-/** Le catalogue vu de l'extérieur — sans les montants ligne à ligne. */
-export function publicBricks(): PublicBrick[] {
-  return BRICKS.map((b) => ({
-    id: b.id,
-    label: b.label,
-    what: b.what,
-    // Le palier se DÉDUIT du prix réel : impossible qu'il dérive du catalogue.
-    palier: b.setupHT >= 2500 ? "cœur" : b.setupHT >= 1800 ? "moteur" : "socle",
-  }));
-}
+// ── LA VUE PUBLIQUE VIT AILLEURS, ET C'EST VOULU ──────────────────────
+//
+// Il a existé ici un `publicBricks()` qui rendait le catalogue sans ses
+// montants. C'était inutile : la fonction lisait `BRICKS`, donc la page
+// publique qui l'importait embarquait le catalogue ENTIER dans son bundle —
+// prix compris, lisibles en trois secondes de devtools. Retirer une donnée
+// de l'affichage ne la retire pas du navigateur.
+//
+// La vue publique est donc un MODULE SÉPARÉ, sans aucun import d'ici :
+// `lib/public-catalogue.ts`. La cohérence entre les deux est garantie par
+// `tests/vitrine-fuite.test.ts`, qui tourne côté serveur et peut charger les
+// deux sans rien exposer.

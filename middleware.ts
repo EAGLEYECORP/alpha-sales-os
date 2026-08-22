@@ -57,6 +57,9 @@ const INTERNAL = [
   // Notion : appelée par l'app avec les fiches du store local. Même origine
   // exigée — le jeton Notion donne accès en écriture à un espace de travail.
   "/api/notion",
+  // Catalogue et chiffrage : la grille tarifaire ne sort que pour une session
+  // authentifiée. C'est ce qui la garde hors des bundles du navigateur.
+  "/api/catalogue",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers

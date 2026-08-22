@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { publicBricks, BRICKS, PALIERS_PUBLICS } from "../lib/bricks";
+import { BRICKS, OUTBOUND_TIERS, OUTBOUND_UNIT_HT, OUTBOUND_UNIT_CALLS, PACK_SETUP_HT, PACK_MONTHLY_HT } from "../lib/bricks";
+import { CAPACITES, PALIERS_LABELS, PRIX_PUBLICS } from "../lib/public-catalogue";
 
 /**
  * La vitrine est PUBLIQUE : hors mot de passe, indexable, lisible par un
@@ -55,7 +56,9 @@ test("vitrine — le levier de négociation sur les paliers d'appels n'est pas d
   assert.doesNotMatch(publique, /millier offert|4ᵉ millier/);
   assert.doesNotMatch(vitrine, /OUTBOUND_TIERS/, "la table des paliers ne s'affiche pas");
   // Le prix d'ENTRÉE, lui, doit être là : sans lui, aucune qualification.
-  assert.match(vitrine, /OUTBOUND_UNIT_HT/);
+  // Il vient du module PUBLIC, pas du catalogue interne — importer ce dernier
+  // rembarquerait tous les prix dans le bundle du navigateur.
+  assert.match(vitrine, /PRIX_PUBLICS\.sortantMensuelHT/);
 });
 
 test("vitrine — aucun aveu qui se sabote", () => {
@@ -84,20 +87,41 @@ test("vitrine — la pile technique n'est pas détaillée", () => {
   }
 });
 
-test("vue publique — dérivée du catalogue, jamais recopiée", () => {
-  // Une seconde liste tenue à la main finirait par annoncer publiquement un
-  // prix ou une capacité qui n'existe plus.
-  const pub = publicBricks();
-  assert.equal(pub.length, BRICKS.length);
-  for (const b of pub) {
-    const source = BRICKS.find((x) => x.id === b.id)!;
-    assert.equal(b.label, source.label);
-    assert.equal(b.what, source.what);
-    // Le palier se déduit du prix réel : il ne peut pas diverger.
-    assert.ok(PALIERS_PUBLICS[b.palier], `palier inconnu : ${b.palier}`);
+test("catalogue public — synchronisé avec le vrai, sans jamais l'importer", () => {
+  // Ce test EST le mécanisme de cohérence. La vue publique ne peut pas
+  // importer le catalogue (ça rembarquerait les prix dans le navigateur), donc
+  // c'est ici — côté serveur, où rien n'est exposé — qu'on vérifie qu'elle ne
+  // dérive pas.
+  assert.equal(CAPACITES.length, BRICKS.length, "une capacité a été ajoutée ou retirée d'un seul côté");
+
+  for (const c of CAPACITES) {
+    const source = BRICKS.find((b) => b.id === c.id);
+    assert.ok(source, `« ${c.id} » n'existe pas au catalogue`);
+    assert.equal(c.label, source!.label, `${c.id} : le nom a divergé`);
+    assert.equal(c.what, source!.what, `${c.id} : la description a divergé`);
+
+    // Le palier annoncé doit correspondre au prix réel : annoncer « Socle »
+    // sur une brique à 3 500 € prépare une conversation difficile.
+    const attendu = source!.setupHT >= 2500 ? "coeur" : source!.setupHT >= 1800 ? "moteur" : "socle";
+    assert.equal(c.palier, attendu, `${c.id} : palier « ${c.palier} » incohérent avec ${source!.setupHT} €`);
+    assert.ok(PALIERS_LABELS[c.palier]);
   }
-  // Et aucun montant ne fuit dans la vue publique.
-  assert.doesNotMatch(JSON.stringify(pub), /setupHT|monthlyHT/);
+});
+
+test("catalogue public — aucun montant hors des deux qui sont assumés", () => {
+  // Le pack (l'ancre) et le palier d'entrée du sortant (la qualification) sont
+  // publics par décision. Tout le reste se dit au cadrage.
+  assert.equal(PRIX_PUBLICS.packSetupHT, PACK_SETUP_HT);
+  assert.equal(PRIX_PUBLICS.packMensuelHT, PACK_MONTHLY_HT);
+  assert.equal(PRIX_PUBLICS.sortantMensuelHT, OUTBOUND_UNIT_HT);
+  assert.equal(PRIX_PUBLICS.sortantAppels, OUTBOUND_UNIT_CALLS);
+
+  // Aucune capacité ne porte de prix.
+  assert.doesNotMatch(JSON.stringify(CAPACITES), /\d{3,}/);
+
+  // Et le palier remisé n'existe nulle part dans le module public.
+  const remise = OUTBOUND_TIERS.find((t) => t.perThousandHT < OUTBOUND_UNIT_HT)!;
+  assert.doesNotMatch(JSON.stringify(PRIX_PUBLICS), new RegExp(String(remise.perThousandHT)));
 });
 
 test("Alpha Live est une brique vendable à part entière", () => {
@@ -107,7 +131,7 @@ test("Alpha Live est une brique vendable à part entière", () => {
   assert.match(live!.why, /PENDANT/);
   assert.ok(live!.setupHT > 0 && live!.monthlyHT > 0);
   // Elle apparaît publiquement, sans son prix.
-  assert.ok(publicBricks().some((b) => b.id === "alpha-live"));
+  assert.ok(CAPACITES.some((c) => c.id === "alpha-live"));
 });
 
 // ── LES AUTRES SURFACES PUBLIQUES ──────────────────────────────────────
@@ -161,5 +185,86 @@ test("vitrine — indexable, et avec une description tournée vers le résultat"
   for (const mot of ["Hormozi", "Taxe d'Ignorance", "3 Croyances", "Red Zone"]) {
     assert.ok(!racine.includes(mot), `« ${mot} » décrit le procédé — pas dans les métadonnées publiques`);
     assert.ok(!layout.includes(mot), `« ${mot} » n'a rien à faire dans la description publique`);
+  }
+});
+
+// ── LE BUNDLE, PAS SEULEMENT L'AFFICHAGE ───────────────────────────────
+
+/**
+ * Le test qui aurait évité toute cette histoire.
+ *
+ * On avait retiré les prix de l'AFFICHAGE de la page publique, et ils
+ * partaient toujours dans son JavaScript : la page importait une fonction
+ * qui lisait le catalogue, donc le catalogue entier était compilé dans le
+ * fichier téléchargé par le visiteur. Mesuré sur le build : `setupHT:3500`,
+ * `perThousandHT:273` et « millier est offert », lisibles en trois secondes
+ * de devtools.
+ *
+ * Ce test suit le graphe d'imports depuis la page publique, exactement comme
+ * le fait le bundler, et vérifie qu'il n'atteint jamais un module qui porte
+ * des prix. Les imports `import type` sont ignorés : ils sont effacés à la
+ * compilation et ne pèsent rien dans le navigateur.
+ */
+const MODULES_A_PRIX = ["lib/bricks", "lib/pricing", "lib/accounts", "lib/deck", "lib/voice-costs"];
+
+function grapheImports(entree: string): Set<string> {
+  const vus = new Set<string>();
+  const file = (chemin: string): string | null => {
+    for (const ext of [".ts", ".tsx", "/index.ts", "/index.tsx"]) {
+      const f = join(process.cwd(), chemin + ext);
+      try {
+        readFileSync(f, "utf8");
+        return f;
+      } catch {
+        /* essai suivant */
+      }
+    }
+    return null;
+  };
+
+  const marche = (chemin: string) => {
+    if (vus.has(chemin)) return;
+    vus.add(chemin);
+    const f = file(chemin);
+    if (!f) return;
+    const src = sansCommentaires(readFileSync(f, "utf8"));
+    // `import type { … }` est effacé à la compilation : il ne met rien dans
+    // le bundle, donc il ne compte pas comme une fuite.
+    for (const m of src.matchAll(/^\s*import\s+(type\s+)?[^;]*?from\s+"(@\/[^"]+)"/gm)) {
+      if (m[1]) continue;
+      marche(m[2].replace(/^@\//, ""));
+    }
+  };
+
+  marche(entree);
+  return vus;
+}
+
+test("bundle public — le graphe d'imports n'atteint AUCUN module à prix", () => {
+  for (const entree of ["app/vitrine/page", "app/vitrine/layout", "app/gate/page"]) {
+    const graphe = grapheImports(entree);
+    for (const interdit of MODULES_A_PRIX) {
+      assert.ok(
+        !graphe.has(interdit),
+        `${entree} atteint ${interdit} — la grille tarifaire repartirait dans le navigateur`
+      );
+    }
+  }
+});
+
+test("bundle public — la coquille de l'app n'est pas imposée aux pages publiques", () => {
+  // L'AppShell se retirait pour /vitrine par un test d'EXÉCUTION
+  // (`if (pathname === "/vitrine") return children`). Ça ne retire rien du
+  // bundle : la page publique téléchargeait tout le code client de l'app.
+  const racine = sansCommentaires(lire("app/layout.tsx"));
+  assert.doesNotMatch(racine, /AppShell/, "la coquille appartient au groupe (app), pas à la racine");
+
+  // Et elle est bien montée pour l'app.
+  const groupe = lire("app/(app)/layout.tsx");
+  assert.match(groupe, /AppShell/);
+
+  // Les pages publiques vivent HORS du groupe.
+  for (const f of ["app/vitrine/page.tsx", "app/gate/page.tsx"]) {
+    assert.doesNotMatch(f, /\(app\)/, `${f} ne doit pas être dans le groupe (app)`);
   }
 });

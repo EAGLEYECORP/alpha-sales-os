@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Banknote,
@@ -32,7 +32,11 @@ import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
 import { guessSegmentForProspect } from "@/lib/segments";
-import { BRICKS, quoteBricks, quoteText } from "@/lib/bricks";
+// ⚠ Aucun import de `lib/bricks` : la grille tarifaire ne doit pas partir dans
+// le bundle du navigateur (voir app/api/catalogue). On demande le catalogue et
+// le chiffrage au serveur.
+import type { Brick } from "@/lib/bricks";
+import { CAPACITES } from "@/lib/public-catalogue";
 import { buildDeck, renderDeck } from "@/lib/deck";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
@@ -387,7 +391,9 @@ function SegmentCard({ p }: { p: Prospect }) {
     );
   }
 
-  const bricks = seg.entryBricks.map((id) => BRICKS.find((b) => b.id === id)?.label ?? id);
+  // Les LIBELLÉS ne sont pas secrets (ils sont sur la page publique) : on les
+  // prend dans le catalogue public, qui ne porte aucun prix.
+  const bricks = seg.entryBricks.map((id) => CAPACITES.find((c) => c.id === id)?.label ?? id);
 
   return (
     <section className="card p-4 lg:col-span-2">
@@ -972,14 +978,58 @@ function QuoteBuilder({ p }: { p: Prospect }) {
   const settings = useAlpha((s) => s.settings);
   const [picked, setPicked] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [bricks, setBricks] = useState<Brick[]>([]);
+  const [devis, setDevis] = useState<{ setupHT: number; monthlyHT: number; firstYearHT: number; recommendation: string } | null>(null);
+  const [texte, setTexte] = useState("");
 
-  const quote = useMemo(() => quoteBricks(picked), [picked]);
-  // L'émetteur vient des réglages du compte (white-label). Vide → le devis
-  // garde son en-tête par défaut plutôt qu'un nom tronqué.
+  // Le catalogue vient du serveur : c'est ce qui garde les prix hors des
+  // fichiers JavaScript téléchargeables par n'importe qui.
+  useEffect(() => {
+    let vivant = true;
+    fetch("/api/catalogue")
+      .then((r) => r.json())
+      .then((d: { bricks?: Brick[] }) => {
+        if (vivant) setBricks(d.bricks ?? []);
+      })
+      .catch(() => {
+        /* hors ligne : la liste reste vide, et le bloc le montre */
+      });
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
   const issuer = settings.agencyName?.trim()
     ? [settings.agencyName.trim(), settings.offer?.city?.trim()].filter(Boolean).join(" · ")
     : undefined;
-  const text = useMemo(() => (picked.length ? quoteText(quote, p.company, { issuer }) : ""), [quote, p.company, issuer, picked.length]);
+
+  // Le chiffrage aussi : calculer dans le navigateur supposerait d'y avoir la
+  // grille, ce qui annulerait tout l'intérêt.
+  useEffect(() => {
+    if (picked.length === 0) {
+      setDevis(null);
+      setTexte("");
+      return;
+    }
+    let vivant = true;
+    fetch("/api/catalogue", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ bricks: picked, client: p.company, issuer }),
+    })
+      .then((r) => r.json())
+      .then((d: { quote?: typeof devis; texte?: string }) => {
+        if (!vivant) return;
+        setDevis(d.quote ?? null);
+        setTexte(d.texte ?? "");
+      })
+      .catch(() => {
+        /* le devis reste vide plutôt que faux */
+      });
+    return () => {
+      vivant = false;
+    };
+  }, [picked, p.company, issuer]);
 
   const toggle = (id: string) => setPicked((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
@@ -989,44 +1039,48 @@ function QuoteBuilder({ p }: { p: Prospect }) {
         <FileText size={15} className="text-bronze-400" /> Devis à la carte
       </h2>
       <p className="mt-0.5 text-[11px] text-paper-faint">
-        Coche ce qu&apos;il prend. Les prix viennent du catalogue — jamais recopiés à la main.
+        Coche ce qu&apos;il prend. Les prix viennent du catalogue, côté serveur — jamais recopiés à la main.
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {BRICKS.map((b) => (
-          <button
-            key={b.id}
-            onClick={() => toggle(b.id)}
-            title={b.what}
-            className={cn(
-              "chip transition-colors",
-              picked.includes(b.id)
-                ? "border-gold bg-gold font-semibold text-goldink"
-                : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
-            )}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
+      {bricks.length === 0 ? (
+        <p className="mt-3 text-[12px] text-paper-faint">Catalogue indisponible — vérifie la connexion.</p>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {bricks.map((b) => (
+            <button
+              key={b.id}
+              onClick={() => toggle(b.id)}
+              title={b.what}
+              className={cn(
+                "chip transition-colors",
+                picked.includes(b.id)
+                  ? "border-gold bg-gold font-semibold text-goldink"
+                  : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
+              )}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {picked.length > 0 && (
+      {devis && (
         <>
           <div className="mt-3 flex flex-wrap gap-4 font-mono text-sm">
-            <span className="text-paper">{eur(quote.setupHT)} HT d&apos;installation</span>
-            <span className="text-bronze-400">{eur(quote.monthlyHT)} HT/mois</span>
-            <span className="text-paper-faint">1re année : {eur(quote.firstYearHT)} HT</span>
+            <span className="text-paper">{eur(devis.setupHT)} HT d&apos;installation</span>
+            <span className="text-bronze-400">{eur(devis.monthlyHT)} HT/mois</span>
+            <span className="text-paper-faint">1re année : {eur(devis.firstYearHT)} HT</span>
           </div>
           <p className="mt-2 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper">
-            {quote.recommendation}
+            {devis.recommendation}
           </p>
           <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-ink-600 bg-ink-850 p-3 text-[12px] text-paper">
-            {text}
+            {texte}
           </pre>
           <button
             className="btn-ghost mt-2 px-3 py-1.5 text-[12px]"
             onClick={() => {
-              navigator.clipboard.writeText(text);
+              navigator.clipboard.writeText(texte);
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}

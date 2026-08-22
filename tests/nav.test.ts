@@ -40,7 +40,11 @@ test("navigation — chaque page de l'app est atteignable, et une seule fois", (
 
   // Toutes les pages réelles doivent être joignables : une page construite et
   // jamais liée est du travail perdu, et c'est arrivé ailleurs dans ce repo.
-  const appDir = join(process.cwd(), "app");
+  // Les pages de l'app vivent dans le groupe de routes `(app)` — les
+  // parenthèses n'apparaissent pas dans les URLs. Les pages PUBLIQUES
+  // (/vitrine, /gate) vivent en dehors, pour ne pas charger la coquille de
+  // l'app ni son code client. Voir app/(app)/layout.tsx.
+  const appDir = join(process.cwd(), "app", "(app)");
   const routes = readdirSync(appDir, { withFileTypes: true })
     .filter((d) => d.isDirectory() && !d.name.startsWith("api") && !d.name.startsWith("[") && !d.name.startsWith("_"))
     .filter((d) => existsSync(join(appDir, d.name, "page.tsx")))
