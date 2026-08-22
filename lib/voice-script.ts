@@ -1,3 +1,4 @@
+import { localTime, BUSINESS_TZ } from "./business-hours";
 import { VERTICALS, type VerticalPlaybook } from "./playbook";
 
 /**
@@ -236,10 +237,11 @@ export function toE164(phone: string): string | null {
  * fermée ne fait que tomber sur un répondeur, et un agent qui appelle un
  * dimanche donne l'image exacte qu'on cherche à éviter.
  */
-export function callAllowedNow(now = new Date()): { allowed: boolean; why: string } {
-  const day = now.getDay();
-  const h = now.getHours();
-  if (day === 0 || day === 6)
+export function callAllowedNow(now = new Date(), timeZone = BUSINESS_TZ): { allowed: boolean; why: string } {
+  // Fuseau du métier, jamais celui du serveur : une fonction serverless
+  // tourne en UTC, et l'agent appellerait donc deux heures à côté.
+  const { hour: h, weekend } = localTime(now, timeZone);
+  if (weekend)
     return { allowed: false, why: "Week-end — un agent vocal qui appelle une entreprise fermée n'atteint qu'un répondeur." };
   if (h < 9 || h >= 18)
     return { allowed: false, why: "Hors 9h–18h : l'entreprise est fermée, et l'horaire donne une mauvaise image." };

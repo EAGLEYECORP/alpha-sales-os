@@ -123,14 +123,18 @@ test("numéro — conversion en E.164, et refus de ce qui n'en est pas un", () =
 });
 
 test("fenêtre — pas d'appel le week-end ni à la pause déjeuner", () => {
+  // ⚠ Les heures portent leur DÉCALAGE, volontairement. Sans lui, JavaScript
+  // les lit dans le fuseau du processus : ce test passait en local et
+  // décrivait, en production (UTC), une fenêtre décalée de deux heures. Il
+  // était le miroir exact du bug qu'il était censé prévenir.
   const at = (iso: string) => callAllowedNow(new Date(iso));
-  assert.equal(at("2026-08-03T10:00:00").allowed, true, "lundi 10h");
-  assert.equal(at("2026-08-03T15:00:00").allowed, true, "lundi 15h");
-  assert.equal(at("2026-08-02T10:00:00").allowed, false, "dimanche");
-  assert.equal(at("2026-08-08T10:00:00").allowed, false, "samedi");
-  assert.equal(at("2026-08-03T12:30:00").allowed, false, "pause déjeuner");
-  assert.equal(at("2026-08-03T08:00:00").allowed, false, "avant ouverture");
-  assert.equal(at("2026-08-03T19:00:00").allowed, false, "après fermeture");
+  assert.equal(at("2026-08-03T10:00:00+02:00").allowed, true, "lundi 10h à Lyon");
+  assert.equal(at("2026-08-03T15:00:00+02:00").allowed, true, "lundi 15h à Lyon");
+  assert.equal(at("2026-08-02T10:00:00+02:00").allowed, false, "dimanche");
+  assert.equal(at("2026-08-08T10:00:00+02:00").allowed, false, "samedi");
+  assert.equal(at("2026-08-03T12:30:00+02:00").allowed, false, "pause déjeuner");
+  assert.equal(at("2026-08-03T08:00:00+02:00").allowed, false, "avant ouverture");
+  assert.equal(at("2026-08-03T19:00:00+02:00").allowed, false, "après fermeture");
   // Et la raison doit être dite, pas seulement le refus.
-  assert.ok(at("2026-08-02T10:00:00").why.length > 30);
+  assert.ok(at("2026-08-02T10:00:00+02:00").why.length > 30);
 });

@@ -75,6 +75,25 @@ const PUBLIC_PREFIXES = [
   // (ALPHA_API_KEYS) et refuse tout si aucune clé n'est configurée — ce n'est
   // donc pas un trou, c'est une porte différente.
   "/api/v1",
+  // Service worker : il DOIT être servi comme du JavaScript, à la racine.
+  // Derrière la porte d'accès, le navigateur recevrait la redirection vers
+  // /gate — donc du HTML — et l'enregistrement échouerait avec une erreur de
+  // type MIME que rien ne relie au mot de passe. Le fichier ne contient
+  // aucune donnée : il écoute les notifications, c'est tout.
+  "/sw.js",
+  // Manifeste PWA : lu avant toute session, et nécessaire pour « ajouter à
+  // l'écran d'accueil » — le seul chemin vers les notifications sur iPhone.
+  "/manifest.webmanifest",
+  // Routes de CRON, appelées par n8n : aucun navigateur, donc aucun cookie
+  // d'accès. Elles portent leur PROPRE authentification (CRON_SECRET) et
+  // REFUSENT tout si le secret n'est pas configuré — ce n'est pas un trou,
+  // c'est une porte différente, comme /api/v1.
+  //
+  // ⚠ Sans cette entrée, l'ordonnanceur reçoit « Accès non autorisé » dès que
+  // SITE_PASSWORD est posé : l'autopilote d'appels et les notifications ne
+  // partent jamais, et rien dans la réponse ne relie ça au mot de passe.
+  "/api/campaign/tick",
+  "/api/push/tick",
 ];
 
 function startsWithAny(path: string, prefixes: string[]): boolean {

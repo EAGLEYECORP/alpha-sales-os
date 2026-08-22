@@ -1,3 +1,4 @@
+import { localTime, BUSINESS_TZ } from "./business-hours";
 /**
  * ─────────────────────────────────────────────────────────────────────
  * Conformité de la prospection B2B — France, août 2026.
@@ -126,11 +127,17 @@ export const FENETRES_APPEL: { label: string; from: number; to: number; note: st
   { label: "Après-midi", from: 14, to: 18, note: "Fenêtre des cabinets et agences. Éviter 12h–14h : personne ne décroche, et ça agace." },
 ];
 
-/** Une heure donnée tombe-t-elle dans une fenêtre utile ? */
-export function fenetreOuverte(now = new Date()): { open: boolean; label: string; why: string } {
-  const h = now.getHours();
-  const day = now.getDay();
-  if (day === 0 || day === 6) {
+/**
+ * Une heure donnée tombe-t-elle dans une fenêtre utile ?
+ *
+ * ⚠ L'heure est lue dans le fuseau du MÉTIER, pas dans celui du serveur.
+ * En production la fonction tourne en UTC : sans ça, « 9h–12h » devenait
+ * 11h–14h heure française, donc on refusait le meilleur créneau et on
+ * appelait en plein déjeuner. Voir lib/business-hours.ts.
+ */
+export function fenetreOuverte(now = new Date(), timeZone = BUSINESS_TZ): { open: boolean; label: string; why: string } {
+  const { hour: h, weekend } = localTime(now, timeZone);
+  if (weekend) {
     return {
       open: false,
       label: "week-end",
