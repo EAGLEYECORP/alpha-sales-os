@@ -94,6 +94,10 @@ const PUBLIC_PREFIXES = [
   // partent jamais, et rien dans la réponse ne relie ça au mot de passe.
   "/api/campaign/tick",
   "/api/push/tick",
+  // Flux calendrier : lu par les serveurs de Google/Apple/Microsoft, jamais
+  // par un navigateur connecté — donc aucun cookie possible. Il porte son
+  // jeton dans l'URL (CALENDAR_TOKEN) et refuse tout sans lui.
+  "/api/calendar",
 ];
 
 function startsWithAny(path: string, prefixes: string[]): boolean {

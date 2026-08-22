@@ -7,6 +7,7 @@ import { useAlpha } from "@/lib/store";
 import type { Meeting, MeetingChannel, MeetingKind } from "@/lib/types";
 import { cn, dateTimeFr, daysAhead, isOverdue, relativeFr, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { CalendarSync } from "@/components/meetings/calendar-sync";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
 
 const KIND_LABEL: Record<MeetingKind, string> = {
@@ -45,6 +46,8 @@ export default function MeetingsPage() {
           </button>
         </div>
       </header>
+
+      <CalendarSync meetings={meetings} />
 
       <section className="space-y-2">
         {upcoming.map((m) => {

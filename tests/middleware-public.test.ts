@@ -33,6 +33,7 @@ test("chemins publics — tout ce qui est appelé SANS navigateur y figure", () 
     "/api/v1",
     "/api/campaign/tick",
     "/api/push/tick",
+    "/api/calendar",
   ]) {
     assert.ok(publics.includes(p), `${p} est appelé sans cookie : il doit passer la porte`);
   }
@@ -51,7 +52,14 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
   // La liste est un contournement de la porte : tout ce qui lit ou écrit des
   // données client doit rester derrière. `/api/v1` et les crons font
   // exception parce qu'ils portent leur propre clé ET refusent tout sans elle.
-  const porteurDeCle = new Set(["/api/v1", "/api/campaign/tick", "/api/push/tick", "/api/webhooks/inbound", "/api/webhooks/stripe"]);
+  const porteurDeCle = new Set([
+    "/api/v1",
+    "/api/campaign/tick",
+    "/api/push/tick",
+    "/api/calendar",
+    "/api/webhooks/inbound",
+    "/api/webhooks/stripe",
+  ]);
   for (const p of publics) {
     if (!p.startsWith("/api/")) continue;
     if (porteurDeCle.has(p)) continue;
