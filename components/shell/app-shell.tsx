@@ -41,6 +41,7 @@ import {
   Swords,
   Trophy,
   UserCog,
+  ChevronRight,
 } from "lucide-react";
 import { Eagle } from "@/components/eagle";
 import { cn } from "@/lib/utils";
@@ -57,42 +58,110 @@ import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { N8nAutoSync } from "@/components/n8n-autosync";
 
-const NAV = [
-  { href: "/", label: "Dashboard", icon: BarChart3 },
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * NAVIGATION — hiérarchisée, pas listée.
+ *
+ * Avant : 34 entrées à plat, toutes du même poids visuel. Un opérateur qui
+ * ouvre l'app le matin ne cherche pas « Newsletter » ni « Concurrents » : il
+ * veut savoir quoi faire aujourd'hui. Une liste plate lui impose de relire
+ * 34 lignes pour retrouver les trois qu'il utilise vraiment, à chaque fois.
+ *
+ * Le principe : ce qui sert TOUS LES JOURS reste toujours visible ; le reste
+ * est rangé par MOMENT DU MÉTIER et se replie. Un groupe qui contient la page
+ * courante s'ouvre tout seul — on ne se perd jamais, et on ne clique pas pour
+ * retrouver où on est. Le repli est mémorisé par navigateur.
+ *
+ * Rien n'est supprimé : tout reste atteignable en un clic, et la palette
+ * (⌘K) va n'importe où en tapant trois lettres.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/** Les quatre écrans du quotidien — jamais repliés, toujours en tête. */
+const NAV_QUOTIDIEN = [
   { href: "/aujourdhui", label: "Aujourd'hui", icon: CalendarCheck },
-  { href: "/decisions", label: "À décider", icon: ListChecks },
-  { href: "/demarrage", label: "Prise en main", icon: Footprints },
-  { href: "/pilote", label: "Pilote", icon: Cpu },
-  { href: "/controle", label: "Salle de contrôle", icon: RadioTower },
-  { href: "/trajectoire", label: "Trajectoire", icon: TrendingUp },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
-  { href: "/closer", label: "Closer OS", icon: Navigation },
-  { href: "/debrief", label: "Débrief terrain", icon: Mic },
-  { href: "/voice", label: "Alpha Voice", icon: AudioLines },
-  { href: "/appels", label: "Appels", icon: PhoneCall },
-  { href: "/linkedin", label: "LinkedIn", icon: Linkedin },
-  { href: "/prescripteurs", label: "Prescripteurs", icon: Handshake },
-  { href: "/agent", label: "Agent ALPHA", icon: Bot },
-  { href: "/cerveau", label: "Cerveau", icon: Brain },
-  { href: "/templates", label: "Templates", icon: ScrollText },
-  { href: "/audits", label: "Audits", icon: FileText },
-  { href: "/campaigns", label: "Campagnes", icon: Mail },
-  { href: "/outbox", label: "Boîte d'envoi", icon: Send },
-  { href: "/newsletter", label: "Newsletter", icon: Newspaper },
-  { href: "/social", label: "Studio social", icon: Megaphone },
-  { href: "/kpis", label: "KPIs", icon: Gauge },
-  { href: "/milestones", label: "Jalons", icon: Trophy },
-  { href: "/preuves", label: "Preuves", icon: Gem },
-  { href: "/offre", label: "Offre & Tarifs", icon: BadgeEuro },
-  { href: "/payouts", label: "Payouts", icon: Coins },
-  { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
-  { href: "/nurture", label: "Relances", icon: Sprout },
-  { href: "/intel", label: "Concurrents", icon: Swords },
-  { href: "/activity", label: "Activité", icon: Activity },
-  { href: "/recette", label: "Recette", icon: ClipboardCheck },
-  { href: "/compte", label: "Compte", icon: UserCog },
-  { href: "/settings", label: "Réglages", icon: Settings },
+  { href: "/decisions", label: "À décider", icon: ListChecks },
+  { href: "/controle", label: "Salle de contrôle", icon: RadioTower },
 ];
+
+interface NavGroup {
+  id: string;
+  label: string;
+  items: { href: string; label: string; icon: typeof BarChart3 }[];
+}
+
+const NAV_GROUPES: NavGroup[] = [
+  {
+    id: "parler",
+    label: "Parler aux prospects",
+    items: [
+      { href: "/voice", label: "Alpha Voice", icon: AudioLines },
+      { href: "/appels", label: "Appels", icon: PhoneCall },
+      { href: "/closer", label: "Closer OS", icon: Navigation },
+      { href: "/debrief", label: "Débrief terrain", icon: Mic },
+      { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
+    ],
+  },
+  {
+    id: "ecrire",
+    label: "Écrire & envoyer",
+    items: [
+      { href: "/templates", label: "Templates", icon: ScrollText },
+      { href: "/campaigns", label: "Campagnes", icon: Mail },
+      { href: "/outbox", label: "Boîte d'envoi", icon: Send },
+      { href: "/nurture", label: "Relances", icon: Sprout },
+      { href: "/audits", label: "Audits", icon: FileText },
+    ],
+  },
+  {
+    id: "savoir",
+    label: "Savoir quoi dire",
+    items: [
+      { href: "/agent", label: "Agent ALPHA", icon: Bot },
+      { href: "/cerveau", label: "Cerveau", icon: Brain },
+      { href: "/offre", label: "Offre & Tarifs", icon: BadgeEuro },
+      { href: "/intel", label: "Concurrents", icon: Swords },
+      { href: "/preuves", label: "Preuves", icon: Gem },
+    ],
+  },
+  {
+    id: "attirer",
+    label: "Se faire connaître",
+    items: [
+      { href: "/linkedin", label: "LinkedIn", icon: Linkedin },
+      { href: "/social", label: "Studio social", icon: Megaphone },
+      { href: "/newsletter", label: "Newsletter", icon: Newspaper },
+      { href: "/prescripteurs", label: "Prescripteurs", icon: Handshake },
+    ],
+  },
+  {
+    id: "mesurer",
+    label: "Mesurer & piloter",
+    items: [
+      { href: "/", label: "Dashboard", icon: BarChart3 },
+      { href: "/kpis", label: "KPIs", icon: Gauge },
+      { href: "/trajectoire", label: "Trajectoire", icon: TrendingUp },
+      { href: "/milestones", label: "Jalons", icon: Trophy },
+      { href: "/payouts", label: "Payouts", icon: Coins },
+      { href: "/activity", label: "Activité", icon: Activity },
+    ],
+  },
+  {
+    id: "regler",
+    label: "Régler la machine",
+    items: [
+      { href: "/pilote", label: "Pilote", icon: Cpu },
+      { href: "/demarrage", label: "Prise en main", icon: Footprints },
+      { href: "/recette", label: "Recette", icon: ClipboardCheck },
+      { href: "/compte", label: "Compte", icon: UserCog },
+      { href: "/settings", label: "Réglages", icon: Settings },
+    ],
+  },
+];
+
+/** Toutes les entrées, à plat — sert au mode replié et aux vérifications. */
+const NAV = [...NAV_QUOTIDIEN, ...NAV_GROUPES.flatMap((g) => g.items)];
 
 // Sur téléphone, le Closer OS remplace Templates : c'est LE compagnon terrain.
 const MOBILE_NAV = NAV.filter((n) =>
@@ -120,6 +189,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       const next = !c;
       if (typeof window !== "undefined")
         localStorage.setItem("alpha_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
+
+  // Repli des groupes de navigation — mémorisé par navigateur. Une valeur
+  // absente signifie « laisse le groupe décider » : il s'ouvre s'il contient
+  // la page courante. On n'écrit donc que les choix EXPLICITES de l'opérateur.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(localStorage.getItem("alpha_nav_groups") ?? "{}") as Record<string, boolean>;
+    } catch {
+      return {};
+    }
+  });
+  const toggleGroup = (id: string, ouvert: boolean) =>
+    setOpenGroups((s) => {
+      const next = { ...s, [id]: ouvert };
+      try {
+        localStorage.setItem("alpha_nav_groups", JSON.stringify(next));
+      } catch {
+        /* navigation privée / stockage plein — le repli reste juste éphémère */
+      }
       return next;
     });
 
@@ -230,25 +321,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className={cn("flex-1 overflow-y-auto py-3 space-y-0.5", collapsed ? "px-2" : "px-3")}>
-          {NAV.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              aria-current={isActive(href) ? "page" : undefined}
-              title={collapsed ? label : undefined}
-              className={cn(
-                "flex items-center rounded-lg text-sm transition-colors",
-                collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
-                isActive(href)
-                  ? "bg-bronze-900/70 text-bronze-300 font-medium"
-                  : "text-paper-dim hover:text-paper hover:bg-ink-800"
-              )}
-            >
-              <Icon size={17} strokeWidth={isActive(href) ? 2.4 : 1.8} />
-              {!collapsed && label}
-            </Link>
-          ))}
+          {/* Replié : tout à plat, en icônes — la hiérarchie ne se lit pas
+              sans libellés, autant ne pas la simuler. */}
+          {collapsed
+            ? NAV.map(({ href, label, icon: Icon }) => (
+                <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} collapsed />
+              ))
+            : (
+              <>
+                {NAV_QUOTIDIEN.map(({ href, label, icon: Icon }) => (
+                  <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} />
+                ))}
+
+                {NAV_GROUPES.map((g) => {
+                  // Le groupe qui contient la page courante s'ouvre tout seul :
+                  // on ne doit jamais avoir à chercher où on se trouve.
+                  const contientPage = g.items.some((i) => isActive(i.href));
+                  const ouvert = openGroups[g.id] ?? contientPage;
+                  return (
+                    <div key={g.id} className="pt-2">
+                      <button
+                        onClick={() => toggleGroup(g.id, !ouvert)}
+                        aria-expanded={ouvert}
+                        className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-left font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint transition-colors hover:text-paper"
+                      >
+                        <ChevronRight size={11} className={cn("transition-transform", ouvert && "rotate-90")} />
+                        {g.label}
+                      </button>
+                      {ouvert &&
+                        g.items.map(({ href, label, icon: Icon }) => (
+                          <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} />
+                        ))}
+                    </div>
+                  );
+                })}
+              </>
+            )}
         </nav>
 
         {!collapsed && (
@@ -334,5 +442,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </LockGate>
     </AuthGate>
     </>
+  );
+}
+
+/** Une entrée de navigation — un seul rendu, pour que replié et déplié ne divergent jamais. */
+function NavLink({
+  href,
+  label,
+  Icon,
+  active,
+  collapsed,
+}: {
+  href: string;
+  label: string;
+  Icon: typeof BarChart3;
+  active: boolean;
+  collapsed?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? label : undefined}
+      className={cn(
+        "flex items-center rounded-lg text-sm transition-colors",
+        collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
+        active ? "bg-bronze-900/70 text-bronze-300 font-medium" : "text-paper-dim hover:text-paper hover:bg-ink-800"
+      )}
+    >
+      <Icon size={17} strokeWidth={active ? 2.4 : 1.8} />
+      {!collapsed && label}
+    </Link>
   );
 }
