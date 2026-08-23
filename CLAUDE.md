@@ -25,11 +25,19 @@ demande explicitement ça et il a besoin de **ventes réelles**, pas de démos.
 Le compte MAÎTRE (EAGLEYE) est l'interface qui pilote tout. Basculer de compte
 change l'identité + l'offre + la commission, **pas** les données.
 
-| Compte | Ce qu'il prend | Commission |
+| Compte | Ce qu'il prend | Ce qui NOUS revient |
 |---|---|---|
-| **EAGLEYE CORP** (maître) | **tout ce qui est faisable par nous** : visibilité (sites, growth), digitalisation **< 40 k**, ex-« ScintIA Lab » | 30 % + setup |
+| **EAGLEYE CORP** (maître) | **nos offres** : visibilité (sites, growth), **Alpha Sales OS** (VIP ou **à la carte**), **OS personnalisé**, digitalisation **< 40 k**, ex-« ScintIA Lab » | **100 %** |
 | **ScintIA** | **Callflow UNIQUEMENT**, vendu comme un PRODUIT | 990 € HT setup → **30 %** + **10 % du mensuel** |
-| **Nuwacom** | chantiers **> 40 k** (sinon trop lourd pour nous) | **15 %** |
+| **Nuwacom** | chantiers **> 40 k** (sinon trop lourd pour nous) | **15 %**, puis **100 %** de la maintenance |
+
+> ⚠ **Deux « 30 % » différents, ne jamais les confondre.**
+> · Le taux d'un compte = ce qui NOUS revient. Sur EAGLEYE c'est **100 %** :
+>   c'est notre société, il n'y a personne à qui reverser. Il ne descend sous
+>   100 % que là où nous sommes **intermédiaires** (ScintIA, Nuwacom).
+> · Les **30 % + setup** de l'offre commerciale = ce qu'on **facture au
+>   client** sur le CA qu'on lui fait gagner (`lib/pricing` → `REV_SHARE`).
+>   C'est un PRIX, pas une commission reversée.
 
 **Règle de routage (négociée, définitive)** : faisable par nous → EAGLEYE ·
 Callflow → ScintIA · > 40 k → Nuwacom.
@@ -38,9 +46,9 @@ Callflow → ScintIA · > 40 k → Nuwacom.
 Cascade, pas aiguillage : un prospect peut déclencher plusieurs marches, et
 chacune revient à un compte. On monte **une marche à la fois**, jamais tout d'un
 coup.
-1. **Visibilité** détectée → **EAGLEYE** (30 %).
+1. **Visibilité** détectée → **EAGLEYE** (100 % — c'est nous).
 2. **Volume de demandes très élevé** → **Callflow / ScintIA** (30 % + 10 % mensuel).
-3. **Automatisation demandée en plus** → **EAGLEYE** (30 %). *Argument clé* :
+3. **Automatisation demandée en plus** → **EAGLEYE** (100 %). *Argument clé* :
    Callflow est le **point d'entrée** — il capte l'info exacte sur chaque
    appelant, donc l'automatisation qui suit coûte **moins de setup** (les données
    sont déjà là, le process est cartographié). Cet argument n'est servi QUE si
@@ -59,11 +67,14 @@ concentrer sur Callflow comme produit.
 
 ## Tarifs Alpha Sales OS (à refléter sur le site)
 - **10 000 € VIP** (offre haute), OU **30 % + frais de setup** (local / cloud)
-  sur devis.
+  sur devis. Ces 30 %-là sont un **PRIX facturé au client** (part de SON CA
+  généré), pas une commission reversée — voir l'encadré plus haut.
 - **Cadrage OBLIGATOIRE** avant devis : visio, appel ou SMS, avec **date + heure
   décidées** et validation de la suite côté Zakaria.
 - **Prix à la carte par brique** : un client peut ne prendre qu'Alpha Voice.
   Il ne voit QUE sa brique ; nous voyons tout.
+- **OS personnalisé** : un OS taillé sur le métier du client, pas une
+  déclinaison du nôtre. Chiffré au cadrage.
 - Callflow (ScintIA) : **990 € HT** setup + paliers minutes (59/115/169/219/319).
 
 ## Alpha Voice (opérationnel)

@@ -91,10 +91,38 @@ test("accounts — commission Callflow : 30 % du setup, 10 % du mensuel", () => 
   assert.equal(monthly.amount, 30);
 });
 
-test("accounts — la digitalisation < 40 k est à EAGLEYE, à 30 %", () => {
+test("accounts — TOUTE offre EAGLEYE est à 100 % : c'est notre société", () => {
+  // Le taux mesure ce qui NOUS revient, pas ce que le client paie. Sur nos
+  // propres offres il n'y a personne à qui reverser — un taux partiel ici
+  // ferait disparaître du chiffre d'affaires des payouts sans que ça se voie.
   const digi = commissionFor("eagleye", { amountHT: 12000, offeringKey: "digitalisation" });
-  assert.equal(digi.pct, 30);
-  assert.equal(digi.amount, 3600);
+  assert.equal(digi.pct, 100);
+  assert.equal(digi.amount, 12000);
+
+  for (const o of commercialFor("eagleye").offerings) {
+    assert.equal(o.commissionPct, 100, `${o.key} : une offre à nous n'est jamais partielle`);
+    assert.equal(o.recurringPct, 100, `${o.key} : le récurrent non plus`);
+  }
+  assert.equal(getAccount("eagleye").commissionPct, 100);
+
+  // Et les offres nommées par la doctrine sont bien là.
+  const cles = commercialFor("eagleye").offerings.map((o) => o.key);
+  for (const attendue of ["visibilite", "alpha-sales-os-vip", "alpha-sales-os-carte", "os-personnalise"]) {
+    assert.ok(cles.includes(attendue), `offre EAGLEYE manquante : ${attendue}`);
+  }
+});
+
+test("accounts — les taux partiels ne concernent QUE les intermédiaires", () => {
+  // ScintIA et Nuwacom sont des tiers : là, on reverse. C'est la seule
+  // situation où le taux descend sous 100 %.
+  assert.equal(getAccount("scintia").commissionPct, 30);
+  assert.equal(getAccount("nuwacom").commissionPct, 15);
+  for (const id of ["scintia", "nuwacom"]) {
+    assert.ok(
+      commercialFor(id).offerings.some((o) => o.commissionPct < 100),
+      `${id} : un compte intermédiaire doit porter un taux partiel`
+    );
+  }
 });
 
 test("accounts — Nuwacom : 15 % au-delà de 40 k", () => {

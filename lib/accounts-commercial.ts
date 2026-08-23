@@ -48,12 +48,16 @@ import { getAccount } from "./accounts";
 
 /**
  * Une OFFRE COMMERCIALE d'un compte, avec sa règle de commission propre.
- * La commission n'est pas la même selon l'offre ni selon la TAILLE du projet :
+ *
+ * Le taux mesure CE QUI NOUS REVIENT sur le deal — pas ce que le client paie.
+ * Il ne descend en dessous de 100 % que là où nous sommes INTERMÉDIAIRES :
+ *   • EAGLEYE           → 100 % sur tout. C'est notre société : visibilité,
+ *                         Alpha Sales OS (VIP ou à la carte), OS personnalisé,
+ *                         digitalisation jusqu'à 40 k € HT. Rien à reverser.
  *   • ScintIA Callflow  → 990 € HT de setup : 30 % + 10 % du mensuel récurrent.
- *   • EAGLEYE           → 30 % : visibilité, et digitalisation jusqu'à 40 k € HT
- *                         (l'ex-« ScintIA Lab », récupéré à la renégociation).
  *   • Nuwacom           → 15 % au-delà de 40 000 € HT, PUIS 100 % de toute la
  *                         maintenance mensuelle.
+ *
  * `minHT`/`maxHT` bornent l'ÉLIGIBILITÉ d'un projet à cette offre.
  */
 export interface Offering {
@@ -99,31 +103,53 @@ export interface AccountCommercial {
 export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
   {
     accountId: "eagleye",
+    // ⚠ TOUTES les offres EAGLEYE sont à 100 %. C'est notre société : le
+    // chiffre d'affaires ne se partage avec personne. Voir `lib/accounts.ts`
+    // pour la distinction avec les 30 % facturés au CLIENT sur son CA généré.
     offerings: [
       {
         key: "alpha-sales-os-vip",
         label: "Alpha Sales OS — VIP",
         setupHT: 10000,
-        commissionPct: 30,
-        recurringPct: 10,
-        note: "Offre haute : 10 000 € VIP. Sinon 30 % + frais de setup sur devis.",
+        commissionPct: 100,
+        recurringPct: 100,
+        note: "Offre haute : 10 000 € VIP. Sinon setup sur devis + 30 % du CA généré (ce que le CLIENT paie).",
+      },
+      {
+        key: "alpha-sales-os-carte",
+        label: "Alpha Sales OS — à la carte (par brique)",
+        commissionPct: 100,
+        recurringPct: 100,
+        note: "Le client ne prend que ses briques et ne voit que les siennes ; nous voyons tout.",
+      },
+      {
+        key: "os-personnalise",
+        label: "OS personnalisé (construit pour le client)",
+        commissionPct: 100,
+        recurringPct: 100,
+        note: "Un OS taillé sur SON métier, pas une déclinaison du nôtre. Chiffré au cadrage.",
       },
       {
         key: "visibilite",
         label: "Visibilité / Growth (sites, présence)",
-        commissionPct: 30,
+        commissionPct: 100,
+        recurringPct: 100,
         note: "TOUT ce qui est visibilité est à EAGLEYE — faisable par nous.",
       },
       {
         key: "digitalisation",
         label: "Digitalisation / transformation < 40 k",
-        commissionPct: 30,
+        commissionPct: 100,
+        recurringPct: 100,
         maxHT: 40000,
         note: "Ex-« ScintIA Lab » : récupéré par EAGLEYE. Au-delà de 40 k → Nuwacom.",
       },
     ],
     closing: { fromEmail: "contact@eagleyecorp.fr" },
-    note: "Compte maître. Prend TOUT ce qui est faisable par nous : visibilité, digitalisation < 40 k, ex-ScintIA Lab.",
+    note:
+      "Notre société. Toutes ses offres sont à 100 % : visibilité, Alpha Sales OS (VIP ou à la carte), " +
+      "OS personnalisé, digitalisation < 40 k. On ne reverse à personne — les taux partiels ne concernent " +
+      "que les comptes où nous sommes intermédiaires (ScintIA, Nuwacom).",
   },
   {
     accountId: "scintia",

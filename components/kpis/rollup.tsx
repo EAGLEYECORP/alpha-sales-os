@@ -60,7 +60,17 @@ export function KpisRollup() {
   // Économie : sur les clients signés (source pipeline, indépendante du tracking)
   const signed = prospects.filter((p) => p.stage === "signe");
   const caAn1 = signed.reduce((s, p) => s + p.setupValue + p.monthlyValue * 12, 0);
-  const ourCut = caAn1 * (commissionPct ? commissionPct / 100 : REV_SHARE);
+  // Deux pourcentages DIFFÉRENTS portaient le même nom, et l'un affichait
+  // l'autre :
+  //  · `commissionPct` = ce qui NOUS revient sur le deal. 100 % sur EAGLEYE
+  //    (c'est notre société), 30 % / 15 % là où on est intermédiaire.
+  //  · `REV_SHARE`     = la part du CA GÉNÉRÉ qu'on facture à un client dans
+  //    l'offre « setup + 30 % ». C'est le prix, pas notre marge.
+  // Le texte disait « le client garde 100 − commissionPct % » : sur un deal
+  // EAGLEYE à 100 %, ça affichait « garde 0 % », ce qui ne veut rien dire.
+  const partPct = commissionPct || Math.round(REV_SHARE * 100);
+  const ourCut = caAn1 * (partPct / 100);
+  const clientGardePct = 100 - Math.round(REV_SHARE * 100);
   const mrr = signed.reduce((s, p) => s + p.monthlyValue, 0);
   const avgLtv = signed.length ? Math.round(caAn1 / signed.length) : 0;
 
@@ -171,13 +181,13 @@ export function KpisRollup() {
           </h2>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Eco label="CA généré (an 1, signés)" value={eur(Math.round(caAn1))} accent />
-            <Eco label={`Notre part (${commissionPct || Math.round(REV_SHARE * 100)} %)`} value={eur(Math.round(ourCut))} accent />
+            <Eco label={`Notre part (${partPct} %)`} value={eur(Math.round(ourCut))} accent />
             <Eco label="MRR signé" value={eur(mrr)} />
             <Eco label="LTV moyenne / client" value={signed.length ? eur(avgLtv) : "—"} />
           </div>
           <p className="mt-3 rounded-lg border border-bronze-700/40 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper-dim">
             {signed.length > 0 ? (
-              <>Chaque client signé rapporte en moyenne <strong className="text-paper">{eur(avgLtv)}</strong> la première année — et garde {100 - (commissionPct || Math.round(REV_SHARE * 100))} % d&apos;un CA qu&apos;il n&apos;aurait pas eu. C&apos;est l&apos;argument à dérouler en RDV (<Link href="/offre" className="text-bronze-400 underline">calculateur</Link>).</>
+              <>Chaque client signé rapporte en moyenne <strong className="text-paper">{eur(avgLtv)}</strong> la première année. En partage de revenu, il garde {clientGardePct} % d&apos;un CA qu&apos;il n&apos;aurait pas eu — c&apos;est l&apos;argument à dérouler en RDV (<Link href="/offre" className="text-bronze-400 underline">calculateur</Link>).</>
             ) : (
               <>Dès la première signature, cette carte devient ton argumentaire : CA généré, ta part, ce que le client garde. <Link href="/offre" className="text-bronze-400 underline">Voir le calculateur</Link>.</>
             )}

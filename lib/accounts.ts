@@ -115,7 +115,18 @@ export const ACCOUNTS: Account[] = [
       "On outille les forces de vente avec l'automatisation IA : zéro lead perdu, la machine tourne 24/7.",
     // Le maître voit et propose tout — c'est lui qui arbitre l'offre.
     offers: ["alpha-sales-os", "callflow", "visibilite-growth"],
-    commissionPct: 30,
+    // 100 %, et ce n'est pas une faute de frappe : EAGLEYE CORP, c'est NOUS.
+    // Sur nos propres offres — visibilité, Alpha Sales OS, à la carte, OS
+    // personnalisé — il n'y a personne à qui reverser quoi que ce soit. Le
+    // « taux » d'un compte mesure ce qui nous revient sur un deal ; sur notre
+    // propre société, c'est tout.
+    //
+    // ⚠ À ne pas confondre avec les 30 % de l'offre « setup + 30 % du CA
+    // généré » : ceux-là, c'est ce qu'on FACTURE à un client sur le chiffre
+    // qu'on lui fait gagner (lib/pricing → REV_SHARE). Deux choses différentes
+    // qui portaient le même nombre — c'est précisément ce qui rendait l'erreur
+    // invisible.
+    commissionPct: 100,
     closing: {
       action: "Envoyer le DEVIS EAGLEYE CORP (chiffré, daté, avec la date de décision convenue).",
     },

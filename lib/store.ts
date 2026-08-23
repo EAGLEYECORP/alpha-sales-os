@@ -150,7 +150,10 @@ const defaultSettings: AppSettings = {
     valueProp: "On outille les forces de vente avec l'automatisation IA : zéro lead perdu, la machine tourne 24/7.",
   },
   targetMRR: 5000,
-  commissionPct: 30,
+  // Le compte par défaut est EAGLEYE — notre société. Rien à reverser, donc
+  // 100 %. À 30 %, un store neuf affichait dans les payouts un tiers du CA de
+  // NOS propres ventes, et les deux autres tiers n'allaient nulle part.
+  commissionPct: 100,
   role: "solo",
   // Vide au départ : la doctrine par défaut récite la grille tarifaire, elle
   // vient donc du serveur (voir components/cerveau/seed-loader.tsx).

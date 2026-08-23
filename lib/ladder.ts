@@ -9,9 +9,10 @@ import { NUWACOM_THRESHOLD_HT } from "./accounts";
  * CASCADE : un même prospect peut déclencher plusieurs marches, et chaque
  * marche revient au compte qui sait la porter.
  *
- *   1. VISIBILITÉ ........... besoin détecté → EAGLEYE le gère.
- *   2. VOLUME DE DEMANDES ... très élevé → CALLFLOW (ScintIA).
- *   3. AUTOMATISATION ....... demande en plus → EAGLEYE.
+ *   1. VISIBILITÉ ........... besoin détecté → EAGLEYE le gère (100 % : c'est
+ *        notre société, il n'y a personne à qui reverser).
+ *   2. VOLUME DE DEMANDES ... très élevé → CALLFLOW (ScintIA), 30 % + 10 %.
+ *   3. AUTOMATISATION ....... demande en plus → EAGLEYE (100 %).
  *        └─ argument de vente : Callflow est le POINT D'ENTRÉE. Il capte
  *           l'information exacte sur chaque personne qui appelle. Quand on
  *           automatise ensuite, les données sont déjà là → moins de setup à
@@ -44,9 +45,13 @@ export interface Rung {
   evidence: string[];
   /** L'argument à dire au prospect pour cette marche. */
   pitch: string;
-  /** Commission sur le one-shot / setup (%). */
+  /**
+   * Ce qui NOUS revient sur le one-shot / setup (%).
+   * 100 % sur les marches EAGLEYE : c'est notre société. En dessous seulement
+   * là où nous sommes intermédiaires (ScintIA 30 %, Nuwacom 15 %).
+   */
   commissionPct: number;
-  /** Commission sur le récurrent mensuel (%), si applicable. */
+  /** Ce qui nous revient sur le récurrent mensuel (%), si applicable. */
   recurringPct?: number;
 }
 
@@ -112,7 +117,9 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
       accountName: "EAGLEYE CORP",
       evidence: vis,
       pitch: "« On vous rend visible là où vos clients cherchent — puis on transforme ce trafic. »",
-      commissionPct: 30,
+      // 100 % : EAGLEYE, c'est nous. On ne reverse à personne sur nos offres.
+      commissionPct: 100,
+      recurringPct: 100,
     });
   }
 
@@ -147,7 +154,8 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
           "appelle. Quand on automatise ensuite, on a déjà toutes les données et le process est cartographié — " +
           "vous payez donc MOINS de setup que si on partait de zéro. »"
         : "« On automatise le process là où il vous coûte du temps — en partant de vos vraies données, pas d'un modèle. »",
-      commissionPct: 30,
+      commissionPct: 100,
+      recurringPct: 100,
     });
   }
 
