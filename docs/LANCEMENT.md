@@ -2,7 +2,10 @@
 
 > **Pour le thread Claude Code local** ouvert dans
 > `/home/neo4tony/Desktop/EAGLEYE CORP/alpha-sales-os/`.
-> Objectif : passer LIVE. Lis ce fichier en premier, puis `docs/HANDOFF.md`
+> Objectif : passer LIVE. Ce fichier dit COMMENT (machine, env, process).
+> Pour savoir QUOI faire et dans quel ordre — ce qui bloque réellement le
+> lancement — voir `docs/CHECKLIST-LANCEMENT.md`.
+> Lis ensuite `docs/HANDOFF.md`
 > (architecture) et `docs/INSTALLATION.md` (détail pas-à-pas) si besoin.
 > Machine cible : MacBook Air 2014 sous Linux Mint — n8n local, app locale,
 > Vercel = réceptionniste publique (`https://alphasalesos.vercel.app`).
