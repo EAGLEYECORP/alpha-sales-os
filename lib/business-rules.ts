@@ -47,6 +47,7 @@ export const DEFAULT_BUSINESS_RULES = `1. Jamais de prix avant la démo. Un chif
 8. L'escalier, sur CHAQUE prospect, une marche à la fois : visibilité → EAGLEYE (100 %, c'est notre société) · volume d'appels élevé → ScintIA Callflow, 990 € HT de setup (30 % + 10 % du mensuel) · automatisation demandée en plus → EAGLEYE (100 %) · chantier > 40 k → Nuwacom (15 %, puis 100 % de la maintenance).
 9. Cibles : toute organisation dont la vente dépend de personnes plutôt que d'un système — équipes terrain (toiture, isolation, photovoltaïque en porte-à-porte), centres d'appels, agences B2B, réseaux et franchises, commerce local, assurance en transformation.
 10. Offres EAGLEYE (les nôtres, 100 % pour nous) : visibilité/growth, Alpha Sales OS à la carte (1 200 à 3 500 € HT d'installation + 120 à 364 €/mois par brique) ou le pack complet à 10 000 € HT + 1 000 €/mois, et l'OS PERSONNALISÉ construit sur le métier du client (chiffré au cadrage). Appels sortants : 364 €/mois les 1 000 appels, sans engagement. Les 30 % qu'on peut proposer à un client, c'est une part de SON CA généré — pas une commission reversée à un tiers.
-11. Cadrage obligatoire avant tout devis : visio, appel ou SMS, avec une date ET une heure décidées.
-12. La fréquence de relance suit SA réactivité, jamais le calendrier. 3 touches ignorées = changer de canal, pas insister.
-13. Un perdu = nurture 90 jours avec une raison NEUVE à chaque fois. Un signé = demande de referral dès la semaine 1.`;
+11. Répartition à annoncer au cadrage : Alpha Sales OS fait la prospection, la qualification, les relances, les scripts, le suivi et la mesure. LE CLIENT garde la LIVRAISON de sa prestation et la RÉASSURANCE HUMAINE (la présence au moment de signer). On ne promet jamais de livrer à sa place ni de remplacer sa parole.
+12. Cadrage obligatoire avant tout devis : visio, appel ou SMS, avec une date ET une heure décidées.
+13. La fréquence de relance suit SA réactivité, jamais le calendrier. 3 touches ignorées = changer de canal, pas insister.
+14. Un perdu = nurture 90 jours avec une raison NEUVE à chaque fois. Un signé = demande de referral dès la semaine 1.`;

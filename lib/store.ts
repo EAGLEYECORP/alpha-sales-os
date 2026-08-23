@@ -38,6 +38,7 @@ import { stageById, signingBlockers } from "./hormozi";
 // maintenant par /api/knowledge/seed — voir `seedNotes` plus bas.
 import type { KnowledgeNote } from "./knowledge";
 import type { Lecon } from "./apprentissage";
+import { OFFRES_SYSTEME, idDepuisLabel, peutSupprimer, validerOffre, type ErreurOffre, type Offre } from "./offer-catalogue";
 import { elaguer } from "./apprentissage";
 import { applyAccount } from "./accounts";
 import type { StandardDay } from "./standard";
@@ -68,6 +69,14 @@ interface AlphaState {
   partners: Partner[];
   /** Le Cerveau — notes markdown (RAG lexical, façon Obsidian). */
   notes: KnowledgeNote[];
+  /**
+   * Les offres que l'OPÉRATEUR vend à SES prospects.
+   *
+   * ⚠ Rien à voir avec `lib/bricks.ts`, qui est NOTRE catalogue. Un couvreur
+   * qui utilise Alpha Sales OS vend des toitures, pas Alpha Voice. Ses offres
+   * sont sa donnée, et il doit pouvoir les changer sans nous appeler.
+   */
+  offers: Offre[];
   /** Historique de la barre du jour — ce qui fait la série. */
   standardLog: StandardDay[];
 
@@ -115,6 +124,12 @@ interface AlphaState {
   upsertNote: (note: Partial<KnowledgeNote> & { title: string; body: string }) => string;
   /** Fusionne le socle du Cerveau servi par le serveur (une seule fois). */
   seedNotes: (socle: KnowledgeNote[]) => void;
+  /** Crée ou met à jour une offre. Renvoie les erreurs de validation, ou []. */
+  upsertOffre: (o: Partial<Offre>) => ErreurOffre[];
+  /** Active / désactive une offre sans toucher à l'historique. */
+  basculerOffre: (id: string, actif: boolean) => void;
+  /** Supprime une offre — refuse si le routage en dépend. */
+  supprimerOffre: (id: string) => { ok: boolean; raison?: string };
   /** Écrit une leçon de terrain dans le Cerveau. `null` = rien à apprendre. */
   apprendre: (lecon: Lecon | null) => string | null;
   deleteNote: (id: string) => void;
@@ -370,6 +385,8 @@ export const useAlpha = create<AlphaState>()(
       customScripts: [],
       partners: [],
       notes: [],
+      // Recopiées du socle : ensuite elles appartiennent à l'opérateur.
+      offers: OFFRES_SYSTEME.map((o) => ({ ...o })),
       standardLog: [],
 
       upsertProspect: (p) =>
@@ -621,6 +638,48 @@ export const useAlpha = create<AlphaState>()(
         return id;
       },
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+
+      upsertOffre: (o) => {
+        const existantes = get().offers;
+        const erreurs = validerOffre(o, existantes);
+        // On refuse AVANT d'écrire : une offre à moitié valide qui traîne dans
+        // le store ressort dans un email ou un prompt, et là il est trop tard.
+        if (erreurs.length) return erreurs;
+
+        const id = o.id ?? idDepuisLabel(o.label ?? "", existantes);
+        const ancienne = existantes.find((x) => x.id === id);
+        const suivante: Offre = {
+          id,
+          label: (o.label ?? "").trim(),
+          what: (o.what ?? "").trim(),
+          pitch: (o.pitch ?? "").trim(),
+          setupHT: Math.max(0, o.setupHT ?? 0),
+          monthlyHT: Math.max(0, o.monthlyHT ?? 0),
+          famille: o.famille!,
+          actif: o.actif ?? true,
+          // Le drapeau système ne s'invente pas : il vient de l'offre existante,
+          // jamais de l'entrée. Sinon n'importe qui rendrait son offre
+          // indélébile en cochant une case.
+          systeme: ancienne?.systeme,
+        };
+        set((s) => ({
+          offers: ancienne ? s.offers.map((x) => (x.id === id ? suivante : x)) : [...s.offers, suivante],
+        }));
+        return [];
+      },
+
+      basculerOffre: (id, actif) =>
+        set((s) => ({ offers: s.offers.map((o) => (o.id === id ? { ...o, actif } : o)) })),
+
+      supprimerOffre: (id) => {
+        const toutes = get().offers;
+        const o = toutes.find((x) => x.id === id);
+        if (!o) return { ok: false, raison: "Offre introuvable." };
+        const verdict = peutSupprimer(o, toutes);
+        if (!verdict.ok) return verdict;
+        set((s) => ({ offers: s.offers.filter((x) => x.id !== id) }));
+        return { ok: true };
+      },
 
       /**
        * Enregistre une LEÇON tirée du terrain dans le Cerveau.
@@ -887,6 +946,8 @@ export const useAlpha = create<AlphaState>()(
           // Cerveau : le socle n'est plus posé ici (il vient du serveur), mais
           // un store d'avant la v5 n'a pas de tableau du tout.
           notes: s.notes ?? [],
+          // Store d'avant les offres éditables : on pose le socle.
+          offers: s.offers?.length ? s.offers : OFFRES_SYSTEME.map((o) => ({ ...o })),
           standardLog: s.standardLog ?? [],
           settledPayouts: s.settledPayouts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },

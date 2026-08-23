@@ -22,6 +22,7 @@ import { NotionPush } from "@/components/settings/notion-push";
 import { Deliverability } from "@/components/settings/deliverability";
 import { CrmDictionary } from "@/components/settings/crm-dictionary";
 import { PricingEditor } from "@/components/settings/pricing-editor";
+import { OffresEditor } from "@/components/settings/offres-editor";
 import { IcpGenerator } from "@/components/settings/icp-generator";
 import { AccountSwitcher } from "@/components/settings/account-switcher";
 import { ImportTriagePanel } from "@/components/settings/import-triage";
@@ -413,6 +414,9 @@ export default function SettingsPage() {
         <IcpGenerator />
 
         {/* Tarifs — white-label : chaque compte définit ses prix (pilote /offre) */}
+        {/* Ce que TU vends — editable sans redeployer. Placé avant la grille
+            tarifaire : on définit l'offre, puis on la chiffre. */}
+        <OffresEditor />
         <PricingEditor />
 
         <PushToggle />

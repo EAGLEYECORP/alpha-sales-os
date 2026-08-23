@@ -77,6 +77,35 @@ concentrer sur Callflow comme produit.
   déclinaison du nôtre. Chiffré au cadrage.
 - Callflow (ScintIA) : **990 € HT** setup + paliers minutes (59/115/169/219/319).
 
+## Répartition du travail — ce qu'Alpha fait, ce que le client fait
+Doctrine de cadrage, à dire au client dès le premier rendez-vous : elle évite
+la promesse floue qui se paie à la livraison.
+
+| | Qui |
+|---|---|
+| Prospection, qualification, relances, scripts, suivi, pipeline, présentations, mesure | **Alpha Sales OS** |
+| **La livraison** de la prestation vendue | **le client** |
+| **La réassurance humaine** — la présence, la voix, la poignée de main au moment de signer | **le client** |
+
+Alpha ne livre pas le chantier et ne remplace pas la personne qui rassure. Il
+supprime tout ce qui se trouve AVANT et AUTOUR : le travail répétitif qui fait
+qu'un bon vendeur passe sa journée à ne pas vendre.
+
+> ⚠ Ne PAS écrire « les meilleurs du marché » dans un artefact vendu ou public.
+> Zéro vente à ce jour : c'est une conviction, pas une preuve, et les tests de
+> la vitrine refusent déjà les affirmations invérifiables. Ce qui se dit sans
+> mentir : « on fait tout sauf la livraison et la poignée de main ».
+
+## Offres — modifiables sans redéployer (`lib/offer-catalogue.ts`)
+Ce que l'OPÉRATEUR vend à SES prospects (≠ `lib/bricks.ts`, qui est NOTRE
+catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
+- Chaque offre se rattache à une **famille de routage** (`alpha-sales-os`,
+  `callflow`, `visibilite-growth`). La famille décide du compte, de l'aimant
+  et de la marche — **pas le nom**. Créer une 4ᵉ mécanique de routage demande
+  encore du code.
+- On **désactive**, on ne supprime pas : une offre portée par une fiche signée
+  ne s'efface pas sans rendre l'historique illisible.
+
 ## Alpha Voice (opérationnel)
 - Pile : Deepgram STT · LLM **NVIDIA NIM `openai/gpt-oss-20b`** (défaut — sans
   latence ; le 70B fait la file d'attente ~14 s, ne pas y revenir) · Fish TTS ·
