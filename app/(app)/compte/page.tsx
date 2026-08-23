@@ -6,6 +6,7 @@ import { LogOut, ShieldCheck, UserCog, Users } from "lucide-react";
 import { authAvailable, getCurrentUser, onAuthChange, signOut, type AuthUser } from "@/lib/auth";
 import { useAlpha } from "@/lib/store";
 import { BillingCard } from "@/components/billing/billing-card";
+import { MonOffre } from "@/components/billing/mon-offre";
 import { ChangePassword } from "@/components/security/change-password";
 
 /**
@@ -110,6 +111,10 @@ export default function ComptePage() {
         </section>
       )}
 
+      {/* Ce que ce compte possède, et l'explication d'un refus : le middleware
+          renvoie ici avec ?bloque=… Placé AVANT la facturation, parce qu'un
+          client bloqué cherche d'abord à comprendre, pas à payer. */}
+      <MonOffre />
       {available && ready && user && <BillingCard email={user.email} />}
 
       <p className="px-1 text-[10.5px] italic text-paper-faint">

@@ -6,6 +6,8 @@ import {
   serverAuthMisconfigured,
   verifySupabaseJwt,
 } from "@/lib/supabase-jwt";
+import { autorise, comptesActifs, resoudreDroits } from "@/lib/entitlements";
+import { CHEMIN_PAR_API } from "@/lib/api-access";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -120,6 +122,21 @@ const PUBLIC_PREFIXES = [
   // jeton dans l'URL (CALENDAR_TOKEN) et refuse tout sans lui.
   "/api/calendar",
 ];
+
+/**
+ * Le chemin MÉTIER que sert une route API.
+ *
+ * Sans cette traduction, il faudrait recopier la carte des briques une
+ * deuxième fois pour les API — et deux cartes finissent toujours par
+ * diverger. Une API non listée retombe sur son propre chemin, donc sur
+ * « non classé », donc REFUSÉE : c'est voulu.
+ */
+function cheminMetierDeLApi(pathname: string): string {
+  for (const [prefixe, chemin] of Object.entries(CHEMIN_PAR_API)) {
+    if (pathname === prefixe || pathname.startsWith(prefixe + "/")) return chemin;
+  }
+  return pathname;
+}
 
 function startsWithAny(path: string, prefixes: string[]): boolean {
   return prefixes.some((p) => path === p || path.startsWith(p + "/"));
@@ -240,6 +257,37 @@ export async function middleware(req: NextRequest) {
       if (!payload?.sub) {
         return NextResponse.json({ error: "Compte requis — connecte-toi." }, { status: 401 });
       }
+    }
+  }
+
+  // ── 0ter. DROITS PAR BRIQUE (vente à la carte) ─────────────────────
+  //
+  // C'est ici que « il ne voit QUE sa brique » devient vrai. Filtrer la
+  // navigation côté client est un confort : le client tape l'URL, ou lit le
+  // JavaScript, qui est téléchargeable. La seule barrière est celle-ci.
+  //
+  // Les API sont gardées AUSSI, et par la même règle : une page bloquée dont
+  // l'API répond ne protège rien du tout.
+  //
+  // En mode solo (aucun système de comptes configuré), `resoudreDroits`
+  // renvoie le droit SOLO et rien ne change — l'usage d'aujourd'hui reste
+  // intact.
+  if (comptesActifs() && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
+    const droits = await resoudreDroits(req);
+    // Une route API est jugée sur le chemin de la FONCTIONNALITÉ qu'elle sert,
+    // pas sur son propre chemin : /api/voice/call appartient à Alpha Voice.
+    const chemin = pathname.startsWith("/api/") ? cheminMetierDeLApi(pathname) : pathname;
+    if (!autorise(droits, chemin)) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "Cette fonctionnalité n'est pas incluse dans ton offre.", code: "brique_absente" },
+          { status: 403 }
+        );
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = "/compte";
+      url.search = `?bloque=${encodeURIComponent(pathname)}`;
+      return NextResponse.redirect(url);
     }
   }
 

@@ -315,7 +315,7 @@ export default function OutboxPage() {
         </label>
         <input
           className="input mt-1.5 w-full max-w-md text-[13px]"
-          placeholder="eagleyecorp.ad@gmail.com"
+          placeholder="toi@exemple.fr"
           value={sender}
           onChange={(e) => changeSender(e.target.value)}
         />

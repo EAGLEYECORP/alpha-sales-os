@@ -59,6 +59,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { N8nAutoSync } from "@/components/n8n-autosync";
 import { StorageAlert } from "@/components/security/storage-alert";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
+import { afficherChemin, useDroits } from "@/lib/use-droits";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -238,6 +239,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
+  // Ce que ce compte a le droit de VOIR dans le menu. La barrière réelle est
+  // le middleware ; ici on évite seulement les culs-de-sac.
+  const droits = useDroits();
+  const visible = (href: string) => afficherChemin(droits, href);
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -326,19 +332,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Replié : tout à plat, en icônes — la hiérarchie ne se lit pas
               sans libellés, autant ne pas la simuler. */}
           {collapsed
-            ? NAV.map(({ href, label, icon: Icon }) => (
+            ? NAV.filter((i) => visible(i.href)).map(({ href, label, icon: Icon }) => (
                 <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} collapsed />
               ))
             : (
               <>
-                {NAV_QUOTIDIEN.map(({ href, label, icon: Icon }) => (
+                {NAV_QUOTIDIEN.filter((i) => visible(i.href)).map(({ href, label, icon: Icon }) => (
                   <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} />
                 ))}
 
                 {NAV_GROUPES.map((g) => {
+                  // On masque ce que le compte ne possède pas — confort, pas
+                  // sécurité : le serveur refuse de toute façon. Un groupe
+                  // entièrement masqué disparaît, sinon on affiche un titre
+                  // qui n'ouvre rien.
+                  const items = g.items.filter((i) => visible(i.href));
+                  if (!items.length) return null;
                   // Le groupe qui contient la page courante s'ouvre tout seul :
                   // on ne doit jamais avoir à chercher où on se trouve.
-                  const contientPage = g.items.some((i) => isActive(i.href));
+                  const contientPage = items.some((i) => isActive(i.href));
                   const ouvert = openGroups[g.id] ?? contientPage;
                   return (
                     <div key={g.id} className="pt-2">
@@ -351,7 +363,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         {g.label}
                       </button>
                       {ouvert &&
-                        g.items.map(({ href, label, icon: Icon }) => (
+                        items.map(({ href, label, icon: Icon }) => (
                           <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} />
                         ))}
                     </div>
