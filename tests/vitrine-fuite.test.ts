@@ -383,3 +383,34 @@ test("bundle public — la coquille de l'app n'est pas imposée aux pages publiq
     assert.doesNotMatch(f, /\(app\)/, `${f} ne doit pas être dans le groupe (app)`);
   }
 });
+
+test("routes — celle qui sert un module serveur est forcément INTERNE", () => {
+  /**
+   * Les modules qu'on vient de sortir du navigateur ne valent que par la porte
+   * qui les remplace. Une route qui les sert sans être dans `INTERNAL` n'a que
+   * SITE_PASSWORD devant elle : pas de garde même-origine, et surtout aucune
+   * relecture de sa sensibilité au moment où on l'ajoute.
+   *
+   * J'ai créé exactement ce trou en ajoutant `/api/pipeline` (noms, adresses et
+   * téléphones d'entreprises réelles) sans l'inscrire. Ce test le dérive du
+   * code au lieu de compter sur la mémoire.
+   */
+  const middleware = lire("middleware.ts");
+  const bloc = middleware.slice(middleware.indexOf("const INTERNAL"), middleware.indexOf("const PUBLIC_PREFIXES"));
+  const internes = [...bloc.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+
+  const routes = sources(["app/api"]).filter((f) => /\/route\.tsx?$/.test(f));
+  const fautes: string[] = [];
+
+  for (const f of routes) {
+    const graphe = grapheImports(f.replace(/\.tsx?$/, ""));
+    const sert = MODULES_SERVEUR.filter((m) => graphe.has(m));
+    if (!sert.length) continue;
+    // Le chemin d'URL de la route : app/api/x/y/route.ts → /api/x/y
+    const url = "/" + f.replace(/^app\//, "").replace(/\/route\.tsx?$/, "");
+    if (!internes.some((p) => url === p || url.startsWith(p + "/"))) {
+      fautes.push(`${url} sert ${sert.join(", ")} sans être dans INTERNAL`);
+    }
+  }
+  assert.deepEqual(fautes, [], fautes.join("\n"));
+});
