@@ -28,6 +28,8 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // sinon un client ne peut pas voir ce qu'il pourrait acheter en plus.
   "/api/catalogue": "/compte",
   "/api/compte": "/compte",
+  // File de propositions : c'est du pilotage du pipe, donc du CRM.
+  "/api/propositions": "/pipeline",
 
   // ── CRM & Pipeline ──
   "/api/crm": "/pipeline",
@@ -76,7 +78,9 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // ── Notifications : transversales, liées au compte lui-même ──
   "/api/push": "/compte",
 
-  // ── API publique v1 : porte sa PROPRE authentification par clé.
-  // Elle n'est pas gouvernée par une brique — elle est hors session.
+  // ── API publique v1 et serveur MCP : portent leur PROPRE authentification
+  // par clé, avec portées. Ils ne sont pas gouvernés par une brique — ils
+  // sont hors session.
   "/api/v1": "/",
+  "/api/mcp": "/",
 };

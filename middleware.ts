@@ -77,6 +77,8 @@ const INTERNAL = [
   // et téléphones d'entreprises tierces. C'est ce qui partait dans le bundle ;
   // ça ne doit pas se contenter de la porte d'accès.
   "/api/pipeline",
+  // File de propositions : lue et tranchée par l'opérateur connecté.
+  "/api/propositions",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers
@@ -98,6 +100,14 @@ const PUBLIC_PREFIXES = [
   // (ALPHA_API_KEYS) et refuse tout si aucune clé n'est configurée — ce n'est
   // donc pas un trou, c'est une porte différente.
   "/api/v1",
+  // Serveur MCP : un agent externe (Cowork, Claude Code) s'y branche sans
+  // navigateur, donc sans cookie. Il porte sa PROPRE authentification par clé
+  // avec PORTÉES (ALPHA_API_KEYS) et refuse tout sans clé configurée — même
+  // porte que /api/v1, pas un trou.
+  //
+  // ⚠ Ses outils sont en LECTURE et PROPOSITION uniquement : aucun n'envoie,
+  // n'appelle ni ne modifie. C'est ce qui rend acceptable de l'exposer.
+  "/api/mcp",
   // Service worker : il DOIT être servi comme du JavaScript, à la racine.
   // Derrière la porte d'accès, le navigateur recevrait la redirection vers
   // /gate — donc du HTML — et l'enregistrement échouerait avec une erreur de

@@ -9,6 +9,7 @@ import { useAlpha } from "@/lib/store";
 import { masterRappelAll, type MasterPlan } from "@/lib/master-rappel";
 import { buildCampaignRun, skipBreakdown, SKIP_LABELS } from "@/lib/campaign-runner";
 import { CampaignRunner } from "@/components/controle/runner";
+import { PropositionsPanel } from "@/components/controle/propositions-panel";
 import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
 import { pipelineCoverage } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,10 @@ export default function ControlePage() {
           <RefreshCw size={13} className={cn(loading && "animate-spin")} /> Rafraîchir
         </button>
       </div>
+
+      {/* Ce que l'orchestrateur propose — en haut : c'est la file qu'on
+          tranche avant de chercher quoi faire soi-même. */}
+      <PropositionsPanel />
 
       <div className="grid gap-2 sm:grid-cols-4">
         <Stat label="Appels en cours" value={live.length} tone={live.length ? "green" : "muted"} icon={<PhoneCall size={13} />} />

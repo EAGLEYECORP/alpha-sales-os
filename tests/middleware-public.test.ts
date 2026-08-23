@@ -59,6 +59,9 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
     "/api/calendar",
     "/api/webhooks/inbound",
     "/api/webhooks/stripe",
+    // Serveur MCP : porte sa propre clé À PORTÉES et refuse tout sans clé
+    // configurée. Vérifié pour de vrai plus bas — l'inscrire ici ne suffit pas.
+    "/api/mcp",
   ]);
   for (const p of publics) {
     if (!p.startsWith("/api/")) continue;
@@ -68,6 +71,41 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
       `${p} est public sans porter de clé — est-ce voulu ?`
     );
   }
+});
+
+test("les routes à clé la vérifient VRAIMENT, pas seulement sur la liste", () => {
+  /**
+   * L'allowlist ci-dessus est déclarative : y inscrire une route suffirait à
+   * la faire passer, même sans authentification. C'est précisément le
+   * raccourci qu'on prendrait un soir de rush. On vérifie donc la SOURCE.
+   */
+  for (const [f, motif] of [
+    ["app/api/mcp/route.ts", /autoriserApi\(/],
+    ["app/api/v1/prospects/route.ts", /ALPHA_API_KEYS|autoriserApi\(/],
+    ["app/api/v1/etat/route.ts", /autoriserApi\(/],
+    ["app/api/v1/propositions/route.ts", /autoriserApi\(/],
+  ] as const) {
+    const src = readFileSync(join(process.cwd(), f), "utf8");
+    assert.match(src, motif, `${f} est déclarée « porteuse de clé » mais ne la vérifie pas`);
+  }
+});
+
+test("MCP — aucun outil ne peut agir, seulement lire et proposer", () => {
+  /**
+   * C'est LA garde de tout le dispositif. Un agent branché sur un pipe réel
+   * doit pouvoir se tromper sans que ça coûte un client. Le jour où un outil
+   * envoie un email, cette ligne de diff doit sauter aux yeux en revue.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/mcp/route.ts"), "utf8");
+  const chemins = [...src.matchAll(/chemin:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(chemins.length >= 2, "les outils doivent être déclarés avec leur chemin");
+  const AUTORISES = ["/api/v1/etat", "/api/v1/propositions"];
+  for (const c of chemins) {
+    assert.ok(AUTORISES.includes(c), `l'outil MCP appelle ${c} — hors du périmètre lecture/proposition`);
+  }
+  // Et aucun chemin d'action ne doit apparaître dans le fichier, même commenté
+  // en exemple : un exemple se copie.
+  assert.doesNotMatch(src, /api\/send|api\/voice\/call|api\/gmail/, "un chemin d'ACTION apparaît dans le serveur MCP");
 });
 
 test("les routes de cron exigent leur secret, et refusent tout sans lui", () => {
