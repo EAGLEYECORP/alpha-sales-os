@@ -35,6 +35,9 @@ const INTERNAL = [
   "/api/ai",
   "/api/agent",
   "/api/sparring",
+  // Génération d'ICP : elle consomme un jeton LLM par appel et reçoit la
+  // doctrine du compte. Même origine exigée, comme les autres surfaces IA.
+  "/api/icp",
   "/api/audit/extract",
   "/api/audit/generate",
   "/api/email/preview",

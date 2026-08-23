@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { doctrineOrDefault } from "@/lib/business-rules";
 import type { Prospect } from "@/lib/types";
 import { runAI } from "@/lib/ai-engine";
 import { playbookPrompt } from "@/lib/playbook";
@@ -203,6 +204,11 @@ export async function POST(request: NextRequest) {
   if (body.task === "briefing" && typeof body.tourSummary !== "string") {
     return NextResponse.json({ error: "tourSummary requis pour le briefing" }, { status: 400 });
   }
+
+  // La doctrine ne dépend plus de ce que le navigateur veut bien envoyer :
+  // une chaîne vide donnait une IA qui ignore « jamais de prix avant la démo »,
+  // sans que rien ne le signale. Le repli est côté serveur.
+  body.businessRules = doctrineOrDefault(body.businessRules);
 
   // Le playbook terrain entre dans le système : c'est lui qui fait la
   // différence entre un conseil générique et la méthode maison.

@@ -19,6 +19,24 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+/**
+ * La doctrine à injecter dans un prompt, avec REPLI SERVEUR.
+ *
+ * ⚠ Ce repli n'existait pas, et c'est un défaut qui précède cette passe : les
+ * routes IA prenaient la doctrine dans le CORPS de la requête, sans rien
+ * derrière. Un navigateur qui envoie une chaîne vide — store neuf, réglages
+ * effacés, ou simplement le socle pas encore descendu — obtenait une IA qui
+ * ignore « jamais de prix avant la démo ». Silencieusement : la réponse arrive
+ * quand même, elle est juste moins bonne, et rien ne le signale.
+ *
+ * On ne fait donc plus confiance au client pour porter la doctrine. S'il en
+ * envoie une (l'opérateur l'a éditée dans ses réglages), elle gagne ; sinon,
+ * c'est celle-ci.
+ */
+export function doctrineOrDefault(depuisClient?: string): string {
+  return (depuisClient ?? "").trim() || DEFAULT_BUSINESS_RULES;
+}
+
 export const DEFAULT_BUSINESS_RULES = `1. Jamais de prix avant la démo. Un chiffre lâché trop tôt transforme la conversation en négociation.
 2. Alpha Voice annonce qu'il est une IA dès la première phrase (AI Act, art. 50). Jamais contourné, jamais adouci.
 3. La décision EST le produit. On vend une décision, pas un outil.

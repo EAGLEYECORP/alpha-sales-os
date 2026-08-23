@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { doctrineOrDefault } from "@/lib/business-rules";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { verticalById, verticalForSector } from "@/lib/playbook";
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
   if (!body?.prospect || !Array.isArray(body.history)) {
     return NextResponse.json({ error: "prospect et history requis" }, { status: 400 });
   }
+  // Repli serveur : voir lib/business-rules.ts. Un coach sans doctrine
+  // entraîne à mal vendre, et ça ne se voit pas dans la réponse.
+  body.businessRules = doctrineOrDefault(body.businessRules);
 
   if (!ollamaConfigured() && !nvidiaConfigured() && !process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ ...localEngine(body), engine: "local" });

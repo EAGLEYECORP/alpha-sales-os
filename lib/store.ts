@@ -153,9 +153,12 @@ const defaultSettings: AppSettings = {
   commissionPct: 30,
   role: "solo",
   // Vide au départ : la doctrine par défaut récite la grille tarifaire, elle
-  // vient donc du serveur (voir components/cerveau/seed-loader.tsx). Les
-  // routes IA ont leur propre repli côté serveur, donc rien ne casse tant
-  // qu'elle n'est pas descendue.
+  // vient donc du serveur (voir components/cerveau/seed-loader.tsx).
+  //
+  // Les routes IA appliquent `doctrineOrDefault()` : une doctrine vide y est
+  // remplacée par celle de la maison. Sans ce repli — qui n'existait pas —,
+  // un store neuf faisait tourner l'IA sans « jamais de prix avant la démo »,
+  // silencieusement.
   businessRules: "",
   bookingUrl: "",
   apiKeys: [],

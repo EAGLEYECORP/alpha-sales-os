@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { doctrineOrDefault } from "@/lib/business-rules";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { playbookPrompt } from "@/lib/playbook";
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
     return NextResponse.json({ error: "messages requis" }, { status: 400 });
   }
+  // Repli serveur : voir lib/business-rules.ts.
+  body.businessRules = doctrineOrDefault(body.businessRules);
 
   // Un assistant vaut ce que vaut son contexte : la méthode terrain (qui le
   // fait parler comme la maison), la carte de l'app, ses limites, et l'état

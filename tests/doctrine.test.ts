@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { SEED_PROSPECT_IDS, DEMO_PROSPECT_IDS, isDemoProspect, seedProspects } from "../lib/seed";
-import { DEFAULT_BUSINESS_RULES } from "../lib/business-rules";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { DEFAULT_BUSINESS_RULES, doctrineOrDefault } from "../lib/business-rules";
 import { clipDoctrine, DOCTRINE_MAX_CHARS } from "../lib/identity";
 import { NUWACOM_THRESHOLD_HT } from "../lib/accounts";
 import { PACK_SETUP_HT, PACK_MONTHLY_HT, OUTBOUND_TIERS } from "../lib/bricks";
@@ -65,4 +67,24 @@ test("démo — la liste de garde couvre TOUTES les fiches de démonstration", (
   }
   assert.equal(DEMO_PROSPECT_IDS.size, SEED_PROSPECT_IDS.length, "les deux listes doivent rester dérivées l'une de l'autre");
   assert.equal(SEED_PROSPECT_IDS.length, seedProspects.length);
+});
+
+test("doctrine — le serveur ne fait plus confiance au client pour la porter", () => {
+  // Régression possible depuis que le socle descend du serveur : un store neuf
+  // envoie `businessRules: ""`. Sans repli, l'IA perdait « jamais de prix avant
+  // la démo » sans qu'aucune réponse ne le signale.
+  assert.equal(doctrineOrDefault(""), DEFAULT_BUSINESS_RULES);
+  assert.equal(doctrineOrDefault("   \n  "), DEFAULT_BUSINESS_RULES);
+  assert.equal(doctrineOrDefault(undefined), DEFAULT_BUSINESS_RULES);
+  // Mais la doctrine ÉDITÉE par l'opérateur gagne toujours : c'est la sienne.
+  assert.equal(doctrineOrDefault("1. Ma règle à moi."), "1. Ma règle à moi.");
+});
+
+test("doctrine — chaque route IA applique le repli", () => {
+  // Le repli ne vaut que s'il est branché. Un ajout de route qui oublie la
+  // ligne repasserait silencieusement sur la doctrine vide.
+  for (const f of ["ai", "sparring", "agent", "icp"]) {
+    const src = readFileSync(join(process.cwd(), `app/api/${f}/route.ts`), "utf8");
+    assert.match(src, /doctrineOrDefault\(/, `/api/${f} n'applique pas le repli de doctrine`);
+  }
 });

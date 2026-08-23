@@ -1,3 +1,4 @@
+import { doctrineOrDefault } from "@/lib/business-rules";
 import { NextRequest, NextResponse } from "next/server";
 import { runAIJson } from "@/lib/ai-engine";
 import { deriveICP, mergeICP, icpSystemPrompt, icpUserPrompt, type ICP, type OfferInput } from "@/lib/icp";
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   const offer: OfferInput = body.offer ?? {};
 
-  const system = [body.identity?.trim(), icpSystemPrompt(), body.businessRules?.trim() ? `Doctrine du compte :\n${clipDoctrine(body.businessRules)}` : ""]
+  const system = [body.identity?.trim(), icpSystemPrompt(), `Doctrine du compte :\n${clipDoctrine(doctrineOrDefault(body.businessRules))}`]
     .filter(Boolean)
     .join("\n\n");
 
