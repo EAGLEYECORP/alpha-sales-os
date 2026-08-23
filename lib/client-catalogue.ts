@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 // `import type` est EFFACÉ à la compilation : la forme des données voyage,
 // pas les données. C'est ce qui permet de garder les types synchronisés avec
 // le module serveur sans rien rembarquer dans le navigateur.
-import type { AccountCommercial } from "./accounts-commercial";
+import type { AccountCommercial, CommissionQuote } from "./accounts-commercial";
 import type { DeckPrix } from "./deck";
 
 /**
@@ -70,6 +70,38 @@ export function useAccountCommercial(accountId: string): AccountCommercial | nul
   }, []);
 
   return all?.find((c) => c.accountId === accountId) ?? null;
+}
+
+/**
+ * L'offre de RÉFÉRENCE d'un compte pour un montant donné, calculée côté
+ * serveur (elle porte les taux, les planchers et les leviers de négociation).
+ *
+ * `null` tant qu'elle n'est pas revenue : le calculateur affiche alors les
+ * chiffres du deal sans comparaison, plutôt qu'une comparaison inventée.
+ */
+export function useReference(accountId: string, amountHT: number): CommissionQuote | null {
+  const [q, setQ] = useState<CommissionQuote | null>(null);
+
+  useEffect(() => {
+    let vivant = true;
+    fetch("/api/catalogue/reference", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ accountId, amountHT }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { reference: CommissionQuote }) => {
+        if (vivant) setQ(d.reference);
+      })
+      .catch(() => {
+        if (vivant) setQ(null);
+      });
+    return () => {
+      vivant = false;
+    };
+  }, [accountId, amountHT]);
+
+  return q;
 }
 
 /**

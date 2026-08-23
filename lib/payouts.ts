@@ -5,9 +5,18 @@ import type { Prospect } from "./types";
  * Payouts — TA part, prélevée sur chaque vente, cumulée depuis la première.
  *
  * Une « vente » = un paiement encaissé (status « paye ») sur une fiche.
- * Sur chaque vente, EAGLEYE prend sa part (`commissionPct` des Réglages) —
- * la « cut off the top ». Ce module en fait un registre : ligne par vente,
- * cumul depuis la vente n°1, et ce qui a déjà été versé vs ce qui reste dû.
+ * Sur chaque vente, on prend sa part — la « cut off the top ». Ce module en
+ * fait un registre : ligne par vente, cumul depuis la vente n°1, et ce qui a
+ * déjà été versé vs ce qui reste dû.
+ *
+ * ⚠ LE TAUX N'EST PAS UNIQUE. Il l'était : tout le registre s'appuyait sur le
+ * `commissionPct` des Réglages, c'est-à-dire un barème global. Or chaque
+ * affaire se structure différemment — le taux suit le levier qu'on garde dans
+ * ce deal-là. Une fiche qui porte des `dealTerms` négociés impose donc SON
+ * taux, et le barème ne sert plus que de repli.
+ *
+ * Sans ça, les payouts affichaient une prévision au barème pendant que la
+ * réalité facturée était ailleurs — l'erreur ne se voyait qu'à l'encaissement.
  *
  * Pur et testable : la source, c'est le CRM (les paiements des fiches). On
  * n'invente aucun revenu — ce qui n'est pas encaissé n'apparaît pas.
@@ -23,8 +32,12 @@ export interface PayoutRow {
   date: string;
   /** Montant encaissé (brut). */
   gross: number;
-  /** Ta part — commissionPct % du brut, arrondie. */
+  /** Ta part sur cette vente, arrondie. */
   cut: number;
+  /** Le taux réellement appliqué à CETTE ligne. */
+  pct: number;
+  /** Vient-il des termes négociés de la fiche, ou du barème des Réglages ? */
+  source: "deal" | "reference";
   /** Reste au client après ta part. */
   net: number;
   /** Ta part a-t-elle déjà été versée ? */
@@ -32,7 +45,16 @@ export interface PayoutRow {
 }
 
 export interface PayoutSummary {
+  /** Le barème des Réglages — le repli, plus la vérité de toutes les lignes. */
   commissionPct: number;
+  /** Nombre de ventes chiffrées avec un taux négocié propre à leur fiche. */
+  dealCount: number;
+  /**
+   * Taux EFFECTIF du registre : la part totale rapportée au brut total.
+   * C'est le seul chiffre honnête quand les lignes n'ont pas toutes le même
+   * taux — afficher le barème donnerait une moyenne fausse.
+   */
+  tauxEffectifPct: number;
   salesCount: number;
   grossTotal: number;
   /** Total de ta part depuis la 1re vente. */
@@ -61,7 +83,13 @@ export function buildPayoutLedger(
     for (const pay of p.payments ?? []) {
       if (pay.status !== "paye") continue;
       const gross = pay.amount;
-      const cut = cutOf(gross, commissionPct);
+      // Les termes de la FICHE priment sur le barème. On ne distingue pas
+      // encore setup et récurrent au niveau du paiement : le taux one-shot
+      // s'applique, parce que c'est celui qui a été convenu pour l'affaire.
+      const negocie = p.dealTerms?.commissionPct;
+      const utiliseDeal = typeof negocie === "number" && Number.isFinite(negocie) && negocie >= 0;
+      const pct = utiliseDeal ? Math.min(100, negocie) : commissionPct;
+      const cut = cutOf(gross, pct);
       rows.push({
         id: pay.id,
         prospectId: p.id,
@@ -69,6 +97,8 @@ export function buildPayoutLedger(
         date: pay.dueDate,
         gross,
         cut,
+        pct,
+        source: utiliseDeal ? "deal" : "reference",
         net: gross - cut,
         settled: settled.has(pay.id),
       });
@@ -85,6 +115,8 @@ export function buildPayoutLedger(
     rows,
     summary: {
       commissionPct,
+      dealCount: rows.filter((r) => r.source === "deal").length,
+      tauxEffectifPct: grossTotal > 0 ? Math.round((cutTotal / grossTotal) * 1000) / 10 : 0,
       salesCount: rows.length,
       grossTotal,
       cutTotal,

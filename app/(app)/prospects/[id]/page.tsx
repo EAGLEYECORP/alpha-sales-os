@@ -42,6 +42,7 @@ import { useQuote } from "@/lib/client-catalogue";
 import { leconDePerte, leconDObjection } from "@/lib/apprentissage";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
+import { DealCalculator } from "@/components/prospects/deal-calculator";
 import { CallHistory } from "@/components/prospects/call-history";
 import { CheckpointsPanel } from "@/components/prospects/checkpoints-panel";
 import { LeadMagnetPanel } from "@/components/prospects/lead-magnet-panel";
@@ -906,6 +907,9 @@ function AuditTab({
       <CallHistory prospectId={p.id} />
 
       {/* Déblocage des fonds — ce qui transforme un « oui » en virement */}
+      {/* Structurer CETTE affaire : le barème dit ce qu'on vise, ici on
+          négocie, et on voit en euros ce que coûte chaque point lâché. */}
+      <DealCalculator p={p} />
       <FundingEditor p={p} />
 
       {/* Routage d'offre — quelle offre EAGLEYE pour ce prospect (lib/offer-match) */}

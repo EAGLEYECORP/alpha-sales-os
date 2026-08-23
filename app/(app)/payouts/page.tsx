@@ -40,7 +40,10 @@ export default function PayoutsPage() {
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper-faint">Ta part cumulée</p>
           <p className="font-display text-3xl font-bold text-bronze-400">{eur(summary.cutTotal)}</p>
           <p className="text-[11px] text-paper-faint">
-            {summary.commissionPct}% · depuis {fdate(summary.firstSaleDate)}
+            {/* Le taux EFFECTIF, pas le barème : dès qu'une fiche porte des
+                termes négociés, les lignes n'ont plus toutes le même taux et
+                afficher le barème donnerait une moyenne fausse. */}
+            {summary.tauxEffectifPct}% effectif · depuis {fdate(summary.firstSaleDate)}
           </p>
         </div>
       </header>
@@ -55,9 +58,15 @@ export default function PayoutsPage() {
 
       <p className="flex items-start gap-1.5 px-1 text-[11px] text-paper-faint">
         <Info size={12} className="mt-0.5 shrink-0" />
-        Le taux ({summary.commissionPct}%) se règle dans{" "}
-        <Link href="/settings" className="text-bronze-400 hover:underline">Réglages</Link>. Coche « versé » quand ta part
-        t&apos;a été payée — le total « en attente » suit tout seul.
+        Le barème ({summary.commissionPct}%) se règle dans{" "}
+        <Link href="/settings" className="text-bronze-400 hover:underline">Réglages</Link>
+        {summary.dealCount > 0 && (
+          <>
+            {" "}— mais {summary.dealCount} vente{summary.dealCount > 1 ? "s" : ""} applique
+            {summary.dealCount > 1 ? "nt" : ""} les termes négociés de sa fiche, qui priment.
+          </>
+        )}
+        . Coche « versé » quand ta part t&apos;a été payée — le total « en attente » suit tout seul.
       </p>
 
       {rows.length === 0 ? (
