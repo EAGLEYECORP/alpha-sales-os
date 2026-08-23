@@ -179,7 +179,15 @@ export function pickMagnet(p: Prospect, accountId = "eagleye"): MagnetPick | nul
       teaser = `≈ ${r.perMonth.toLocaleString("fr-FR")} € par mois qui partent chez le concurrent, sur vos propres chiffres.`;
     }
   } else if (magnet.offer === "visibilite-growth" && a.googleReviews !== undefined) {
-    teaser = `${a.googleReviews} avis Google — vos concurrents en ont davantage, et ça se voit dans les résultats.`;
+    // ⚠ On ne dit PAS « vos concurrents en ont davantage » : on ne les a pas
+    // comptés. Une comparaison inventée en première phrase est le plus court
+    // chemin vers la corbeille — il suffit qu'il en ait plus qu'eux pour que
+    // tout le document devienne suspect. On énonce SON chiffre, et on laisse
+    // le seuil parler : sous 10 avis, personne n'a besoin qu'on compare.
+    teaser =
+      a.googleReviews < 10
+        ? `${a.googleReviews} avis Google. En dessous de dix, la fiche ne remonte quasiment jamais sur une recherche locale.`
+        : `${a.googleReviews} avis Google — on a regardé ce que ça donne face aux recherches de votre zone.`;
   }
 
   const firstName = p.name?.trim() && !/^(g[ée]rant|cabinet|accueil|contact|standard)$/i.test(p.name.trim())
@@ -218,4 +226,177 @@ export function magnetEmail(pick: MagnetPick, p: Prospect, senderName: string, a
     accountName,
   ];
   return { subject, body: lines.join("\n") };
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUE L'AIMANT CONTIENDRA VRAIMENT — avant de l'envoyer.
+ *
+ * ── LE PROBLÈME TROUVÉ ──
+ *
+ * Chaque aimant PROMET quatre choses (`contains`). Le générateur de document
+ * (`lib/audit-doc.ts`) n'en produit qu'une partie : il met en page des champs
+ * SAISIS À LA MAIN, plus des ordres de grandeur tirés des repères de la
+ * verticale. Personne n'appelle les trois concurrents, personne ne fait de
+ * capture Google — ces sections n'existent que si l'humain les fabrique.
+ *
+ * Un prospect qui reçoit un document annonçant quatre parties et n'en trouve
+ * que deux ne se dit pas « il manque des données ». Il se dit « ils ont
+ * survendu ». Sur une première prise de contact, c'est le pire moment
+ * possible pour perdre le bénéfice du doute.
+ *
+ * Pire cas : `withMetierBenchmark` remplit les appels manqués depuis la
+ * MOYENNE du métier quand la fiche est vide. Un document intitulé « sur VOS
+ * chiffres » peut donc afficher une moyenne sectorielle. Le garagiste qui
+ * reçoit « vous perdez 23 appels/semaine » alors qu'il en reçoit 4 par jour
+ * jette la page ET nous avec.
+ *
+ * ── CE QUE FAIT CE BLOC ──
+ *
+ * Il dit, promesse par promesse, si elle est adossée à une donnée RÉELLE, à
+ * une ESTIMATION de secteur, ou à un travail que l'humain doit encore faire.
+ * Il ne bloque rien : c'est l'opérateur qui décide d'envoyer. Mais il ne peut
+ * plus envoyer sans savoir.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+export type EtatPromesse =
+  /** Adossée à une donnée saisie sur la fiche. */
+  | "reel"
+  /** Sera remplie par la moyenne du métier — vraie en ordre de grandeur, pas SA vérité. */
+  | "estime"
+  /** Rien ne la produit : l'humain doit la fabriquer avant d'envoyer. */
+  | "a-faire"
+  /** La donnée manque et rien ne la remplace : la section sortira vide. */
+  | "absent";
+
+export interface PromesseVerifiee {
+  promesse: string;
+  etat: EtatPromesse;
+  /** Ce qu'il faut faire, quand il y a quelque chose à faire. */
+  action?: string;
+}
+
+export interface MagnetReadiness {
+  magnetId: string;
+  promesses: PromesseVerifiee[];
+  /** Nombre de promesses réellement tenues par le document tel quel. */
+  tenues: number;
+  /** Minutes de travail humain avant que le document tienne ses promesses. */
+  minutesDeTravail: number;
+  /** Verdict en une ligne pour l'opérateur. Jamais vide. */
+  verdict: string;
+}
+
+/**
+ * Les promesses qu'AUCUN code ne produit aujourd'hui, et le temps qu'elles
+ * coûtent à l'humain. Repérées par un fragment distinctif de leur libellé.
+ *
+ * C'est une liste explicite plutôt qu'une heuristique : une heuristique qui
+ * se trompe ici ferait passer une promesse non tenue pour tenue, ce qui est
+ * exactement le bug qu'on corrige.
+ */
+const PROMESSES_MANUELLES: { fragment: RegExp; minutes: number; action: string }[] = [
+  {
+    fragment: /concurrents les plus proches quand on les appelle/i,
+    minutes: 15,
+    action: "Appeler 3 concurrents à 3 moments différents et noter ce qui se passe (décroché, sonnerie, rappel).",
+  },
+  {
+    fragment: /capture à l'appui/i,
+    minutes: 10,
+    action: "Faire la recherche Google du métier + ville et capturer ce qui remonte.",
+  },
+  {
+    fragment: /comparés aux trois concurrents/i,
+    minutes: 10,
+    action: "Relever la note et le nombre d'avis des 3 concurrents du quartier.",
+  },
+  {
+    fragment: /trajet complet d'un lead/i,
+    minutes: 20,
+    action: "Cartographier le parcours d'un lead avec lui — ça se fait au téléphone, pas depuis un bureau.",
+  },
+  {
+    fragment: /ce qui dépend d'une seule personne/i,
+    minutes: 10,
+    action: "Identifier les points de dépendance à une personne (à demander pendant le cadrage).",
+  },
+];
+
+/** Ce qu'une promesse chiffrée exige comme données sur la fiche. */
+function etatChiffre(p: Prospect, promesse: string): EtatPromesse | null {
+  const d = p.deepAudit ?? {};
+  if (/appels que vous perdez/i.test(promesse)) {
+    if (d.missedCallsPerWeek !== undefined) return "reel";
+    // Le repère de verticale existe : le document sortira rempli, mais avec
+    // une moyenne. C'est le cas le plus dangereux — il ne se voit pas.
+    return "estime";
+  }
+  if (/en euros par mois et par an/i.test(promesse)) {
+    return p.ignoranceTax > 0 || (d.missedCallsPerWeek !== undefined && d.avgTicket !== undefined) ? "reel" : "estime";
+  }
+  if (/votre note et vos avis/i.test(promesse)) {
+    return d.googleRating !== undefined || d.googleReviews !== undefined ? "reel" : "absent";
+  }
+  if (/l'état de votre site/i.test(promesse)) {
+    return d.websiteState?.trim() ? "reel" : "absent";
+  }
+  if (/combien d'affaires meurent/i.test(promesse)) {
+    return p.ignoranceTax > 0 ? "reel" : "estime";
+  }
+  return null;
+}
+
+/**
+ * Ce que l'aimant contiendra vraiment pour CE prospect, promesse par promesse.
+ */
+export function magnetReadiness(p: Prospect, magnet: LeadMagnet): MagnetReadiness {
+  const promesses: PromesseVerifiee[] = magnet.contains.map((promesse) => {
+    const manuelle = PROMESSES_MANUELLES.find((m) => m.fragment.test(promesse));
+    if (manuelle) return { promesse, etat: "a-faire", action: manuelle.action };
+
+    const chiffre = etatChiffre(p, promesse);
+    if (chiffre) {
+      return {
+        promesse,
+        etat: chiffre,
+        action:
+          chiffre === "estime"
+            ? "Remplacer la moyenne du métier par SON chiffre avant d'envoyer — sinon il verra que ce n'est pas le sien."
+            : chiffre === "absent"
+              ? "Donnée absente : la section sortira vide. La saisir ou retirer la promesse."
+              : undefined,
+      };
+    }
+    // Les promesses qualitatives (correctifs, recommandations) sont produites
+    // par le document à partir de la verticale : toujours là, jamais fausses.
+    return { promesse, etat: "reel" };
+  });
+
+  const tenues = promesses.filter((x) => x.etat === "reel").length;
+  const minutesDeTravail = promesses
+    .filter((x) => x.etat === "a-faire")
+    .reduce((s, x) => {
+      const m = PROMESSES_MANUELLES.find((pm) => pm.fragment.test(x.promesse));
+      return s + (m?.minutes ?? 0);
+    }, 0);
+
+  const aFaire = promesses.filter((x) => x.etat === "a-faire").length;
+  const estimes = promesses.filter((x) => x.etat === "estime").length;
+  const absents = promesses.filter((x) => x.etat === "absent").length;
+
+  const verdict =
+    tenues === promesses.length
+      ? "Le document tient ses quatre promesses. Envoyable tel quel."
+      : [
+          `${tenues}/${promesses.length} promesses tenues par le document seul.`,
+          aFaire ? `${aFaire} demandent ${minutesDeTravail} min de ta part.` : "",
+          estimes ? `${estimes} sortiront avec une MOYENNE de secteur, pas son chiffre.` : "",
+          absents ? `${absents} sortiront vides.` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+  return { magnetId: magnet.id, promesses, tenues, minutesDeTravail, verdict };
 }

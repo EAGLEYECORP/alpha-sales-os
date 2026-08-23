@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Magnet } from "lucide-react";
-import { pickMagnet, magnetEmail } from "@/lib/lead-magnet";
+import { pickMagnet, magnetEmail, magnetReadiness, type EtatPromesse } from "@/lib/lead-magnet";
+import { cn } from "@/lib/utils";
 import { getAccount } from "@/lib/accounts";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
@@ -19,12 +20,24 @@ import type { Prospect } from "@/lib/types";
  * l'email, et rien n'est envoyé si aucun aimant ne correspond (un aimant
  * hors-sujet coûte plus cher que pas d'aimant du tout).
  */
+/** Vert = tenu par le document · ambre = à faire · rouge = sortira vide. */
+const PASTILLE: Record<EtatPromesse, string> = {
+  reel: "bg-signal-green",
+  estime: "bg-signal-amber",
+  "a-faire": "bg-signal-amber",
+  absent: "bg-signal-red",
+};
+
 export function LeadMagnetPanel({ p }: { p: Prospect }) {
   const settings = useAlpha((s) => s.settings);
   const accountId = settings.accountId ?? "eagleye";
   const [copied, setCopied] = useState(false);
 
   const pick = useMemo(() => pickMagnet(p, accountId), [p, accountId]);
+  // Ce que le document contiendra VRAIMENT. Sans ça, on envoie une page qui
+  // annonce quatre parties et n'en livre que deux — et le prospect ne se dit
+  // pas « il manque des données », il se dit « ils ont survendu ».
+  const pret = useMemo(() => (pick ? magnetReadiness(p, pick.magnet) : null), [p, pick]);
   const account = getAccount(accountId);
   const mail = useMemo(
     () => (pick ? magnetEmail(pick, p, settings.closerName || "", account.name) : null),
@@ -53,11 +66,23 @@ export function LeadMagnetPanel({ p }: { p: Prospect }) {
       </h2>
       <p className="mt-0.5 text-[11px] text-paper-faint">{pick.why}</p>
 
-      <ul className="mt-2 space-y-0.5 text-[12px] text-paper">
-        {pick.magnet.contains.map((c) => (
-          <li key={c}>· {c}</li>
+      <ul className="mt-2 space-y-1 text-[12px] text-paper">
+        {(pret?.promesses ?? pick.magnet.contains.map((c) => ({ promesse: c, etat: "reel" as EtatPromesse, action: undefined }))).map((x) => (
+          <li key={x.promesse} className="flex items-start gap-1.5">
+            <span className={cn("mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full", PASTILLE[x.etat])} />
+            <span>
+              <span className={x.etat === "reel" ? "text-paper" : "text-paper-dim"}>{x.promesse}</span>
+              {x.action && <span className="block text-[11px] text-signal-amber">{x.action}</span>}
+            </span>
+          </li>
         ))}
       </ul>
+
+      {pret && pret.tenues < pret.promesses.length && (
+        <p className="mt-2 rounded-lg border border-signal-amber/40 bg-signal-amber/10 px-3 py-2 text-[11.5px] text-paper">
+          {pret.verdict}
+        </p>
+      )}
       <p className="mt-2 text-[11px] text-paper-faint">
         Vaut le coup même s&apos;il n&apos;achète pas : {pick.magnet.standaloneValue}
       </p>
