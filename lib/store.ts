@@ -37,6 +37,7 @@ import { stageById, signingBlockers } from "./hormozi";
 // par toutes les pages client : il partait donc dans chaque bundle. Il arrive
 // maintenant par /api/knowledge/seed — voir `seedNotes` plus bas.
 import type { KnowledgeNote } from "./knowledge";
+import type { Lecon } from "./apprentissage";
 import { applyAccount } from "./accounts";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
@@ -113,6 +114,8 @@ interface AlphaState {
   upsertNote: (note: Partial<KnowledgeNote> & { title: string; body: string }) => string;
   /** Fusionne le socle du Cerveau servi par le serveur (une seule fois). */
   seedNotes: (socle: KnowledgeNote[]) => void;
+  /** Écrit une leçon de terrain dans le Cerveau. `null` = rien à apprendre. */
+  apprendre: (lecon: Lecon | null) => string | null;
   deleteNote: (id: string) => void;
 
   /** Coche/décoche un item de la barre du jour. */
@@ -534,6 +537,22 @@ export const useAlpha = create<AlphaState>()(
         return id;
       },
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+
+      /**
+       * Enregistre une LEÇON tirée du terrain dans le Cerveau.
+       *
+       * C'est la seule écriture automatique de la mémoire. Elle passe par
+       * `upsertNote`, donc l'identifiant déterministe des leçons fait une mise
+       * à jour et non un doublon : rejouer un débrief n'empile pas.
+       *
+       * `null` en entrée = la leçon n'avait pas de substance (voir
+       * lib/apprentissage.ts, règle 2). On ne l'écrit pas, et ce n'est pas une
+       * erreur — c'est le cas normal d'un débrief vide.
+       */
+      apprendre: (lecon) => {
+        if (!lecon) return null;
+        return get().upsertNote(lecon);
+      },
 
       /**
        * Fusionne le socle servi par le serveur, UNE seule fois.

@@ -223,6 +223,31 @@ export interface Prospect {
   upsell?: UpsellOpportunity;
   wonReason?: string;
   lostReason?: string;
+  /**
+   * Les TERMES NÉGOCIÉS de CETTE affaire.
+   *
+   * Le portefeuille (`lib/accounts-commercial.ts`) porte la RÉFÉRENCE : ce
+   * qu'on prend d'habitude sur ce type de deal. Mais chaque affaire se
+   * structure différemment — le taux suit le levier qu'on garde, pas un
+   * barème. Un chantier Nuwacom où on donne la main sur la technique juste
+   * après la vision, c'est le plancher ; le même chantier où on a construit
+   * les démos avant de transmettre, c'est plus.
+   *
+   * Absent = on applique la référence. Renseigné = c'est CE chiffre qui compte
+   * partout (payouts, prévisions, marge), parce que c'est celui qui sera
+   * facturé. Sans ce champ, l'app affichait une prévision au barème pendant
+   * que la réalité était ailleurs.
+   */
+  dealTerms?: {
+    /** % négocié sur le one-shot / setup. */
+    commissionPct?: number;
+    /** % négocié sur le récurrent mensuel. */
+    recurringPct?: number;
+    /** Comment ce deal est monté, en une ligne — le levier qui justifie le taux. */
+    structure?: string;
+    /** Quand ces termes ont été convenus (ISO). Un terme sans date est un souhait. */
+    agreedAt?: string;
+  };
   wonAt?: string;
   createdAt: string;
   updatedAt: string;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { audiencePrompt } from "@/lib/audience";
 import { doctrineOrDefault } from "@/lib/business-rules";
 import type { Prospect } from "@/lib/types";
 import { runAI } from "@/lib/ai-engine";
@@ -29,6 +30,8 @@ interface AiRequest {
   identity?: string;
   /** Extraits du Cerveau (RAG) récupérés côté client. */
   brainContext?: string;
+  /** Compte actif : détermine l'ICP, donc à qui le texte s'adresse. */
+  accountId?: string;
   objection?: string;
   /** inbound message to answer (task = reply) */
   inboundMessage?: string;
@@ -116,6 +119,15 @@ function buildPrompt(req: AiRequest): string {
       ].join("\n"),
       { maxChars: 6_000 }
     ),
+    ``,
+    ``,
+    // À QUI on parle, déduit du segment du prospect. La fiche donne les faits ;
+    // ce bloc donne le VOCABULAIRE de son métier — c'est ce qui fait la
+    // différence entre « un texte sur lui » et « un texte pour lui ».
+    audiencePrompt({
+      accountId: req.accountId,
+      prospect: { sector: p.sector, company: p.company, notes: p.notes, problems: p.problems },
+    }),
     ``,
     `## Règles business de l'agence`,
     clipDoctrine(req.businessRules ?? ""),

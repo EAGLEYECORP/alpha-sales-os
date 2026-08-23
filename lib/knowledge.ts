@@ -22,7 +22,13 @@ export interface KnowledgeNote {
   createdAt: string;
   updatedAt: string;
   /** D'où vient la note : saisie, aspirée d'un prospect, d'un débrief… */
-  source: "manuel" | "intel" | "debrief" | "playbook" | "auto";
+  /**
+   * `terrain` : écrite AUTOMATIQUEMENT depuis un événement réel (débrief,
+   * objection traitée, perte). C'est la mémoire qui s'accumule — elle ne pèse
+   * pas comme la doctrine (`playbook`), et l'opérateur doit pouvoir faire le
+   * tri d'un coup d'œil : une leçon tirée d'un cas n'est pas une règle.
+   */
+  source: "manuel" | "intel" | "debrief" | "playbook" | "auto" | "terrain";
   /**
    * Compte propriétaire de la note. ABSENT = note COMMUNE, visible depuis
    * tous les comptes (la doctrine, les chiffres maison, le routage).

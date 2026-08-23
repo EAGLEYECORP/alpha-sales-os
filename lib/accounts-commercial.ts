@@ -65,7 +65,14 @@ export interface Offering {
   label: string;
   /** Prix setup / one-shot public (€ HT), si productisé. */
   setupHT?: number;
-  /** % prélevé sur le one-shot / setup. */
+  /**
+   * % qui nous revient sur le one-shot / setup — la RÉFÉRENCE, pas une loi.
+   *
+   * Voir `pctEstPlancher` : sur certaines offres ce chiffre est un MINIMUM
+   * qu'on remonte selon le levier qu'on garde dans le deal. Le taux réellement
+   * négocié d'une affaire vit sur la fiche du prospect (`Prospect.dealTerms`),
+   * pas ici.
+   */
   commissionPct: number;
   /** % prélevé sur le mensuel récurrent (abonnement), si applicable. */
   recurringPct?: number;
@@ -73,6 +80,18 @@ export interface Offering {
   minHT?: number;
   /** Plafond d'éligibilité du projet (€ HT). */
   maxHT?: number;
+  /**
+   * `commissionPct` est-il un PLANCHER plutôt qu'un taux fixe ?
+   *
+   * Chaque affaire se structure différemment : ce qui fait bouger le taux,
+   * c'est le levier qu'on garde. Donner la main sur la technique juste après
+   * la vision, c'est le plancher ; construire les démos soi-même et rester le
+   * point d'entrée technique, c'est plus. Écrire un chiffre fixe ici faisait
+   * croire que le taux était acquis — donc le laissait sur la table.
+   */
+  pctEstPlancher?: boolean;
+  /** Ce qui fait MONTER le taux au-dessus du plancher, concrètement. */
+  leviers?: string[];
   note?: string;
 }
 
@@ -177,14 +196,24 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
         key: "transformation",
         label: "Gros chantier / transformation (> 40 k)",
         commissionPct: 15,
-        // Le gros devis justifie les 15 % ; la MAINTENANCE mensuelle qui suit
-        // revient à 100 % chez nous — c'est là qu'est la rente du chantier.
+        // 15 %, c'est le PLANCHER, pas le tarif. Voir `leviers` : le taux suit
+        // ce qu'on garde dans le deal, et le contrat se dresse APRÈS le cadrage
+        // — c'est précisément là que ça se négocie.
+        pctEstPlancher: true,
+        leviers: [
+          "PLANCHER 15 % : on passe la main sur la technique juste après la vision. On n'a plus de prise, on prend le minimum.",
+          "PLUS : on construit les démos nous-mêmes avant de transmettre. Le client a vu NOTRE travail — le levier est de notre côté au moment du contrat.",
+          "PLUS : on reste le point d'entrée technique du client. Le lien ne passe pas par eux.",
+          "Le contrat se dresse APRÈS le cadrage : c'est le moment où le levier se convertit en pourcentage. Ne rien signer avant.",
+        ],
+        // Le gros devis justifie le plancher ; la MAINTENANCE mensuelle qui
+        // suit revient à 100 % chez nous — c'est là qu'est la rente du chantier.
         recurringPct: 100,
         minHT: 40000,
         note:
-          "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 % sur le devis. " +
+          "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 % MINIMUM sur le devis. " +
           "PUIS 100 % de tous les services de maintenance mensuels. " +
-          "En dessous : EAGLEYE le fait (meilleur levier). Contrat dressé APRÈS le cadrage.",
+          "En dessous : EAGLEYE le fait (meilleur levier). Contrat dressé APRÈS le cadrage = c'est là qu'on remonte le taux.",
       },
     ],
     targetPerProject: 40000, // plancher de routage : sous 40 k, EAGLEYE le fait
@@ -215,6 +244,28 @@ export interface CommissionQuote {
   pct: number;
   /** Montant de la commission sur `amountHT`. */
   amount: number;
+  /** Le taux vient-il des termes NÉGOCIÉS de l'affaire, ou de la référence ? */
+  source: "deal" | "reference";
+  /**
+   * Le taux de référence, quand le deal s'en écarte. C'est ce qui permet de
+   * dire « tu as signé 3 points sous ta référence » au lieu d'afficher un
+   * chiffre sans point de comparaison.
+   */
+  referencePct?: number;
+  /**
+   * Alerte à montrer à l'opérateur. Deux cas : on est SOUS un plancher
+   * (Nuwacom à moins de 15 %), ou on a laissé du levier sur la table.
+   * Vide = rien à signaler.
+   */
+  alerte?: string;
+}
+
+/** Les termes négociés d'une affaire — voir `Prospect.dealTerms`. */
+export interface DealTerms {
+  commissionPct?: number;
+  recurringPct?: number;
+  structure?: string;
+  agreedAt?: string;
 }
 
 /**
@@ -231,7 +282,7 @@ export interface CommissionQuote {
  */
 export function commissionFor(
   accountId: string,
-  opts: { amountHT: number; recurring?: boolean; offeringKey?: string }
+  opts: { amountHT: number; recurring?: boolean; offeringKey?: string; deal?: DealTerms }
 ): CommissionQuote {
   const a = getAccount(accountId);
   const offerings = commercialFor(a.id).offerings;
@@ -252,10 +303,58 @@ export function commissionFor(
     offerings.find(fits) ||
     offerings[0];
 
-  if (!picked) {
-    const pct = a.commissionPct;
-    return { offering: { key: "default", label: a.name, commissionPct: pct }, pct, amount: Math.round((amt * pct) / 100) };
+  const offering: Offering = picked ?? { key: "default", label: a.name, commissionPct: a.commissionPct };
+
+  // La RÉFÉRENCE : ce qu'on prend d'habitude sur ce type de deal.
+  const reference = opts.recurring && offering.recurringPct != null ? offering.recurringPct : offering.commissionPct;
+
+  // LES TERMES DU DEAL priment. Chaque affaire se structure différemment ; le
+  // barème dit ce qu'on VISE, la fiche dit ce qui sera FACTURÉ. Afficher le
+  // barème quand la réalité est ailleurs, c'est se mentir sur ses prévisions.
+  const negocie = opts.recurring ? opts.deal?.recurringPct : opts.deal?.commissionPct;
+  const utiliseDeal = typeof negocie === "number" && Number.isFinite(negocie) && negocie >= 0;
+  const pct = utiliseDeal ? Math.min(100, negocie) : reference;
+
+  return {
+    offering,
+    pct,
+    amount: Math.round((amt * pct) / 100),
+    source: utiliseDeal ? "deal" : "reference",
+    ...(utiliseDeal && pct !== reference ? { referencePct: reference } : {}),
+    ...alerteDe(offering, pct, reference, utiliseDeal, opts.recurring === true),
+  };
+}
+
+/**
+ * Ce qu'il faut dire à l'opérateur sur l'écart entre le deal et la référence.
+ *
+ * Deux situations valent une alerte, et une seule est un problème :
+ *  · SOUS LE PLANCHER — on a signé moins que le minimum de l'offre. Ça arrive,
+ *    mais ça doit se voir : c'est du chiffre d'affaires qui ne reviendra pas.
+ *  · AU PLANCHER SANS AVOIR ESSAYÉ — le taux plancher est appliqué par défaut
+ *    alors que les leviers existent. On rappelle lesquels : le contrat se
+ *    dresse APRÈS le cadrage, donc il est encore temps.
+ */
+function alerteDe(
+  offering: Offering,
+  pct: number,
+  reference: number,
+  utiliseDeal: boolean,
+  recurring: boolean
+): { alerte?: string } {
+  // Un plancher ne concerne que le one-shot : le récurrent a sa propre règle.
+  if (recurring || !offering.pctEstPlancher) return {};
+
+  if (utiliseDeal && pct < reference) {
+    return { alerte: `⚠ ${pct} % : SOUS le plancher de ${reference} % sur « ${offering.label} ». C'est acté, mais ça se compte.` };
   }
-  const pct = opts.recurring && picked.recurringPct != null ? picked.recurringPct : picked.commissionPct;
-  return { offering: picked, pct, amount: Math.round((amt * pct) / 100) };
+  if (pct === reference) {
+    const levier = offering.leviers?.[1];
+    return {
+      alerte:
+        `${pct} % est le PLANCHER de « ${offering.label} », pas le tarif. ` +
+        (levier ? `Levier à jouer : ${levier}` : `Le taux suit le levier qu'on garde dans le deal.`),
+    };
+  }
+  return {};
 }

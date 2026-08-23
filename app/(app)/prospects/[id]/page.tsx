@@ -39,6 +39,7 @@ import type { Brick } from "@/lib/bricks";
 import { CAPACITES } from "@/lib/public-catalogue";
 import { buildDeck, renderDeck } from "@/lib/deck";
 import { useQuote } from "@/lib/client-catalogue";
+import { leconDePerte, leconDObjection } from "@/lib/apprentissage";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
@@ -93,7 +94,7 @@ const EVENT_ICONS: Record<EventKind, React.ReactNode> = {
 export default function ProspectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { prospects, settings, patchProspect, moveStage, addEvent, deleteProspect } = useAlpha();
+  const { prospects, settings, patchProspect, moveStage, addEvent, deleteProspect, apprendre } = useAlpha();
   const p = prospects.find((x) => x.id === id);
   const [tab, setTab] = useState<Tab>("doctrine");
   const [editing, setEditing] = useState(false);
@@ -358,6 +359,16 @@ export default function ProspectDetailPage() {
               reasonAsk.kind === "won" ? { wonReason: reason } : { lostReason: reason }
             );
             if (res.ok && reasonAsk.stage === "signe") fireSignedConfetti();
+            // La raison d'un refus est l'information la plus chère du pipe et
+            // la plus vite oubliée — parce qu'on n'a pas envie de la relire.
+            // Elle entre donc dans le Cerveau toute seule, avec le secteur et
+            // le segment, pour ressortir au prochain prospect du même métier.
+            if (res.ok && reasonAsk.kind === "lost") {
+              // `reason` est optionnel : sans raison saisie, `leconDePerte`
+              // renvoie null et rien n'est écrit. Une note « perdu, on ne sait
+              // pas pourquoi » n'apprend rien et pollue la recherche.
+              apprendre(leconDePerte({ prospect: p, raison: reason ?? "", accountId: settings.accountId }));
+            }
           }
           setReasonAsk(null);
         }}
@@ -441,6 +452,7 @@ function DoctrineTab({
   p: Prospect;
   patch: (id: string, patch: Partial<Prospect>) => void;
 }) {
+  const apprendre = useAlpha((s) => s.apprendre);
   const [newObstacle, setNewObstacle] = useState("");
   const [newObjection, setNewObjection] = useState("");
 
@@ -632,13 +644,27 @@ function DoctrineTab({
                 <select
                   className="input w-28 py-1 text-[11px]"
                   value={o.status}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const status = e.target.value as Objection["status"];
                     patch(p.id, {
-                      objections: p.objections.map((x) =>
-                        x.id === o.id ? { ...x, status: e.target.value as Objection["status"] } : x
-                      ),
-                    })
-                  }
+                      objections: p.objections.map((x) => (x.id === o.id ? { ...x, status } : x)),
+                    });
+                    // Les objections se répètent par métier, presque mot pour
+                    // mot. Une réponse qui a débloqué un garagiste débloquera
+                    // le suivant — à condition qu'on l'ait écrite. C'est la
+                    // mémoire la plus rentable du système, et personne ne la
+                    // remplirait à la main.
+                    if (o.counter && (status === "traitee" || status === "bloquante")) {
+                      apprendre(
+                        leconDObjection({
+                          prospect: p,
+                          objection: o.label,
+                          reponse: o.counter,
+                          aDebloque: status === "traitee",
+                        })
+                      );
+                    }
+                  }}
                 >
                   <option value="ouverte">Ouverte</option>
                   <option value="traitee">Traitée ✓</option>
@@ -1494,6 +1520,7 @@ function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
           task,
           prospect: p,
           businessRules: rules,
+          accountId: settings.accountId,
           identity: buildIdentity(settings),
           brainContext: contextFromNotes(search(`${p.company} ${p.sector} ${p.problems.join(" ")} ${p.solution ?? ""} ${objection}`, notes)),
           ...extra,

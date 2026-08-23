@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Clapperboard, Copy, ExternalLink, Loader2, Megaphone, Sparkles } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { PLATFORMS, shareIntentUrl, splitThread, type Platform } from "@/lib/social";
+import { SEGMENTS } from "@/lib/segments";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,9 +17,13 @@ export default function SocialPage() {
   const shareUrl = settings.bookingUrl?.trim() || "https://eagleyecorp.fr";
 
   const [topic, setTopic] = useState("");
+  // À QUI on écrit. Vide = l'ICP du compte actif ; un segment = le métier
+  // précis, avec ses mots. Un post qui ne nomme personne ne convertit personne.
+  const [segmentId, setSegmentId] = useState("");
   const [angle, setAngle] = useState("");
   const [drafts, setDrafts] = useState<Record<Platform, string> | null>(null);
   const [engine, setEngine] = useState("");
+  const [audience, setAudience] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -42,6 +47,7 @@ export default function SocialPage() {
           agencyName: settings.agencyName,
           offerLine: settings.offer?.whatYouSell,
           valueProp: settings.offer?.valueProp,
+          audience: { accountId: settings.accountId, segmentId: segmentId || undefined },
         }),
       });
       const json = await res.json();
@@ -49,6 +55,7 @@ export default function SocialPage() {
       else {
         setDrafts(json.drafts);
         setEngine(json.engine ?? "");
+        setAudience(json.audience ?? "");
       }
     } catch {
       setErr("Réseau.");
@@ -140,6 +147,19 @@ export default function SocialPage() {
           onChange={(e) => setTopic(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !loading && generate()}
         />
+        <label className="label mt-3">Pour qui (le métier visé)</label>
+        <select className="input" value={segmentId} onChange={(e) => setSegmentId(e.target.value)}>
+          <option value="">Le client idéal du compte (ICP par défaut)</option>
+          {SEGMENTS.map((sg) => (
+            <option key={sg.id} value={sg.id}>
+              {sg.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-[11px] text-paper-faint">
+          Le post nomme SON métier et SA douleur. Sans cible, il ressemble à celui de toutes les agences.
+        </p>
+
         <label className="label mt-3">Angle (optionnel)</label>
         <input
           className="input"
@@ -152,7 +172,12 @@ export default function SocialPage() {
           {loading ? "Rédaction…" : "Générer les posts"}
         </button>
         {err && <p className="mt-2 text-[12px] text-signal-red">{err}</p>}
-        {engine && drafts && <p className="mt-2 text-[11px] text-paper-faint">Moteur : {engine}</p>}
+        {engine && drafts && (
+          <p className="mt-2 text-[11px] text-paper-faint">
+            Moteur : {engine}
+            {audience && <> · écrit pour : <span className="text-paper-dim">{audience}</span></>}
+          </p>
+        )}
       </section>
 
       {drafts &&
