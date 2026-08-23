@@ -38,6 +38,7 @@ import { stageById, signingBlockers } from "./hormozi";
 // maintenant par /api/knowledge/seed — voir `seedNotes` plus bas.
 import type { KnowledgeNote } from "./knowledge";
 import type { Lecon } from "./apprentissage";
+import { elaguer } from "./apprentissage";
 import { applyAccount } from "./accounts";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
@@ -192,6 +193,26 @@ const normalizeCampaign = (c: Partial<Campaign>): Campaign =>
 const normalizeMeeting = (m: Partial<Meeting>): Meeting =>
   ({ channel: "physique", ...m }) as Meeting;
 
+/**
+ * Plafonds des journaux — ce sont des FLUX, pas des données.
+ *
+ * Ils vivent dans le même blob localStorage que le CRM, et le quota (~5 Mo)
+ * est partagé. Un journal sans plafond finit par expulser les fiches, ce qui
+ * est exactement l'inverse de la priorité.
+ *
+ * `addActivity` plafonnait déjà à 300. Trois autres chemins (changement
+ * d'étape, ajout d'intro, ajout de partenaire) empilaient sans borne : le
+ * plafond dépendait donc de PAR OÙ l'entrée arrivait. D'où ce helper unique —
+ * un plafond qui se recopie à la main finit toujours par diverger.
+ */
+const MAX_ACTIVITES = 300;
+const MAX_AUDIT = 500;
+const MAX_JOURS_STANDARD = 400;
+
+/** Empile une activité en tête, en respectant le plafond. */
+const pousserActivite = (liste: Activity[], entree: Activity): Activity[] =>
+  [entree, ...liste].slice(0, MAX_ACTIVITES);
+
 const audit = (actor: string, action: string, target: string): AuditLogEntry => ({
   id: uid(),
   date: new Date().toISOString(),
@@ -214,32 +235,104 @@ const audit = (actor: string, action: string, target: string): AuditLogEntry => 
  * montre, et l'opérateur sait qu'il doit synchroniser ou alléger AVANT de
  * perdre quoi que ce soit.
  */
+/**
+ * ── L'ÉCRITURE DIFFÉRÉE, et pourquoi elle est indispensable ──
+ *
+ * MESURÉ : zustand n'a pas de `partialize`, donc CHAQUE écriture sérialise
+ * l'état entier. Et le champ « Notes » de la fiche prospect appelle
+ * `patchProspect` à chaque frappe. Résultat : à 500 fiches, taper une note
+ * réécrivait ~1,9 Mo de JSON par caractère — 10 ms de `JSON.stringify` mesurés
+ * en Node, et `localStorage.setItem` est SYNCHRONE et plus lent que ça dans un
+ * navigateur. La frappe devient visiblement saccadée bien avant le quota.
+ *
+ * On groupe donc les écritures : la dernière gagne, après un court silence.
+ *
+ * ⚠ LE PIÈGE DE TOUT DÉBOUNCE DE PERSISTANCE : si l'onglet se ferme pendant
+ * le délai, l'écriture n'a jamais lieu et la saisie est perdue — exactement le
+ * bug qu'on prétend éviter. D'où le vidage forcé sur `pagehide` et sur
+ * `visibilitychange`, les deux seuls événements qu'un navigateur mobile
+ * garantit avant de tuer un onglet (`beforeunload` ne se déclenche pas sur
+ * iOS). `flushStorage()` est aussi exporté pour les tests.
+ */
+const DELAI_ECRITURE_MS = 400;
+let enAttente: { cle: string; valeur: string } | null = null;
+let minuterie: ReturnType<typeof setTimeout> | null = null;
+
+/** Écrit immédiatement ce qui attend. Idempotent. */
+export function flushStorage(): void {
+  if (minuterie) {
+    clearTimeout(minuterie);
+    minuterie = null;
+  }
+  const p = enAttente;
+  enAttente = null;
+  if (p) ecrireVraiment(p.cle, p.valeur);
+}
+
+if (typeof window !== "undefined") {
+  // `pagehide` couvre la fermeture ET le bfcache (iOS) ; `visibilitychange`
+  // couvre le passage en arrière-plan, seul signal fiable sur mobile.
+  window.addEventListener("pagehide", flushStorage);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushStorage();
+  });
+}
+
+function ecrireVraiment(k: string, v: string): void {
+  try {
+    localStorage.setItem(k, v);
+    // Une écriture qui repasse efface l'alerte : le problème est réglé.
+    if (storageFailed) {
+      storageFailed = false;
+      notifyStorage(false);
+    }
+  } catch (e) {
+    if (isQuotaError(e)) {
+      storageFailed = true;
+      notifyStorage(true);
+      // On NE relance PAS : faire planter l'app par-dessus la perte de
+      // données n'aide personne. L'alerte, elle, est visible.
+      return;
+    }
+    throw e;
+  }
+}
+
 const guardedLocalStorage: Storage = {
   get length() {
     return localStorage.length;
   },
   key: (i: number) => localStorage.key(i),
-  getItem: (k: string) => localStorage.getItem(k),
-  removeItem: (k: string) => localStorage.removeItem(k),
-  clear: () => localStorage.clear(),
+  getItem: (k: string) => {
+    // Une lecture doit voir ce qui attend : sans ça, un rechargement de l'état
+    // juste après une écriture différée renverrait la version d'avant.
+    if (enAttente?.cle === k) return enAttente.valeur;
+    return localStorage.getItem(k);
+  },
+  removeItem: (k: string) => {
+    // Effacer annule ce qui attend, sinon la minuterie ressusciterait la clé.
+    if (enAttente?.cle === k) enAttente = null;
+    localStorage.removeItem(k);
+  },
+  clear: () => {
+    enAttente = null;
+    localStorage.clear();
+  },
   setItem: (k: string, v: string) => {
-    try {
-      localStorage.setItem(k, v);
-      // Une écriture qui repasse efface l'alerte : le problème est réglé.
-      if (storageFailed) {
-        storageFailed = false;
-        notifyStorage(false);
-      }
-    } catch (e) {
-      if (isQuotaError(e)) {
-        storageFailed = true;
-        notifyStorage(true);
-        // On NE relance PAS : faire planter l'app par-dessus la perte de
-        // données n'aide personne. L'alerte, elle, est visible.
-        return;
-      }
-      throw e;
+    // Hors navigateur (tests), on écrit tout de suite : pas de minuterie qui
+    // traîne et fait échouer un test pour une raison sans rapport.
+    if (typeof window === "undefined") {
+      ecrireVraiment(k, v);
+      return;
     }
+    enAttente = { cle: k, valeur: v };
+    if (minuterie) clearTimeout(minuterie);
+    minuterie = setTimeout(() => {
+      minuterie = null;
+      const p = enAttente;
+      enAttente = null;
+      if (p) ecrireVraiment(p.cle, p.valeur);
+    }, DELAI_ECRITURE_MS);
   },
 };
 
@@ -289,7 +382,7 @@ export const useAlpha = create<AlphaState>()(
             activities: exists
               ? s.activities
               : [{ id: uid(), date: now, kind: "prospect" as const, message: `Nouveau prospect : ${p.company}`, prospectId: p.id }, ...s.activities],
-            auditLog: [audit(s.settings.closerName, exists ? "update" : "create", `prospect:${p.company}`), ...s.auditLog].slice(0, 500),
+            auditLog: [audit(s.settings.closerName, exists ? "update" : "create", `prospect:${p.company}`), ...s.auditLog].slice(0, MAX_AUDIT),
           };
         }),
 
@@ -304,7 +397,7 @@ export const useAlpha = create<AlphaState>()(
         set((s) => ({
           prospects: s.prospects.filter((p) => p.id !== id),
           meetings: s.meetings.filter((m) => m.prospectId !== id),
-          auditLog: [audit(s.settings.closerName, "delete", `prospect:${id}`), ...s.auditLog].slice(0, 500),
+          auditLog: [audit(s.settings.closerName, "delete", `prospect:${id}`), ...s.auditLog].slice(0, MAX_AUDIT),
         })),
 
       moveStage: (id, stage, extra) => {
@@ -334,22 +427,19 @@ export const useAlpha = create<AlphaState>()(
                 }
               : x
           ),
-          activities: [
-            {
-              id: uid(),
-              date: now,
-              kind: stage === "signe" ? ("signe" as const) : stage === "perdu" ? ("perdu" as const) : ("stage" as const),
-              message:
-                stage === "signe"
-                  ? `SIGNÉ ✓ ${p.company}`
-                  : stage === "perdu"
-                    ? `Perdu : ${p.company}`
-                    : `${p.company} → ${stageById(stage).label}`,
-              prospectId: id,
-            },
-            ...s.activities,
-          ],
-          auditLog: [audit(s.settings.closerName, "stage", `${p.company} → ${stage}`), ...s.auditLog].slice(0, 500),
+          activities: pousserActivite(s.activities, {
+            id: uid(),
+            date: now,
+            kind: stage === "signe" ? ("signe" as const) : stage === "perdu" ? ("perdu" as const) : ("stage" as const),
+            message:
+              stage === "signe"
+                ? `SIGNÉ ✓ ${p.company}`
+                : stage === "perdu"
+                  ? `Perdu : ${p.company}`
+                  : `${p.company} → ${stageById(stage).label}`,
+            prospectId: id,
+          }),
+          auditLog: [audit(s.settings.closerName, "stage", `${p.company} → ${stage}`), ...s.auditLog].slice(0, MAX_AUDIT),
         }));
         return { ok: true, blockers: [] };
       },
@@ -379,15 +469,12 @@ export const useAlpha = create<AlphaState>()(
             partners: exists
               ? s.partners.map((x) => (x.id === p.id ? next : x))
               : [{ ...next, createdAt: now }, ...s.partners],
-            activities: [
-              {
-                id: uid(),
-                date: now,
-                kind: "prospect" as const,
-                message: exists ? `Prescripteur mis à jour — ${p.organisation}` : `Prescripteur ajouté — ${p.organisation}`,
-              },
-              ...s.activities,
-            ],
+            activities: pousserActivite(s.activities, {
+              id: uid(),
+              date: now,
+              kind: "prospect" as const,
+              message: exists ? `Prescripteur mis à jour — ${p.organisation}` : `Prescripteur ajouté — ${p.organisation}`,
+            }),
           };
         }),
 
@@ -410,16 +497,13 @@ export const useAlpha = create<AlphaState>()(
                   }
                 : p
             ),
-            activities: [
-              {
-                id: uid(),
-                date: now,
-                kind: "prospect" as const,
-                message: `Mise en relation reçue — ${intro.company}`,
-                prospectId: intro.prospectId,
-              },
-              ...s.activities,
-            ],
+            activities: pousserActivite(s.activities, {
+              id: uid(),
+              date: now,
+              kind: "prospect" as const,
+              message: `Mise en relation reçue — ${intro.company}`,
+              prospectId: intro.prospectId,
+            }),
           };
         }),
 
@@ -463,7 +547,7 @@ export const useAlpha = create<AlphaState>()(
 
       logActivity: (a) =>
         set((s) => ({
-          activities: [{ ...a, id: uid(), date: new Date().toISOString() }, ...s.activities].slice(0, 300),
+          activities: pousserActivite(s.activities, { ...a, id: uid(), date: new Date().toISOString() }),
         })),
 
       prepareCampaignDrafts: (campaignId) => {
@@ -551,7 +635,16 @@ export const useAlpha = create<AlphaState>()(
        */
       apprendre: (lecon) => {
         if (!lecon) return null;
-        return get().upsertNote(lecon);
+        const id = get().upsertNote(lecon);
+        // Élagage APRÈS écriture : la mémoire de terrain grossit à chaque
+        // objection et chaque perte, sans que rien ne la borne. Sans ça, elle
+        // mange le quota localStorage et fait laguer Alpha Live pendant un
+        // appel réel (search() = 62 ms sur 5 000 notes, mesuré).
+        set((s) => {
+          const gardees = elaguer(s.notes);
+          return gardees.length === s.notes.length ? {} : { notes: gardees };
+        });
+        return id;
       },
 
       /**
@@ -621,7 +714,7 @@ export const useAlpha = create<AlphaState>()(
             competitors: data.competitors ?? s.competitors,
             activities: data.activities ?? s.activities,
             settings: { ...s.settings, ...(data.settings ?? {}) },
-            auditLog: [audit(s.settings.closerName, "import", `${data.prospects.length} prospects`), ...s.auditLog].slice(0, 500),
+            auditLog: [audit(s.settings.closerName, "import", `${data.prospects.length} prospects`), ...s.auditLog].slice(0, MAX_AUDIT),
           }));
           return { ok: true };
         } catch (e) {
@@ -681,11 +774,13 @@ export const useAlpha = create<AlphaState>()(
           }
           return {
             prospects: next,
-            activities: [
-              { id: uid(), date: new Date().toISOString(), kind: "systeme" as const, message: `Import : ${added} nouveau(x) prospect(s), ${updated} mis à jour` },
-              ...s.activities,
-            ],
-            auditLog: [audit(s.settings.closerName, "import-csv", `${added} added / ${updated} updated`), ...s.auditLog].slice(0, 500),
+            activities: pousserActivite(s.activities, {
+              id: uid(),
+              date: new Date().toISOString(),
+              kind: "systeme" as const,
+              message: `Import : ${added} nouveau(x) prospect(s), ${updated} mis à jour`,
+            }),
+            auditLog: [audit(s.settings.closerName, "import-csv", `${added} added / ${updated} updated`), ...s.auditLog].slice(0, MAX_AUDIT),
           };
         });
         return { added, updated };
@@ -702,7 +797,7 @@ export const useAlpha = create<AlphaState>()(
           activities: [
             { id: uid(), date: new Date().toISOString(), kind: "systeme" as const, message: "Données de démo effacées — mode données réelles" },
           ],
-          auditLog: [audit(s.settings.closerName, "clear-all", "all business data"), ...s.auditLog].slice(0, 500),
+          auditLog: [audit(s.settings.closerName, "clear-all", "all business data"), ...s.auditLog].slice(0, MAX_AUDIT),
         })),
 
       exportData: () => {
@@ -727,15 +822,12 @@ export const useAlpha = create<AlphaState>()(
           meetings,
           campaigns: [],
           drafts: [],
-          activities: [
-            {
-              id: uid(),
-              date: new Date().toISOString(),
-              kind: "systeme" as const,
-              message: `Pipeline réel de juillet 2026 chargé — ${prospects.length} fiches, ${meetings.length} rendez-vous`,
-            },
-            ...s.activities,
-          ],
+          activities: pousserActivite(s.activities, {
+            id: uid(),
+            date: new Date().toISOString(),
+            kind: "systeme" as const,
+            message: `Pipeline réel de juillet 2026 chargé — ${prospects.length} fiches, ${meetings.length} rendez-vous`,
+          }),
           settings: { ...s.settings, onboarded: true },
         }));
       },

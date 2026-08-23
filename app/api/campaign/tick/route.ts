@@ -83,13 +83,37 @@ export async function POST(req: NextRequest) {
   const dryRun = !armed() || url.searchParams.get("dryRun") === "1";
 
   // ── Lecture des prospects ──
-  const { data, error } = await db.from("prospects").select("data").limit(2000);
+  //
+  // ⚠ La limite est une TRONCATURE, et elle était muette. Au-delà de 2 000
+  // fiches, celles qui suivent n'entrent jamais dans la file : elles ne sont
+  // jamais rappelées, et rien dans la réponse ne le disait. Un autopilote qui
+  // ignore une partie du pipe sans le signaler est pire qu'un autopilote
+  // arrêté — on croit qu'il tourne.
+  //
+  // On lit donc UNE de plus que la limite pour SAVOIR qu'on tronque, puis on
+  // le remonte dans la réponse (et n8n peut alerter dessus).
+  const LIMITE_LECTURE = 2000;
+  const { data, error } = await db.from("prospects").select("data").limit(LIMITE_LECTURE + 1);
   if (error) {
     return NextResponse.json({ error: "lecture impossible", detail: error.message }, { status: 500 });
   }
-  const prospects = (data ?? []).map((r) => r.data as Prospect).filter(Boolean);
+  const brut = (data ?? []).map((r) => r.data as Prospect).filter(Boolean);
+  const tronque = brut.length > LIMITE_LECTURE;
+  const prospects = tronque ? brut.slice(0, LIMITE_LECTURE) : brut;
+  const avertissement = tronque
+    ? `⚠ Plus de ${LIMITE_LECTURE} prospects côté serveur : seuls les ${LIMITE_LECTURE} premiers entrent dans la file. Les suivants ne sont JAMAIS rappelés — il faut paginer le tick ou filtrer côté base.`
+    : undefined;
   if (prospects.length === 0) {
-    return NextResponse.json({ ok: true, called: 0, why: "Aucun prospect synchronisé côté serveur." });
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      // ⚠ Ce cas n'est PAS théorique : aucun composant de l'app ne pousse les
+      // prospects vers la table `prospects`. Le store vit dans le navigateur.
+      // Tant que la synchro n'existe pas, l'autopilote tourne à vide en
+      // rendant « ok: true » — d'où cette formulation, qui ne se lit pas
+      // comme un succès.
+      why: "Aucun prospect synchronisé côté serveur — l'autopilote n'a rien à appeler. Le CRM vit dans le navigateur ; il faut une synchro vers Supabase pour que le cron voie quelque chose.",
+    });
   }
 
   // ── La file, avec toutes les portes habituelles (jamais de force) ──
@@ -177,6 +201,8 @@ export async function POST(req: NextRequest) {
     failed: results.filter((r) => !r.ok).length,
     queueSize: run.queue.length,
     tooSoon: plan.tooSoon.length,
+    // Remonté à l'ordonnanceur : c'est le seul endroit où quelqu'un le lira.
+    ...(avertissement ? { tronque: true, avertissement, lus: prospects.length } : {}),
     results,
   });
 }

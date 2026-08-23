@@ -198,3 +198,52 @@ export function empreinte(texte: string): string {
   }
   return (h >>> 0).toString(36);
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'ÉLAGAGE — parce qu'une mémoire sans plafond est une fuite.
+ *
+ * Chaque objection traitée, chaque perte, chaque débrief écrit une note. Rien
+ * n'en supprime jamais. MESURÉ : 0,5 Ko par leçon, et `search()` coûte 62 ms
+ * sur 5 000 notes — or Alpha Live appelle `search()` à CHAQUE bribe entendue,
+ * sur le fil principal, PENDANT un appel réel. Le souffleur se serait mis à
+ * laguer précisément quand on parle à un client.
+ *
+ * Deux garde-fous, et un principe : on n'élague QUE ce que la machine a écrit.
+ *
+ *  · Les notes écrites par l'humain (manuel, playbook, intel) ne sont JAMAIS
+ *    touchées. Une mémoire automatique qui supprime le travail de quelqu'un
+ *    est pire que pas de mémoire du tout.
+ *  · À plafond atteint, on retire les PLUS ANCIENNES. Une leçon récente vaut
+ *    mieux qu'une leçon de l'an dernier sur un prospect déjà classé.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Nombre maximal de leçons de terrain conservées.
+ *
+ * 400 × 0,5 Ko ≈ 200 Ko, et `search()` reste sous 5 ms — donc invisible même
+ * pendant un appel. Au-delà, on gagne de la mémoire qu'on ne relit jamais et
+ * on paie une latence qu'on sent.
+ */
+export const MAX_LECONS_TERRAIN = 400;
+
+/**
+ * Retourne les notes à conserver. Pure : elle ne mute rien, l'appelant décide.
+ * L'ordre d'entrée est préservé pour tout ce qui n'est pas élagué.
+ */
+export function elaguer(notes: KnowledgeNote[], max = MAX_LECONS_TERRAIN): KnowledgeNote[] {
+  const terrain = notes.filter((n) => n.source === "terrain");
+  if (terrain.length <= max) return notes;
+
+  // Les plus RÉCENTES d'abord, puis on garde les `max` premières. `updatedAt`
+  // et non `createdAt` : une leçon rouverte et complétée est vivante.
+  const gardees = new Set(
+    [...terrain]
+      .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+      .slice(0, max)
+      .map((n) => n.id)
+  );
+
+  return notes.filter((n) => n.source !== "terrain" || gardees.has(n.id));
+}
