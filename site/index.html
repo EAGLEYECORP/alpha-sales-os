@@ -3,8 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ALPHA SALES OS® — Le système d'exploitation de la vente terrain | EAGLEYE CORP.</title>
-<meta name="description" content="ALPHA SALES OS® — le système d'exploitation commercial pour la vente terrain. Il calcule ce qui est urgent, débriefe à la voix, dépose tes emails prêts à envoyer, et te prévient seulement quand ça compte. Par EAGLEYE CORP., Lyon." />
+<!-- Titre et description taillés pour la LARGEUR D'AFFICHAGE d'un résultat de
+     recherche, pas pour tout dire : au-delà, Google coupe au milieu d'un mot et
+     la promesse se termine par « … ». ~60 caractères pour le titre, ~155 pour
+     la description. Le reste du discours est dans la page. -->
+<title>ALPHA SALES OS® — l'OS de la vente terrain | EAGLEYE CORP.</title>
+<meta name="description" content="ALPHA SALES OS® tient ta vente pendant que tu es dehors : il calcule ce qui est urgent, débriefe à la voix et prépare tes emails. EAGLEYE CORP., Lyon." />
 <meta property="og:title" content="ALPHA SALES OS® — Le système d'exploitation de la vente terrain" />
 <meta property="og:description" content="Sur le terrain toute la journée. Rien ne se perd. Le système d'exploitation commercial d'EAGLEYE CORP." />
 <meta property="og:type" content="website" />
@@ -196,11 +200,34 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
 .foot .legal{font-family:"JetBrains Mono";font-size:10.5px;letter-spacing:.05em;color:var(--graphite);line-height:1.9;text-align:right}
 @media(max-width:600px){.foot{flex-direction:column}.foot .legal{text-align:left}}
 
-/* Entrée en CSS pur (aucune dépendance JS) : l'animation finit toujours à
-   l'état visible (fill both), donc rien ne peut rester caché. */
+/* Entrée en CSS pur (aucune dépendance JS).
+
+   ⚠ PAS de `fill-mode`, à l'inverse de ce qui était écrit ici. `both` fait
+   porter à l'élément l'état de DÉPART — opacity 0 — tant que l'animation
+   n'a pas démarré : c'est exactement ce qui peut laisser une page blanche,
+   pas ce qui l'en protège. Sans fill-mode, l'état hors animation est l'état
+   normal, donc visible ; le rendu est identique quand l'animation tourne, et
+   la différence ne se voit que le jour où elle ne tourne pas.
+   Aucun navigateur réel ne l'a produit ici — le seul cas observé était un
+   navigateur sans compositeur, qui ne peignait aucune image. Mais sur une
+   page dont l'unique métier est de vendre, le pari ne vaut pas le mot en
+   trop qu'il fait économiser. */
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-.reveal{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.reveal{animation:rise .7s cubic-bezier(.2,.7,.2,1)}
 @media (prefers-reduced-motion: reduce){.reveal{animation:none}html{scroll-behavior:auto}}
+
+  /* Capture produit — cadre sobre, coins doux, ombre portée discrète. */
+  .shot { margin: 40px 0 8px; }
+  .shot picture { display: block; }
+  .shot img {
+    width: 100%; height: auto; display: block; border-radius: 14px;
+    border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    box-shadow: 0 18px 50px -20px rgba(0,0,0,.35);
+  }
+  .shot figcaption {
+    margin-top: 12px; font-size: 13px; line-height: 1.7;
+    color: var(--graphite, currentColor); opacity: .8;
+  }
 </style>
 </head>
 <body>
@@ -240,7 +267,7 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
       <a class="btn ghost" href="#produit">Voir ce que ça fait</a>
     </div>
     <div class="stats reveal">
-      <div class="stat"><div class="n">~80<span class="accent">%</span></div><div class="l">de ta vente qui tourne sans toi, une fois branché</div></div>
+      <div class="stat"><div class="n">0<span class="accent"> </span></div><div class="l">email parti sans que tu l'aies relu — rien ne s'envoie tout seul</div></div>
       <div class="stat"><div class="n">40<span class="mono" style="font-size:.5em;letter-spacing:.02em"> sec</span></div><div class="l">pour débriefer un rendez-vous à la voix — au lieu de 10 minutes de saisie</div></div>
       <div class="stat"><div class="n">1</div><div class="l">seule alerte par jour : les priorités critiques, rien d'autre</div></div>
     </div>
@@ -271,6 +298,19 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
       <h2>Un système d'exploitation, pas un carnet d'adresses.</h2>
       <p>Chaque brique règle un point précis de la vente terrain. Ensemble, elles font tourner la machine — et te laissent les 20 % qui font signer.</p>
     </div>
+
+    <!-- Le produit, montré. Une page qui vend un logiciel sans jamais l'afficher
+         demande un acte de foi ; c'est une capture RÉELLE du build de
+         production, pas une maquette. WebP d'abord, JPEG en repli.
+         width/height renseignés : sans eux la page saute au chargement. -->
+    <figure class="shot reveal">
+      <picture>
+        <source srcset="/assets/produit-pipeline.webp" type="image/webp" />
+        <img src="/assets/produit-pipeline.jpg" width="2200" height="1375" loading="lazy" decoding="async"
+             alt="Le pipeline d'ALPHA SALES OS : les prospects rangés par étape, de « prospect » à « offre », chaque fiche montrant sa valeur, sa confiance et sa prochaine action." />
+      </picture>
+      <figcaption>Le pipeline, tel qu'il s'affiche. Chaque fiche porte sa prochaine action — jamais une liste morte.</figcaption>
+    </figure>
     <div class="feat">
       <div class="f reveal">
         <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12h5l2 6 4-14 2 8h5"/></svg></span>
@@ -312,7 +352,7 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
         <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span>
         <h3>Pilote automatique</h3>
         <p>Réponses entrantes, désinscriptions, synchro CRM, remontée des ouvertures : la machine tourne pendant que tu es sur la route.</p>
-        <span class="tag">~80 % sans toi</span>
+        <span class="tag">tourne sans toi</span>
       </div>
       <div class="f reveal">
         <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l19-8-8 19-2-8-9-3z"/></svg></span>
@@ -374,8 +414,14 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
           <li>Audits cadeaux illimités</li>
           <li>Boîte d&apos;envoi + brouillons Gmail</li>
         </ul>
-        <!-- Remplace par ton lien de paiement Stripe (Payment Link) -->
-        <a class="btn ghost" href="https://buy.stripe.com/REMPLACE_SOLO">Commencer</a>
+        <!-- ⚠ Les deux liens de paiement Stripe pointaient vers des URL de
+             gabarit : un visiteur qui cliquait tombait sur une page
+             introuvable, au moment exact où il voulait payer. En attendant les
+             vrais liens, le bouton mène au CADRAGE — ce qui est de toute façon
+             la doctrine maison (« cadrage obligatoire avant devis »). Pour
+             revenir au paiement direct : href="https://buy.stripe.com/<lien>".
+             -->
+        <a class="btn ghost" href="mailto:contact@eagleyecorp.fr?subject=D%C3%A9mo%20ALPHA%20SALES%20OS">Réserver le cadrage</a>
       </div>
       <div class="tier feat reveal">
         <span class="badge">Le plus choisi</span>
@@ -388,7 +434,7 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
           <li>Récap urgent par SMS</li>
           <li>Pilote automatique (n8n)</li>
         </ul>
-        <a class="btn accent" href="https://buy.stripe.com/REMPLACE_PRO">S&apos;abonner</a>
+        <a class="btn accent" href="mailto:contact@eagleyecorp.fr?subject=D%C3%A9mo%20ALPHA%20SALES%20OS">Réserver le cadrage</a>
       </div>
       <div class="tier reveal">
         <h3>Agence</h3>
@@ -400,10 +446,14 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
           <li>Onboarding + formation terrain</li>
           <li>Support prioritaire</li>
         </ul>
-        <a class="btn ghost" href="mailto:contact@eagleyecorp.fr?subject=ALPHA%20SALES%20OS%20—%20Offre%20Agence">Nous parler</a>
+        <a class="btn ghost" href="mailto:contact@eagleyecorp.fr?subject=ALPHA%20SALES%20OS%20%E2%80%94%20Offre%20Agence">Nous parler</a>
       </div>
     </div>
-    <p class="pay-note">Paiement sécurisé par Stripe · résiliable à tout moment · TVA en sus</p>
+    <!-- Cette ligne annonçait « Paiement sécurisé par Stripe ». Depuis que les
+         trois boutons mènent au cadrage, plus aucun paiement n'est possible sur
+         la page : la mention était devenue fausse. Elle ne revient que le jour
+         où de vrais liens Stripe existent. -->
+    <p class="pay-note">Tarifs HT · résiliable à tout moment · le cadrage précède tout devis</p>
   </div>
 </section>
 
@@ -414,7 +464,7 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
       <h2>Audite ta vente. Vois ce qui te coûte des deals.</h2>
       <p>Vingt minutes, on regarde ton pipe réel et on te montre, sur tes propres fiches, ce qu'ALPHA change dès la première semaine. Sans engagement — et tu gardes l'audit.</p>
       <div class="cta">
-        <a class="btn accent" href="mailto:contact@eagleyecorp.fr?subject=Démo%20ALPHA%20SALES%20OS">Réserver ma démo</a>
+        <a class="btn accent" href="mailto:contact@eagleyecorp.fr?subject=D%C3%A9mo%20ALPHA%20SALES%20OS">Réserver ma démo</a>
         <a class="btn ghost" href="mailto:contact@eagleyecorp.fr?subject=Une%20question%20sur%20ALPHA%20SALES%20OS">Poser une question</a>
       </div>
       <div class="mail">contact@eagleyecorp.fr · Lyon</div>
@@ -440,6 +490,13 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
       SIREN 831&nbsp;729&nbsp;934 · TVA FR32831729934<br/>
       contact@eagleyecorp.fr · eagleyecorp.fr<br/>
       ALPHA SALES OS® — marque déposée
+      <div style="margin-top:14px;line-height:2">
+        <a href="/mentions-legales.html">Mentions légales</a> ·
+        <a href="/cgv.html">CGV</a> ·
+        <a href="/cgu.html">CGU</a> ·
+        <a href="/confidentialite.html">Confidentialité</a> ·
+        <a href="/dpa.html">DPA</a>
+      </div>
     </div>
   </div>
 </footer>

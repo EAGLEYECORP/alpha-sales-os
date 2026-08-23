@@ -23,10 +23,10 @@ siège, à l'attention de Zakaria TAZI.
 
 | Donnée | Finalité | Base légale (art. 6 RGPD) | Conservation |
 |---|---|---|---|
-| Identité de compte (email, mot de passe haché) | Créer et sécuriser l'accès | Exécution du contrat | Durée du compte + [12] mois |
+| Identité de compte (email, mot de passe haché) | Créer et sécuriser l'accès | Exécution du contrat | Durée du compte + 12 mois |
 | Données de facturation (via Stripe) | Gérer l'abonnement, obligations comptables | Contrat / obligation légale | 10 ans (compta) |
-| Journaux techniques, adresse IP | Sécurité, prévention de la fraude | Intérêt légitime | [12] mois |
-| Données de support (échanges) | Répondre aux demandes | Intérêt légitime | [24] mois |
+| Journaux techniques, adresse IP | Sécurité, prévention de la fraude | Intérêt légitime | 12 mois |
+| Données de support (échanges) | Répondre aux demandes | Intérêt légitime | 24 mois |
 | Cookies de mesure / préférences | Fonctionnement, statistiques | Consentement (hors cookies strictement nécessaires) | 13 mois max |
 
 Nous ne traitons **pas** de catégories particulières de données (art. 9 RGPD)

@@ -14,7 +14,7 @@ volume et le support.
 | CRM + pipeline complet | ✅ | ✅ | ✅ | ✅ |
 | Fiches prospects | jusqu'à **50** | illimité (usage loyal) | illimité | illimité |
 | Rédaction assistée | **templates** (hors-ligne) | **IA cascade** | IA cascade | IA cascade |
-| E-mails suivis / mois | **20** | fair use (≈ [40]/h) | volume supérieur | sur mesure |
+| E-mails suivis / mois | **20** | fair use (≈ 40/h) | volume supérieur | sur mesure |
 | Tracking durable (ouvertures/clics) | ❌ (mémoire) | ✅ (Supabase) | ✅ | ✅ |
 | Débrief voix / transcription | ❌ | ✅ | ✅ | ✅ |
 | Appels sortants (voix) | ❌ | option | ✅ | ✅ |

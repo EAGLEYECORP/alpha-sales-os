@@ -38,7 +38,7 @@ aucun volume de ventes, de rendez-vous ou de chiffre d'affaires.
 Les prix sont indiqués **hors taxes** ; la TVA au taux en vigueur s'ajoute
 (TVA FR32831729934). L'Éditeur peut modifier ses prix à tout moment ; le
 nouveau prix s'applique au Client au terme de la période d'abonnement en cours,
-après information préalable par courriel au moins [30] jours à l'avance.
+après information préalable par courriel au moins 30 jours à l'avance.
 
 ## Article 4 — Souscription et paiement
 
@@ -50,7 +50,7 @@ bancaire.
 prélèvement automatique à chaque échéance.
 
 4.3 En cas d'échec de paiement, l'accès peut être suspendu après relance restée
-sans effet pendant [7] jours. Tout retard de paiement d'un professionnel emporte
+sans effet pendant 7 jours. Tout retard de paiement d'un professionnel emporte
 de plein droit des pénalités au taux légal applicable et une indemnité
 forfaitaire de recouvrement de 40 € (art. L441-10 C. com.).
 
@@ -72,7 +72,7 @@ légale impérative.
 
 6.3 L'Éditeur peut résilier ou suspendre en cas de manquement grave du Client
 (non-paiement, usage illicite, violation des CGU), après mise en demeure restée
-sans effet pendant [15] jours, sauf urgence (atteinte à la sécurité, activité
+sans effet pendant 15 jours, sauf urgence (atteinte à la sécurité, activité
 illégale) justifiant une suspension immédiate.
 
 ## Article 7 — Obligations du Client
@@ -99,7 +99,7 @@ de données imputable au Client, préjudice commercial).
 
 9.2 En tout état de cause, la responsabilité totale de l'Éditeur, toutes causes
 confondues, est **plafonnée aux sommes effectivement versées par le Client au
-titre des [12] derniers mois** précédant le fait générateur.
+titre des 12 derniers mois** précédant le fait générateur.
 
 9.3 L'Éditeur ne saurait être tenu responsable de l'usage du Service par le
 Client en violation de la réglementation applicable à la prospection ou à la

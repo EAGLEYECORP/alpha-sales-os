@@ -1,0 +1,5 @@
+# eagleyecorp.fr — tout est public et indexable.
+User-agent: *
+Allow: /
+
+Sitemap: https://eagleyecorp.fr/sitemap.xml

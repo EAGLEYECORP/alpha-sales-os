@@ -1,0 +1,12 @@
+# Netlify — redirections et page d'erreur.
+#
+# Sans cette ligne, une URL inconnue rend la 404 par DÉFAUT de Netlify, pas la
+# nôtre : le visiteur sort de la marque au moment où il est déjà perdu.
+/*    /404.html   404
+
+# Confort : les adresses sans extension marchent aussi.
+/mentions-legales   /mentions-legales.html   200
+/cgv                /cgv.html                200
+/cgu                /cgu.html                200
+/confidentialite    /confidentialite.html    200
+/dpa                /dpa.html                200

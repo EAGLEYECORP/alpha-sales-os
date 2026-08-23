@@ -102,9 +102,9 @@ facturation raisonnable, après information du Responsable.
 
 À la fin de la prestation, le Sous-traitant, au choix du Responsable :
 - **restitue** les données (export dans un format réutilisable), et/ou
-- les **supprime** de ses systèmes actifs dans un délai de [30] jours, sauf
+- les **supprime** de ses systèmes actifs dans un délai de 30 jours, sauf
   obligation légale de conservation, les sauvegardes étant purgées selon leur
-  cycle (au plus [90] jours).
+  cycle (au plus 90 jours).
 Sur demande, le Sous-traitant atteste par écrit de la suppression.
 
 ## Article 10 — Responsabilité
