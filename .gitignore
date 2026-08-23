@@ -21,9 +21,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env
+# env — TOUT sauf les exemples.
+#
+# ⚠ La règle précédente était `.env` + `.env*.local`. Elle laissait passer
+# `.env.production`, `.env.prod` et `.env.staging` : exactement les fichiers
+# qui contiennent les vraies clés. Un secret poussé sur GitHub reste dans
+# l'historique même après suppression — il faut le considérer comme brûlé et
+# le faire tourner.
 .env
-.env*.local
+.env.*
+!.env.example
 
 # vercel
 .vercel

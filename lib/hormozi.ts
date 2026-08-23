@@ -10,7 +10,12 @@ import type {
   Prospect,
   Stage,
 } from "./types";
-import { BRICKS } from "./bricks";
+// ⚠ Pas d'import de `lib/bricks` : ce module est atteint par `lib/store`, donc
+// par TOUTES les pages client, et la grille tarifaire y partait en entier
+// (chemin mesuré : app/(app)/*/page → lib/store → lib/hormozi → lib/bricks).
+// Seul le LIBELLÉ est nécessaire ici : il vient de la vue publique, qui ne
+// porte aucun montant par brique.
+import { CAPACITES } from "./public-catalogue";
 import { guessSegmentForProspect } from "./segments";
 
 export const STAGES: {
@@ -259,7 +264,7 @@ export function fallbackObjectionAnswer(objectionLabel: string, p: Prospect): st
 function recommendedBricks(p: Prospect): string {
   const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
   if (!seg) return "Alpha Sales OS — briques à arrêter au cadrage";
-  const labels = seg.entryBricks.map((id) => BRICKS.find((b) => b.id === id)?.label ?? id);
+  const labels = seg.entryBricks.map((id) => CAPACITES.find((c) => c.id === id)?.label ?? id);
   return labels.length ? labels.join(" + ") : "Alpha Sales OS";
 }
 

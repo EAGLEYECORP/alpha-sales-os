@@ -120,18 +120,28 @@ test("master rappel — un prospect prêt déclenche le rituel de closing du com
   const eagleye = masterRappel(readyProspect(), { now: NOW, accountId: "eagleye" });
   assert.equal(eagleye.closing?.accountId, "eagleye");
   assert.match(eagleye.closing!.action, /DEVIS/i);
-  assert.equal(eagleye.closing?.fromEmail, "contact@eagleyecorp.fr");
   assert.match(eagleye.headline, /PRÊT À SIGNER/);
 
   const scintia = masterRappel(readyProspect(), { now: NOW, accountId: "scintia" });
   assert.match(scintia.closing!.action, /PROPOSITION COMMERCIALE/i);
-  assert.equal(scintia.closing?.fromEmail, "z.tazi@scintia.ai");
-  assert.equal(scintia.closing?.panelUrl, "https://sales.scintiacallflow.ai/");
 
   const nuwacom = masterRappel(readyProspect(), { now: NOW, accountId: "nuwacom" });
   assert.match(nuwacom.closing!.action, /CADRAGE/i);
-  assert.match(nuwacom.closing!.contactName!, /Christophe/);
-  assert.equal(nuwacom.closing?.timezone, "Europe/Luxembourg");
+});
+
+test("master rappel — l'acte de closing ne transporte AUCUNE coordonnée partenaire", () => {
+  // Ce module est calculé côté client : tout ce qu'il produit part dans un
+  // fichier JavaScript téléchargeable. L'email d'expédition, le panel de vente
+  // et le nom du CEO à impliquer arrivent par /api/catalogue, pas par ici.
+  for (const id of ["eagleye", "scintia", "nuwacom"]) {
+    const plan = masterRappel(readyProspect(), { now: NOW, accountId: id });
+    assert.deepEqual(
+      Object.keys(plan.closing!).sort(),
+      ["accountId", "accountName", "action"],
+      `${id} : le rituel ne porte que l'acte`
+    );
+    assert.doesNotMatch(plan.closing!.action, /@|https?:\/\/|Christophe/i, `${id} : ni adresse, ni URL, ni nom`);
+  }
 });
 
 test("master rappel — pas prêt = pas de closing proposé", () => {

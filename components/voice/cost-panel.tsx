@@ -1,11 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { computeCosts, defaultVolume, FIXED_COSTS, FREE_TIERS, FREE_VERDICT, type CallVolumeInput } from "@/lib/voice-costs";
-// ⚠ Aucun import de `lib/bricks` : ce module porte la grille tarifaire, et
-// tout ce qu'un composant client importe part dans un fichier JavaScript que
-// n'importe qui peut télécharger. Le prix vient du serveur.
+import { useEffect, useState } from "react";
+// ⚠ Aucun import de `lib/voice-costs` ni de `lib/bricks` : ces modules portent
+// notre modèle de coût et notre grille tarifaire, et tout ce qu'un composant
+// client importe part dans un fichier JavaScript que n'importe qui peut
+// télécharger. Les chiffres viennent du serveur, déjà agrégés.
 import { cn } from "@/lib/utils";
+
+/** Ce que la route renvoie — le RÉSULTAT, jamais les tarifs unitaires. */
+interface Volume {
+  calls: number;
+  answerRatePct: number;
+  avgMinutesAnswered: number;
+  avgMinutesUnanswered: number;
+}
+interface Reponse {
+  volume: Volume;
+  breakdown: {
+    answeredCalls: number;
+    fixedEur: number;
+    totalEur: number;
+    revenueEur: number;
+    marginEur: number;
+    marginPct: number;
+    costPerCallEur: number;
+    lines: { id: string; label: string; eur: number; pctOfCost: number }[];
+  };
+  fixed: { label: string; eur: number }[];
+  freeTiers: { provider: string; limit: string; realWorld: string; commercialOk: boolean; warning?: string }[];
+  freeVerdict: string;
+}
 
 /**
  * Le coût usine d'Alpha Voice — ce que chaque appel nous coûte VRAIMENT, et ce
@@ -15,40 +39,45 @@ import { cn } from "@/lib/utils";
  * savoir si un palier était rentable sans relire le code. Une offre dont on ne
  * voit pas la marge finit toujours par être vendue à perte.
  *
- * Le chiffre d'affaires n'est PAS saisi ici : il vient de la grille publique
- * (`outboundPrice`), pour qu'il n'existe qu'un seul prix dans tout le produit.
+ * Le calcul se fait côté SERVEUR (`/api/voice-costs`) : le chiffre d'affaires
+ * vient de la grille publique et les coûts fournisseurs de notre modèle — deux
+ * choses qui n'ont rien à faire dans le navigateur. Le panneau n'est plus
+ * qu'un afficheur.
  */
 export function CostPanel() {
-  const [v, setV] = useState<CallVolumeInput>(defaultVolume);
-  const [revenue, setRevenue] = useState(0);
+  // Les hypothèses par défaut sont RÉPÉTÉES ici plutôt qu'importées : elles ne
+  // sont pas confidentielles (30 % de décroché en B2B froid, 2 min de
+  // conversation), et le serveur les réapplique de toute façon si l'entrée est
+  // absurde. C'est le prix à payer pour que le module de coût reste serveur.
+  const [v, setV] = useState<Volume>({ calls: 1000, answerRatePct: 30, avgMinutesAnswered: 2, avgMinutesUnanswered: 0.4 });
+  const [data, setData] = useState<Reponse | null>(null);
+  const [erreur, setErreur] = useState(false);
 
-  // Le chiffre d'affaires vient de la grille publique, côté SERVEUR : il n'y a
-  // qu'un seul prix dans tout le produit, et il ne descend pas dans le
-  // navigateur. Tant que la réponse n'est pas là, la marge s'affiche à zéro
-  // plutôt qu'avec un prix inventé.
   useEffect(() => {
     let vivant = true;
-    fetch("/api/catalogue", {
+    setErreur(false);
+    fetch("/api/voice-costs", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ calls: v.calls }),
+      body: JSON.stringify(v),
     })
-      .then((r) => r.json())
-      .then((d: { sortant?: { monthlyHT: number } }) => {
-        if (vivant) setRevenue(d.sortant?.monthlyHT ?? 0);
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: Reponse) => {
+        if (vivant) setData(d);
       })
       .catch(() => {
-        /* hors ligne : la marge reste à zéro, ce qui se voit */
+        // Pas de chiffre inventé : on le dit. Une marge affichée à zéro parce
+        // que le réseau a lâché ressemble à une marge à zéro.
+        if (vivant) setErreur(true);
       });
     return () => {
       vivant = false;
     };
-  }, [v.calls]);
-
-  const c = useMemo(() => computeCosts(v, revenue), [v, revenue]);
+  }, [v]);
 
   const eur2 = (n: number) => `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-  const set = (patch: Partial<CallVolumeInput>) => setV((s) => ({ ...s, ...patch }));
+  const set = (patch: Partial<Volume>) => setV((s) => ({ ...s, ...patch }));
+  const c = data?.breakdown;
 
   return (
     <section className="card p-4">
@@ -76,55 +105,65 @@ export function CostPanel() {
         </label>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-4">
-        <Stat label="Tarif public" value={`${c.revenueEur.toLocaleString("fr-FR")} €`} hint="grille des paliers" />
-        <Stat label="Coût total" value={eur2(c.totalEur)} hint={`dont ${eur2(c.fixedEur)} de fixe`} />
-        <Stat
-          label="Marge"
-          value={`${eur2(c.marginEur)} · ${c.marginPct} %`}
-          hint={c.marginEur < 0 ? "⚠ vendu à perte" : "après fournisseurs"}
-          tone={c.marginEur < 0 ? "bad" : "good"}
-        />
-        <Stat label="Coût d'un appel" value={eur2(c.costPerCallEur)} hint={`${c.answeredCalls} décrochés`} />
-      </div>
+      {erreur && (
+        <p className="mt-3 rounded-lg border border-signal-red/40 bg-signal-red/10 px-3 py-2 text-[12px] text-signal-red">
+          Le calcul n&apos;a pas répondu — aucun chiffre affiché plutôt qu&apos;un chiffre faux. Recharge la page.
+        </p>
+      )}
 
-      <table className="mt-4 w-full text-[12px]">
-        <tbody>
-          {c.lines
-            .filter((l) => l.eur > 0)
-            .map((l) => (
-              <tr key={l.id} className="border-t border-ink-700">
-                <td className="py-1.5 text-paper">{l.label}</td>
-                <td className="py-1.5 text-right font-mono text-paper-faint">{eur2(l.eur)}</td>
-                <td className="w-12 py-1.5 text-right font-mono text-paper-faint">{l.pctOfCost} %</td>
-              </tr>
+      {c && (
+        <>
+          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+            <Stat label="Tarif public" value={`${c.revenueEur.toLocaleString("fr-FR")} €`} hint="grille des paliers" />
+            <Stat label="Coût total" value={eur2(c.totalEur)} hint={`dont ${eur2(c.fixedEur)} de fixe`} />
+            <Stat
+              label="Marge"
+              value={`${eur2(c.marginEur)} · ${c.marginPct} %`}
+              hint={c.marginEur < 0 ? "⚠ vendu à perte" : "après fournisseurs"}
+              tone={c.marginEur < 0 ? "bad" : "good"}
+            />
+            <Stat label="Coût d'un appel" value={eur2(c.costPerCallEur)} hint={`${c.answeredCalls} décrochés`} />
+          </div>
+
+          <table className="mt-4 w-full text-[12px]">
+            <tbody>
+              {c.lines
+                .filter((l) => l.eur > 0)
+                .map((l) => (
+                  <tr key={l.id} className="border-t border-ink-700">
+                    <td className="py-1.5 text-paper">{l.label}</td>
+                    <td className="py-1.5 text-right font-mono text-paper-faint">{eur2(l.eur)}</td>
+                    <td className="w-12 py-1.5 text-right font-mono text-paper-faint">{l.pctOfCost} %</td>
+                  </tr>
+                ))}
+              {data.fixed.map((f) => (
+                <tr key={f.label} className="border-t border-ink-700">
+                  <td className="py-1.5 text-paper-faint">{f.label} (fixe)</td>
+                  <td className="py-1.5 text-right font-mono text-paper-faint">{eur2(f.eur)}</td>
+                  <td />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h3 className="mt-5 font-display text-sm font-semibold text-paper">Jusqu&apos;où va le gratuit</h3>
+          <p className="mt-1 rounded-lg border border-signal-red/40 bg-signal-red/10 px-3 py-2 text-[12px] text-paper">{data.freeVerdict}</p>
+          <ul className="mt-2 space-y-1.5">
+            {data.freeTiers.map((t) => (
+              <li key={t.provider} className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-[12px]">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-paper">{t.provider}</span>
+                  <span className={cn("chip", t.commercialOk ? "border-signal-green/50 text-signal-green" : "border-signal-red/50 text-signal-red")}>
+                    {t.commercialOk ? "OK en commercial" : "interdit en commercial"}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-paper-faint">{t.limit} — {t.realWorld}</p>
+                {t.warning && <p className="mt-0.5 text-signal-red">{t.warning}</p>}
+              </li>
             ))}
-          {FIXED_COSTS.map((f) => (
-            <tr key={f.label} className="border-t border-ink-700">
-              <td className="py-1.5 text-paper-faint">{f.label} (fixe)</td>
-              <td className="py-1.5 text-right font-mono text-paper-faint">{eur2(f.eurPerMonth)}</td>
-              <td />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h3 className="mt-5 font-display text-sm font-semibold text-paper">Jusqu&apos;où va le gratuit</h3>
-      <p className="mt-1 rounded-lg border border-signal-red/40 bg-signal-red/10 px-3 py-2 text-[12px] text-paper">{FREE_VERDICT}</p>
-      <ul className="mt-2 space-y-1.5">
-        {FREE_TIERS.map((t) => (
-          <li key={t.provider} className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-[12px]">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="text-paper">{t.provider}</span>
-              <span className={cn("chip", t.commercialOk ? "border-signal-green/50 text-signal-green" : "border-signal-red/50 text-signal-red")}>
-                {t.commercialOk ? "OK en commercial" : "interdit en commercial"}
-              </span>
-            </div>
-            <p className="mt-0.5 text-paper-faint">{t.limit} — {t.realWorld}</p>
-            {t.warning && <p className="mt-0.5 text-signal-red">{t.warning}</p>}
-          </li>
-        ))}
-      </ul>
+          </ul>
+        </>
+      )}
     </section>
   );
 }

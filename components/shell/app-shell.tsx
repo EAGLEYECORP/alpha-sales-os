@@ -58,6 +58,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { N8nAutoSync } from "@/components/n8n-autosync";
 import { StorageAlert } from "@/components/security/storage-alert";
+import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -421,6 +422,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Au-dessus de tout : si le stockage local n'enregistre plus, aucune
             autre information n'a d'importance tant que ce n'est pas réglé. */}
         <StorageAlert />
+        {/* Le socle du Cerveau arrive du serveur : il ne peut plus être compilé
+            dans le bundle, où il était lisible sans mot de passe. */}
+        <KnowledgeSeedLoader />
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
 

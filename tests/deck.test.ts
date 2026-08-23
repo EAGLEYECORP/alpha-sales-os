@@ -1,21 +1,45 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildDeck, renderDeck } from "../lib/deck";
+import { buildDeck, renderDeck, type DeckPrix } from "../lib/deck";
+import { quoteBricks, PACK_SETUP_HT, PACK_MONTHLY_HT } from "../lib/bricks";
+import { guessSegmentForProspect } from "../lib/segments";
 import { prospect } from "./fixtures";
 import type { Stage } from "../lib/types";
 
 const AVANT_OFFRE: Stage[] = ["prospect", "contact", "audit", "demo"];
 const APRES_OFFRE: Stage[] = ["offre", "redzone", "signe"];
 
-const texte = (stage: Stage, over = {}) =>
-  JSON.stringify(buildDeck(prospect({ stage, company: "Toitures du Rhône", ...over })));
+/**
+ * Le chiffrage tel que le SERVEUR le produit — le test le fabrique lui-même,
+ * parce que `lib/deck.ts` ne peut plus importer la grille : il est appelé
+ * depuis une page client, et tout ce qu'il importe part dans le navigateur.
+ */
+const prixDe = (p: Parameters<typeof buildDeck>[0]): DeckPrix => {
+  const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
+  const q = quoteBricks(seg?.entryBricks ?? []);
+  return {
+    setupHT: q.setupHT,
+    monthlyHT: q.monthlyHT,
+    recommendation: q.recommendation,
+    packSetupHT: PACK_SETUP_HT,
+    packMonthlyHT: PACK_MONTHLY_HT,
+  };
+};
+
+const texte = (stage: Stage, over = {}) => {
+  const p = prospect({ stage, company: "Toitures du Rhône", ...over });
+  return JSON.stringify(buildDeck(p, "eagleye", new Date(), prixDe(p)));
+};
 
 test("prix — AUCUN montant avant l'étape offre, à aucune étape", () => {
   // La règle la plus chère de la maison. Elle est tenue par CONSTRUCTION :
   // la fonction ne produit pas la diapositive, ce n'est pas un réglage qu'on
   // peut oublier de cocher.
   for (const stage of AVANT_OFFRE) {
-    const d = buildDeck(prospect({ stage, setupValue: 3500, monthlyValue: 364 }));
+    const p = prospect({ stage, setupValue: 3500, monthlyValue: 364 });
+    // On FOURNIT le chiffrage : la preuve n'a de valeur que si le prix était
+    // disponible et que la fonction a quand même refusé de l'afficher.
+    const d = buildDeck(p, "eagleye", new Date(), prixDe(p));
     const brut = JSON.stringify(d);
     assert.doesNotMatch(brut, /HT\/mois|d'installation|Installation :/, `${stage} : un prix a fui`);
     assert.ok(
@@ -30,6 +54,22 @@ test("prix — il apparaît à partir de l'offre, avec l'ancrage sur le pack", (
     const brut = texte(stage);
     assert.match(brut, /Installation :/, `${stage} : le prix doit être là`);
     assert.match(brut, /pack complet/, `${stage} : l'ancrage doit être montré, pas plaidé`);
+  }
+});
+
+test("prix — sans chiffrage serveur, aucun montant inventé : l'omission est dite", () => {
+  // Le chiffrage se calcule côté serveur pour que la grille ne parte pas dans
+  // le navigateur. Le risque introduit : si l'appel échoue, la présentation
+  // pourrait afficher un prix approximatif. Elle n'en affiche aucun — et elle
+  // le DIT à l'opérateur, sinon il présente sans savoir qu'il manque une
+  // diapositive.
+  for (const stage of APRES_OFFRE) {
+    const d = buildDeck(prospect({ stage, company: "Toitures du Rhône" }));
+    assert.doesNotMatch(JSON.stringify(d), /Installation :/, `${stage} : pas de prix sans chiffrage`);
+    assert.ok(
+      d.omissions.some((o) => /chiffrage n'a pas répondu/.test(o)),
+      `${stage} : l'opérateur doit savoir que le prix manque`
+    );
   }
 });
 

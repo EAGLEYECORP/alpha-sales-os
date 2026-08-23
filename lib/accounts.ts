@@ -22,6 +22,13 @@ import type { EagleyeOffer } from "./offer-match";
  * ⚠ Un compte n'est PAS une frontière de sécurité (ça, c'est la RLS + le JWT,
  * lib/tenant.ts). C'est une frontière d'IDENTITÉ COMMERCIALE : au nom de qui on
  * parle, quoi on vend, combien on prend.
+ *
+ * ⚠⚠ CE FICHIER DESCEND DANS LE NAVIGATEUR. Il est importé par le store et par
+ * cinq composants client : tout ce qu'on écrit ici finit dans un fichier
+ * JavaScript téléchargeable par n'importe qui (`_next/static/**` est exclu du
+ * middleware). Les MONTANTS, le détail des règles de commission et les
+ * COORDONNÉES partenaires vivent donc dans `lib/accounts-commercial.ts`,
+ * servi par `/api/catalogue`. N'ajoute ici que ce qu'un inconnu peut lire.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -40,32 +47,6 @@ export type AccountKind = "master" | "client";
  * celui qui ne peut pas suivre.
  */
 export type AccountTier = "interne" | "vip";
-
-/**
- * Une OFFRE COMMERCIALE d'un compte, avec sa règle de commission propre.
- * La commission n'est pas la même selon l'offre ni selon la TAILLE du projet :
- *   • ScintIA Callflow  → 990 € HT de setup : 30 % + 10 % du mensuel récurrent.
- *   • EAGLEYE           → 30 % : visibilité, et digitalisation jusqu'à 40 k € HT
- *                         (l'ex-« ScintIA Lab », récupéré à la renégociation).
- *   • Nuwacom           → 15 % au-delà de 40 000 € HT, PUIS 100 % de toute la
- *                         maintenance mensuelle.
- * `minHT`/`maxHT` bornent l'ÉLIGIBILITÉ d'un projet à cette offre.
- */
-export interface Offering {
-  key: string;
-  label: string;
-  /** Prix setup / one-shot public (€ HT), si productisé. */
-  setupHT?: number;
-  /** % prélevé sur le one-shot / setup. */
-  commissionPct: number;
-  /** % prélevé sur le mensuel récurrent (abonnement), si applicable. */
-  recurringPct?: number;
-  /** Plancher d'éligibilité du projet (€ HT). */
-  minHT?: number;
-  /** Plafond d'éligibilité du projet (€ HT). */
-  maxHT?: number;
-  note?: string;
-}
 
 export interface Account {
   /** Slug stable — la clé stockée dans settings.accountId. */
@@ -93,34 +74,29 @@ export interface Account {
    * Taux « vitrine » du compte — celui appliqué par défaut dans la page
    * Payouts (settings.commissionPct). C'est l'offre PRINCIPALE du compte
    * (Callflow 30 % pour ScintIA, 15 % pour Nuwacom). Les taux fins par
-   * offre/taille vivent dans `offerings` (voir commissionFor()).
+   * offre/taille vivent dans `lib/accounts-commercial.ts` (commissionFor()).
+   *
+   * Il reste ici — donc dans le navigateur — sciemment : il irrigue
+   * l'escalier, la fiche et les payouts à chaque rendu, et chaque partenaire
+   * connaît déjà son propre taux. Les MONTANTS, eux, sont partis.
    */
   commissionPct: number;
-  /** Les offres commerciales du compte + leurs règles de commission. */
-  offerings: Offering[];
-  /** Objectif minimal de valeur par projet (€), s'il existe. */
-  targetPerProject?: number;
   /**
    * Comment on CLOSE sur ce compte. Chaque marque a son rituel de signature :
    * un devis EAGLEYE, une proposition via le panel ScintIA, un cadrage avec le
    * CEO de Nuwacom. Se tromper de rituel = perdre le deal au dernier mètre.
+   *
+   * Seul l'ACTE est ici. Les coordonnées qui vont avec (adresse d'expédition,
+   * panel de vente, nom du CEO à impliquer, fuseau) sont dans
+   * `lib/accounts-commercial.ts` et arrivent par `/api/catalogue` : elles
+   * n'ont rien à faire dans un fichier que n'importe qui télécharge.
    */
   closing?: {
     /** L'acte précis à poser quand le prospect est prêt. */
     action: string;
-    /** Adresse d'expédition officielle pour ce compte. */
-    fromEmail?: string;
-    /** Outil à utiliser (panel de vente, espace devis…). */
-    panelUrl?: string;
-    /** Personne à impliquer (ex. le CEO côté Nuwacom). */
-    contactName?: string;
-    /** Fuseau de la personne à impliquer — évite de proposer un créneau absurde. */
-    timezone?: string;
   };
   /** ICP semé pour ce compte (surcharge le squelette déduit de l'offre). */
   icp?: Partial<ICP>;
-  /** Une ligne pour l'humain — d'où vient le compte, son statut. */
-  note?: string;
 }
 
 /**
@@ -140,34 +116,9 @@ export const ACCOUNTS: Account[] = [
     // Le maître voit et propose tout — c'est lui qui arbitre l'offre.
     offers: ["alpha-sales-os", "callflow", "visibilite-growth"],
     commissionPct: 30,
-    offerings: [
-      {
-        key: "alpha-sales-os-vip",
-        label: "Alpha Sales OS — VIP",
-        setupHT: 10000,
-        commissionPct: 30,
-        recurringPct: 10,
-        note: "Offre haute : 10 000 € VIP. Sinon 30 % + frais de setup sur devis.",
-      },
-      {
-        key: "visibilite",
-        label: "Visibilité / Growth (sites, présence)",
-        commissionPct: 30,
-        note: "TOUT ce qui est visibilité est à EAGLEYE — faisable par nous.",
-      },
-      {
-        key: "digitalisation",
-        label: "Digitalisation / transformation < 40 k",
-        commissionPct: 30,
-        maxHT: 40000,
-        note: "Ex-« ScintIA Lab » : récupéré par EAGLEYE. Au-delà de 40 k → Nuwacom.",
-      },
-    ],
     closing: {
       action: "Envoyer le DEVIS EAGLEYE CORP (chiffré, daté, avec la date de décision convenue).",
-      fromEmail: "contact@eagleyecorp.fr",
     },
-    note: "Compte maître. Prend TOUT ce qui est faisable par nous : visibilité, digitalisation < 40 k, ex-ScintIA Lab.",
   },
   {
     id: "scintia",
@@ -183,23 +134,9 @@ export const ACCOUNTS: Account[] = [
     // PRODUIT. Le « ScintIA Lab » est repassé à EAGLEYE.
     offers: ["callflow"],
     commissionPct: 30,
-    offerings: [
-      {
-        key: "callflow",
-        label: "ScintIA Callflow",
-        setupHT: 990,
-        commissionPct: 30,
-        recurringPct: 10,
-        note: "990 € HT de setup → 30 % ; + 10 % sur l'abonnement mensuel.",
-      },
-    ],
-    targetPerProject: 990, // setup Callflow public (lib/pipeline-juillet.ts)
     closing: {
       action: "Envoyer la PROPOSITION COMMERCIALE depuis le panel de vente ScintIA Callflow.",
-      fromEmail: "z.tazi@scintia.ai",
-      panelUrl: "https://sales.scintiacallflow.ai/",
     },
-    note: "Callflow SEUL, vendu comme un produit (990 € HT, 30 % + 10 % mensuel). Pipe juillet 2026 ici.",
   },
   {
     id: "nuwacom",
@@ -215,28 +152,12 @@ export const ACCOUNTS: Account[] = [
     // et ça reste chez EAGLEYE. Au-dessus, c'est trop lourd pour nous.
     offers: ["visibilite-growth", "alpha-sales-os"],
     commissionPct: 15,
-    offerings: [
-      {
-        key: "transformation",
-        label: "Gros chantier / transformation (> 40 k)",
-        commissionPct: 15,
-        // Le gros devis justifie les 15 % ; la MAINTENANCE mensuelle qui suit
-        // revient à 100 % chez nous — c'est là qu'est la rente du chantier.
-        recurringPct: 100,
-        minHT: 40000,
-        note:
-          "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 % sur le devis. " +
-          "PUIS 100 % de tous les services de maintenance mensuels. " +
-          "En dessous : EAGLEYE le fait (meilleur levier). Contrat dressé APRÈS le cadrage.",
-      },
-    ],
-    targetPerProject: 40000, // plancher de routage : sous 40 k, EAGLEYE le fait
     closing: {
+      // Le NOM du CEO est dans `lib/accounts-commercial.ts` : l'acte se dit
+      // sans lui, et cette chaîne-ci part dans le navigateur.
       action:
-        "Caler le RDV de CADRAGE avec Christophe (CEO Nuwacom). Le contrat se dresse APRÈS ce cadrage — " +
+        "Caler le RDV de CADRAGE avec le CEO de Nuwacom. Le contrat se dresse APRÈS ce cadrage — " +
         "c'est là qu'est le levier de négociation.",
-      contactName: "Christophe (CEO Nuwacom)",
-      timezone: "Europe/Luxembourg",
     },
     icp: {
       label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
@@ -271,10 +192,6 @@ export const ACCOUNTS: Account[] = [
       angle:
         "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
     },
-    note:
-      "Entrée sur le marché FR (déjà fort en Allemagne + Benelux). CEO Christophe (visio faite, réglo). " +
-      "Chantiers > 40 k, 15 %. Contrat dressé APRÈS le cadrage = levier. Si un open-source ou nous-mêmes " +
-      "pouvons le faire vite → on le fait nous ; si trop lourd (ou refusé par eux) → leur plateforme.",
   },
 ];
 
@@ -359,52 +276,6 @@ export function routeAccount(deal: { offer?: EagleyeOffer; amountHT?: number }):
   };
 }
 
-export interface CommissionQuote {
-  offering: Offering;
-  /** % appliqué (recurring si `recurring`, sinon setup/one-shot). */
-  pct: number;
-  /** Montant de la commission sur `amountHT`. */
-  amount: number;
-}
-
-/**
- * La commission EXACTE d'une vente : on choisit l'offre du compte dont les
- * bornes (`minHT`/`maxHT`) contiennent le montant, puis on applique le bon
- * taux (récurrent vs setup). C'est ce qui distingue un Callflow ScintIA
- * (30 % du setup + 10 % du mensuel) d'une digitalisation EAGLEYE (30 %,
- * jusqu'à 40 k) ou d'un chantier Nuwacom (15 % au-delà de 40 k, puis 100 %
- * de la maintenance mensuelle).
- *
- * Repli : si aucune offre ne matche la taille (montant hors des bornes, ou
- * compte sans offerings), on retombe sur le taux vitrine du compte — jamais
- * d'erreur silencieuse, on facture toujours QUELQUE chose de traçable.
- */
-export function commissionFor(
-  accountId: string,
-  opts: { amountHT: number; recurring?: boolean; offeringKey?: string }
-): CommissionQuote {
-  const a = getAccount(accountId);
-  const amt = Math.max(0, opts.amountHT || 0);
-  const fits = (o: Offering) => (o.minHT == null || amt >= o.minHT) && (o.maxHT == null || amt <= o.maxHT);
-
-  // 1. La vente NOMME son offre → autorité absolue (le montant seul est ambigu :
-  //    990 € peut être un setup Callflow OU un petit projet Lab).
-  // 2. Sinon récurrent → l'offre à abonnement (celle qui a un recurringPct).
-  // 3. Sinon setup exact → l'offre productisée dont le prix colle.
-  // 4. Sinon on route par la TAILLE (bornes min/max) — Lab < 6 k, Nuwacom ≥ 20 k.
-  // 5. Repli : 1re offre, ou taux vitrine du compte. Jamais d'erreur muette.
-  const picked =
-    (opts.offeringKey && a.offerings.find((o) => o.key === opts.offeringKey)) ||
-    (opts.recurring && a.offerings.find((o) => o.recurringPct != null)) ||
-    (!opts.recurring && a.offerings.find((o) => o.setupHT != null && o.setupHT === amt)) ||
-    a.offerings.filter((o) => o.minHT != null || o.maxHT != null).find(fits) ||
-    a.offerings.find(fits) ||
-    a.offerings[0];
-
-  if (!picked) {
-    const pct = a.commissionPct;
-    return { offering: { key: "default", label: a.name, commissionPct: pct }, pct, amount: Math.round((amt * pct) / 100) };
-  }
-  const pct = opts.recurring && picked.recurringPct != null ? picked.recurringPct : picked.commissionPct;
-  return { offering: picked, pct, amount: Math.round((amt * pct) / 100) };
-}
+// `commissionFor()` et `CommissionQuote` ont déménagé dans
+// `lib/accounts-commercial.ts` : ils ont besoin des MONTANTS par offre, et ce
+// fichier-ci descend dans le navigateur. Voir l'en-tête pour la frontière.

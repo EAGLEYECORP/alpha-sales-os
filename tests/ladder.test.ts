@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildLadder, ladderPitch, HIGH_DEMAND_PER_WEEK } from "../lib/ladder";
-import { commissionFor } from "../lib/accounts";
+import { commissionFor } from "../lib/accounts-commercial";
 import type { Prospect } from "../lib/types";
 
 function fixture(over: Partial<Prospect> = {}): Prospect {

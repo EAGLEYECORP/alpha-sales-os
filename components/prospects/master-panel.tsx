@@ -8,6 +8,7 @@ import {
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
 import { masterRappel, type RunCheck, type Action } from "@/lib/master-rappel";
+import { useAccountCommercial } from "@/lib/client-catalogue";
 import { buildArgumentaire, argumentaireText } from "@/lib/argumentaire";
 import { cn } from "@/lib/utils";
 
@@ -63,16 +64,10 @@ export function MasterPanel({ p }: { p: Prospect }) {
             <FileSignature size={13} className="text-signal-green" /> Closing — {plan.closing.accountName}
           </p>
           <p className="mt-1 text-[11.5px] text-paper-dim">{plan.closing.action}</p>
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-paper-faint">
-            {plan.closing.fromEmail && <span>depuis <span className="font-mono text-bronze-400">{plan.closing.fromEmail}</span></span>}
-            {plan.closing.panelUrl && (
-              <a href={plan.closing.panelUrl} target="_blank" rel="noreferrer" className="text-bronze-400 hover:underline">
-                ouvrir le panel ↗
-              </a>
-            )}
-            {plan.closing.contactName && <span>avec {plan.closing.contactName}</span>}
-            {plan.closing.timezone && <span>fuseau {plan.closing.timezone}</span>}
-          </div>
+          {/* Les coordonnées du rituel viennent du serveur : email d'expédition,
+              panel de vente, personne à impliquer. Elles n'ont rien à faire
+              dans un bundle que n'importe qui télécharge. */}
+          <ClosingCoordonnees accountId={plan.closing.accountId} />
         </div>
       )}
 
@@ -221,6 +216,31 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
     <div>
       <p className="text-[11px] uppercase tracking-wider text-paper-faint">{title}</p>
       <div className="mt-0.5 text-paper-dim">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Les coordonnées du rituel de signature, récupérées côté serveur.
+ *
+ * Rien tant que la réponse n'est pas là : l'ACTE (« envoyer le devis », « caler
+ * le cadrage ») est déjà affiché au-dessus et suffit à agir. Mieux vaut une
+ * ligne qui apparaît une demi-seconde plus tard qu'une adresse partenaire
+ * livrée à quiconque télécharge nos fichiers JavaScript.
+ */
+function ClosingCoordonnees({ accountId }: { accountId: string }) {
+  const c = useAccountCommercial(accountId)?.closing;
+  if (!c) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-paper-faint">
+      {c.fromEmail && <span>depuis <span className="font-mono text-bronze-400">{c.fromEmail}</span></span>}
+      {c.panelUrl && (
+        <a href={c.panelUrl} target="_blank" rel="noreferrer" className="text-bronze-400 hover:underline">
+          ouvrir le panel ↗
+        </a>
+      )}
+      {c.contactName && <span>avec {c.contactName}</span>}
+      {c.timezone && <span>fuseau {c.timezone}</span>}
     </div>
   );
 }

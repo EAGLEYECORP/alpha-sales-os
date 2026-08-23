@@ -1,4 +1,6 @@
-import { BRICKS } from "./bricks";
+// Seuls les identifiants sont utiles ici, et ce module est rendu côté client :
+// `lib/bricks` y embarquerait toute la grille tarifaire.
+import { CAPACITES } from "./public-catalogue";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -194,7 +196,7 @@ export function parcours(
   const depart = new Date(signeLe);
   const jourEnMs = 86_400_000;
 
-  const achetees = new Set(briquesAchetees.length ? briquesAchetees : BRICKS.map((b) => b.id));
+  const achetees = new Set(briquesAchetees.length ? briquesAchetees : CAPACITES.map((c) => c.id));
 
   const etapes: ParcoursEtape[] = ONBOARDING
     // Une étape qui parle d'une brique non achetée n'a rien à faire dans le

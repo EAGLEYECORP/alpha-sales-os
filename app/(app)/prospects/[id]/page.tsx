@@ -38,6 +38,7 @@ import { guessSegmentForProspect } from "@/lib/segments";
 import type { Brick } from "@/lib/bricks";
 import { CAPACITES } from "@/lib/public-catalogue";
 import { buildDeck, renderDeck } from "@/lib/deck";
+import { useQuote } from "@/lib/client-catalogue";
 import { MasterPanel } from "@/components/prospects/master-panel";
 import { FundingEditor } from "@/components/prospects/funding-editor";
 import { CallHistory } from "@/components/prospects/call-history";
@@ -1696,7 +1697,16 @@ function FilesTab({
  */
 function DeckButton({ p }: { p: Prospect }) {
   const settings = useAlpha((s) => s.settings);
-  const deck = useMemo(() => buildDeck(p, settings.accountId ?? "eagleye"), [p, settings.accountId]);
+  // Les briques d'entrée viennent du segment (calcul local, sans montant) ;
+  // leur PRIX se calcule côté serveur. Tant qu'il n'est pas revenu, la
+  // présentation se construit sans diapositive de prix et l'omission est
+  // affichée à l'opérateur — jamais un montant approximatif.
+  const briques = useMemo(() => {
+    const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
+    return seg?.entryBricks ?? [];
+  }, [p.sector, p.company, p.notes, p.problems]);
+  const prix = useQuote(briques);
+  const deck = useMemo(() => buildDeck(p, settings.accountId ?? "eagleye", new Date(), prix ?? undefined), [p, settings.accountId, prix]);
 
   const ouvrir = () => {
     const html = renderDeck(deck, settings.agencyName || "EAGLEYE CORP");

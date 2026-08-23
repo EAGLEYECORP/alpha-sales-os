@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BRICKS, OUTBOUND_TIERS, OUTBOUND_UNIT_HT, OUTBOUND_UNIT_CALLS, PACK_SETUP_HT, PACK_MONTHLY_HT } from "../lib/bricks";
 import { CAPACITES, PALIERS_LABELS, PRIX_PUBLICS } from "../lib/public-catalogue";
@@ -228,16 +228,49 @@ function grapheImports(entree: string): Set<string> {
     const f = file(chemin);
     if (!f) return;
     const src = sansCommentaires(readFileSync(f, "utf8"));
+    const dossier = chemin.split("/").slice(0, -1).join("/");
     // `import type { … }` est effacé à la compilation : il ne met rien dans
     // le bundle, donc il ne compte pas comme une fuite.
-    for (const m of src.matchAll(/^\s*import\s+(type\s+)?[^;]*?from\s+"(@\/[^"]+)"/gm)) {
+    //
+    // ⚠ Les imports RELATIFS comptent autant que les alias `@/`. Ce walker ne
+    // suivait que `@/…` — or à l'intérieur de `lib/`, tout est relatif
+    // (`lib/store.ts` fait `import { applyAccount } from "./accounts"`). Un
+    // module à prix atteint par ce chemin-là passait donc inaperçu.
+    for (const m of src.matchAll(/^\s*import\s+(type\s+)?[^;]*?from\s+"((?:@\/|\.\.?\/)[^"]+)"/gm)) {
       if (m[1]) continue;
-      marche(m[2].replace(/^@\//, ""));
+      const spec = m[2];
+      if (spec.startsWith("@/")) {
+        marche(spec.slice(2));
+        continue;
+      }
+      // Résolution relative à la main : pas de dépendance, et on reste dans
+      // le repo (les segments `..` qui sortent du dossier sont normalisés).
+      const parts = dossier ? dossier.split("/") : [];
+      for (const seg of spec.split("/")) {
+        if (seg === "." || seg === "") continue;
+        if (seg === "..") parts.pop();
+        else parts.push(seg);
+      }
+      marche(parts.join("/"));
     }
   };
 
   marche(entree);
   return vus;
+}
+
+/** Tous les fichiers `.ts`/`.tsx` sous ces dossiers, récursivement. */
+function sources(dossiers: string[]): string[] {
+  const out: string[] = [];
+  const visite = (rel: string) => {
+    for (const e of readdirSync(join(process.cwd(), rel), { withFileTypes: true })) {
+      const chemin = `${rel}/${e.name}`;
+      if (e.isDirectory()) visite(chemin);
+      else if (/\.tsx?$/.test(e.name)) out.push(chemin);
+    }
+  };
+  for (const d of dossiers) visite(d);
+  return out;
 }
 
 test("bundle public — le graphe d'imports n'atteint AUCUN module à prix", () => {
@@ -250,6 +283,88 @@ test("bundle public — le graphe d'imports n'atteint AUCUN module à prix", () 
       );
     }
   }
+});
+
+/**
+ * ── LE TEST QUI GÉNÉRALISE LA LEÇON ──
+ *
+ * La vitrine n'était que le cas le plus visible. La règle réelle est plus
+ * large : `_next/static/**` est exclu du middleware, et `_buildManifest.js`
+ * (dont le chemin se déduit du buildId présent dans le HTML public) liste TOUS
+ * les chunks de TOUTES les pages. Donc tout ce qu'un composant client importe
+ * est public — y compris sur une page derrière SITE_PASSWORD.
+ *
+ * Mesuré sur le build avant ce test : `z.tazi@scintia.ai`,
+ * `sales.scintiacallflow.ai`, `Christophe`, `setupHT: 10000`, et les tarifs
+ * fournisseurs à la minute (`usdPerMin`) étaient tous dans des chunks
+ * téléchargeables. Aucune page ne les affichait publiquement — c'est bien le
+ * problème : l'affichage ne dit rien du bundle.
+ *
+ * On part donc de CHAQUE fichier `"use client"` du dépôt, pas seulement des
+ * pages publiques.
+ */
+const MODULES_SERVEUR = ["lib/bricks", "lib/accounts-commercial", "lib/voice-costs", "lib/knowledge-seed", "lib/business-rules", "lib/pipeline-juillet", "lib/prospects-icp"];
+
+/**
+ * `lib/pricing` n'est PAS dans cette liste, et c'est un choix, pas un oubli.
+ *
+ * Il est atteint par `/offre`, `/kpis` et `/settings` (calculateur, rollup,
+ * éditeur de tarifs). Ce qu'il contient : le setup à 10 000 € et le palier
+ * d'entrée à 1 000 €/mois — déjà publiés sur la vitrine (`PRIX_PUBLICS`) —,
+ * la part de 30 % — le même taux que `Account.commissionPct`, qui reste côté
+ * client pour la même raison —, et les paliers Growth/Scale, qui sont la
+ * grille qu'on MONTRE au prospect sur ce calculateur.
+ *
+ * Autrement dit : rien qui ne soit destiné à être vu par un client. Le sortir
+ * coûterait un état de chargement sur deux outils que l'opérateur manipule au
+ * clavier, pour protéger des chiffres qu'on affiche nous-mêmes en rendez-vous.
+ *
+ * Si un jour on y met un coût de revient ou une marge, la ligne du dessus
+ * doit changer.
+ */
+
+test("bundle app — aucun composant client n'atteint un module serveur", () => {
+  const clients = sources(["app", "components"]).filter((f) =>
+    /^\s*["']use client["']/.test(readFileSync(join(process.cwd(), f), "utf8"))
+  );
+  assert.ok(clients.length > 20, `on n'a trouvé que ${clients.length} fichiers client — le balayage est cassé`);
+
+  const fautes: string[] = [];
+  for (const f of clients) {
+    const graphe = grapheImports(f.replace(/\.tsx?$/, ""));
+    for (const interdit of MODULES_SERVEUR) {
+      if (graphe.has(interdit)) fautes.push(`${f} → ${interdit}`);
+    }
+  }
+  assert.deepEqual(
+    fautes,
+    [],
+    "ces modules repartiraient dans un fichier JavaScript téléchargeable par n'importe qui :\n" + fautes.join("\n")
+  );
+});
+
+test("bundle app — aucune coordonnée de prospect réel ne peut partir dans un chunk", () => {
+  // La fuite la plus grave trouvée dans cette passe n'était pas commerciale.
+  // `lib/store.ts` faisait `require("./pipeline-juillet")` et
+  // `require("./prospects-icp")` dans deux actions : un require de chemin
+  // statique n'est pas paresseux pour le bundler, et le nom, l'adresse et le
+  // NUMÉRO DE TÉLÉPHONE de seize entreprises réelles se retrouvaient dans un
+  // fichier JavaScript téléchargeable sans mot de passe.
+  //
+  // Le test du graphe couvre déjà ces modules ; celui-ci verrouille le motif
+  // qui les y avait fait entrer, parce qu'un `require()` ressemble à du
+  // chargement paresseux et ne l'est pas.
+  const src = sansCommentaires(lire("lib/store.ts"));
+  assert.doesNotMatch(src, /require\(/, "un require() de chemin statique embarque le module — utilise une route serveur");
+});
+
+test("bundle app — le registre client des comptes ne porte plus l'économie", () => {
+  // Garde de dernier recours, sur le TEXTE du module qui descend vraiment dans
+  // le navigateur. Un test sur les données (tests/accounts.test.ts) ne verrait
+  // pas une constante posée à côté du registre.
+  const src = sansCommentaires(lire("lib/accounts.ts"));
+  assert.doesNotMatch(src, /sales\.scintiacallflow|z\.tazi@|Christophe/i);
+  assert.doesNotMatch(src, /setupHT|targetPerProject|recurringPct/);
 });
 
 test("bundle public — la coquille de l'app n'est pas imposée aux pages publiques", () => {

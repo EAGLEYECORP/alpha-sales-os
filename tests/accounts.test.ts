@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, commissionFor, routeAccount } from "../lib/accounts";
+import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, routeAccount } from "../lib/accounts";
+import { commercialFor, commissionFor } from "../lib/accounts-commercial";
 import { matchOffer } from "../lib/offer-match";
 
 test("accounts — le portefeuille contient EAGLEYE (maître), ScintIA, Nuwacom", () => {
@@ -24,22 +25,48 @@ test("accounts — ScintIA ne propose QUE callflow", () => {
 test("accounts — Nuwacom : commission 15 %, plancher 40 k, entrée FR", () => {
   const n = getAccount("nuwacom");
   assert.equal(n.commissionPct, 15);
-  assert.equal(n.targetPerProject, 40000);
-  assert.match(n.note ?? "", /Allemagne|Benelux|Christophe/);
-  const transfo = n.offerings.find((o) => o.key === "transformation");
+  const nc = commercialFor("nuwacom");
+  assert.equal(nc.targetPerProject, 40000);
+  assert.match(nc.note ?? "", /Allemagne|Benelux|Christophe/);
+  const transfo = nc.offerings.find((o) => o.key === "transformation");
   assert.equal(transfo?.minHT, 40000);
 });
 
 test("accounts — ScintIA n'a QUE Callflow (le Lab est repassé à EAGLEYE)", () => {
-  const s = getAccount("scintia");
+  const s = commercialFor("scintia");
   assert.equal(s.offerings.length, 1);
   assert.equal(s.offerings[0].key, "callflow");
   assert.equal(s.offerings.some((o) => /lab/i.test(o.key)), false);
   // Et EAGLEYE porte bien la digitalisation < 40 k (l'ex-Lab).
-  const e = getAccount("eagleye");
+  const e = commercialFor("eagleye");
   const digi = e.offerings.find((o) => o.key === "digitalisation");
   assert.equal(digi?.maxHT, 40000);
   assert.ok(e.offerings.some((o) => o.key === "visibilite"), "la visibilité est à EAGLEYE");
+});
+
+test("accounts-commercial — chaque compte du portefeuille a son volet commercial", () => {
+  // Le registre est scindé en DEUX fichiers pour que les montants ne descendent
+  // pas dans le navigateur. Le risque de la scission, c'est qu'un compte ajouté
+  // d'un côté soit oublié de l'autre — et qu'un devis se chiffre au taux de
+  // repli sans que personne ne le voie.
+  for (const a of ACCOUNTS) {
+    const c = commercialFor(a.id);
+    assert.ok(c.offerings.length > 0, `${a.id} n'a aucune offre chiffrée`);
+    assert.ok(c.closing, `${a.id} n'a pas de coordonnées de closing`);
+  }
+});
+
+test("accounts — le registre client ne porte ni montant ni coordonnée partenaire", () => {
+  // Ce fichier est importé par le store et par cinq composants client : tout ce
+  // qu'il contient part dans un chunk téléchargeable. La règle se vérifie sur
+  // les DONNÉES, pas sur le type — un champ ajouté hors type passerait.
+  const brut = JSON.stringify(ACCOUNTS);
+  assert.doesNotMatch(brut, /[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}/i, "aucune adresse email");
+  assert.doesNotMatch(brut, /sales\.scintiacallflow/, "aucun panel de vente partenaire");
+  assert.doesNotMatch(brut, /Christophe/i, "aucun nom de dirigeant partenaire");
+  assert.doesNotMatch(brut, /"(setupHT|targetPerProject|recurringPct)"/, "aucun montant par offre");
+  // 10 000 et 990 sont nos prix de setup : ils vivent dans le module serveur.
+  assert.doesNotMatch(brut, /\b(10000|990)\b/, "aucun prix de setup");
 });
 
 test("routage — Callflow → ScintIA · > 40 k → Nuwacom · le reste → EAGLEYE", () => {

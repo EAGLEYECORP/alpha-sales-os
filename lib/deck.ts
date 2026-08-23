@@ -3,7 +3,13 @@ import { stageById } from "./hormozi";
 import { deepDive } from "./deep-dive";
 import { guessSegmentForProspect } from "./segments";
 import { getAccount } from "./accounts";
-import { BRICKS, quoteBricks, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./bricks";
+// ⚠ Pas d'import de `lib/bricks` : ce module est appelé depuis une page
+// CLIENT (app/(app)/prospects/[id]/page.tsx), donc tout ce qu'il importe part
+// dans un fichier JavaScript téléchargeable. Les libellés viennent de la vue
+// publique ; les MONTANTS sont passés en paramètre, chiffrés par le serveur
+// (/api/catalogue). Sans eux, la diapositive de prix n'existe pas — ce qui est
+// le comportement correct, pas une dégradation.
+import { CAPACITES } from "./public-catalogue";
 import { vitalSigns } from "./vital-signs";
 
 /**
@@ -64,8 +70,24 @@ const PRIX_AUTORISE: Stage[] = ["offre", "redzone", "signe"];
  *
  * `accountId` détermine l'offre et le rituel de closing : une présentation
  * ScintIA ne parle pas d'Alpha Sales OS, elle parle de Callflow.
+ *
+ * `prix` : le chiffrage, calculé côté serveur. Absent = pas de diapositive de
+ * prix, et l'omission est expliquée à l'opérateur. C'est volontairement le
+ * même comportement que « trop tôt pour le prix » : dans les deux cas, mieux
+ * vaut une présentation sans montant qu'un montant approximatif.
  */
-export function buildDeck(p: Prospect, accountId = "eagleye", now: Date = new Date()): Deck {
+export interface DeckPrix {
+  /** Chiffrage des briques d'entrée du segment (€ HT). */
+  setupHT: number;
+  monthlyHT: number;
+  /** La recommandation produite par le chiffrage (pack vs briques). */
+  recommendation: string;
+  /** Le pack complet, comme point d'ancrage. */
+  packSetupHT: number;
+  packMonthlyHT: number;
+}
+
+export function buildDeck(p: Prospect, accountId = "eagleye", now: Date = new Date(), prix?: DeckPrix): Deck {
   const dive = deepDive(p, accountId);
   const account = getAccount(accountId);
   const segment = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
@@ -122,7 +144,7 @@ export function buildDeck(p: Prospect, accountId = "eagleye", now: Date = new Da
 
   // ── 4. Ce qu'on installe — par étape ────────────────────────────────
   const briques = segment
-    ? segment.entryBricks.map((id) => BRICKS.find((b) => b.id === id)).filter(Boolean)
+    ? segment.entryBricks.map((id) => CAPACITES.find((c) => c.id === id)).filter(Boolean)
     : [];
 
   if (p.stage === "prospect" || p.stage === "contact") {
@@ -149,19 +171,23 @@ export function buildDeck(p: Prospect, accountId = "eagleye", now: Date = new Da
   }
 
   // ── 5. Le prix — UNIQUEMENT à partir de l'offre ────────────────────
-  if (prixOk) {
-    const devis = quoteBricks(briques.map((b) => b!.id));
+  if (prixOk && prix) {
     slides.push({
       kicker: "Le prix, sans détour",
       title: "Ce que ça coûte",
       bullets: [
-        `Installation : ${eur(devis.setupHT)} HT`,
-        `Abonnement : ${eur(devis.monthlyHT)} HT/mois`,
-        devis.recommendation,
-        `Le pack complet : ${eur(PACK_SETUP_HT)} HT + ${eur(PACK_MONTHLY_HT)} HT/mois.`,
+        `Installation : ${eur(prix.setupHT)} HT`,
+        `Abonnement : ${eur(prix.monthlyHT)} HT/mois`,
+        prix.recommendation,
+        `Le pack complet : ${eur(prix.packSetupHT)} HT + ${eur(prix.packMonthlyHT)} HT/mois.`,
       ],
       say: "Vous avez vu ce que ça fait. Voilà ce que ça coûte. Le reste, c'est votre décision.",
     });
+  } else if (prixOk) {
+    omissions.push(
+      "Aucun prix : le chiffrage n'a pas répondu (il se calcule côté serveur pour ne pas publier la grille). " +
+        "Recharge la fiche avant de présenter — un montant approximatif se paie au closing."
+    );
   } else {
     omissions.push(
       `Aucun prix : le prospect est à l'étape « ${stage.label} ». Un chiffre annoncé avant la démo transforme la conversation en négociation.`

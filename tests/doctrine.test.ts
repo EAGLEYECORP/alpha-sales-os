@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_BUSINESS_RULES, SEED_PROSPECT_IDS, DEMO_PROSPECT_IDS, isDemoProspect, seedProspects } from "../lib/seed";
+import { SEED_PROSPECT_IDS, DEMO_PROSPECT_IDS, isDemoProspect, seedProspects } from "../lib/seed";
+import { DEFAULT_BUSINESS_RULES } from "../lib/business-rules";
 import { clipDoctrine, DOCTRINE_MAX_CHARS } from "../lib/identity";
 import { NUWACOM_THRESHOLD_HT } from "../lib/accounts";
 import { PACK_SETUP_HT, PACK_MONTHLY_HT, OUTBOUND_TIERS } from "../lib/bricks";

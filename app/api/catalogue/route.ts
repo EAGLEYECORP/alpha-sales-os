@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { BRICKS, OUTBOUND_TIERS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, quoteText, outboundPrice } from "@/lib/bricks";
+import { ACCOUNTS_COMMERCIAL } from "@/lib/accounts-commercial";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +36,10 @@ export async function GET() {
     bricks: BRICKS,
     outboundTiers: OUTBOUND_TIERS,
     pack: { setupHT: PACK_SETUP_HT, monthlyHT: PACK_MONTHLY_HT },
+    // Le volet commercial du portefeuille (montants par offre, coordonnées de
+    // closing partenaires) : même raisonnement que la grille des briques —
+    // `lib/accounts.ts` descend dans le navigateur, pas ça.
+    accounts: ACCOUNTS_COMMERCIAL,
   });
 }
 
@@ -68,6 +73,9 @@ export async function POST(req: Request) {
   return NextResponse.json({
     quote,
     texte,
+    // Le pack sert d'ANCRE en face du chiffrage : il voyage avec, pour que
+    // l'appelant n'ait pas à faire un second aller-retour.
+    pack: { setupHT: PACK_SETUP_HT, monthlyHT: PACK_MONTHLY_HT },
     ...(typeof body.calls === "number" ? { sortant: outboundPrice(body.calls) } : {}),
   });
 }

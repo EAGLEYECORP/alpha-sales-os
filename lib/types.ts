@@ -366,6 +366,14 @@ export interface AppSettings {
   };
   targetMRR: number;
   commissionPct: number;
+  /**
+   * Le socle du Cerveau a-t-il déjà été semé depuis le serveur ?
+   *
+   * Sans ce drapeau, chaque chargement rajouterait les notes du playbook que
+   * l'opérateur a supprimées — un socle qui repousse est pire qu'un socle
+   * absent.
+   */
+  knowledgeSeeded?: boolean;
   role: "solo" | "team";
   /** Free-text business rules injected into every AI prompt */
   businessRules: string;

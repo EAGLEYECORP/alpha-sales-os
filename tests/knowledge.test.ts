@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tokenize, extractLinks, backlinks, search, contextFromNotes, seedKnowledge, type KnowledgeNote } from "../lib/knowledge";
+import { tokenize, extractLinks, backlinks, search, contextFromNotes, type KnowledgeNote } from "../lib/knowledge";
+import { seedKnowledge, seedScintia, SEED_NOTES } from "../lib/knowledge-seed";
 
 function note(id: string, title: string, body: string): KnowledgeNote {
   return { id, title, body, tags: [], createdAt: "2026-08-10T00:00:00Z", updatedAt: "2026-08-10T00:00:00Z", source: "manuel" };
@@ -76,8 +77,8 @@ test("knowledge — le socle de départ est cohérent et relié", () => {
 });
 
 test("cerveau — les notes sont cloisonnées par compte", async () => {
-  const { notesForAccount, seedScintia, seedKnowledge } = await import("../lib/knowledge");
-  const all = [...seedKnowledge, ...seedScintia];
+  const { notesForAccount } = await import("../lib/knowledge");
+  const all = SEED_NOTES;
 
   // Depuis ScintIA : ses notes + les communes, jamais celles d'un autre compte.
   const vueScintia = notesForAccount(all, "scintia");
@@ -98,7 +99,6 @@ test("cerveau — les notes sont cloisonnées par compte", async () => {
 });
 
 test("cerveau — ScintIA est semé avec les chiffres RÉELS de juillet", async () => {
-  const { seedScintia, search } = await import("../lib/knowledge");
   assert.ok(seedScintia.length >= 4);
   assert.ok(seedScintia.every((n) => n.accountId === "scintia"));
 

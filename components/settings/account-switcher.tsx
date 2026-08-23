@@ -3,6 +3,9 @@
 import { Building2, Check, Coins, Crown, Target } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { ACCOUNTS, accountICP, getAccount } from "@/lib/accounts";
+// Les montants par offre et la note d'économie du compte NE sont pas importés :
+// ils viennent du serveur (voir lib/client-catalogue.ts).
+import { useAccountCommercial } from "@/lib/client-catalogue";
 import { OFFER_LABELS } from "@/lib/offer-match";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +24,7 @@ export function AccountSwitcher() {
   const activeId = settings.accountId ?? "eagleye";
   const active = getAccount(activeId);
   const icp = accountICP(activeId);
+  const commercial = useAccountCommercial(activeId);
 
   return (
     <section className="card space-y-3 p-4">
@@ -67,9 +71,11 @@ export function AccountSwitcher() {
                 <span className="inline-flex items-center gap-1 rounded-full bg-bronze-900/30 px-1.5 py-0.5 text-bronze-300">
                   <Coins size={10} /> {a.commissionPct}%
                 </span>
-                {a.targetPerProject ? (
+                {/* L'objectif par projet est un MONTANT : il arrive du serveur,
+                    et seulement pour le compte actif. */}
+                {a.id === activeId && commercial?.targetPerProject ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-surface px-1.5 py-0.5 text-paper-dim">
-                    <Target size={10} /> ≥ {a.targetPerProject.toLocaleString("fr-FR")} €
+                    <Target size={10} /> ≥ {commercial.targetPerProject.toLocaleString("fr-FR")} €
                   </span>
                 ) : null}
               </div>
@@ -81,8 +87,11 @@ export function AccountSwitcher() {
       {/* Résumé du compte actif : commissions par offre + client parfait (ICP). */}
       <div className="rounded-xl border border-line/50 bg-surface/30 p-3 text-[11.5px]">
         <p className="font-medium text-paper">Commissions par offre</p>
+        {!commercial && (
+          <p className="mt-1 text-[11px] text-paper-faint">Chargement du détail commercial…</p>
+        )}
         <ul className="mt-1 space-y-1">
-          {active.offerings.map((o) => (
+          {(commercial?.offerings ?? []).map((o) => (
             <li key={o.key} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
               <span className="text-paper-dim">{o.label}</span>
               <span className="rounded-full bg-bronze-900/25 px-1.5 py-0.5 text-[10.5px] text-bronze-300">
@@ -129,7 +138,18 @@ export function AccountSwitcher() {
             ))}
           </p>
         ) : null}
-        {active.note && <p className="mt-1.5 text-[11px] italic text-paper-faint">{active.note}</p>}
+        {commercial?.note && <p className="mt-1.5 text-[11px] italic text-paper-faint">{commercial.note}</p>}
+        {/* Le rituel de signature : l'acte est local, les coordonnées viennent
+            du serveur (email d'expédition, panel, personne à impliquer). */}
+        {active.closing && (
+          <p className="mt-1.5 text-[11px] text-paper-faint">
+            <strong className="text-paper-dim">Closing :</strong> {active.closing.action}
+            {commercial?.closing?.fromEmail && (
+              <> — depuis <span className="font-mono text-bronze-400">{commercial.closing.fromEmail}</span></>
+            )}
+            {commercial?.closing?.contactName && <> — avec {commercial.closing.contactName}</>}
+          </p>
+        )}
       </div>
     </section>
   );

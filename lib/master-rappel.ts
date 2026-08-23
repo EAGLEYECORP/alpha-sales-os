@@ -48,14 +48,19 @@ export interface RunCheck {
   detail: string;
 }
 
+/**
+ * Le rituel de signature du compte qui porte le deal.
+ *
+ * Seul l'ACTE est ici. Les coordonnées qui vont avec (adresse d'expédition,
+ * panel de vente, personne à impliquer, fuseau) sont servies par
+ * `/api/catalogue` : ce module est calculé côté client, donc tout ce qu'il
+ * touche part dans un fichier JavaScript téléchargeable. Voir
+ * `lib/accounts-commercial.ts`.
+ */
 export interface ClosingStep {
   accountId: string;
   accountName: string;
   action: string;
-  fromEmail?: string;
-  panelUrl?: string;
-  contactName?: string;
-  timezone?: string;
 }
 
 /**

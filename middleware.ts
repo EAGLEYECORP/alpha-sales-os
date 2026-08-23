@@ -60,6 +60,14 @@ const INTERNAL = [
   // Catalogue et chiffrage : la grille tarifaire ne sort que pour une session
   // authentifiée. C'est ce qui la garde hors des bundles du navigateur.
   "/api/catalogue",
+  // Coût usine d'Alpha Voice : c'est notre marge ligne à ligne. Même
+  // traitement que le catalogue — elle ne se calcule que côté serveur, pour
+  // une session authentifiée.
+  "/api/voice-costs",
+  // Socle du Cerveau : c'est le playbook maison en clair (rituels de closing,
+  // adresses partenaires, taux par offre). Il ne s'initialise plus depuis le
+  // bundle, il se télécharge — pour une session authentifiée seulement.
+  "/api/knowledge",
 ];
 
 // Chemins servis même sans cookie d'accès (fonctionnent pour des tiers

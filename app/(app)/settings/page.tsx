@@ -557,7 +557,11 @@ export default function SettingsPage() {
                   onClick={() =>
                     confirm(
                       "Charger le pipeline RÉEL de juillet 2026 ?\n\n16 fiches, 6 rendez-vous datés (***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08, closings de septembre).\n\nLes données actuelles seront remplacées."
-                    ) && loadPipelineJuillet()
+                    ) &&
+                    // Les fiches viennent du serveur (elles portent des
+                    // coordonnées réelles) : l'échec doit se voir, sinon
+                    // l'opérateur croit avoir chargé un pipeline vide.
+                    void loadPipelineJuillet().catch((e: Error) => setImportMsg(`⚠ ${e.message}`))
                   }
                 >
                   <Download size={13} /> Charger mon pipeline juillet
@@ -566,8 +570,13 @@ export default function SettingsPage() {
                   className="btn-bronze px-2.5 py-1.5 text-[12px]"
                   title="Ajoute 20 prospects ICP Callflow tirés de tes feuilles réelles (Lyon 6 & 7 : garages, artisans, immobilier, auto-école, spa…). Fusionne — n'efface rien."
                   onClick={() => {
-                    const { added, updated } = loadProspectsICP();
-                    setImportMsg(`✓ Prospects ICP Callflow chargés : ${added} nouveau(x), ${updated} mis à jour. Cible d'abord ceux avec un email (Boîte d'envoi) et appelle les autres.`);
+                    void loadProspectsICP()
+                      .then(({ added, updated }) =>
+                        setImportMsg(
+                          `✓ Prospects ICP Callflow chargés : ${added} nouveau(x), ${updated} mis à jour. Cible d'abord ceux avec un email (Boîte d'envoi) et appelle les autres.`
+                        )
+                      )
+                      .catch((e: Error) => setImportMsg(`⚠ ${e.message}`));
                   }}
                 >
                   <Download size={13} /> Prospects ICP (Callflow)

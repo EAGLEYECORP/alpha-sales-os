@@ -30,10 +30,13 @@ import {
   seedNurture,
   seedProspects,
   prospectDefaults,
-  DEFAULT_BUSINESS_RULES,
 } from "./seed";
 import { stageById, signingBlockers } from "./hormozi";
-import { seedKnowledge, seedScintia, type KnowledgeNote } from "./knowledge";
+// ⚠ Le SOCLE de notes n'est plus importé ici. Il portait le playbook en clair
+// (adresses partenaires, prix de setup, taux par offre) et le store est importé
+// par toutes les pages client : il partait donc dans chaque bundle. Il arrive
+// maintenant par /api/knowledge/seed — voir `seedNotes` plus bas.
+import type { KnowledgeNote } from "./knowledge";
 import { applyAccount } from "./accounts";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
@@ -108,6 +111,8 @@ interface AlphaState {
   // cerveau (knowledge base)
   /** Crée ou met à jour une note ; renvoie son id. */
   upsertNote: (note: Partial<KnowledgeNote> & { title: string; body: string }) => string;
+  /** Fusionne le socle du Cerveau servi par le serveur (une seule fois). */
+  seedNotes: (socle: KnowledgeNote[]) => void;
   deleteNote: (id: string) => void;
 
   /** Coche/décoche un item de la barre du jour. */
@@ -129,9 +134,9 @@ interface AlphaState {
   exportData: () => string;
   resetToSeed: () => void;
   /** Charge le pipeline réel de juillet 2026 (Scintia · Lyon) — remplace tout. */
-  loadPipelineJuillet: () => void;
+  loadPipelineJuillet: () => Promise<void>;
   /** Ajoute les prospects ICP Callflow (Sheets réels) — fusionne, n'efface rien. */
-  loadProspectsICP: () => { added: number; updated: number };
+  loadProspectsICP: () => Promise<{ added: number; updated: number }>;
 }
 
 const defaultSettings: AppSettings = {
@@ -147,7 +152,11 @@ const defaultSettings: AppSettings = {
   targetMRR: 5000,
   commissionPct: 30,
   role: "solo",
-  businessRules: DEFAULT_BUSINESS_RULES,
+  // Vide au départ : la doctrine par défaut récite la grille tarifaire, elle
+  // vient donc du serveur (voir components/cerveau/seed-loader.tsx). Les
+  // routes IA ont leur propre repli côté serveur, donc rien ne casse tant
+  // qu'elle n'est pas descendue.
+  businessRules: "",
   bookingUrl: "",
   apiKeys: [],
   supabaseSync: false,
@@ -258,7 +267,7 @@ export const useAlpha = create<AlphaState>()(
       drafts: [],
       customScripts: [],
       partners: [],
-      notes: [...seedKnowledge, ...seedScintia],
+      notes: [],
       standardLog: [],
 
       upsertProspect: (p) =>
@@ -520,6 +529,26 @@ export const useAlpha = create<AlphaState>()(
       },
       deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
 
+      /**
+       * Fusionne le socle servi par le serveur, UNE seule fois.
+       *
+       * Deux pièges évités :
+       *  · réécraser une note du socle que l'utilisateur a modifiée — on ne
+       *    touche jamais un id déjà présent ;
+       *  · faire réapparaître une note qu'il a supprimée — d'où le drapeau
+       *    `knowledgeSeeded` : après le premier semis, on ne rajoute plus rien.
+       */
+      seedNotes: (socle) =>
+        set((s) => {
+          if (s.settings.knowledgeSeeded) return {};
+          const connus = new Set(s.notes.map((n) => n.id));
+          const ajouts = socle.filter((n) => !connus.has(n.id));
+          return {
+            notes: [...s.notes, ...ajouts],
+            settings: { ...s.settings, knowledgeSeeded: true },
+          };
+        }),
+
       toggleStandardItem: (itemId, held) =>
         set((s) => {
           const today = new Date().toISOString().slice(0, 10);
@@ -656,9 +685,18 @@ export const useAlpha = create<AlphaState>()(
         return JSON.stringify({ exportedAt: new Date().toISOString(), prospects, campaigns, meetings, nurture, competitors, activities, settings }, null, 2);
       },
 
-      loadPipelineJuillet: () => {
-        const { pipelineJuillet } = require("./pipeline-juillet") as typeof import("./pipeline-juillet");
-        const { prospects, meetings } = pipelineJuillet();
+      /**
+       * Charge le pipeline réel de juillet — DEPUIS LE SERVEUR.
+       *
+       * C'était un `require("./pipeline-juillet")`. Un require de chemin
+       * statique n'est pas paresseux pour le bundler : les seize fiches
+       * (noms, adresses, TÉLÉPHONES d'entreprises réelles) partaient dans le
+       * chunk client, téléchargeable sans mot de passe. Voir /api/pipeline.
+       */
+      loadPipelineJuillet: async () => {
+        const r = await fetch("/api/pipeline?jeu=juillet");
+        if (!r.ok) throw new Error("Le pipeline de juillet n'a pas pu être chargé.");
+        const { prospects, meetings } = (await r.json()) as { prospects: Prospect[]; meetings: Meeting[] };
         set((s) => ({
           prospects,
           meetings,
@@ -677,10 +715,17 @@ export const useAlpha = create<AlphaState>()(
         }));
       },
 
-      loadProspectsICP: () => {
-        const { csvToProspects } = require("./csv") as typeof import("./csv");
-        const { PROSPECTS_ICP_CSV } = require("./prospects-icp") as typeof import("./prospects-icp");
-        const { prospects } = csvToProspects(PROSPECTS_ICP_CSV);
+      /**
+       * Importe les prospects ICP — le CSV vient du SERVEUR, pour la même
+       * raison : il porte des coordonnées d'artisans lyonnais réels.
+       * Le parsing, lui, reste local (aucune donnée sensible dans `csvToProspects`).
+       */
+      loadProspectsICP: async () => {
+        const { csvToProspects } = await import("./csv");
+        const r = await fetch("/api/pipeline?jeu=icp");
+        if (!r.ok) throw new Error("Les prospects ICP n'ont pas pu être chargés.");
+        const { csv } = (await r.json()) as { csv: string };
+        const { prospects } = csvToProspects(csv);
         // Fusionne (ajoute / met à jour) — n'efface pas le pipeline existant.
         return get().importProspects(prospects);
       },
@@ -722,8 +767,9 @@ export const useAlpha = create<AlphaState>()(
           drafts: s.drafts ?? [],
           customScripts: s.customScripts ?? [],
           partners: s.partners ?? [],
-          // Cerveau : socle de notes si le store précède la v5.
-          notes: s.notes ?? [...seedKnowledge, ...seedScintia],
+          // Cerveau : le socle n'est plus posé ici (il vient du serveur), mais
+          // un store d'avant la v5 n'a pas de tableau du tout.
+          notes: s.notes ?? [],
           standardLog: s.standardLog ?? [],
           settledPayouts: s.settledPayouts ?? [],
           settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
