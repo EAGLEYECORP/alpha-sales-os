@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { LINKEDIN_DAILY_SAFE, LINKEDIN_INVITE_LIMIT, linkedinTouchesToday, linkedinUrl } from "../lib/linkedin";
 import { buildLinkedinQueue, inviteText, relanceText } from "../lib/linkedin-sequence";
@@ -12,6 +12,8 @@ import {
   EN_ATTENTE_MAX, LINKEDIN_WEEKLY_LIMIT, RETRAIT_APRES_JOURS, entonnoir, hygieneInvitations,
   plafondSemaine, planifierCampagne, quotaDuJour,
 } from "../lib/linkedin-plan";
+import { ENTETE_MODELE, importerProfils, parserProfils } from "../lib/linkedin-import";
+import { verticalForProspect } from "../lib/playbook";
 import { prospect as makeProspect } from "./fixtures";
 
 /**
@@ -375,4 +377,154 @@ test("LinkedIn — les touches du jour se comptent sur la vraie date", () => {
     ],
   });
   assert.equal(linkedinTouchesToday([p]), 1);
+});
+
+// ── L'ENTRÉE DES PROFILS SOURCÉS ───────────────────────────────────────
+
+test("import — les trois formats qui arrivent réellement sont lus", () => {
+  /**
+   * Un tableau JSON (sortie d'outil), du JSONL (une ligne = un objet, ce que
+   * crache un outil en flux) et du CSV/TSV avec en-tête (export de tableur,
+   * copier-coller). Deviner le format en silence trompe : il est rendu.
+   */
+  const json = parserProfils('[{"name":"Claire","title":"Gérante","company":"Régie B"}]');
+  assert.equal(json.format, "json");
+  assert.equal(json.profils[0].nom, "Claire");
+  assert.equal(json.profils[0].titre, "Gérante");
+
+  const jsonl = parserProfils('{"nom":"A","entreprise":"X"}\n{"nom":"B","entreprise":"Y"}');
+  assert.equal(jsonl.profils.length, 2, "le JSONL échoue sur un JSON.parse global");
+
+  const tsv = parserProfils("nom\ttitre\tentreprise\nClaire\tGérante\tRégie B");
+  assert.equal(tsv.format, "csv");
+  assert.equal(tsv.profils[0].entreprise, "Régie B");
+});
+
+test("import — un en-tête illisible le DIT, au lieu de rendre un lot vide", () => {
+  // « 0 profil importé » sans raison fait conclure que la source est mauvaise,
+  // alors que c'est le nom d'une colonne qui ne correspond pas.
+  const r = parserProfils("colonne1;colonne2\na;b");
+  assert.deepEqual(r.profils, []);
+  assert.equal(r.rejets.length, 1);
+  assert.match(r.rejets[0].raison, /aucune colonne reconnue/i);
+  assert.ok(r.avertissements.some((a) => /nom|titre|entreprise/.test(a)), "il faut donner les noms attendus");
+});
+
+test("import — les guillemets protègent le séparateur", () => {
+  const r = parserProfils('nom;entreprise\n"Roux, Paul";"Couverture Roux; et fils"');
+  assert.equal(r.profils[0].nom, "Roux, Paul");
+  assert.equal(r.profils[0].entreprise, "Couverture Roux; et fils");
+});
+
+test("import — les colonnes ignorées remontent dès la première tentative", () => {
+  const r = parserProfils("nom;entreprise;lubie\nA;X;z");
+  assert.ok(r.avertissements.some((a) => /lubie/.test(a)), "un intégrateur doit l'apprendre tout de suite");
+});
+
+test("import — le métier atterrit dans les NOTES, pas dans un enum à cinq valeurs", () => {
+  /**
+   * « gérant de régie immobilière » n'entre pas dans `Sector`. Sans ce
+   * détour par les notes, la fiche tomberait dans « autre » et perdrait sa
+   * verticale — c'est `verticalForProspect` qui lit les notes.
+   */
+  const r = importerProfils(`${ENTETE_MODELE}\nClaire;Gérante;Régie B;Lyon 6e;linkedin.com/in/c;immobilier;11-50`);
+  assert.equal(r.retenus.length, 1);
+  const p = r.retenus[0].prospect;
+  assert.match(p.notes, /immobilier/i);
+  assert.equal(verticalForProspect(p)?.id, "immobilier", "la verticale doit survivre à l'import");
+});
+
+test("import — une fiche entrée par ce canal reste au DÉBUT du pipeline", () => {
+  // Un profil relevé sur une page publique n'a rien demandé. L'avancer ferait
+  // mentir toutes les prévisions qui s'appuient sur le stade.
+  const r = importerProfils(`${ENTETE_MODELE}\nClaire;Gérante;Régie B;Lyon 6e;linkedin.com/in/c;immobilier;11-50`);
+  assert.equal(r.retenus[0].prospect.stage, "prospect");
+  assert.equal(r.retenus[0].prospect.preferredChannel, "linkedin");
+});
+
+test("import — réimporter le même lot ne crée pas un second contact", () => {
+  /**
+   * L'identifiant est stable sur l'URL du profil. Un doublon sur ce canal
+   * n'est pas une ligne en trop dans un tableau : c'est une DEUXIÈME
+   * invitation envoyée à la même personne.
+   */
+  const ligne = `${ENTETE_MODELE}\nClaire;Gérante;Régie B;Lyon 6e;linkedin.com/in/claire;immobilier;11-50`;
+  const a = importerProfils(ligne).retenus[0].prospect.id;
+  const b = importerProfils(ligne).retenus[0].prospect.id;
+  assert.equal(a, b);
+  assert.ok(a.startsWith("li-"), "l'origine du contact doit rester lisible dans l'identifiant");
+});
+
+test("import — les écartés remontent AVEC leur raison", () => {
+  /**
+   * Un tri dont on ne voit pas les refus ne se corrige jamais — et c'est là
+   * qu'on découvre que la colonne « titre » était mal nommée dans l'export.
+   */
+  const r = importerProfils(
+    `${ENTETE_MODELE}\n` +
+      `Claire;Gérante;Régie B;Lyon 6e;linkedin.com/in/c;immobilier;11-50\n` +
+      `Paul;Apprenti;Couverture Roux;Lyon 7e;linkedin.com/in/p;couverture;3`
+  );
+  assert.equal(r.retenus.length, 1);
+  assert.equal(r.ecartes.length, 1);
+  assert.ok(r.ecartes[0].ciblage.risques.length > 0, "un écarté sans raison est un refus opaque");
+});
+
+test("import — le lot vide ne produit ni fiche ni faux diagnostic", () => {
+  const r = importerProfils("   ");
+  assert.equal(r.parse.format, "aucun");
+  assert.deepEqual(r.retenus, []);
+  assert.deepEqual(r.parse.rejets, []);
+});
+
+test("import — les réserves du ciblage suivent la fiche", () => {
+  // Sans ça, personne ne se souvient dans trois semaines pourquoi ce profil
+  // était limite au moment de l'inviter.
+  const r = importerProfils(
+    `${ENTETE_MODELE}\nJean;Gérant;Couverture Roux;Lyon 7e;linkedin.com/in/j;couverture;5`
+  );
+  assert.equal(r.retenus.length, 1);
+  assert.match(r.retenus[0].prospect.notes, /Réserves au ciblage/);
+  assert.match(r.retenus[0].prospect.notes, /peu présent sur LinkedIn/i);
+});
+
+test("import — le module ne va RIEN chercher : il reçoit du texte", () => {
+  /**
+   * La collecte reste dehors, remplaçable, et aucune dépendance de scraping
+   * n'entre dans le produit vendu. Un `fetch` ici serait le début d'un
+   * collecteur embarqué — et la fin de cette garantie.
+   */
+  const src = sansCommentaires(readFileSync(join(process.cwd(), "lib/linkedin-import.ts"), "utf8"));
+  for (const re of [/\bfetch\s*\(/, /axios|got\(|https?\.request/, /puppeteer|playwright/]) {
+    assert.doesNotMatch(src, re, `lib/linkedin-import.ts effectue une collecte (${re})`);
+  }
+});
+
+test("sourcing — le dépôt n'adopte jamais le backend qui se connecte AVEC ton compte", () => {
+  /**
+   * `mcp-server-linkedin` demande `uvx mcp-server-linkedin@latest --login` :
+   * ce `--login`, c'est la session LinkedIn de Zakaria. Chaque requête est
+   * ensuite faite EN SON NOM par un navigateur automatisé — le mécanisme
+   * exact qui fait restreindre les comptes.
+   *
+   * Ce test balaie la configuration et l'outillage, là où la ligne
+   * s'ajouterait le jour où le confort l'emportera. La documentation, elle, a
+   * le droit d'en parler : c'est là qu'on explique pourquoi on n'en veut pas.
+   */
+  const zones = ["package.json", "scripts", ".claude", "lib", "app", "components"];
+  const suspects: string[] = [];
+  const visiter = (rel: string) => {
+    const abs = join(process.cwd(), rel);
+    let stat;
+    try { stat = statSync(abs); } catch { return; }
+    if (stat.isDirectory()) {
+      for (const e of readdirSync(abs)) visiter(join(rel, e));
+      return;
+    }
+    if (!/\.(ts|tsx|json|mjs|js|ya?ml|sh)$/.test(rel)) return;
+    const src = readFileSync(abs, "utf8");
+    if (/mcp-server-linkedin|linkedin-scraper|li_at|--login\s+.*linkedin/i.test(src)) suspects.push(rel);
+  };
+  zones.forEach(visiter);
+  assert.deepEqual(suspects, [], `automatisation LinkedIn par session adoptée dans : ${suspects.join(", ")}`);
 });

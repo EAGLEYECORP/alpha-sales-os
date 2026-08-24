@@ -6,8 +6,12 @@ import { ArrowUpRight, CheckCircle2, Clock, Copy, ExternalLink, Gauge, Linkedin,
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { LINKEDIN_DAILY_SAFE, LINKEDIN_INVITE_LIMIT, linkedinTouchesToday, linkedinUrl } from "@/lib/linkedin";
+import {
+  LINKEDIN_INVITE_LIMIT, linkedinTouchesSemaine, linkedinTouchesToday, linkedinUrl, semaineCampagne,
+} from "@/lib/linkedin";
 import { STEP_LABEL, buildLinkedinQueue, type LinkedinStep } from "@/lib/linkedin-sequence";
+import { LINKEDIN_WEEKLY_LIMIT, plafondSemaine, quotaDuJour } from "@/lib/linkedin-plan";
+import { SourcingPanel } from "@/components/linkedin/sourcing-panel";
 
 /**
  * Machine LinkedIn — campagne ALPHA SALES TEST 1 (SCINTIA × EAGLEYE).
@@ -35,8 +39,22 @@ export default function LinkedinPage() {
     () => buildLinkedinQueue(prospects, { city, bookingUrl: settings.bookingUrl }),
     [prospects, city, settings.bookingUrl]
   );
+  /**
+   * ⚠ Le quota ne se lit plus à la journée seule.
+   *
+   * LinkedIn compte les invitations à la SEMAINE : 25 par jour tenus cinq
+   * jours font 125, au-dessus du plafond. L'écran affichait « quota OK »
+   * pendant que la plateforme bloquait déjà. `quotaDuJour` croise les trois
+   * plafonds (jour, semaine, montée en charge) et nomme celui qui mord.
+   */
   const today = linkedinTouchesToday(prospects);
-  const remaining = Math.max(0, LINKEDIN_DAILY_SAFE - today);
+  const semaine = semaineCampagne(prospects);
+  const cetteSemaine = linkedinTouchesSemaine(prospects);
+  const quota = useMemo(
+    () => quotaDuJour({ envoyeesSemaine: cetteSemaine, envoyeesAujourdhui: today, semaineCampagne: semaine }),
+    [cetteSemaine, today, semaine]
+  );
+  const remaining = quota.reste;
   const ready = queue.filter((t) => t.ready);
 
   /** Copie le message, ouvre LinkedIn, consigne la touche. */
@@ -66,7 +84,19 @@ export default function LinkedinPage() {
           <div className="text-right">
             <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Quota du jour</p>
             <p className={cn("font-display text-lg font-extrabold", remaining === 0 ? "text-signal-red" : "text-paper")}>
-              {today}<span className="text-sm text-paper-faint">/{LINKEDIN_DAILY_SAFE}</span>
+              {today}<span className="text-sm text-paper-faint">/{today + remaining}</span>
+            </p>
+          </div>
+          {/* La semaine est l'unité que LinkedIn compte vraiment. */}
+          <div className="text-right">
+            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Cette semaine</p>
+            <p
+              className={cn(
+                "font-display text-lg font-extrabold",
+                cetteSemaine >= plafondSemaine(semaine) ? "text-signal-red" : "text-paper"
+              )}
+            >
+              {cetteSemaine}<span className="text-sm text-paper-faint">/{plafondSemaine(semaine)}</span>
             </p>
           </div>
           <div className="text-right">
@@ -90,11 +120,21 @@ export default function LinkedinPage() {
         </p>
       </div>
 
-      {remaining === 0 && (
-        <p className="rounded-xl border border-signal-red/50 bg-signal-red/5 px-4 py-3 text-[13px] text-signal-red">
-          Quota atteint ({LINKEDIN_DAILY_SAFE} touches). On s&apos;arrête là aujourd&apos;hui — le profil est un actif, on ne le grille pas.
-        </p>
-      )}
+      <SourcingPanel />
+
+      {/* Le message dit LAQUELLE des trois limites bloque : « quota atteint »
+          sans raison pousse à passer outre, « il te reste 4 invitations cette
+          semaine » se respecte. */}
+      <p
+        className={cn(
+          "rounded-xl border px-4 py-3 text-[13px]",
+          remaining === 0
+            ? "border-signal-red/50 bg-signal-red/5 text-signal-red"
+            : "border-ink-600 bg-ink-850 text-paper-dim"
+        )}
+      >
+        {quota.message}
+      </p>
 
       <p className="rounded-xl border border-bronze-700/50 bg-bronze-900/20 px-4 py-3 text-[12.5px] leading-relaxed text-bronze-300">
         <strong>Comment ça marche :</strong> « Copier + ouvrir » met le message dans le presse-papier, ouvre le profil
@@ -179,7 +219,8 @@ export default function LinkedinPage() {
       </section>
 
       <p className="flex items-center justify-center gap-2 text-center text-[11px] text-paper-faint">
-        <Gauge size={12} /> {LINKEDIN_DAILY_SAFE} touches/jour maximum · chaque envoi est consigné dans la fiche et dans les Preuves.
+        <Gauge size={12} /> {plafondSemaine(semaine)} invitations/semaine maximum (plafond plateforme {LINKEDIN_WEEKLY_LIMIT}) ·
+        chaque envoi est consigné dans la fiche et dans les Preuves.
       </p>
     </div>
   );

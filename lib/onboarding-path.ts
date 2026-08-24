@@ -266,14 +266,31 @@ export const STEPS: StepDef[] = [
     auto: true,
   },
   {
+    id: "linkedin-sourcing",
+    phase: "charger",
+    title: "Sourcer et TRIER les profils LinkedIn",
+    why: "La file LinkedIn ne se remplit pas toute seule : elle part de fiches. Et le tri est le vrai travail — les invitations sont un budget plafonné à la semaine, donc celle dépensée sur un apprenti est celle qui n'ira pas au gérant d'à côté. Alpha ne va rien chercher : il ne détient aucun identifiant LinkedIn, c'est ce qui garantit que ton profil ne se fait pas restreindre.",
+    how: [
+      "Relève les profils dehors (export Sales Navigator, tableur, ou lecture de pages publiques — voir docs/SOURCING-LINKEDIN.md).",
+      "LinkedIn → « Sourcer des profils » → colle le CSV, le TSV ou le JSON.",
+      "LIS LES ÉCARTÉS avant d'ajouter : c'est là qu'on découvre qu'une colonne était mal nommée.",
+      "Regarde le calendrier annoncé. 200 invitations, ce n'est pas une matinée : c'est plusieurs semaines.",
+    ],
+    href: "/linkedin",
+    hrefLabel: "Ouvrir le sourcing",
+    minutes: 25,
+    auto: true,
+  },
+  {
     id: "first-linkedin",
     phase: "lancer",
     title: "Lancer la machine LinkedIn",
-    why: "LinkedIn touche ceux qui n'ouvrent pas leurs mails. Le quota de 25 actions par jour n'est pas une prudence excessive : au-delà, les comptes se font restreindre.",
+    why: "LinkedIn touche ceux qui n'ouvrent pas leurs mails. Le plafond est HEBDOMADAIRE, pas journalier : c'est la limite que la plateforme compte réellement, et le rythme monte par paliers parce que le changement d'allure se voit plus que le volume.",
     how: [
       "LinkedIn → filtre sur ton périmètre, la file se construit toute seule.",
       "« Copier + ouvrir » : le texte est dans le presse-papier, le profil s'ouvre. Colle, envoie.",
       "Invitation d'abord, message à J+2, relance à J+4. Jamais de lien dans l'invitation.",
+      "Quand le bandeau annonce la limite, arrête-toi : il dit laquelle des trois mord et de combien.",
     ],
     href: "/linkedin",
     hrefLabel: "Ouvrir LinkedIn",
@@ -460,6 +477,15 @@ export function buildPath(ctx: PathContext): Path {
         return hasEvent(prospects, "appel")
           ? { done: true, detail: "premiers appels consignés" }
           : { done: false, detail: "aucun appel consigné" };
+      case "linkedin-sourcing": {
+        // Une fiche entrée par le sourcing porte le tag « linkedin » : c'est
+        // la seule trace qui distingue un profil trié d'une fiche saisie à la
+        // main, et elle survit à l'import comme au rechargement.
+        const sourcees = prospects.filter((p) => p.tags.includes("linkedin")).length;
+        return sourcees > 0
+          ? { done: true, detail: `${sourcees} profil${sourcees > 1 ? "s" : ""} trié${sourcees > 1 ? "s" : ""} et entré${sourcees > 1 ? "s" : ""}` }
+          : { done: false, detail: "aucun profil sourcé — la file LinkedIn n'a rien à traiter" };
+      }
       case "first-linkedin":
         return hasEvent(prospects, "linkedin")
           ? { done: true, detail: "première salve LinkedIn consignée" }

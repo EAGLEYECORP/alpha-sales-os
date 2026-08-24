@@ -164,7 +164,10 @@ test("chemin — parcours complet : plus rien à faire, zéro minute restante", 
     }
   }
   const prospects = [
-    ...Array.from({ length: FUEL_TARGET - 1 }, (_, i) => prospect({ id: `p${i}` })),
+    // Le tag « linkedin » marque une fiche entrée par le sourcing trié : sans
+    // au moins une, l'étape « sourcer et trier » reste ouverte, et le parcours
+    // n'est pas complet.
+    ...Array.from({ length: FUEL_TARGET - 1 }, (_, i) => prospect({ id: `p${i}`, tags: ["linkedin"] })),
     prospect({ id: "p-signe", stage: "signe", events }),
   ];
 

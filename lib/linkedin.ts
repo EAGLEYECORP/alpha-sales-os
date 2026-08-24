@@ -48,3 +48,45 @@ export function linkedinTouchesToday(prospects: Prospect[]): number {
 
 /** Message d'invitation LinkedIn : la limite dure est 300 caractères. */
 export const LINKEDIN_INVITE_LIMIT = 300;
+
+const JOUR = 86_400_000;
+
+/**
+ * Touches LinkedIn sur les 7 DERNIERS JOURS.
+ *
+ * C'est l'unité que LinkedIn compte réellement. Le compteur journalier seul
+ * laissait passer 125 invitations dans la semaine : voir `linkedin-plan.ts`.
+ */
+export function linkedinTouchesSemaine(prospects: Prospect[], now = new Date()): number {
+  const debut = now.getTime() - 7 * JOUR;
+  let n = 0;
+  for (const p of prospects) {
+    for (const e of p.events) {
+      if (e.kind !== "linkedin") continue;
+      const t = new Date(e.date).getTime();
+      if (Number.isFinite(t) && t >= debut && t <= now.getTime()) n++;
+    }
+  }
+  return n;
+}
+
+/**
+ * Depuis combien de semaines ce compte envoie-t-il ?
+ *
+ * Sert à piloter la rampe de montée en charge : un compte qui n'envoyait rien
+ * ne passe pas à plein régime du jour au lendemain. On le déduit de la
+ * PREMIÈRE touche consignée plutôt que d'un réglage — un réglage se met à 10
+ * le jour où la file paraît longue, une date ne se négocie pas.
+ */
+export function semaineCampagne(prospects: Prospect[], now = new Date()): number {
+  let premiere = Infinity;
+  for (const p of prospects) {
+    for (const e of p.events) {
+      if (e.kind !== "linkedin") continue;
+      const t = new Date(e.date).getTime();
+      if (Number.isFinite(t) && t < premiere) premiere = t;
+    }
+  }
+  if (!Number.isFinite(premiere)) return 0;
+  return Math.max(0, Math.floor((now.getTime() - premiere) / (7 * JOUR)));
+}
