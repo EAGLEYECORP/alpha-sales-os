@@ -582,16 +582,35 @@ export function playbookPrompt(sector?: Sector, verticalId?: string): string {
 const VERTICAL_KEYWORDS: { id: string; re: RegExp }[] = [
   { id: "centre-appels", re: /centre d'?appel|call ?center|plateau|téléopé|teleope|relation client|hotline|téléconseill|teleconseill/ },
   { id: "equipe-terrain", re: /porte-?à-?porte|porte-?a-?porte|force de vente|équipe commerciale|equipe commerciale|commerciaux|poseur|photovolta|isolation|pompe à chaleur|pompe a chaleur/ },
-  { id: "immobilier", re: /immobil|agence|mandat|syndic|régie|regie/ },
+  // ⚠ « agence » seul a été retiré : il attrapait les agences web, d'intérim
+  // et de voyage, et les classait en immobilier. « agence immobilière » passe
+  // toujours, par « immobil ».
+  { id: "immobilier", re: /immobil|mandat|syndic|régie|regie/ },
   { id: "auto-ecole", re: /auto-?école|auto-?ecole|permis|conduite|moniteur/ },
   { id: "garage-carrosserie", re: /garage|carross|mécanic|mecanic|peinture auto/ },
-  { id: "artisan-batiment", re: /plomb|électric|electric|menuis|serrur|chauffag|couvreu|maçon|macon|peintre|rénov|renov|artisan|bâtiment|batiment|dépann|depann/ },
+  // « couvreu » ne suffisait pas : une entreprise de toiture s'appelle
+  // « Couverture Roux », pas « Roux couvreur ». Idem pour la charpente, le
+  // zinc et l'étanchéité, qui sont des noms d'enseigne courants.
+  { id: "artisan-batiment", re: /plomb|électric|electric|menuis|serrur|chauffag|couvreu|couvertur|charpent|zinguerie|étanch|etanch|toiture|maçon|macon|peintre|rénov|renov|artisan|bâtiment|batiment|dépann|depann|terrassement|carrelag/ },
   { id: "sante-cabinet", re: /dentaire|cabinet|médical|medical|centre de santé|kiné|kine|ostéo|osteo|labo/ },
 ];
 
+/**
+ * Verticale déduite d'un TEXTE libre.
+ *
+ * Extrait de `verticalForProspect` parce que le ciblage LinkedIn n'a pas de
+ * fiche à lui donner : il ne dispose que d'un intitulé de poste et d'un nom
+ * d'entreprise. Un seul jeu de mots-clés pour les deux usages — sinon la
+ * qualification d'un profil et celle d'une fiche divergent, et personne ne
+ * comprend pourquoi le même métier tombe dans deux verticales.
+ */
+export function verticalForText(texte: string): VerticalPlaybook | null {
+  const hay = (texte ?? "").toLowerCase();
+  const hit = VERTICAL_KEYWORDS.find((k) => k.re.test(hay));
+  return hit ? verticalById(hit.id) : null;
+}
+
 /** Verticale déduite d'une fiche (mots-clés du métier, à défaut le secteur). */
 export function verticalForProspect(p: Pick<Prospect, "sector" | "notes">): VerticalPlaybook | null {
-  const hay = `${p.notes ?? ""}`.toLowerCase();
-  const hit = VERTICAL_KEYWORDS.find((k) => k.re.test(hay));
-  return (hit ? verticalById(hit.id) : null) ?? verticalForSector(p.sector);
+  return verticalForText(p.notes ?? "") ?? verticalForSector(p.sector);
 }
