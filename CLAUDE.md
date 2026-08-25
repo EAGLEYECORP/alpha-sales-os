@@ -138,6 +138,14 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
 - **Cadence de relance Callflow (exigée par ScintIA)** : après le 1er appel sans
   réponse → **5 rappels sur 2 jours**. Dès qu'il répond : Alpha Voice **arrête**,
   met à jour le pipeline, et **passe la main à l'humain** (closer).
+  > ⚠ **Cette cadence fait 6 contacts en 2 jours. Le décret n° 2022-1313
+  > plafonne le démarchage à 4 sollicitations par consommateur sur 30 jours
+  > glissants.** Il vise le B2C, mais une liste terrain est MÊLÉE et c'est nous
+  > qui portons le risque. `plafondRappels` (`lib/call-cadence.ts`) arbitre :
+  > **SIREN connu → cadence ScintIA entière ; pas de SIREN → plafond à 4**.
+  > Le croisement au registre lève donc le plafond, et c'est le seul moyen.
+  > **À arbitrer avec ScintIA** — le code ne tranche pas l'accord, il empêche
+  > seulement la cadence longue de partir en silence sur une cible à risque.
 
 ## Rituels de closing (par compte) — `Account.closing`
 Se tromper de rituel = perdre le deal au dernier mètre.

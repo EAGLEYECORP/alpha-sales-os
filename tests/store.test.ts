@@ -214,3 +214,54 @@ test("store — un JSON invalide est refusé proprement, sans vider les données
   assert.ok(r.error, "l'échec doit être expliqué");
   assert.equal(useAlpha.getState().prospects.length, 1, "un import raté ne doit RIEN détruire");
 });
+
+test("store — l'import dédoublonne par TÉLÉPHONE : jamais deux appels au même numéro", () => {
+  /**
+   * ⚠ La fusion se faisait sur l'email ou le NOM D'ENTREPRISE. Sur un relevé
+   * terrain, « Carrosserie des Lilas » et « Carrosserie des Lilas SARL » sont
+   * deux noms — donc deux fiches, donc DEUX APPELS au même numéro.
+   *
+   * Le module de sourcing calcule pourtant un identifiant stable sur le
+   * numéro. Il ne servait à rien ici : cette fusion-ci ne regarde pas
+   * l'identifiant. Le test le prouvait au niveau du module, pas du chemin.
+   */
+  useAlpha.setState({ prospects: [] });
+  const { importProspects } = useAlpha.getState();
+  importProspects([fixture({ id: "a", company: "Carrosserie des Lilas", email: undefined, phone: "+33478123456" })]);
+
+  // Autre nom, autre écriture du numéro, même ligne téléphonique.
+  const b = importProspects([
+    fixture({ id: "b", company: "Carrosserie des Lilas SARL", email: undefined, phone: "04 78 12 34 56" }),
+  ]);
+  assert.deepEqual([b.added, b.updated], [0, 1], "deux écritures du même numéro doivent fusionner");
+  assert.equal(useAlpha.getState().prospects.length, 1);
+});
+
+test("store — deux numéros DIFFÉRENTS restent deux fiches", () => {
+  // Le garde-fou ne doit pas fusionner à tort : deux établissements d'une même
+  // enseigne locale ont deux numéros et se travaillent séparément.
+  useAlpha.setState({ prospects: [] });
+  const { importProspects } = useAlpha.getState();
+  importProspects([fixture({ id: "a", company: "Garage Nord", email: undefined, phone: "0478000001" })]);
+  const b = importProspects([fixture({ id: "b", company: "Garage Sud", email: undefined, phone: "0478000002" })]);
+  assert.equal(b.added, 1);
+  assert.equal(useAlpha.getState().prospects.length, 2);
+});
+
+test("store — les tags s'AJOUTENT à la réimportation", () => {
+  /**
+   * Une fiche déjà connue, réimportée avec un extrait d'avis nouvellement
+   * relevé, doit gagner son tag « injoignable ». Sinon le relevé ne sert à
+   * rien dès que la fiche existe — c'est-à-dire dans la plupart des cas.
+   */
+  useAlpha.setState({ prospects: [] });
+  const { importProspects } = useAlpha.getState();
+  importProspects([fixture({ id: "a", company: "Toiture Roux", email: undefined, phone: "0478000009", tags: ["terrain"] })]);
+  importProspects([
+    fixture({ id: "a2", company: "Toiture Roux", email: undefined, phone: "0478000009", tags: ["injoignable"] }),
+  ]);
+  const p = useAlpha.getState().prospects[0];
+  assert.ok(p.tags.includes("terrain"), "l'ancien tag survit");
+  assert.ok(p.tags.includes("injoignable"), "le nouveau tag entre");
+  assert.equal(new Set(p.tags).size, p.tags.length, "aucun doublon de tag");
+});

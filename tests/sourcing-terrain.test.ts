@@ -12,6 +12,7 @@ import {
 } from "../lib/sourcing-terrain-import";
 import { ICP_PAR_CANAL, evaluerSurface, recouvrement } from "../lib/icp-canal";
 import { buildLadder } from "../lib/ladder";
+import { verticalForProspect } from "../lib/playbook";
 import { lireTableau, decouper, separateur } from "../lib/tabulaire";
 import {
   BASCULE_NAF_2025, ECRIT_SANS_DEMANDER, apparier, metierDepuisNaf, nafPourVerticale,
@@ -693,4 +694,49 @@ test("feuille — le tri terrain survit au passage par le Sheet", () => {
   assert.equal(r.retenus.length, 1);
   assert.equal(r.retenus[0].ciblage.verticaleId, "artisan-batiment", "le code APE doit survivre à l'import");
   assert.ok(r.retenus[0].ciblage.signaux.some((s) => s.id === "plainte-injoignable"));
+});
+
+// ── LE FLUX DE BOUT EN BOUT ────────────────────────────────────────────
+
+test("flux — une fiche terrain arrive dans SA file d'appels, pas dans « generique »", () => {
+  /**
+   * ⚠ LE MAILLON QUI MANQUAIT, ET QUI CASSAIT LE FLUX EN SILENCE.
+   *
+   * L'import forçait `sector: "autre"` pour tout le monde. Or la file d'appels
+   * relit la verticale via `verticalForProspect`, qui cherche des MOTS-CLÉS
+   * dans les notes puis retombe sur le secteur — et `VERTICAL_KEYWORDS` ne
+   * contient rien pour la restauration, les bars ni les ambulances. Ces trois
+   * verticales ne se reconnaissent QUE par le secteur.
+   *
+   * Mesuré avant correction : un restaurant était correctement classé
+   * « restauration » par le tri, puis tombait dans « generique » dans la file
+   * — donc sans son script, sans son miroir, sans ses questions de diagnostic.
+   */
+  const cas: [string, string, string][] = [
+    ["restauration", "Le Bouchon;restaurant;Lyon 1er;0478000001;;140;4,6;;\"injoignable\";5610A;1", "restauration"],
+    ["bar-pub", "Le Comptoir;bar;Lyon 2e;0478000002;;140;4,6;;\"injoignable\";5630Z;2", "bar-pub"],
+    ["ambulance", "Ambulances du Rhône;ambulance;Lyon 8e;0478000003;;140;4,6;;\"injoignable\";8690A;3", "ambulance"],
+    ["garage", "Les Ateliers du Rhône;;Lyon 3e;0478000004;;140;4,6;;\"injoignable\";4520A;4", "garage-carrosserie"],
+    ["couvreur", "Toiture Roux;;Lyon 7e;0478000005;;140;4,6;;\"injoignable\";4391B;5", "artisan-batiment"],
+  ];
+  for (const [nom, ligne, attendu] of cas) {
+    const p = importerFiches(`${ENTETE_TERRAIN}\n${ligne}`).retenus[0]?.prospect;
+    assert.ok(p, `${nom} : fiche non retenue`);
+    assert.equal(
+      verticalForProspect(p!)?.id,
+      attendu,
+      `${nom} : la file d'appels le range dans « ${verticalForProspect(p!)?.id} » au lieu de « ${attendu} »`
+    );
+  }
+});
+
+test("flux — la fiche terrain déclenche bien la marche Callflow de l'ESCALIER", () => {
+  // Le tri, l'import et l'escalier doivent parler de la même chose : sans ça,
+  // la fiche remonte en tête de file d'appels et l'escalier reste muet.
+  const p = importerFiches(
+    `${ENTETE_TERRAIN}\nToiture Roux;;Lyon 7e;0478000006;;140;4,6;;"impossible de les joindre";4391B;6`
+  ).retenus[0].prospect;
+  const escalier = buildLadder(p);
+  assert.ok(escalier.rungs.some((r) => r.id === "callflow"), "la marche Callflow doit se déclencher");
+  assert.equal(escalier.entry?.accountId, "scintia", "et elle revient à ScintIA");
 });

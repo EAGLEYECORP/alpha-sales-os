@@ -22,6 +22,75 @@
 export const CALLFLOW_RECALL_OFFSETS_H = [3, 8, 24, 32, 48];
 export const CALLFLOW_MAX_RECALLS = CALLFLOW_RECALL_OFFSETS_H.length;
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE CONFLIT ENTRE LA CADENCE ScintIA ET LE DROIT FRANÇAIS.
+ *
+ * La cadence exigée par ScintIA fait **6 contacts en 2 jours** (le premier
+ * appel plus cinq rappels). Le décret n° 2022-1313 plafonne le démarchage
+ * téléphonique à **4 sollicitations par consommateur sur 30 jours glissants**.
+ *
+ * Il vise le B2C. Or une liste de prospection terrain est MÊLÉE : un artisan
+ * en nom propre sur sa ligne mobile est exactement la zone grise, et c'est
+ * nous qui portons le risque.
+ *
+ * ── CE QUE CE CODE FAIT, ET CE QU'IL NE FAIT PAS ──
+ *
+ * Il ne tranche PAS l'accord commercial : sur une cible clairement
+ * professionnelle, la cadence ScintIA s'applique entière. Il empêche
+ * seulement la cadence longue de partir en silence sur une cible à risque.
+ *
+ * Le discriminant est le SIREN. Une fiche croisée avec le registre des
+ * entreprises est une entreprise inscrite — donc B2B. Une fiche sans SIREN,
+ * sur un mobile, ne prouve rien : elle est plafonnée jusqu'à ce que quelqu'un
+ * la qualifie.
+ *
+ * Avant, l'app AVERTISSAIT à l'import (`planifierAppels` alerte au-delà de 4)
+ * et EXÉCUTAIT six contacts ici. Un avertissement qui ne pilote rien est un
+ * avertissement qu'on apprend à ignorer.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const PLAFOND_SOLLICITATIONS_B2C = 4;
+
+export interface RisqueCible {
+  /** SIREN connu = entreprise inscrite au registre = B2B établi. */
+  siren?: string;
+  /** Numéro appelé, en E.164 ou en national. */
+  telephone?: string;
+}
+
+/** Un mobile français : 06 / 07, ou +336 / +337. */
+const MOBILE_FR = /^(?:\+33|0)\s*[67]/;
+
+/**
+ * Le nombre de rappels réellement autorisés sur cette cible.
+ *
+ * Rend AUSSI la raison : un plafond appliqué sans motif se contourne au
+ * premier agacement, et celui-ci a une justification juridique qu'il faut
+ * pouvoir relire.
+ */
+export function plafondRappels(cible: RisqueCible = {}): { max: number; plafonne: boolean; pourquoi: string } {
+  const siren = (cible.siren ?? "").replace(/\D/g, "");
+  if (siren.length >= 9) {
+    return {
+      max: CALLFLOW_MAX_RECALLS,
+      plafonne: false,
+      pourquoi: `SIREN ${siren} — entreprise inscrite au registre, la cadence Callflow complète s'applique.`,
+    };
+  }
+
+  const mobile = MOBILE_FR.test((cible.telephone ?? "").replace(/[\s.-]/g, ""));
+  // Le premier appel compte dans les sollicitations : 4 au total = 3 rappels.
+  const max = PLAFOND_SOLLICITATIONS_B2C - 1;
+  return {
+    max: Math.min(max, CALLFLOW_MAX_RECALLS),
+    plafonne: true,
+    pourquoi: mobile
+      ? "Mobile sans SIREN : la cible peut être un particulier ou un artisan en nom propre. Plafonné à 4 sollicitations sur 30 jours (décret n° 2022-1313) — croise la fiche avec le registre pour lever le plafond."
+      : "Aucun SIREN : rien ne prouve que la cible est une entreprise inscrite. Plafonné à 4 sollicitations sur 30 jours (décret n° 2022-1313) — croise la fiche avec le registre pour lever le plafond.",
+  };
+}
+
 export type CallOutcome =
   /** Personne n'a décroché (sonnerie, répondeur). */
   | "sans-reponse"
@@ -67,8 +136,13 @@ const H = 3600_000;
  * L'état de la cadence pour UN prospect, d'après ses tentatives.
  * `now` injectable pour les tests (et pour rejouer un historique).
  */
-export function cadenceFor(attempts: CallAttempt[], now: Date = new Date()): CadenceDecision {
+export function cadenceFor(
+  attempts: CallAttempt[],
+  now: Date = new Date(),
+  cible: RisqueCible = {}
+): CadenceDecision {
   const sorted = [...attempts].sort((a, b) => a.at.localeCompare(b.at));
+  const plafond = plafondRappels(cible);
 
   // ── Arrêts définitifs : ils priment sur tout le reste ──
   const opposed = sorted.find((a) => a.outcome === "opposition");
@@ -127,7 +201,7 @@ export function cadenceFor(attempts: CallAttempt[], now: Date = new Date()): Cad
   // ── En cadence : 5 rappels calés sur le PREMIER appel ──
   const t0 = new Date(first.at).getTime();
   const recallsUsed = sorted.length - 1;
-  const recallsLeft = CALLFLOW_MAX_RECALLS - recallsUsed;
+  const recallsLeft = plafond.max - recallsUsed;
 
   if (recallsLeft <= 0) {
     return {
@@ -137,7 +211,9 @@ export function cadenceFor(attempts: CallAttempt[], now: Date = new Date()): Cad
       recallsUsed,
       recallsLeft: 0,
       handoffToHuman: true,
-      reason: `${CALLFLOW_MAX_RECALLS} rappels sur 2 jours sans réponse — on arrête d'appeler et on repasse à l'humain (autre canal).`,
+      reason: plafond.plafonne
+        ? `Plafond atteint (${plafond.max} rappels). ${plafond.pourquoi}`
+        : `${plafond.max} rappels sur 2 jours sans réponse — on arrête d'appeler et on repasse à l'humain (autre canal).`,
     };
   }
 
@@ -151,8 +227,8 @@ export function cadenceFor(attempts: CallAttempt[], now: Date = new Date()): Cad
     recallsLeft,
     handoffToHuman: false,
     reason: due
-      ? `Rappel ${recallsUsed + 1}/${CALLFLOW_MAX_RECALLS} dû.`
-      : `Rappel ${recallsUsed + 1}/${CALLFLOW_MAX_RECALLS} prévu à ${nextAt.toLocaleString("fr-FR")}.`,
+      ? `Rappel ${recallsUsed + 1}/${plafond.max} dû.`
+      : `Rappel ${recallsUsed + 1}/${plafond.max} prévu à ${nextAt.toLocaleString("fr-FR")}.`,
   };
 }
 

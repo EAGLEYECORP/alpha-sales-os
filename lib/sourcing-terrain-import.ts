@@ -67,11 +67,43 @@ export function parserFiches(texte: string): ParseTerrain {
 function notesDepuisFiche(f: FicheTerrain, c: CiblageTerrain): string {
   const bouts: string[] = [];
   if (f.secteur) bouts.push(`Métier : ${f.secteur}.`);
+  /**
+   * Le SIREN est écrit EN CLAIR dans les notes, et ce n'est pas cosmétique :
+   * c'est lui que `campaign-runner` relit pour savoir si la cible est une
+   * entreprise inscrite au registre — donc si la cadence Callflow complète
+   * peut s'appliquer, ou si le plafond légal B2C s'impose.
+   */
+  if (f.siren) bouts.push(`SIREN : ${(f.siren ?? "").replace(/\D/g, "").slice(0, 9)}.`);
   if (c.verticaleLabel) bouts.push(`Verticale : ${c.verticaleLabel}.`);
   for (const s of c.signaux) bouts.push(`${s.label} — ${s.fait}`);
   if (c.manque.length) bouts.push(`À vérifier : ${c.manque.join(" · ")}.`);
   return bouts.join(" ");
 }
+
+/**
+ * Verticale détectée → valeur de l'enum `Sector`, quand elle existe.
+ *
+ * ⚠ CE MAILLON MANQUAIT, ET IL CASSAIT LA FILE D'APPELS.
+ *
+ * L'import forçait `sector: "autre"` pour tout le monde. Or la file d'appels
+ * (`buildCallSession`) relit la verticale via `verticalForProspect`, qui
+ * cherche d'abord des MOTS-CLÉS dans les notes, puis retombe sur le secteur.
+ *
+ * Et `VERTICAL_KEYWORDS` ne contient aucune entrée pour la restauration, les
+ * bars ni les ambulances : ces trois verticales-là ne se reconnaissent QUE par
+ * le secteur. Résultat mesuré : un restaurant sourcé sur le terrain était
+ * correctement classé « restauration » par le tri, puis tombait dans
+ * « generique » dans la file d'appels — donc sans son script, sans son miroir,
+ * sans ses questions de diagnostic. Silencieusement.
+ *
+ * L'enum compte cinq valeurs et trois n'étaient jamais utilisées. Les voilà.
+ */
+const VERTICALE_SECTEUR: Record<string, Sector> = {
+  restauration: "restaurant",
+  "bar-pub": "pub",
+  ambulance: "ambulance",
+  "artisan-batiment": "artisan",
+};
 
 /**
  * Traduit la plainte d'injoignabilité en un nombre d'appels manqués.
@@ -111,7 +143,7 @@ export function ficheVersProspect(f: FicheTerrain, c: CiblageTerrain, now = new 
     id: `tr-${graine}`.slice(0, 60),
     company: entreprise,
     name: "",
-    sector: "autre" as Sector,
+    sector: (c.verticaleId && VERTICALE_SECTEUR[c.verticaleId]) ?? ("autre" as Sector),
     city: (f.ville ?? "").trim(),
     phone: c.telephone ?? undefined,
     stage: "prospect",

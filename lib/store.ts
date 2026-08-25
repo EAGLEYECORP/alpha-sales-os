@@ -368,6 +368,22 @@ function notifyStorage(failed: boolean): void {
 /** L'écriture locale est-elle en échec ? Lu par l'alerte d'interface. */
 export const storageIsFailing = (): boolean => storageFailed;
 
+/**
+ * Numéro réduit à ses chiffres significatifs, pour comparer deux écritures.
+ *
+ * « 04 78 12 34 56 », « +33478123456 » et « 0478123456 » sont le même
+ * téléphone. Comparer les chaînes brutes ferait échouer la fusion sur la seule
+ * différence de mise en forme entre deux sources — et deux fiches au même
+ * numéro, c'est deux appels à la même personne.
+ */
+function normTel(tel: string | undefined): string {
+  const d = (tel ?? "").replace(/\D/g, "");
+  if (!d) return "";
+  // 0478123456 et 33478123456 pointent le même poste : on garde les 9 derniers
+  // chiffres, qui suffisent à identifier une ligne française.
+  return d.length >= 9 ? d.slice(-9) : d;
+}
+
 export const useAlpha = create<AlphaState>()(
   persist(
     (set, get) => ({
@@ -788,8 +804,24 @@ export const useAlpha = create<AlphaState>()(
           const next = [...s.prospects];
           for (const raw of list) {
             const p = normalizeProspect(raw);
+            /**
+             * ⚠ LE TÉLÉPHONE AVANT LE NOM.
+             *
+             * La fusion se faisait sur l'email ou le NOM D'ENTREPRISE. Sur un
+             * import terrain, « Carrosserie des Lilas » et « Carrosserie des
+             * Lilas SARL » sont deux noms — donc deux fiches, donc DEUX APPELS
+             * au même numéro. Le module de sourcing calcule pourtant un
+             * identifiant stable sur le numéro : il ne servait à rien ici,
+             * parce que cette fusion-ci ne regarde pas l'identifiant.
+             *
+             * Un numéro est unique, un nom d'entreprise ne l'est pas. Il passe
+             * donc en premier — l'ordre compte, `findIndex` s'arrête au
+             * premier trouvé.
+             */
+            const telP = normTel(p.phone);
             const idx = next.findIndex(
               (x) =>
+                (telP && normTel(x.phone) === telP) ||
                 (p.email && x.email && x.email.toLowerCase() === p.email.toLowerCase()) ||
                 x.company.trim().toLowerCase() === p.company.trim().toLowerCase()
             );
@@ -814,6 +846,11 @@ export const useAlpha = create<AlphaState>()(
                 problems: p.problems.length ? p.problems : next[idx].problems,
                 deepAudit: { ...next[idx].deepAudit, ...Object.fromEntries(Object.entries(p.deepAudit).filter(([, v]) => v !== undefined && v !== "")) },
                 preferredChannel: p.preferredChannel ?? next[idx].preferredChannel,
+                // Les tags s'AJOUTENT au lieu d'être ignorés : une fiche
+                // réimportée avec un extrait d'avis nouvellement relevé doit
+                // gagner son tag « injoignable », sinon le relevé ne sert à
+                // rien une fois la fiche déjà connue.
+                tags: Array.from(new Set([...next[idx].tags, ...p.tags])),
                 satisfaction: p.satisfaction ?? next[idx].satisfaction,
                 testimonial: p.testimonial ?? next[idx].testimonial,
                 upsell: p.upsell ?? next[idx].upsell,

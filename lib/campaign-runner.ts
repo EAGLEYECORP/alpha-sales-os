@@ -159,8 +159,22 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
       continue;
     }
 
-    // Cadence : c'est elle qui dit si un appel est dû MAINTENANT.
-    const cadence = cadenceFor(attemptsFromEvents(p), now);
+    /**
+     * Cadence : c'est elle qui dit si un appel est dû MAINTENANT.
+     *
+     * ⚠ La CIBLE est passée, pas seulement les tentatives. Sans elle, le
+     * plafond légal ne s'applique jamais : `plafondRappels` ne peut pas savoir
+     * si le prospect est une entreprise inscrite (SIREN) ou un artisan en nom
+     * propre sur son mobile. Le runner appelait sans cible, donc la cadence
+     * longue partait sur tout le monde.
+     *
+     * Le SIREN se lit dans les notes : c'est là que l'import terrain l'écrit
+     * après croisement avec le registre.
+     */
+    const cadence = cadenceFor(attemptsFromEvents(p), now, {
+      telephone: p.phone,
+      siren: p.notes.match(/\bSIREN\s*:?\s*(\d{9})\b/i)?.[1],
+    });
     if (cadence.state === "repondu-passer-humain") {
       push(p, "a-repondu", "Il a répondu — Alpha Voice s'arrête, la main est au closer.");
       continue;
