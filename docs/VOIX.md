@@ -220,6 +220,6 @@ jour, c'est une affaire de jours d'intégration.
 | Catalogue d'objections + alertes doctrine | `lib/live-assist.ts` |
 | Capture micro (Web Speech API) | `components/voice/use-speech.ts` |
 | Panneau d'assistant d'appel | `components/voice/live-assist.tsx` |
-| Écran de débrief | `app/debrief/page.tsx` |
+| Écran de débrief | `app/(app)/debrief/page.tsx` |
 | Affinage IA (Ollama, optionnel) | `app/api/debrief/route.ts` |
 | Tests (dates, extraction, appariement) | `tests/voice.test.ts` |

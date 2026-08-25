@@ -91,7 +91,7 @@ ne reçoive quoi que ce soit.
 | MIME RFC 822 (MailComposer, livré avec Nodemailer) | `lib/gmail-mime.ts` |
 | Client IMAP APPEND sur `node:tls` (zéro dépendance) | `lib/imap-append.ts` |
 | Route de dépôt + sonde de capacité | `app/api/gmail/draft/route.ts` |
-| Boutons (lot, unité, prévisualisation) | `app/outbox/page.tsx` |
+| Boutons (lot, unité, prévisualisation) | `app/(app)/outbox/page.tsx` |
 | Tests (filtres, cadrage IMAP, SPECIAL-USE) | `tests/gmail-draft.test.ts` |
 
 ---

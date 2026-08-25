@@ -94,11 +94,11 @@ n8n → Supabase → l'app la relit.
 - Écrit l'info critique dans `crm_records` (Supabase, service role). n8n lit les
   lignes `synced_to_sheet = false` → écrit dans Sheets → repasse le flag.
 
-**Funnel campagne** — `lib/campaign-funnel.ts`, `app/campaigns/page.tsx`
+**Funnel campagne** — `lib/campaign-funnel.ts`, `app/(app)/campaigns/page.tsx`
 - Taux réels : délivré(nospam)/ouvert/réponse/follow-thru/follow-up/closed +
   **LTV + satisfaction**, dérivés du tracking × pipeline.
 
-**Modèle & prix** — `lib/pricing.ts`, `app/offre/page.tsx` — calculateur de ROI.
+**Modèle & prix** — `lib/pricing.ts`, `app/(app)/offre/page.tsx` — calculateur de ROI.
 
 **Thème** — clair/sombre sans flash (`lib/theme.ts`, tokens CSS).
 

@@ -30,7 +30,7 @@
   (« l'agence ») si rien n'est renseigné. ⚠ Non testé contre une vraie clé IA —
   la mécanique compile/passe les tests ; le rendu réel se valide en prod.
 - **Divulgation voix** (art. 50) : ✅ **Fait**. L'appel sortant se déclare déjà
-  « pour le compte de {agencyName} » (`app/voice/page.tsx`) ; l'accueil ENTRANT
+  « pour le compte de {agencyName} » (`app/(app)/voice/page.tsx`) ; l'accueil ENTRANT
   (agent Python) prend `VOICE_BRAND_NAME`/`VOICE_BRAND_CITY` (défaut EAGLEYE).
 - **Documents prospect** (audit / projection / lot) : ✅ **Fait** (marque du compte).
 

@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { localTime, BUSINESS_TZ } from "../lib/business-hours";
-import { fenetreOuverte } from "../lib/conformite";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { MENTIONS_OBLIGATOIRES, fenetreOuverte, verifieMentions } from "../lib/conformite";
+import { emailBody } from "../lib/mail-compose";
+import { prospect } from "./fixtures";
 import { callAllowedNow } from "../lib/voice-script";
 
 /**
@@ -79,4 +83,39 @@ test("week-end — samedi et dimanche sont fermés des deux côtés", () => {
   assert.equal(fenetreOuverte(new Date("2026-08-22T10:00:00+02:00")).open, false); // samedi
   assert.equal(fenetreOuverte(new Date("2026-08-23T10:00:00+02:00")).open, false); // dimanche
   assert.equal(fenetreOuverte(new Date("2026-08-24T10:00:00+02:00")).open, true); // lundi
+});
+
+test("conformité — les DEUX chemins d'envoi portent le moyen de refus", () => {
+  /**
+   * `verifieMentions` existait depuis longtemps et n'était appelé NULLE PART.
+   * Un contrôle de conformité que rien n'exécute ne protège de rien.
+   *
+   * Le brancher au runtime aurait coûté un appel par email pour vérifier une
+   * ligne qui est DANS le gabarit. Le vrai risque n'est pas qu'un message
+   * l'oublie aujourd'hui — c'est qu'on modifie un gabarit demain et qu'on la
+   * supprime sans s'en apercevoir. C'est donc ici que le contrôle doit vivre.
+   *
+   * Les deux chemins comptent, et ils sont différents :
+   *  · `emailBody` — l'opérateur colle dans Gmail et envoie de sa main ;
+   *  · `email-html` — l'envoi automatique par SMTP.
+   * Un seul des deux couvert laisserait une moitié des envois en faute.
+   */
+  const closer = "Zakaria Tazi";
+  const agence = "EAGLEYE CORP";
+
+  const manuel = emailBody(prospect({ company: "Test SARL" }), { closerName: closer, agencyName: agence });
+  assert.deepEqual(
+    verifieMentions(manuel, closer, agence),
+    [],
+    "le chemin MANUEL (Gmail / presse-papier) perd ses mentions obligatoires"
+  );
+
+  // Le gabarit HTML porte la ligne en dur : on la cherche dans le fichier,
+  // parce que le rendu dépend de trop de réglages pour être reconstitué ici.
+  const html = readFileSync(join(process.cwd(), "lib/email-html.ts"), "utf8");
+  assert.match(html, /STOP/, "le gabarit HTML a perdu son moyen de refus");
+  assert.ok(
+    MENTIONS_OBLIGATOIRES.length === 3,
+    "la liste des mentions a changé — vérifier que les gabarits suivent avant de toucher à ce test"
+  );
 });
