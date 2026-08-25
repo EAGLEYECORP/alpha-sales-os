@@ -8,6 +8,7 @@ import {
 } from "../lib/sourcing-terrain";
 import {
   CHAMPS_PLACES, COLONNES_TERRAIN, importerFiches, importerPlaces, parserFiches, placeVersFiche,
+  ressembleAuTerrain,
 } from "../lib/sourcing-terrain-import";
 import { ICP_PAR_CANAL, evaluerSurface, recouvrement } from "../lib/icp-canal";
 import { buildLadder } from "../lib/ladder";
@@ -652,4 +653,44 @@ test("registre — le module ne collecte RIEN, comme le reste du sourcing", () =
   // navigateur de l'opérateur.
   const src = readFileSync(join(process.cwd(), "lib/registre-entreprises.ts"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.doesNotMatch(src, /\bfetch\s*\(/);
+});
+
+// ── LE FLUX RÉEL : CARTE → GOOGLE SHEET → ALPHA ────────────────────────
+
+test("feuille — un relevé terrain est reconnu comme tel", () => {
+  /**
+   * Le flux réel est : relevé sur une carte → Google Sheet → import. Or
+   * l'import de feuille passait par `csvToProspects`, générique, qui IGNORE
+   * les colonnes portant tout le tri. Les fiches entraient et la plainte
+   * d'injoignabilité, la verticale confirmée et le plan d'appels ne sortaient
+   * jamais — pendant que l'écran annonçait « ✓ 200 nouveaux ».
+   */
+  assert.equal(ressembleAuTerrain(ENTETE_TERRAIN), true);
+  assert.equal(ressembleAuTerrain("name;phone;reviews;rating;hours"), true, "un export d'outil doit passer aussi");
+  assert.equal(ressembleAuTerrain("entreprise;telephone;naf;avis"), true);
+});
+
+test("feuille — un import CRM ordinaire n'est PAS routé vers le tri terrain", () => {
+  /**
+   * Le seuil est DEUX marqueurs, pas un. Router à tort un import CRM vers le
+   * terrain ferait EXCLURE toutes les fiches sans téléphone — c'est-à-dire
+   * l'inverse du service rendu, et sur le chemin d'import le plus utilisé.
+   */
+  assert.equal(ressembleAuTerrain("company;name;email;stage;monthlyValue"), false);
+  assert.equal(ressembleAuTerrain("company;name;note"), false, "« note » seul ne suffit pas");
+  assert.equal(ressembleAuTerrain(""), false);
+  assert.equal(ressembleAuTerrain('{"places":[]}'), false, "du JSON n'est pas une feuille");
+});
+
+test("feuille — le tri terrain survit au passage par le Sheet", () => {
+  // Bout en bout : ce qu'un relevé Maps collé dans une feuille produit
+  // réellement une fois importé.
+  const csv =
+    `${ENTETE_TERRAIN}\n` +
+    `Les Ateliers du Rhône;;Lyon 3e;04 78 00 00 01;;140;4,6;fermé samedi dimanche;"impossible de les joindre";4391B;123456789`;
+  assert.equal(ressembleAuTerrain(csv), true);
+  const r = importerFiches(csv);
+  assert.equal(r.retenus.length, 1);
+  assert.equal(r.retenus[0].ciblage.verticaleId, "artisan-batiment", "le code APE doit survivre à l'import");
+  assert.ok(r.retenus[0].ciblage.signaux.some((s) => s.id === "plainte-injoignable"));
 });

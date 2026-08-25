@@ -5,6 +5,7 @@ import { Cable, Cloud, CloudOff, Compass, Download, Eraser, FileSpreadsheet, Key
 import Link from "next/link";
 import { useAlpha } from "@/lib/store";
 import { SyncProspects } from "@/components/sync-prospects";
+import { importerFiches, ressembleAuTerrain } from "@/lib/sourcing-terrain-import";
 import {
   pushSnapshot,
   pullSnapshot,
@@ -159,6 +160,27 @@ export default function SettingsPage() {
   };
 
   const applyCsv = (text: string) => {
+    /**
+     * ⚠ Un relevé TERRAIN ne passe pas par l'import CRM générique.
+     *
+     * Le flux réel est : relevé sur une carte → Google Sheet → ici. Or
+     * `csvToProspects` ignore les colonnes qui portent tout le tri (avis,
+     * extraits d'avis, code APE) : les fiches entraient et la plainte
+     * d'injoignabilité, la verticale confirmée et le plan d'appels ne
+     * sortaient jamais. L'import annonçait quand même « ✓ 200 nouveaux ».
+     */
+    if (ressembleAuTerrain(text)) {
+      const r = importerFiches(text);
+      if (r.retenus.length || r.ecartes.length) {
+        const { added, updated } = importProspects(r.retenus.map((x) => x.prospect));
+        setImportMsg(
+          `✓ Relevé terrain : ${added} nouveau(x), ${updated} mis à jour, ${r.ecartes.length} écartée(s). ${r.resume.join(" ")}`
+        );
+        setTriage(triageImport(r.retenus.map((x) => x.prospect), settings.accountId));
+        return;
+      }
+    }
+
     const { prospects: parsed, skipped, headersFound } = csvToProspects(text);
     if (parsed.length === 0) {
       setImportMsg(

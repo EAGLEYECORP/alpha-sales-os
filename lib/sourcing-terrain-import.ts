@@ -163,6 +163,43 @@ export function importerFiches(texte: string, now = new Date()): ImportTerrain {
 /** Qualification d'une fiche unique, pour la saisie à la main. */
 export const qualifierFiche = qualifierTerrain;
 
+/**
+ * Ce tableau est-il un relevé TERRAIN, ou un import CRM ordinaire ?
+ *
+ * ── POURQUOI CETTE DÉTECTION EXISTE ──
+ *
+ * Le flux réel est : relevé sur une carte → Google Sheet → Alpha. Or l'import
+ * de feuille passait par `csvToProspects`, l'import CRM générique. Les
+ * colonnes qui portent tout le tri — nombre d'avis, extraits d'avis, code
+ * APE — y étaient simplement IGNORÉES. Les fiches entraient, et la plainte
+ * d'injoignabilité, la verticale confirmée et le plan d'appels ne sortaient
+ * jamais. Rien ne le disait : l'import annonçait « ✓ 200 nouveaux ».
+ *
+ * ── POURQUOI ON DÉTECTE AU LIEU DE DEMANDER ──
+ *
+ * Une case « c'est un relevé terrain » de plus, au moment exact où on colle
+ * 200 lignes, est une case qu'on oublie de cocher. Les colonnes disent déjà
+ * ce que le fichier est.
+ *
+ * Le seuil est DEUX marqueurs, pas un : « note » seul apparaît dans des
+ * exports CRM ordinaires, et router à tort un import CRM vers le tri terrain
+ * ferait exclure toutes les fiches sans téléphone — c'est-à-dire l'inverse du
+ * service rendu.
+ */
+export function ressembleAuTerrain(texte: string): boolean {
+  const entete = (texte ?? "").split(/\r?\n/)[0] ?? "";
+  if (!entete.trim() || entete.trimStart().startsWith("{") || entete.trimStart().startsWith("[")) return false;
+
+  const marqueurs = [
+    /\b(avis|reviews|reviewcount|nombreavis|usertotal)\b/i,
+    /\b(extraitsavis|reviewtext|avistexte|verbatim|commentaires)\b/i,
+    /\b(naf|ape|codenaf|codeape|activiteprincipale)\b/i,
+    /\b(horaires|hours|openinghours|ouverture)\b/i,
+    /\b(note|rating|etoiles|stars)\b/i,
+  ];
+  return marqueurs.filter((re) => re.test(entete)).length >= 2;
+}
+
 // ── L'API PLACES DE GOOGLE ─────────────────────────────────────────────
 
 /**

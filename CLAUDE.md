@@ -91,6 +91,25 @@ Alpha ne livre pas le chantier et ne remplace pas la personne qui rassure. Il
 supprime tout ce qui se trouve AVANT et AUTOUR : le travail répétitif qui fait
 qu'un bon vendeur passe sa journée à ne pas vendre.
 
+### La troisième colonne : ce qu'Alpha NE FAIT PAS
+**Si Alpha ne sait pas le faire, on le fait à la main — et on montre au client
+comment le faire.** Ce n'est pas un aveu, c'est une position : le lien Google
+Sheet est la porte prévue pour ça (`/api/import/sheet`, direct, sans n8n ; ou
+la synchro bidirectionnelle via n8n). L'humain relève, la feuille transporte,
+Alpha trie.
+
+C'est ce qui permet de refuser d'embarquer un collecteur dans le produit
+(scraping d'annuaire, session LinkedIn, aspiration de Maps) sans perdre le
+service : la collecte reste dehors, remplaçable, et sous la responsabilité de
+celui qui la fait.
+
+> ⚠ La contrepartie, à cadrer AVANT de la promettre. « On montre au client
+> comment faire » est du **service**, pas du logiciel : ça ne s'automatise pas,
+> ça ne se duplique pas, et sans limite écrite ça devient du travail gratuit
+> illimité. Ça se vend comme une prestation d'accompagnement bornée (nombre de
+> séances, périmètre), ou ça se donne une fois au cadrage — jamais « on est là
+> si besoin ».
+
 > ⚠ Ne PAS écrire « les meilleurs du marché » dans un artefact vendu ou public.
 > Zéro vente à ce jour : c'est une conviction, pas une preuve, et les tests de
 > la vitrine refusent déjà les affirmations invérifiables. Ce qui se dit sans
