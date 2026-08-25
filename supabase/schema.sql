@@ -3,6 +3,11 @@
 -- Local-first app: each table stores full row payload as JSONB (`data`)
 -- keyed by the client-generated id, scoped per user with RLS.
 -- Apply: Supabase Dashboard → SQL Editor → paste & run.
+--
+-- ⚠ CE FICHIER EST EN `create table if not exists` : sur une base DÉJÀ créée,
+-- il ne modifie RIEN, en silence. Toute correction de structure doit donc
+-- exister DEUX fois — ici pour les nouvelles bases, et dans
+-- `supabase/migrations/` pour celles qui tournent déjà.
 -- ─────────────────────────────────────────────────────────────────────
 
 -- Prospects ------------------------------------------------------------
@@ -63,6 +68,54 @@ create table if not exists public.audit_log (
   created_at timestamptz not null default now()
 );
 
+-- Tables SERVEUR ---------------------------------------------------------
+-- Ni RLS par utilisateur, ni session : seul le service role y accède. Elles
+-- portent `proprietaire` quand il faut distinguer l'opérateur d'un client.
+--
+-- ⚠ Ces trois-là étaient interrogées par le code sans exister nulle part :
+-- le SQL de `propositions` vivait dans une documentation, les deux autres
+-- n'existaient dans aucun fichier. Résultat : l'orchestrateur ne pouvait rien
+-- proposer, l'historique d'appels disparaissait à chaque redéploiement, et les
+-- notifications cessaient sans prévenir.
+
+-- Ce que l'agent DÉPOSE, et que l'humain tranche. Rien ne s'exécute d'ici.
+create table if not exists public.propositions (
+  id           text primary key,
+  proprietaire text not null default 'operateur',
+  data         jsonb not null,
+  created_at   timestamptz not null default now()
+);
+
+-- La trace des appels Alpha Voice. Colonnes calées sur `toRow()` dans
+-- app/api/voice/session/route.ts.
+create table if not exists public.call_sessions (
+  id                  text primary key,
+  room                text not null,
+  prospect_id         text,
+  account_id          text,
+  direction           text not null,
+  peer                text,
+  started_at          timestamptz not null,
+  ended_at            timestamptz,
+  state               text not null,
+  turns               jsonb not null default '[]'::jsonb,
+  outcome             text,
+  recording_announced boolean not null default false,
+  recording_url       text,
+  error               text
+);
+
+-- Les abonnements aux notifications. Sans cette table ils vivent en MÉMOIRE,
+-- et un redéploiement les efface sans que personne le remarque.
+create table if not exists public.push_subscriptions (
+  endpoint   text primary key,
+  user_id    text,
+  p256dh     text not null,
+  auth       text not null,
+  failures   integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
 -- Indexes ----------------------------------------------------------------
 create index if not exists prospects_user_stage_idx on public.prospects (user_id, stage);
 -- La synchro et l'orchestrateur lisent par propriétaire, jamais par utilisateur.
@@ -71,6 +124,9 @@ create index if not exists prospects_user_sector_idx on public.prospects (user_i
 create index if not exists meetings_user_idx on public.meetings (user_id);
 create index if not exists campaigns_user_idx on public.campaigns (user_id);
 create index if not exists activities_user_idx on public.activities (user_id);
+create index if not exists propositions_proprietaire_idx on public.propositions (proprietaire);
+create index if not exists call_sessions_started_idx on public.call_sessions (started_at desc);
+create index if not exists call_sessions_prospect_idx on public.call_sessions (prospect_id);
 
 -- updated_at trigger -------------------------------------------------------
 create or replace function public.touch_updated_at()
@@ -98,6 +154,11 @@ alter table public.campaigns enable row level security;
 alter table public.meetings enable row level security;
 alter table public.activities enable row level security;
 alter table public.audit_log enable row level security;
+-- Tables serveur : RLS activée SANS aucune policy = personne n'y accède, sauf
+-- le service role qui la contourne. C'est le verrou voulu.
+alter table public.propositions enable row level security;
+alter table public.call_sessions enable row level security;
+alter table public.push_subscriptions enable row level security;
 
 do $$
 declare t text;

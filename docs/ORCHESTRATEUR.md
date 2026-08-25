@@ -133,19 +133,21 @@ omission, c'est la conception — et un test refuse tout outil pointant hors de
 Sans elles, rien de tout ça ne fonctionne : le serveur ne voit pas le pipe et
 les propositions ne survivent pas à la requête.
 
-```sql
-create table if not exists public.propositions (
-  id            text primary key,
-  proprietaire  text not null default 'operateur',
-  data          jsonb not null,
-  created_at    timestamptz not null default now()
-);
-create index if not exists propositions_proprietaire_idx
-  on public.propositions (proprietaire);
+⚠ Ce SQL ne vit plus ici. Il vivait dans cette documentation, donc personne ne
+l'exécutait en appliquant `schema.sql` — et l'orchestrateur ne pouvait rien
+proposer sans que rien ne plante. Il est maintenant dans le schéma, avec deux
+autres tables qui étaient dans le même cas (`call_sessions`,
+`push_subscriptions`).
 
-alter table public.propositions enable row level security;
--- Aucune policy : seul le service role (le serveur) y accède.
-```
+**Base neuve** → `supabase/schema.sql`.
+
+**Base qui tourne déjà** → `supabase/migrations/001-proprietaire-et-tables-serveur.sql`.
+`schema.sql` est écrit en `create table if not exists` : sur une base existante
+il ne modifie **rien**, et le SQL Editor annonce quand même « Success ». La
+migration porte les `alter table` et se relance sans danger.
+
+Un test refuse désormais qu'une table interrogée par le code soit absente du
+schéma.
 
 La table `prospects` du schéma principal (`supabase/schema.sql`) sert aux deux
 écrivains serveur. ⚠ Elle a été corrigée : `user_id` était `NOT NULL`, ce qui

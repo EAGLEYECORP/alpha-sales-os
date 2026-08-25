@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   LOT_MAX, PLANCHER_EFFACEMENT, PROPRIETAIRE_OPERATEUR, SEUIL_EFFACEMENT,
@@ -234,4 +234,69 @@ test("sync — la route est INTERNE : aucune clé API, la session suffit", () =>
   assert.match(mw, /"\/api\/sync"/, "sans ça, la route serait publique");
   const acces = readFileSync(join(process.cwd(), "lib/api-access.ts"), "utf8");
   assert.match(acces, /"\/api\/sync": "\/pipeline"/, "la route doit être traduite vers un chemin métier");
+});
+
+// ── LE SCHÉMA CONTRE LE CODE ───────────────────────────────────────────
+
+test("schéma — toute table interrogée par le code EXISTE dans schema.sql", () => {
+  /**
+   * Trois tables étaient interrogées sans exister nulle part : `propositions`
+   * (son SQL vivait dans une documentation), `call_sessions` et
+   * `push_subscriptions` (dans aucun fichier). Conséquences silencieuses :
+   * l'orchestrateur ne pouvait rien proposer, l'historique d'appels
+   * disparaissait à chaque redéploiement, et les notifications cessaient sans
+   * prévenir.
+   *
+   * Rien ne plantait — Supabase rend une erreur que le code journalise et
+   * ignore. C'est exactement le genre de panne qu'un test doit attraper, parce
+   * que personne ne la voit à l'usage.
+   */
+  const racine = process.cwd();
+  const sql = readFileSync(join(racine, "supabase/schema.sql"), "utf8");
+
+  const fichiers: string[] = [];
+  const visiter = (rel: string) => {
+    for (const e of readdirSync(join(racine, rel), { withFileTypes: true })) {
+      if (e.name.startsWith(".") || e.name === "node_modules") continue;
+      const chemin = join(rel, e.name);
+      if (e.isDirectory()) visiter(chemin);
+      else if (/\.(ts|tsx)$/.test(e.name)) fichiers.push(chemin);
+    }
+  };
+  for (const d of ["lib", "app"]) visiter(d);
+
+  const tables = new Set<string>();
+  for (const f of fichiers) {
+    for (const m of readFileSync(join(racine, f), "utf8").matchAll(/\.from\("([a-z_]+)"\)/g)) {
+      tables.add(m[1]);
+    }
+  }
+
+  assert.ok(tables.size >= 8, `seulement ${tables.size} tables détectées — le balayage est cassé`);
+  for (const t of tables) {
+    assert.match(
+      sql,
+      new RegExp(`create table if not exists public\\.${t}\\b`),
+      `la table « ${t} » est interrogée par le code mais absente de supabase/schema.sql`
+    );
+  }
+});
+
+test("schéma — une correction de structure existe AUSSI en migration", () => {
+  /**
+   * `schema.sql` est en `create table if not exists` : sur une base déjà
+   * créée, il ne fait RIEN, et le SQL Editor annonce quand même « Success ».
+   * Une correction qui n'existe que là ne s'appliquera jamais aux bases qui
+   * tournent — c'est ainsi que `user_id NOT NULL` a survécu à sa propre
+   * correction.
+   */
+  const mig = readFileSync(join(process.cwd(), "supabase/migrations/001-proprietaire-et-tables-serveur.sql"), "utf8");
+  assert.match(mig, /alter table public\.prospects alter column user_id drop not null/);
+  assert.match(mig, /add column proprietaire text not null default 'operateur'/);
+  for (const t of ["propositions", "call_sessions", "push_subscriptions"]) {
+    assert.match(mig, new RegExp(`create table if not exists public\\.${t}`), `migration : ${t} manquante`);
+  }
+  // Idempotence : relancer la migration ne doit rien casser.
+  assert.match(mig, /information_schema\.columns/, "les ALTER doivent être conditionnels");
+  assert.ok(mig.includes("begin;") && mig.includes("commit;"), "la migration doit être transactionnelle");
 });
