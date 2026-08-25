@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Check, ClipboardPaste, Info, MapPin, PhoneOff, Star, X } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { ENTETE_TERRAIN, SOURCES_TERRAIN, planifierAppels } from "@/lib/sourcing-terrain";
-import { importerFiches } from "@/lib/sourcing-terrain-import";
+import { CHAMPS_PLACES, importerFiches, importerPlaces } from "@/lib/sourcing-terrain-import";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,7 +32,20 @@ export function SourcingTerrainPanel() {
   const [texte, setTexte] = useState("");
   const [fait, setFait] = useState<string | null>(null);
 
-  const res = useMemo(() => (texte.trim() ? importerFiches(texte) : null), [texte]);
+  /**
+   * Le format se DÉTECTE, il ne se choisit pas dans un menu.
+   *
+   * Une réponse de l'API Places commence par une accolade et porte une clé
+   * `places` ; un relevé de tableur, non. Demander à l'opérateur de le
+   * déclarer serait une case à cocher de plus, et une source d'erreur de plus
+   * au moment exact où il colle 1 000 lignes.
+   */
+  const estPlaces = /^\s*[[{]/.test(texte) && /"(places|displayName|userRatingCount)"/.test(texte);
+
+  const res = useMemo(
+    () => (texte.trim() ? (estPlaces ? importerPlaces(texte) : importerFiches(texte)) : null),
+    [texte, estPlaces]
+  );
   const plan = useMemo(
     () => (res?.retenus.length ? planifierAppels(res.retenus.length, TENTATIVES) : null),
     [res]
@@ -73,6 +86,12 @@ export function SourcingTerrainPanel() {
         }}
       />
 
+      {estPlaces && (
+        <p className="mt-2 rounded-lg border border-signal-blue/40 bg-signal-blue/10 px-3 py-2 text-[11.5px] text-paper">
+          Réponse Google Places détectée — les avis, les horaires et le téléphone sont lus directement.
+        </p>
+      )}
+
       {fait && (
         <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-signal-green/40 bg-signal-green/10 px-3 py-2 text-[12px] text-signal-green">
           <Check size={13} /> {fait}
@@ -93,6 +112,19 @@ export function SourcingTerrainPanel() {
               </li>
             ))}
           </ul>
+          <p className="mt-2 text-[11px] leading-relaxed text-paper-faint">
+            <strong className="text-paper-dim">Par l&apos;API Places</strong> — c&apos;est la seule voie propre pour
+            obtenir le texte des avis en volume : aspirer les pages Maps viole les conditions d&apos;utilisation de
+            Google. Colle la réponse JSON telle quelle, elle est reconnue toute seule. Le masque de champs à demander,
+            avec <code>reviews</code> qui porte le signal :
+          </p>
+          <pre className="mt-1 overflow-x-auto rounded-lg border border-ink-700 bg-ink-900 p-2 font-mono text-[10.5px] text-paper-dim">
+            {CHAMPS_PLACES}
+          </pre>
+          <p className="mt-1 text-[11px] text-paper-faint">
+            ⚠ Payante, et plafonnée à 5 avis par établissement. Vérifie le tarif et les quotas gratuits avant de lancer
+            1 000 requêtes — ils changent, et je n&apos;ai pas pu les vérifier d&apos;ici.
+          </p>
         </details>
       )}
 

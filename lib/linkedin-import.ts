@@ -17,7 +17,7 @@ import { qualifier, trierLot, type Ciblage, type ProfilLinkedin } from "./linked
  *
  * De ce que l'opérateur a sous la main : un export de Sales Navigator, un
  * tableur monté à la main, ou un relevé de pages publiques par un outil
- * externe (voir `docs/SOURCING-LINKEDIN.md`). Ce module ne va RIEN chercher :
+ * externe (voir `docs/SOURCING.md`). Ce module ne va RIEN chercher :
  * il ne fait pas de requête, ne détient aucun identifiant et n'ouvre aucun
  * navigateur. Il reçoit du texte, il en fait des fiches.
  *

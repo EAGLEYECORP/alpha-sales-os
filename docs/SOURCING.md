@@ -1,4 +1,9 @@
-# Sourcer des profils LinkedIn — ce qui est branchable, et ce qui ne l'est pas
+# Sourcer — ce qui est branchable, et ce qui ne l'est pas
+
+> Deux canaux, deux sourcings : **LinkedIn** (des personnes, pour les inviter)
+> et **le terrain** (des entreprises, pour les appeler). Ce document couvre les
+> deux, parce que la règle qui les gouverne est la même : *la collecte reste
+> dehors, l'app reçoit du texte et trie.*
 
 > Où trouver les profils, comment les faire entrer, et pourquoi une partie de
 > l'outillage disponible est écartée alors qu'elle marche.
@@ -168,3 +173,89 @@ tourné. « 30 % d'acceptation » traîne partout et a l'air sérieux ; ce chiff
 ne vient d'aucune campagne de cette maison, sur aucune de ces verticales, avec
 ce message. La question qui se tranche vraiment est l'inverse : combien de
 rendez-vous justifient 200 invitations relues à la main.
+
+
+---
+
+# Sourcer du terrain — les 1 000 numéros
+
+## Ce qu'Agent Reach ne fait PAS
+
+**Agent Reach n'a pas de canal Google Maps.** Dix-neuf canaux (web, YouTube,
+RSS, GitHub, X, Reddit, Facebook, Instagram, Xiaohongshu, LinkedIn, V2EX,
+Bilibili, Xueqiu, Xiaoyuzhou, recherche Exa…), aucun pour Maps. La seule
+mention de Maps dans le dépôt est dans un **encart sponsor** pour BrowserAct —
+un produit tiers payant, pas une capacité de l'outil.
+
+Ce qu'il a et qui pourrait servir de loin :
+
+| Canal | Ce que ça donne ici |
+|---|---|
+| `web.py` (Jina Reader) | lit une page publique — mais Maps est rendu en JS, ses avis sont derrière une interaction, et `web.py` embarque une détection d'anti-bot parce que ces pages bloquent |
+| `exa_search.py` | recherche sémantique — utile pour trouver des entreprises, pas pour en extraire téléphone + avis structurés |
+
+**Verdict : Agent Reach ne résout pas ce problème.** Il reste bon pour ce qu'on
+lui a gardé (lecture de pages publiques LinkedIn), pas pour construire une
+liste d'appels.
+
+## Aspirer Google Maps : non, et pour la même raison que LinkedIn
+
+Le scraping des pages Maps viole les conditions d'utilisation de Google. C'est
+exactement la catégorie du backend LinkedIn à session qu'on a refusé — refuser
+l'un et faire l'autre serait une doctrine à géométrie variable.
+
+## L'API Places — la voie propre
+
+Elle rend précisément ce dont le tri a besoin, **texte des avis compris** :
+
+```
+places.displayName,places.primaryTypeDisplayName,places.shortFormattedAddress,
+places.nationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,
+places.regularOpeningHours.weekdayDescriptions,places.reviews
+```
+
+`reviews` est le champ non négociable : c'est lui qui porte la plainte
+d'injoignabilité, le signal qui pèse plus que tous les autres.
+
+**Appels → Alimenter la file → colle la réponse JSON telle quelle.** Le format
+est reconnu tout seul (une réponse Places commence par une accolade et porte
+`places` / `displayName`) ; aucune case à cocher, aucune clé Google ne transite
+par l'app.
+
+⚠ Trois réserves, à vérifier avant de lancer 1 000 requêtes :
+- l'API est **payante**, et facturée au champ demandé — réclamer tout coûte
+  plus cher pour rien ;
+- elle plafonne à **5 avis par établissement** ;
+- le tarif et les quotas gratuits changent régulièrement. **Je n'ai pas pu les
+  vérifier** : le proxy de développement n'atteint pas Google.
+
+## Ce que le tri cherche, et qui n'est pas un métier
+
+Un **volume de demandes qui se perd**. Le déclencheur de la marche 2 de
+l'ESCALIER, pas un secteur — un garage sans clients ne l'a pas plus qu'un
+cabinet d'avocat.
+
+| Signal | Poids |
+|---|---|
+| Un avis dit « impossible de les joindre » | **le plus fort** — le prospect a écrit l'ouverture à ta place |
+| Volume d'avis élevé | fort — proxy de la demande, **pas une mesure des appels** |
+| Fermé le midi ou le week-end | moyen — les appels de ces heures sont perdus par construction |
+| Verticale du playbook reconnue | moyen |
+| Excellente note | moyen — elle ne parle que des clients qui les ont EUS au téléphone |
+
+Trois exclusions sèches que le score ne rattrape pas : **pas de numéro
+composable** (c'est une liste d'appels), **enseigne nationale ou franchise**
+(téléphone mutualisé, décision ailleurs), **déjà équipé d'un standard**
+(l'offre n'a plus d'objet).
+
+## Le plafond de sollicitations
+
+`planifierAppels` alerte au-delà de **4 tentatives**. Le décret n° 2022-1313
+plafonne le démarchage à 4 sollicitations par consommateur sur 30 jours
+glissants. Il vise le B2C — mais un artisan en nom propre sur sa ligne
+personnelle est exactement la zone grise, et c'est nous qui portons le risque
+sur une liste mêlée.
+
+⚠ **À arbitrer avec ScintIA** : leur cadence Callflow exigée est de **cinq
+rappels sur deux jours**, soit six contacts. Sur une cible qui bascule en B2C,
+elle est hors des clous.

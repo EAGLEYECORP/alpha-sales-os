@@ -271,7 +271,7 @@ export const STEPS: StepDef[] = [
     title: "Sourcer et TRIER les profils LinkedIn",
     why: "La file LinkedIn ne se remplit pas toute seule : elle part de fiches. Et le tri est le vrai travail — les invitations sont un budget plafonné à la semaine, donc celle dépensée sur un apprenti est celle qui n'ira pas au gérant d'à côté. Alpha ne va rien chercher : il ne détient aucun identifiant LinkedIn, c'est ce qui garantit que ton profil ne se fait pas restreindre.",
     how: [
-      "Relève les profils dehors (export Sales Navigator, tableur, ou lecture de pages publiques — voir docs/SOURCING-LINKEDIN.md).",
+      "Relève les profils dehors (export Sales Navigator, tableur, ou lecture de pages publiques — voir docs/SOURCING.md).",
       "LinkedIn → « Sourcer des profils » → colle le CSV, le TSV ou le JSON.",
       "LIS LES ÉCARTÉS avant d'ajouter : c'est là qu'on découvre qu'une colonne était mal nommée.",
       "Regarde le calendrier annoncé. 200 invitations, ce n'est pas une matinée : c'est plusieurs semaines.",

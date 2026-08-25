@@ -6,7 +6,9 @@ import {
   AVIS_DEMANDE_ELEVEE, ENTETE_TERRAIN, SCORE_MIN_TERRAIN, SOURCES_TERRAIN,
   planifierAppels, qualifierTerrain, trierTerrain, type FicheTerrain,
 } from "../lib/sourcing-terrain";
-import { COLONNES_TERRAIN, importerFiches, parserFiches } from "../lib/sourcing-terrain-import";
+import {
+  CHAMPS_PLACES, COLONNES_TERRAIN, importerFiches, importerPlaces, parserFiches, placeVersFiche,
+} from "../lib/sourcing-terrain-import";
 import { ICP_PAR_CANAL, evaluerSurface, recouvrement } from "../lib/icp-canal";
 import { buildLadder } from "../lib/ladder";
 import { lireTableau, decouper, separateur } from "../lib/tabulaire";
@@ -397,4 +399,81 @@ test("tabulaire — un en-tête illisible le DIT au lieu de rendre un lot vide",
   assert.deepEqual(r.fiches, []);
   assert.match(r.rejets[0].raison, /aucune colonne reconnue/);
   assert.ok(COLONNES_TERRAIN.includes("telephone"));
+});
+
+// ── L'API PLACES ───────────────────────────────────────────────────────
+
+test("places — la réponse imbriquée de l'API devient une fiche exploitable", () => {
+  /**
+   * Le lecteur générique mappe des colonnes PLATES. Places est imbriqué
+   * (`displayName.text`, `reviews[].text.text`) : il lui faut son propre
+   * adaptateur, sinon on bricole des chemins pointés dans un lecteur partagé
+   * par tous les autres usages.
+   */
+  const f = placeVersFiche({
+    displayName: { text: "Carrosserie des Lilas" },
+    primaryTypeDisplayName: { text: "Atelier de carrosserie" },
+    shortFormattedAddress: "12 rue Baraban, 69003 Lyon",
+    nationalPhoneNumber: "04 78 12 34 56",
+    rating: 4.6,
+    userRatingCount: 142,
+    regularOpeningHours: { weekdayDescriptions: ["lundi: 08:00–12:00, 14:00–18:00"] },
+    reviews: [{ text: { text: "Travail nickel." } }],
+  });
+  assert.equal(f.entreprise, "Carrosserie des Lilas");
+  assert.equal(f.ville, "Lyon", "la ville se lit après le code postal");
+  assert.equal(f.telephone, "04 78 12 34 56");
+  assert.equal(f.avis, "142");
+  assert.equal(f.note, "4.6");
+});
+
+test("places — TOUS les avis sont lus, pas seulement le premier", () => {
+  /**
+   * L'API en rend jusqu'à cinq. La plainte d'injoignabilité peut être dans le
+   * quatrième — n'en garder qu'un ferait manquer le signal le plus fort sur
+   * une bonne partie du lot, silencieusement.
+   */
+  const f = placeVersFiche({
+    displayName: { text: "X" },
+    nationalPhoneNumber: "0478000000",
+    reviews: [
+      { text: { text: "Très bon accueil." } },
+      { text: { text: "Prix corrects." } },
+      { text: { text: "Impossible de les joindre au téléphone." } },
+    ],
+  });
+  assert.match(f.extraitsAvis ?? "", /Impossible de les joindre/);
+  assert.ok(qualifierTerrain(f).signaux.some((s) => s.id === "plainte-injoignable"));
+});
+
+test("places — « pas de site » et « champ non demandé » ne sont pas la même chose", () => {
+  // Le premier est un signal (marche visibilité de l'escalier), le second est
+  // une lacune de la requête. Les confondre inventerait un signal.
+  assert.equal(placeVersFiche({ displayName: { text: "X" }, websiteUri: "" }).siteWeb, "");
+  assert.equal(placeVersFiche({ displayName: { text: "X" } }).siteWeb, undefined);
+});
+
+test("places — la réponse complète comme le tableau nu sont acceptés", () => {
+  const place = { displayName: { text: "X" }, nationalPhoneNumber: "0478000000", userRatingCount: 100, reviews: [{ text: { text: "injoignable" } }] };
+  assert.equal(importerPlaces(JSON.stringify({ places: [place] })).retenus.length, 1);
+  assert.equal(importerPlaces(JSON.stringify([place])).retenus.length, 1, "concaténer plusieurs pages à la main donne un tableau nu");
+  assert.equal(importerPlaces("pas du json").resume[0].includes("JSON invalide"), true);
+});
+
+test("places — un masque sans « reviews » est SIGNALÉ, pas subi", () => {
+  /**
+   * Places facture au champ demandé. Oublier `reviews` fait économiser
+   * quelques euros et perd le seul signal qui pèse plus que tous les autres —
+   * et rien ne le dirait sans ce message.
+   */
+  const sansAvis = importerPlaces(JSON.stringify({ places: [{ displayName: { text: "X" }, nationalPhoneNumber: "0478000000", userRatingCount: 200 }] }));
+  assert.ok(sansAvis.resume.some((r) => /masque de champs/.test(r)));
+  assert.match(CHAMPS_PLACES, /places\.reviews/, "le masque fourni doit demander les avis");
+});
+
+test("places — aucun appel réseau : l'adaptateur reçoit du texte", () => {
+  // Même doctrine que partout : la collecte reste dehors, remplaçable. Ici
+  // c'est aussi ce qui garantit qu'aucune clé Google ne transite par l'app.
+  const src = readFileSync(join(process.cwd(), "lib/sourcing-terrain-import.ts"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(src, /\bfetch\s*\(|places\.googleapis\.com|X-Goog-Api-Key/i);
 });
