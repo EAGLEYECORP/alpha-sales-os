@@ -17,6 +17,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { n8nConnected } from "@/lib/n8n";
 import { buildPath, type PathStep } from "@/lib/onboarding-path";
+import { SurfacePreuve } from "@/components/demarrage/surface-preuve";
 import { cn } from "@/lib/utils";
 
 const MANUAL_KEY = "alpha_path_manual";
@@ -209,6 +210,11 @@ export default function DemarragePage() {
           </ul>
         </section>
       ))}
+
+      {/* Ce que trouve un prospect qui cherche notre nom. Ça ne se coche pas
+          tout seul — l'app n'a accès ni au site ni aux réseaux — mais ça se
+          décide ici, avec le reste du démarrage. */}
+      <SurfacePreuve />
 
       <p className="px-1 text-[11px] text-paper-faint">
         Les étapes marquées « vérifiée par ALPHA » se cochent toutes seules à partir de tes données réelles — elles ne

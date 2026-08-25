@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   AVIS_DEMANDE_ELEVEE, ENTETE_TERRAIN, SCORE_MIN_TERRAIN, SOURCES_TERRAIN,
@@ -476,4 +476,39 @@ test("places — aucun appel réseau : l'adaptateur reçoit du texte", () => {
   // c'est aussi ce qui garantit qu'aucune clé Google ne transite par l'app.
   const src = readFileSync(join(process.cwd(), "lib/sourcing-terrain-import.ts"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.doesNotMatch(src, /\bfetch\s*\(|places\.googleapis\.com|X-Goog-Api-Key/i);
+});
+
+test("modules — aucun module de cette passe n'est du code MORT", () => {
+  /**
+   * `lib/icp-canal.ts` a existé un jour entier importé UNIQUEMENT par ses
+   * propres tests : 100 % couvert, et inatteignable depuis l'app. Des tests
+   * verts sur du code que personne n'appelle donnent la sensation d'avoir
+   * livré sans avoir livré — c'est le pire des deux mondes, parce que le
+   * tableau de bord est au vert.
+   *
+   * Ce test balaie les modules livrés récemment et exige qu'au moins un
+   * fichier NON-test les importe.
+   */
+  const modules = [
+    "icp-canal", "sourcing-terrain", "sourcing-terrain-import",
+    "tabulaire", "sync-prospects", "references", "linkedin-plan", "linkedin-ciblage",
+  ];
+  const racine = process.cwd();
+  const sources: string[] = [];
+  const visiter = (rel: string) => {
+    for (const e of readdirSync(join(racine, rel), { withFileTypes: true })) {
+      if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+      const chemin = join(rel, e.name);
+      if (e.isDirectory()) visiter(chemin);
+      else if (/\.(ts|tsx)$/.test(e.name)) sources.push(chemin);
+    }
+  };
+  for (const d of ["lib", "app", "components"]) visiter(d);
+
+  for (const m of modules) {
+    const importeurs = sources.filter(
+      (f) => f !== join("lib", `${m}.ts`) && new RegExp(`from "(@/lib|\\.)/${m}"`).test(readFileSync(join(racine, f), "utf8"))
+    );
+    assert.ok(importeurs.length > 0, `lib/${m}.ts n'est importé par aucun fichier de l'app — c'est du code mort`);
+  }
 });
