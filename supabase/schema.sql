@@ -6,9 +6,24 @@
 -- ─────────────────────────────────────────────────────────────────────
 
 -- Prospects ------------------------------------------------------------
+-- ⚠ DEUX ÉCRIVAINS, DEUX MODÈLES D'ACCÈS, UNE SEULE TABLE.
+--
+--  · le NAVIGATEUR d'un locataire SaaS écrit avec la clé anon + une session
+--    authentifiée : `user_id` est renseigné, la RLS l'isole ;
+--  · le SERVEUR écrit avec le service role, sans session — pour la synchro de
+--    l'opérateur (`/api/sync/prospects`) et pour l'ingestion par clé API
+--    (`/api/v1/prospects`). Ces lignes-là n'ont pas d'utilisateur : elles
+--    portent `proprietaire`, comme la table `propositions`.
+--
+-- `user_id` était NOT NULL, ce qui rendait les écritures serveur IMPOSSIBLES :
+-- les deux routes documentées ne pouvaient pas écrire dans leur propre table.
+-- Il devient nullable. Une ligne sans `user_id` reste invisible aux clients
+-- (les policies RLS comparent à auth.uid()), donc rien ne fuit d'un locataire
+-- à l'autre — seul le service role, qui contourne la RLS, les voit.
 create table if not exists public.prospects (
   id text primary key,
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id uuid references auth.users (id) on delete cascade,
+  proprietaire text not null default 'operateur',
   data jsonb not null,
   -- generated columns for indexing/queries without unpacking jsonb in app code
   stage text generated always as (data->>'stage') stored,
@@ -50,6 +65,8 @@ create table if not exists public.audit_log (
 
 -- Indexes ----------------------------------------------------------------
 create index if not exists prospects_user_stage_idx on public.prospects (user_id, stage);
+-- La synchro et l'orchestrateur lisent par propriétaire, jamais par utilisateur.
+create index if not exists prospects_proprietaire_idx on public.prospects (proprietaire);
 create index if not exists prospects_user_sector_idx on public.prospects (user_id, sector);
 create index if not exists meetings_user_idx on public.meetings (user_id);
 create index if not exists campaigns_user_idx on public.campaigns (user_id);

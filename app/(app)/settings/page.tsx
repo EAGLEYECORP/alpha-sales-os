@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Cable, Cloud, CloudOff, Compass, Download, Eraser, FileSpreadsheet, KeyRound, Link2, Link2Off, Lock, PlugZap, Plus, RefreshCw, RotateCcw, ShieldCheck, Table2, Trash2, Upload, UserCog, Users, Wand2, Webhook } from "lucide-react";
 import Link from "next/link";
 import { useAlpha } from "@/lib/store";
+import { SyncProspects } from "@/components/sync-prospects";
 import {
   pushSnapshot,
   pullSnapshot,
@@ -705,6 +706,12 @@ export default function SettingsPage() {
             </p>
           </div>
         </section>
+
+        {/* La synchro du pipe — juste au-dessus de la config Supabase dont
+            elle dépend, pour qu'on ne cherche pas l'interrupteur ailleurs. */}
+        <div className="lg:col-span-2">
+          <SyncProspects />
+        </div>
 
         {/* Supabase — linkable from the UI */}
         <section className="card p-4 lg:col-span-2">

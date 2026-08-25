@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
+import { PROPRIETAIRE_OPERATEUR } from "@/lib/sync-prospects";
 import { autoriserApi } from "@/lib/api-keys";
 import { vitalSigns } from "@/lib/vital-signs";
 import { statutReel, resumeFile, type Proposition } from "@/lib/propositions";
@@ -53,7 +54,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { data, error } = await db.from("prospects").select("data").limit(2001);
+  /**
+   * ⚠ Restreint au périmètre de l'OPÉRATEUR.
+   *
+   * La requête balayait la table entière. Tant qu'il n'y a qu'un locataire ça
+   * ne se voit pas ; le jour où il y en a deux, l'agent de l'un lit le pipe de
+   * l'autre. Le filtre coûte un index et ferme la porte avant qu'elle serve.
+   */
+  const { data, error } = await db
+    .from("prospects")
+    .select("data")
+    .eq("proprietaire", PROPRIETAIRE_OPERATEUR)
+    .limit(2001);
   if (error) return NextResponse.json({ error: "lecture impossible", detail: error.message }, { status: 500 });
 
   const brut = (data ?? []).map((r) => r.data as Prospect).filter(Boolean);
@@ -65,7 +77,7 @@ export async function GET(req: NextRequest) {
       vu: 0,
       // ⚠ Formulation délibérée : « je ne vois rien » ≠ « rien à faire ».
       avertissement:
-        "Aucun prospect côté serveur. Ce n'est PAS un pipe vide : c'est un pipe invisible. La synchro navigateur → Supabase n'existe pas encore, donc l'orchestrateur ne peut rien observer.",
+        "Aucun prospect côté serveur. Ce n'est PAS un pipe vide : c'est un pipe invisible. La synchro existe (Réglages → Synchro du pipe) mais elle est éteinte, ou elle n'a encore jamais tourné.",
       propositions: { enAttente: 0, aDecider: 0, alertes: 0, expirees: 0 },
     });
   }

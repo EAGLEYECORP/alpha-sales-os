@@ -1,0 +1,201 @@
+import type { Prospect } from "./types";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * SYNCHRO NAVIGATEUR → SERVEUR — rendre le pipe VISIBLE.
+ *
+ * ── LE TROU QUE ÇA BOUCHE ──
+ *
+ * Le CRM vit dans le navigateur (Zustand + localStorage). L'orchestrateur,
+ * lui, lit Supabase. Personne ne remplissait cette table : `/api/v1/etat`
+ * répondait honnêtement « ce n'est PAS un pipe vide, c'est un pipe invisible »
+ * et tout ce qui est bâti autour — MCP, propositions, salle de contrôle —
+ * tournait à vide.
+ *
+ * ── POURQUOI UNE RÉCONCILIATION, ET PAS UN SIMPLE ENVOI ──
+ *
+ * Un envoi qui ne fait qu'ajouter laisse des FANTÔMES : une fiche supprimée
+ * dans le navigateur reste côté serveur, et l'agent propose de relancer
+ * quelqu'un qui n'existe plus. Sur un canal qui écrit à de vraies personnes,
+ * c'est la pire sorte de bug — silencieux, et visible seulement par le
+ * destinataire.
+ *
+ * Le navigateur envoie donc la LISTE COMPLÈTE de ses identifiants (léger) et
+ * seulement les fiches qui ont CHANGÉ (lourd). Le serveur écrit les
+ * changements et supprime ce qui n'est plus dans la liste.
+ *
+ * ── LE DANGER DE CETTE MÉCANIQUE, ET SON GARDE-FOU ──
+ *
+ * Une réconciliation exacte fait qu'un navigateur vide efface le serveur.
+ * localStorage se vide tout seul : navigation privée, nettoyage du cache,
+ * changement d'appareil, quota dépassé. Le jour où ça arrive, la synchro
+ * effacerait tout le pipe côté serveur — sans rien demander à personne.
+ *
+ * D'où `SEUIL_EFFACEMENT` : au-delà d'une certaine proportion supprimée d'un
+ * coup, la synchro REFUSE et demande une confirmation explicite. Perdre une
+ * synchro coûte une minute ; perdre le pipe coûte le travail de six mois.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/** Ce que le serveur rend pour permettre au navigateur de comparer sans tout télécharger. */
+export interface EmpreinteServeur {
+  id: string;
+  /** `updatedAt` de la fiche côté serveur. */
+  maj: string;
+}
+
+export interface PlanSync {
+  /** Fiches à écrire (nouvelles ou modifiées). */
+  aEcrire: Prospect[];
+  /** Identifiants à supprimer côté serveur. */
+  aSupprimer: string[];
+  /** Fiches identiques des deux côtés — rien à faire. */
+  inchangees: number;
+  /** Vrai si le plan efface une part anormale du serveur. */
+  effacementMassif: boolean;
+  /** Ce qu'il faut afficher avant d'exécuter. */
+  resume: string;
+}
+
+/**
+ * Proportion de suppressions au-delà de laquelle on s'arrête pour demander.
+ *
+ * 0,34 n'est pas un chiffre magique : c'est « plus d'un tiers du pipe ». Un
+ * nettoyage normal ne supprime pas un tiers des fiches d'un coup ; un
+ * localStorage vidé, si.
+ */
+export const SEUIL_EFFACEMENT = 0.34;
+
+/** En dessous de ce nombre de fiches côté serveur, le seuil ne s'applique pas. */
+export const PLANCHER_EFFACEMENT = 10;
+
+/**
+ * Compare l'état local et les empreintes serveur, et rend le plan.
+ *
+ * Pur et déterministe : testable sans Supabase, et il rend le MÊME plan deux
+ * fois de suite — une synchro qui change d'avis n'est pas une synchro.
+ */
+export function planifierSync(locaux: Prospect[], serveur: EmpreinteServeur[]): PlanSync {
+  const parId = new Map(serveur.map((e) => [e.id, e.maj]));
+  const idsLocaux = new Set(locaux.map((p) => p.id));
+
+  const aEcrire: Prospect[] = [];
+  let inchangees = 0;
+
+  for (const p of locaux) {
+    const majServeur = parId.get(p.id);
+    // `updatedAt` fait foi. Il est écrit à chaque modification de fiche par le
+    // store ; comparer les objets entiers coûterait plus cher que d'envoyer.
+    if (majServeur === undefined || majServeur !== p.updatedAt) aEcrire.push(p);
+    else inchangees++;
+  }
+
+  const aSupprimer = serveur.filter((e) => !idsLocaux.has(e.id)).map((e) => e.id);
+
+  const effacementMassif =
+    serveur.length >= PLANCHER_EFFACEMENT && aSupprimer.length / serveur.length > SEUIL_EFFACEMENT;
+
+  const resume = effacementMassif
+    ? `⚠ Cette synchro supprimerait ${aSupprimer.length} fiche(s) sur ${serveur.length} côté serveur. C'est le symptôme d'un navigateur qui a perdu ses données, pas d'un nettoyage. Rien n'a été envoyé.`
+    : `${aEcrire.length} à écrire · ${aSupprimer.length} à supprimer · ${inchangees} inchangée(s).`;
+
+  return { aEcrire, aSupprimer, inchangees, effacementMassif, resume };
+}
+
+/**
+ * Taille maximale d'un lot envoyé au serveur.
+ *
+ * Une fiche pèse ~3 Ko. 200 fiches font ~600 Ko de corps de requête, ce qui
+ * passe partout ; 1 000 d'un coup se font refuser par les limites de
+ * plateforme, et l'échec serait total au lieu d'être partiel.
+ */
+export const LOT_MAX = 200;
+
+/** Découpe les écritures en lots envoyables. */
+export function lots<T>(items: T[], taille = LOT_MAX): T[][] {
+  if (taille <= 0) return items.length ? [items] : [];
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += taille) out.push(items.slice(i, i + taille));
+  return out;
+}
+
+/**
+ * Ce qui est RETIRÉ d'une fiche avant de partir vers le serveur.
+ *
+ * ⚠ Pas les coordonnées : elles restent, parce que la base est la NÔTRE et que
+ * c'est `/api/v1/etat` qui les projette hors de la vue de l'agent. Les
+ * supprimer ici rendrait la table inutilisable pour tout le reste (relances,
+ * export, reprise après changement d'appareil).
+ *
+ * Ce qu'on retire, ce sont les PIÈCES JOINTES : un audit en base64 dans une
+ * fiche pèse des mégaoctets, ne sert à rien à l'orchestrateur, et ferait
+ * exploser la taille des lots. On garde leur nombre, pour que la fiche ne
+ * mente pas sur ce qu'elle contient.
+ */
+export function allegerPourSync(p: Prospect): Prospect {
+  const attachments = p.attachments ?? [];
+  if (attachments.length === 0) return p;
+  return {
+    ...p,
+    // `url` porte soit un chemin de stockage Supabase (léger, on le garde),
+    // soit une data URL complète en base64 (lourde, on la coupe). Le nom, la
+    // taille et la date restent : la fiche continue de dire ce qu'elle a.
+    attachments: attachments.map((a) =>
+      a.url?.startsWith("data:") ? { ...a, url: undefined } : a
+    ),
+  };
+}
+
+export interface ResultatSync {
+  ok: boolean;
+  ecrites: number;
+  supprimees: number;
+  /** Message à afficher — succès comme échec. */
+  message: string;
+}
+
+/**
+ * L'état de la synchro, tel qu'il s'affiche.
+ *
+ * `jamais` est un état distinct de `erreur` : « pas encore synchronisé » et
+ * « la synchro a échoué » demandent deux gestes différents, et les confondre
+ * fait chercher une panne là où il n'y a qu'un interrupteur éteint.
+ */
+export type EtatSync = "jamais" | "a-jour" | "en-retard" | "erreur" | "desactivee";
+
+export function etatSync(i: {
+  active: boolean;
+  derniereSync?: string;
+  derniereErreur?: string;
+  aEcrire: number;
+  aSupprimer: number;
+}): { etat: EtatSync; message: string } {
+  if (!i.active) {
+    return {
+      etat: "desactivee",
+      message:
+        "Synchro désactivée. Le pipe reste dans ce navigateur : l'orchestrateur ne voit rien, et rien n'est récupérable depuis un autre appareil.",
+    };
+  }
+  if (i.derniereErreur) return { etat: "erreur", message: i.derniereErreur };
+  if (!i.derniereSync) {
+    return { etat: "jamais", message: "Jamais synchronisé — le serveur ne voit encore rien du pipe." };
+  }
+  const enAttente = i.aEcrire + i.aSupprimer;
+  if (enAttente > 0) {
+    return { etat: "en-retard", message: `${enAttente} changement(s) en attente d'envoi.` };
+  }
+  return { etat: "a-jour", message: `À jour — dernière synchro ${new Date(i.derniereSync).toLocaleString("fr-FR")}.` };
+}
+
+/**
+ * Le propriétaire des lignes écrites côté serveur.
+ *
+ * Même convention que la table `propositions` : les lignes du serveur
+ * appartiennent à « operateur », pas à un utilisateur Supabase authentifié.
+ * C'est ce qui permet au service role d'écrire sans session, et à
+ * `/api/v1/etat` de ne lire QUE ce périmètre au lieu de balayer la table
+ * entière — ce qu'il faisait, et qui aurait mélangé les locataires le jour où
+ * il y en a deux.
+ */
+export const PROPRIETAIRE_OPERATEUR = "operateur";

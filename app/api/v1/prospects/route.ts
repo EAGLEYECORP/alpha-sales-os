@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
 import { normalizeBatch, KNOWN_FIELDS } from "@/lib/api-ingest";
 import { triageImport } from "@/lib/import-triage";
-import { safeEqual } from "@/lib/access";
+import { autoriserApi } from "@/lib/api-keys";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -36,34 +36,24 @@ function serviceClient(): SupabaseClient | null {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-function authorized(req: NextRequest): boolean {
-  const raw = process.env.ALPHA_API_KEYS?.trim();
-  // Pas de clés configurées = la route n'existe pas. Volontaire.
-  if (!raw) return false;
-  const keys = raw.split(",").map((k) => k.trim()).filter(Boolean);
-  if (keys.length === 0) return false;
-  const header = req.headers.get("authorization") ?? "";
-  const provided = header.startsWith("Bearer ") ? header.slice(7).trim() : (req.headers.get("x-api-key") ?? "").trim();
-  if (provided.length === 0) return false;
-  // Comparaison à temps constant sur CHAQUE clé : `includes` s'arrête au
-  // premier caractère différent. On teste tout, sans court-circuit, pour ne
-  // pas signaler par la durée combien de caractères sont justes.
-  let ok = false;
-  for (const k of keys) if (safeEqual(provided, k)) ok = true;
-  return ok;
-}
-
-const unauthorized = () =>
-  NextResponse.json(
-    {
-      error: "non autorisé",
-      why: "Fournis « Authorization: Bearer <clé> ». Les clés valides sont listées dans ALPHA_API_KEYS côté serveur.",
-    },
-    { status: 401 }
-  );
+/**
+ * ⚠ Cette route vérifiait la clé À LA MAIN, sans PORTÉE.
+ *
+ * N'importe quelle clé valide pouvait donc écrire des prospects — y compris
+ * une clé délivrée à un client pour tout autre chose. Le système de portées
+ * existait déjà (`lib/api-keys.ts`) et cette route, la seule qui ÉCRIT, ne
+ * s'en servait pas. Le test « toute route /api/v1 vérifie une portée » passait
+ * parce qu'il acceptait la simple mention de `ALPHA_API_KEYS` : il regardait
+ * le mot, pas le mécanisme.
+ *
+ * `autoriserApi` apporte aussi le PROPRIÉTAIRE de la clé, et c'est lui qui
+ * rend `proprietaire` utile en base : les fiches d'un client lui restent
+ * attribuées, donc la synchro de l'opérateur ne peut pas les supprimer.
+ */
 
 export async function POST(req: NextRequest) {
-  if (!authorized(req)) return unauthorized();
+  const v = autoriserApi(req.headers.get("authorization"), "prospects.write");
+  if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
 
   let body: unknown;
   try {
@@ -138,7 +128,11 @@ export async function POST(req: NextRequest) {
             updatedAt: new Date().toISOString(),
           }
         : incoming;
-      return { id: merged.id, data: merged };
+      // ⚠ `proprietaire` est OBLIGATOIRE : sans lui, la ligne n'est lue ni par
+      // l'orchestrateur ni par la synchro, et l'ingestion écrivait dans le
+      // vide. C'est aussi ce qui empêche une synchro de l'opérateur de
+      // supprimer les fiches entrées par la clé d'un client.
+      return { id: merged.id, proprietaire: v.appelant.proprietaire, data: merged };
     });
 
     const { error } = await db.from("prospects").upsert(rowsToWrite, { onConflict: "id" });
@@ -172,7 +166,10 @@ export async function POST(req: NextRequest) {
 
 /** Documentation vivante : ce que la route accepte. */
 export async function GET(req: NextRequest) {
-  if (!authorized(req)) return unauthorized();
+  // La documentation se lit avec la portée de LECTURE : décrire une route
+  // d'écriture n'exige pas le droit d'écrire.
+  const v = autoriserApi(req.headers.get("authorization"), "prospects.read");
+  if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
   return NextResponse.json({
     version: "v1",
     methode: "POST",

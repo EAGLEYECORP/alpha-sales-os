@@ -147,14 +147,26 @@ alter table public.propositions enable row level security;
 -- Aucune policy : seul le service role (le serveur) y accède.
 ```
 
-⚠ **`prospects` est lue par l'orchestrateur et remplie par personne.** Le CRM
-vit dans le navigateur de l'opérateur. Tant que la synchro n'existe pas,
-`etat_du_pipe` répond honnêtement :
+La table `prospects` du schéma principal (`supabase/schema.sql`) sert aux deux
+écrivains serveur. ⚠ Elle a été corrigée : `user_id` était `NOT NULL`, ce qui
+rendait toute écriture sans session **impossible** — les deux routes
+documentées ne pouvaient pas écrire dans leur propre table. Il est devenu
+nullable, et une colonne `proprietaire` distingue les lignes :
 
-> « Aucun prospect côté serveur. Ce n'est PAS un pipe vide : c'est un pipe
-> invisible. »
+| Écrivain | `proprietaire` | Peut être supprimé par |
+|---|---|---|
+| Synchro de l'opérateur (`/api/sync/prospects`) | `operateur` | l'opérateur |
+| Ingestion par clé API (`/api/v1/prospects`) | le propriétaire de la clé | personne |
 
-C'est le **prérequis n°1** pour que l'orchestration serve à quelque chose.
+**La synchro navigateur → Supabase existe** : *Réglages → Synchro du pipe vers
+le serveur*. Elle est **éteinte par défaut** — l'activer transfère vers le
+serveur les coordonnées de vraies personnes, et c'est une décision.
+
+Elle réconcilie : elle écrit ce qui a changé et supprime ce qui a été supprimé.
+Un garde-fou refuse d'envoyer si plus d'un tiers du pipe serveur disparaîtrait
+d'un coup — c'est le symptôme d'un navigateur qui a perdu ses données, pas d'un
+nettoyage. Le plafond est **revérifié côté route** : le client n'est pas une
+source de vérité sur sa propre prudence.
 
 ---
 
@@ -217,9 +229,9 @@ son pipe, pas à proposer des actions sur le tien.
 
 ## Ce qui reste à faire
 
-- [ ] Créer les tables `propositions` et `prospects`.
-- [ ] **Construire la synchro navigateur → Supabase.** Sans elle,
-      l'orchestrateur est aveugle. C'est le vrai prérequis.
+- [ ] Créer les tables `propositions` et `prospects` (`supabase/schema.sql`).
+- [x] ~~Construire la synchro navigateur → Supabase.~~ Faite. Reste à
+      l'**activer** dans Réglages une fois Supabase branché.
 - [ ] Générer les clés et poser `ALPHA_API_KEYS`.
 - [ ] Brancher le client MCP et vérifier avec le `curl` ci-dessus.
 - [ ] Faire tourner **une** proposition de bout en bout avant d'en automatiser

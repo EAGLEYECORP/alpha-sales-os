@@ -56,6 +56,8 @@ export const CHEMIN_PAR_API: Record<string, string> = {
 
   // ── Le Cerveau ──
   "/api/brain": "/cerveau",
+  // La synchro pousse le pipe de l'opérateur : même porte que le pipeline.
+  "/api/sync": "/pipeline",
   "/api/knowledge": "/cerveau",
   // Le catalogue de références (livres, vidéos) alimente le Cerveau : même porte.
   "/api/references": "/cerveau",
