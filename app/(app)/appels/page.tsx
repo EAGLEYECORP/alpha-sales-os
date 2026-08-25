@@ -18,6 +18,7 @@ import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { HEAT_HEX, heatTone } from "@/lib/closer";
+import { SourcingTerrainPanel } from "@/components/appels/sourcing-terrain-panel";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
 
@@ -100,12 +101,17 @@ export default function AppelsPage() {
           <h1 className="font-display text-2xl font-bold text-paper">Session d&apos;appels</h1>
           <p className="text-sm text-paper-faint">La liste du matin : une verticale, son script, l&apos;angle de chaque prospect.</p>
         </header>
-        <p className="card px-4 py-8 text-center text-sm text-paper-faint">
-          Aucun prospect actif rattaché à une verticale du playbook.{" "}
+        {/* La file vide n'est pas une erreur, c'est l'étape d'avant : on
+            source. Renvoyer vers le pipeline laissait l'opérateur chercher
+            tout seul par où commencer. */}
+        <p className="card px-4 py-6 text-center text-sm text-paper-faint">
+          Aucun prospect actif rattaché à une verticale du playbook — la file d&apos;appels part d&apos;une liste, et
+          la liste se source ci-dessous.{" "}
           <Link href="/pipeline" className="text-bronze-400 hover:underline">
-            Ajoute ou importe des fiches →
+            Voir le pipeline →
           </Link>
         </p>
+        <SourcingTerrainPanel />
       </div>
     );
   }
@@ -129,6 +135,17 @@ export default function AppelsPage() {
           </span>
         </div>
       </header>
+
+      {/* Alimenter la file. Replié : quand il y a du monde à appeler, on
+          appelle — le sourcing est le geste d'AVANT, pas celui du matin. */}
+      <details className="card px-4 py-3">
+        <summary className="cursor-pointer text-[12.5px] text-bronze-400">
+          Alimenter la file — sourcer de nouveaux numéros
+        </summary>
+        <div className="mt-3">
+          <SourcingTerrainPanel />
+        </div>
+      </details>
 
       {/* Verticales */}
       <div className="flex flex-wrap gap-1.5">

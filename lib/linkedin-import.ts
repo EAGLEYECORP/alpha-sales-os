@@ -1,4 +1,5 @@
 import { prospectDefaults } from "./seed";
+import { champsReconnus, lireTableau, type Lecture, type Rejet } from "./tabulaire";
 import type { Prospect, Sector } from "./types";
 import { qualifier, trierLot, type Ciblage, type ProfilLinkedin } from "./linkedin-ciblage";
 
@@ -43,169 +44,34 @@ const ALIAS: Record<string, keyof ProfilLinkedin> = {
   taille: "taille", size: "taille", companysize: "taille", effectif: "taille", employees: "taille", headcount: "taille",
 };
 
-const norm = (s: string) =>
-  s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+export type { Rejet };
 
-export interface Rejet {
-  /** Index dans la source (1 = première ligne de données). */
-  ligne: number;
-  raison: string;
-  /** Ce qui a été lu, tronqué — pour retrouver la ligne dans le fichier. */
-  extrait: string;
-}
-
-export interface ParseProfils {
+/**
+ * Le résultat de lecture, vu du LinkedIn.
+ *
+ * `profils` double `entrees` : le reste du module et l'écran parlent de
+ * profils, pas d'entrées de tableau. Le champ générique reste exposé pour ne
+ * pas avoir deux vérités à maintenir.
+ */
+export interface ParseProfils extends Lecture<ProfilLinkedin> {
   profils: ProfilLinkedin[];
-  rejets: Rejet[];
-  /** Ce que l'intégrateur doit apprendre à la première tentative. */
-  avertissements: string[];
-  /** Le format détecté, dit à l'écran : deviner en silence trompe. */
-  format: "json" | "csv" | "aucun";
 }
 
 /**
  * Détecte le format et rend des profils.
  *
- * Trois formats acceptés parce que ce sont les trois qui arrivent réellement :
- * un tableau JSON (sortie d'outil), du JSONL (une ligne = un objet), et du
- * CSV/TSV avec en-tête (export de tableur, copier-coller de Sales Navigator).
+ * Le lecteur lui-même est mutualisé dans `lib/tabulaire.ts` : le sourcing
+ * terrain a le même besoin sur d'autres colonnes, et deux lecteurs recopiés
+ * divergent au premier bug corrigé d'un seul côté.
  */
 export function parserProfils(texte: string): ParseProfils {
-  const brut = (texte ?? "").trim();
-  if (!brut) return { profils: [], rejets: [], avertissements: [], format: "aucun" };
-
-  if (brut.startsWith("[") || brut.startsWith("{")) return parserJson(brut);
-  return parserTableau(brut);
+  const lu = lireTableau<ProfilLinkedin>(texte, ALIAS);
+  const profils = lu.entrees as ProfilLinkedin[];
+  return { ...lu, entrees: profils, profils };
 }
 
-function depuisEnregistrement(rec: Record<string, unknown>): { profil: ProfilLinkedin; inconnus: string[] } {
-  const profil: ProfilLinkedin = {};
-  const inconnus: string[] = [];
-  for (const [cle, valeur] of Object.entries(rec)) {
-    const champ = ALIAS[norm(cle)];
-    if (!champ) {
-      if (String(valeur ?? "").trim()) inconnus.push(cle);
-      continue;
-    }
-    const v = String(valeur ?? "").trim();
-    if (v) profil[champ] = v;
-  }
-  return { profil, inconnus };
-}
-
-function parserJson(brut: string): ParseProfils {
-  const rejets: Rejet[] = [];
-  const avertissements: string[] = [];
-  let lignes: unknown[];
-
-  try {
-    const parsed = JSON.parse(brut) as unknown;
-    lignes = Array.isArray(parsed) ? parsed : [parsed];
-  } catch {
-    // JSONL : une ligne = un objet. C'est ce que crache la plupart des outils
-    // en flux, et un JSON.parse global échoue dessus.
-    lignes = [];
-    brut.split("\n").forEach((l, i) => {
-      const t = l.trim();
-      if (!t) return;
-      try {
-        lignes.push(JSON.parse(t));
-      } catch {
-        rejets.push({ ligne: i + 1, raison: "ni JSON ni JSONL valide", extrait: t.slice(0, 60) });
-      }
-    });
-  }
-
-  const profils: ProfilLinkedin[] = [];
-  const inconnusVus = new Set<string>();
-
-  lignes.forEach((l, i) => {
-    if (!l || typeof l !== "object" || Array.isArray(l)) {
-      rejets.push({ ligne: i + 1, raison: "entrée qui n'est pas un objet", extrait: JSON.stringify(l).slice(0, 60) });
-      return;
-    }
-    const { profil, inconnus } = depuisEnregistrement(l as Record<string, unknown>);
-    inconnus.forEach((c) => inconnusVus.add(c));
-    if (!Object.keys(profil).length) {
-      rejets.push({ ligne: i + 1, raison: "aucun champ reconnu", extrait: JSON.stringify(l).slice(0, 60) });
-      return;
-    }
-    profils.push(profil);
-  });
-
-  if (inconnusVus.size) {
-    avertissements.push(
-      `Champs ignorés : ${[...inconnusVus].slice(0, 8).join(", ")}. Les noms reconnus sont : ${[...new Set(Object.values(ALIAS))].join(", ")}.`
-    );
-  }
-  return { profils, rejets, avertissements, format: "json" };
-}
-
-/** Découpe une ligne CSV en respectant les guillemets. */
-function decouper(ligne: string, sep: string): string[] {
-  const out: string[] = [];
-  let courant = "";
-  let dansGuillemets = false;
-  for (let i = 0; i < ligne.length; i++) {
-    const c = ligne[i];
-    if (c === '"') {
-      // Un guillemet doublé à l'intérieur est un guillemet littéral.
-      if (dansGuillemets && ligne[i + 1] === '"') { courant += '"'; i++; }
-      else dansGuillemets = !dansGuillemets;
-    } else if (c === sep && !dansGuillemets) {
-      out.push(courant);
-      courant = "";
-    } else courant += c;
-  }
-  out.push(courant);
-  return out.map((c) => c.trim());
-}
-
-function parserTableau(brut: string): ParseProfils {
-  const lignes = brut.split(/\r?\n/).filter((l) => l.trim());
-  const rejets: Rejet[] = [];
-  const avertissements: string[] = [];
-
-  // Le séparateur se déduit de l'en-tête : un copier-coller de tableur arrive
-  // en tabulations, un export en points-virgules ou en virgules.
-  const entete = lignes[0] ?? "";
-  const sep = [["\t", (entete.match(/\t/g) ?? []).length], [";", (entete.match(/;/g) ?? []).length], [",", (entete.match(/,/g) ?? []).length]]
-    .sort((a, b) => Number(b[1]) - Number(a[1]))[0][0] as string;
-
-  const colonnes = decouper(entete, sep).map((c) => ALIAS[norm(c)] ?? null);
-  const reconnues = colonnes.filter(Boolean).length;
-
-  if (reconnues === 0) {
-    return {
-      profils: [],
-      rejets: [{ ligne: 1, raison: "aucune colonne reconnue dans l'en-tête", extrait: entete.slice(0, 80) }],
-      avertissements: [
-        `Première ligne attendue : un en-tête. Noms reconnus : ${[...new Set(Object.values(ALIAS))].join(", ")}.`,
-      ],
-      format: "csv",
-    };
-  }
-
-  const inconnues = decouper(entete, sep).filter((c) => c && !ALIAS[norm(c)]);
-  if (inconnues.length) avertissements.push(`Colonnes ignorées : ${inconnues.slice(0, 8).join(", ")}.`);
-
-  const profils: ProfilLinkedin[] = [];
-  lignes.slice(1).forEach((ligne, i) => {
-    const cellules = decouper(ligne, sep);
-    const profil: ProfilLinkedin = {};
-    colonnes.forEach((champ, j) => {
-      const v = (cellules[j] ?? "").trim();
-      if (champ && v) profil[champ] = v;
-    });
-    if (!Object.keys(profil).length) {
-      rejets.push({ ligne: i + 1, raison: "ligne vide après lecture des colonnes", extrait: ligne.slice(0, 60) });
-      return;
-    }
-    profils.push(profil);
-  });
-
-  return { profils, rejets, avertissements, format: "csv" };
-}
+/** Les noms de colonnes acceptés, pour un message d'aide. */
+export const COLONNES_RECONNUES = champsReconnus(ALIAS);
 
 /**
  * Le métier lu sur le profil, gardé en clair dans les notes.
