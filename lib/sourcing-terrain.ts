@@ -1,6 +1,7 @@
 import { toE164 } from "./voice-script";
-import { verticalForText, type VerticalPlaybook } from "./playbook";
+import { verticalById, verticalForText, type VerticalPlaybook } from "./playbook";
 import { HIGH_DEMAND_PER_WEEK } from "./ladder";
+import { metierDepuisNaf, nomenclaturePerimee } from "./registre-entreprises";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -56,6 +57,14 @@ export interface FicheTerrain {
   extraitsAvis?: string;
   /** Effectif affiché, si la source en donne un. */
   taille?: string;
+  /**
+   * Code APE issu du registre des entreprises, quand la fiche a été croisée.
+   * Il ne se DEVINE pas : il est attribué. C'est pour ça qu'il prime sur la
+   * détection par mots-clés de l'enseigne.
+   */
+  naf?: string;
+  /** SIREN, quand l'appariement au registre est sûr. */
+  siren?: string;
 }
 
 export type ForceSignal = "fort" | "moyen" | "faible";
@@ -187,8 +196,24 @@ export function qualifierTerrain(f: FicheTerrain): CiblageTerrain {
   const exclusions: string[] = [];
 
   const texte = [f.entreprise, f.secteur, f.adresse].filter(Boolean).join(" ");
-  const verticale: VerticalPlaybook | null = verticalForText(texte);
   const avis = f.extraitsAvis ?? "";
+
+  /**
+   * ⚠ LE CODE APE PRIME SUR L'ENSEIGNE.
+   *
+   * `verticalForText` devine à partir des mots : « Carrosserie des Lilas » →
+   * garage. Ça marche souvent, et ça se trompe en silence sur « Les Ateliers
+   * du Rhône » ou « Maison Bernard ». Le code APE, lui, est ATTRIBUÉ — il ne
+   * se devine pas, il se lit.
+   *
+   * Quand la fiche a été croisée avec le registre, on remplace donc une
+   * supposition par un fait. Sans croisement, on retombe sur les mots-clés :
+   * c'est moins bon, et c'est mieux que rien.
+   */
+  const officiel = metierDepuisNaf(f.naf);
+  const verticale: VerticalPlaybook | null = officiel.verticale
+    ? (verticalForText(officiel.verticale) ?? verticalById(officiel.verticale) ?? verticalForText(texte))
+    : verticalForText(texte);
 
   // ── LES EXCLUSIONS SÈCHES ──
   const telephone = f.telephone ? toE164(f.telephone) : null;
@@ -278,13 +303,25 @@ export function qualifierTerrain(f: FicheTerrain): CiblageTerrain {
 
   // ── LA VERTICALE : sait-on lui parler ? ──
   if (verticale) {
-    score += 20;
+    // Un métier CONFIRMÉ par le registre pèse plus qu'un métier deviné : le
+    // script sera juste, et l'ouverture ne se cassera pas sur un contresens.
+    score += officiel.verticale ? 28 : 20;
     signaux.push({
       id: "verticale",
-      label: `Verticale ${verticale.label}`,
-      force: "moyen",
-      fait: verticale.criterion,
+      label: officiel.verticale
+        ? `Verticale ${verticale.label} — confirmée au registre (${officiel.naf})`
+        : `Verticale ${verticale.label}`,
+      force: officiel.verticale ? "fort" : "moyen",
+      fait: officiel.libelle
+        ? `Code APE ${officiel.naf} — ${officiel.libelle}. Métier attribué, pas déduit de l'enseigne.`
+        : verticale.criterion,
     });
+  } else if (f.naf && !officiel.verticale) {
+    // Un code lu mais hors de notre table : ce n'est pas un échec de lecture,
+    // c'est un métier qu'on ne sait pas servir. Le dire évite de le recroiser.
+    manque.push(
+      `code APE ${officiel.naf} hors de nos verticales — métier réel, mais sans playbook chez nous`
+    );
   } else {
     manque.push("métier non reconnu — le script sera générique, donc plus faible");
   }
@@ -362,6 +399,20 @@ export function trierTerrain(fiches: FicheTerrain[]): LotTerrain {
   if (sansAvis > fiches.length / 2 && fiches.length > 0) {
     resume.push(
       `${sansAvis} fiches sans extrait d'avis. C'est le signal le PLUS fort et il est gratuit : relever une phrase par fiche change le tri.`
+    );
+  }
+
+  /**
+   * ⚠ L'alerte qui évite une panne SILENCIEUSE en janvier 2027.
+   *
+   * La table NAF est en rév. 2. Le jour de la bascule vers la NAF 2025, les
+   * codes changent et la table se mettrait à rendre « métier inconnu » sur une
+   * partie du fichier — sans que rien ne le signale, parce qu'un métier non
+   * reconnu est un cas NORMAL du tri.
+   */
+  if (nomenclaturePerimee() && fiches.some((f) => f.naf)) {
+    resume.push(
+      "⚠ La nomenclature NAF 2025 est en vigueur mais la table de correspondance est restée en rév. 2 : les métiers confirmés au registre sont à revérifier."
     );
   }
 
@@ -503,7 +554,7 @@ export const SOURCES_TERRAIN: SourceTerrain[] = [
 
 /** Le gabarit à copier dans un tableur — la première ligne, rien de plus. */
 export const ENTETE_TERRAIN =
-  "entreprise;secteur;ville;telephone;siteWeb;avis;note;horaires;extraitsAvis";
+  "entreprise;secteur;ville;telephone;siteWeb;avis;note;horaires;extraitsAvis;naf;siren";
 
 /** Rappel du seuil de l'escalier, pour l'écran : au-delà, Callflow se déclenche. */
 export const SEUIL_DEMANDE_ESCALIER = HIGH_DEMAND_PER_WEEK;

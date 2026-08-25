@@ -125,6 +125,24 @@ export function SourcingTerrainPanel() {
             ⚠ Payante, et plafonnée à 5 avis par établissement. Vérifie le tarif et les quotas gratuits avant de lancer
             1 000 requêtes — ils changent, et je n&apos;ai pas pu les vérifier d&apos;ici.
           </p>
+          <p className="mt-2 text-[11px] leading-relaxed text-paper-faint">
+            <strong className="text-paper-dim">Croiser avec le registre des entreprises</strong> — une carte donne une
+            enseigne, le registre donne un <strong className="text-paper-dim">code APE attribué</strong>. « Les Ateliers
+            du Rhône » ne dit rien ; <code>43.91B</code> dit « travaux de couverture ». Ajoute une colonne{" "}
+            <code>naf</code> (et <code>siren</code>) à ton tableau : le code prime alors sur la devinette par mots-clés,
+            et le métier devient un fait.
+          </p>
+          <p className="mt-1 text-[11px] text-paper-faint">
+            <a
+              className="text-bronze-400 hover:underline"
+              href="https://recherche-entreprises.api.gouv.fr/docs/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              recherche-entreprises.api.gouv.fr
+            </a>{" "}
+            — gratuite, ouverte, sans clé. Recherche par nom et code postal, rend le code d&apos;activité.
+          </p>
         </details>
       )}
 

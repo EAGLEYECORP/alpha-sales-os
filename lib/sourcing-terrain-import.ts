@@ -38,6 +38,10 @@ const ALIAS: Record<string, keyof FicheTerrain> = {
   extraitsavis: "extraitsAvis", avistexte: "extraitsAvis", commentaires: "extraitsAvis",
   reviewtext: "extraitsAvis", extraits: "extraitsAvis", verbatim: "extraitsAvis",
   taille: "taille", effectif: "taille", employees: "taille", size: "taille",
+  // Croisement avec le registre des entreprises : le code APE prime sur
+  // l'enseigne dans le tri, donc ces deux colonnes valent d'être lues.
+  naf: "naf", ape: "naf", codenaf: "naf", codeape: "naf", activiteprincipale: "naf",
+  siren: "siren", siret: "siren",
 };
 
 export const COLONNES_TERRAIN = champsReconnus(ALIAS);

@@ -12,6 +12,10 @@ import {
 import { ICP_PAR_CANAL, evaluerSurface, recouvrement } from "../lib/icp-canal";
 import { buildLadder } from "../lib/ladder";
 import { lireTableau, decouper, separateur } from "../lib/tabulaire";
+import {
+  BASCULE_NAF_2025, ECRIT_SANS_DEMANDER, apparier, metierDepuisNaf, nafPourVerticale,
+  nomenclaturePerimee, normaliserNom,
+} from "../lib/registre-entreprises";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -511,4 +515,141 @@ test("modules — aucun module de cette passe n'est du code MORT", () => {
     );
     assert.ok(importeurs.length > 0, `lib/${m}.ts n'est importé par aucun fichier de l'app — c'est du code mort`);
   }
+});
+
+// ── LE CROISEMENT AVEC LE REGISTRE ─────────────────────────────────────
+
+test("registre — le code APE PRIME sur l'enseigne", () => {
+  /**
+   * `verticalForText` devine à partir des mots : « Carrosserie des Lilas » →
+   * garage. Ça marche souvent et ça se trompe EN SILENCE sur une enseigne
+   * opaque. Le code APE, lui, est attribué : il ne se devine pas, il se lit.
+   */
+  const opaque: FicheTerrain = {
+    entreprise: "Les Ateliers du Rhône",
+    telephone: "0478000000",
+    avis: "120",
+    adresse: "69003 Lyon",
+    extraitsAvis: "injoignable",
+  };
+  assert.equal(qualifierTerrain(opaque).verticaleId, null, "l'enseigne seule ne dit rien du métier");
+
+  const avecNaf = qualifierTerrain({ ...opaque, naf: "4391B" }); // travaux de couverture
+  assert.equal(avecNaf.verticaleId, "artisan-batiment");
+  assert.ok(avecNaf.score > qualifierTerrain(opaque).score, "un métier confirmé vaut plus qu'un métier deviné");
+  const s = avecNaf.signaux.find((x) => x.id === "verticale");
+  assert.equal(s?.force, "fort");
+  assert.match(s?.label ?? "", /confirmée au registre/);
+});
+
+test("registre — un code hors de nos verticales le DIT au lieu de se taire", () => {
+  // Ce n'est pas un échec de lecture, c'est un métier qu'on ne sait pas
+  // servir. Le dire évite de recroiser la même fiche le mois prochain.
+  const q = qualifierTerrain({ entreprise: "X", telephone: "0478000000", naf: "6201Z" }); // programmation
+  assert.ok(q.manque.some((m) => /hors de nos verticales/.test(m)));
+  assert.equal(q.verticaleId, null);
+});
+
+test("registre — le code se normalise quelle que soit sa forme", () => {
+  for (const brut of ["4520A", "45.20A", "45.20 a", "45-20-A"]) {
+    assert.equal(metierDepuisNaf(brut).naf, "45.20A", `mal normalisé : « ${brut} »`);
+  }
+  assert.equal(metierDepuisNaf("").naf, "");
+  assert.equal(metierDepuisNaf("45").naf, "", "un code tronqué ne se complète pas au hasard");
+});
+
+test("registre — 86.90A est l'ambulance, pas « autres activités de santé »", () => {
+  /**
+   * 86.90 couvre les ambulances ET les laboratoires ET les infirmiers.
+   * Élargir le préfixe enverrait le script « ambulance » à un laboratoire
+   * d'analyses — un contresens dit avec assurance.
+   */
+  assert.equal(metierDepuisNaf("8690A").verticale, "ambulance");
+  assert.equal(metierDepuisNaf("8690B").verticale, "sante-cabinet");
+});
+
+test("registre — la normalisation d'un nom retire la forme juridique", () => {
+  // Une carte affiche « Carrosserie des Lilas », le registre
+  // « CARROSSERIE DES LILAS SARL ». Comparer brut fait échouer un appariement
+  // évident, et renvoie la fiche à la qualification manuelle.
+  assert.equal(normaliserNom("CARROSSERIE DES LILAS SARL"), normaliserNom("Carrosserie des Lilas"));
+  assert.equal(normaliserNom("Ets Bernard & Fils SAS"), "bernard fils");
+});
+
+test("registre — un appariement net est SÛR, et il est motivé", () => {
+  const a = apparier(
+    { entreprise: "Carrosserie des Lilas", adresse: "12 rue Baraban, 69003 Lyon" },
+    [{ nom: "CARROSSERIE DES LILAS SARL", siren: "123456789", naf: "45.20A", codePostal: "69003" }]
+  );
+  assert.equal(a.confiance, "sure");
+  assert.equal(a.candidat?.siren, "123456789");
+  assert.ok(a.pourquoi.length >= 2, "un appariement doit dire CE QUI l'a fait pencher");
+  assert.deepEqual(a.reserves, []);
+});
+
+test("registre — deux candidats plausibles : on NE TRANCHE PAS", () => {
+  /**
+   * Le risque de cet appariement n'est pas de rater, c'est de SE TROMPER.
+   * Rater coûte une minute de qualification manuelle. Se tromper colle un
+   * SIREN et un métier officiel FAUX sur une fiche — avec l'autorité de
+   * l'officiel, donc plus personne ne le remet en cause.
+   */
+  const a = apparier(
+    { entreprise: "Garage Martin", adresse: "69003 Lyon" },
+    [
+      { nom: "GARAGE MARTIN", siren: "111111111", codePostal: "69003" },
+      { nom: "GARAGE MARTIN", siren: "222222222", codePostal: "69003" },
+    ]
+  );
+  assert.equal(a.candidat, null, "aucun SIREN ne doit être choisi au hasard");
+  assert.equal(a.confiance, "douteuse");
+  assert.ok(a.reserves.some((r) => /également plausibles/.test(r)));
+});
+
+test("registre — sans code postal, rien n'est jamais « sûr »", () => {
+  const a = apparier({ entreprise: "Carrosserie des Lilas" }, [
+    { nom: "CARROSSERIE DES LILAS", siren: "1", codePostal: "75001" },
+  ]);
+  assert.notEqual(a.confiance, "sure");
+  assert.ok(a.reserves.some((r) => /code postal/.test(r)));
+  assert.deepEqual(ECRIT_SANS_DEMANDER, ["sure"], "seul un appariement sûr écrit sans demander");
+});
+
+test("registre — un candidat sans rapport n'est pas apparié de force", () => {
+  const a = apparier({ entreprise: "Carrosserie des Lilas", adresse: "69003 Lyon" }, [
+    { nom: "BOULANGERIE DUPONT", siren: "9", codePostal: "13001" },
+  ]);
+  assert.equal(a.candidat, null);
+  assert.equal(a.confiance, "aucune");
+});
+
+test("registre — la table NAF a une DATE DE PÉREMPTION, et elle est connue", () => {
+  /**
+   * La NAF 2025 (décret n° 2025-736) devient la référence au 1er janvier 2027 :
+   * ~3 % des entreprises changent de code. Sans cette alerte, la table se
+   * mettrait à rendre « métier inconnu » sur une partie du fichier — et un
+   * métier non reconnu est un cas NORMAL du tri, donc rien ne le signalerait.
+   */
+  assert.equal(BASCULE_NAF_2025, "2027-01-01");
+  assert.equal(nomenclaturePerimee(new Date("2026-12-31")), false);
+  assert.equal(nomenclaturePerimee(new Date("2027-01-01")), true);
+
+  const lot = trierTerrain([{ entreprise: "X", telephone: "0478000000", avis: "120", naf: "4520A", extraitsAvis: "injoignable" }]);
+  assert.ok(!lot.resume.some((r) => /NAF 2025/.test(r)), "avant la bascule, aucune alerte");
+});
+
+test("registre — cibler un métier ENTIER, pas une enseigne", () => {
+  // C'est l'intérêt du croisement : viser tous les couvreurs d'un
+  // département au lieu d'espérer que l'enseigne dise le métier.
+  const codes = nafPourVerticale("garage-carrosserie");
+  assert.ok(codes.includes("45.20"));
+  assert.ok(codes.length >= 3);
+  assert.deepEqual(nafPourVerticale("metier-inexistant"), []);
+});
+
+test("registre — le module ne collecte RIEN, comme le reste du sourcing", () => {
+  // Un import de 1 000 fiches ne doit pas déclencher 1 000 requêtes depuis le
+  // navigateur de l'opérateur.
+  const src = readFileSync(join(process.cwd(), "lib/registre-entreprises.ts"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(src, /\bfetch\s*\(/);
 });
