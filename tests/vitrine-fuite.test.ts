@@ -303,7 +303,7 @@ test("bundle public — le graphe d'imports n'atteint AUCUN module à prix", () 
  * On part donc de CHAQUE fichier `"use client"` du dépôt, pas seulement des
  * pages publiques.
  */
-const MODULES_SERVEUR = ["lib/bricks", "lib/accounts-commercial", "lib/voice-costs", "lib/knowledge-seed", "lib/business-rules", "lib/pipeline-juillet", "lib/prospects-icp"];
+const MODULES_SERVEUR = ["lib/bricks", "lib/accounts-commercial", "lib/voice-costs", "lib/knowledge-seed", "lib/business-rules", "lib/pipeline-juillet", "lib/prospects-icp", "lib/references-seed"];
 
 /**
  * `lib/pricing` n'est PAS dans cette liste, et c'est un choix, pas un oubli.

@@ -128,6 +128,31 @@ Se tromper de rituel = perdre le deal au dernier mètre.
 - **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
   **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
 
+## Références externes (`lib/references.ts`) — un livre n'est PAS une vérité
+Les sources extérieures (livres, vidéos, cours) entrent dans le Cerveau avec
+trois choses attachées, jamais sans :
+1. **la provenance** (titre, auteur, année) ;
+2. **le niveau de preuve** — `mesure-maison` (constaté sur NOS affaires : la
+   seule catégorie qui mérite le mot « vérité ») · `source-primaire` ·
+   `praticien` (la plupart des livres de vente) · `folklore` (répété partout,
+   sans source — ex. « il faut sept expositions ») ;
+3. **le statut face à la doctrine** — `applicable` · `sous-condition` ·
+   `conflit-doctrine` · `bloque`.
+
+> ⚠ Un statut `conflit-doctrine`, `bloque` ou `sous-condition` **exige une
+> réserve écrite**. Un avertissement sans contenu se fait ignorer, et la leçon
+> s'applique par défaut. C'est ce point-là qui évite l'erreur, pas le volume de
+> citations accumulées.
+
+Les notes de référence sont marquées `[SOURCE EXTERNE — non vérifiée chez nous]`
+dans le contexte IA : la doctrine alimente les prompts, les prompts produisent
+de VRAIS emails. Une phrase de livre ne doit jamais revenir au même rang qu'un
+chiffre mesuré.
+
+**Ce qui reste bloqué tant qu'il n'y a pas de client** : témoignages, logos,
+endossements, « 101 histoires de réussite ». Zéro vente = zéro preuve sociale
+disponible ; l'appliquer quand même fabrique de la preuve inventée.
+
 ## MASTER RAPPEL (`lib/master-rappel.ts` + `lib/vital-signs.ts`)
 Pour chaque prospect, à chaque instant : **signaux vitaux** (prêt à signer ?),
 **fatigue** (saturé ?), **fenêtre** (quand revenir sans l'agacer), **actions

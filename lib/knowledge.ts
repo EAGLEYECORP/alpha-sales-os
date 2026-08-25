@@ -28,7 +28,13 @@ export interface KnowledgeNote {
    * pas comme la doctrine (`playbook`), et l'opérateur doit pouvoir faire le
    * tri d'un coup d'œil : une leçon tirée d'un cas n'est pas une règle.
    */
-  source: "manuel" | "intel" | "debrief" | "playbook" | "auto" | "terrain";
+  /**
+   * `reference` : extraite d'une SOURCE EXTÉRIEURE (livre, vidéo, cours). Elle
+   * porte toujours son en-tête de provenance et son niveau de preuve dans le
+   * corps — voir `lib/references.ts`. C'est la seule source qui n'est pas de
+   * nous : elle ne se cite jamais comme un fait maison.
+   */
+  source: "manuel" | "intel" | "debrief" | "playbook" | "auto" | "terrain" | "reference";
   /**
    * Compte propriétaire de la note. ABSENT = note COMMUNE, visible depuis
    * tous les comptes (la doctrine, les chiffres maison, le routage).
@@ -152,12 +158,24 @@ export function search(query: string, notes: KnowledgeNote[], k = 6): Scored[] {
 }
 
 /** Notes de départ — le socle du Cerveau (offre, chiffres, doctrine de routage). */
-/** Contexte compact des notes récupérées, à injecter dans un prompt IA. */
+/**
+ * Contexte compact des notes récupérées, à injecter dans un prompt IA.
+ *
+ * ⚠ Les notes de source `reference` sont MARQUÉES dans le titre du bloc.
+ *
+ * Elles viennent de livres et de vidéos : ce sont des affirmations de
+ * praticiens, pas des faits mesurés ici. Sans ce marquage, une phrase tirée
+ * d'un livre revient dans un email au même rang qu'un chiffre constaté sur nos
+ * propres affaires — et l'email part sous le nom de Zakaria. Le corps de la
+ * note porte déjà son en-tête de provenance ; ce préfixe est la ceinture en
+ * plus des bretelles, parce que l'erreur, ici, s'envoie.
+ */
 export function contextFromNotes(scored: Scored[], maxChars = 3000): string {
   const blocks: string[] = [];
   let used = 0;
   for (const { note } of scored) {
-    const block = `## ${note.title}\n${note.body.trim()}`;
+    const marque = note.source === "reference" ? " [SOURCE EXTERNE — non vérifiée chez nous]" : "";
+    const block = `## ${note.title}${marque}\n${note.body.trim()}`;
     if (used + block.length > maxChars) break;
     blocks.push(block);
     used += block.length;

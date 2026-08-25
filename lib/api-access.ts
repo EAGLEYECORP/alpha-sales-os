@@ -57,6 +57,8 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // ── Le Cerveau ──
   "/api/brain": "/cerveau",
   "/api/knowledge": "/cerveau",
+  // Le catalogue de références (livres, vidéos) alimente le Cerveau : même porte.
+  "/api/references": "/cerveau",
 
   // ── Audits ──
   "/api/audit": "/audits",

@@ -73,6 +73,7 @@ const INTERNAL = [
   // adresses partenaires, taux par offre). Il ne s'initialise plus depuis le
   // bundle, il se télécharge — pour une session authentifiée seulement.
   "/api/knowledge",
+  "/api/references",
   // Jeux de données RÉELS (pipeline juillet, prospects ICP) : noms, adresses
   // et téléphones d'entreprises tierces. C'est ce qui partait dans le bundle ;
   // ça ne doit pas se contenter de la porte d'accès.
