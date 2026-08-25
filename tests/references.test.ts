@@ -263,3 +263,59 @@ test("référence — les échelles restent courtes et revues à la main", () =>
   assert.ok(STATUTS.length <= 5);
   assert.equal(entete(ref(), ref().lecons[0]).split("\n").length, 2, "l'en-tête tient en deux lignes");
 });
+
+// ── LE CHEMIN QUI COMPTE : DU CERVEAU VERS UN EMAIL RÉEL ───────────────
+
+test("contexte IA — une leçon BLOQUÉE part avec une INTERDICTION, pas une réserve", () => {
+  /**
+   * `contextFromNotes` alimente `brainContext`, qui part dans les prompts de
+   * la boîte de réception — donc dans une réponse réellement envoyée à un
+   * prospect. La recherche étant lexicale, « montre tes témoignages » remonte
+   * dès que le message parle d'avis ou de références.
+   *
+   * « Non vérifiée chez nous » se lit comme une réserve et le modèle applique
+   * quand même. Il faut une interdiction, et la RAISON avec.
+   */
+  const notes = referenceVersNotes(CASHVERTISING);
+  const bloquee = notes.find((n) => n.id === "ref-cashvertising-l16-preuve-sociale")!;
+  const ctx = contextFromNotes([{ note: bloquee, score: 1 }], 5000);
+
+  assert.match(ctx, /\[NE PAS APPLIQUER/);
+  assert.doesNotMatch(ctx, /\[SOURCE EXTERNE/, "l'étiquette faible ne doit pas remplacer l'interdiction");
+  assert.match(ctx, /Aucun client/i, "la raison doit voyager avec l'interdiction");
+});
+
+test("contexte IA — un conflit de doctrine porte la même interdiction", () => {
+  const notes = referenceVersNotes(CASHVERTISING);
+  const conflit = notes.find((n) => n.id === "ref-cashvertising-l11-peur")!;
+  const ctx = contextFromNotes([{ note: conflit, score: 1 }], 5000);
+  assert.match(ctx, /\[NE PAS APPLIQUER/);
+  assert.match(ctx, /interdits à froid/i, "la règle maison heurtée doit être lisible par le modèle");
+});
+
+test("contexte IA — une leçon applicable garde l'étiquette faible", () => {
+  // L'interdiction doit rester RARE pour rester lisible : si tout est interdit,
+  // plus rien ne l'est.
+  const notes = referenceVersNotes(CASHVERTISING);
+  const ok = notes.find((n) => n.id === "ref-cashvertising-l08-specificite")!;
+  const ctx = contextFromNotes([{ note: ok, score: 1 }], 5000);
+  assert.match(ctx, /\[SOURCE EXTERNE — non vérifiée chez nous\]/);
+  assert.doesNotMatch(ctx, /NE PAS APPLIQUER/);
+});
+
+test("contexte IA — les leçons bloquées ne sont PAS retirées du contexte", () => {
+  /**
+   * Choix assumé : on les laisse, interdites et motivées, plutôt que de les
+   * masquer. Un modèle privé de la note réinvente le conseil tout seul depuis
+   * son propre entraînement — « mettez en avant vos témoignages clients » est
+   * une phrase que n'importe quel modèle produit sans aide — et il la produit
+   * alors SANS la réserve qui explique qu'on n'a aucun client.
+   */
+  const notes = referenceVersNotes(CASHVERTISING);
+  const bloquees = notes.filter((n) => n.tags.includes("bloque"));
+  assert.ok(bloquees.length >= 5);
+  const ctx = contextFromNotes(bloquees.map((note) => ({ note, score: 1 })), 20000);
+  for (const n of bloquees) {
+    assert.ok(ctx.includes(n.title), `« ${n.title} » a disparu du contexte`);
+  }
+});

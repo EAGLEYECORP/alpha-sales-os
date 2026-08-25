@@ -159,23 +159,39 @@ export function search(query: string, notes: KnowledgeNote[], k = 6): Scored[] {
 
 /** Notes de départ — le socle du Cerveau (offre, chiffres, doctrine de routage). */
 /**
- * Contexte compact des notes récupérées, à injecter dans un prompt IA.
+ * L'étiquette que porte un bloc dans le contexte IA.
  *
- * ⚠ Les notes de source `reference` sont MARQUÉES dans le titre du bloc.
+ * ⚠ CE N'EST PAS DÉCORATIF, et la nuance entre les deux marques compte.
  *
- * Elles viennent de livres et de vidéos : ce sont des affirmations de
- * praticiens, pas des faits mesurés ici. Sans ce marquage, une phrase tirée
- * d'un livre revient dans un email au même rang qu'un chiffre constaté sur nos
- * propres affaires — et l'email part sous le nom de Zakaria. Le corps de la
- * note porte déjà son en-tête de provenance ; ce préfixe est la ceinture en
- * plus des bretelles, parce que l'erreur, ici, s'envoie.
+ * `contextFromNotes` alimente `brainContext`, qui part dans les prompts de la
+ * boîte de réception, du dossier prospect et de l'agent — c'est-à-dire dans
+ * des messages RÉELLEMENT envoyés sous le nom de l'opérateur.
+ *
+ * Or la recherche est lexicale : une leçon marquée `bloque` (« montre tes
+ * témoignages », « associe-toi à des célébrités ») remonte comme n'importe
+ * quelle autre dès que le message du prospect parle de références ou d'avis.
+ * Dire « non vérifiée chez nous » ne suffit alors pas — ça se lit comme une
+ * réserve, pas comme une interdiction, et le modèle applique quand même.
+ *
+ * Une leçon bloquée ou en conflit part donc avec une INTERDICTION explicite.
+ * On ne la retire pas du contexte : la laisser dedans, interdite et motivée,
+ * vaut mieux que l'absence — sinon le modèle réinvente le conseil tout seul,
+ * depuis son propre entraînement, et sans la réserve qui va avec.
  */
+function etiquette(note: KnowledgeNote): string {
+  if (note.source !== "reference") return "";
+  if (note.tags.includes("bloque") || note.tags.includes("conflit-doctrine")) {
+    return " [NE PAS APPLIQUER — contredit la doctrine ou exige une preuve qu'on n'a pas. Lire la réserve ci-dessous.]";
+  }
+  return " [SOURCE EXTERNE — non vérifiée chez nous]";
+}
+
+/** Contexte compact des notes récupérées, à injecter dans un prompt IA. */
 export function contextFromNotes(scored: Scored[], maxChars = 3000): string {
   const blocks: string[] = [];
   let used = 0;
   for (const { note } of scored) {
-    const marque = note.source === "reference" ? " [SOURCE EXTERNE — non vérifiée chez nous]" : "";
-    const block = `## ${note.title}${marque}\n${note.body.trim()}`;
+    const block = `## ${note.title}${etiquette(note)}\n${note.body.trim()}`;
     if (used + block.length > maxChars) break;
     blocks.push(block);
     used += block.length;
