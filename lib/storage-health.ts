@@ -125,6 +125,73 @@ export function readStorageHealth(prefix = "alpha-"): StorageHealth | null {
   }
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA PROJECTION — savoir AVANT de coller mille lignes, pas après.
+ *
+ * `analyseStorage` constate. Il ne sert à rien à l'instant qui compte : celui
+ * où l'opérateur s'apprête à importer un lot. Le mur se découvrait donc en le
+ * percutant, et une écriture qui rate ne ressemble pas à une panne — l'app
+ * continue d'afficher les fiches, elles disparaissent en fermant l'onglet.
+ *
+ * ⚠ La projection est une ESTIMATION et le dit. Elle multiplie un poids
+ * moyen par le nombre de fiches ; la fusion des doublons et la compression
+ * du navigateur la rendent pessimiste. On préfère cette erreur-là.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface ProjectionImport {
+  /** Octets UTF-16 que ce lot ajouterait, estimés. */
+  ajoutBytes: number;
+  /** Pourcentage du quota APRÈS import. */
+  pctApres: number;
+  niveauApres: StorageLevel;
+  /** Vrai quand l'import ferait franchir le seuil critique. */
+  alerte: boolean;
+  /** Ce qui s'affiche, réserve comprise. */
+  phrase: string;
+}
+
+/** Au-delà, on ne laisse pas coller sans prévenir. */
+export const SEUIL_ALERTE_PCT = 80;
+
+export function projeterImport(
+  sante: StorageHealth | null,
+  fiches: { length: number },
+  octetsParFiche: number
+): ProjectionImport {
+  const n = Math.max(0, fiches.length);
+  // ×2 : localStorage compte en UTF-16, pas en octets JSON.
+  const ajoutBytes = n * Math.max(0, octetsParFiche) * 2;
+
+  if (!sante) {
+    return {
+      ajoutBytes,
+      pctApres: 0,
+      niveauApres: "ok",
+      alerte: false,
+      phrase: `~${Math.round(ajoutBytes / 1024)} Ko ajoutés (estimation). Impossible de mesurer le stockage de ce navigateur — navigation privée, ou stockage désactivé.`,
+    };
+  }
+
+  const apres = sante.usedBytes + ajoutBytes;
+  const pctApres = sante.quotaBytes > 0 ? Math.round((apres / sante.quotaBytes) * 100) : 0;
+  const niveauApres = level(pctApres);
+  const alerte = pctApres >= SEUIL_ALERTE_PCT;
+
+  const combien = ajoutBytes >= 1024 * 1024
+    ? `${(ajoutBytes / 1024 / 1024).toFixed(1)} Mo`
+    : `${Math.round(ajoutBytes / 1024)} Ko`;
+
+  const phrase = alerte
+    ? `⚠ Ce lot ajoute ~${combien} : le stockage passerait de ${sante.usedPct} % à ~${pctApres} % du quota du navigateur. ` +
+      (pctApres >= 100
+        ? "Au-delà de 100 %, plus rien ne s'enregistre — et ça échoue EN SILENCE, l'écran continue d'afficher les fiches jusqu'à ce que tu fermes l'onglet. Active la synchronisation Supabase AVANT de coller ce lot."
+        : "Active la synchronisation Supabase avant, ou importe par lots plus petits. Estimation pessimiste : les doublons fusionnés ne comptent pas.")
+    : `~${combien} ajoutés · stockage ${sante.usedPct} % → ~${pctApres} % du quota. Estimation.`;
+
+  return { ajoutBytes, pctApres, niveauApres, alerte, phrase };
+}
+
 /** Une erreur de quota, quel que soit le navigateur qui la lève. */
 export function isQuotaError(e: unknown): boolean {
   if (!(e instanceof Error)) return false;

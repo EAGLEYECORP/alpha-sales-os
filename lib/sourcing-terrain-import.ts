@@ -56,13 +56,33 @@ export function parserFiches(texte: string): ParseTerrain {
   return { ...lu, entrees: fiches, fiches };
 }
 
+/** Un extrait d'avis plus long que ça n'apporte plus rien au téléphone. */
+const CITATION_MAX = 220;
+
 /**
- * Le métier lu sur la fiche, gardé en clair dans les notes.
+ * ─────────────────────────────────────────────────────────────────────
+ * LES NOTES D'UNE FICHE TERRAIN — des FAITS, pas de la doctrine recopiée.
  *
- * L'enum `Sector` ne compte que cinq valeurs : « carrosserie », « auto-école »
- * ou « régie immobilière » y tomberaient dans « autre » et la fiche perdrait
- * sa verticale. `verticalForProspect` lit les notes — c'est là que le mot doit
- * atterrir, exactement comme le fait déjà l'import CSV.
+ * La version d'avant écrivait `s.fait` pour chaque signal, c'est-à-dire la
+ * PHRASE D'EXPLICATION du signal (« C'est LEUR phrase, pas notre estimation —
+ * utilisable en question, jamais en reproche »). Deux conséquences mesurées :
+ *
+ *  · 825 octets par fiche, soit 47 % du poids d'un prospect, pour recopier
+ *    mille fois le même paragraphe de doctrine. À 1 744 octets la fiche,
+ *    1 000 numéros pèsent ~3,3 Mo en UTF-16 : les deux tiers du quota
+ *    localStorage, avant le Cerveau et les campagnes. Le mur était à ~1 500.
+ *  · Et pendant ce temps, LA PHRASE DU CLIENT — le seul texte qui serve
+ *    vraiment au téléphone, celui qu'on relit avant de composer — n'était
+ *    PAS conservée. On gardait le commentaire du code et on jetait la preuve.
+ *
+ * Ici on ne garde que ce qui ne se recalcule pas : le métier, le SIREN, la
+ * verticale, et la citation brute. Le MÉTIER reste en clair et ce n'est pas
+ * décoratif : l'enum `Sector` ne compte que cinq valeurs, « carrosserie » ou
+ * « régie immobilière » y tomberaient dans « autre », et `verticalForProspect`
+ * lit les notes pour retrouver la verticale. Les explications de signaux se
+ * régénèrent à tout moment par `qualifierTerrain` — elles vivent dans le
+ * code, pas dans mille copies.
+ * ─────────────────────────────────────────────────────────────────────
  */
 function notesDepuisFiche(f: FicheTerrain, c: CiblageTerrain): string {
   const bouts: string[] = [];
@@ -75,7 +95,19 @@ function notesDepuisFiche(f: FicheTerrain, c: CiblageTerrain): string {
    */
   if (f.siren) bouts.push(`SIREN : ${(f.siren ?? "").replace(/\D/g, "").slice(0, 9)}.`);
   if (c.verticaleLabel) bouts.push(`Verticale : ${c.verticaleLabel}.`);
-  for (const s of c.signaux) bouts.push(`${s.label} — ${s.fait}`);
+
+  // LA CITATION. C'est elle qu'on lit trente secondes avant de composer, et
+  // c'est la seule chose ici qui soit irremplaçable : elle ne se recalcule pas.
+  const avis = (f.extraitsAvis ?? "").replace(/\s+/g, " ").trim();
+  if (avis) {
+    const court = avis.length > CITATION_MAX ? `${avis.slice(0, CITATION_MAX - 1).trimEnd()}…` : avis;
+    bouts.push(`Avis client : « ${court.replace(/^["«\s]+|["»\s]+$/g, "")} »`);
+  }
+
+  // Les LABELS des signaux, jamais leurs explications : « Volume de demandes
+  // élevé » suffit à savoir pourquoi la fiche est là ; le paragraphe qui va
+  // avec est dans le playbook.
+  if (c.signaux.length) bouts.push(`Signaux : ${c.signaux.map((s) => s.label).join(" · ")}.`);
   if (c.manque.length) bouts.push(`À vérifier : ${c.manque.join(" · ")}.`);
   return bouts.join(" ");
 }
@@ -158,7 +190,9 @@ export function ficheVersProspect(f: FicheTerrain, c: CiblageTerrain, now = new 
       // Ne se renseigne QUE sur une plainte constatée. Sans plainte, on ne sait
       // rien du volume manqué et inventer un chiffre serait pire que le vide.
       missedCallsPerWeek: plainte ? MANQUES_ESTIMES_SI_PLAINTE : undefined,
-      currentProcess: c.signaux.find((s) => s.id === "trou-horaire")?.fait ?? "",
+      // Le FAIT seul (« fermé sur la pause déjeuner »), pas le paragraphe qui
+      // l'explique : celui-là se régénère, et recopié mille fois il pèse.
+      currentProcess: (c.signaux.find((s) => s.id === "trou-horaire")?.fait ?? "").split(" — ")[0],
       updatedAt: nAvis || plainte ? iso : undefined,
     },
     createdAt: iso,

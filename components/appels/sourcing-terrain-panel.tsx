@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import { ENTETE_TERRAIN, HYPOTHESE_DECROCHE, SOURCES_TERRAIN, planifierAppels } from "@/lib/sourcing-terrain";
 import { CHAMPS_PLACES, importerFiches, importerPlaces } from "@/lib/sourcing-terrain-import";
 import { calibrer, tauxPourPlan } from "@/lib/calibration";
+import { projeterImport, readStorageHealth } from "@/lib/storage-health";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,6 +62,28 @@ export function SourcingTerrainPanel() {
   const plan = useMemo(
     () => (res?.retenus.length ? planifierAppels(res.retenus.length, TENTATIVES, taux.taux) : null),
     [res, taux]
+  );
+
+  /**
+   * Le mur de stockage se voit AVANT de coller, pas après.
+   *
+   * Une écriture localStorage qui échoue ne ressemble pas à une panne : l'app
+   * affiche les fiches normalement, et elles disparaissent en fermant
+   * l'onglet. Mesuré : une fiche terrain pèse ~1,3 Ko, donc ~2,7 Ko de quota
+   * UTF-16 — mille numéros consomment la moitié des 5 Mo du navigateur.
+   */
+  const stockage = useMemo(
+    () =>
+      res?.retenus.length
+        ? projeterImport(
+            readStorageHealth(),
+            res.retenus,
+            Math.round(
+              JSON.stringify(res.retenus.map((r) => r.prospect)).length / Math.max(1, res.retenus.length)
+            )
+          )
+        : null,
+    [res]
   );
 
   const ajouter = () => {
@@ -196,6 +219,19 @@ export function SourcingTerrainPanel() {
                 </p>
               ))}
             </div>
+          )}
+
+          {stockage && (
+            <p
+              className={cn(
+                "mt-2 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed",
+                stockage.alerte
+                  ? "border-signal-red/50 bg-signal-red/5 text-signal-red"
+                  : "border-ink-700 text-paper-faint"
+              )}
+            >
+              {stockage.phrase}
+            </p>
           )}
 
           {res.retenus.length > 0 && (

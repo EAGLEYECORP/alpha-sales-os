@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { projeterImport } from "../lib/storage-health";
 import {
   AVIS_DEMANDE_ELEVEE, ENTETE_TERRAIN, SCORE_MIN_TERRAIN, SOURCES_TERRAIN,
   planifierAppels, qualifierTerrain, trierTerrain, type FicheTerrain,
@@ -739,4 +740,72 @@ test("flux — la fiche terrain déclenche bien la marche Callflow de l'ESCALIER
   const escalier = buildLadder(p);
   assert.ok(escalier.rungs.some((r) => r.id === "callflow"), "la marche Callflow doit se déclencher");
   assert.equal(escalier.entry?.accountId, "scintia", "et elle revient à ScintIA");
+});
+
+// ─────────── LE POIDS D'UNE FICHE, ET LE MUR DE STOCKAGE ───────────
+
+test("terrain — les notes gardent la PHRASE DU CLIENT, pas la doctrine", () => {
+  /**
+   * L'ancienne version écrivait `s.fait` pour chaque signal, c'est-à-dire le
+   * paragraphe d'explication du playbook — recopié dans chaque fiche. Et la
+   * seule chose qui serve au téléphone, l'avis brut, était jetée.
+   */
+  const r = importerFiches(
+    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie;Lyon 3e;04 78 12 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre, j'ai appelé trois fois";45.20A;123456789`
+  );
+  const notes = r.retenus[0].prospect.notes;
+  assert.match(notes, /impossible de les joindre/, "l'avis du client doit être conservé");
+  assert.doesNotMatch(notes, /utilisable en question, jamais en reproche/, "la doctrine ne se recopie pas par fiche");
+  assert.doesNotMatch(notes, /perdus par construction/, "idem pour l'explication du trou horaire");
+  // Les faits qui ne se recalculent pas restent.
+  assert.match(notes, /SIREN : 123456789/);
+  assert.match(notes, /Métier : carrosserie/);
+});
+
+test("terrain — une fiche reste sous le poids qui rend 1 000 numéros tenables", () => {
+  const r = importerFiches(
+    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie automobile;Lyon 3e;04 78 12 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre, j'ai appelé trois fois et personne ne répond jamais au téléphone";45.20A;123456789`
+  );
+  const octets = JSON.stringify(r.retenus[0].prospect).length;
+  // 1 500 octets × 2 (UTF-16) × 1 000 fiches = 3 Mo, sur un quota de 5 Mo.
+  // Au-delà, l'objectif de 1 000 numéros ne tient plus dans le navigateur.
+  assert.ok(octets < 1500, `${octets} octets par fiche — le mur localStorage se rapproche`);
+});
+
+test("terrain — un avis très long est coupé, pas stocké en entier", () => {
+  const pave = "impossible de les joindre. ".repeat(40);
+  const r = importerFiches(
+    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie;Lyon;04 78 12 34 56;;142;4,6;;"${pave}";45.20A;123456789`
+  );
+  const notes = r.retenus[0].prospect.notes;
+  assert.ok(notes.length < 700, `${notes.length} caractères de notes`);
+  assert.match(notes, /…/, "la coupure doit se voir");
+});
+
+test("stockage — la projection prévient AVANT de coller, et se tait quand tout va bien", () => {
+  const sante = { usedBytes: 1_000_000, quotaBytes: 5 * 1024 * 1024, usedPct: 19, level: "ok" as const, message: "" };
+
+  const petit = projeterImport(sante, { length: 50 }, 1300);
+  assert.equal(petit.alerte, false);
+  assert.match(petit.phrase, /Estimation/, "un chiffre estimé se présente comme tel");
+
+  const gros = projeterImport(sante, { length: 1500 }, 1300);
+  assert.equal(gros.alerte, true, `${gros.pctApres} % après import : il faut prévenir`);
+  assert.match(gros.phrase, /Supabase/, "l'alerte doit dire QUOI faire, pas seulement s'alarmer");
+
+  const enorme = projeterImport(sante, { length: 4000 }, 1300);
+  assert.ok(enorme.pctApres >= 100);
+  assert.match(enorme.phrase, /EN SILENCE/, "l'échec silencieux est le vrai danger, il doit être nommé");
+});
+
+test("stockage — sans mesure possible, on ne prétend pas connaître le quota", () => {
+  const p = projeterImport(null, { length: 1000 }, 1300);
+  assert.equal(p.alerte, false, "on n'alarme pas sur un chiffre qu'on n'a pas");
+  assert.equal(p.pctApres, 0);
+  assert.match(p.phrase, /Impossible de mesurer/);
+});
+
+test("stockage — le panneau projette avant l'import", () => {
+  const src = readFileSync(join(process.cwd(), "components/appels/sourcing-terrain-panel.tsx"), "utf8");
+  assert.ok(src.includes("projeterImport"), "le panneau doit annoncer le coût du lot avant le bouton");
 });
