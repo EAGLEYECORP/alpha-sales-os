@@ -244,8 +244,39 @@ def build_llm():
     sans endpoint serveur — il ne sert qu'au bouton « Écouter » du web. Ne cherche
     pas d'« URL Puter » pour l'agent : il n'y en a pas.
     """
-    base_url = os.getenv("VOICE_BASE_URL", "https://integrate.api.nvidia.com/v1").strip()
-    model = os.getenv("VOICE_MODEL", "openai/gpt-oss-20b").strip()
+    # ── L'ORDRE DES FOURNISSEURS : OpenAI D'ABORD, NVIDIA EN REPLI ──
+    #
+    # Deux raisons, une mesurée et une contractuelle.
+    #
+    #  1. TERRAIN : sur un vrai appel entrant, la conversation servie par
+    #     OpenAI est nettement plus fluide que celle du NIM gratuit. Le tier
+    #     gratuit NVIDIA met les requêtes EN FILE quand la charge monte, et
+    #     une seconde d'attente au milieu d'une phrase s'entend.
+    #  2. LICENCE : l'accès gratuit build.nvidia.com est réservé au
+    #     développement, aux tests et à l'évaluation. Servir des appels
+    #     CLIENTS avec exige NVIDIA AI Enterprise. Le repli gratuit reste
+    #     donc bon pour la mise au point, jamais pour la production facturée.
+    #
+    # Le choix se DÉDUIT des clés présentes — pas d'un drapeau à penser à
+    # basculer le jour du lancement. `VOICE_BASE_URL` reste prioritaire pour
+    # forcer la main (Groq, Cerebras, Ollama…).
+    forced = os.getenv("VOICE_BASE_URL", "").strip()
+    # `VOICE_API_KEY` est la clé GÉNÉRIQUE : elle peut viser Groq (gsk_…),
+    # NVIDIA (nvapi-…) ou autre. La prendre pour un signal « OpenAI » enverrait
+    # une clé Groq à api.openai.com. Seul le préfixe OpenAI (sk-) compte ici.
+    generique = os.getenv("VOICE_API_KEY", "").strip()
+    a_openai = bool(os.getenv("OPENAI_API_KEY", "").strip()) or generique.startswith("sk-")
+    base_url = forced or (
+        "https://api.openai.com/v1" if a_openai else "https://integrate.api.nvidia.com/v1"
+    )
+    # Le modèle par défaut suit l'endpoint : un id namespacé (« openai/… »)
+    # envoyé à api.openai.com rend un 404, et l'inverse aussi.
+    defaut_modele = "gpt-4o-mini" if "openai.com" in base_url.lower() else "openai/gpt-oss-20b"
+    # ⚠ `VOICE_MODEL=` (déclarée VIDE dans .env) n'est PAS une variable absente :
+    # `os.getenv(x, defaut)` rend alors "" et non le défaut. L'agent partait
+    # avec un modèle vide → 400 du fournisseur, appel mort. On retombe donc sur
+    # le défaut aussi bien pour l'absence que pour la chaîne vide.
+    model = (os.getenv("VOICE_MODEL") or "").strip() or defaut_modele
     host = base_url.lower()
     is_local = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0"))
 
@@ -490,27 +521,88 @@ async def entrypoint(ctx: JobContext) -> None:
         except Exception as e:  # noqa: BLE001 — jamais casser l'appel
             logger.debug("Tour non journalisé : %s", e)
 
+    # ─────────────────────────────────────────────────────────────────
+    # LA FIN DE L'APPEL SE DÉCLARE À LA FIN DE L'APPEL.
+    #
+    # ⚠ DEUX DÉFAUTS CORRIGÉS ICI, et ils se voyaient au téléphone.
+    #
+    #  1. `end` PARTAIT TROP TÔT. L'ancienne version postait
+    #     `end(outcome="repondu")` juste après `generate_reply()`, c'est-à-dire
+    #     dès la PREMIÈRE réponse de l'agent — alors que la conversation
+    #     continue. Conséquences en chaîne : la session passait en
+    #     « terminee » côté CRM pendant que la personne parlait encore, l'écran
+    #     Live Assist arrêtait de suivre l'appel en cours, et surtout
+    #     `applyOutcome` réconciliait l'événement de timeline AVANT la fin —
+    #     donc un « ne me rappelez plus » prononcé ensuite n'était plus
+    #     appliqué. L'appel avait l'air coupé alors qu'il tournait toujours.
+    #
+    #     La fin réelle, c'est l'arrêt du job (l'interlocuteur a raccroché, la
+    #     room se ferme). D'où le callback d'extinction.
+    #
+    #  2. UNE ERREUR RACCROCHAIT. Le `raise` faisait tomber le job : la
+    #     personne au bout du fil entendait un silence puis la tonalité, sans
+    #     un mot. Un LLM qui répond 429, une TTS à court de crédit, un
+    #     hoquet réseau — tout coupait l'appel. Maintenant l'incident est
+    #     journalisé, l'agent le DIT, et la session reste ouverte : le tour de
+    #     parole suivant relance un appel au modèle, qui passe souvent.
+    # ─────────────────────────────────────────────────────────────────
+    resultat: dict[str, str | None] = {"outcome": None, "error": None}
+
+    async def _cloturer(*_args) -> None:
+        """Poste `end` au vrai raccroché. Ne lève JAMAIS : on est en extinction."""
+        try:
+            await reporter.end(outcome=resultat["outcome"], error=resultat["error"])
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Clôture de session non journalisée : %s", e)
+
+    ctx.add_shutdown_callback(_cloturer)
+
+    # Démarrage de la pile audio. Si CELUI-CI échoue, rien ne fonctionne et il
+    # n'y a pas d'appel à sauver : on relance.
     try:
         await session.start(
             room=ctx.room,
             agent=agent,
             room_input_options=RoomInputOptions(),
         )
+    except Exception as e:  # noqa: BLE001
+        resultat["error"] = f"démarrage de session : {e}"
+        logger.error("Alpha Voice — la session n'a pas démarré (%s) : %s", company, e, exc_info=True)
+        raise
 
+    try:
         # ── LA divulgation — prononcée par le code, pas par le modèle ──
         #
         # allow_interruptions=False : même si l'interlocuteur parle en même
         # temps, la phrase va au bout. C'est ce qui rend l'obligation tenue.
         await session.say(first_sentence(script), allow_interruptions=False)
 
+        # La divulgation est passée : quelqu'un est au bout du fil. C'est le
+        # moment où le résultat devient « repondu » — mais il ne sera POSTÉ
+        # qu'au raccroché.
+        resultat["outcome"] = "repondu"
+
         # Le modèle prend la main ensuite, avec le script en instructions.
         await session.generate_reply()
-    except Exception as e:  # noqa: BLE001
-        await reporter.end(outcome=None, error=str(e))
-        raise
-    else:
-        # L'agent a parlé et rendu la main : quelqu'un était bien au bout du fil.
-        await reporter.end(outcome="repondu")
+    except Exception as e:  # noqa: BLE001 — un incident ne doit pas raccrocher
+        resultat["error"] = str(e)
+        logger.error(
+            "Alpha Voice — incident pendant l'appel (%s) : %s. "
+            "L'appel CONTINUE ; regarde ce message pour la cause exacte "
+            "(429 = quota, 404 = modèle inconnu, timeout = fournisseur lent).",
+            company, e, exc_info=True,
+        )
+        # Ne jamais laisser un silence : la personne doit entendre quelque
+        # chose. Phrase neutre — elle ne prétend pas être un humain (art. 50).
+        try:
+            await session.say(
+                "Pardon, j'ai eu une coupure technique. Je vous écoute.",
+                allow_interruptions=True,
+            )
+        except Exception as e2:  # noqa: BLE001
+            # Là, même la voix est morte : il n'y a plus rien à sauver.
+            logger.error("Alpha Voice — la voix ne répond plus non plus : %s", e2)
+            raise
 
 
 if __name__ == "__main__":
