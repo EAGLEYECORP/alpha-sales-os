@@ -190,9 +190,42 @@ Règles dures :
   jours ; saturé → silence de 7-21 j puis **raison NEUVE** (jamais « je me
   permets de relancer »).
 - Le compteur de saturation **repart à zéro dès qu'il répond**.
-- 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré).
+- 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré)…
+  **sauf s'il OUVRE** (`lib/reactivite.ts`) : là le canal passe, c'est la
+  DEMANDE qui coince. Changer de registre jetterait le seul canal dont on a
+  la preuve qu'il arrive.
 - Jamais de prix avant la démo. Jamais de closing sur un vital au rouge.
   Jamais doubler un RDV déjà calé.
+
+## LA BOUCLE — la sortie doit revenir corriger l'entrée
+Le flux allait dans un seul sens : sourcing → tri → appel → résultat écrit →
+plus rien. Chaque module était juste, et la chaîne ne bouclait pas. Les cinq
+arcs de retour sont branchés ; ils se protègent par
+`tests/boucle-terrain.test.ts`, qui suit la chaîne entière.
+
+1. **Résultat d'appel → cadence.** `RESULTATS_MANUELS` (`lib/call-outcome.ts`)
+   est la SEULE source du texte écrit à la main, et l'aller-retour
+   résultat → texte → résultat est testé ligne par ligne. Écrire un résumé
+   d'appel ailleurs casse le test — c'est voulu.
+2. **Résultat d'appel → poids du tri.** `lib/calibration.ts` mesure ; il ne
+   corrige rien tout seul.
+3. **Débrief / objection / perte → Cerveau → file d'appels** du même métier
+   (`lib/lecons-terrain.ts`), verticale identifiée par **tag**, jamais par
+   ressemblance de mots.
+4. **Cible → plafond légal**, lu de façon identique par l'autopilote et par le
+   plan humain (`cibleDepuisProspect`).
+5. **Ouvertures / clics → plan de comms** (`lib/reactivite.ts`).
+
+> ⚠ **Les trois règles qui empêchent la boucle de fabriquer de la fausse
+> science** — elles valent pour tout nouveau module de mesure :
+> · **zéro donnée → zéro chiffre.** `source: "aucune"`, `valeur: null`. Un
+>   `0 %` se lit comme un résultat ; l'angle mort se DIT.
+> · **jamais un taux nu** : dénominateur + intervalle de Wilson à 95 %, et la
+>   réserve qui va avec (un taux d'ouverture est un *plancher*, pas une mesure).
+> · **aucun poids ne s'auto-corrige.** Sur quarante appels, un ajustement
+>   automatique apprend le bruit et le grave dans le tri. Le module rend un
+>   verdict et nomme le fichier ; la constante se change à la main, et ça se
+>   voit dans un diff.
 
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
