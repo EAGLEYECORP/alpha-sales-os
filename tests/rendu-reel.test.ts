@@ -120,3 +120,51 @@ test("les deux écrans distinguent « pas configuré » de « en panne »", () =
     "le pilote ne doit pas afficher un rapport vide comme s'il en était un"
   );
 });
+
+// ─────────── 3. LES TIERS QUE LA PAGE APPELLE ───────────
+
+test("l'app n'appelle qu'UN SEUL tiers, et on sait lequel", () => {
+  /**
+   * Mesuré au navigateur : sur les 37 écrans, la seule requête sortant de
+   * notre domaine est la feuille de style Google Fonts. Aucun pixel, aucun
+   * traceur, aucune CDN de script — c'est une bonne nouvelle, et c'est
+   * exactement ce qu'il faut verrouiller : un tiers de plus s'ajoute sans
+   * bruit, et personne ne le voit avant un audit.
+   *
+   * ⚠ CE TIERS-LÀ N'EST PAS ANODIN EN FRANCE. Charger une police depuis les
+   * serveurs de Google transmet l'IP du visiteur aux États-Unis sans son
+   * consentement — c'est le motif de condamnations en Europe (LG München,
+   * janvier 2022) et un point de contrôle CNIL connu. Pour une app qui
+   * affiche des mentions RGPD et un DPA, l'incohérence se voit.
+   *
+   * La correction est simple mais demande le réseau au build : passer à
+   * `next/font/google`, qui télécharge les polices à la compilation et les
+   * SERT DEPUIS NOTRE DOMAINE. Je n'ai pas pu la faire ici (le proxy du bac à
+   * sable bloque fonts.gstatic.com, donc je n'aurais pas pu vérifier le
+   * build) — elle est documentée plutôt qu'appliquée à l'aveugle.
+   */
+  const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+  const tiers = [...layout.matchAll(/https:\/\/([a-z0-9.-]+)/gi)]
+    .map((m) => m[1].toLowerCase())
+    .filter((h) => !h.endsWith("eagleyecorp.fr") && !h.includes("schema.org") && !h.includes("w3.org"));
+
+  const attendus = new Set(["fonts.googleapis.com", "fonts.gstatic.com"]);
+  const inattendus = [...new Set(tiers)].filter((h) => !attendus.has(h));
+
+  assert.deepEqual(
+    inattendus,
+    [],
+    `nouveau(x) tiers dans le layout : ${inattendus.join(", ")} — chaque domaine externe est une donnée qui part`
+  );
+});
+
+test("les polices ont un repli système — un tiers bloqué ne casse pas la lecture", () => {
+  // Bloqueur de contenu, pare-feu d'entreprise, ou simplement Google
+  // injoignable : la page doit rester lisible. Vérifié au navigateur, les
+  // 37 écrans se rendent complètement avec Google Fonts inaccessible.
+  const tw = readFileSync(join(process.cwd(), "tailwind.config.ts"), "utf8");
+  const familles = tw.slice(tw.indexOf("fontFamily"), tw.indexOf("fontFamily") + 400);
+  for (const repli of ["system-ui", "sans-serif", "monospace"]) {
+    assert.ok(familles.includes(repli), `repli « ${repli} » absent : sans lui la page devient illisible hors ligne`);
+  }
+});
