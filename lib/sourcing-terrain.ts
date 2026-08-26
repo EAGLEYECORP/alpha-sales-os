@@ -163,6 +163,25 @@ export const AVIS_MINIMUM = 8;
 /** Le seuil de rétention. Sous ce score, l'appel coûte plus qu'il ne rapporte. */
 export const SCORE_MIN_TERRAIN = 45;
 
+/**
+ * La note à partir de laquelle le cadrage « on protège » fonctionne.
+ *
+ * Nommée pour que `lib/calibration.ts` teste EXACTEMENT le critère qui a servi
+ * au tri. Un seuil recopié à la main dans les deux fichiers dérive au premier
+ * changement, et la mesure porterait alors sur un autre signal que celui
+ * appliqué — un faux verdict, ce qui est pire que pas de verdict.
+ */
+export const NOTE_EXCELLENTE = 4.3;
+
+/**
+ * Le décroché supposé tant qu'aucune campagne n'a tourné.
+ *
+ * ⚠ Ce n'est PAS une mesure. Il est nommé et exporté pour qu'un seul endroit
+ * porte la supposition, et pour que `tauxPourPlan` puisse le remplacer par un
+ * chiffre réel dès qu'il y en a un.
+ */
+export const HYPOTHESE_DECROCHE = 0.2;
+
 /** Une fermeture le midi ou le week-end = des appels qui tombent dans le vide. */
 function trouDansLesHoraires(horaires?: string): string | null {
   const h = (horaires ?? "").toLowerCase();
@@ -275,7 +294,7 @@ export function qualifierTerrain(f: FicheTerrain): CiblageTerrain {
 
   // ── LA NOTE : elle sert à CADRER l'angle, pas à disqualifier ──
   const note = nombre(f.note);
-  if (note !== null && note >= 4.3 && (nAvis ?? 0) >= AVIS_DEMANDE_MOYENNE) {
+  if (note !== null && note >= NOTE_EXCELLENTE && (nAvis ?? 0) >= AVIS_DEMANDE_MOYENNE) {
     score += 10;
     signaux.push({
       id: "bonne-note",
@@ -457,7 +476,7 @@ export interface PlanAppels {
 export function planifierAppels(
   cibles: number,
   tentativesMax = 4,
-  tauxDecrocheParTentative = 0.2
+  tauxDecrocheParTentative = HYPOTHESE_DECROCHE
 ): PlanAppels {
   const n = Math.max(0, Math.floor(cibles));
   const taux = Math.max(0, Math.min(1, tauxDecrocheParTentative));

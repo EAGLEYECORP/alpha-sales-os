@@ -12,13 +12,16 @@ import {
   PhoneOff,
   RotateCcw,
   ScrollText,
+  ShieldBan,
   Target,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { RESULTATS_MANUELS, type ResultatManuel } from "@/lib/call-outcome";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { HEAT_HEX, heatTone } from "@/lib/closer";
 import { SourcingTerrainPanel } from "@/components/appels/sourcing-terrain-panel";
+import { CalibrationPanel } from "@/components/appels/calibration-panel";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
 
@@ -31,19 +34,20 @@ import { LiveAssist } from "@/components/voice/live-assist";
  * au rechargement, et la Salle des Preuves se remplit toute seule.
  */
 
-type Outcome = "rdv" | "rappeler" | "non" | "messagerie";
+type Outcome = ResultatManuel;
 
 const OUTCOME_META: Record<Outcome, { label: string; icon: typeof PhoneCall; tone: string }> = {
   rdv: { label: "RDV posé", icon: CalendarCheck, tone: "border-signal-green/60 text-signal-green" },
   rappeler: { label: "À rappeler", icon: RotateCcw, tone: "border-signal-amber/60 text-signal-amber" },
   messagerie: { label: "Messagerie", icon: PhoneOff, tone: "border-ink-600 text-paper-faint" },
   non: { label: "Pas intéressé", icon: Ban, tone: "border-signal-red/50 text-signal-red" },
+  opposition: { label: "Ne plus appeler", icon: ShieldBan, tone: "border-signal-red/70 text-signal-red" },
 };
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
 
 export default function AppelsPage() {
-  const { prospects, addEvent, setNextStep, moveStage, logActivity } = useAlpha();
+  const { prospects, addEvent, setNextStep, moveStage, patchProspect, logActivity } = useAlpha();
   const verticals = useMemo(() => verticalsWithTargets(prospects), [prospects]);
   const [activeId, setActiveId] = useState<string>("");
   const [scriptOpen, setScriptOpen] = useState(true);
@@ -67,25 +71,26 @@ export default function AppelsPage() {
   const record = (p: Prospect, outcome: Outcome) => {
     setDone((d) => ({ ...d, [p.id]: outcome }));
 
-    const summaries: Record<Outcome, string> = {
-      rdv: "Appel sortant — RDV obtenu",
-      rappeler: "Appel sortant — à rappeler",
-      messagerie: "Appel sortant — messagerie, pas de réponse",
-      non: "Appel sortant — pas intéressé pour l'instant",
-    };
-    const steps: Record<Outcome, { date: string; action: string }> = {
-      rdv: { date: inDays(2), action: "Confirmer le RDV et préparer l'audit" },
-      rappeler: { date: inDays(3), action: "Rappeler — reprendre là où on s'est arrêtés" },
-      messagerie: { date: inDays(2), action: "Rappeler (messagerie la dernière fois)" },
-      non: { date: inDays(90), action: "Réactivation — le contexte aura changé" },
-    };
+    /**
+     * Le texte NE S'ÉCRIT PAS ici. `RESULTATS_MANUELS` est la seule source, et
+     * chaque phrase y est testée en aller-retour contre `attemptsFromEvents` :
+     * ce que le vendeur clique doit être ce que la cadence relit. Deux phrases
+     * écrites à la main ici étaient relues « sans réponse », et le robot
+     * rappelait des gens qui avaient déjà décroché.
+     */
+    const r = RESULTATS_MANUELS[outcome];
+    const step = { date: inDays(r.dansJours), action: r.action };
 
-    addEvent(p.id, { date: new Date().toISOString(), kind: "appel", summary: summaries[outcome], nextStep: steps[outcome] });
-    setNextStep(p.id, steps[outcome]);
+    addEvent(p.id, { date: new Date().toISOString(), kind: "appel", summary: r.summary, nextStep: step });
+    setNextStep(p.id, step);
     if (outcome === "rdv" && (p.stage === "prospect" || p.stage === "contact")) {
       moveStage(p.id, "audit");
     }
-    logActivity({ kind: "prospect", message: `${summaries[outcome]} — ${p.company}`, prospectId: p.id });
+    // Une opposition doit sortir des campagnes, pas seulement de cette liste.
+    if (outcome === "opposition" && !p.tags.includes("ne-pas-appeler")) {
+      patchProspect(p.id, { tags: [...p.tags, "ne-pas-appeler"] });
+    }
+    logActivity({ kind: "prospect", message: `${r.summary} — ${p.company}`, prospectId: p.id });
   };
 
   const undo = (id: string) =>
@@ -144,6 +149,18 @@ export default function AppelsPage() {
         </summary>
         <div className="mt-3">
           <SourcingTerrainPanel />
+        </div>
+      </details>
+
+      {/* L'arc de retour. Replié lui aussi : on ne calibre pas en composant,
+          on calibre APRÈS la session — mais il vit ici, à côté de la file
+          qu'il juge, pas dans un tableau de bord qu'on n'ouvre jamais. */}
+      <details className="card px-4 py-3">
+        <summary className="cursor-pointer text-[12.5px] text-bronze-400">
+          Ce que le terrain dit du tri — confronter les poids aux appels passés
+        </summary>
+        <div className="mt-3">
+          <CalibrationPanel />
         </div>
       </details>
 

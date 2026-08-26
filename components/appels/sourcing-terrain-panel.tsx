@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, ClipboardPaste, Info, MapPin, PhoneOff, Star, X } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { ENTETE_TERRAIN, SOURCES_TERRAIN, planifierAppels } from "@/lib/sourcing-terrain";
+import { ENTETE_TERRAIN, HYPOTHESE_DECROCHE, SOURCES_TERRAIN, planifierAppels } from "@/lib/sourcing-terrain";
 import { CHAMPS_PLACES, importerFiches, importerPlaces } from "@/lib/sourcing-terrain-import";
+import { calibrer, tauxPourPlan } from "@/lib/calibration";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,9 +29,20 @@ import { cn } from "@/lib/utils";
 const TENTATIVES = 4;
 
 export function SourcingTerrainPanel() {
-  const { importProspects, logActivity } = useAlpha();
+  const { prospects, importProspects, logActivity } = useAlpha();
   const [texte, setTexte] = useState("");
   const [fait, setFait] = useState<string | null>(null);
+
+  /**
+   * LE TAUX VIENT DES APPELS DÉJÀ PASSÉS, pas d'une constante.
+   *
+   * C'est le point où la boucle se referme : tant qu'aucune campagne n'a
+   * tourné, on affiche l'hypothèse EN LA NOMMANT hypothèse ; dès qu'il y a
+   * assez d'appels consignés, le plan bascule sur le chiffre réel sans que
+   * personne ne touche au code. La bascule est décidée dans `tauxPourPlan`,
+   * pas ici — l'affichage n'a pas à arbitrer ce qui est mesuré.
+   */
+  const taux = useMemo(() => tauxPourPlan(calibrer(prospects), HYPOTHESE_DECROCHE), [prospects]);
 
   /**
    * Le format se DÉTECTE, il ne se choisit pas dans un menu.
@@ -47,8 +59,8 @@ export function SourcingTerrainPanel() {
     [texte, estPlaces]
   );
   const plan = useMemo(
-    () => (res?.retenus.length ? planifierAppels(res.retenus.length, TENTATIVES) : null),
-    [res]
+    () => (res?.retenus.length ? planifierAppels(res.retenus.length, TENTATIVES, taux.taux) : null),
+    [res, taux]
   );
 
   const ajouter = () => {
@@ -169,8 +181,14 @@ export function SourcingTerrainPanel() {
                 {plan.cibles} numéro(s) × jusqu&apos;à {TENTATIVES} tentatives = {plan.tentatives} appels composés
               </p>
               <p className="mt-0.5 text-[11.5px] text-bronze-300/85">
-                {plan.tours.map((t) => `T${t.tour} : ${t.composes}`).join(" · ")} — hypothèse de décroché à 20 %,{" "}
-                <strong>jamais mesurée ici</strong>. Le premier taux réel viendra de cette campagne.
+                {plan.tours.map((t) => `T${t.tour} : ${t.composes}`).join(" · ")} —{" "}
+                {taux.source === "mesure" ? (
+                  <strong className="text-signal-green">{taux.phrase}</strong>
+                ) : (
+                  <>
+                    <strong>{taux.phrase}</strong> Le premier taux réel viendra de cette campagne.
+                  </>
+                )}
               </p>
               {plan.alertes.map((a) => (
                 <p key={a} className="mt-1.5 text-[11.5px] leading-relaxed text-signal-amber">

@@ -43,6 +43,78 @@ export function summaryFor(outcome: CallOutcome, extra?: string): string {
   return extra?.trim() ? `${base[outcome]} · ${extra.trim()}` : base[outcome];
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'APPEL PASSÉ À LA MAIN — et pourquoi il vit ICI et pas dans la page.
+ *
+ * La page /appels écrivait ses propres phrases. Deux d'entre elles n'étaient
+ * PAS relues comme prévu par `attemptsFromEvents` :
+ *
+ *   « Appel sortant — à rappeler »               → lu « sans-reponse »
+ *   « Appel sortant — pas intéressé pour l'instant » → lu « sans-reponse »
+ *
+ * Conséquence réelle, vérifiée : `cadenceFor` ne voyait aucun décroché, donc
+ * `campaign-runner` gardait ces fiches dans la file de rappel automatique. Un
+ * prospect qui venait de dire « non merci » à un humain se faisait rappeler
+ * par le robot. La boucle était ouverte au maillon le plus visible.
+ *
+ * La table ci-dessous est la SEULE source du texte écrit à la main, et
+ * l'aller-retour résultat → texte → résultat est testé pour chaque ligne.
+ * Ajouter un bouton dans la page sans passer par ici casse le test.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export type ResultatManuel = "rdv" | "rappeler" | "messagerie" | "non" | "opposition";
+
+export interface LectureManuelle {
+  /** Ce qui s'écrit dans la timeline. */
+  summary: string;
+  /** Ce que `attemptsFromEvents` DOIT en relire. Testé en aller-retour. */
+  lecture: CallOutcome;
+  /** Délai du next step, en jours. */
+  dansJours: number;
+  action: string;
+}
+
+export const RESULTATS_MANUELS: Record<ResultatManuel, LectureManuelle> = {
+  rdv: {
+    summary: "Appel sortant — il a décroché, RDV obtenu",
+    lecture: "repondu",
+    dansJours: 2,
+    action: "Confirmer le RDV et préparer l'audit",
+  },
+  rappeler: {
+    // « décroché » est le mot qui porte la lecture. Sans lui, « à rappeler »
+    // ressemble à un échec d'appel alors que quelqu'un a bien parlé.
+    summary: "Appel sortant — il a décroché, à rappeler plus tard",
+    lecture: "repondu",
+    dansJours: 3,
+    action: "Rappeler — reprendre là où on s'est arrêtés",
+  },
+  messagerie: {
+    summary: "Appel sortant — messagerie, personne au bout",
+    lecture: "sans-reponse",
+    dansJours: 2,
+    action: "Rappeler (messagerie la dernière fois)",
+  },
+  non: {
+    // Un refus n'est PAS une opposition : il autorise encore une réactivation
+    // plus tard. Mais il a répondu, donc la cadence automatique doit s'arrêter.
+    summary: "Appel sortant — il a répondu, pas intéressé pour l'instant",
+    lecture: "repondu",
+    dansJours: 90,
+    action: "Réactivation — le contexte aura changé",
+  },
+  opposition: {
+    // Le bouton qui manquait. Sans lui, « ne me rappelez plus » n'avait aucun
+    // moyen d'être consigné : le seul chemin vers `opposition` passait par une
+    // session vocale automatique.
+    summary: "Appel sortant — opposition : ne plus appeler",
+    lecture: "opposition",
+    dansJours: 0,
+    action: "Ne plus appeler — retirer de toutes les campagnes",
+  },
+};
+
 /** L'événement en attente le plus proche de cette session, s'il existe. */
 function findPending(p: Prospect, sessionStart: string, toleranceMs = 30 * 60_000): TimelineEvent | null {
   const t = new Date(sessionStart).getTime();
