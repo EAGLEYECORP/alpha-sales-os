@@ -8,19 +8,42 @@
 // product's reach from this file.
 import type {
   Activity,
+  Attachment,
   Campaign,
   Competitor,
   ContractInfo,
+  Croyances,
   DeepAudit,
   DeliveryStatus,
   Meeting,
+  NextStep,
   NurtureSequence,
+  Objection,
+  Obstacle,
   Payment,
   Prospect,
+  TimelineEvent,
 } from "./types";
 import { daysAgo, daysAhead } from "./utils";
 
-/** Defaults for fields added over time — applied to every seed prospect. */
+/**
+ * Defaults for fields added over time — applied to every seed prospect.
+ *
+ * ⚠ CE SOCLE EST AUSSI CELUI DE TOUS LES IMPORTS, pas seulement des données de
+ * démo : `normalizeProspect` (lib/store.ts), `ficheVersProspect` (terrain) et
+ * `profilVersProspect` (LinkedIn) le déversent tous avant d'ajouter leurs
+ * champs. Une clé absente ICI est donc absente de CHAQUE fiche importée.
+ *
+ * Il manquait les cinq TABLEAUX : `events`, `objections`, `obstacles`,
+ * `attachments` — plus `croyances`. Conséquence mesurée : après un import
+ * terrain, `construireJournee` plantait sur `p.events[0]` et la page
+ * « Aujourd'hui » — l'écran d'entrée du matin — tombait en écran blanc.
+ * Les modules qui écrivaient `p.events ?? []` survivaient ; les autres non.
+ *
+ * Un tableau vide et un tableau absent doivent se comporter pareil. La règle :
+ * TOUT champ de `Prospect` qui n'est pas optionnel dans le type a sa valeur
+ * neutre ici, et `tests/store.test.ts` le vérifie champ par champ.
+ */
 export const prospectDefaults = {
   likeness: 55,
   problems: [] as string[],
@@ -29,6 +52,15 @@ export const prospectDefaults = {
   payments: [] as Payment[],
   contract: { status: "aucun" } as ContractInfo,
   delivery: "non-demarre" as DeliveryStatus,
+  // ── Les tableaux. Leur absence est un plantage, pas une valeur manquante. ──
+  events: [] as TimelineEvent[],
+  objections: [] as Objection[],
+  obstacles: [] as Obstacle[],
+  attachments: [] as Attachment[],
+  tags: [] as string[],
+  croyances: { produit: 0, soutien: 0, pourLui: 0 } as Croyances,
+  nextStep: null as NextStep | null,
+  demoShownBeforePrice: false,
   deepAudit: {
     websiteState: "",
     socialState: "",

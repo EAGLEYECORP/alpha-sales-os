@@ -2,6 +2,7 @@ import type { Prospect } from "./types";
 import { heat } from "./closer";
 import { stageById } from "./hormozi";
 import { VERTICALS, type VerticalPlaybook, verticalForProspect } from "./playbook";
+import { aRefuseTouteRelance } from "./voice-script";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -110,6 +111,9 @@ export function buildCallSession(prospects: Prospect[], verticalId: string): { v
 
   const targets = prospects
     .filter((p) => p.stage !== "signe" && p.stage !== "perdu")
+    // Il a dit « ne plus m'appeler ». La fiche revenait dans la file le
+    // lendemain matin, avec son angle et son script, comme si de rien n'était.
+    .filter((p) => !aRefuseTouteRelance(p))
     .filter((p) => {
       if (!vertical) return true;
       const own = verticalForProspect(p);
@@ -128,7 +132,11 @@ export function buildCallSession(prospects: Prospect[], verticalId: string): { v
 
 /** Les verticales qui ont réellement des cibles — pour les onglets. */
 export function verticalsWithTargets(prospects: Prospect[]): { vertical: VerticalPlaybook; count: number }[] {
-  const open = prospects.filter((p) => p.stage !== "signe" && p.stage !== "perdu");
+  // Même filtre que la file elle-même : sans ça, l'onglet annonce « 12 » et
+  // la liste en montre 11, ce qui donne l'impression d'un bug d'affichage.
+  const open = prospects.filter(
+    (p) => p.stage !== "signe" && p.stage !== "perdu" && !aRefuseTouteRelance(p)
+  );
   return VERTICALS.map((vertical) => ({
     vertical,
     count: open.filter((p) => verticalForProspect(p)?.id === vertical.id).length,

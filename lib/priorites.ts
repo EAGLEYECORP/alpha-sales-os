@@ -1,6 +1,9 @@
 import type { Meeting, Prospect } from "./types";
 import { weightedValue } from "./hormozi";
 import { fenetreOuverte, type Canal } from "./conformite";
+import { vitalSigns } from "./vital-signs";
+import { masterRappel, type Channel } from "./master-rappel";
+import { aRefuseTouteRelance } from "./voice-script";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -48,6 +51,28 @@ export interface Tache {
   /** Valeur pondérée en jeu, quand il y en a. */
   value?: number;
   href: string;
+}
+
+/**
+ * Le canal du plan de comms, traduit dans le vocabulaire de la journée.
+ *
+ * Les deux vocabulaires existent pour de bonnes raisons — `Canal` porte le
+ * régime juridique (lib/conformite.ts), `Channel` porte le registre commercial
+ * — mais ils doivent se rejoindre, sinon la journée réinvente un canal que le
+ * plan a déjà choisi.
+ */
+function canalTache(c: Channel): Canal {
+  switch (c) {
+    case "terrain":
+      return "visite";
+    case "visio":
+    case "systeme":
+      return "appel";
+    case "dm":
+      return "linkedin";
+    default:
+      return c;
+  }
 }
 
 export const QUADRANT_META: Record<Quadrant, { label: string; sub: string; tone: string }> = {
@@ -195,10 +220,37 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
     });
   }
 
+  /**
+   * ⚠ L'OPPOSITION SORT AVANT TOUT LE RESTE.
+   *
+   * Une fiche marquée « ne plus appeler » produisait quand même une tâche
+   * « Relancer — X · canal appel » au bout de sept jours de silence. Le robot,
+   * lui, s'arrêtait (`cadenceFor` → `stop-definitif`). L'écran du matin
+   * demandait donc à l'humain exactement ce qu'on avait interdit à la machine.
+   *
+   * Le tag et la timeline sont lus tous les deux : le tag vient du bouton
+   * « Ne plus appeler », l'opposition dans les événements peut venir d'une
+   * session vocale ou d'un import.
+   */
+
+  /** Jamais appelées, joignables : la file d'appels, pas encore entamée. */
+  const aAppeler: Prospect[] = [];
+
   for (const p of prospects) {
     if (p.stage === "signe" || p.stage === "perdu") continue;
+    if (aRefuseTouteRelance(p)) continue;
     const imp = importanceOf(p, refValue);
-    const lastTouch = p.events[0]?.date;
+    const events = p.events ?? [];
+    const lastTouch = events[0]?.date;
+
+    // Fiche sourcée, joignable, jamais touchée : elle n'a AUCUNE échéance,
+    // donc aucune des règles ci-dessous ne la voit. Elle est mise de côté et
+    // regroupée en une seule tâche — mille lignes « appeler X » ne sont pas
+    // une journée, c'est une liste.
+    if (!lastTouch && !p.nextStep && p.phone?.trim() && (p.stage === "prospect" || p.stage === "contact")) {
+      aAppeler.push(p);
+      continue;
+    }
 
     // ── 2. Prochaine étape datée : la promesse qu'on s'est faite ──
     if (p.nextStep) {
@@ -231,7 +283,7 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
     }
 
     // ── 3. Red Zone : une objection posée bloque tout le reste ──
-    const openObjection = p.objections.find((o) => o.status !== "traitee");
+    const openObjection = (p.objections ?? []).find((o) => o.status !== "traitee");
     if (p.stage === "redzone" || openObjection) {
       taches.push({
         id: `o-${p.id}`,
@@ -253,24 +305,88 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
     if (lastTouch) {
       const age = daysSince(lastTouch, now);
       if (age >= 7) {
+        /**
+         * ⚠ LA FATIGUE PASSE AVANT L'ÂGE — sinon les deux écrans se contredisent.
+         *
+         * Cas mesuré : cinq relances sans réponse, huit jours de silence. La
+         * journée disait « Relancer — 8 jours sans contact » ; MASTER RAPPEL
+         * disait, sur la MÊME fiche, « saturé · silence 21 jours · toute
+         * relance commerciale interdite ». Deux ordres opposés, et c'est
+         * l'écran du matin que l'opérateur suit.
+         *
+         * `vitalSigns` est la source unique : tant que la fenêtre n'est pas
+         * ouverte, il n'y a pas de tâche. Et quand elle s'ouvre, la tâche ne
+         * dit pas « relancer » mais « revenir avec une raison NEUVE » — la
+         * doctrine ne tolère pas le « je me permets de relancer ».
+         */
+        const s = vitalSigns(p, now);
+        const fenetre = new Date(s.bestWindow.at);
+        if (s.fatigueLevel === "sature" && fenetre.getTime() > now.getTime()) continue;
+
         // Plus le deal est avancé, plus le silence coûte cher.
         const avance = p.stage === "offre" || p.stage === "demo" || p.stage === "audit";
         const urgence = Math.min(90, 40 + age * (avance ? 3 : 1.5));
+        // Le canal vient du plan de comms, pas d'un littéral : c'est lui qui
+        // sait qu'il OUVRE les emails, ou que le canal écrit a déjà échoué.
+        const comms = masterRappel(p, { now }).comms;
+        const neuve = s.fatigueLevel !== "ok";
         taches.push({
           id: `c-${p.id}`,
           prospectId: p.id,
-          action: `Relancer — ${p.company}`,
-          why: `${age} jours sans contact${avance ? ", et le deal est avancé. C'est là que le silence coûte le plus cher." : "."}`,
+          action: `${neuve ? "Revenir avec une raison NEUVE" : "Relancer"} — ${p.company}`,
+          why: neuve
+            ? `${age} jours sans contact, et ${s.unansweredTouches} touche(s) déjà ignorée(s). ${s.bestWindow.why} Une relance sans raison neuve brûle la fiche.`
+            : `${age} jours sans contact${avance ? ", et le deal est avancé. C'est là que le silence coûte le plus cher." : "."}`,
           urgence: Math.round(urgence),
           importance: imp,
           quadrant: quadrantOf(Math.round(urgence), imp),
-          canal: "appel",
+          canal: canalTache(comms.channel),
           minutes: 8,
           value: weightedValue(p),
           href: `/prospects/${p.id}`,
         });
       }
     }
+  }
+
+  /**
+   * ── 5. LA FILE D'APPELS — ce qui manquait complètement ──
+   *
+   * Mille numéros sourcés produisaient ZÉRO tâche : sans échéance, sans
+   * événement et sans next step, aucune des règles ci-dessus ne les voit.
+   * L'écran du matin ignorait donc la seule source de nouveaux deals, et
+   * l'opérateur devait se souvenir tout seul d'aller sur /appels.
+   *
+   * UNE tâche pour tout le lot, jamais une par fiche : mille lignes
+   * « appeler X » ne sont pas une journée, c'est une liste. La durée annoncée
+   * est celle d'une SESSION, pas celle du lot — on ne promet pas de vider
+   * mille numéros dans la matinée.
+   */
+  if (aAppeler.length > 0) {
+    const parVerticale = new Map<string, number>();
+    for (const p of aAppeler) {
+      const v = (p.tags ?? []).find((t) => t !== "terrain" && t !== "injoignable") ?? p.sector;
+      parVerticale.set(v, (parVerticale.get(v) ?? 0) + 1);
+    }
+    const tete = [...parVerticale.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    taches.push({
+      id: "file-appels",
+      action: `Session d'appels — ${aAppeler.length} numéro(s) jamais appelé(s)`,
+      why:
+        `Ces fiches sont sourcées, joignables, et personne ne les a encore appelées. ` +
+        (tete ? `Le plus gros bloc : ${tete[1]} en ${tete[0]} — une verticale à la fois, un seul script. ` : "") +
+        `C'est la seule ligne de l'écran qui fabrique de NOUVEAUX deals ; toutes les autres entretiennent l'existant.`,
+      // Important par construction (le pipe se vide sans elle), jamais urgent :
+      // rien ne se ferme aujourd'hui. C'est le cadran « planifier », et c'est
+      // exactement celui qu'on saute quand on ne l'écrit pas.
+      urgence: 45,
+      importance: 78,
+      quadrant: quadrantOf(45, 78),
+      canal: "appel",
+      minutes: 45,
+      href: "/appels",
+    });
   }
 
   const ordre: Record<Quadrant, number> = { faire: 0, planifier: 1, deleguer: 2, abandonner: 3 };

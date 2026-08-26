@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { RESULTATS_MANUELS, type ResultatManuel } from "@/lib/call-outcome";
+import { DO_NOT_CALL_TAG } from "@/lib/voice-script";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { HEAT_HEX, heatTone } from "@/lib/closer";
@@ -88,8 +89,8 @@ export default function AppelsPage() {
       moveStage(p.id, "audit");
     }
     // Une opposition doit sortir des campagnes, pas seulement de cette liste.
-    if (outcome === "opposition" && !p.tags.includes("ne-pas-appeler")) {
-      patchProspect(p.id, { tags: [...p.tags, "ne-pas-appeler"] });
+    if (outcome === "opposition" && !p.tags.includes(DO_NOT_CALL_TAG)) {
+      patchProspect(p.id, { tags: [...p.tags, DO_NOT_CALL_TAG] });
     }
     logActivity({ kind: "prospect", message: `${r.summary} — ${p.company}`, prospectId: p.id });
   };

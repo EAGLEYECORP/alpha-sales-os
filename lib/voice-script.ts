@@ -253,6 +253,41 @@ export function callAllowedNow(now = new Date(), timeZone = BUSINESS_TZ): { allo
 /** Tag de fiche marquant un droit d'opposition exercé — ne plus appeler. */
 export const DO_NOT_CALL_TAG = "ne-pas-appeler";
 
+/**
+ * ⚠ LA SEULE FAÇON DE DEMANDER « A-T-IL DIT NON ? ».
+ *
+ * La question se posait à trois endroits, et chacun répondait autrement :
+ *   · `cadenceFor` lisait la timeline → le robot s'arrêtait ;
+ *   · `construireJournee` ne lisait rien → l'écran du matin disait de rappeler ;
+ *   · `buildCallSession` ne lisait rien non plus → la fiche revenait dans la
+ *     file d'appels le lendemain matin.
+ *
+ * Un opérateur qui clique « Ne plus appeler » voyait donc la fiche revenir
+ * deux fois. Les deux sources comptent : le TAG vient du bouton, l'événement
+ * d'OPPOSITION peut venir d'une session vocale ou d'un import.
+ *
+ * Le test dérivé de `tests/journee.test.ts` interdit à un nouveau lecteur de
+ * réécrire ce test à la main.
+ */
+export function aRefuseTouteRelance(p: {
+  tags?: string[];
+  events?: { kind: string; summary?: string }[];
+}): boolean {
+  if ((p.tags ?? []).includes(DO_NOT_CALL_TAG)) return true;
+  return (p.events ?? []).some(
+    (e) => e.kind === "appel" && OPPOSITION_ECRITE.test(e.summary ?? "")
+  );
+}
+
+/**
+ * Le motif d'opposition, aligné sur celui de `attemptsFromEvents`
+ * (lib/master-rappel.ts). Il est dupliqué ici et NON importé pour éviter un
+ * cycle — `tests/journee.test.ts` vérifie que les deux lectures concordent
+ * sur les phrases réellement écrites par `RESULTATS_MANUELS`.
+ */
+const OPPOSITION_ECRITE =
+  /ne plus (?:me |nous )?(?:appeler|contacter)|stop|opposition|ne pas rappeler|d[ée]sinscri/i;
+
 export interface OutboundGateInput {
   mode: CallMode;
   /** La cible est-elle confirmée professionnelle (B2B) ? */
