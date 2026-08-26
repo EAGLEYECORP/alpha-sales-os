@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { LogOut, ShieldCheck, UserCog, Users } from "lucide-react";
 import { authAvailable, getCurrentUser, onAuthChange, signOut, type AuthUser } from "@/lib/auth";
 import { useAlpha } from "@/lib/store";
 import { BillingCard } from "@/components/billing/billing-card";
 import { MonOffre } from "@/components/billing/mon-offre";
 import { ChangePassword } from "@/components/security/change-password";
+import { ApresAchat } from "@/components/billing/apres-achat";
 
 /**
  * Compte — gestion de l'identité multi-locataire.
@@ -49,6 +50,12 @@ export default function ComptePage() {
         </p>
         <h1 className="font-display text-2xl font-bold text-paper">Compte</h1>
       </header>
+
+      {/* Le retour de Stripe. `useSearchParams` impose un Suspense côté Next :
+          sans lui, le build échoue au prerender de la page. */}
+      <Suspense fallback={null}>
+        <ApresAchat />
+      </Suspense>
 
       {!available ? (
         <section className="card p-5">

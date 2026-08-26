@@ -1,5 +1,3 @@
-import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_MONTHLY_HT, PACK_SETUP_HT } from "./bricks";
-import { FIXED_COSTS, USD_TO_EUR, computeCosts } from "./voice-costs";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -32,6 +30,28 @@ import { FIXED_COSTS, USD_TO_EUR, computeCosts } from "./voice-costs";
  * une offre à perte.
  * ─────────────────────────────────────────────────────────────────────
  */
+
+/**
+ * ⚠ LES PRIX PUBLICS VIVENT ICI, PAS DANS `lib/bricks.ts`. Le sens de la
+ * dépendance n'est pas un détail de rangement.
+ *
+ * `bricks` et `voice-costs` sont des modules SERVEUR : ils portent le coût de
+ * revient de chaque fournisseur et la marge de chaque brique. Un test de fuite
+ * (`tests/vitrine-fuite.test.ts`) interdit qu'un composant client les atteigne
+ * — et il a mordu quand ce fichier les importait : la grille de coûts serait
+ * partie dans le bundle navigateur, lisible dans les devtools par n'importe
+ * quel prospect.
+ *
+ * Ce qui est PUBLIC est donc déclaré ici, et `bricks` le réimporte. Un test
+ * vérifie que les deux disent la même chose : la source unique reste unique,
+ * elle a simplement changé de côté.
+ */
+export const ESSAI_CALLS = 100;
+export const ESSAI_HT = 290;
+export const OUTBOUND_UNIT_CALLS = 1000;
+export const OUTBOUND_UNIT_HT = 364;
+export const PACK_SETUP_HT = 10_000;
+export const PACK_MONTHLY_HT = 1_000;
 
 /** Comment l'offre se paie. */
 export type CadenceOffre =
@@ -66,6 +86,16 @@ export interface OffrePublique {
   priceEnv: string | null;
   /** L'action, telle qu'elle s'affiche sur le site. */
   cta: { label: string; href: string };
+  /**
+   * Les capacités (`lib/public-catalogue.ts`) que l'achat débloque.
+   *
+   * ⚠ C'est ce champ qui fait exister l'ONBOARDING. Sans lui, `parcours()`
+   * retombe sur « tout est acheté » et sert au client la liste complète des
+   * étapes — y compris celles de briques qu'il n'a pas prises. Un parcours qui
+   * annonce du retard sur ce qu'on n'a pas vendu fait douter dès le jour un,
+   * et c'est exactement le moment où un client neuf ne doit pas douter.
+   */
+  capacites: string[];
 }
 
 /**
@@ -107,6 +137,7 @@ export const OFFRES: OffrePublique[] = [
     // Déduit du premier mois : c'est une porte, pas un péage.
     priceEnv: "STRIPE_PRICE_ESSAI",
     cta: { label: "Lancer l'essai", href: "/compte?offre=essai" },
+    capacites: ["alpha-voice"],
   },
   {
     id: "solo",
@@ -127,6 +158,7 @@ export const OFFRES: OffrePublique[] = [
     auDela: null,
     priceEnv: "STRIPE_PRICE_SOLO",
     cta: { label: "Prendre Solo", href: "/compte?offre=solo" },
+    capacites: ["crm", "closer", "audits", "pilotage"],
   },
   {
     id: "pro",
@@ -145,6 +177,7 @@ export const OFFRES: OffrePublique[] = [
     auDela: `Au-delà de ${PRO_APPELS_INCLUS} appels/mois : ${OUTBOUND_UNIT_HT} € HT par millier supplémentaire, sans engagement.`,
     priceEnv: "STRIPE_PRICE_PRO",
     cta: { label: "Prendre Pro", href: "/compte?offre=pro" },
+    capacites: ["crm", "closer", "audits", "pilotage", "alpha-voice", "campagnes", "tracking"],
   },
   {
     id: "voix-1000",
@@ -163,6 +196,7 @@ export const OFFRES: OffrePublique[] = [
     auDela: `Chaque millier supplémentaire : ${OUTBOUND_UNIT_HT} € HT. Le 4ᵉ millier est offert.`,
     priceEnv: "STRIPE_PRICE_VOIX_1000",
     cta: { label: "Lancer la campagne", href: "/compte?offre=voix-1000" },
+    capacites: ["alpha-voice", "crm", "pilotage"],
   },
   {
     id: "os-complet",
@@ -182,6 +216,8 @@ export const OFFRES: OffrePublique[] = [
     auDela: "Volume d'appels arrêté au cadrage, puis facturé à la grille.",
     priceEnv: null,
     cta: CADRAGE,
+    // Tout : c'est la définition du pack complet.
+    capacites: ["alpha-voice", "campagnes", "cerveau", "crm", "audits", "tracking", "alpha-live", "closer", "agent-alpha", "pilotage"],
   },
 ];
 
@@ -247,102 +283,33 @@ export function validerOffres(offres: OffrePublique[] = OFFRES): ErreurOffre[] {
     if (!o.inclus.length) {
       erreurs.push({ offreId: o.id, champ: "inclus", probleme: "aucun contenu listé — invendable" });
     }
+    if (!o.capacites.length) {
+      erreurs.push({
+        offreId: o.id,
+        champ: "capacites",
+        probleme:
+          "aucune capacité débloquée : le client paie et ne reçoit aucun parcours de mise en route. " +
+          "`parcours()` retomberait sur « tout est acheté » et lui annoncerait du retard sur ce qu'il n'a pas pris.",
+      });
+    }
+    if (o.voixIncluse && !o.capacites.includes("alpha-voice")) {
+      erreurs.push({
+        offreId: o.id,
+        champ: "capacites",
+        probleme: "la voix est vendue mais la capacité « alpha-voice » n'est pas débloquée — le client paie pour un écran fermé.",
+      });
+    }
   }
 
   return erreurs;
 }
 
-export interface MargeOffre {
-  offreId: string;
-  prixHT: number | null;
-  /** Coût des appels inclus, fixe mutualisé COMPRIS. */
-  coutCompletEur: number;
-  /** Coût du client SUPPLÉMENTAIRE : le fixe est déjà payé par les autres. */
-  coutMarginalEur: number;
-  margeMarginaleEur: number | null;
-  margeMarginalePct: number | null;
-  /** Le volume d'appels à partir duquel l'offre devient déficitaire. */
-  seuilPerteAppels: number | null;
-  phrase: string;
-}
-
-/**
- * La marge d'une offre au plafond annoncé — et le volume qui la ferait basculer.
- *
- * Deux coûts, et la distinction n'est pas cosmétique :
- *  · le coût COMPLET inclut les 57 €/mois d'hébergement. C'est le bon chiffre
- *    pour juger le PREMIER client, celui qui paie l'infra à lui seul ;
- *  · le coût MARGINAL les exclut, parce qu'ils sont déjà payés. C'est le bon
- *    chiffre pour juger le client suivant — et c'est celui qui décide si on
- *    peut vendre l'offre en volume.
- */
-export function margeOffre(o: OffrePublique): MargeOffre {
-  const fixe = FIXED_COSTS.reduce((s, f) => s + f.eurPerMonth, 0);
-
-  if (!o.voixIncluse || !o.appelsInclus) {
-    const marginal = 0;
-    return {
-      offreId: o.id,
-      prixHT: o.prixHT,
-      coutCompletEur: fixe,
-      coutMarginalEur: marginal,
-      margeMarginaleEur: o.prixHT,
-      margeMarginalePct: o.prixHT ? 100 : null,
-      seuilPerteAppels: null,
-      phrase:
-        `${o.nom} — sans appels composés, le coût marginal est nul (hébergement mutualisé). ` +
-        `Le prix ne se déduit d'aucun coût : il vient de la valeur.`,
-    };
-  }
-
-  const cout = (appels: number) =>
-    computeCosts(
-      { calls: appels, answerRatePct: 30, avgMinutesAnswered: 2.85, avgMinutesUnanswered: 0.4 },
-      0
-    ).totalEur;
-
-  const coutCompletEur = Math.round(cout(o.appelsInclus) * 100) / 100;
-  const coutMarginalEur = Math.round((coutCompletEur - fixe) * 100) / 100;
-
-  const margeMarginaleEur = o.prixHT === null ? null : Math.round((o.prixHT - coutMarginalEur) * 100) / 100;
-  const margeMarginalePct =
-    o.prixHT && margeMarginaleEur !== null ? Math.round((margeMarginaleEur / o.prixHT) * 100) : null;
-
-  // À partir de combien d'appels le prix ne couvre plus le coût complet ?
-  let seuilPerteAppels: number | null = null;
-  if (o.prixHT !== null) {
-    for (let n = o.appelsInclus; n <= 50_000; n += 100) {
-      if (cout(n) > o.prixHT) {
-        seuilPerteAppels = n;
-        break;
-      }
-    }
-  }
-
-  const phrase =
-    o.prixHT === null
-      ? `${o.nom} — sur devis : le volume se fixe au cadrage, la marge aussi.`
-      : `${o.nom} — ${o.appelsInclus} appels inclus coûtent ${coutMarginalEur} € en marginal ` +
-        `(${coutCompletEur} € fixe compris). À ${o.prixHT} €, marge marginale ${margeMarginaleEur} € ` +
-        `(${margeMarginalePct} %).` +
-        (seuilPerteAppels
-          ? ` ⚠ L'offre devient déficitaire vers ${seuilPerteAppels} appels — d'où le plafond écrit.`
-          : " Aucun volume testé jusqu'à 50 000 appels ne la rend déficitaire.");
-
-  return {
-    offreId: o.id,
-    prixHT: o.prixHT,
-    coutCompletEur,
-    coutMarginalEur,
-    margeMarginaleEur,
-    margeMarginalePct,
-    seuilPerteAppels,
-    phrase,
-  };
-}
-
 /** Le pack complet, pour l'affichage « sur devis » — l'ancre reste connue. */
 export const PACK = { setupHT: PACK_SETUP_HT, mensuelHT: PACK_MONTHLY_HT };
 
-/** Taux de change, ré-exporté pour que la vitrine n'aille pas le chercher ailleurs. */
-export { USD_TO_EUR };
+/**
+ * ⚠ `margeOffre` n'est PAS ici : elle vit dans `lib/offres-marge.ts`.
+ * Elle a besoin du modèle de coûts, donc elle est serveur. Ce fichier-ci doit
+ * rester atteignable depuis un composant client — c'est lui qui affiche les
+ * prix, et il ne doit rien savoir de nos marges.
+ */

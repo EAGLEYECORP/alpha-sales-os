@@ -187,29 +187,76 @@ async function stripePost(path: string, body: string): Promise<Record<string, un
   return json;
 }
 
-/** Crée une session Checkout d'abonnement. Renvoie l'URL de paiement. */
+/**
+ * Crée une session Checkout pour N'IMPORTE QUELLE offre de la grille publique.
+ *
+ * ⚠ ELLE NE CONNAÎT PAS LE CATALOGUE, ET C'EST VOULU.
+ *
+ * L'appelant résout l'offre et passe la plomberie (variable de prix, mode).
+ * La première version importait `lib/offres-publiques` ici — ce qui tirait la
+ * grille de COÛTS jusque dans `/api/webhooks/stripe`, une route appelée par
+ * Stripe et donc hors du garde même-origine. Un test de fuite l'a vu. Corriger
+ * en ajoutant le webhook aux routes internes l'aurait CASSÉ (Stripe n'est pas
+ * de même origine) : c'est la dépendance qu'il fallait couper, pas le garde.
+ *
+ * ⚠ CETTE FONCTION NE CONNAISSAIT QUE « solo » ET « pro ».
+ *
+ * La grille en compte quatre encaissables — l'essai, Solo, Pro et le palier
+ * voix. Les deux autres n'avaient aucun chemin de paiement : le parcours
+ * « démo gratuite → essai payant → mensualité » s'arrêtait donc net à
+ * l'essai, c'est-à-dire à l'étape qui transforme un intéressé en client.
+ *
+ * ⚠ ET L'ESSAI N'EST PAS UN ABONNEMENT. C'est un paiement UNIQUE. Le passer
+ * en `mode: subscription` aurait prélevé 290 € tous les mois à un client qui
+ * croyait payer une mise en route — le genre d'erreur qu'on ne rattrape pas
+ * commercialement. Le mode se déduit de la cadence déclarée dans la grille,
+ * jamais d'un paramètre que l'appelant pourrait se tromper à passer.
+ */
 export async function createCheckoutSession(opts: {
-  plan: Plan;
+  /** Identifiant d'offre, pour les métadonnées et les messages d'erreur. */
+  offreId: string;
+  /** Nom lisible de l'offre. */
+  offreNom: string;
+  /** Nom de la variable d'env portant l'ID de prix Stripe. */
+  priceEnv: string;
+  /** Abonnement mensuel, ou paiement unique. */
+  abonnement: boolean;
   userId: string;
   email?: string;
   successUrl: string;
   cancelUrl: string;
 }): Promise<string> {
-  const price = priceIdFor(opts.plan);
-  if (!price) throw new Error(`Prix non configuré pour le plan ${opts.plan} (${PLANS[opts.plan].priceEnv}).`);
+  const price = process.env[opts.priceEnv] || null;
+  if (!price) {
+    throw new Error(
+      `Prix Stripe non configuré pour « ${opts.offreNom} » : renseigne ${opts.priceEnv} (voir .env.example).`
+    );
+  }
+
+  const abonnement = opts.abonnement;
+
   const json = await stripePost(
     "checkout/sessions",
     form({
-      mode: "subscription",
+      mode: abonnement ? "subscription" : "payment",
       "line_items[0][price]": price,
       "line_items[0][quantity]": "1",
       success_url: opts.successUrl,
       cancel_url: opts.cancelUrl,
       client_reference_id: opts.userId,
       customer_email: opts.email,
-      // Rattache l'abonnement au compte — relu par le webhook.
-      "subscription_data[metadata][user_id]": opts.userId,
-      "subscription_data[metadata][plan]": opts.plan,
+      // Rattache l'achat au compte — relu par le webhook. Les métadonnées
+      // vont sur l'abonnement quand il y en a un, sur la session sinon :
+      // c'est le seul endroit où un paiement unique peut les porter.
+      ...(abonnement
+        ? {
+            "subscription_data[metadata][user_id]": opts.userId,
+            "subscription_data[metadata][plan]": opts.offreId,
+          }
+        : {
+            "metadata[user_id]": opts.userId,
+            "metadata[offre]": opts.offreId,
+          }),
       allow_promotion_codes: "true",
     })
   );

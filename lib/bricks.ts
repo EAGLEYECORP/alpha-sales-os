@@ -50,8 +50,11 @@ export interface Brick {
  * multiplier les appels ne fait que brûler du fichier plus vite : le volume
  * n'a de valeur qu'après le réglage.
  */
-export const OUTBOUND_UNIT_CALLS = 1000;
-export const OUTBOUND_UNIT_HT = 364;
+// Les prix PUBLICS viennent de `lib/offres-publiques.ts` : c'est le module
+// que le navigateur a le droit d'atteindre, donc c'est lui qui les porte.
+// Les réimporter garantit qu'il n'existe qu'un seul nombre.
+export { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT } from "./offres-publiques";
+import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT } from "./offres-publiques";
 
 export interface OutboundTier {
   calls: number;
@@ -103,8 +106,6 @@ export const OUTBOUND_TIERS: OutboundTier[] = [
  * après la première installation réelle, quand on saura le vrai temps passé.
  * ─────────────────────────────────────────────────────────────────────
  */
-export const ESSAI_CALLS = 100;
-export const ESSAI_HT = 290;
 
 /** Fenêtre pendant laquelle l'essai se déduit du premier mois. */
 export const ESSAI_DEDUCTIBLE_JOURS = 30;

@@ -6,11 +6,11 @@ import {
   OFFRES,
   PRIX_PUBLICS,
   PRO_APPELS_INCLUS,
-  margeOffre,
   offreParId,
   validerOffres,
   type OffrePublique,
 } from "../lib/offres-publiques";
+import { margeOffre } from "../lib/offres-marge";
 import { PLANS } from "../lib/stripe";
 import { ESSAI_HT, OUTBOUND_UNIT_HT } from "../lib/bricks";
 
@@ -30,6 +30,15 @@ import { ESSAI_HT, OUTBOUND_UNIT_HT } from "../lib/bricks";
  */
 
 const SITE = readFileSync(join(process.cwd(), "site/index.html"), "utf8");
+
+/**
+ * Un test qui cherche une faute dans du code doit lire le CODE, pas les
+ * commentaires. Le commentaire qui explique « ne jamais écrire paiement
+ * confirmé » contient forcément la phrase interdite — et faisait échouer le
+ * test qu'il documente.
+ */
+const sansCommentaires = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 // ─────────── 1. LA RÈGLE QUI A COÛTÉ LE PLUS CHER ───────────
 
@@ -188,4 +197,75 @@ test("l'offre sur devis n'affiche aucun prix", () => {
   const devis = OFFRES.filter((o) => o.cadence === "devis");
   assert.ok(devis.length > 0, "il faut au moins une porte « on en parle »");
   for (const o of devis) assert.equal(o.prixHT, null);
+});
+
+// ─────────── 5. LA GRILLE PUBLIQUE RESTE ATTEIGNABLE PAR LE NAVIGATEUR ───────────
+
+test("lib/offres-publiques n'atteint AUCUN module de coûts", () => {
+  /**
+   * Ce fichier s'affiche dans le navigateur : c'est lui qui porte les prix.
+   * S'il importe `voice-costs` ou `bricks`, la structure de coûts et les
+   * marges partent dans le bundle, lisibles dans les devtools par n'importe
+   * quel prospect. Le test de fuite l'a attrapé une fois ; celui-ci le dit
+   * à l'endroit où la faute se commettrait.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/offres-publiques.ts"), "utf8");
+  for (const interdit of ["voice-costs", "./bricks", "pricing-briques"]) {
+    assert.doesNotMatch(
+      src,
+      new RegExp(`from ["']\\.?/?${interdit.replace(".", "\\.")}["']`),
+      `offres-publiques importe ${interdit} — la grille de coûts partirait au navigateur`
+    );
+  }
+});
+
+test("le catalogue interne réimporte les prix publics au lieu de les recopier", () => {
+  const bricks = readFileSync(join(process.cwd(), "lib/bricks.ts"), "utf8");
+  assert.match(
+    bricks,
+    /from "\.\/offres-publiques"/,
+    "bricks doit tirer les prix publics de la grille, sinon les deux redivergent"
+  );
+  // Et surtout : il ne doit PAS les redéclarer.
+  assert.doesNotMatch(bricks, /^export const OUTBOUND_UNIT_HT = \d+;/m);
+  assert.doesNotMatch(bricks, /^export const ESSAI_HT = \d+;/m);
+});
+
+test("chaque offre débloque des capacités réelles — sinon l'onboarding est vide", () => {
+  for (const o of OFFRES) {
+    assert.ok(o.capacites.length > 0, `${o.id} ne débloque rien : le client paie et n'a aucun parcours`);
+    if (o.voixIncluse) {
+      assert.ok(
+        o.capacites.includes("alpha-voice"),
+        `${o.id} vend la voix sans débloquer l'écran — le client paie pour une porte fermée`
+      );
+    }
+  }
+});
+
+test("le retour de paiement mène à un onboarding, pas à un écran identique", () => {
+  // `/compte` ne lisait AUCUN paramètre d'URL : après avoir payé, le client
+  // revenait sur la même page qu'avant et devait deviner la suite.
+  const page = readFileSync(join(process.cwd(), "app/(app)/compte/page.tsx"), "utf8");
+  assert.ok(page.includes("ApresAchat"), "la page compte doit accueillir le retour de Stripe");
+
+  const panneau = sansCommentaires(readFileSync(join(process.cwd(), "components/billing/apres-achat.tsx"), "utf8"));
+  assert.ok(panneau.includes("parcours("), "le retour doit lancer le parcours d'onboarding");
+  // Une redirection navigateur n'est PAS une preuve d'encaissement.
+  assert.doesNotMatch(
+    panneau,
+    /[Pp]aiement (confirmé|validé|encaissé)/,
+    "l'URL de retour ne prouve rien : seul le webhook confirme"
+  );
+});
+
+test("la route de paiement accepte toutes les offres payables, et refuse le devis", () => {
+  const route = readFileSync(join(process.cwd(), "app/api/billing/checkout/route.ts"), "utf8");
+  assert.ok(route.includes("offreParId"), "la route doit résoudre l'offre dans la grille");
+  assert.match(route, /cadence === "devis"/, "une offre sur devis ne doit pas avoir de bouton payer");
+  assert.match(
+    route,
+    /abonnement: offre\.cadence === "mensuel"/,
+    "le mode Stripe doit se DÉDUIRE de la cadence : l'essai est un paiement unique"
+  );
 });
