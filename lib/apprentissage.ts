@@ -1,6 +1,7 @@
 import type { Prospect } from "./types";
 import type { KnowledgeNote } from "./knowledge";
 import { guessSegmentForProspect } from "./segments";
+import { verticalForProspect } from "./playbook";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -47,7 +48,21 @@ import { guessSegmentForProspect } from "./segments";
 /** Le contexte de rattachement — c'est lui qui rend la leçon RETROUVABLE. */
 function ancrage(p: Prospect): { tags: string[]; entete: string } {
   const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
-  const tags = ["terrain", p.sector, seg?.id].filter((t): t is string => Boolean(t && t.trim()));
+  /**
+   * ⚠ LA VERTICALE EST UN TAG, PAS UNE COÏNCIDENCE DE MOTS.
+   *
+   * Sans elle, retrouver une leçon « garage » depuis la file d'appels garage
+   * reposait uniquement sur la recherche lexicale. Or nos playbooks parlent
+   * tous d'appels manqués, du midi et du week-end : une leçon de garage
+   * remontait sur la file restauration parce que les deux textes partagent
+   * le même vocabulaire de douleur. Mesuré, pas supposé — c'est un test de
+   * bout en bout qui l'a montré.
+   *
+   * Le tag rend le métier ADRESSABLE. `p.sector` ne suffit pas : il vaut
+   * « autre » pour un garage comme pour un cabinet dentaire.
+   */
+  const verticale = verticalForProspect(p);
+  const tags = ["terrain", p.sector, seg?.id, verticale?.id].filter((t): t is string => Boolean(t && t.trim()));
   // Le secteur et le segment sont écrits DANS le corps, pas seulement en tags :
   // la recherche est lexicale et pèse le texte, pas les métadonnées. Une leçon
   // qui ne contient pas le mot « garage » ne ressortira jamais sur un garage.

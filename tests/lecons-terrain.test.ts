@@ -127,3 +127,36 @@ test("la session d'appels lit vraiment le Cerveau — le maillon qu'on protège"
     "les leçons doivent être filtrées par compte — une leçon ScintIA n'a rien à faire dans un appel EAGLEYE"
   );
 });
+
+test("un tag de métier écarte sèchement — les mots communs ne le rattrapent pas", () => {
+  /**
+   * Le défaut trouvé par le test de bout en bout : tous nos playbooks parlent
+   * d'appels manqués, du midi et du week-end. BM25 seul faisait donc remonter
+   * une leçon de garage sur une file restauration.
+   */
+  const resto = note({
+    id: "n-resto",
+    title: "Terrain — Le Bouchon",
+    // Volontairement BOURRÉE du vocabulaire garage : sans le tag, BM25 la
+    // classerait en tête. C'est ça qu'on met à l'épreuve, pas un score nul.
+    body:
+      "Contexte : Le Bouchon — restaurant.\n\nGarage & carrosserie : les métiers où l'atelier tourne et le téléphone sonne en même temps. Garage, carrosserie, atelier, téléphone.",
+    tags: ["terrain", "restaurant", "restauration"],
+  });
+  assert.deepEqual(
+    leconsPourAppels([resto], GARAGE, []),
+    [],
+    "une leçon tagguée restauration n'a rien à faire dans une file garage"
+  );
+  assert.equal(
+    leconsPourAppels([resto], verticalById("restauration"), []).length,
+    1,
+    "…et elle doit bien ressortir sur SA verticale"
+  );
+});
+
+test("une leçon SANS tag de métier reste éligible — on ne perd pas l'historique", () => {
+  // Les leçons écrites avant que l'ancrage ne pose le tag de verticale.
+  const ancienne = note({ id: "n-vieille", tags: ["terrain", "garage"] });
+  assert.equal(leconsPourAppels([ancienne], GARAGE, []).length, 1);
+});

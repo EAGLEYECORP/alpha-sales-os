@@ -1,6 +1,6 @@
 import { search, type KnowledgeNote } from "./knowledge";
 import type { Prospect } from "./types";
-import type { VerticalPlaybook } from "./playbook";
+import { VERTICALS, type VerticalPlaybook } from "./playbook";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -48,6 +48,9 @@ export interface LeconServie {
 const ENTETE = /^[ \t]*Contexte\s*:\s*([^\n]*)\n?/im;
 
 const EXTRAIT_MAX = 260;
+
+/** Tous les identifiants de verticale — pour reconnaître le tag de métier. */
+const VERTICAL_IDS = new Set(VERTICALS.map((v) => v.id));
 
 /** « Garage Dupont — garage (segment : …). » → « Garage Dupont ». */
 function origineDepuisEntete(body: string): string | null {
@@ -100,10 +103,34 @@ export function leconsPourAppels(
   const terrain = notes.filter((n) => n.source === "terrain");
   if (terrain.length === 0) return [];
 
+  /**
+   * ⚠ LE TAG DE VERTICALE PRIME SUR LA RECHERCHE LEXICALE.
+   *
+   * BM25 seul se trompe ici, et pas à la marge : tous nos playbooks parlent
+   * d'appels manqués, du midi et du week-end. Une leçon de garage remontait
+   * donc sur la file restauration — vérifié par le test de bout en bout.
+   *
+   * La règle exacte : une leçon tagguée d'un AUTRE métier est écartée sèchement
+   * — un métier écrit noir sur blanc ne se discute pas avec des mots communs.
+   * Une leçon SANS tag de métier (écrite avant que `ancrage` ne le pose) reste
+   * éligible et se départage sur les mots : moins bon, et mieux que perdre
+   * l'historique.
+   */
+  const corpus = v
+    ? terrain.filter((n) => {
+        const sien = n.tags.find((t) => VERTICAL_IDS.has(t));
+        // Pas de tag = leçon ancienne, on la laisse concourir sur les mots.
+        // Un tag d'un AUTRE métier = exclusion sèche, la recherche lexicale
+        // n'a pas son mot à dire contre un métier écrit noir sur blanc.
+        return !sien || sien === v.id;
+      })
+    : terrain;
+  if (corpus.length === 0) return [];
+
   const q = requeteVerticale(v, cibles);
   if (!q) return [];
 
-  return search(q, terrain, k)
+  return search(q, corpus, k)
     .filter((s) => s.score > 0)
     .map(({ note, score }) => ({
       id: note.id,
