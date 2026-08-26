@@ -409,3 +409,62 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
 }
 
 export const parQuadrant = (j: Journee, q: Quadrant): Tache[] => j.taches.filter((t) => t.quadrant === q);
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUI S'AFFICHE — et pourquoi une journée se PLAFONNE.
+ *
+ * Mesuré : 1 000 fiches refroidies produisent 1 000 tâches. La page affichait
+ * les mille, sous un pied de page qui promettait que « l'écran doit rester
+ * lisible ». Une liste de mille lignes n'est pas un plan de journée, c'est
+ * l'export du CRM — et elle détruit exactement ce que l'écran promet : « si
+ * tu ne fais que ça, la journée est réussie ».
+ *
+ * Deux règles :
+ *
+ *  · RIEN N'EST CACHÉ EN SILENCE. Le reste est résumé sur une ligne qui porte
+ *    le nombre, les minutes et l'argent laissés de côté. Un plafond muet
+ *    ferait disparaître un deal ; celui-ci le compte à voix haute.
+ *  · LE CADRAN « URGENT ET IMPORTANT » A UN PLAFOND PLUS HAUT, et quand il
+ *    déborde, ce débordement EST l'information : une journée à quinze urgences
+ *    n'est pas une journée chargée, c'est un pipe mal tenu. On le dit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const PLAFOND_FAIRE = 12;
+export const PLAFOND_AUTRES = 8;
+
+export interface QuadrantAffiche {
+  quadrant: Quadrant;
+  /** Les tâches réellement listées, dans l'ordre. */
+  visibles: Tache[];
+  /** Nombre de tâches repliées. 0 = tout est affiché. */
+  reste: number;
+  /** Minutes et argent pondéré du repli — comptés, jamais perdus. */
+  resteMinutes: number;
+  resteValeur: number;
+  /** La ligne à afficher sous la liste, ou null s'il n'y a pas de repli. */
+  note: string | null;
+}
+
+export function pourEcran(j: Journee, q: Quadrant): QuadrantAffiche {
+  const list = parQuadrant(j, q);
+  const plafond = q === "faire" ? PLAFOND_FAIRE : PLAFOND_AUTRES;
+  const visibles = list.slice(0, plafond);
+  const replies = list.slice(plafond);
+
+  const resteMinutes = replies.reduce((s, t) => s + t.minutes, 0);
+  const resteValeur = replies.reduce((s, t) => s + (t.value ?? 0), 0);
+
+  let note: string | null = null;
+  if (replies.length > 0) {
+    const heures = Math.round((resteMinutes / 60) * 10) / 10;
+    note =
+      q === "faire"
+        ? `+ ${replies.length} autres urgences importantes (${heures} h, ${Math.round(resteValeur)} € pondérés). ` +
+          `Une journée à plus de ${PLAFOND_FAIRE} urgences n'est pas une journée chargée : c'est un pipe qu'on a laissé s'accumuler. ` +
+          `Traite ces ${PLAFOND_FAIRE}-là, puis va vider le reste depuis le pipeline.`
+        : `+ ${replies.length} autres (${heures} h, ${Math.round(resteValeur)} € pondérés) — repliées pour garder l'écran lisible, pas supprimées. Elles sont dans le pipeline.`;
+  }
+
+  return { quadrant: q, visibles, reste: replies.length, resteMinutes, resteValeur, note };
+}

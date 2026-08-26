@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { construireJournee } from "../lib/priorites";
+import { construireJournee, pourEcran, PLAFOND_FAIRE, PLAFOND_AUTRES } from "../lib/priorites";
 import { appeleAujourdhui, buildCallSession, verticalsWithTargets } from "../lib/call-session";
 import { attemptsFromEvents } from "../lib/master-rappel";
 import { aRefuseTouteRelance, DO_NOT_CALL_TAG } from "../lib/voice-script";
@@ -312,4 +312,90 @@ test("la page ne recompte plus la progression à la main", () => {
     /restants:\s*targets\.length\s*-\s*Object\.keys\(done\)\.length/,
     "le compteur ne doit plus dépendre du seul état local"
   );
+});
+
+// ─────────── 8. UNE JOURNÉE SE PLAFONNE ───────────
+
+test("mille fiches refroidies ne produisent pas mille lignes à l'écran", () => {
+  // Mesuré avant correction : 1 000 fiches → 1 000 tâches affichées, sous un
+  // pied de page promettant que « l'écran doit rester lisible ».
+  const froids = Array.from({ length: 300 }, (_, i) =>
+    prospect({
+      id: `f${i}`,
+      company: `Boîte ${i}`,
+      monthlyValue: 200,
+      setupValue: 1500,
+      events: [ev(`e${i}`, 10 + (i % 20), "appel", "Sans réponse")],
+    })
+  );
+  const j = construireJournee({ prospects: froids, meetings: [], now: NOW });
+  assert.ok(j.taches.length > 100, "le calcul reste complet — c'est l'affichage qu'on plafonne");
+
+  for (const q of ["faire", "planifier", "deleguer", "abandonner"] as const) {
+    const e = pourEcran(j, q);
+    const plafond = q === "faire" ? PLAFOND_FAIRE : PLAFOND_AUTRES;
+    assert.ok(e.visibles.length <= plafond, `${q} : ${e.visibles.length} lignes affichées`);
+  }
+});
+
+test("ce qui est replié est COMPTÉ — minutes et argent —, jamais escamoté", () => {
+  const froids = Array.from({ length: 300 }, (_, i) =>
+    prospect({
+      id: `f${i}`,
+      monthlyValue: 200,
+      setupValue: 1500,
+      probability: 40,
+      events: [ev(`e${i}`, 10 + (i % 20), "appel", "Sans réponse")],
+    })
+  );
+  const j = construireJournee({ prospects: froids, meetings: [], now: NOW });
+
+  let vus = 0;
+  let restes = 0;
+  for (const q of ["faire", "planifier", "deleguer", "abandonner"] as const) {
+    const e = pourEcran(j, q);
+    vus += e.visibles.length;
+    restes += e.reste;
+    if (e.reste > 0) {
+      assert.ok(e.note, "un repli sans ligne de comptage serait un escamotage");
+      assert.match(e.note!, new RegExp(`${e.reste}`), "la note doit dire COMBIEN");
+      assert.ok(e.resteMinutes > 0, "les minutes repliées doivent être comptées");
+      assert.ok(e.resteValeur > 0, "l'argent replié doit être compté");
+    }
+  }
+  assert.equal(vus + restes, j.taches.length, "aucune tâche ne doit disparaître du décompte");
+});
+
+test("le cadran urgent-ET-important dit que le débordement EST l'information", () => {
+  const urgents = Array.from({ length: 40 }, (_, i) =>
+    prospect({
+      id: `u${i}`,
+      stage: "offre",
+      monthlyValue: 400,
+      setupValue: 3000,
+      probability: 70,
+      nextStep: { date: ilYA(3), action: "Relancer la décision" },
+      events: [ev(`e${i}`, 5, "appel", "Sans réponse")],
+    })
+  );
+  const e = pourEcran(construireJournee({ prospects: urgents, meetings: [], now: NOW }), "faire");
+  assert.ok(e.reste > 0, "le fixture doit vraiment déborder");
+  assert.match(e.note!, /pipe qu'on a laissé s'accumuler/);
+});
+
+test("une petite journée n'est pas plafonnée du tout", () => {
+  const j = construireJournee({
+    prospects: [prospect({ id: "a", events: [ev("e", 20, "appel", "Sans réponse")] })],
+    meetings: [],
+    now: NOW,
+  });
+  for (const q of ["faire", "planifier", "deleguer", "abandonner"] as const) {
+    assert.equal(pourEcran(j, q).note, null, `${q} ne doit afficher aucune note de repli`);
+  }
+});
+
+test("la page affiche la vue plafonnée, pas la liste complète", () => {
+  const src = readFileSync(join(process.cwd(), "app/(app)/aujourdhui/page.tsx"), "utf8");
+  assert.ok(src.includes("pourEcran"), "la page doit passer par la vue plafonnée");
+  assert.doesNotMatch(src, /\{list\.map\(\(t\) =>/, "elle ne doit plus dérouler la liste entière");
 });

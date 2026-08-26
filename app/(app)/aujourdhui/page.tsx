@@ -15,7 +15,7 @@ import {
   Target,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { construireJournee, parQuadrant, QUADRANT_META, type Quadrant, type Tache } from "@/lib/priorites";
+import { construireJournee, parQuadrant, pourEcran, QUADRANT_META, type Quadrant, type Tache } from "@/lib/priorites";
 import { REGLES, regleFor } from "@/lib/conformite";
 import { cn, eur } from "@/lib/utils";
 
@@ -181,6 +181,9 @@ export default function AujourdhuiPage() {
           if (list.length === 0) return null;
           const meta = QUADRANT_META[q];
           const mins = list.filter((t) => !done[t.id]).reduce((s, t) => s + t.minutes, 0);
+          // Plafonné : mille lignes ne sont pas un plan de journée. Ce qui est
+          // replié est COMPTÉ sur une ligne, jamais escamoté.
+          const ecran = pourEcran(j, q);
           return (
             <section key={q} className="card p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -192,10 +195,25 @@ export default function AujourdhuiPage() {
               </div>
               <p className="mt-0.5 text-[12px] text-paper-dim">{meta.sub}</p>
               <ul className="mt-3 space-y-1.5">
-                {list.map((t) => (
+                {ecran.visibles.map((t) => (
                   <TacheRow key={t.id} tache={t} done={!!done[t.id]} onToggle={() => setDone((d) => ({ ...d, [t.id]: !d[t.id] }))} />
                 ))}
               </ul>
+              {ecran.note && (
+                <p
+                  className={cn(
+                    "mt-2 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed",
+                    q === "faire"
+                      ? "border-signal-amber/40 bg-signal-amber/5 text-signal-amber"
+                      : "border-ink-700 text-paper-faint"
+                  )}
+                >
+                  {ecran.note}{" "}
+                  <Link href="/pipeline" className="text-bronze-400 hover:underline">
+                    Ouvrir le pipeline →
+                  </Link>
+                </p>
+              )}
             </section>
           );
         })
