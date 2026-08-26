@@ -91,6 +91,86 @@ test("on ne demande JAMAIS de rappeler quelqu'un qui a dit « ne plus m'appeler 
   assert.equal(j.taches.length, 0, `aucune tâche attendue, obtenu : ${j.taches.map((t) => t.action).join(" | ")}`);
 });
 
+/**
+ * ⚠ LE TROU QUE LE TEST PRÉCÉDENT NE POUVAIT PAS VOIR : il passe `meetings: []`.
+ *
+ * Trouvé en pilotant un vrai navigateur, pas ici : on clique « Ne plus
+ * appeler » sur une fiche qui a déjà un closing calé, et le plan du matin
+ * affiche toujours en TÊTE de liste « Closing — <client> aujourd'hui 20:35 »,
+ * canal « appel », urgence 100. La garde d'opposition existait — vingt lignes
+ * plus bas. Les rendez-vous passaient avant elle.
+ *
+ * La règle retenue : on NE SUPPRIME PAS le rendez-vous (l'effacer en silence
+ * ferait poser un lapin sans témoin), on refuse seulement que l'écran donne
+ * l'ordre sans dire ce qu'il sait.
+ */
+const rdv = (prospectId: string, date: string) => ({
+  id: `m-${prospectId}`,
+  prospectId,
+  title: "Closing",
+  date,
+  durationMin: 45,
+  kind: "closing" as const,
+  channel: "appel" as const,
+  location: "",
+  reminded: false,
+  done: false,
+});
+
+test("un rendez-vous avec une fiche en opposition n'est PAS effacé du plan", () => {
+  const p = prospect({ id: "opp3", phone: "0612345671", tags: ["terrain", DO_NOT_CALL_TAG] });
+  const j = construireJournee({
+    prospects: [p],
+    meetings: [rdv("opp3", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
+    now: NOW,
+  });
+  const t = j.taches.find((x) => x.prospectId === "opp3");
+  assert.ok(t, "le rendez-vous doit rester : c'est un engagement pris, pas une relance");
+});
+
+test("…mais il DIT que la personne a demandé à ne plus être appelée", () => {
+  const p = prospect({ id: "opp4", phone: "0612345672", tags: ["terrain", DO_NOT_CALL_TAG] });
+  const j = construireJournee({
+    prospects: [p],
+    meetings: [rdv("opp4", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
+    now: NOW,
+  });
+  const t = j.taches.find((x) => x.prospectId === "opp4")!;
+  assert.match(t.action, /^⚠/, "l'ordre doit être marqué, pas rendu tel quel");
+  assert.match(t.why, /ne plus appeler/i, "et la raison doit nommer l'opposition");
+  assert.match(t.why, /écrit|annule/i, "elle doit aussi dire quoi faire à la place de composer");
+});
+
+test("l'opposition lue dans la TIMELINE marque le rendez-vous elle aussi", () => {
+  // Le bouton pose un tag ; une session vocale, elle, écrit dans la timeline.
+  // Les deux doivent produire le même avertissement, sinon la moitié des
+  // oppositions passe à travers.
+  const p = prospect({
+    id: "opp5",
+    phone: "0612345673",
+    events: [ev("e", 1, "appel", RESULTATS_MANUELS.opposition.summary)],
+  });
+  const j = construireJournee({
+    prospects: [p],
+    meetings: [rdv("opp5", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
+    now: NOW,
+  });
+  assert.match(j.taches.find((x) => x.prospectId === "opp5")!.action, /^⚠/);
+});
+
+test("un rendez-vous ORDINAIRE ne porte aucun avertissement", () => {
+  // Le contre-test : sans lui, marquer tout le monde passerait pour une réussite.
+  const p = prospect({ id: "sain", phone: "0612345674" });
+  const j = construireJournee({
+    prospects: [p],
+    meetings: [rdv("sain", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
+    now: NOW,
+  });
+  const t = j.taches.find((x) => x.prospectId === "sain")!;
+  assert.doesNotMatch(t.action, /⚠/);
+  assert.doesNotMatch(t.why, /ne plus appeler/i);
+});
+
 test("…mais une fiche ordinaire qui refroidit produit bien une tâche", () => {
   // Le contre-test : sans lui, une exclusion trop large passerait inaperçue.
   const froid = prospect({ id: "ok", phone: "0612345670", events: [ev("e", 20, "appel", "Sans réponse")] });

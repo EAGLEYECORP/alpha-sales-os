@@ -195,6 +195,22 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
     if (d < 0 || d > 7) continue;
     const p = prospects.find((x) => x.id === m.prospectId);
     const imp = p ? importanceOf(p, refValue) : 60;
+    /**
+     * ⚠ UNE OPPOSITION POSTÉRIEURE AU RENDEZ-VOUS.
+     *
+     * Trouvé au navigateur : on clique « Ne plus appeler » sur une fiche qui a
+     * déjà un closing calé, et le plan du matin affiche toujours, en tête et
+     * en canal « appel », « Closing — <client> aujourd'hui 20:35 ». La garde
+     * d'opposition existe bien — vingt lignes plus bas, dans la boucle des
+     * prospects. Les rendez-vous, eux, passent AVANT elle.
+     *
+     * On ne SUPPRIME pas la tâche : un rendez-vous est un engagement pris, et
+     * l'effacer en silence ferait poser un lapin sans que personne ne le voie.
+     * Ce qu'on corrige, c'est le mensonge : l'écran donnait un ordre d'appeler
+     * quelqu'un qui vient de demander qu'on ne l'appelle plus. Il le dit
+     * maintenant, et c'est l'humain qui tranche — pas la liste.
+     */
+    const refuse = p ? aRefuseTouteRelance(p) : false;
     // Un RDV demain se prépare CE SOIR. Le préparer le matin même, c'est
     // arriver avec ce qu'on avait déjà — donc rien de neuf.
     const urgence = d <= 0 ? 100 : d === 1 ? 95 : d <= 3 ? 75 : 55;
@@ -202,9 +218,12 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
     taches.push({
       id: `m-${m.id}`,
       prospectId: m.prospectId,
-      action: d <= 0 ? `${m.title} — aujourd'hui ${heure}` : `Préparer : ${m.title} (${heure})`,
-      why:
-        d <= 0
+      action:
+        (refuse ? "⚠ " : "") +
+        (d <= 0 ? `${m.title} — aujourd'hui ${heure}` : `Préparer : ${m.title} (${heure})`),
+      why: refuse
+        ? "Cette fiche est marquée « ne plus appeler » — la demande est postérieure à la prise de rendez-vous. Le rendez-vous tient, l'opposition aussi : confirme par écrit avant de composer, ou annule proprement. Ne compose pas sans avoir tranché."
+        : d <= 0
           ? "C'est aujourd'hui. Rien d'autre ne passe devant."
           : d === 1
             ? "C'est demain. Un rendez-vous se prépare la veille, pas le matin même — sinon tu arrives avec ce que tu avais déjà."

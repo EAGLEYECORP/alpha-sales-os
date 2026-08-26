@@ -26,6 +26,11 @@ import { useAlpha } from "@/lib/store";
 import { setN8nConfig, getN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
 import { getSupabaseConfig, supabaseConfigSource, setSupabaseConfig } from "@/lib/supabase";
 import { ENV_TEMPLATE } from "@/components/settings/system-status";
+import {
+  chargerProgression,
+  effacerProgression,
+  enregistrerProgression,
+} from "@/lib/wizard-progress";
 
 /** Ouvre l'assistant depuis n'importe où (ex. bouton Réglages). */
 export function openSetupWizard() {
@@ -45,13 +50,11 @@ const STEPS = [
   "Prêt",
 ] as const;
 
-/** L'installation complète prend ~1 h : on sauvegarde où en est l'utilisateur. */
-const PROGRESS_KEY = "alpha_wizard_progress_v2";
-interface Progress {
-  step: number;
-  sheetsReady: boolean;
-  workflowReady: boolean;
-}
+/**
+ * L'installation complète prend ~1 h : on sauvegarde où en est l'utilisateur.
+ * La clé, sa forme et la règle d'ouverture automatique vivent dans
+ * `lib/wizard-progress.ts` — `Onboarding` lit exactement la même chose.
+ */
 
 const N8N_LAUNCH = `export ALPHA_APP_URL="http://localhost:3000"
 export ALPHA_WEBHOOK_SECRET="choisis-un-secret"
@@ -127,17 +130,10 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
 
   // Reprendre là où on s'était arrêté (l'installation complète prend ~1 h).
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(PROGRESS_KEY);
-      if (raw) {
-        const p = JSON.parse(raw) as Progress;
-        if (typeof p.step === "number") setStep(Math.min(p.step, STEPS.length - 1));
-        setSheetsReady(Boolean(p.sheetsReady));
-        setWorkflowReady(Boolean(p.workflowReady));
-      }
-    } catch {
-      /* progression illisible → on repart du début */
-    }
+    const p = chargerProgression();
+    setStep(Math.min(p.step, STEPS.length - 1));
+    setSheetsReady(p.sheetsReady);
+    setWorkflowReady(p.workflowReady);
     setSbLinked(supabaseConfigSource() !== null || getSupabaseConfig() !== null);
     const cfg = getSupabaseConfig();
     if (cfg) {
@@ -147,20 +143,29 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(PROGRESS_KEY, JSON.stringify({ step, sheetsReady, workflowReady } satisfies Progress));
-    } catch {
-      /* stockage plein/bloqué : la progression ne sera pas reprise, sans gravité */
-    }
+    // `differe` est préservé : avancer d'une étape ne doit pas réarmer
+    // l'ouverture automatique que l'utilisateur a déjà repoussée.
+    enregistrerProgression({ ...chargerProgression(), step, sheetsReady, workflowReady });
   }, [step, sheetsReady, workflowReady]);
 
   const finish = () => {
     patchSettings({ onboarded: true });
-    try {
-      window.localStorage.removeItem(PROGRESS_KEY);
-    } catch {
-      /* ignore */
-    }
+    effacerProgression();
+    onClose();
+  };
+
+  /**
+   * Fermer à la croix ≠ avoir configuré.
+   *
+   * On n'écrit donc PAS `onboarded: true` — ce serait mentir à tous les écrans
+   * qui s'en servent pour croire la machine branchée. On note seulement que
+   * l'assistant a été repoussé, ce qui suffit à tenir la promesse affichée
+   * dans le rail : « fermez et revenez quand vous voulez ». Avant, la croix ne
+   * posait rien et l'assistant revenait par-dessus l'app au chargement
+   * suivant, en interceptant tous les clics.
+   */
+  const differer = () => {
+    enregistrerProgression({ ...chargerProgression(), step, sheetsReady, workflowReady, differe: true });
     onClose();
   };
 
@@ -229,9 +234,10 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-[95] flex items-center justify-center bg-ink-950/92 p-4 backdrop-blur-sm">
       <div className="card relative flex w-full max-w-3xl flex-col overflow-hidden md:flex-row animate-fade-up" style={{ maxHeight: "92vh" }}>
         <button
-          onClick={onClose}
+          onClick={differer}
           className="absolute right-3 top-3 z-10 grid h-8 w-8 place-items-center rounded-full text-paper-faint hover:bg-ink-800 hover:text-paper"
           aria-label="Fermer l'assistant"
+          title="Fermer — la progression est gardée, l'assistant ne se rouvrira pas tout seul"
         >
           <X size={16} />
         </button>
