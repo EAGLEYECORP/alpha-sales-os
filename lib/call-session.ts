@@ -29,6 +29,8 @@ export interface CallTarget {
   hot: boolean;
   /** Jours depuis le dernier contact (null si jamais contacté). */
   daysSinceContact: number | null;
+  /** Déjà appelé aujourd'hui — lu dans la timeline, donc vrai après un F5. */
+  faitAujourdhui: boolean;
 }
 
 const DAY = 86_400_000;
@@ -105,8 +107,28 @@ export function callAngle(p: Prospect, v: VerticalPlaybook | null, daysSince: nu
   };
 }
 
+/**
+ * Cette fiche a-t-elle DÉJÀ été appelée aujourd'hui ?
+ *
+ * La page d'appels gardait sa progression dans un `useState` — perdue au
+ * rechargement, alors que son propre commentaire promettait le contraire.
+ * Sur une session de cent numéros, un onglet fermé par erreur faisait
+ * recommencer la liste à zéro, dans le même ordre, sans marquer les faits.
+ *
+ * La vraie source est la timeline : un appel consigné aujourd'hui EST la
+ * preuve qu'on l'a fait. On la relit au lieu de la mémoriser deux fois.
+ */
+export function appeleAujourdhui(p: Prospect, now: Date = new Date()): boolean {
+  const jour = now.toISOString().slice(0, 10);
+  return (p.events ?? []).some((e) => e.kind === "appel" && (e.date ?? "").slice(0, 10) === jour);
+}
+
 /** Construit la session : la verticale, puis les cibles triées. */
-export function buildCallSession(prospects: Prospect[], verticalId: string): { vertical: VerticalPlaybook | null; targets: CallTarget[] } {
+export function buildCallSession(
+  prospects: Prospect[],
+  verticalId: string,
+  now: Date = new Date()
+): { vertical: VerticalPlaybook | null; targets: CallTarget[] } {
   const vertical = VERTICALS.find((v) => v.id === verticalId) ?? null;
 
   const targets = prospects
@@ -121,11 +143,19 @@ export function buildCallSession(prospects: Prospect[], verticalId: string): { v
     })
     .map((p) => {
       const last = lastContactAt(p);
-      const daysSinceContact = last === null ? null : Math.floor((Date.now() - last) / DAY);
+      const daysSinceContact = last === null ? null : Math.floor((now.getTime() - last) / DAY);
       const { angle, hot } = callAngle(p, vertical, daysSinceContact);
-      return { prospect: p, heat: heat(p), angle, hot, daysSinceContact };
+      return { prospect: p, heat: heat(p), angle, hot, daysSinceContact, faitAujourdhui: appeleAujourdhui(p, now) };
     })
-    .sort((a, b) => Number(b.hot) - Number(a.hot) || b.heat - a.heat);
+    // Les fiches déjà traitées aujourd'hui descendent, elles ne disparaissent
+    // pas : on doit pouvoir corriger un statut mal cliqué. Mais on travaille
+    // toujours depuis le haut, et le compteur « restants » redevient juste.
+    .sort(
+      (a, b) =>
+        Number(a.faitAujourdhui) - Number(b.faitAujourdhui) ||
+        Number(b.hot) - Number(a.hot) ||
+        b.heat - a.heat
+    );
 
   return { vertical, targets };
 }

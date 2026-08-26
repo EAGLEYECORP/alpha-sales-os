@@ -55,6 +55,8 @@ export default function AppelsPage() {
   const [scriptOpen, setScriptOpen] = useState(true);
   const [assistOpen, setAssistOpen] = useState(false);
   const [done, setDone] = useState<Record<string, Outcome>>({});
+  // Fiches dont on rouvre volontairement les boutons pour corriger un statut.
+  const [reouvert, setReouvert] = useState<Set<string>>(() => new Set());
 
   const verticalId = activeId || verticals[0]?.vertical.id || "";
   const { vertical, targets } = useMemo(
@@ -62,11 +64,28 @@ export default function AppelsPage() {
     [prospects, verticalId]
   );
 
+  /**
+   * La progression se LIT dans la timeline, elle ne se mémorise pas deux fois.
+   *
+   * `done` ne portait que la session courante : un rechargement — un onglet
+   * fermé, un téléphone verrouillé — remettait cent numéros dans le même ordre
+   * sans marquer ceux déjà faits. Le CRM, lui, avait bien tout consigné.
+   *
+   * `done` reste utile pour l'instant d'après le clic (avant que le store ne
+   * re-rende) et pour le bouton « Masquer ». La timeline tranche pour le reste.
+   */
+  const traite = (p: Prospect): Outcome | "fait" | undefined => {
+    if (done[p.id]) return done[p.id];
+    if (reouvert.has(p.id)) return undefined;
+    return targets.find((t) => t.prospect.id === p.id)?.faitAujourdhui ? "fait" : undefined;
+  };
+
+  const faits = targets.filter((t) => t.faitAujourdhui || done[t.prospect.id]).length;
   const counts = {
     rdv: Object.values(done).filter((o) => o === "rdv").length,
     rappeler: Object.values(done).filter((o) => o === "rappeler").length,
-    traites: Object.keys(done).length,
-    restants: targets.length - Object.keys(done).length,
+    traites: faits,
+    restants: targets.length - faits,
   };
 
   /** Consigne l'appel : touche réelle + next step daté. Doctrine. */
@@ -280,13 +299,14 @@ export default function AppelsPage() {
       {/* La liste */}
       <section className="space-y-2">
         {targets.map(({ prospect: p, heat: h, angle, hot, daysSinceContact }) => {
-          const outcome = done[p.id];
+          const etat = traite(p);
+          const outcome = etat === "fait" ? undefined : etat;
           return (
             <div
               key={p.id}
               className={cn(
                 "card p-4 transition-opacity",
-                outcome && "opacity-50",
+                etat && "opacity-50",
                 outcome === "rdv" && "border-signal-green/50 opacity-100"
               )}
             >
@@ -332,6 +352,20 @@ export default function AppelsPage() {
                     <span className={cn("chip", OUTCOME_META[outcome].tone)}>{OUTCOME_META[outcome].label} · consigné ✓</span>
                     <button className="btn-ghost px-2.5 py-1.5 text-[11.5px]" onClick={() => undo(p.id)}>
                       Masquer
+                    </button>
+                  </>
+                ) : etat === "fait" ? (
+                  /* Appel consigné aujourd'hui, mais dans une autre session (ou
+                     avant un rechargement). On ne réaffiche pas les boutons par
+                     défaut — c'est ce qui faisait rappeler deux fois — sans pour
+                     autant interdire de corriger un statut mal cliqué. */
+                  <>
+                    <span className="chip border-ink-600 text-paper-faint">Appelé aujourd&apos;hui · consigné ✓</span>
+                    <button
+                      className="btn-ghost px-2.5 py-1.5 text-[11.5px]"
+                      onClick={() => setReouvert((r) => new Set(r).add(p.id))}
+                    >
+                      Corriger le statut
                     </button>
                   </>
                 ) : (

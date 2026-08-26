@@ -970,6 +970,32 @@ export const useAlpha = create<AlphaState>()(
         if (typeof localStorage === "undefined") throw new Error("localStorage indisponible");
         return guardedLocalStorage;
       }),
+      /**
+       * ⚠ `merge` TOURNE À CHAQUE RÉHYDRATATION, `migrate` seulement au
+       * changement de version. C'est toute la différence.
+       *
+       * `prospectDefaults` a longtemps ignoré cinq tableaux (`events`,
+       * `objections`, `obstacles`, `attachments`, `tags`). Les fiches
+       * importées pendant cette période sont DÉJÀ dans le localStorage des
+       * utilisateurs, écrites sous la version courante — `migrate` ne les
+       * reverra donc jamais, et l'écran « Aujourd'hui » continuerait de
+       * planter sur elles après la correction du socle.
+       *
+       * Normaliser ici répare le stock existant au prochain chargement, et
+       * garantit qu'aucune fiche partielle ne peut atteindre l'interface,
+       * quelle que soit la version qui l'a écrite. Le coût est un spread par
+       * fiche, négligeable à côté du JSON.parse qui vient d'avoir lieu.
+       */
+      merge: (persisted, courant) => {
+        const s = (persisted ?? {}) as Partial<AlphaState>;
+        return {
+          ...courant,
+          ...s,
+          prospects: (s.prospects ?? courant.prospects).map(normalizeProspect),
+          campaigns: (s.campaigns ?? courant.campaigns).map(normalizeCampaign),
+          meetings: (s.meetings ?? courant.meetings).map(normalizeMeeting),
+        } as AlphaState;
+      },
       migrate: (persisted) => {
         const s = persisted as Partial<AlphaState>;
         return {

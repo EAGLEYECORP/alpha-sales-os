@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { construireJournee } from "../lib/priorites";
-import { buildCallSession, verticalsWithTargets } from "../lib/call-session";
+import { appeleAujourdhui, buildCallSession, verticalsWithTargets } from "../lib/call-session";
 import { attemptsFromEvents } from "../lib/master-rappel";
 import { aRefuseTouteRelance, DO_NOT_CALL_TAG } from "../lib/voice-script";
 import { masterRappel } from "../lib/master-rappel";
@@ -246,4 +246,70 @@ test("le tag d'opposition n'est écrit qu'à un seul endroit", () => {
   const page = readFileSync(join(process.cwd(), "app/(app)/appels/page.tsx"), "utf8");
   assert.ok(page.includes("DO_NOT_CALL_TAG"), "la page doit utiliser la constante");
   assert.doesNotMatch(page, /"ne-pas-appeler"/, "aucun littéral en dur dans la page");
+});
+
+// ─────────── 6. LE STOCK DÉJÀ CASSÉ DANS LES NAVIGATEURS ───────────
+
+test("les fiches partielles déjà persistées sont réparées à la réhydratation", () => {
+  /**
+   * Corriger `prospectDefaults` répare les imports FUTURS. Les fiches
+   * écrites avant, elles, sont déjà dans le localStorage sous la version
+   * courante — `migrate` est gated par la version et ne les reverra jamais.
+   * C'est `merge` qui doit s'en charger, à chaque réhydratation.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/store.ts"), "utf8");
+  const merge = src.slice(src.indexOf("merge: (persisted"), src.indexOf("migrate: (persisted"));
+  assert.ok(merge.length > 0, "le store doit définir un `merge`");
+  assert.match(merge, /normalizeProspect/, "merge doit normaliser les fiches, pas seulement les recopier");
+});
+
+// ─────────── 7. LA PROGRESSION D'UNE SESSION D'APPELS ───────────
+
+test("la progression d'appel survit au rechargement — elle se lit dans la timeline", () => {
+  /**
+   * La page promettait dans son propre commentaire que « rien ne se perd au
+   * rechargement ». C'était vrai des données, faux de la progression : elle
+   * vivait dans un `useState`. Sur cent numéros, un onglet fermé remettait
+   * la liste à zéro, dans le même ordre, sans marquer ce qui était fait.
+   */
+  const fait = prospect({
+    id: "fait",
+    stage: "prospect",
+    phone: "0478000001",
+    sector: "restaurant",
+    events: [ev("e", 0, "appel", RESULTATS_MANUELS.messagerie.summary)],
+  });
+  const aFaire = prospect({ id: "todo", stage: "prospect", phone: "0478000002", sector: "restaurant", events: [] });
+
+  assert.equal(appeleAujourdhui(fait, NOW), true);
+  assert.equal(appeleAujourdhui(aFaire, NOW), false);
+
+  const { targets } = buildCallSession([fait, aFaire], "restauration", NOW);
+  assert.deepEqual(
+    targets.map((t) => t.prospect.id),
+    ["todo", "fait"],
+    "ce qui est fait descend, on travaille toujours depuis le haut"
+  );
+  assert.equal(targets.find((t) => t.prospect.id === "fait")!.faitAujourdhui, true);
+});
+
+test("un appel d'HIER ne compte pas comme fait aujourd'hui", () => {
+  const hier = prospect({
+    id: "h",
+    stage: "prospect",
+    phone: "0478000003",
+    sector: "restaurant",
+    events: [ev("e", 1, "appel", RESULTATS_MANUELS.messagerie.summary)],
+  });
+  assert.equal(appeleAujourdhui(hier, NOW), false);
+});
+
+test("la page ne recompte plus la progression à la main", () => {
+  const src = readFileSync(join(process.cwd(), "app/(app)/appels/page.tsx"), "utf8");
+  assert.ok(src.includes("faitAujourdhui"), "le compteur doit venir de la timeline");
+  assert.doesNotMatch(
+    src,
+    /restants:\s*targets\.length\s*-\s*Object\.keys\(done\)\.length/,
+    "le compteur ne doit plus dépendre du seul état local"
+  );
 });
