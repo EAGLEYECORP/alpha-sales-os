@@ -1,7 +1,8 @@
 import type { Prospect, Stage } from "./types";
 import { getAccount } from "./accounts";
 import { vitalSigns, type VitalSigns } from "./vital-signs";
-import { cadenceFor, type CallAttempt } from "./call-cadence";
+import { cadenceFor, cibleDepuisProspect, plafondRappels, type CallAttempt } from "./call-cadence";
+import type { Reactivite } from "./reactivite";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -79,6 +80,13 @@ export interface CommsPlan {
   say: string;
   /** Ce qu'il ne faut surtout PAS faire avec ce prospect-là. */
   avoid: string[];
+  /**
+   * La réactivité mesurée (ouvertures, clics), quand elle a été fournie.
+   *
+   * `null` = personne ne l'a passée. Ce n'est PAS « il n'ouvre pas » : c'est
+   * un angle mort, et le plan doit le dire au lieu de conclure.
+   */
+  reactivite: Reactivite | null;
 }
 
 export interface MasterPlan {
@@ -140,13 +148,22 @@ export function attemptsFromEvents(p: Prospect): CallAttempt[] {
  */
 export function masterRappel(
   p: Prospect,
-  opts: { now?: Date; attempts?: CallAttempt[]; accountId?: string } = {}
+  opts: { now?: Date; attempts?: CallAttempt[]; accountId?: string; reactivite?: Reactivite } = {}
 ): MasterPlan {
   const now = opts.now ?? new Date();
   // Sans historique fourni, on le déduit de la timeline : zéro double saisie.
   const attempts = opts.attempts ?? attemptsFromEvents(p);
   const signs = vitalSigns(p, now);
-  const cadence = cadenceFor(attempts, now);
+  /**
+   * La cadence se calcule sur la CIBLE, comme dans l'autopilote.
+   *
+   * Sans elle, le plan annonçait « rappel 3/5 » alors que `campaign-runner`
+   * s'arrêtait à 4 sur une fiche sans SIREN (plafond du décret n° 2022-1313).
+   * Le nombre affiché à l'humain était donc au-dessus de ce que le code
+   * s'autorisait — et c'est l'humain qui compose.
+   */
+  const cadence = cadenceFor(attempts, now, cibleDepuisProspect(p));
+  const plafond = plafondRappels(cibleDepuisProspect(p));
   const win = signs.bestWindow.at;
 
   const human: Action[] = [];
@@ -166,7 +183,7 @@ export function masterRappel(
     alpha.push({
       id: "cadence-appel",
       owner: "alpha",
-      do: `Passer le rappel ${cadence.recallsUsed + 1}/5 (cadence Callflow).`,
+      do: `Passer le rappel ${cadence.recallsUsed + 1}/${plafond.max} (cadence Callflow).`,
       channel: "appel",
       when: now.toISOString(),
       why: cadence.reason,
@@ -176,7 +193,7 @@ export function masterRappel(
     alpha.push({
       id: "cadence-attente",
       owner: "alpha",
-      do: `Rappel ${cadence.recallsUsed + 1}/5 programmé.`,
+      do: `Rappel ${cadence.recallsUsed + 1}/${plafond.max} programmé.`,
       channel: "appel",
       when: cadence.nextCallAt,
       why: cadence.reason,
@@ -397,7 +414,7 @@ export function masterRappel(
     ? `PRÊT À SIGNER — ${closing.action}`
     : (human[0]?.do ?? alpha[0]?.do ?? "Qualifier la fiche.");
 
-  const comms = buildComms(p, signs);
+  const comms = buildComms(p, signs, opts.reactivite ?? null);
 
   return { prospectId: p.id, stage: p.stage, signs, comms, human, alpha, checks, closing, headline };
 }
@@ -410,7 +427,7 @@ export function masterRappel(
  * Appliquer la même cadence à tout le monde est la meilleure façon de brûler
  * la moitié du fichier.
  */
-function buildComms(p: Prospect, s: VitalSigns): CommsPlan {
+function buildComms(p: Prospect, s: VitalSigns, r: Reactivite | null): CommsPlan {
   const avoid: string[] = [];
 
   // ── Fréquence : dictée par la fatigue et la réactivité ──
@@ -424,9 +441,26 @@ function buildComms(p: Prospect, s: VitalSigns): CommsPlan {
   // ── Canal : celui qui casse la routine quand l'actuel ne répond plus ──
   let channel: Channel;
   if (s.readiness >= 70) channel = "visio";
-  else if (s.unansweredTouches >= 3) {
+  else if (r?.lecture === "clic" || r?.lecture === "lu-sans-reponse") {
+    /**
+     * ── LA CORRECTION QUE LA RÉACTIVITÉ APPORTE ──
+     *
+     * Sans données d'ouverture, trois touches sans réponse déclenchaient un
+     * changement de canal. Mais s'il OUVRE, le canal marche : c'est la
+     * demande qui coince. Changer de registre à ce moment-là jette le seul
+     * canal dont on a la preuve qu'il passe.
+     *
+     * L'inverse est vrai aussi : zéro signal sur plusieurs envois, et le
+     * problème est probablement technique avant d'être commercial.
+     */
+    channel = "email";
+    avoid.push(
+      "Abandonner l'email parce qu'il ne répond pas : il l'OUVRE. Le canal passe, c'est la demande qui est trop grosse."
+    );
+  } else if (s.unansweredTouches >= 3) {
     channel = "terrain"; // le canal écrit a échoué : changer de registre
     avoid.push("Continuer sur le canal qui n'a rien donné — il a déjà ignoré ce format.");
+    if (r?.lecture === "muet" && r.conseil) avoid.push(r.conseil);
   } else if (p.stage === "prospect" || p.stage === "contact") channel = "appel";
   else channel = "email";
 
@@ -442,8 +476,14 @@ function buildComms(p: Prospect, s: VitalSigns): CommsPlan {
 
   // ── Quoi dire MAINTENANT ──
   const pain = p.problems?.[0] ?? (p.objections ?? []).find((o) => o.status !== "traitee")?.label;
+  // Un signal frais prime sur tout le reste : c'est la seule chose qu'on sait
+  // de LUI aujourd'hui, et elle donne l'accroche exacte.
+  const fraisEtChaud =
+    r && (r.lecture === "clic" || r.lecture === "lu-sans-reponse") && (r.heuresDepuisSignal ?? Infinity) <= 48;
   const say =
-    s.readiness >= 70
+    fraisEtChaud && r?.conseil
+      ? r.conseil
+      : s.readiness >= 70
       ? "« On a tout ce qu'il faut. Je vous envoie le document — on démarre quand ? »"
       : s.fatigueLevel === "sature"
         ? "Une raison NEUVE, jamais « je me permets de relancer » : un résultat obtenu ailleurs, une preuve, une actualité de son métier."
@@ -460,15 +500,17 @@ function buildComms(p: Prospect, s: VitalSigns): CommsPlan {
     avoid.push("Pousser vers la signature tant que l'objection bloquante n'est pas levée.");
   if (p.nextStep?.date) avoid.push("Doubler un rendez-vous déjà calé par une relance parasite.");
 
-  return { channel, everyDays, tone, say, avoid };
+  return { channel, everyDays, tone, say, avoid, reactivite: r };
 }
 
 /** Les plans de tout le pipe, les plus prêts d'abord. */
 export function masterRappelAll(
   prospects: Prospect[],
-  opts: { now?: Date; accountId?: string } = {}
+  opts: { now?: Date; accountId?: string; reactivite?: Record<string, Reactivite> } = {}
 ): MasterPlan[] {
+  // La réactivité est indexée par prospect : chaque plan reçoit LA sienne,
+  // et l'absence d'entrée reste un angle mort, pas un « il n'ouvre pas ».
   return prospects
-    .map((p) => masterRappel(p, opts))
+    .map((p) => masterRappel(p, { ...opts, reactivite: opts.reactivite?.[p.id] }))
     .sort((a, b) => b.signs.readiness - a.signs.readiness);
 }

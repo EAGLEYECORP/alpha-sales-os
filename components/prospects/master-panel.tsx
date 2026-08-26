@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity, AlertTriangle, Bot, CalendarClock, Check, CheckCircle2, ChevronDown, Circle,
-  Clock, Coins, FileSignature, Gauge, MessageSquare, Radio, User, X,
+  Clock, Coins, FileSignature, Gauge, MailOpen, MessageSquare, Radio, User, X,
 } from "lucide-react";
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
 import { masterRappel, type RunCheck, type Action } from "@/lib/master-rappel";
+import { lireReactivite, type EnvoiSuivi, type Reactivite } from "@/lib/reactivite";
 import { useAccountCommercial } from "@/lib/client-catalogue";
 import { buildArgumentaire, argumentaireText } from "@/lib/argumentaire";
 import { cn } from "@/lib/utils";
@@ -17,8 +18,13 @@ import { cn } from "@/lib/utils";
  * maintenant, qu'est-ce que je fais, qu'est-ce qu'Alpha fait, et est-ce que
  * ça tourne vraiment ?
  *
- * Tout est calculé côté client à partir de la fiche (modules purs) : aucun
- * appel réseau, aucune clé. La fiche est donc toujours à jour, même hors ligne.
+ * Tout est calculé côté client à partir de la fiche (modules purs) : aucune
+ * clé, et le plan reste complet hors ligne.
+ *
+ * UNE seule lecture réseau, facultative : les ouvertures et les clics de ses
+ * emails. Elle CORRIGE le plan quand elle arrive (« il ouvre » ≠ « il ignore »)
+ * et ne le bloque jamais quand elle échoue — sans elle, la réactivité reste
+ * un angle mort déclaré, pas un « il n'ouvre pas » supposé.
  */
 export function MasterPanel({ p }: { p: Prospect }) {
   const accountId = useAlpha((s) => s.settings.accountId);
@@ -26,7 +32,29 @@ export function MasterPanel({ p }: { p: Prospect }) {
 
   // `now` figé au montage : sans ça, chaque rendu redécale les échéances.
   const now = useMemo(() => new Date(), []);
-  const plan = useMemo(() => masterRappel(p, { now, accountId }), [p, now, accountId]);
+
+  const [reactivite, setReactivite] = useState<Reactivite | undefined>(undefined);
+  useEffect(() => {
+    let vivant = true;
+    fetch(`/api/track/stats?prospectId=${encodeURIComponent(p.id)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!vivant) return;
+        const envois = (Array.isArray(d.records) ? d.records : []) as EnvoiSuivi[];
+        setReactivite(lireReactivite(envois));
+      })
+      // Un échec réseau laisse `undefined` : le plan se calcule sans, et
+      // l'écran dira « angle mort » plutôt qu'une conclusion inventée.
+      .catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, [p.id]);
+
+  const plan = useMemo(
+    () => masterRappel(p, { now, accountId, reactivite }),
+    [p, now, accountId, reactivite]
+  );
   const argu = useMemo(() => buildArgumentaire(p, accountId), [p, accountId]);
 
   const s = plan.signs;
@@ -91,6 +119,25 @@ export function MasterPanel({ p }: { p: Prospect }) {
         </div>
         <p className="mt-1.5 text-[11.5px] text-paper-dim">{plan.comms.say}</p>
         <p className="mt-1 text-[11px] italic text-paper-faint">Ton : {plan.comms.tone}</p>
+
+        {/* La réactivité mesurée, avec sa réserve. Elle est affichée telle
+            quelle : un taux d'ouverture est un plancher, jamais une mesure,
+            et le lecteur doit voir la limite en même temps que le chiffre. */}
+        {plan.comms.reactivite && (
+          <p
+            className={cn(
+              "mt-2 flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] leading-relaxed",
+              plan.comms.reactivite.lecture === "clic"
+                ? "border-signal-green/40 bg-signal-green/5 text-signal-green"
+                : plan.comms.reactivite.lecture === "lu-sans-reponse"
+                  ? "border-bronze-700/40 bg-bronze-900/10 text-bronze-300"
+                  : "border-ink-700 text-paper-faint"
+            )}
+          >
+            <MailOpen size={11} className="mt-0.5 shrink-0" />
+            {plan.comms.reactivite.phrase}
+          </p>
+        )}
         {plan.comms.avoid.length > 0 && (
           <ul className="mt-2 space-y-0.5">
             {plan.comms.avoid.map((a) => (

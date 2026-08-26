@@ -1,5 +1,5 @@
 import type { Prospect } from "./types";
-import { cadenceFor } from "./call-cadence";
+import { cadenceFor, cibleDepuisProspect } from "./call-cadence";
 import { attemptsFromEvents } from "./master-rappel";
 import { vitalSigns } from "./vital-signs";
 import { deepDive, briefForScript } from "./deep-dive";
@@ -171,10 +171,7 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
      * Le SIREN se lit dans les notes : c'est là que l'import terrain l'écrit
      * après croisement avec le registre.
      */
-    const cadence = cadenceFor(attemptsFromEvents(p), now, {
-      telephone: p.phone,
-      siren: p.notes.match(/\bSIREN\s*:?\s*(\d{9})\b/i)?.[1],
-    });
+    const cadence = cadenceFor(attemptsFromEvents(p), now, cibleDepuisProspect(p));
     if (cadence.state === "repondu-passer-humain") {
       push(p, "a-repondu", "Il a répondu — Alpha Voice s'arrête, la main est au closer.");
       continue;

@@ -63,6 +63,29 @@ export interface RisqueCible {
 const MOBILE_FR = /^(?:\+33|0)\s*[67]/;
 
 /**
+ * Le SIREN, tel que l'import terrain l'écrit dans les notes après croisement
+ * au registre. Un seul motif, partagé — deux relectures différentes du même
+ * champ finissent par donner deux plafonds différents pour la même fiche.
+ */
+const SIREN_DANS_NOTES = /\bSIREN\s*:?\s*(\d{9})\b/i;
+
+/**
+ * La cible de risque d'un prospect — LE point d'entrée unique.
+ *
+ * ⚠ Appeler `cadenceFor` sans cible retombe sur la cadence Callflow complète
+ * (5 rappels), c'est-à-dire au-dessus du plafond légal quand la fiche n'a pas
+ * de SIREN. C'était le cas de `masterRappel` : le plan affiché à l'humain
+ * annonçait « rappel 3/5 » pendant que l'autopilote, lui, s'arrêtait à 4.
+ * Deux réponses pour la même fiche, et celle montrée était la mauvaise.
+ */
+export function cibleDepuisProspect(p: { phone?: string; notes?: string }): RisqueCible {
+  return {
+    telephone: p.phone,
+    siren: (p.notes ?? "").match(SIREN_DANS_NOTES)?.[1],
+  };
+}
+
+/**
  * Le nombre de rappels réellement autorisés sur cette cible.
  *
  * Rend AUSSI la raison : un plafond appliqué sans motif se contourne au

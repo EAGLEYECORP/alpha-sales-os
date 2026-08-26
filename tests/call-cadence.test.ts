@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  cadenceFor, plannedRecalls, plafondRappels, CALLFLOW_MAX_RECALLS, PLAFOND_SOLLICITATIONS_B2C,
+  cadenceFor, cibleDepuisProspect, plannedRecalls, plafondRappels, CALLFLOW_MAX_RECALLS, PLAFOND_SOLLICITATIONS_B2C,
   type CallAttempt,
 } from "../lib/call-cadence";
+import { masterRappel } from "../lib/master-rappel";
+import { prospect } from "./fixtures";
 
 const T0 = "2026-08-03T09:00:00.000Z";
 const at = (h: number) => new Date(new Date(T0).getTime() + h * 3600_000);
@@ -142,8 +144,46 @@ test("cadence — le SIREN doit VOYAGER de l'import jusqu'au runner", () => {
    * tout le monde.
    */
   const runner = readFileSync(join(process.cwd(), "lib/campaign-runner.ts"), "utf8");
-  assert.match(runner, /cadenceFor\([\s\S]{0,120}siren/, "le runner doit passer le SIREN à la cadence");
+  assert.match(
+    runner,
+    /cadenceFor\([\s\S]{0,120}cibleDepuisProspect/,
+    "le runner doit passer la cible (donc le SIREN) à la cadence"
+  );
 
   const importTerrain = readFileSync(join(process.cwd(), "lib/sourcing-terrain-import.ts"), "utf8");
   assert.match(importTerrain, /SIREN\s*:/, "l'import terrain doit écrire le SIREN là où le runner le relit");
+
+  // Le mécanisme, pas le mot : la relecture du SIREN doit vraiment marcher
+  // sur le texte que l'import écrit.
+  const cible = cibleDepuisProspect({ phone: "0612345678", notes: "Fiche terrain\nSIREN : 123456789\nAPE 45.20A" });
+  assert.equal(cible.siren, "123456789");
+  assert.equal(plafondRappels(cible).plafonne, false, "un SIREN lu doit lever le plafond");
+});
+
+test("cadence — le plan affiché à l'humain annonce le MÊME plafond que l'autopilote", () => {
+  /**
+   * `masterRappel` appelait `cadenceFor(attempts, now)` sans cible et écrivait
+   * « rappel n/5 » en dur. Sur une fiche sans SIREN, l'humain lisait donc un
+   * plan à 5 rappels pendant que le runner s'arrêtait à 4 — et c'est l'humain
+   * qui compose.
+   */
+  const p = prospect({
+    phone: "0612345678",
+    notes: "aucun SIREN connu",
+    events: [
+      { id: "e1", date: at(0).toISOString(), kind: "appel", summary: "Sans réponse" },
+      { id: "e2", date: at(3).toISOString(), kind: "appel", summary: "Sans réponse" },
+    ],
+  });
+
+  const attendu = plafondRappels(cibleDepuisProspect(p));
+  assert.equal(attendu.max, PLAFOND_SOLLICITATIONS_B2C - 1, "sans SIREN, 3 rappels au maximum");
+
+  const plan = masterRappel(p, { now: at(30) });
+  const ligne = [...plan.alpha, ...plan.human].map((a) => a.do).join(" | ");
+  assert.ok(
+    !/\/5\b/.test(ligne),
+    `le plan ne doit plus annoncer un plafond de 5 sur une fiche sans SIREN : ${ligne}`
+  );
+  assert.match(ligne, new RegExp(`/${attendu.max}\\b`), `le plan doit annoncer /${attendu.max}`);
 });
