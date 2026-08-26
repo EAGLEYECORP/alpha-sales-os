@@ -73,6 +73,75 @@ export const OUTBOUND_TIERS: OutboundTier[] = [
   },
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE PALIER D'ESSAI — ce qui manquait pour transformer une démo en client.
+ *
+ * Le parcours voulu est : démo gratuite → PREMIER LOT PAYANT → mensualité.
+ * Or la grille n'avait pas de marche entre les deux : 100 appels étaient
+ * facturés au millier entamé, soit 364 € — le prix d'un mois entier pour un
+ * test. Personne ne dit oui à ça après une démo.
+ *
+ * ⚠ CE QU'ON VEND ICI N'EST PAS « 100 APPELS ».
+ *
+ * 100 appels coûtent quelques euros de téléphonie et de jetons : les vendre au
+ * prix de la consommation (×4 ferait ~16 €) n'aurait aucun sens. Ce qui coûte,
+ * c'est la MISE EN ROUTE — le script, le trunk SIP, le premier lot de numéros,
+ * l'écoute des premiers appels. Plusieurs heures de travail humain, qu'on
+ * facture une fois.
+ *
+ * D'où le cadrage, et il doit être dit tel quel au client : « frais de mise en
+ * route, 100 appels réels inclus ». Pas « un forfait 100 appels » — sinon il
+ * compare au prix du millier et il a raison de trouver ça cher.
+ *
+ * ⚠ Le prix est VOLONTAIREMENT loin de la proportionnelle (2 900 €/millier
+ * équivalent contre 364 €). Sans cet écart, dix lots de 100 coûteraient moins
+ * cher qu'un lot de 1 000 et on fabriquerait l'arbitrage inverse de celui
+ * qu'on veut.
+ *
+ * ⚠ À VALIDER : ce montant couvre ~4 h de mise en route. Il se corrige ici
+ * après la première installation réelle, quand on saura le vrai temps passé.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const ESSAI_CALLS = 100;
+export const ESSAI_HT = 290;
+
+/** Fenêtre pendant laquelle l'essai se déduit du premier mois. */
+export const ESSAI_DEDUCTIBLE_JOURS = 30;
+
+export interface EssaiQuote {
+  calls: number;
+  totalHT: number;
+  /** Ce qu'un millier coûterait à ce rythme — l'écart rend le palier suivant évident. */
+  perThousandEquivalentHT: number;
+  /** Déduit du premier mois si le client bascule dans la fenêtre. */
+  deductibleHT: number;
+  pitch: string;
+  conditions: string[];
+}
+
+/**
+ * Le devis d'essai. Un seul par client — c'est une porte d'entrée, pas un
+ * abonnement déguisé.
+ */
+export function prixEssai(): EssaiQuote {
+  return {
+    calls: ESSAI_CALLS,
+    totalHT: ESSAI_HT,
+    perThousandEquivalentHT: Math.round((ESSAI_HT / ESSAI_CALLS) * OUTBOUND_UNIT_CALLS),
+    deductibleHT: ESSAI_HT,
+    pitch:
+      `Mise en route d'Alpha Voice + ${ESSAI_CALLS} appels réels inclus — ${ESSAI_HT} € HT, une fois. ` +
+      `La démo est gratuite ; dès qu'on compose de vrais numéros, il y a de la téléphonie et des jetons à payer.`,
+    conditions: [
+      `Déduit intégralement du premier mois si tu passes au palier ${OUTBOUND_UNIT_CALLS} appels sous ${ESSAI_DEDUCTIBLE_JOURS} jours.`,
+      "Un seul essai par client — ce n'est pas un abonnement à 100 appels.",
+      `Au-delà de ${ESSAI_CALLS} appels, on bascule sur la grille mensuelle (${OUTBOUND_UNIT_HT} € HT le millier).`,
+      "Les numéros à appeler sont fournis par le client, ou sourcés ensemble au cadrage.",
+    ],
+  };
+}
+
 export interface OutboundQuote {
   calls: number;
   monthlyHT: number;
@@ -110,7 +179,15 @@ export function outboundPrice(calls: number): OutboundQuote {
     calls: c,
     monthlyHT,
     perThousandHT: Math.round(monthlyHT / (c / OUTBOUND_UNIT_CALLS)),
-    note: c % OUTBOUND_UNIT_CALLS !== 0 ? `Facturé au millier entamé (${thousands} × ${OUTBOUND_UNIT_HT} € HT).` : undefined,
+    note:
+      c < OUTBOUND_UNIT_CALLS
+        ? // Sous le millier, l'abonnement est le mauvais produit : c'est une
+          // mise en route, pas un mois. On le dit au lieu de facturer un
+          // millier entamé — c'est ce prix-là qui tuait les premiers essais.
+          `Sous ${OUTBOUND_UNIT_CALLS} appels, l'abonnement mensuel n'est pas le bon produit : prends le palier d'essai (${ESSAI_HT} € HT, mise en route + ${ESSAI_CALLS} appels inclus, déduits du premier mois).`
+        : c % OUTBOUND_UNIT_CALLS !== 0
+          ? `Facturé au millier entamé (${thousands} × ${OUTBOUND_UNIT_HT} € HT).`
+          : undefined,
   };
 }
 
