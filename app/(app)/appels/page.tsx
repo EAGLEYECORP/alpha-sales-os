@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { HEAT_HEX, heatTone } from "@/lib/closer";
 import { SourcingTerrainPanel } from "@/components/appels/sourcing-terrain-panel";
 import { CalibrationPanel } from "@/components/appels/calibration-panel";
+import { LeconsVerticale } from "@/components/appels/lecons-verticale";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
 
@@ -196,6 +197,11 @@ export default function AppelsPage() {
           </button>
         )}
       </div>
+
+      {/* Ce qu'on a appris sur ce métier — AVANT le script, parce qu'une
+          leçon tirée d'un rendez-vous réel prime sur un opener écrit à froid.
+          Ne s'affiche que s'il y a quelque chose de vrai à dire. */}
+      <LeconsVerticale vertical={vertical} targets={targets.map((t) => t.prospect)} />
 
       {/* Le script de la verticale */}
       {vertical && (

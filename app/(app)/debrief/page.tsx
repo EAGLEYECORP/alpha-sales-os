@@ -19,6 +19,7 @@ import { useAlpha } from "@/lib/store";
 import { useSpeech } from "@/components/voice/use-speech";
 import { useRecorder } from "@/components/voice/use-recorder";
 import { extractDebrief, type DebriefDraft } from "@/lib/debrief";
+import { leconDeDebrief } from "@/lib/apprentissage";
 import { stageById } from "@/lib/hormozi";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +36,7 @@ import { cn } from "@/lib/utils";
  * par champ, et l'écran dit ce qu'il n'a PAS trouvé.
  */
 export default function DebriefPage() {
-  const { prospects, addEvent, setNextStep, moveStage, patchProspect } = useAlpha();
+  const { prospects, addEvent, setNextStep, moveStage, patchProspect, apprendre, settings } = useAlpha();
   const speech = useSpeech({ lang: "fr-FR", continuous: true });
   const recorder = useRecorder();
 
@@ -66,6 +67,7 @@ export default function DebriefPage() {
   const [saved, setSaved] = useState("");
   const [typing, setTyping] = useState(false);
   const [applyStage, setApplyStage] = useState(true);
+  const [cequiAMarche, setCequiAMarche] = useState("");
 
   // Les fiches les plus plausibles en premier : celles touchées récemment.
   const candidates = useMemo(
@@ -134,6 +136,32 @@ export default function DebriefPage() {
       notes: [prospect.notes, `[Débrief ${stamp}] ${draft.notes}`].filter(Boolean).join("\n\n").slice(0, 6000),
     });
 
+    /**
+     * ── LE DÉBRIEF REVIENT DANS LE CERVEAU, PAS SEULEMENT DANS LA FICHE ──
+     *
+     * Jusqu'ici tout finissait dans les notes du prospect : relisible avant
+     * SON rendez-vous suivant, invisible partout ailleurs. `leconDeDebrief`
+     * existait et n'était appelée nulle part — la mémoire de terrain ne se
+     * remplissait qu'aux objections et aux pertes.
+     *
+     * Les freins entendus valent comme « ce qui a coûté » : ce sont les
+     * points où l'échange a accroché. La phrase qui a débloqué, elle, se
+     * saisit — aucune extraction lexicale ne peut la trouver.
+     *
+     * `apprendre` rend null quand il n'y a aucun fait : un débrief vide ne
+     * pollue pas le Cerveau, et l'identifiant déterministe fait qu'un
+     * débrief rejoué met à jour au lieu d'empiler.
+     */
+    const leconEcrite = apprendre(
+      leconDeDebrief({
+        prospect,
+        accountId: settings.accountId,
+        resume: draft.summary,
+        cequiAMarche,
+        cequiACoute: draft.objections.map((o) => o.label).join(" ; "),
+      })
+    );
+
     let stageMsg = "";
     if (applyStage && draft.stageHint && draft.stageHint !== prospect.stage) {
       const r = moveStage(prospect.id, draft.stageHint);
@@ -142,8 +170,13 @@ export default function DebriefPage() {
         : ` · étape non changée (${r.blockers[0]})`;
     }
 
-    setSaved(`Écrit dans la fiche ${prospect.company}${stageMsg}.`);
+    setSaved(
+      `Écrit dans la fiche ${prospect.company}${stageMsg}${
+        leconEcrite ? " · leçon versée au Cerveau" : ""
+      }.`
+    );
     setDraft(null);
+    setCequiAMarche("");
     speech.reset();
   };
 
@@ -326,6 +359,20 @@ export default function DebriefPage() {
                 placeholder="non entendu"
                 value={draft.interlocutor ?? ""}
                 onChange={(e) => patchDraft({ interlocutor: e.target.value })}
+              />
+            </Field>
+
+            {/* Le seul champ qu'aucune extraction ne trouvera : la phrase qui
+                a débloqué. C'est aussi le plus rentable — les objections se
+                répètent par métier, presque mot pour mot, donc une réponse
+                qui a marché ici marchera au rendez-vous suivant du même
+                métier. Facultatif : un débrief vide n'écrit rien. */}
+            <Field label="Ce qui a marché — la phrase qui a débloqué (va dans le Cerveau)">
+              <input
+                className="input w-full text-[13px]"
+                placeholder="ex. « je lui ai fait compter ses appels manqués du samedi »"
+                value={cequiAMarche}
+                onChange={(e) => setCequiAMarche(e.target.value)}
               />
             </Field>
 
