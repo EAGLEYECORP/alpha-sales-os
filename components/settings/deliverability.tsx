@@ -60,7 +60,13 @@ export function Deliverability() {
     try {
       const res = await fetch(`/api/deliverability/dns${d ? `?domain=${encodeURIComponent(d)}` : ""}`);
       const json = await res.json();
-      if (!res.ok) {
+      // « Pas encore configuré » n'est pas une panne : la route rend 200 avec
+      // `configure: false`, et l'écran doit dire l'ÉTAPE À FAIRE, pas afficher
+      // une erreur rouge qui laisse croire que quelque chose est cassé.
+      if (res.ok && json?.configure === false) {
+        setReport(null);
+        setError(json.quoiFaire ?? "Domaine d'envoi non configuré.");
+      } else if (!res.ok) {
         setReport(null);
         setError(json.error ?? "Vérification impossible.");
       } else {

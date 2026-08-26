@@ -82,7 +82,10 @@ export default function PilotePage() {
       .finally(() => setLoading(false));
     fetch("/api/deliverability/dns")
       .then((r) => (r.ok ? r.json() : null))
-      .then(setDns)
+      // `configure: false` = pas encore de domaine d'envoi. Ce n'est pas un
+      // rapport vide, c'est l'absence de configuration : on ne l'affiche pas
+      // comme un résultat.
+      .then((j) => setDns(j && j.configure === false ? null : j))
       .catch(() => setDns(null));
   };
 

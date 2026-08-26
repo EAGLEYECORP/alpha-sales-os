@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { peutLireSessions, REFUS_LECTURE } from "@/lib/voice-session-acces";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CallSession, TranscriptTurn, CallDirection, Speaker } from "@/lib/call-log";
 import { liveSessions } from "@/lib/call-log";
@@ -262,8 +263,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  if (!authorized(req)) {
-    return NextResponse.json({ error: "non autorisé" }, { status: 401 });
+  // ⚠ LIRE et ÉCRIRE n'ont pas la même porte — voir lib/voice-session-acces.ts.
+  // Le POST reste réservé au secret de l'agent ; la lecture s'ouvre à
+  // l'application elle-même, sinon la Salle de contrôle est morte en prod.
+  if (!peutLireSessions(req.headers, authorized(req))) {
+    return NextResponse.json({ error: REFUS_LECTURE }, { status: 401 });
   }
   const url = new URL(req.url);
   const prospectId = url.searchParams.get("prospectId");

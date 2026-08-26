@@ -71,10 +71,27 @@ export async function GET(request: NextRequest) {
   const domain = asked && DOMAIN_RE.test(asked) ? asked : domainFromEnv();
 
   if (!domain) {
-    return NextResponse.json(
-      { error: "Aucun domaine d'envoi : renseigne SMTP_FROM (ou passe ?domain=)." },
-      { status: 400 }
-    );
+    /**
+     * ⚠ PAS CONFIGURÉ N'EST PAS UNE ERREUR — et le code HTTP doit le dire.
+     *
+     * Cette route rendait un 400. Or 400 signifie « le client a envoyé une
+     * requête malformée » : ici la requête est parfaite, c'est le SERVEUR qui
+     * n'a pas encore de domaine d'envoi. Constaté au navigateur : deux écrans
+     * (/pilote et /settings) affichaient une erreur rouge à chaque
+     * chargement, et n'importe quelle supervision aurait compté des erreurs
+     * client qui n'en sont pas.
+     *
+     * On rend donc 200 avec un état explicite. L'écran peut alors dire
+     * « pas encore configuré » — une ÉTAPE À FAIRE — au lieu de
+     * « vérification impossible », qui ressemble à une panne.
+     */
+    return NextResponse.json({
+      configure: false,
+      domain: null,
+      quoiFaire:
+        "Aucun domaine d'envoi. Renseigne SMTP_FROM dans l'environnement, " +
+        "ou passe ?domain=exemple.fr pour vérifier un domaine ponctuellement.",
+    });
   }
 
   const [root, dmarc, mx, dkim] = await Promise.all([
