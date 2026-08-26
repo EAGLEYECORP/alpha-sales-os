@@ -407,7 +407,7 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
       <div class="tier reveal">
         <h3>Solo</h3>
         <div class="price">79 €<span> / mois</span></div>
-        <p class="psub">Un closer. Tout le cœur du système.</p>
+        <p class="psub">Un closer. Tout le cœur du système, sans les appels sortants.</p>
         <ul>
           <li>Pipeline, Aujourd&apos;hui, À décider</li>
           <li>Débrief terrain à la voix</li>
@@ -427,13 +427,20 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
         <span class="badge">Le plus choisi</span>
         <h3>Pro</h3>
         <div class="price">149 €<span> / mois</span></div>
-        <p class="psub">La machine complète — la voix et le pilote inclus.</p>
+        <p class="psub">La machine complète — la voix incluse, 200 appels par mois.</p>
         <ul>
           <li>Tout <b>Solo</b>, plus :</li>
-          <li>Alpha Voice — l&apos;agent qui parle</li>
+          <!-- ⚠ LE PLAFOND N'EST PAS DÉCORATIF. Cette ligne annonçait
+               « Alpha Voice — l'agent qui parle » sans aucune limite. Mille
+               appels coûtent ~96 € de téléphonie et de voix : il restait 53 €
+               pour TOUT le reste du produit, et l'offre passait en perte sèche
+               vers 2 200 appels. Le plafond vient de lib/offres-publiques.ts,
+               et un test refuse que la voix soit annoncée sans lui. -->
+          <li>Alpha Voice — <b>200 appels/mois inclus</b></li>
           <li>Récap urgent par SMS</li>
           <li>Pilote automatique (n8n)</li>
         </ul>
+        <p class="psub" style="font-size:.82rem;opacity:.8">Au-delà : 364 € HT par millier d&apos;appels supplémentaire, sans engagement.</p>
         <a class="btn accent" href="mailto:contact@eagleyecorp.fr?subject=D%C3%A9mo%20ALPHA%20SALES%20OS">Réserver le cadrage</a>
       </div>
       <div class="tier reveal">
