@@ -227,6 +227,31 @@ arcs de retour sont branchés ; ils se protègent par
 >   verdict et nomme le fichier ; la constante se change à la main, et ça se
 >   voit dans un diff.
 
+## Les quatre règles d'écran (elles ont toutes coûté un bug)
+1. **`prospectDefaults` (`lib/seed.ts`) est le socle de TOUS les imports**, pas
+   des données de démo. Tout champ non optionnel de `Prospect` y a sa valeur
+   neutre. Il manquait cinq tableaux → `/aujourdhui` tombait en écran blanc
+   après un import terrain. `merge` renormalise à chaque réhydratation, sinon
+   le stock déjà écrit dans les navigateurs reste cassé (`migrate` est gated
+   par la version).
+2. **Une seule façon de demander « a-t-il dit non ? »** :
+   `aRefuseTouteRelance` (`lib/voice-script.ts`), tag **et** timeline. La
+   question se posait à trois endroits, deux répondaient non — la fiche
+   revenait dans la file d'appels et dans le plan du matin.
+3. **Un écran se plafonne, et ce qui est replié se COMPTE** (nombre, minutes,
+   € pondérés). 1 000 fiches → 1 000 lignes n'est pas un plan de journée,
+   c'est l'export du CRM. Vaut pour `/aujourdhui`, le tableau pipeline
+   (paginé) et le kanban (borné). On borne l'affichage, **jamais le compte**.
+4. **Le mur localStorage se montre AVANT de coller** (`projeterImport`). Une
+   écriture qui rate ne ressemble pas à une panne : l'écran continue
+   d'afficher les fiches, elles disparaissent en fermant l'onglet. Une fiche
+   terrain ≈ 1,3 Ko → 1 000 numéros ≈ la moitié du quota de 5 Mo.
+
+> ⚠ Corollaire de la 4 : **ne jamais recopier de la doctrine dans une fiche.**
+> Les notes d'import portaient l'explication de chaque signal — mille copies du
+> même paragraphe, 47 % du poids — pendant que la phrase du client, elle, était
+> jetée. On garde ce qui ne se recalcule pas ; le reste vit dans le code.
+
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
   Elles sont à **rotate**. Ne JAMAIS écrire une clé collée dans un fichier, un
