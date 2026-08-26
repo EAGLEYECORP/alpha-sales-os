@@ -10,9 +10,12 @@ import { useAlpha } from "@/lib/store";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { Modal } from "@/components/ui/modal";
 import { ReasonDialog } from "@/components/ui/reason-dialog";
+
+/** Cartes affichees par colonne. Au-dela, le glisser-deposer devient poisseux. */
+const CARTES_MAX = 40;
 import { fireSignedConfetti } from "@/lib/confetti";
 
-export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
+export function KanbanBoard({ prospects, onVoirListe }: { prospects: Prospect[]; onVoirListe?: () => void }) {
   const moveStage = useAlpha((s) => s.moveStage);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<Stage | null>(null);
@@ -57,6 +60,19 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
         {STAGES.map((stage) => {
           const items = prospects.filter((p) => p.stage === stage.id);
           const colValue = items.reduce((s, p) => s + weightedValue(p), 0);
+          /**
+           * La colonne se BORNE. Objectif affiché : 1 000 numéros terrain, et
+           * ils atterrissent tous au stade « prospect » — mille cartes dans
+           * une seule colonne, chacune avec son badge et sa poignée de
+           * glisser-déposer. Le rendu se compte en secondes et le drag devient
+           * inutilisable, sur une vue qu'on ouvre tous les jours.
+           *
+           * Le TOTAL affiché en tête (nombre et € pondérés) reste calculé sur
+           * la colonne entière : on borne l'affichage, jamais le compte.
+           * Au-delà, le kanban n'est de toute façon pas le bon outil — le
+           * tableau paginé l'est, et le lien le dit.
+           */
+          const visibles = items.slice(0, CARTES_MAX);
           return (
             <div
               key={stage.id}
@@ -91,7 +107,7 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                 <p className="font-mono text-[11px] text-bronze-500">{eur(colValue)}</p>
               </div>
               <div className="flex-1 space-y-2 p-2 min-h-24">
-                {items.map((p) => (
+                {visibles.map((p) => (
                   <KanbanCard
                     key={p.id}
                     p={p}
@@ -105,6 +121,23 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                     }}
                   />
                 ))}
+                {items.length > visibles.length && (
+                  <p className="rounded-lg border border-ink-700 px-2.5 py-2 text-[11px] leading-relaxed text-paper-faint">
+                    + {items.length - visibles.length} autres dans cette colonne. Le kanban sert à DÉPLACER quelques
+                    affaires, pas à parcourir un fichier
+                    {onVoirListe ? (
+                      <>
+                        {" — "}
+                        <button onClick={onVoirListe} className="text-bronze-400 hover:underline">
+                          passe en vue liste
+                        </button>
+                        .
+                      </>
+                    ) : (
+                      "."
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           );

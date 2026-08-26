@@ -399,3 +399,30 @@ test("la page affiche la vue plafonnée, pas la liste complète", () => {
   assert.ok(src.includes("pourEcran"), "la page doit passer par la vue plafonnée");
   assert.doesNotMatch(src, /\{list\.map\(\(t\) =>/, "elle ne doit plus dérouler la liste entière");
 });
+
+// ─────────── 9. LES ÉCRANS QUI DÉROULAIENT TOUT ───────────
+
+test("le pipeline se pagine — 1 000 fiches, ce n'est pas 1 000 lignes de tableau", () => {
+  /**
+   * Objectif affiche du produit : 1 000 numeros terrain. Ils atterrissent
+   * TOUS au stade « prospect ». Le tableau deroulait chaque ligne avec sa
+   * case a cocher, ses badges et ses liens ; le kanban, chaque carte avec sa
+   * poignee de glisser-deposer.
+   */
+  const page = readFileSync(join(process.cwd(), "app/(app)/pipeline/page.tsx"), "utf8");
+  assert.ok(page.includes("getPaginationRowModel"), "le tableau doit paginer");
+  assert.match(page, /TAILLE_PAGE\s*=\s*(\d+)/, "la taille de page doit être une constante nommée");
+  const taille = Number(page.match(/TAILLE_PAGE\s*=\s*(\d+)/)![1]);
+  assert.ok(taille > 0 && taille <= 100, `${taille} lignes par page`);
+
+  const kanban = readFileSync(join(process.cwd(), "components/pipeline/kanban.tsx"), "utf8");
+  assert.match(kanban, /CARTES_MAX\s*=\s*\d+/, "la colonne kanban doit être bornée");
+  assert.ok(
+    kanban.includes("items.length - visibles.length"),
+    "ce qui n'est pas affiché doit être compté à l'écran, pas escamoté"
+  );
+  assert.ok(
+    kanban.includes("items.length") && kanban.includes("colValue"),
+    "le total en tête de colonne reste calculé sur la colonne ENTIÈRE"
+  );
+});

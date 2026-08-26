@@ -6,11 +6,12 @@ import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Kanban, List, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Kanban, List, Plus, Search, Trash2 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect, Sector, Stage } from "@/lib/types";
 import { STAGES, weightedValue } from "@/lib/hormozi";
@@ -18,6 +19,9 @@ import { cn, dateFr, eur } from "@/lib/utils";
 import { KanbanBoard } from "@/components/pipeline/kanban";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
 import { StageBadge } from "@/components/ui/stage-badge";
+
+/** Lignes par page. Au-delà, le rendu se sent au defilement. */
+const TAILLE_PAGE = 50;
 
 const col = createColumnHelper<Prospect>();
 
@@ -101,6 +105,19 @@ export default function PipelinePage() {
     [selected]
   );
 
+  /**
+   * LE TABLEAU SE PAGINE — objectif affiché : 1 000 numéros terrain.
+   *
+   * La table déroulait TOUTES les lignes. À 1 000 fiches sourcées, ça fait
+   * 1 000 <tr> avec cases à cocher, badges et liens : le rendu se compte en
+   * secondes et le défilement devient poisseux, sur une page qu'on ouvre
+   * vingt fois par jour. La pagination vient de @tanstack/react-table, déjà
+   * installé — pas de dépendance nouvelle.
+   *
+   * Le tri, la recherche et les filtres restent appliqués sur le lot ENTIER :
+   * on pagine l'affichage, jamais les données. Un tri qui ne trierait que la
+   * page courante serait pire que pas de tri.
+   */
   const table = useReactTable({
     data: filtered,
     columns,
@@ -108,6 +125,8 @@ export default function PipelinePage() {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: TAILLE_PAGE } },
   });
 
   const bulkDelete = () => {
@@ -193,7 +212,7 @@ export default function PipelinePage() {
           </div>
         </div>
       ) : view === "kanban" ? (
-        <KanbanBoard prospects={filtered} />
+        <KanbanBoard prospects={filtered} onVoirListe={() => setView("list")} />
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
@@ -227,6 +246,35 @@ export default function PipelinePage() {
               ))}
             </tbody>
           </table>
+
+          {table.getPageCount() > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-800 px-3 py-2">
+              <span className="font-mono text-[11px] text-paper-faint">
+                {table.getState().pagination.pageIndex * TAILLE_PAGE + 1}–
+                {Math.min((table.getState().pagination.pageIndex + 1) * TAILLE_PAGE, filtered.length)} sur{" "}
+                {filtered.length}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  className="btn-ghost px-2.5 py-1 text-[12px] disabled:opacity-40"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <ChevronLeft size={13} /> Précédent
+                </button>
+                <span className="font-mono text-[11px] text-paper-dim">
+                  {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+                </span>
+                <button
+                  className="btn-ghost px-2.5 py-1 text-[12px] disabled:opacity-40"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  Suivant <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
