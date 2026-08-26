@@ -108,75 +108,89 @@ et l'écoute des premiers appels**. Plusieurs heures, facturées une fois.
 
 ---
 
-## 4. Le catalogue de briques — le problème du pack
+## 4. RELEVÉ DE MARCHÉ — et il contredit le diagnostic d'hier
 
-```
-À la carte (10 briques) ....... 20 500 € setup  +  2 034 €/mois
-Pack complet .................. 10 000 € setup  +  1 000 €/mois
-                                → remise de 51 % sur les deux
-```
+> Relevé le 26 août 2026. **Sources secondaires** (articles de comparaison),
+> pas les pages de tarifs des éditeurs. Ordre de grandeur, pas tarif opposable :
+> rouvre la page du concurrent le jour où tu le cites en rendez-vous.
+> Rejouable : `lib/marche.ts`.
 
-**Une remise de moitié dit le contraire de « élite ».** Ce n'est pas un pack,
-c'est un aveu : le client en déduit que les briques à l'unité sont gonflées, et
-il le calcule en dix secondes.
+### Ce qui est BIEN placé — ne touche pas
 
-Tu demandais s'il faut monter le full OS au-dessus de 10 k. Voilà l'arbitrage
-réel — mais il porte sur **l'écart**, pas sur le chiffre isolé :
+| Notre offre | Marché | Verdict |
+|---|---|---|
+| **Pack setup 10 000 €** | Implémentation sur mesure 4 600–23 000 € | **dans le marché** |
+| **Essai 290 €** | Frais de mise en service télésecrétariat 100–300 € | **dans le marché** |
+| **Alpha Voice 364 €/mois** | Télésecrétariat humain 80–400 €/mois | **dans le marché** |
+| **Solo 79 €/mois** | Axonaut (forfait FR) 50–100 €/mois | **dans le marché** |
 
-| Setup pack | Remise vs à la carte |
-|---|---|
-| 10 000 € | 51 % |
-| 12 500 € | 39 % |
-| **15 000 €** | **27 %** |
-| 18 000 € | 12 % |
+**Ta question d'hier était « faut-il monter le full OS au-dessus de 10 k ? ».
+La réponse est non.** Le pack est correctement placé. Le problème est ailleurs.
 
-**Deux sorties cohérentes, pas les deux à la fois :**
-1. **Monter le pack** vers 15 000 € — la remise tombe à 27 %, crédible, et
-   l'ancre haute sert le positionnement élite.
-2. **Baisser les prix à la carte** — mais tu perds la mécanique d'upsell
-   (aujourd'hui l'addition de 3 briques dépasse le pack, c'est volontaire).
+### Ce qui est MAL placé
 
-Je ne tranche pas : ça dépend de ce que font tes concurrents, et **je n'ai
-aucun relevé** (le proxy bloque, et rien dans le dépôt). C'est la donnée qui
-manque, et ta règle « un peu moins que le marché » est incalculable sans elle.
+**Les briques à l'unité sont ~×2 le marché.**
 
-### Ta règle ×4 est fausse sur 4 briques sur 10
+| Brique | Notre prix | Comparable | Écart |
+|---|---|---|---|
+| CRM & Pipeline | 190 €/mois | Axonaut 50–100 € (forfait, facturation incluse) | ×1,9 |
+| Campagnes & outreach | 290 €/mois | Lemlist 54–146 €/siège | ×2,0 |
+| Le Cerveau | 240 €/mois | — | pas de comparable direct |
 
-| Brique | Prix | Coût | Multiple | Verdict |
-|---|---|---|---|---|
-| Alpha Voice | 364 € | 142 € | ×2,6 | au-dessus du plancher |
-| Campagnes | 290 € | 113 € | ×2,6 | au-dessus |
-| Le Cerveau | 240 € | 70 € | ×3,4 | **hors règle** |
-| CRM & Pipeline | 190 € | 70 € | ×2,7 | **hors règle** |
-| Audits | 150 € | 76 € | ×2,0 | au-dessus |
-| Tracking | 140 € | 35 € | ×4,0 | **hors règle** |
-| Alpha Live | 180 € | 75 € | ×2,4 | au-dessus |
-| Closer OS | 140 € | 37 € | ×3,8 | au-dessus |
-| Agent ALPHA | 220 € | 82 € | ×2,7 | au-dessus |
-| Pilotage & KPIs | 120 € | 35 € | ×3,4 | **hors règle** |
+C'est **ça** qui produisait la remise de 51 % sur le pack. Alignées sur le
+marché, la somme des briques passe de 2 034 € à **1 291 €/mois** — et la remise
+du pack tombe de **51 % à 23 %**, sans toucher au pack.
 
-**Pourquoi « hors règle » :** le Cerveau, le CRM, le Tracking et le Pilotage ont
-un **coût marginal quasi nul**. L'hébergement (57 €/mois) est mutualisé sur
-*tous* les clients. Quatre fois zéro fait zéro : appliquée telle quelle, ta
-règle dirait de **donner** ces quatre briques.
+**Pro à 149 €/mois est SOUS le marché** (secrétaire IA France : 200–300 €/mois).
+Avec 200 appels inclus, tu te sous-vends. Il y a de la place jusqu'à ~200 €.
 
-Ce qu'elles coûtent vraiment, c'est du **temps** : installation et support.
-C'est ça qui se facture. Le reste du prix vient de la **valeur** et du marché —
-et ça ne se calcule pas, ça se décide.
+### Le point sur lequel tu te feras attaquer
 
-> Le module refuse d'inventer un plancher pour ces briques-là : il rend `null`
-> et explique pourquoi, plutôt que de sortir un chiffre qui aurait l'air calculé.
+Ramené à la minute, Alpha Voice est à **0,43 €/min** (364 € pour 855 min à
+30 % de décroché × 2,85 min).
+
+| Comparable | Prix | Notre position |
+|---|---|---|
+| Bland (tout inclus) | 0,10–0,13 €/min | **×3,3** |
+| Vapi/Retell tout compris | 0,13–0,30 €/min | ×1,4 |
+| Marché global | 0,11–0,41 €/min | ×1,03 |
+
+Un acheteur technique sortira Bland ou Vapi et dira « c'est 3× moins cher ».
+**Il aura raison sur le chiffre et tort sur le produit** : Vapi est une API où
+il construit tout — script, intégration CRM, conformité article 50, numéros,
+sourcing. Nous vendons le service fini.
+
+La bonne réponse en rendez-vous n'est pas de défendre le prix à la minute,
+c'est de **refuser la comparaison** : « Vapi vous vend une brique de Lego. Ce
+que vous comparez, c'est votre télésecrétariat à 300 €/mois qui ne fait que
+l'entrant. »
+
+> ⚠ Ce 0,43 €/min repose sur l'hypothèse de 30 % de décroché — **jamais
+> mesurée**. Si le décroché réel est de 50 %, on tombe à 0,26 €/min et l'écart
+> disparaît. C'est la première chose que l'essai ScintIA va te dire.
+
+### Ce que je ferais, dans l'ordre
+
+1. **Monter Pro** de 149 à ~199 €/mois (on est sous le marché, 200 appels inclus).
+2. **Baisser les briques à l'unité** vers le marché → la remise du pack redevient
+   crédible toute seule.
+3. **Ne pas toucher** au pack, à l'essai, à Solo, ni au palier 1 000 appels.
+
+Je n'ai appliqué **aucun** de ces changements : ce sont des décisions
+commerciales, pas des corrections de bug. Le calcul est rejouable
+(`lib/marche.ts`), les prix se changent dans `lib/offres-publiques.ts`.
 
 ---
 
-## 5. Ce qu'il manque, et que je ne peux pas produire
+## 5. Ce qui manque encore
 
 | Manque | Pourquoi ça bloque |
 |---|---|
-| **Ton taux horaire chargé** | 6 briques sur 10 se chiffrent au temps. Sans lui, aucun prix. Hypothèse de travail ci-dessus : 70 €/h. |
-| **Les prix concurrents** | « Un peu moins que le marché » est incalculable sans le marché. Proxy bloqué : à relever toi-même. |
-| **Une facture Telnyx réelle** | Seule ligne de coût invérifiable, et la plus lourde. |
-| **Le temps réel d'une installation** | Les 46 h du catalogue sont des estimations de conception. Aucune installation n'a eu lieu. À corriger après ScintIA. |
+| **Ton taux horaire chargé** | 6 briques sur 10 se chiffrent au temps. Sans lui, aucun prix de setup client. Hypothèse de travail : 70 €/h. |
+| **Une facture Telnyx réelle** | Seule ligne de coût invérifiable, et la plus lourde (17 %). |
+| **Le temps réel d'une installation** | Les 46 h du catalogue sont des estimations. Aucune installation n'a eu lieu. |
+| **Le taux de décroché réel** | Toute la comparaison à la minute en dépend. L'essai ScintIA le donnera. |
+| **Les pages de tarifs officielles** | Le relevé est secondaire. Avant de citer un concurrent en rendez-vous, rouvre sa page. |
 
 ---
 
