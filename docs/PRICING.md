@@ -127,35 +127,40 @@ export CDR, pas avec une opinion.
 
 ## 2. Alpha Voice — ce que ça coûte, ce que ça rapporte
 
-### Palier 1 000 appels/mois — recalculé après la mesure Fish
+### Palier 1 000 appels/mois — après la mesure Fish
 
-⚠ **Ce bloc annonçait « 96 € · ×3,79 · la règle ×4 est tenue ». Les trois
-étaient faux** : le chiffre datait d'avant la mesure Fish du 27/08, et il
-mélangeait deux hypothèses de durée. Recalculé, les deux scénarios :
+⚠ **Ce bloc a été faux deux fois.** Il annonçait d'abord « 96 € · ×3,79 »,
+chiffre d'avant la mesure Fish. Puis j'ai « corrigé » en écrivant que la
+règle ×4 n'était plus tenue — **c'était faux aussi, et pour une raison qui
+compte.**
 
-| Durée moyenne d'un appel décroché | Minutes | Coût | Marge | Multiple |
-|---|---|---|---|---|
-| 2,00 min (défaut du modèle) | 600 | **95 €** | 269 € (74 %) | ×3,84 |
-| **2,85 min (ta durée réelle)** | 855 | **109 €** | 255 € (70 %) | **×3,34** |
+```
+1 000 composés · 300 décrochés · 855 min (2,85 min par appel décroché)
+Coût fournisseurs .............. 106 €   (dont 57 € de fixe mutualisé)
+Prix affiché ................... 364 €
+Marge .......................... 258 € (71 %)
+Plancher de la règle ×4 ........ 252 €   → le prix est 112 € AU-DESSUS
+```
 
-`1 000 composés · 30 % décrochés · 57 € de fixe mutualisé · prix 364 €`
+**La règle ×4 est tenue.** Elle porte sur la **consommation**, pas sur le
+coût total : le fixe (hébergement, supervision, numéro) est **mutualisé sur
+tous les clients**, et le multiplier reviendrait à facturer dix fois le même
+serveur. C'est écrit dans `devisVoix` (`lib/pricing-briques.ts`), et c'est le
+bon raisonnement.
 
-**Verdict corrigé : la règle ×4 N'EST PAS tenue** — et elle ne l'était déjà
-plus à ta propre durée d'appel, avant même de vérifier Telnyx. Le plancher
-×4 sur ce palier serait de **436 €**, pas 364 €.
+> ⚠ **Le piège dans lequel je suis tombé, et qui te guette en rendez-vous.**
+> Le multiple « prix ÷ coût total » vaut **×3,44**, et il est tentant de le
+> lire comme un échec de la règle. Ce n'est pas la même grandeur : le
+> plancher se calcule `variable × 4 + fixe`, soit 252 €. Si quelqu'un te
+> sort « vous n'êtes qu'à ×3,4 », la réponse est que le ×4 ne s'applique
+> jamais à un coût partagé.
 
-Ce que ça veut dire, sans dramatiser : **70 % de marge reste très bon.**
-C'est ta règle qui n'est pas tenue, pas ta rentabilité. Trois sorties, à toi
-de choisir :
-1. **monter le palier à ~436 €** — le marché le supporte (télésecrétariat
-   80–400 €/mois, § 4), mais tu perds l'argument « moins cher qu'une
-   secrétaire » ;
-2. **assumer ×3,3** et écrire la règle comme un objectif, pas une loi ;
-3. **attendre l'export CDR Telnyx** avant de bouger — si le tarif réel est
-   sous l'hypothèse, le multiple remonte tout seul.
+À 2,00 min par appel plutôt que 2,85, le coût descend à **95 €** et la marge
+monte à 74 %. Ta durée réelle annoncée est 2,85 — c'est celle que retient
+`VOLUME_PALIER`, donc le chiffre ci-dessus est le bon pour toi.
 
-Je recommande la 3 : bouger un prix public sur un modèle dont la ligne la
-plus lourde est encore supposée, c'est bouger deux fois.
+**Rien à changer sur ce palier.** La seule chose qui pourrait le remettre en
+cause est le tarif Telnyx réel, encore supposé — d'où l'export CDR.
 
 ### Les jetons LLM ne sont pas le problème
 
@@ -395,17 +400,19 @@ sans vendre une heure de plus.
                        déduits du 1er mois s'il passe au palier sous 30 j
 
 2.  PALIER 1 000 ..... 364 € HT/mois — sans engagement
-                       coût 109 € à ta durée réelle (2,85 min)
-                       → marge 255 € (70 %), soit ×3,34
+                       coût 106 € à ta durée réelle (2,85 min)
+                       → marge 258 € (71 %)
+                       plancher de la règle ×4 : 252 € — tu es 112 € au-dessus
 
-3.  TON COÛT ......... ~109 € pour 1 000 appels, PAS 360 €
+3.  TON COÛT ......... ~106 € pour 1 000 appels, PAS 360 €
                        (95 € si les appels tombent à 2 min)
 ```
 
-⚠ **Ce qu'il ne faut PAS dire en rendez-vous** : « on est à ×4 ». C'est
-×3,34 à ta durée d'appel réelle, et la ligne Telnyx est encore une
-hypothèse. Le chiffre solide, celui que tu peux défendre, c'est **70 % de
-marge** — pas un multiple.
+⚠ **Le chiffre à défendre est la MARGE (71 %), pas un multiple.** Le rapport
+prix ÷ coût total vaut ×3,44 et ne veut rien dire : le plancher de la règle
+×4 se calcule sur la consommation seule (252 €), parce que le fixe est
+mutualisé. Si tu annonces « ×4 » et qu'on te sort « non, ×3,4 », tu perds la
+main sur un malentendu de calcul.
 
 **L'ordre de la conversation :** démo gratuite → essai payant → mensualité. Ne
 saute pas l'essai : c'est lui qui transforme un « intéressant » en client, et

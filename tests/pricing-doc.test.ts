@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { computeCosts, defaultVolume } from "../lib/voice-costs";
+import { devisVoix, PRIX_PALIER_HT, VOLUME_PALIER } from "../lib/pricing-briques";
 import { outboundPrice } from "../lib/bricks";
 
 /**
@@ -10,18 +11,22 @@ import { outboundPrice } from "../lib/bricks";
  * LE DOC DE PRIX NE PEUT PAS SE CONTREDIRE — c'est celui qu'on ouvre AVANT
  * un rendez-vous, et un chiffre faux s'y annonce à voix haute.
  *
- * ⚠ CE QU'IL DISAIT, ET QUI ÉTAIT FAUX SUR TROIS POINTS À LA FOIS :
+ * ⚠ CE QU'IL DISAIT : « 1 000 composés · 855 min · Coût 96 € · ×3,79 ».
+ * Les 96 € dataient d'AVANT la mesure Fish du 27/08, et ils étaient calculés
+ * sur 2,00 min alors que la ligne annonce 855 minutes — c'est-à-dire
+ * 2,85 min. Deux hypothèses mélangées dans le même encadré. Le résumé § 6
+ * reprenait les mêmes 96 €, et c'est LUI qu'on lit dix minutes avant l'appel.
  *
- *   « 1 000 composés · 855 min · Coût 96 € · ×3,79 · la règle ×4 est tenue »
+ * ⚠⚠ ET MA PREMIÈRE CORRECTION ÉTAIT FAUSSE AUSSI. J'ai divisé le prix par
+ * le coût TOTAL, trouvé ×3,44, et écrit que la règle ×4 n'était plus tenue —
+ * en recommandant d'envisager 436 €. Le plancher se calcule
+ * `variable × 4 + fixe`, soit 252 € : le fixe est mutualisé sur tous les
+ * clients et le multiplier reviendrait à facturer dix fois le même serveur.
+ * `devisVoix` le faisait correctement depuis le début ; je ne l'avais pas lu.
+ * La règle EST tenue, avec 112 € de marge au-dessus du plancher.
  *
- *  1. les 96 € dataient d'AVANT la mesure Fish du 27/08 ;
- *  2. ils étaient calculés sur 2,00 min alors que la ligne annonce 855 min,
- *     c'est-à-dire 2,85 min — deux hypothèses mélangées dans le même bloc ;
- *  3. et la conclusion « la règle ×4 est tenue » est fausse dans les deux
- *     cas de figure.
- *
- * Le résumé § 6 reprenait les mêmes 96 €. Un doc de prix qui se contredit
- * entre son corps et son résumé fait dire un chiffre faux en réunion.
+ * C'est pour ça que ces tests lisent `devisVoix` et ne recalculent plus rien
+ * eux-mêmes : le modèle sait, moi je me trompe.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -38,23 +43,45 @@ test("le coût annoncé pour le palier 1 000 est celui que le modèle calcule", 
    * constante fournisseur bouge, c'est le DOC qui doit échouer, pas le test.
    */
   const c2 = cout(2);
-  const c285 = cout(2.85);
+  const palier = devisVoix(1000, PRIX_PALIER_HT, VOLUME_PALIER);
   assert.ok(doc.includes(`${Math.round(c2.totalEur)} €`), `le coût à 2,00 min (${Math.round(c2.totalEur)} €) doit apparaître`);
-  assert.ok(doc.includes(`${Math.round(c285.totalEur)} €`), `le coût à 2,85 min (${Math.round(c285.totalEur)} €) doit apparaître`);
+  assert.ok(doc.includes(`${Math.round(palier.coutTotalEur)} €`), `le coût du palier (${Math.round(palier.coutTotalEur)} €) doit apparaître`);
   // L'ancien chiffre, calculé avant la mesure Fish, ne doit plus traîner.
   assert.doesNotMatch(doc, /Coût fournisseurs \.+ 96 €/, "96 € datait d'avant la mesure Fish");
 });
 
-test("⚠ le doc ne prétend PAS que la règle ×4 est tenue sur ce palier", () => {
+test("⚠ le PLANCHER de la règle ×4 vient du modèle, pas d'une division", () => {
   /**
-   * Elle ne l'est pas : ×3,84 à 2,00 min, ×3,34 à la durée réelle annoncée
-   * par Zakaria. Le dire tenu, c'est justifier un prix par une règle que le
-   * calcul contredit — et se faire reprendre par un acheteur qui compte.
+   * ⚠ J'AI ÉCRIT L'INVERSE DANS CE FICHIER, ET C'ÉTAIT FAUX.
+   *
+   * J'avais divisé le prix par le coût TOTAL, trouvé ×3,44, et conclu que la
+   * règle ×4 n'était pas tenue. Le module dit autre chose, et il a raison :
+   * le ×4 porte sur la CONSOMMATION seule. Le fixe — hébergement,
+   * supervision, numéro — est mutualisé sur tous les clients ; le multiplier
+   * reviendrait à facturer dix fois le même serveur.
+   *
+   *   plancher = variable × 4 + fixe = 252 €, et non coût × 4 = 436 €.
+   *
+   * Le prix de 364 € est donc 112 € AU-DESSUS du plancher. Ce test lit le
+   * plancher dans `devisVoix` pour que la confusion ne puisse pas revenir.
    */
-  const c = cout(2.85);
-  assert.ok(PRIX / c.totalEur < 4, "si le multiple repassait au-dessus de 4, ce test doit être réécrit");
-  assert.doesNotMatch(doc, /\*\*Verdict : la règle ×4 est tenue\.\*\*/);
-  assert.match(doc, /la règle ×4 N'EST PAS tenue/i, "le verdict doit être écrit, pas suggéré");
+  const d = devisVoix(1000, PRIX_PALIER_HT, VOLUME_PALIER);
+  assert.ok(d.prixAfficheEur >= d.plancherEur, "le prix public doit rester au-dessus du plancher");
+  assert.ok(doc.includes(String(Math.round(d.plancherEur))), `le plancher (${Math.round(d.plancherEur)} €) doit figurer dans le doc`);
+  assert.match(doc, /La règle ×4 est tenue/i, "le verdict doit être écrit");
+  assert.match(doc, /mutualisé/i, "et la raison — le fixe ne se multiplie pas — doit être écrite");
+});
+
+test("le doc met en garde contre le multiple naïf prix ÷ coût total", () => {
+  /**
+   * C'est le piège exact dans lequel je suis tombé, et il se rejoue en
+   * rendez-vous : quelqu'un divise, trouve ×3,4, et annonce que la règle
+   * n'est pas tenue. Les deux grandeurs ne sont pas comparables.
+   */
+  const d = devisVoix(1000, PRIX_PALIER_HT, VOLUME_PALIER);
+  assert.ok(d.multipleReel < 4, "si ce multiple repassait au-dessus de 4, la mise en garde change");
+  assert.ok(doc.includes(String(d.multipleReel).replace(".", ",")), "le multiple naïf doit être cité pour être désamorcé");
+  assert.match(doc, /ne veut rien dire|pas la même grandeur/i);
 });
 
 test("le résumé de rendez-vous porte le MÊME coût que le corps du document", () => {
@@ -64,7 +91,7 @@ test("le résumé de rendez-vous porte le MÊME coût que le corps du document",
    * haute — et c'est le faux.
    */
   const resume = doc.slice(doc.indexOf("## 6."));
-  const attendu = Math.round(cout(2.85).totalEur);
+  const attendu = Math.round(devisVoix(1000, PRIX_PALIER_HT, VOLUME_PALIER).coutTotalEur);
   assert.ok(resume.includes(String(attendu)), `le résumé doit annoncer ${attendu} €`);
   assert.doesNotMatch(resume, /~96 €/, "l'ancien chiffre ne doit plus être dans le résumé");
 });
@@ -73,8 +100,8 @@ test("le résumé dit ce qu'il ne faut PAS annoncer en rendez-vous", () => {
   // « on est à ×4 » est la phrase la plus tentante et la plus fausse. Le
   // chiffre défendable est la marge, pas le multiple.
   const resume = doc.slice(doc.indexOf("## 6."));
-  assert.match(resume, /Ce qu'il ne faut PAS dire/i);
-  assert.match(resume, /70 % de\s*\n?\s*marge/i, "le chiffre solide doit être nommé");
+  assert.match(resume, /Le chiffre à défendre est la MARGE/i);
+  assert.match(resume, /71 %/, "le chiffre solide doit être nommé");
 });
 
 test("les scénarios sont ÉTIQUETÉS par leur durée d'appel", () => {
