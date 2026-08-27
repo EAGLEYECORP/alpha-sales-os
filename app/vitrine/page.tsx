@@ -38,9 +38,17 @@ const LINE = "#DEDAD1";
 
 export default function VitrinePage() {
   // On ne calcule PLUS de total public : le chiffrage se fait au cadrage.
-  // Voir `publicBricks()` dans lib/bricks.ts — l'ancrage par l'addition ne
-  // fonctionne que dans une conversation, pas sur une page où le prospect
-  // optimise seul.
+  // L'ancrage par l'addition ne fonctionne que dans une conversation, pas sur
+  // une page où le prospect optimise seul.
+  //
+  // ⚠ Cette ligne renvoyait à `publicBricks()` dans lib/bricks.ts. Cette
+  // fonction N'EXISTE PLUS — elle a été retirée parce qu'elle lisait `BRICKS`,
+  // donc la page publique qui l'importait embarquait tout le catalogue, prix
+  // compris, dans son bundle (le post-mortem est en bas de lib/bricks.ts).
+  // Une consigne au présent qui désigne du code mort envoie le prochain
+  // lecteur chercher une garde qui n'est pas là. Ce qui garde la vitrine
+  // aujourd'hui : `lib/public-catalogue.ts`, recopié à la main, et
+  // `tests/vitrine-fuite.test.ts`.
   const [picked, setPicked] = useState<string[]>([]);
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));

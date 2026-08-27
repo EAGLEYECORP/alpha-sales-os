@@ -1,4 +1,3 @@
-import { SETUP_FEE } from "./pricing";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -53,8 +52,8 @@ export interface Brick {
 // Les prix PUBLICS viennent de `lib/offres-publiques.ts` : c'est le module
 // que le navigateur a le droit d'atteindre, donc c'est lui qui les porte.
 // Les réimporter garantit qu'il n'existe qu'un seul nombre.
-export { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT } from "./offres-publiques";
-import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT } from "./offres-publiques";
+export { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
+import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
 
 export interface OutboundTier {
   calls: number;
@@ -307,10 +306,19 @@ export const BRICKS: Brick[] = [
 
 export const getBrick = (id: string): Brick | undefined => BRICKS.find((b) => b.id === id);
 
-/** Prix du pack complet (tout, installé) — l'ancre. */
-export const PACK_SETUP_HT = SETUP_FEE; // 10 000 €
-/** Abonnement du pack complet. */
-export const PACK_MONTHLY_HT = 1000;
+/**
+ * ⚠ LE PACK ÉTAIT DÉCLARÉ ICI UNE SECONDE FOIS — les deux plus gros nombres
+ * du catalogue (10 000 € et 1 000 €/mois, l'ANCRE de toute négociation).
+ *
+ * L'en-tête de `offres-publiques` promettait déjà « bricks le réimporte », et
+ * le test qui l'exige ne couvrait que `OUTBOUND_UNIT_HT` et `ESSAI_HT` : la
+ * garde s'arrêtait juste avant l'endroit où le doublon vivait encore. Les
+ * valeurs coïncidaient, donc rien ne se voyait — `tests/marche.test.ts` lit la
+ * version `offres-publiques`, tout le reste du produit lit celle-ci. Changer
+ * l'ancre d'un côté aurait laissé l'autre annoncer l'ancien prix, sans échec.
+ *
+ * Ils sont maintenant réimportés (ligne 56). Rien à déclarer ici.
+ */
 
 export interface BrickQuote {
   bricks: Brick[];

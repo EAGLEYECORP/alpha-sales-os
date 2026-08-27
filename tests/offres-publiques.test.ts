@@ -1,10 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   OFFRES,
   PRIX_PUBLICS,
+  PACK_SETUP_HT,
+  PACK_MONTHLY_HT,
   PRO_APPELS_INCLUS,
   offreParId,
   validerOffres,
@@ -229,6 +231,56 @@ test("le catalogue interne réimporte les prix publics au lieu de les recopier",
   // Et surtout : il ne doit PAS les redéclarer.
   assert.doesNotMatch(bricks, /^export const OUTBOUND_UNIT_HT = \d+;/m);
   assert.doesNotMatch(bricks, /^export const ESSAI_HT = \d+;/m);
+});
+
+test("⚠ AUCUN prix public ne se redéclare ailleurs — la garde s'arrêtait avant le pack", () => {
+  /**
+   * ⚠ CE TEST EXISTAIT À MOITIÉ, ET LA MOITIÉ MANQUANTE PORTAIT L'ANCRE.
+   *
+   * Celui du dessus interdisait de redéclarer `OUTBOUND_UNIT_HT` et
+   * `ESSAI_HT`. Pendant ce temps `bricks` redéclarait `PACK_SETUP_HT` et
+   * `PACK_MONTHLY_HT` — 10 000 € et 1 000 €/mois, les deux plus gros nombres
+   * du catalogue, ceux sur lesquels toute négociation s'ancre. Les valeurs
+   * coïncidaient, donc rien ne se voyait ; mais `tests/marche.test.ts` lisait
+   * la version `offres-publiques` et tout le produit l'autre. Bouger l'ancre
+   * d'un côté laissait l'autre annoncer l'ancien prix, sans un seul échec.
+   *
+   * On ne liste plus les constantes une par une : on interdit la REDÉCLARATION
+   * de tout ce que `offres-publiques` exporte comme nombre. Ajouter un prix
+   * public demain le protège tout seul — c'est la seule forme de garde qui ne
+   * se laisse pas distancer par le fichier qu'elle surveille.
+   */
+  const grille = readFileSync(join(process.cwd(), "lib/offres-publiques.ts"), "utf8");
+  const nomsPrix = [...grille.matchAll(/^export const ([A-Z_]+)(?::\s*number)?\s*=\s*[\d_]+;/gm)].map((m) => m[1]);
+  assert.ok(nomsPrix.length >= 6, `on doit trouver les prix publics (trouvé : ${nomsPrix.join(", ")})`);
+
+  // Tout module qui n'est PAS la grille elle-même doit les importer, jamais
+  // les réécrire. On balaie `lib/` entier : le doublon d'hier était dans
+  // `bricks`, celui de demain sera ailleurs.
+  for (const fichier of readdirSync(join(process.cwd(), "lib")).filter((f) => f.endsWith(".ts") && f !== "offres-publiques.ts")) {
+    const src = readFileSync(join(process.cwd(), "lib", fichier), "utf8");
+    for (const nom of nomsPrix) {
+      assert.doesNotMatch(
+        src,
+        new RegExp(`^export const ${nom}\\s*(?::[^=]+)?=\\s*[\\d_]+;`, "m"),
+        `lib/${fichier} redéclare ${nom} — deux saisies du même prix public, aucune ne préviendra quand l'autre bougera`
+      );
+    }
+  }
+});
+
+test("le pack dit le même prix des deux côtés, et par-dessus le nom métier", async () => {
+  /**
+   * La garde ci-dessus lit le SOURCE. Celle-ci lit les VALEURS : si un jour
+   * quelqu'un contourne la forme (calcul, indirection), les nombres doivent
+   * encore coïncider. `SETUP_FEE` est le même montant sous son nom de modèle
+   * économique — légitime, à condition qu'il n'y ait qu'une saisie.
+   */
+  const bricks = await import("../lib/bricks");
+  const { SETUP_FEE } = await import("../lib/pricing");
+  assert.equal(bricks.PACK_SETUP_HT, PACK_SETUP_HT, "le pack de bricks doit être celui de la grille");
+  assert.equal(bricks.PACK_MONTHLY_HT, PACK_MONTHLY_HT);
+  assert.equal(SETUP_FEE, PACK_SETUP_HT, "« frais de setup » et « pack » sont le même montant");
 });
 
 test("chaque offre débloque des capacités réelles — sinon l'onboarding est vide", () => {

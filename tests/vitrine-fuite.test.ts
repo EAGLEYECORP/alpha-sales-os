@@ -33,14 +33,45 @@ const sansCommentaires = (src: string) =>
 
 const publique = sansCommentaires(vitrine) + sansCommentaires(mission);
 
+/**
+ * ⚠ CES TROIS ASSERTIONS LISAIENT LA SOURCE BRUTE, COMMENTAIRES COMPRIS —
+ * et ça les mettait en guerre avec la doctrine du dépôt.
+ *
+ * Le repo demande d'expliquer le POURQUOI en commentaire. Or ici, expliquer
+ * pourquoi on n'importe pas le catalogue oblige à ÉCRIRE son nom, ce que
+ * l'assertion interdisait. Le test a mordu sur une phrase qui disait
+ * précisément « il ne faut pas importer ça » : la seule issue était d'écrire
+ * la consigne à mots couverts, donc de la rendre moins claire.
+ *
+ * C'est le cinquième cas de ce piège dans le dépôt, et il a toujours la même
+ * résolution : un test de forme doit juger le CODE. Un `import` ne s'exécute
+ * pas depuis un commentaire ; une prose qui nomme l'interdit ne fait rien
+ * fuiter. La garde ne perd rien — la mutation ci-dessous le vérifie.
+ */
+const vitrineCode = sansCommentaires(vitrine);
+
 test("vitrine — la grille de prix ligne à ligne ne sort pas", () => {
   // L'ancrage par l'addition ne fonctionne QUE dans une conversation : sur une
   // page, le prospect fait l'addition seul et choisit la brique la moins
   // chère. La grille détaillée est aussi la carte du produit pour un
   // concurrent.
-  assert.doesNotMatch(vitrine, /b\.setupHT|b\.monthlyHT/, "les montants par brique ne s'affichent plus");
-  assert.doesNotMatch(vitrine, /quoteBricks|quote\.setupHT|quote\.monthlyHT/, "aucun total calculé publiquement");
-  assert.doesNotMatch(vitrine, /BRICKS\b/, "le catalogue interne ne doit pas être importé ici");
+  assert.doesNotMatch(vitrineCode, /b\.setupHT|b\.monthlyHT/, "les montants par brique ne s'affichent plus");
+  assert.doesNotMatch(vitrineCode, /quoteBricks|quote\.setupHT|quote\.monthlyHT/, "aucun total calculé publiquement");
+  assert.doesNotMatch(vitrineCode, /BRICKS\b/, "le catalogue interne ne doit pas être importé ici");
+});
+
+test("le retrait des commentaires n'ouvre aucune porte", () => {
+  /**
+   * La question qui compte après avoir assoupli une garde : est-ce qu'elle
+   * attrape encore la vraie faute ? On lui présente le code exact qu'elle
+   * existe pour refuser, et le commentaire exact qu'elle refusait à tort.
+   */
+  const codeFautif = `import { BRICKS } from "@/lib/bricks";\nconst x = b.setupHT;`;
+  assert.match(sansCommentaires(codeFautif), /BRICKS\b/, "un vrai import doit toujours être vu");
+  assert.match(sansCommentaires(codeFautif), /b\.setupHT/, "un vrai affichage de montant doit toujours être vu");
+
+  const commentaireLegitime = `// ⚠ On n'importe pas BRICKS ici : le catalogue partirait au navigateur.`;
+  assert.doesNotMatch(sansCommentaires(commentaireLegitime), /BRICKS\b/, "expliquer l'interdit ne doit plus être une faute");
 });
 
 test("vitrine — le modèle de commission reste interne", () => {

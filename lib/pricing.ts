@@ -11,8 +11,20 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
-/** Frais de setup one-shot (build : numéros, agent vocal, scripts, infra, délivrabilité, CRM). */
-export const SETUP_FEE = 10000;
+/**
+ * Frais de setup one-shot (build : numéros, agent vocal, scripts, infra,
+ * délivrabilité, CRM).
+ *
+ * ⚠ CE NOMBRE NE SE SAISIT PLUS ICI. C'est le prix du pack complet, et il
+ * est publié : il vit dans `offres-publiques`, le seul module que le
+ * navigateur a le droit d'atteindre. Il en existait trois copies (ici,
+ * `bricks`, `offres-publiques`) ; elles étaient égales, donc invisibles.
+ * `SETUP_FEE` reste exporté parce que le modèle économique parle de « frais
+ * de setup » et pas de « pack » — c'est le même montant sous deux noms
+ * métier, ce qui est légitime tant qu'il n'y a qu'une saisie.
+ */
+import { PACK_SETUP_HT } from "./offres-publiques";
+export const SETUP_FEE = PACK_SETUP_HT;
 
 /** Part EAGLEYE sur le CA généré (modèle Performance). */
 export const REV_SHARE = 0.3;
