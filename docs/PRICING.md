@@ -264,14 +264,101 @@ commerciales, pas des corrections de bug. Le calcul est rejouable
 
 ---
 
+## 4 bis. LE TAUX HORAIRE — relevé sur le marché, faute de l'avoir de toi
+
+Je te l'ai demandé trois fois. Il bloquait six briques sur dix et tout prix de
+setup client. Je l'ai donc **relevé sur le marché** plutôt que de laisser la
+grille muette. `lib/taux-horaire.ts` — remplaçable par ta compta le jour où
+elle existe : une mesure maison bat toujours un baromètre.
+
+### Le relevé (27 août 2026, sources secondaires)
+
+| Profil | TJM France |
+|---|---|
+| Développeur junior (< 3 ans) | 250–350 € |
+| Développeur confirmé | 350–600 € (médiane ~520) |
+| Développeur senior (React, Python) | 500–700 € |
+| **Automatisation (n8n, Make, Zapier)** | **350–700 €** |
+| Consultant IA | 400–1 500 € |
+| Intégrateur d'automatisations IA | 700–1 500 € |
+
+Île-de-France ~620 €/j · régions 450–540 €/j · Lyon = 2ᵉ bassin tech, haut de
+la province (décote retenue : 8 %, la plus faible de la fourchette).
+
+### Ce qui est retenu
+
+```
+TJM ................ 500 € HT/jour   (fourchette 450–550)
+Heures par jour .... 7      (pas 8 : le TJM est un prix de JOURNÉE)
+→ TAUX ............. 71 €/h  (fourchette 64–79)
+```
+
+**Le contre-calcul donne plus.** Intersection « automatisation » × « dev
+senior » = 500–700 national, centre 600, soit **552 €/j à Lyon**. Je retiens
+500. Ce n'est pas une erreur : le haut de fourchette se défend avec des
+références, et il y a **zéro vente**. Un TJM qu'on ne sait pas justifier se
+négocie à la baisse en direct — ça coûte plus cher que de l'avoir posé juste.
+Il remonte au premier client livré.
+
+> ⚠ **Ce taux dit ce qu'une heure se VEND, pas ce qu'elle coûte.** Ne lui
+> applique jamais la règle ×4 : tu facturerais l'installation quatre fois le
+> prix du marché en croyant être prudent. Pour un indépendant seul, le coût
+> d'une heure est son coût d'opportunité — donc le taux lui-même. La marge
+> sur du temps humain est structurellement nulle, et c'est précisément
+> pourquoi la règle ×4 ne vaut que pour la consommation fournisseurs.
+
+### Ce que ça débloque — et le chiffre qui fait mal
+
+Tout le catalogue se chiffre enfin. Le résultat n'est pas confortable :
+
+| Brique | Setup affiché | Heures | Main-d'œuvre | Multiple |
+|---|---|---|---|---|
+| Agent ALPHA | 2 200 € | 3 h | 213 € | **×10,3** |
+| Salle de contrôle & KPIs | 1 200 € | 2 h | 142 € | ×8,5 |
+| Le Cerveau · CRM · Tracking · Closer | 1 500–2 500 € | 3–5 h | 213–355 € | ×7,0 |
+| Campagnes & outreach | 2 500 € | 6 h | 426 € | ×5,9 |
+| Alpha Voice | 3 500 € | 12 h | 852 € | ×4,1 |
+| **Pack complet** | **10 000 €** | **46 h (6,6 j)** | **3 266 €** | **×3,1** |
+
+**Agent ALPHA, c'est 2 200 € pour 3 heures estimées — 733 €/h.** Ça ne
+survit pas à la question « ça vous prend combien de jours ? ».
+
+**Ce que je ne recommande PAS :** baisser ces prix. Un frais d'installation
+n'est pas un devis en régie — on installe un produit qui existe déjà, et le
+client n'achète pas des journées. Le pack à 10 000 € reste dans le marché de
+l'implémentation sur mesure (4 600–23 000 €, § 4).
+
+**Ce que je recommande :** ne jamais laisser la conversation devenir des
+heures. C'est le même refus de comparaison que face à Vapi : « vous ne payez
+pas mes journées, vous payez un système qui tourne le lendemain ».
+
+> ⚠ **Et l'écart est peut-être un artefact.** Les 46 h du catalogue sont des
+> ESTIMATIONS — aucune installation n'a eu lieu. Si une vraie pose prend 3×
+> plus longtemps, Agent ALPHA tombe à 9 h et 244 €/h, ce qui est parfaitement
+> défendable. **La première installation réelle tranche**, et elle tranche
+> dans le sens qui t'arrange. Chronomètre-la.
+
+### La limite du temps vendu — l'argument du produit, chiffré
+
+```
+130 jours facturés/an → 65 000 €     (occupation moyenne)
+180 jours facturés/an → 90 000 €     (bien occupé)
+```
+
+Voilà le plafond de la vente de temps, et c'est exactement pourquoi l'OS
+récurrent existe. À 10 ventes/mois sur l'offre Pro, tu dépasses ce plafond
+sans vendre une heure de plus.
+
+---
+
 ## 5. Ce qui manque encore
 
 | Manque | Pourquoi ça bloque |
 |---|---|
-| **Ton taux horaire chargé** | 6 briques sur 10 se chiffrent au temps. Sans lui, aucun prix de setup client. Hypothèse de travail : 70 €/h. |
+| ~~Ton taux horaire~~ → **relevé sur le marché** (§ 4 bis) | Débloqué : 71 €/h (500 €/j ÷ 7 h). À remplacer par ta compta réelle dès qu'elle existe. |
+| **Le temps RÉEL d'une installation, chronométré** | Les 46 h du catalogue sont estimées. C'est ce qui décide si les frais de setup sont ×10 la main-d'œuvre ou ×3 — donc s'ils sont attaquables ou non. |
 | **L'export CDR Telnyx** (Reporting → Usage Reports) | Le solde du mois (2,05 $) est connu depuis le 27/08 — mais il ne donne pas un tarif à la minute. Il faut les minutes par appel. Dernière ligne du modèle encore supposée, et la plus lourde. |
 | **Le nombre d'interruptions par appel** (journaux LiveKit) | Décide si le ×2,24 sur Fish est un artefact du compteur ou de la synthèse payée puis jetée. Dans le second cas, c'est du code, pas du tarif. |
-| **Le temps réel d'une installation** | Les 46 h du catalogue sont des estimations. Aucune installation n'a eu lieu. |
 | **Le taux de décroché réel** | Toute la comparaison à la minute en dépend. L'essai ScintIA le donnera. |
 | **Les pages de tarifs officielles** | Le relevé est secondaire. Avant de citer un concurrent en rendez-vous, rouvre sa page. |
 
