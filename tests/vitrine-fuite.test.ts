@@ -376,6 +376,124 @@ test("bundle app — aucun composant client n'atteint un module serveur", () => 
   );
 });
 
+/**
+ * ── LA LEÇON GÉNÉRALISÉE UNE FOIS DE PLUS : GARDER LA DONNÉE, PAS LE FICHIER ──
+ *
+ * `MODULES_SERVEUR` nomme des MODULES. C'est efficace tant que la donnée
+ * sensible reste dans le module qu'on a listé — et ça ne tient pas quand elle
+ * est recopiée à côté.
+ *
+ * ⚠ MESURÉ SUR LE BUILD, PAS SUPPOSÉ. `lib/ladder.ts` n'est dans aucune liste
+ * et descend dans le navigateur (via `argumentaire` →
+ * `components/prospects/master-panel`). Il portait `commissionPct: 30` +
+ * `recurringPct: 10` à côté de « ScintIA », et `commissionPct: 15` à côté de
+ * « Nuwacom ». `_next/static/**` est exclu du middleware : ces chunks
+ * répondent 200 sans cookie et sans mot de passe. Notre part chez chaque
+ * partenaire, téléchargeable par ce partenaire — alors que le taux Nuwacom
+ * est justement ce qui se négocie APRÈS le cadrage.
+ *
+ * Aggravant : aucun écran ne lisait ces champs. Seuls des tests les
+ * touchaient. Ils voyageaient jusqu'au navigateur pour personne.
+ *
+ * Le test du dessus n'a rien vu parce qu'il cherchait des NOMS DE FICHIERS.
+ * Celui-ci cherche la donnée : un taux de partenariat écrit en dur dans un
+ * module que le navigateur atteint.
+ */
+/**
+ * ⚠ 100 % N'EST PAS UN TAUX DE PARTENARIAT, ET LA NUANCE N'EST PAS UN
+ * ASSOUPLISSEMENT DE COMPLAISANCE.
+ *
+ * La première version de ce détecteur refusait tout `commissionPct: <n>`. Elle
+ * a immédiatement signalé `lib/store.ts`, où le défaut d'un store neuf est
+ * `commissionPct: 100` — le taux d'EAGLEYE, c'est-à-dire NOUS. « On garde
+ * tout » ne dit rien de personne : il n'y a aucun tiers à protéger.
+ *
+ * Ce qui fuit, c'est exactement l'inverse : un taux SOUS 100 nomme un
+ * partenaire et chiffre ce qu'on lui prend. C'est ce cas-là qu'on refuse.
+ */
+const TAUX_PARTENARIAT = /\b(?:commissionPct|recurringPct)\s*:\s*(\d+)/g;
+
+/** Un module met-il en dur la part qu'on prend à quelqu'un d'autre ? */
+function tauxDePartenariat(src: string): number[] {
+  return [...src.matchAll(TAUX_PARTENARIAT)].map((m) => Number(m[1])).filter((n) => n < 100);
+}
+
+/**
+ * ⚠ L'EXPOSITION ASSUMÉE, ET POURQUOI ELLE EST ÉCRITE ICI PLUTÔT QUE TUE.
+ *
+ * `lib/accounts.ts` porte encore le taux « vitrine » des trois comptes, et
+ * son propre commentaire dit que c'est délibéré : le taux irrigue l'escalier,
+ * la fiche et les payouts à chaque rendu, et chaque partenaire connaît son
+ * propre taux.
+ *
+ * La moitié du raisonnement tient, l'autre non, et ça se dit franchement :
+ * le chunk montre les TROIS taux ensemble, à quiconque, et pas seulement au
+ * partenaire concerné. Or CLAUDE.md pose que le taux Nuwacom se négocie APRÈS
+ * le cadrage — il n'est donc pas « déjà connu », c'est l'enjeu.
+ *
+ * Le sortir n'est pas gratuit : `applyAccount` écrit `settings.commissionPct`
+ * à chaque bascule de compte, et sans lui `/payouts` calculerait notre part
+ * d'un deal ScintIA à 100 %. Un chiffre FAUX en silence est pire qu'un
+ * chiffre exposé. Ça se fait avec la bascule qui va chercher le taux au
+ * serveur (`useAccountCommercial` existe déjà et sert ce rôle pour les
+ * montants) — c'est un arbitrage de produit, pas une correction évidente.
+ *
+ * D'ici là : liste d'UN seul élément, avec la raison écrite. Toute copie
+ * suivante fait échouer le test.
+ */
+const EXPOSITION_ASSUMEE = new Set(["lib/accounts"]);
+
+test("bundle app — aucun TAUX de partenariat en dur dans un module que le navigateur atteint", () => {
+  const clients = sources(["app", "components"]).filter((f) =>
+    /^\s*["']use client["']/.test(readFileSync(join(process.cwd(), f), "utf8"))
+  );
+  assert.ok(clients.length > 20, `on n'a trouvé que ${clients.length} fichiers client — le balayage est cassé`);
+
+  const atteints = new Set<string>();
+  for (const f of clients) for (const m of grapheImports(f.replace(/\.tsx?$/, ""))) atteints.add(m);
+
+  const fautes: string[] = [];
+  for (const m of [...atteints].sort()) {
+    if (!m.startsWith("lib/") || EXPOSITION_ASSUMEE.has(m)) continue;
+    let src: string;
+    try {
+      src = readFileSync(join(process.cwd(), m + ".ts"), "utf8");
+    } catch {
+      continue;
+    }
+    // Sans cette découpe, le commentaire qui EXPLIQUE la fuite déclenche le
+    // test qui l'interdit — c'est arrivé cinq fois dans ce dépôt. Le
+    // minifieur retire les commentaires : ils ne partent pas au navigateur.
+    const taux = tauxDePartenariat(sansCommentaires(src));
+    if (taux.length) fautes.push(`${m} (${taux.join(" %, ")} %)`);
+  }
+
+  assert.deepEqual(
+    fautes,
+    [],
+    "ces modules mettent notre part chez un partenaire dans un chunk public :\n  " + fautes.join("\n  ")
+  );
+});
+
+test("le détecteur de taux voit la vraie forme, et pas la prose", () => {
+  // Une garde qu'on n'a jamais vue mordre ne garde rien. Les deux fuites
+  // réelles, telles qu'elles étaient écrites dans `lib/ladder.ts`.
+  assert.deepEqual(tauxDePartenariat("      commissionPct: 15,"), [15]);
+  assert.deepEqual(tauxDePartenariat("recurringPct:10,"), [10]);
+
+  // Notre propre taux : rien à protéger, personne à nommer.
+  assert.deepEqual(tauxDePartenariat("commissionPct: 100,"), []);
+
+  // Un champ d'interface, une valeur venue d'ailleurs : ce n'est pas un taux
+  // écrit en dur, et l'interdire condamnerait tout usage légitime.
+  assert.deepEqual(tauxDePartenariat("  commissionPct: number;"), []);
+  assert.deepEqual(tauxDePartenariat("commissionPct: a.commissionPct,"), []);
+
+  // Et la prose qui EXPLIQUE la fuite ne doit pas la déclencher — c'est le
+  // piège qui s'est refermé cinq fois dans ce dépôt.
+  assert.deepEqual(tauxDePartenariat(sansCommentaires("// commissionPct: 30 était ici")), []);
+});
+
 test("bundle app — aucune coordonnée de prospect réel ne peut partir dans un chunk", () => {
   // La fuite la plus grave trouvée dans cette passe n'était pas commerciale.
   // `lib/store.ts` faisait `require("./pipeline-juillet")` et

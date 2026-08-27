@@ -46,13 +46,32 @@ export interface Rung {
   /** L'argument à dire au prospect pour cette marche. */
   pitch: string;
   /**
-   * Ce qui NOUS revient sur le one-shot / setup (%).
-   * 100 % sur les marches EAGLEYE : c'est notre société. En dessous seulement
-   * là où nous sommes intermédiaires (ScintIA 30 %, Nuwacom 15 %).
+   * ⚠ CE QUI NOUS REVIENT N'EST PLUS ÉCRIT ICI, ET C'EST UNE FUITE RÉELLE
+   * QUI L'A FAIT SORTIR — pas une préférence de rangement.
+   *
+   * Ce module est atteint par le navigateur (`argumentaire` →
+   * `components/prospects/master-panel`). Tout ce qu'un composant client
+   * importe finit dans un chunk de `_next/static/**`, et ce chemin est
+   * EXCLU du middleware : servi 200, sans cookie, sans mot de passe.
+   *
+   * Mesuré sur le build : `commissionPct:30` / `recurringPct:10` à côté de
+   * « ScintIA », et `commissionPct:15` à côté de « Nuwacom ». Autrement dit
+   * notre part chez chaque partenaire, téléchargeable par ce partenaire —
+   * alors que le taux Nuwacom est précisément ce qui se négocie APRÈS le
+   * cadrage (CLAUDE.md).
+   *
+   * Aggravant : dans toute l'application, RIEN ne lisait ces deux champs.
+   * Seuls des tests les touchaient. Ils voyageaient jusqu'au navigateur pour
+   * personne.
+   *
+   * L'économie de chaque compte vit dans `lib/accounts-commercial.ts`, qui
+   * ne descend pas dans le navigateur et qui n'est servi qu'au compte
+   * maître (`/api/catalogue`). C'était déjà une deuxième copie des mêmes
+   * nombres ; il n'en reste qu'une.
+   *
+   * L'escalier dit QUELLE marche et QUEL compte. Combien elle nous rapporte
+   * se demande au serveur.
    */
-  commissionPct: number;
-  /** Ce qui nous revient sur le récurrent mensuel (%), si applicable. */
-  recurringPct?: number;
 }
 
 export interface LadderResult {
@@ -117,9 +136,6 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
       accountName: "EAGLEYE CORP",
       evidence: vis,
       pitch: "« On vous rend visible là où vos clients cherchent — puis on transforme ce trafic. »",
-      // 100 % : EAGLEYE, c'est nous. On ne reverse à personne sur nos offres.
-      commissionPct: 100,
-      recurringPct: 100,
     });
   }
 
@@ -133,8 +149,6 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
       accountName: "ScintIA",
       evidence: dem,
       pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
-      commissionPct: 30,
-      recurringPct: 10,
     });
   }
 
@@ -154,8 +168,6 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
           "appelle. Quand on automatise ensuite, on a déjà toutes les données et le process est cartographié — " +
           "vous payez donc MOINS de setup que si on partait de zéro. »"
         : "« On automatise le process là où il vous coûte du temps — en partant de vos vraies données, pas d'un modèle. »",
-      commissionPct: 100,
-      recurringPct: 100,
     });
   }
 
@@ -171,9 +183,6 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
       pitch:
         "« Sur un chantier de cette taille, on s'appuie sur une plateforme éprouvée — et on reste votre " +
         "interlocuteur unique sur la maintenance. »",
-      commissionPct: 15,
-      // Le gros devis justifie les 15 % ; la maintenance mensuelle est à 100 %.
-      recurringPct: 100,
     });
   }
 

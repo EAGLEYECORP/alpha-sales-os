@@ -57,8 +57,25 @@ test("escalier — marche 2 : un volume de demandes élevé déclenche Callflow 
   );
   const cf = l.rungs.find((r) => r.id === "callflow");
   assert.equal(cf?.accountId, "scintia");
-  assert.equal(cf?.commissionPct, 30);
-  assert.equal(cf?.recurringPct, 10);
+
+  /**
+   * ⚠ CES DEUX ASSERTIONS LISAIENT `cf.commissionPct` ET `cf.recurringPct`.
+   *
+   * Ces champs ont été retirés de l'escalier : ce module descend dans le
+   * navigateur, et les chunks de `_next/static/**` sont servis sans cookie.
+   * `commissionPct:30` et `recurringPct:10` étaient donc téléchargeables à
+   * côté du mot « ScintIA » — par ScintIA comme par n'importe qui.
+   *
+   * Aucun écran ne les lisait : SEULS ces tests les touchaient. Ils
+   * garantissaient la doctrine sur une COPIE des chiffres, pendant que
+   * l'original vivait dans `accounts-commercial`. On interroge donc
+   * l'original, par le compte que la marche désigne — ce qui vérifie en plus
+   * que l'escalier et l'économie ne se sont pas désynchronisés.
+   */
+  const eco = commissionFor(cf!.accountId, { amountHT: 990 });
+  assert.equal(eco.pct, 30, "ScintIA Callflow : 30 % sur le setup");
+  const recurrent = commissionFor(cf!.accountId, { amountHT: 200, recurring: true });
+  assert.equal(recurrent.pct, 10, "et 10 % sur le mensuel");
 });
 
 test("escalier — sous le seuil, Callflow ne se déclenche pas", () => {
@@ -89,8 +106,12 @@ test("escalier — marche 4 : au-delà de 40 k, ça part chez Nuwacom (15 % + 10
   const l = buildLadder(fixture({ setupValue: 60000 }));
   const gros = l.rungs.find((r) => r.id === "gros-chantier");
   assert.equal(gros?.accountId, "nuwacom");
-  assert.equal(gros?.commissionPct, 15);
-  assert.equal(gros?.recurringPct, 100, "la maintenance mensuelle revient à 100 % chez nous");
+  // Même raison qu'à la marche 2 : l'économie se lit à sa source, jamais sur
+  // la marche — celle-ci part dans le navigateur.
+  const eco = commissionFor(gros!.accountId, { amountHT: 60000 });
+  assert.equal(eco.pct, 15, "le gros devis justifie les 15 %");
+  const maintenance = commissionFor(gros!.accountId, { amountHT: 1200, recurring: true });
+  assert.equal(maintenance.pct, 100, "la maintenance mensuelle revient à 100 % chez nous");
 });
 
 test("escalier — Nuwacom : 15 % sur le devis, 100 % sur la maintenance mensuelle", () => {
