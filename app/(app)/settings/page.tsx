@@ -18,6 +18,7 @@ import {
 import { cn, sha256, uid } from "@/lib/utils";
 import { lockNow } from "@/components/security/lock-gate";
 import { csvToProspects, CSV_TEMPLATE_HEADER } from "@/lib/csv";
+import { projeterImport, readStorageHealth } from "@/lib/storage-health";
 import { SystemStatus } from "@/components/settings/system-status";
 import { PushToggle } from "@/components/settings/push-toggle";
 import { NotionPush } from "@/components/settings/notion-push";
@@ -160,6 +161,34 @@ export default function SettingsPage() {
     a.click();
   };
 
+  /**
+   * ── LE MUR DE STOCKAGE, SUR LE CHEMIN QUI N'EN AVAIT PAS ──
+   *
+   * ⚠ `projeterImport` existait, était testé, et n'était branché que sur le
+   * panneau de sourcing terrain. Ici — l'import CSV, celui par lequel arrivent
+   * les gros lots — rien n'avertissait.
+   *
+   * Une écriture localStorage qui échoue ne ressemble pas à une panne :
+   * l'écran affiche les fiches, elles disparaissent en fermant l'onglet.
+   * `StorageAlert` finit par le dire, mais après.
+   *
+   * Ce chemin-ci n'a pas d'étape de prévisualisation où poser l'avertissement
+   * (choisir le fichier suffit à importer). On DEMANDE donc, et seulement
+   * quand la projection est en alerte : un import qui passe large ne doit rien
+   * demander du tout, sinon la question devient un réflexe et se clique sans
+   * être lue.
+   */
+  const passeLeMurDuStockage = (fiches: unknown[]): boolean => {
+    if (!fiches.length) return true;
+    const p = projeterImport(
+      readStorageHealth(),
+      fiches,
+      Math.round(JSON.stringify(fiches).length / Math.max(1, fiches.length))
+    );
+    if (!p.alerte) return true;
+    return confirm(`${p.phrase}\n\nImporter quand même ?`);
+  };
+
   const applyCsv = (text: string) => {
     /**
      * ⚠ Un relevé TERRAIN ne passe pas par l'import CRM générique.
@@ -173,11 +202,16 @@ export default function SettingsPage() {
     if (ressembleAuTerrain(text)) {
       const r = importerFiches(text);
       if (r.retenus.length || r.ecartes.length) {
-        const { added, updated } = importProspects(r.retenus.map((x) => x.prospect));
+        const fiches = r.retenus.map((x) => x.prospect);
+        if (!passeLeMurDuStockage(fiches)) {
+          setImportMsg("Import annulé — rien n'a été écrit.");
+          return;
+        }
+        const { added, updated } = importProspects(fiches);
         setImportMsg(
           `✓ Relevé terrain : ${added} nouveau(x), ${updated} mis à jour, ${r.ecartes.length} écartée(s). ${r.resume.join(" ")}`
         );
-        setTriage(triageImport(r.retenus.map((x) => x.prospect), settings.accountId));
+        setTriage(triageImport(fiches, settings.accountId));
         return;
       }
     }
@@ -187,6 +221,10 @@ export default function SettingsPage() {
       setImportMsg(
         `Aucun prospect reconnu (${skipped} ligne(s) ignorée(s)). Colonnes détectées : ${headersFound.join(", ") || "aucune"}. Il faut au minimum une colonne « company / commerce ».`
       );
+      return;
+    }
+    if (!passeLeMurDuStockage(parsed)) {
+      setImportMsg("Import annulé — rien n'a été écrit.");
       return;
     }
     const { added, updated } = importProspects(parsed);

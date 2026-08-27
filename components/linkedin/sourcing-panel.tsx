@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, CalendarClock, Check, ClipboardPaste, Info, UserPlus, X } from "lucide-react";
 import { ENTETE_MODELE, importerProfils } from "@/lib/linkedin-import";
 import { planifierCampagne } from "@/lib/linkedin-plan";
+import { projeterImport, readStorageHealth } from "@/lib/storage-health";
 import { useAlpha } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,38 @@ export function SourcingPanel() {
   const resultat = useMemo(() => (texte.trim() ? importerProfils(texte) : null), [texte]);
   const plan = useMemo(
     () => (resultat?.retenus.length ? planifierCampagne(resultat.retenus.length) : null),
+    [resultat]
+  );
+
+  /**
+   * ── LE MUR DE STOCKAGE SE VOIT AVANT DE COLLER, PAS APRÈS ──
+   *
+   * ⚠ Cette projection existait, était testée, et n'était branchée que sur UNE
+   * des deux surfaces de collage en masse : le sourcing terrain. Ici, un lot de
+   * profils LinkedIn — c'est-à-dire des centaines de fiches en un clic —
+   * entrait sans le moindre avertissement.
+   *
+   * Ce que ça coûte : une écriture localStorage qui échoue ne ressemble pas à
+   * une panne. L'écran affiche les fiches normalement, et elles disparaissent
+   * en fermant l'onglet. `StorageAlert` finit par le dire, mais APRÈS — or la
+   * règle est de le montrer avant, quand ça se répare encore.
+   *
+   * Le poids par fiche est MESURÉ sur le lot réel, pas supposé : c'est la même
+   * mécanique que le panneau terrain, et une fiche LinkedIn ne pèse pas comme
+   * une fiche d'annuaire.
+   */
+  const stockage = useMemo(
+    () =>
+      resultat?.retenus.length
+        ? projeterImport(
+            readStorageHealth(),
+            resultat.retenus,
+            Math.round(
+              JSON.stringify(resultat.retenus.map((r) => r.prospect)).length /
+                Math.max(1, resultat.retenus.length)
+            )
+          )
+        : null,
     [resultat]
   );
 
@@ -157,6 +190,20 @@ export function SourcingPanel() {
               {resultat.retenus.length > 20 && (
                 <p className="mt-1 text-[11px] text-paper-faint">
                   … et {resultat.retenus.length - 20} autre(s).
+                </p>
+              )}
+
+              {/* Avant le bouton, jamais après : c'est tout l'intérêt. */}
+              {stockage && (
+                <p
+                  className={cn(
+                    "mt-2 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed",
+                    stockage.alerte
+                      ? "border-signal-red/50 bg-signal-red/5 text-signal-red"
+                      : "border-ink-700 text-paper-faint"
+                  )}
+                >
+                  {stockage.phrase}
                 </p>
               )}
 
