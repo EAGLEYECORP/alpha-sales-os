@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ArgentDeDemo } from "@/components/argent-de-demo";
 import {
   AlertTriangle, ArrowUpRight, Ban, CalendarClock, Check, ExternalLink, Flag, Gauge, Target, TrendingUp,
 } from "lucide-react";
@@ -60,6 +61,9 @@ export default function TrajectoirePage() {
 
   return (
     <div className="space-y-5 p-4">
+      {/* Le palier se calcule sur le cash encaissé : si ce cash est fictif, le
+          palier l'est aussi, et cet écran sert à décider quoi faire ensuite. */}
+      <ArgentDeDemo prospects={prospects} />
       <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
         <TrendingUp size={20} className="text-bronze-400" /> Trajectoire
       </h1>

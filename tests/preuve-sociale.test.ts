@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { seedMeetings, seedProspects } from "../lib/seed";
+import { buildTemplates } from "../lib/templates";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -54,6 +56,18 @@ const REDACTEURS = [
   "lib/lead-magnet.ts",
   "lib/ladder.ts",
   "lib/proof.ts",
+  /**
+   * ⚠ AJOUTÉ APRÈS COUP, ET C'EST LE PLUS INSTRUCTIF DES ONZE.
+   *
+   * Les contenus de séquence du seed sont des CONSIGNES, lues par l'opérateur
+   * au moment d'écrire son message. L'une d'elles disait, mot pour mot :
+   * « une preuve fraîche même secteur (on vient d'équiper X, +N clients/mois) ».
+   *
+   * Ce n'est pas une phrase envoyée : c'est une instruction à en fabriquer
+   * une. Le fichier n'était pas dans la liste parce qu'il « ne rédige pas » —
+   * or il dicte. Troisième endroit du dépôt où cette tentation était écrite.
+   */
+  "lib/seed.ts",
 ];
 
 const sansCommentaires = (src: string) =>
@@ -141,4 +155,72 @@ test("la même discipline existe déjà dans les modèles — elle sert de réf�
   // dépend de l'endroit où le retour à la ligne tombe.
   const prose = src.replace(/^\s*\/\/\s?/gm, " ").replace(/\s+/g, " ");
   assert.match(prose, /jamais un client inventé/i, "et la raison doit rester écrite");
+});
+
+test("⚠ les RDV de démonstration tombent dans la fenêtre d'appel", () => {
+  /**
+   * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT, PAS EN LE TESTANT.
+   *
+   * `daysAhead` conserve l'heure COURANTE. Les cinq rendez-vous de démo en
+   * héritaient : une démo ouverte à 23 h affichait « Closing — Le Bouchon des
+   * Canuts (23:23) » sur `/aujourdhui`, juste sous le bandeau « Hors fenêtre
+   * d'appel — après 18h, on ne joint pas un dirigeant de TPE ».
+   *
+   * Le produit se contredisait dans le même écran, et le premier bouton de
+   * l'app est « Explorer la démo ». Une incohérence visible à la première
+   * seconde coûte plus cher qu'un bug qu'on ne rencontre jamais.
+   */
+  const heures = seedMeetings.map((m) => new Date(m.date).getHours());
+  const hors = heures.filter((h) => h < 9 || h >= 18);
+  assert.deepEqual(hors, [], `des RDV de démo hors fenêtre professionnelle : ${hors.join("h, ")}h`);
+
+  // Et ils ne tombent pas tous à la même heure : un jeu de démonstration
+  // où tout est calé à 10h30 ne ressemble pas à une semaine de travail.
+  assert.ok(new Set(heures).size >= 3, "les créneaux de démo doivent être variés");
+});
+
+test("le modèle J+60 se lit correctement SANS référence réelle", () => {
+  /**
+   * ⚠ La phrase supposait que `{proof}` soit un chiffre : « des nouvelles
+   * fraîches : {proof} […] à chaque fois que je vois ces chiffres ». Or à
+   * zéro vente, `{proof}` vaut le MÉCANISME — la substitution était sûre, la
+   * prose autour ne l'était pas.
+   */
+  const t = buildTemplates({ agency: "EAGLEYE CORP" }).find((x) => x.title.includes("J+60"));
+  assert.ok(t, "le modèle J+60 doit exister");
+  assert.doesNotMatch(t!.body, /ces chiffres/i, "on ne renvoie pas à des chiffres qu'on n'a pas donnés");
+  assert.doesNotMatch(t!.body, /nouvelles fraîches/i, "un mécanisme n'est pas une nouvelle");
+  assert.match(t!.body, /\{proof\}|concrètement/, "la substitution doit rester en place");
+});
+
+test("⚠ l'argent de DÉMONSTRATION est nommé sur les écrans d'argent", () => {
+  /**
+   * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT.
+   *
+   * Avec le jeu de démo chargé — l'état par défaut, et le premier bouton de
+   * l'app est « Explorer la démo » — `/payouts` affiche « Ta part cumulée
+   * 1 390 € · Ventes 2 » et `/trajectoire` « 1 390 € encaissés ». Rien ne
+   * disait que ces euros sont fictifs, et ce sont exactement les écrans qu'on
+   * ouvre pour PROUVER que l'OS fonctionne.
+   *
+   * Même ligne rouge que « nos clients » dans le script hors-ligne, en pire :
+   * un chiffre se croit plus vite qu'une phrase.
+   *
+   * Le mécanisme (`isDemoProspect`) existait et n'était branché que sur la
+   * boîte d'envoi et le push Notion — encore une garde câblée à un seul
+   * endroit.
+   */
+  const seedPaye = seedProspects.filter((p) => (p.payments ?? []).some((x) => x.status === "paye"));
+  assert.ok(seedPaye.length > 0, "le jeu de démo doit encore contenir des paiements — sinon ce test ne garde rien");
+
+  for (const f of ["app/(app)/payouts/page.tsx", "app/(app)/trajectoire/page.tsx"]) {
+    const src = readFileSync(join(RACINE, f), "utf8");
+    assert.match(src, /<ArgentDeDemo prospects=\{prospects\} \/>/, `${f} doit nommer l'argent de démo`);
+  }
+
+  // Le bandeau se retire TOUT SEUL : un avertissement qu'il faut penser à
+  // enlever est un avertissement qu'on oublie, puis qu'on montre.
+  const bandeau = readFileSync(join(RACINE, "components/argent-de-demo.tsx"), "utf8");
+  assert.match(bandeau, /if \(demoAvecArgent\.length === 0\) return null;/, "il doit disparaître sans intervention");
+  assert.match(bandeau, /status === "paye"/, "et ne se déclencher que sur de l'argent réellement compté");
 });

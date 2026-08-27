@@ -20,6 +20,33 @@ export const dateTimeFr = (iso: string) =>
 export const daysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString();
 export const daysAhead = (n: number) => new Date(Date.now() + n * 864e5).toISOString();
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * UN RENDEZ-VOUS À UNE HEURE OÙ L'APP ELLE-MÊME INTERDIT D'APPELER.
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT, PAS EN LE TESTANT.
+ *
+ * `daysAhead` conserve l'HEURE COURANTE. Les cinq rendez-vous de
+ * démonstration en héritaient : une démo ouverte à 23 h affichait
+ * « Closing — Le Bouchon des Canuts (23:23) » sur `/aujourdhui`… à côté du
+ * bandeau « Hors fenêtre d'appel — avant 9h ou après 18h, on ne joint pas un
+ * dirigeant de TPE ». Le produit se contredisait dans le même écran.
+ *
+ * Ça ne casse aucune donnée réelle — c'est du jeu de démonstration. Mais le
+ * premier bouton de l'app est « Explorer la démo », et c'est cet écran-là
+ * qu'un prospect regarde. Une incohérence visible à la première seconde coûte
+ * plus cher qu'un bug qu'on ne rencontre jamais.
+ *
+ * `heure` est en heure LOCALE : c'est celle que l'écran affiche, et donc la
+ * seule qui doive tomber dans la fenêtre professionnelle.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const daysAheadAt = (n: number, heure: number, minute = 0) => {
+  const d = new Date(Date.now() + n * 864e5);
+  d.setHours(heure, minute, 0, 0);
+  return d.toISOString();
+};
+
 export const isOverdue = (iso: string) => new Date(iso).getTime() < Date.now();
 
 /** SHA-256 hex digest (Web Crypto) — used for the app-lock PIN. */

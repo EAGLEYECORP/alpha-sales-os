@@ -24,7 +24,7 @@ import type {
   Prospect,
   TimelineEvent,
 } from "./types";
-import { daysAgo, daysAhead } from "./utils";
+import { daysAgo, daysAhead, daysAheadAt } from "./utils";
 
 /**
  * Defaults for fields added over time — applied to every seed prospect.
@@ -489,12 +489,26 @@ export const seedCampaigns: Campaign[] = [
   },
 ];
 
+/**
+ * ⚠ LES HEURES SONT FIXÉES, ELLES NE SUIVENT PLUS L'HORLOGE.
+ *
+ * `daysAhead` garde l'heure courante : une démo ouverte à 23 h produisait
+ * cinq rendez-vous à 23 h, pendant que `/aujourdhui` affichait juste au-dessus
+ * « après 18h, on ne joint pas un dirigeant de TPE ». Le premier bouton de
+ * l'app est « Explorer la démo » — c'est exactement cet écran qu'un prospect
+ * regarde en premier.
+ *
+ * Les créneaux ci-dessous sont choisis dans la fenêtre professionnelle, et
+ * variés : un closing en fin de matinée, une démo l'après-midi, un audit tôt.
+ * Un jeu de démonstration où tout tombe à la même heure ne ressemble pas à une
+ * semaine de travail.
+ */
 export const seedMeetings: Meeting[] = [
-  { id: "m1", prospectId: "p-bouchon", title: "Closing — Le Bouchon des Canuts", date: daysAhead(1), durationMin: 45, kind: "closing", channel: "physique", location: "Sur place — Croix-Rousse", calLink: "https://cal.com/eagleye/closing-bouchon", reminded: true, done: false },
-  { id: "m2", prospectId: "p-smoking-dog", title: "Démo mobile — Smoking Dog", date: daysAhead(2), durationMin: 30, kind: "demo", channel: "physique", location: "Sur place — Vieux Lyon", calLink: "https://cal.com/eagleye/demo-smokingdog", reminded: false, done: false },
-  { id: "m3", prospectId: "p-ambulances-rhone", title: "Audit + démo (les 2 frères)", date: daysAhead(3), durationMin: 60, kind: "audit", channel: "physique", location: "Dépôt Villeurbanne", calLink: "https://cal.com/eagleye/audit-rhone", reminded: false, done: false },
-  { id: "m4", prospectId: "p-boulangerie", title: "Appel décision — Plomberie Fabre", date: daysAhead(1), durationMin: 15, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
-  { id: "m5", prospectId: "p-menuiserie", title: "Onboarding + referrals — Charbonnier", date: daysAhead(5), durationMin: 45, kind: "suivi", channel: "visio", location: "Google Meet", calLink: "https://cal.com/eagleye/onboarding-charbonnier", reminded: false, done: false },
+  { id: "m1", prospectId: "p-bouchon", title: "Closing — Le Bouchon des Canuts", date: daysAheadAt(1, 10, 30), durationMin: 45, kind: "closing", channel: "physique", location: "Sur place — Croix-Rousse", calLink: "https://cal.com/eagleye/closing-bouchon", reminded: true, done: false },
+  { id: "m2", prospectId: "p-smoking-dog", title: "Démo mobile — Smoking Dog", date: daysAheadAt(2, 14, 0), durationMin: 30, kind: "demo", channel: "physique", location: "Sur place — Vieux Lyon", calLink: "https://cal.com/eagleye/demo-smokingdog", reminded: false, done: false },
+  { id: "m3", prospectId: "p-ambulances-rhone", title: "Audit + démo (les 2 frères)", date: daysAheadAt(3, 9, 30), durationMin: 60, kind: "audit", channel: "physique", location: "Dépôt Villeurbanne", calLink: "https://cal.com/eagleye/audit-rhone", reminded: false, done: false },
+  { id: "m4", prospectId: "p-boulangerie", title: "Appel décision — Plomberie Fabre", date: daysAheadAt(1, 16, 0), durationMin: 15, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
+  { id: "m5", prospectId: "p-menuiserie", title: "Onboarding + referrals — Charbonnier", date: daysAheadAt(5, 11, 0), durationMin: 45, kind: "suivi", channel: "visio", location: "Google Meet", calLink: "https://cal.com/eagleye/onboarding-charbonnier", reminded: false, done: false },
 ];
 
 export const seedNurture: NurtureSequence[] = [
@@ -505,7 +519,17 @@ export const seedNurture: NurtureSequence[] = [
     active: true,
     steps: [
       { id: "ns1", day: 30, channel: "email", content: "Article utile secteur (zéro vente) : « 3 choses que les meilleurs {secteur}s de Lyon font en ligne »." },
-      { id: "ns2", day: 60, channel: "whatsapp", content: "Message personnel : une preuve fraîche même secteur (« on vient d'équiper X, +N clients/mois »)." },
+      /**
+       * ⚠ CETTE ÉTAPE DISAIT : « une preuve fraîche même secteur (on vient
+       * d'équiper X, +N clients/mois) ».
+       *
+       * C'est une consigne à l'opérateur, lue au moment d'écrire — donc une
+       * instruction à FABRIQUER une référence. Zéro vente à ce jour : « on
+       * vient d'équiper X » se vérifie en une question, et la relation ne
+       * s'en remet pas. Troisième endroit du dépôt où cette tentation était
+       * écrite, après `hormozi` et la carte de preuves.
+       */
+      { id: "ns2", day: 60, channel: "whatsapp", content: "Message personnel : un constat frais sur SON secteur — ce qu'on voit passer, ce qui a bougé depuis. ⚠ Aucune référence client tant qu'il n'y en a pas de vraie." },
       { id: "ns3", day: 90, channel: "appel", content: "Appel direct : « Où en êtes-vous avec votre site ? » — si le low-cost n'a rien produit, ré-audit gratuit." },
     ],
   },

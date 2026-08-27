@@ -339,7 +339,21 @@ Si un jour vous voulez la version complète, vous savez où me trouver.
   },
   {
     group: "reconquete", format: "dm", title: "J+60 — la preuve fraîche",
-    body: `{prenom}, des nouvelles fraîches : {proof}. Je repense à {commerce} à chaque fois que je vois ces chiffres. Quand vous voulez, on refait le point — sans engagement, comme toujours.`,
+    /**
+     * ⚠ LA PHRASE SUPPOSAIT QUE `{proof}` SOIT UN CHIFFRE. Elle disait « des
+     * nouvelles fraîches : {proof} […] à chaque fois que je vois ces
+     * chiffres ». Or `{proof}` vaut le MÉCANISME tant qu'aucune référence
+     * réelle n'existe — c'est la discipline de ce fichier, et elle est bonne.
+     *
+     * Rendu à zéro vente : « des nouvelles fraîches : pendant le coup de feu,
+     * personne ne peut décrocher […] à chaque fois que je vois ces chiffres. »
+     * Des « nouvelles » qui n'en sont pas, et des « chiffres » jamais donnés.
+     * La substitution était sûre, la prose autour ne l'était pas.
+     *
+     * Réécrite pour tenir dans les DEUX cas : une vraie référence comme un
+     * mécanisme se lisent aussi bien après « ce que ça donne concrètement ».
+     */
+    body: `{prenom}, une chose que je voulais vous montrer — ce que ça donne concrètement : {proof}. Je repense à {commerce} chaque fois que je le vois tourner. Quand vous voulez, on refait le point — sans engagement, comme toujours.`,
     tip: "Une preuve du MÊME secteur réactive la croyance n°3 (« ça peut marcher pour moi »).",
   },
   {

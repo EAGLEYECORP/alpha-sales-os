@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { ArrowRight, Check, Coins, Info } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { buildPayoutLedger } from "@/lib/payouts";
+import { ArgentDeDemo } from "@/components/argent-de-demo";
 import { eur } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,9 @@ export default function PayoutsPage() {
 
   return (
     <div className="space-y-4 animate-fade-up">
+      {/* L'argent de démonstration se nomme : c'est l'écran qu'on ouvre pour
+          prouver que l'OS marche. */}
+      <ArgentDeDemo prospects={prospects} />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
