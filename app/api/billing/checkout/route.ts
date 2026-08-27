@@ -67,10 +67,20 @@ export async function POST(req: NextRequest) {
       abonnement: offre.cadence === "mensuel",
       userId: tenant.id,
       email: tenant.email ?? undefined,
-      // L'offre voyage dans l'URL de retour : c'est elle qui déclenche le bon
-      // parcours d'onboarding au lieu d'un « merci » générique.
-      successUrl: `${base}/compte?achat=ok&offre=${encodeURIComponent(offre.id)}`,
-      cancelUrl: `${base}/compte?achat=annule&offre=${encodeURIComponent(offre.id)}`,
+      /**
+       * ⚠ LE RETOUR DOIT ÊTRE PUBLIC — il ne l'était pas.
+       *
+       * Ces deux URL visaient `/compte`, une route de `(app)`. Vérifié en
+       * démarrant le serveur avec `SITE_PASSWORD` : le client payait, Stripe
+       * le renvoyait, et il tombait sur `307 → /gate`. On prenait son argent
+       * pour lui montrer une porte fermée — et le mot de passe demandé est
+       * celui de NOTRE outil interne, qu'il n'aura jamais.
+       *
+       * L'offre voyage dans l'URL : c'est elle qui déclenche le bon parcours
+       * d'onboarding au lieu d'un « merci » générique.
+       */
+      successUrl: `${base}/souscrire?achat=ok&offre=${encodeURIComponent(offre.id)}`,
+      cancelUrl: `${base}/souscrire?achat=annule&offre=${encodeURIComponent(offre.id)}`,
     });
     return NextResponse.json({ url });
   } catch (e) {

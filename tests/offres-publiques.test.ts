@@ -259,6 +259,45 @@ test("le retour de paiement mène à un onboarding, pas à un écran identique",
   );
 });
 
+test("⚠ le client qui vient de PAYER n'atterrit pas derrière le mot de passe", () => {
+  /**
+   * LE PIRE DES DÉFAUTS DE CETTE SÉRIE, parce qu'il coûte après l'argent.
+   *
+   * `successUrl` et `cancelUrl` visaient `/compte`, une route de `(app)`.
+   * Vérifié en démarrant le serveur avec `SITE_PASSWORD` — le seul cas où le
+   * mur s'active, donc invisible en local : le client payait, Stripe le
+   * renvoyait, et il tombait sur `307 → /gate`. On prenait son argent pour
+   * lui montrer une porte fermée, dont le mot de passe est celui de NOTRE
+   * outil interne — qu'il n'aura jamais.
+   */
+  const route = readFileSync(join(process.cwd(), "app/api/billing/checkout/route.ts"), "utf8");
+  for (const champ of ["successUrl", "cancelUrl"]) {
+    const ligne = route.slice(route.indexOf(champ), route.indexOf(champ) + 140);
+    assert.doesNotMatch(ligne, /\/compte/, `${champ} ne doit pas viser une route gardée`);
+    assert.match(ligne, /\/souscrire/, `${champ} doit revenir sur la page publique`);
+    assert.match(ligne, /offre=\$\{encodeURIComponent/, `${champ} doit porter l'offre, sinon le parcours est générique`);
+  }
+});
+
+test("la page publique de retour lance le parcours, sans prétendre être payée", () => {
+  const page = sansCommentaires(readFileSync(join(process.cwd(), "app/souscrire/page.tsx"), "utf8"));
+  assert.ok(page.includes("parcours("), "le retour public doit lancer l'onboarding, pas dire merci");
+  assert.match(page, /achat=ok|q\.get\("achat"\)/, "la page doit lire l'état du retour");
+  // Même règle que sur le panneau interne : une redirection ne prouve rien.
+  assert.doesNotMatch(
+    page,
+    /[Pp]aiement (confirmé|validé|encaissé)/,
+    "seul le webhook Stripe confirme un encaissement"
+  );
+  // Et le formulaire d'achat ne doit pas rester affiché sous le remerciement :
+  // proposer de repayer à quelqu'un qui vient de payer est un appel au support.
+  assert.match(page, /!achat && choisie/, "l'écran d'achat doit s'effacer au retour");
+  // Un paiement ANNULÉ ne se remercie pas. Constaté au navigateur : le titre
+  // « Merci — on prend la suite » s'affichait au-dessus de « Paiement
+  // interrompu ». Le titre doit distinguer les deux retours.
+  assert.match(page, /achat === "ok" \?/, "le titre doit distinguer le succès de l'annulation");
+});
+
 test("la route de paiement accepte toutes les offres payables, et refuse le devis", () => {
   const route = readFileSync(join(process.cwd(), "app/api/billing/checkout/route.ts"), "utf8");
   assert.ok(route.includes("offreParId"), "la route doit résoudre l'offre dans la grille");

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 // même si rien ne l'affiche (voir tests/vitrine-fuite.test.ts). N'importer
 // depuis cette page aucun module qui touche aux coûts ou aux marges.
 import { OFFRES, offreParId, type OffrePublique } from "@/lib/offres-publiques";
+import { parcours, ESSAI_JOURS } from "@/lib/client-onboarding";
 import { authAvailable, getCurrentUser, onAuthChange, signIn, signUp, type AuthUser } from "@/lib/auth";
 
 /**
@@ -41,7 +42,112 @@ const prix = (o: OffrePublique) =>
     ? "Sur devis"
     : `${o.prixHT.toLocaleString("fr-FR")} € HT${o.cadence === "mensuel" ? "/mois" : ""}`;
 
+/** Date lisible sans dépendre d'un module de l'app. */
+const jourFr = (iso: string) =>
+  new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+
+/**
+ * ── LE RETOUR DE PAIEMENT ──
+ *
+ * ⚠ NE JAMAIS ÉCRIRE QUE LE PAIEMENT EST ENCAISSÉ. L'URL de retour est une
+ * redirection navigateur, pas une preuve : seul le webhook Stripe confirme.
+ * On dit « commande envoyée », et on enchaîne sur la mise en route — parce
+ * que les dix minutes qui suivent un paiement décident si le client ouvre
+ * l'app demain ou s'il attend qu'on le rappelle.
+ */
+function RetourPaiement({ achat, offre }: { achat: string; offre: OffrePublique }) {
+  const plan =
+    achat === "ok"
+      ? parcours(new Date().toISOString(), offre.capacites, [], { essai: offre.id === "essai" })
+      : null;
+
+  if (achat === "annule") {
+    return (
+      <div className="mt-10 rounded-2xl p-7" style={{ border: `1px solid ${LINE}`, background: "#FFFFFF" }}>
+        <p className="font-serif text-[24px] tracking-[-0.01em]">Paiement interrompu</p>
+        <p className="mt-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+          Rien n&apos;a été débité. L&apos;offre « {offre.nom} » reste disponible. Si quelque chose vous a
+          arrêté, dites-le —{" "}
+          <a
+            href="mailto:contact@eagleyecorp.fr?subject=Question%20avant%20de%20payer"
+            className="underline underline-offset-4"
+            style={{ color: ACCENT }}
+          >
+            c&apos;est plus utile qu&apos;un abandon silencieux
+          </a>
+          .
+        </p>
+      </div>
+    );
+  }
+
+  const premieres = plan?.etapes.slice(0, 4) ?? [];
+  return (
+    <div className="mt-10 rounded-2xl p-7" style={{ border: `1px solid ${ACCENT}`, background: "#FFFFFF" }}>
+      <p className="font-serif text-[28px] tracking-[-0.01em]">Commande envoyée — {offre.nom}</p>
+      <p className="mt-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+        Stripe traite le paiement ; la confirmation arrive par email. Pendant ce temps, voilà la mise en
+        route — elle commence maintenant, pas à la confirmation.
+      </p>
+
+      {offre.appelsInclus !== null && offre.auDela && (
+        <p className="mt-4 rounded-lg px-4 py-3 text-[15px] leading-[1.55]" style={{ background: PAPER, color: MUTED }}>
+          <strong style={{ color: INK }}>{offre.appelsInclus} appels inclus.</strong> {offre.auDela}
+        </p>
+      )}
+
+      {premieres.length > 0 && (
+        <>
+          <p className="mt-6 text-[13px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>
+            Les premières étapes — qui fait quoi
+          </p>
+          <ul className="mt-3 space-y-2">
+            {premieres.map((e) => (
+              <li key={e.id} className="rounded-lg px-4 py-3" style={{ background: PAPER }}>
+                <p className="text-[15px] font-medium">
+                  {e.titre}
+                  <span className="ml-2 text-[13px]" style={{ color: e.cote === "nous" ? ACCENT : MUTED }}>
+                    · {e.cote === "nous" ? "nous" : "vous"}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[13px]" style={{ color: MUTED }}>
+                  visé le {jourFr(e.date)}
+                </p>
+              </li>
+            ))}
+          </ul>
+          {plan && plan.etapes.length > premieres.length && (
+            <p className="mt-2 text-[13px]" style={{ color: MUTED }}>
+              … et {plan.etapes.length - premieres.length} autres étapes, filtrées sur ce que vous venez de
+              prendre.
+            </p>
+          )}
+        </>
+      )}
+
+      {offre.id === "essai" && (
+        <p className="mt-5 text-[15px] leading-[1.55]" style={{ color: ACCENT }}>
+          L&apos;essai a une fin : il faut qu&apos;un résultat existe sous {ESSAI_JOURS} jours. C&apos;est
+          court, et c&apos;est le but — un essai qui traîne ne prouve rien.
+        </p>
+      )}
+
+      <p className="mt-6 text-[15px] leading-[1.6]" style={{ color: MUTED }}>
+        Vos accès arrivent par email dès la confirmation. Une question d&apos;ici là :{" "}
+        <a
+          href="mailto:contact@eagleyecorp.fr?subject=Mise%20en%20route"
+          className="underline underline-offset-4"
+          style={{ color: ACCENT }}
+        >
+          contact@eagleyecorp.fr
+        </a>
+      </p>
+    </div>
+  );
+}
+
 export default function SouscrirePage() {
+  const [achat, setAchat] = useState<string | null>(null);
   const [choisie, setChoisie] = useState<OffrePublique | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [pret, setPret] = useState(false);
@@ -52,10 +158,13 @@ export default function SouscrirePage() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  // L'offre peut arriver dans l'URL (?offre=solo) depuis la vitrine.
+  // L'offre peut arriver dans l'URL (?offre=solo) depuis la vitrine, et
+  // `achat` au RETOUR de Stripe (?achat=ok&offre=solo).
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("offre");
+    const q = new URLSearchParams(window.location.search);
+    const id = q.get("offre");
     if (id) setChoisie(offreParId(id) ?? null);
+    setAchat(q.get("achat"));
   }, []);
 
   useEffect(() => {
@@ -125,16 +234,25 @@ export default function SouscrirePage() {
         </a>
 
         <h1 className="mt-8 font-serif text-[38px] leading-[1.12] tracking-[-0.02em] sm:text-[46px]">
-          {choisie ? choisie.nom : "Par où vous voulez commencer"}
+          {/* « Merci — on prend la suite » au-dessus de « Paiement
+              interrompu » : constaté au navigateur, et c'est exactement le
+              genre de contresens qui fait douter au pire moment. */}
+          {achat === "ok" ? "Merci" : achat ? "Rien n'a été débité" : choisie ? choisie.nom : "Par où vous voulez commencer"}
         </h1>
         <p className="mt-4 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-          {choisie
+          {achat === "ok"
+            ? "On prend la suite."
+            : achat
+            ? "Vous pouvez reprendre où vous en étiez."
+            : choisie
             ? choisie.sousTitre
             : "La démo est gratuite. Le lancement, non — il y a de la téléphonie et du temps derrière. Prix affichés, sans engagement."}
         </p>
 
+        {achat && choisie && <RetourPaiement achat={achat} offre={choisie} />}
+
         {/* ── 1. L'offre ── */}
-        {!choisie && (
+        {!achat && !choisie && (
           <div className="mt-12 grid gap-4 sm:grid-cols-2">
             {PAYABLES.map((o) => (
               <button
@@ -169,7 +287,7 @@ export default function SouscrirePage() {
           </div>
         )}
 
-        {choisie && (
+        {!achat && choisie && (
           <div className="mt-10 rounded-2xl p-7" style={{ border: `1px solid ${ACCENT}`, background: "#FFFFFF" }}>
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <p className="font-serif text-[34px] leading-none tracking-[-0.02em]">{prix(choisie)}</p>
@@ -293,7 +411,7 @@ export default function SouscrirePage() {
         )}
 
         {/* ── Ce qui ne s'achète pas en ligne, et pourquoi ── */}
-        {SUR_DEVIS.length > 0 && (
+        {!achat && SUR_DEVIS.length > 0 && (
           <div className="mt-16 border-t pt-10" style={{ borderColor: LINE }}>
             <h2 className="font-serif text-[26px] tracking-[-0.01em]">L&apos;installation complète</h2>
             <p className="mt-3 max-w-2xl text-[16px] leading-[1.65]" style={{ color: MUTED }}>
