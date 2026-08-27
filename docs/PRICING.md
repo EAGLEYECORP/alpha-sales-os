@@ -127,17 +127,35 @@ export CDR, pas avec une opinion.
 
 ## 2. Alpha Voice — ce que ça coûte, ce que ça rapporte
 
-### Palier 1 000 appels/mois — la grille actuelle tient
+### Palier 1 000 appels/mois — recalculé après la mesure Fish
 
-```
-1 000 composés · 300 décrochés · 855 min de conversation
-Coût fournisseurs .............. 96 €   (dont 57 € de fixe mutualisé)
-Prix affiché ................... 364 €
-Marge .......................... 268 € (74 %) → ×3,79 le coût
-Plancher règle ×4 .............. 213 €
-```
+⚠ **Ce bloc annonçait « 96 € · ×3,79 · la règle ×4 est tenue ». Les trois
+étaient faux** : le chiffre datait d'avant la mesure Fish du 27/08, et il
+mélangeait deux hypothèses de durée. Recalculé, les deux scénarios :
 
-**Verdict : la règle ×4 est tenue.** Rien à changer sur ce palier.
+| Durée moyenne d'un appel décroché | Minutes | Coût | Marge | Multiple |
+|---|---|---|---|---|
+| 2,00 min (défaut du modèle) | 600 | **95 €** | 269 € (74 %) | ×3,84 |
+| **2,85 min (ta durée réelle)** | 855 | **109 €** | 255 € (70 %) | **×3,34** |
+
+`1 000 composés · 30 % décrochés · 57 € de fixe mutualisé · prix 364 €`
+
+**Verdict corrigé : la règle ×4 N'EST PAS tenue** — et elle ne l'était déjà
+plus à ta propre durée d'appel, avant même de vérifier Telnyx. Le plancher
+×4 sur ce palier serait de **436 €**, pas 364 €.
+
+Ce que ça veut dire, sans dramatiser : **70 % de marge reste très bon.**
+C'est ta règle qui n'est pas tenue, pas ta rentabilité. Trois sorties, à toi
+de choisir :
+1. **monter le palier à ~436 €** — le marché le supporte (télésecrétariat
+   80–400 €/mois, § 4), mais tu perds l'argument « moins cher qu'une
+   secrétaire » ;
+2. **assumer ×3,3** et écrire la règle comme un objectif, pas une loi ;
+3. **attendre l'export CDR Telnyx** avant de bouger — si le tarif réel est
+   sous l'hypothèse, le multiple remonte tout seul.
+
+Je recommande la 3 : bouger un prix public sur un modèle dont la ligne la
+plus lourde est encore supposée, c'est bouger deux fois.
 
 ### Les jetons LLM ne sont pas le problème
 
@@ -377,10 +395,17 @@ sans vendre une heure de plus.
                        déduits du 1er mois s'il passe au palier sous 30 j
 
 2.  PALIER 1 000 ..... 364 € HT/mois — sans engagement
-                       (coût 96 €, marge 74 %)
+                       coût 109 € à ta durée réelle (2,85 min)
+                       → marge 255 € (70 %), soit ×3,34
 
-3.  TON COÛT ......... ~96 € pour 1 000 appels, PAS 360 €
+3.  TON COÛT ......... ~109 € pour 1 000 appels, PAS 360 €
+                       (95 € si les appels tombent à 2 min)
 ```
+
+⚠ **Ce qu'il ne faut PAS dire en rendez-vous** : « on est à ×4 ». C'est
+×3,34 à ta durée d'appel réelle, et la ligne Telnyx est encore une
+hypothèse. Le chiffre solide, celui que tu peux défendre, c'est **70 % de
+marge** — pas un multiple.
 
 **L'ordre de la conversation :** démo gratuite → essai payant → mensualité. Ne
 saute pas l'essai : c'est lui qui transforme un « intéressant » en client, et
