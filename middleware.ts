@@ -253,6 +253,26 @@ function rateLimited(ip: string, pathname: string): boolean {
 const ADMIN_PREFIXES = ["/payouts", "/offre", "/api/sync"];
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES ROUTES QUI SERVENT NOTRE PATRIMOINE — compte MAÎTRE uniquement.
+ *
+ * Distinct d'`ADMIN_PREFIXES` : celles-là ne sont pas derrière le mot de
+ * passe (un client CONNECTÉ peut y arriver, c'est le problème), elles sont
+ * derrière l'identité. Aucune brique ne les achète, parce qu'elles ne
+ * contiennent pas le produit — elles contiennent NOUS :
+ *
+ *   /api/pipeline    → nos fiches réelles (RGPD : données de tiers)
+ *   /api/voice-costs → notre modèle de coût, donc notre marge
+ *   /api/knowledge   → le playbook maison, les partenaires, les taux
+ *   /api/references  → notre bibliothèque de doctrine
+ *
+ * ⚠ Ne JAMAIS y ajouter une route du produit vendu : le client la paierait
+ * et se la verrait refuser. Un test le vérifie dans les deux sens.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const MAITRE_SEULEMENT = ["/api/pipeline", "/api/voice-costs", "/api/knowledge", "/api/references"];
+
+/**
  * ⚠ LA GARDE QUI EMPÊCHE D'OUVRIR L'APP PAR INADVERTANCE.
  *
  * Retirer le mur global n'est sûr que s'il existe une autre serrure. Elle
@@ -354,6 +374,39 @@ export async function middleware(req: NextRequest) {
   // intact.
   if (comptesActifs() && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
     const droits = await resoudreDroits(req);
+
+    /**
+     * ⚠ CE QUI EST À NOUS, ET QU'AUCUNE BRIQUE N'ACHÈTE.
+     *
+     * Trouvé en séparant les réglages client des réglages opérateur : trois
+     * routes servaient NOTRE patrimoine à n'importe quel client qui possédait
+     * la brique correspondante.
+     *
+     *  · `/api/pipeline` → brique « crm ». Sert `pipeline-juillet` et
+     *    `prospects-icp` : noms, téléphones et adresses d'entreprises
+     *    lyonnaises RÉELLES. Un client Solo pouvait charger notre fichier de
+     *    prospection. C'est notre actif commercial, et ce sont des données
+     *    personnelles de tiers — donc un sujet RGPD, pas seulement un vol.
+     *
+     *  · `/api/voice-costs` → brique « alpha-voice ». C'est notre modèle de
+     *    coût, notre marge ligne à ligne. Un client Alpha Voice pouvait lire
+     *    exactement ce que son abonnement nous rapporte.
+     *
+     *  · `/api/knowledge` → brique « cerveau ». Le playbook maison : rituels
+     *    de closing, adresses des partenaires, taux par offre.
+     *
+     * Ces trois modules sont précisément ceux que `tests/vitrine-fuite.test.ts`
+     * tient hors du bundle du navigateur. On verrouillait la fenêtre en
+     * laissant la porte ouverte.
+     *
+     * `estMaitre()` lit l'email du JETON, jamais un paramètre client.
+     */
+    if (startsWithAny(pathname, MAITRE_SEULEMENT) && !droits.maitre) {
+      return NextResponse.json(
+        { error: "Réservé au compte propriétaire.", code: "maitre_requis" },
+        { status: 403 }
+      );
+    }
     // Une route API est jugée sur le chemin de la FONCTIONNALITÉ qu'elle sert,
     // pas sur son propre chemin : /api/voice/call appartient à Alpha Voice.
     const chemin = pathname.startsWith("/api/") ? cheminMetierDeLApi(pathname) : pathname;

@@ -29,6 +29,7 @@ import { IcpGenerator } from "@/components/settings/icp-generator";
 import { AccountSwitcher } from "@/components/settings/account-switcher";
 import { ImportTriagePanel } from "@/components/settings/import-triage";
 import { triageImport, type ImportTriage } from "@/lib/import-triage";
+import { PanneauOperateur } from "@/components/settings/panneau-operateur";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
@@ -268,12 +269,19 @@ export default function SettingsPage() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* System status — what's configured, what's missing */}
-        <SystemStatus />
+        {/* ── OPÉRATEUR. Le gabarit d'environnement et l'état de NOTRE
+            infrastructure : noms de variables, secrets attendus, sondes.
+            Rien là-dedans n'appartient au client. ── */}
+        <PanneauOperateur titre="Infrastructure">
+          <SystemStatus />
+        </PanneauOperateur>
 
         {/* Délivrabilité — DNS du domaine d'envoi (SPF / DKIM / DMARC) */}
         <Deliverability />
 
+        {/* ── OPÉRATEUR. La connexion n8n porte l'URL et le SECRET partagé de
+            notre orchestrateur. Le client ne branche pas notre cerveau. ── */}
+        <PanneauOperateur titre="Orchestrateur n8n">
         {/* n8n — the app is a dashboard onto the n8n memory */}
         <section className="card p-4 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -336,12 +344,17 @@ export default function SettingsPage() {
             <p className={cn("mt-2 text-[12px]", n8nMsg.ok ? "text-signal-green" : "text-signal-red")}>{n8nMsg.text}</p>
           )}
         </section>
+        </PanneauOperateur>
 
         {/* Dictionnaire CRM — toutes les variables suivies par Google Sheets */}
         <CrmDictionary />
 
-        {/* Portefeuille de comptes white-label (le maître pilote les autres) */}
-        <AccountSwitcher />
+        {/* ── OPÉRATEUR. Le portefeuille : EAGLEYE, ScintIA, Nuwacom. Ce sont
+            NOS identités commerciales et NOS taux de reversement. Un client
+            n'a rien à basculer là-dedans — et n'a pas à savoir que ça existe. ── */}
+        <PanneauOperateur titre="Portefeuille de comptes">
+          <AccountSwitcher />
+        </PanneauOperateur>
 
         {/* Agency */}
         <section className="card space-y-3 p-4">
@@ -439,8 +452,15 @@ export default function SettingsPage() {
         {/* Tarifs — white-label : chaque compte définit ses prix (pilote /offre) */}
         {/* Ce que TU vends — editable sans redeployer. Placé avant la grille
             tarifaire : on définit l'offre, puis on la chiffre. */}
+        {/* Ce que le TITULAIRE du compte vend à SES prospects : ça lui
+            appartient, white-label oblige. Reste côté client. */}
         <OffresEditor />
-        <PricingEditor />
+
+        {/* ── OPÉRATEUR. La grille tarifaire d'Alpha Sales OS — nos prix, nos
+            paliers. Le client achète l'outil ; il n'édite pas son prix. ── */}
+        <PanneauOperateur titre="Grille tarifaire Alpha">
+          <PricingEditor />
+        </PanneauOperateur>
 
         <PushToggle />
 
@@ -578,6 +598,18 @@ export default function SettingsPage() {
                 >
                   <RotateCcw size={14} /> Restaurer la démo
                 </button>
+                {/* ── OPÉRATEUR. Ces deux boutons chargent NOS fiches
+                    réelles : noms, téléphones et adresses d'entreprises
+                    lyonnaises existantes. C'est notre actif commercial ET des
+                    données personnelles de tiers — un client n'a aucun titre
+                    à les charger dans son propre CRM.
+
+                    ⚠ Masquer ne suffit pas : la route `/api/pipeline` qui les
+                    sert est désormais réservée au compte maître dans le
+                    middleware (`MAITRE_SEULEMENT`). Ici on évite seulement
+                    d'afficher un bouton qui rendrait 403. ── */}
+                <PanneauOperateur>
+                  <div className="flex flex-wrap gap-2">
                 <button
                   className="btn-bronze px-2.5 py-1.5 text-[12px]"
                   title="Charge les 16 fiches réelles de juillet 2026 (Scintia · Lyon) avec leurs rendez-vous datés. Remplace les données actuelles."
@@ -608,6 +640,8 @@ export default function SettingsPage() {
                 >
                   <Download size={13} /> Prospects ICP (Callflow)
                 </button>
+                  </div>
+                </PanneauOperateur>
               </div>
               <label className="label mt-4 flex items-center gap-1.5"><Webhook size={13} className="text-bronze-400" /> Webhook entrant (réponses)</label>
               <code className="block rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 font-mono text-[11px] text-paper-dim">
@@ -736,6 +770,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Supabase — linkable from the UI */}
+        {/* ── OPÉRATEUR. Clés d'infrastructure Supabase. ── */}
+        <PanneauOperateur titre="Supabase">
         <section className="card p-4 lg:col-span-2">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
             {sbSource ? <Cloud size={15} className="text-signal-green" /> : <CloudOff size={15} className="text-paper-faint" />}
@@ -800,6 +836,7 @@ export default function SettingsPage() {
             <code className="font-mono text-bronze-400">SUPABASE_SERVICE_ROLE_KEY</code> en variable d&apos;environnement serveur (table <code className="font-mono text-bronze-400">tracking_messages</code>, service role uniquement).
           </p>
         </section>
+        </PanneauOperateur>
       </div>
     </div>
   );

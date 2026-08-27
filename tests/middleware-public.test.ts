@@ -246,3 +246,126 @@ test("les pages du PRODUIT ne sont pas classées comme administration", () => {
     assert.ok(!bloc.includes(`"${p}"`), `${p} est une page vendue au client : elle ne doit pas être murée`);
   }
 });
+
+
+// ══════════ CE QUI EST À NOUS, ET QU'AUCUNE BRIQUE N'ACHÈTE ══════════
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * Trouvé en séparant les réglages client des réglages opérateur : trois
+ * routes servaient NOTRE patrimoine à n'importe quel client qui possédait la
+ * brique correspondante.
+ *
+ *  · `/api/pipeline` → brique « crm ». Sert `pipeline-juillet` et
+ *    `prospects-icp` : noms, téléphones, adresses d'entreprises lyonnaises
+ *    RÉELLES. Un client Solo pouvait charger notre fichier de prospection.
+ *    Actif commercial ET données personnelles de tiers — donc RGPD.
+ *  · `/api/voice-costs` → brique « alpha-voice ». Notre modèle de coût,
+ *    notre marge ligne à ligne, servie au client qui la finance.
+ *  · `/api/knowledge` → brique « cerveau ». Le playbook maison : rituels de
+ *    closing, adresses des partenaires, taux par offre.
+ *
+ * Ce sont exactement les modules que `vitrine-fuite` tient hors du bundle du
+ * navigateur. On verrouillait la fenêtre en laissant la porte ouverte.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+test("les routes qui servent NOTRE patrimoine exigent le compte maître", () => {
+  const bloc = mw.slice(mw.indexOf("const MAITRE_SEULEMENT"), mw.indexOf("function verrouDeComptesActif"));
+  for (const p of ["/api/pipeline", "/api/voice-costs", "/api/knowledge", "/api/references"]) {
+    assert.ok(bloc.includes(`"${p}"`), `${p} sert notre patrimoine : il doit être réservé au maître`);
+  }
+  // Et la garde doit exister VRAIMENT, pas seulement la liste.
+  assert.match(mw, /startsWithAny\(pathname, MAITRE_SEULEMENT\) && !droits\.maitre/);
+  assert.match(mw, /code: "maitre_requis"/);
+});
+
+test("la garde maître est POSÉE AVANT le contrôle par brique", () => {
+  /**
+   * Sinon elle ne sert à rien : le contrôle par brique laisserait passer un
+   * client qui possède `crm`, et la route répondrait avant qu'on ait vérifié
+   * l'identité.
+   */
+  const iMaitre = mw.indexOf("MAITRE_SEULEMENT) && !droits.maitre");
+  const iBrique = mw.indexOf("if (!autorise(droits, chemin))");
+  assert.ok(iMaitre > 0 && iBrique > 0, "les deux contrôles doivent exister");
+  assert.ok(iMaitre < iBrique, "l'identité doit être vérifiée avant la brique");
+});
+
+test("AUCUNE route du produit vendu n'est réservée au maître", () => {
+  /**
+   * Le contre-test, et il compte autant que l'autre : une liste trop large
+   * ferait payer une brique à un client pour lui refuser sa propre route.
+   * On vérifie contre la carte des API : tout ce qui est réservé au maître
+   * doit mener à un chemin métier lui-même réservé au maître (zéro brique)
+   * ou hors catalogue.
+   */
+  const acces = readFileSync(join(process.cwd(), "lib/api-access.ts"), "utf8");
+  const bloc = mw.slice(mw.indexOf("const MAITRE_SEULEMENT"), mw.indexOf("function verrouDeComptesActif"));
+  const reservees = [...bloc.matchAll(/"(\/api\/[a-z-]+)"/g)].map((m) => m[1]);
+
+  const produit = ["/api/voice/call", "/api/send", "/api/debrief", "/api/agent", "/api/audit", "/api/crm"];
+  for (const p of produit) {
+    assert.ok(!reservees.includes(p), `${p} est vendu au client : le réserver au maître le lui refuserait`);
+  }
+  // La carte doit connaître chaque route réservée, sinon elle retomberait sur
+  // « non classé » et serait refusée à tout le monde, maître compris.
+  for (const r of reservees) {
+    assert.ok(acces.includes(`"${r}"`), `${r} doit figurer dans CHEMIN_PAR_API`);
+  }
+});
+
+test("le panneau opérateur ne prétend PAS être une sécurité", () => {
+  /**
+   * C'est la pente naturelle : on cache un bouton et on croit avoir fermé une
+   * porte. Le composant doit dire qu'il masque, et pointer vers la vraie
+   * barrière — sinon le prochain lecteur ajoutera une action sensible derrière
+   * lui en pensant qu'elle est protégée.
+   */
+  const src = readFileSync(join(process.cwd(), "components/settings/panneau-operateur.tsx"), "utf8");
+  assert.match(src, /NE SÉCURISE RIEN/i);
+  assert.match(src, /MAITRE_SEULEMENT/, "il doit nommer la vraie barrière");
+});
+
+
+test("les sections OPÉRATEUR des réglages sont bien derrière la porte", () => {
+  /**
+   * `/settings` est un chemin COMMUN — tout compte y accède, et c'est voulu :
+   * un client qui ne peut pas configurer son propre outil n'est pas un client.
+   * Mais l'écran mélangeait deux métiers. Ces cinq blocs-là sont à NOUS.
+   */
+  const page = readFileSync(join(process.cwd(), "app/(app)/settings/page.tsx"), "utf8");
+  for (const composant of ["<SystemStatus />", "<AccountSwitcher />", "<PricingEditor />"]) {
+    const i = page.indexOf(composant);
+    assert.ok(i > 0, `${composant} introuvable`);
+    const avant = page.slice(Math.max(0, i - 700), i);
+    const ouvert = avant.lastIndexOf("<PanneauOperateur");
+    const ferme = avant.lastIndexOf("</PanneauOperateur>");
+    assert.ok(ouvert > ferme, `${composant} doit être enveloppé dans <PanneauOperateur>`);
+  }
+  // Les chargeurs de NOS fiches réelles aussi.
+  const iPipe = page.indexOf("loadPipelineJuillet()");
+  const avantPipe = page.slice(Math.max(0, iPipe - 1800), iPipe);
+  assert.ok(
+    avantPipe.lastIndexOf("<PanneauOperateur") > avantPipe.lastIndexOf("</PanneauOperateur>"),
+    "charger NOS fiches réelles ne doit pas s'afficher chez un client"
+  );
+});
+
+test("les réglages du CLIENT restent chez le client", () => {
+  /**
+   * Contre-test. Tout envelopper serait aussi faux que ne rien envelopper :
+   * l'agence, la doctrine, l'ICP et les offres que le titulaire vend à SES
+   * prospects lui appartiennent — c'est le principe même du white-label.
+   */
+  const page = readFileSync(join(process.cwd(), "app/(app)/settings/page.tsx"), "utf8");
+  for (const composant of ["<OffresEditor />", "<IcpGenerator />", "<PushToggle />"]) {
+    const i = page.indexOf(composant);
+    assert.ok(i > 0, `${composant} introuvable`);
+    const avant = page.slice(Math.max(0, i - 400), i);
+    assert.ok(
+      avant.lastIndexOf("<PanneauOperateur") <= avant.lastIndexOf("</PanneauOperateur>"),
+      `${composant} appartient au client : il ne doit pas être masqué`
+    );
+  }
+});
