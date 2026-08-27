@@ -3,6 +3,11 @@ import { getAccount } from "./accounts";
 import { recovery } from "./recovery";
 import { buildLadder, type LadderResult } from "./ladder";
 import { vitalSigns } from "./vital-signs";
+// L'offre vient du MÊME calcul que partout ailleurs (deep-dive → matchOffer,
+// contraint aux offres du compte). Une table de correspondance marche→offre
+// serait une deuxième source, et elle divergerait.
+import { deepDive } from "./deep-dive";
+import { OFFRES } from "./offer-match";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -166,16 +171,43 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     `Je travaille avec des ${p.sector === "artisan" ? "artisans" : "entreprises"} du secteur sur un point précis : ` +
     `les demandes qui arrivent et qui ne sont jamais traitées. Je vous vole deux minutes — dites-moi si ça vous parle ou pas. »`;
 
-  // ── 2. Les questions qui font CONSTATER (jamais affirmer à sa place) ──
+  /**
+   * ── 2. Les questions qui font CONSTATER (jamais affirmer à sa place) ──
+   *
+   * ⚠ ELLES ÉTAIENT TOUTES ÉCRITES AU TÉLÉPHONE, ET CE MODULE ALIMENTE LE
+   * BRIEF D'APPEL.
+   *
+   * `campaign-runner` colle `argu.questions` sous « Questions qui font
+   * constater » dans le brief de l'agent vocal. Une fois le script rendu
+   * conforme à l'offre routée, une fiche « visibilité » recevait donc :
+   *
+   *   Offre représentée : Visibilité / Growth
+   *   Questions : « Quand vous êtes en intervention et que le téléphone
+   *                 sonne, il se passe quoi ? »
+   *
+   * La même contradiction, d'un cran plus bas — et elle annulait la
+   * correction faite au-dessus.
+   *
+   * La STRUCTURE, elle, ne dépendait pas du canal : ce qui se passe quand une
+   * demande arrive · combien s'en perdent · ce que vaut un client · ce que
+   * deviennent les perdus. Seule la formulation était verrouillée. Les trois
+   * premières viennent donc de l'offre ; celle du panier n'a jamais été
+   * spécifique et ne bouge pas.
+   */
+  const offre = deepDive(p, accountId).offer;
+  const o = OFFRES[offre];
+
   const questions = [
-    "Quand vous êtes en intervention et que le téléphone sonne, il se passe quoi ?",
-    a.missedCallsPerWeek === undefined
-      ? "Sur une semaine normale, combien d'appels vous n'arrivez pas à prendre ?"
-      : `Vous m'avez dit ${a.missedCallsPerWeek} appels manqués par semaine — sur ces appels, combien rappellent ?`,
+    o.question ?? "Aujourd'hui, une nouvelle demande vous arrive comment — et il se passe quoi ensuite ?",
+    // Le chiffre de la fiche prime sur la question générique : on ne redemande
+    // pas ce qu'on a déjà noté, on le fait CONFIRMER et prolonger.
+    offre === "callflow" && a.missedCallsPerWeek !== undefined
+      ? `Vous m'avez dit ${a.missedCallsPerWeek} appels manqués par semaine — sur ces appels, combien rappellent ?`
+      : o.perte ?? "Sur dix demandes qui arrivent, combien aboutissent vraiment ?",
     a.avgTicket === undefined
       ? "Un client qui passe commande, ça représente combien en moyenne ?"
-      : `À ${eur(a.avgTicket)} le client, un appel perdu c'est combien pour vous ?`,
-    "Et ceux qui ne rappellent pas — vous pensez qu'ils font quoi ?",
+      : `À ${eur(a.avgTicket)} le client, une demande perdue c'est combien pour vous ?`,
+    o.consequence ?? "Et ceux que vous perdez en route — vous pensez qu'ils font quoi ?",
   ];
 
   // ── Questions BUDGET : le déblocage réel, pas l'accord de principe ──
@@ -195,12 +227,37 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     "Il y a une contrainte de calendrier — clôture, budget annuel, trésorerie — dont je devrais tenir compte ?",
   ];
 
-  // ── 3. La norme du marché ──
-  const marketStandard = [
-    "Aujourd'hui un client qui n'obtient pas de réponse appelle le suivant dans les 5 minutes — il n'attend plus.",
-    "Vos concurrents équipés répondent 24/7, y compris le soir et le week-end, sans embaucher.",
-    "Un accueil qui décroche systématiquement, c'est devenu le minimum attendu — plus un avantage.",
-  ];
+  /**
+   * ── 3. La norme du marché ──
+   *
+   * ⚠ CES TROIS LIGNES PARLENT DE TÉLÉPHONE, ET ELLES SORTAIENT SUR LES TROIS
+   * OFFRES. Sur une fiche routée « visibilité », l'argumentaire affirmait que
+   * « vos concurrents équipés répondent 24/7 » — hors sujet, et ça décrédibilise
+   * tout le reste de l'échange.
+   *
+   * ⚠⚠ ET ON N'ÉCRIT PAS LES DEUX AUTRES. La tentation était d'inventer trois
+   * lignes équivalentes pour la visibilité et pour Alpha Sales OS. Ce sont des
+   * affirmations sur le MARCHÉ, dites à un prospect : CLAUDE.md pose que sans
+   * vente ni mesure, les produire revient à fabriquer de la preuve. Zéro client
+   * sur ces deux offres aujourd'hui.
+   *
+   * Le bloc est donc VIDE hors Callflow, et l'écran qui l'affiche le dit. Un
+   * argumentaire sans « norme du marché » se tient parfaitement : les questions
+   * font constater, les pertes sont chiffrées sur SES données. Ce qui ne se
+   * tiendrait pas, c'est une norme inventée qu'un prospect vérifie.
+   *
+   * Réserve valable aussi pour les trois lignes qui restent : elles n'ont
+   * aucune source attachée. Elles étaient là avant, elles sont plausibles, et
+   * ce n'est pas pareil que mesuré.
+   */
+  const marketStandard =
+    offre === "callflow"
+      ? [
+          "Aujourd'hui un client qui n'obtient pas de réponse appelle le suivant dans les 5 minutes — il n'attend plus.",
+          "Vos concurrents équipés répondent 24/7, y compris le soir et le week-end, sans embaucher.",
+          "Un accueil qui décroche systématiquement, c'est devenu le minimum attendu — plus un avantage.",
+        ]
+      : [];
 
   // ── 5. L'offre ──
   const what = ladder.entry
@@ -238,8 +295,13 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     },
     {
       says: "« On gère déjà en interne. »",
-      means: "Quelqu'un décroche quand il peut — ce n'est pas un process, c'est de la bonne volonté.",
-      answer: "« Et quand cette personne est en congé, ou en intervention ? C'est là que ça se perd, et personne ne le voit passer. »",
+      // Le CONSTAT est le même sur les trois offres — quelqu'un s'en occupe
+      // quand il peut. Seul l'exemple était verrouillé sur le téléphone.
+      means: "Quelqu'un s'en occupe quand il peut — ce n'est pas un process, c'est de la bonne volonté.",
+      answer:
+        offre === "callflow"
+          ? "« Et quand cette personne est en congé, ou en intervention ? C'est là que ça se perd, et personne ne le voit passer. »"
+          : "« Et quand cette personne est en congé, ou prise par autre chose ? C'est là que ça se perd, et personne ne le voit passer. »",
     },
     {
       says: "« Rappelez-moi dans 3 mois. »",

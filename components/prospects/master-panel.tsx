@@ -206,8 +206,25 @@ export function MasterPanel({ p }: { p: Prospect }) {
             <Block title="2. Questions qui font constater (puis se taire)">
               <ul className="space-y-0.5">{argu.questions.map((q) => <li key={q}>— {q}</li>)}</ul>
             </Block>
+            {/**
+              * ⚠ Le bloc est VIDE hors Callflow, et c'est voulu : ces lignes
+              * sont des affirmations sur le marché, et on n'en a écrit aucune
+              * pour la visibilité ni pour Alpha Sales OS — zéro client sur ces
+              * deux offres, donc rien de mesuré à annoncer.
+              *
+              * On DIT l'absence au lieu de laisser un titre suivi de blanc :
+              * un vide muet se lit comme un bug, et l'opérateur cherche ce
+              * qu'il a cassé au lieu de passer à la question suivante.
+              */}
             <Block title="3. Ce qui se fait dans le marché">
-              <ul className="space-y-0.5">{argu.marketStandard.map((x) => <li key={x}>— {x}</li>)}</ul>
+              {argu.marketStandard.length ? (
+                <ul className="space-y-0.5">{argu.marketStandard.map((x) => <li key={x}>— {x}</li>)}</ul>
+              ) : (
+                <p className="text-paper-faint">
+                  Rien d&apos;écrit pour cette offre — et on n&apos;invente pas une norme de marché.
+                  Les questions du bloc 2 font constater, le bloc 4 chiffre sur ses données.
+                </p>
+              )}
             </Block>
             <Block title="4. Ce que ça coûte">{argu.losses.sentence}</Block>
             <Block title="5. Notre offre et son prix">

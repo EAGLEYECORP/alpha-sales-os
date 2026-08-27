@@ -70,6 +70,13 @@ export interface OffreCommerciale {
   raisonAppel: string;
   /** La seule question posée avant d'écouter. */
   question: string;
+  /**
+   * Ce qui SE PERD sur ce canal — la question qui fait chiffrer la fuite.
+   * Elle suit toujours l'ouverture : d'abord ce qui se passe, ensuite combien.
+   */
+  perte: string;
+  /** Ce que deviennent ceux qu'on perd. La question qui fait constater le coût. */
+  consequence: string;
 }
 
 export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
@@ -79,6 +86,8 @@ export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
     raisonAppel:
       "comprendre comment vous suivez vos demandes aujourd'hui, parce que la plupart des affaires se perdent entre le premier contact et la relance, pas au moment de vendre",
     question: "Quand quelqu'un vous contacte aujourd'hui, qu'est-ce qui se passe ensuite, concrètement ?",
+    perte: "Sur dix personnes qui vous contactent, combien vont jusqu'au devis ?",
+    consequence: "Et celles qui s'arrêtent en route — vous savez pourquoi, ou ça se perd sans qu'on le sache ?",
   },
   callflow: {
     label: "ScintIA Callflow — l'accueil & relance IA au téléphone",
@@ -86,6 +95,11 @@ export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
     raisonAppel:
       "comprendre ce qui se passe chez vous quand le téléphone sonne et que personne ne peut décrocher",
     question: "Dans une semaine normale, il vous arrive de ne pas pouvoir répondre ? À peu près combien de fois ?",
+    // Ces deux-là existaient déjà, mot pour mot, dans `buildArgumentaire` :
+    // elles sont remontées ici pour que les trois offres se lisent au même
+    // endroit — rien n'a été réécrit.
+    perte: "Sur une semaine normale, combien d'appels vous n'arrivez pas à prendre ?",
+    consequence: "Et ceux qui ne rappellent pas — vous pensez qu'ils font quoi ?",
   },
   "visibilite-growth": {
     label: "Visibilité / Growth — offre personnalisée",
@@ -93,6 +107,8 @@ export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
     raisonAppel:
       "comprendre comment vos clients vous trouvent aujourd'hui, parce que de l'extérieur on vous voit assez peu",
     question: "Vos nouveaux clients, ils viennent d'où en ce moment — bouche-à-oreille, recherche, autre chose ?",
+    perte: "Quelqu'un qui cherche votre métier dans le secteur, sans vous connaître : il vous trouve ?",
+    consequence: "Et ceux qui ne vous trouvent pas — ils prennent qui, à votre avis ?",
   },
 };
 

@@ -1,6 +1,6 @@
 import type { Prospect } from "./types";
 import { getAccount, routeAccount } from "./accounts";
-import { matchOffer, type EagleyeOffer, OFFER_LABELS } from "./offer-match";
+import { matchOffer, type EagleyeOffer, OFFER_LABELS, OFFRES } from "./offer-match";
 import { buildLadder, ladderPitch, type LadderResult } from "./ladder";
 import { wrapUntrusted } from "./untrusted";
 
@@ -116,8 +116,37 @@ export function deepDive(
     gaps.push("le NOM du décideur (on parle à une fonction, pas à une personne)");
   if (!filled(p.phone) && !filled(p.email)) gaps.push("un moyen de contact direct (ni téléphone ni email)");
   else if (!filled(p.email)) gaps.push("l'email direct (pour envoyer l'audit écrit)");
-  if (a.missedCallsPerWeek === undefined) gaps.push("le volume d'appels manqués (le chiffre qui fait mal)");
-  if (!filled(a.currentProcess)) gaps.push("comment ils gèrent les appels aujourd'hui");
+  /**
+   * ⚠ CES TROUS ÉTAIENT TOUS DEMANDÉS, QUELLE QUE SOIT L'OFFRE — et les
+   * `gaps` ne sont pas décoratifs : ils partent dans le brief sous
+   * « Ce que tu dois APPRENDRE », c'est-à-dire une consigne à l'agent.
+   *
+   * Sur une fiche routée VISIBILITÉ, l'agent recevait donc l'ordre d'aller
+   * chercher « le volume d'appels manqués » et « comment ils gèrent les
+   * appels ». Troisième couche du même défaut, après le script et
+   * l'argumentaire — et la plus sournoise, parce qu'elle ne se lit pas comme
+   * un argumentaire mais comme un objectif.
+   *
+   * Chaque offre a SON chiffre qui fait mal. Les questions existent déjà
+   * (`OFFRES[offre].perte`) : on les réutilise plutôt que d'en écrire de
+   * nouvelles. Les trous d'identité — nom, contact, budget — ne dépendent
+   * d'aucune offre et restent demandés partout.
+   */
+  const trouOffre = OFFRES[m.primary];
+  if (m.primary === "callflow") {
+    if (a.missedCallsPerWeek === undefined) gaps.push("le volume d'appels manqués (le chiffre qui fait mal)");
+    if (!filled(a.currentProcess)) gaps.push("comment ils gèrent les appels aujourd'hui");
+  } else {
+    if (!filled(a.currentProcess)) gaps.push(`la réponse à : « ${trouOffre.question} »`);
+    // ⚠ Pas « le chiffre qui fait mal » : sur la visibilité, `perte` est une
+    // question fermée (« il vous trouve ? »), pas un nombre. Une étiquette qui
+    // annonce un chiffre là où il n'y en a pas envoie l'agent chercher ce qui
+    // n'existe pas — et l'opérateur lit un trou de données qu'il n'a pas.
+    gaps.push(`ce qu'il faut lui faire constater : « ${trouOffre.perte} »`);
+  }
+  // L'état du site sert au ROUTAGE lui-même (il déclenche la visibilité) :
+  // il se demande sur toutes les offres, et ce n'est pas hors sujet — un
+  // site mort se voit depuis n'importe quel angle.
   if (!filled(a.websiteState)) gaps.push("l'état du site");
   if ((p.setupValue ?? 0) === 0 && (p.monthlyValue ?? 0) === 0) gaps.push("le budget / la valeur du deal");
 
