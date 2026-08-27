@@ -613,9 +613,25 @@ export default function SettingsPage() {
                 <button
                   className="btn-bronze px-2.5 py-1.5 text-[12px]"
                   title="Charge les 16 fiches réelles de juillet 2026 (Scintia · Lyon) avec leurs rendez-vous datés. Remplace les données actuelles."
+                  /**
+                   * ⚠ CETTE BOÎTE NOMMAIT TROIS VRAIS PROSPECTS ET LEURS DATES
+                   * DE RENDEZ-VOUS. Mesuré dans le build : la chaîne
+                   * « ***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08 » se trouvait dans
+                   * un chunk de `_next/static/**`, chemin exclu du middleware —
+                   * donc lisible sans mot de passe, par un concurrent comme par
+                   * n'importe qui.
+                   *
+                   * C'est exactement la fuite dont `lib/pipeline-juillet` porte
+                   * déjà le post-mortem. La garde existait, et elle protégeait
+                   * le MODULE : les noms avaient simplement été retapés à la
+                   * main dans une page client, où plus rien ne les surveillait.
+                   *
+                   * La confirmation n'a besoin d'aucun nom pour être claire :
+                   * ce que l'opérateur décide, c'est d'écraser ses données.
+                   */
                   onClick={() =>
                     confirm(
-                      "Charger le pipeline RÉEL de juillet 2026 ?\n\n16 fiches, 6 rendez-vous datés (***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08, closings de septembre).\n\nLes données actuelles seront remplacées."
+                      "Charger le pipeline RÉEL de juillet 2026 ?\n\n16 fiches, 6 rendez-vous datés, closings de septembre.\n\nLes données actuelles seront remplacées."
                     ) &&
                     // Les fiches viennent du serveur (elles portent des
                     // coordonnées réelles) : l'échec doit se voir, sinon

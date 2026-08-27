@@ -3,6 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+/** Un test de FORME doit juger le code, jamais la prose qui l'explique. */
+const sansCommentaires = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
 /**
  * La liste des chemins publics est un point de bascule silencieux : une
  * omission ne casse rien en local (la porte est désactivée sans
@@ -362,7 +366,19 @@ test("les sections OPÉRATEUR des réglages sont bien derrière la porte", () =>
    * un client qui ne peut pas configurer son propre outil n'est pas un client.
    * Mais l'écran mélangeait deux métiers. Ces cinq blocs-là sont à NOUS.
    */
-  const page = readFileSync(join(process.cwd(), "app/(app)/settings/page.tsx"), "utf8");
+  /**
+   * ⚠ CE TEST LISAIT LA SOURCE BRUTE ET REMONTAIT D'UN NOMBRE FIXE DE
+   * CARACTÈRES. Ajouter un commentaire d'explication au-dessus du bouton l'a
+   * fait échouer : la balise ouvrante était toujours là, simplement plus loin.
+   *
+   * C'est le même piège que dans `vitrine-fuite`, sous une autre forme —
+   * une garde qui punit le fait d'écrire POURQUOI. On retire donc les
+   * commentaires avant de mesurer la distance : ils ne changent pas ce qui
+   * enveloppe quoi, et le dépôt tient par eux.
+   */
+  const page = sansCommentaires(
+    readFileSync(join(process.cwd(), "app/(app)/settings/page.tsx"), "utf8")
+  );
   for (const composant of ["<SystemStatus />", "<AccountSwitcher />", "<PricingEditor />"]) {
     const i = page.indexOf(composant);
     assert.ok(i > 0, `${composant} introuvable`);

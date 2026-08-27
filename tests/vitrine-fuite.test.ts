@@ -491,6 +491,100 @@ test("le détecteur de taux voit la vraie forme, et pas la prose", () => {
   assert.deepEqual(tauxDePartenariat(sansCommentaires("// commissionPct: 30 était ici")), []);
 });
 
+test("⚠ bundle app — aucun NOM de prospect réel, même recopié à la main", () => {
+  /**
+   * ⚠ MESURÉ DANS LE BUILD, ET C'EST LA MÊME LEÇON POUR LA TROISIÈME FOIS.
+   *
+   * Un chunk public contenait « ***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08 » :
+   * trois vrais prospects et leurs dates de rendez-vous, lisibles sans mot de
+   * passe. Ce n'était pas `lib/pipeline-juillet` qui avait fui — ce module est
+   * gardé depuis son post-mortem. Les noms avaient été RETAPÉS à la main dans
+   * une boîte de confirmation de `/settings`, et plus rien ne les surveillait.
+   *
+   * Un test qui nomme des fichiers protège des fichiers. Celui-ci part des
+   * DONNÉES : il lit les entreprises réelles à leur source et vérifie qu'aucun
+   * fichier atteignable par le navigateur ne les écrit. Il n'y a pas de
+   * troisième endroit où les recopier sans qu'il le voie.
+   */
+  const source = readFileSync(join(process.cwd(), "lib/pipeline-juillet.ts"), "utf8");
+  const entreprises = [...source.matchAll(/company:\s*"([^"]+)"/g)]
+    /**
+     * Ce qui est entre parenthèses QUALIFIE, ça n'identifie pas :
+     * « ***NOM-RETIRE*** » — le nom est ***NOM-RETIRE***, Cordeliers
+     * est un quartier de Lyon, et il sert de ville à une fiche de démonstration
+     * parfaitement légitime. Même chose pour « (Point S) », « (traiteur) »,
+     * « (agence immobilière) ». On les retire par la FORME plutôt que de les
+     * énumérer : une parenthèse suivante sera traitée toute seule.
+     */
+    .map((m) => m[1].replace(/\([^)]*\)/g, " "))
+    // On ne retient que le nom distinctif : « ***NOM-RETIRE*** » se recopie
+    // souvent en « ***NOM-RETIRE*** » seul, et c'est cette forme-là qui avait fui.
+    .flatMap((nom) => nom.split(/[\s—·]+/))
+    .map((mot) => mot.replace(/[^\p{L}'-]/gu, ""))
+    // Les mots de métier (« Carrosserie », « Avocats ») sont partout dans le
+    // produit : les interdire rendrait le test ininterprétable. On garde les
+    // noms propres rares, c'est-à-dire ceux qui n'apparaissent pas dans le
+    // vocabulaire courant du dépôt.
+    .filter((mot) => mot.length >= 5 && /^[A-ZÉÈ]/.test(mot))
+    /**
+     * ⚠ LE VOCABULAIRE DE MÉTIER N'EST PAS UN NOM DE PROSPECT, et le premier
+     * jet de ce test l'a appris en signalant « Point » (de « Point S ») et
+     * « Ambulance » (de « ***NOM-RETIRE*** ») dans des listes de secteurs
+     * parfaitement légitimes.
+     *
+     * Cette liste ne recopie PAS la donnée protégée : elle recopie le
+     * vocabulaire commun, qui est public et stable. La direction d'erreur est
+     * la bonne — un mot de métier oublié fait un faux positif qu'on vient
+     * ajouter ici en le justifiant, tandis qu'un nom propre inédit reste
+     * attrapé. L'inverse (une liste de noms à chercher) serait une copie de
+     * la donnée qu'on protège, et divergerait au premier prospect ajouté.
+     */
+    .filter(
+      (mot) =>
+        !/^(Carrosserie|Auto|École|Ecole|Agence|Garage|Avocats|Associés|Prestige|Ambulance|Point|Conduite|Chirurgie|Rénovation|Traiteur|Immobilier|Immobilière|Automobile|Lyon)$/.test(
+          mot
+        )
+    );
+
+  assert.ok(entreprises.length >= 5, `lecture des entreprises cassée : ${entreprises.join(", ")}`);
+
+  const clients = sources(["app", "components"]).filter((f) =>
+    /^\s*["']use client["']/.test(readFileSync(join(process.cwd(), f), "utf8"))
+  );
+  const atteints = new Set<string>();
+  for (const f of clients) {
+    atteints.add(f.replace(/\.tsx?$/, ""));
+    for (const m of grapheImports(f.replace(/\.tsx?$/, ""))) atteints.add(m);
+  }
+
+  const fautes: string[] = [];
+  for (const m of [...atteints].sort()) {
+    let src = "";
+    for (const ext of [".ts", ".tsx"]) {
+      try {
+        src = readFileSync(join(process.cwd(), m + ext), "utf8");
+        break;
+      } catch {
+        /* extension suivante */
+      }
+    }
+    if (!src) continue;
+    // Le minifieur retire les commentaires : une explication ne part pas au
+    // navigateur, et ne doit donc pas faire échouer le test (le piège s'est
+    // refermé cinq fois dans ce dépôt).
+    const code = sansCommentaires(src);
+    for (const nom of new Set(entreprises)) {
+      if (new RegExp(`\\b${nom}\\b`).test(code)) fautes.push(`${m} → « ${nom} »`);
+    }
+  }
+
+  assert.deepEqual(
+    fautes,
+    [],
+    "des noms de prospects réels partent dans un fichier JavaScript téléchargeable :\n  " + fautes.join("\n  ")
+  );
+});
+
 test("bundle app — aucune coordonnée de prospect réel ne peut partir dans un chunk", () => {
   // La fuite la plus grave trouvée dans cette passe n'était pas commerciale.
   // `lib/store.ts` faisait `require("./pipeline-juillet")` et
