@@ -460,8 +460,37 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                 </p>
                 {prospects.length > 0 && (
                   <label className="mt-4 flex items-center gap-2 text-[12px] text-paper-faint">
-                    <button className="btn-ghost px-2.5 py-1.5 text-[12px]" onClick={() => clearAllData()}>Vider la démo d&apos;abord</button>
-                    <span>({prospects.length} fiche(s) de démo actuellement)</span>
+                    {/**
+                     * ⚠ CE BOUTON EFFAÇAIT TOUT EN UN CLIC, SANS RIEN DEMANDER.
+                     *
+                     * Il dit « vider la démo », mais `clearAllData()` ne fait
+                     * aucune différence entre une fiche de démonstration et un
+                     * vrai client : il vide prospects, campagnes, RDV et intel.
+                     * Or l'assistant se ROUVRE tout seul tant que `onboarded`
+                     * est faux — un opérateur qui a déjà saisi de vraies fiches
+                     * peut très bien le retrouver devant lui.
+                     *
+                     * Le même appel, dans les réglages, demande confirmation en
+                     * nommant ce qui part. Une fois sur deux ne protège rien :
+                     * c'est le chemin NON gardé qu'on emprunte par accident.
+                     */}
+                    <button
+                      className="btn-ghost px-2.5 py-1.5 text-[12px]"
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Effacer les ${prospects.length} fiche(s) actuelles ?\n\n` +
+                              "Cela vide TOUT — prospects, campagnes, rendez-vous, intel — pas seulement la démo. " +
+                              "Si certaines de ces fiches sont de vrais clients, elles seront perdues."
+                          )
+                        ) {
+                          clearAllData();
+                        }
+                      }}
+                    >
+                      Vider la démo d&apos;abord
+                    </button>
+                    <span>({prospects.length} fiche(s) actuellement)</span>
                   </label>
                 )}
                 <button className="btn-bronze mt-4" onClick={runImport} disabled={importing}>

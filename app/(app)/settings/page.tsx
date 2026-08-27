@@ -259,16 +259,43 @@ export default function SettingsPage() {
     }
   };
 
+  /**
+   * ⚠ RESTAURER UNE SAUVEGARDE REMPLACE TOUT, ET NE DEMANDAIT RIEN.
+   *
+   * `importData` ne fusionne pas : il réécrit l'état entier — prospects,
+   * campagnes, rendez-vous, intel. Choisir le fichier suffisait à l'appliquer.
+   * Un export d'il y a trois semaines sélectionné par erreur dans le sélecteur
+   * de fichiers effaçait trois semaines de travail, sans un mot.
+   *
+   * Les deux autres actions destructrices de cet écran (tout effacer, revenir
+   * à la démo) demandent confirmation depuis toujours. Celle-ci est la plus
+   * facile à déclencher par accident — c'est un clic dans une liste de
+   * fichiers — et c'était la seule à ne rien demander.
+   *
+   * On confirme AVANT de lire le fichier : rien ne sert de charger ce qu'on
+   * ne va pas appliquer, et le compteur de fiches actuelles donne à
+   * l'opérateur la seule information qui décide vraiment.
+   */
   const doImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
+    if (
+      !confirm(
+        `Restaurer « ${file.name} » ?\n\n` +
+          `Cela REMPLACE tout l'état actuel (${prospects.length} fiche(s), campagnes, rendez-vous, intel) ` +
+          "par le contenu de la sauvegarde. Ce qui n'est pas dans le fichier sera perdu."
+      )
+    ) {
+      setImportMsg("Restauration annulée — rien n'a été touché.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const res = importData(String(reader.result));
       alert(res.ok ? "Import réussi ✓" : `Erreur : ${res.error}`);
     };
     reader.readAsText(file);
-    e.target.value = "";
   };
 
   const sync = async (dir: "push" | "pull") => {

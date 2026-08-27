@@ -106,7 +106,29 @@ export default function MeetingsPage() {
                 >
                   <Check size={14} />
                 </button>
-                <button className="btn-danger px-2.5" onClick={() => deleteMeeting(m.id)}>
+                {/**
+                 * ⚠ SUPPRIMER UN RDV NE DEMANDAIT RIEN, alors que supprimer un
+                 * prospect — bouton rouge identique, deux écrans plus loin —
+                 * demande confirmation depuis toujours.
+                 *
+                 * Un rendez-vous est un ENGAGEMENT DATÉ pris avec quelqu'un.
+                 * Le perdre d'un clic ne coûte pas une ligne de base : ça
+                 * coûte un no-show, et le prospect n'a aucune raison de
+                 * pardonner. La doctrine du projet dit déjà « jamais doubler
+                 * un RDV déjà calé » — encore faut-il qu'il reste calé.
+                 */}
+                <button
+                  className="btn-danger px-2.5"
+                  onClick={() => {
+                    // Le titre porte le nom lisible ; `prospectId` est le
+                    // repli, parce qu'un identifiant nu vaut mieux qu'un vide
+                    // au moment où on demande « tu es sûr ? ».
+                    const quand = m.date ? ` du ${m.date}` : "";
+                    if (confirm(`Supprimer le rendez-vous${quand} — ${m.title || m.prospectId} ?`)) {
+                      deleteMeeting(m.id);
+                    }
+                  }}
+                >
                   <Trash2 size={14} />
                 </button>
               </div>
