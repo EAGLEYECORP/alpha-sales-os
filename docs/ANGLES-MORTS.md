@@ -27,12 +27,12 @@ ce qui reste. Pas de « c'est bon » de complaisance.
 
 ## 🔎 Passe de vérification complète — 27/08/2026
 
-**1 124 tests verts · `tsc --noEmit` propre · build OK · balayage navigateur**
+**1 126 tests verts · `tsc --noEmit` propre · build OK · balayage navigateur**
 sur serveur réel (production, `next start`), et non en développement.
 
 ### Ce que la passe a trouvé : toujours le même défaut
 
-Sept défauts, et **aucun n'est une erreur de logique**. À chaque fois : du code
+Neuf défauts, et **aucun n'est une erreur de logique**. À chaque fois : du code
 juste, une doctrine juste, écrite noir sur blanc — et rien qui relie les deux.
 La garde nomme un FICHIER, la donnée est recopiée dans le fichier d'à côté.
 
@@ -44,7 +44,9 @@ La garde nomme un FICHIER, la donnée est recopiée dans le fichier d'à côté.
 | 4 | `lib/accounts.ts` faisait de même avec le taux des trois comptes | **haute** |
 | 5 | Trois **vrais prospects et leurs dates de RDV** (***NOM-RETIRE***, Vauban, ***NOM-RETIRE***) dans un chunk public | **haute** |
 | 6 | Une fiche importée de LinkedIn sortait avec **sept champs `undefined`** | **haute** |
-| 7 | Le mur de stockage n'était branché que sur **une des quatre** surfaces d'import | moyenne |
+| 7 | `clearAllData()` (assistant) et `importData()` (restauration) **détruisaient tout en un clic**, sans rien demander — pendant que le MÊME appel, ailleurs, confirmait | **haute** |
+| 8 | Le mur de stockage n'était branché que sur **une des quatre** surfaces d'import | moyenne |
+| 9 | `deleteMeeting()` supprimait un RDV daté sans question, quand `deleteProspect()` demandait | moyenne |
 | + | Un retour de paiement sans offre reconnue laissait l'acheteur devant une page vide | moyenne |
 | + | Deux références mortes (`publicBricks()`) pointant vers du code supprimé | faible |
 
@@ -89,6 +91,26 @@ retirés, et une mutation vérifie qu'elles attrapent toujours la vraie faute.
   aucun nom de prospect, aucune coordonnée de closing. Les deux chaînes qui
   ressemblaient à des clés (`nvapi-…`, `eyJhbGciOi…`) sont des **placeholders**
   de formulaire, vérifié en contexte.
+- **Balayage navigateur, 36 écrans, ~700 commandes cliquées** une par une, sur
+  page rechargée à chaque clic (contexte neuf par écran, donc pas de dérive
+  d'état). Résultat : **zéro erreur JS non rattrapée, zéro 4xx/5xx applicatif,
+  zéro écran blanc.** Tout ce qui a été signalé est une confirmation légitime
+  (`confirm` sur action destructrice, `alert` de doctrine « conviction 9/10 —
+  il faut 10/10 »), le certificat Google Fonts injoignable dans le bac à sable,
+  ou le 503 Supabase — que l'interface AFFICHE correctement avec la raison du
+  serveur, vérifié dans `components/sync-prospects.tsx`.
+- **Les actions vers le monde réel sont gardées, et mieux qu'avec une boîte de
+  dialogue.** `/api/voice/call` oppose des portes SERVEUR non contournables
+  (B2B, cible professionnelle confirmée, aucune opposition) ; seule la fenêtre
+  horaire est forçable, par un bouton distinct. La newsletter confirme en deux
+  temps. Rien à corriger — vérifié plutôt que supposé.
+
+> ⚠ Limite de l'outil de balayage, à connaître avant d'y croire trop : il
+> repère les commandes par (texte, rang) et recharge la page entre deux clics.
+> Quand le DOM se réordonne, le libellé enregistré ne correspond plus à
+> l'élément cliqué — d'où des lignes absurdes comme « Copier l'adresse
+> d'abonnement → confirme la suppression d'un RDV ». Le BRUIT est réel, son
+> attribution ne l'est pas. Chaque signalement a été rouvert à la main.
 
 ### Ce qui n'a PAS pu être vérifié d'ici, et ne doit pas être présumé
 
