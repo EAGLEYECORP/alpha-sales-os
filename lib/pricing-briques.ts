@@ -41,8 +41,16 @@ export type NatureCout =
 export interface CoutBrique {
   brickId: string;
   nature: NatureCout;
-  /** Coût fournisseur par client et par mois, en €. 0 pour du logiciel pur. */
+  /**
+   * Coût fournisseur par client et par mois, en €. 0 pour du logiciel pur.
+   * ⚠ IGNORÉ quand `volumeDependant` est vrai — voir `consommationDe()`.
+   */
   consommationMensuelleEur: number;
+  /**
+   * La consommation dépend du VOLUME d'appels, pas d'une constante.
+   * `consommationDe()` interroge alors le modèle de coût réel.
+   */
+  volumeDependant?: boolean;
   /** Heures d'installation chez le client. */
   heuresSetup: number;
   /** Heures de support récurrent par mois. */
@@ -65,9 +73,21 @@ export const COUTS_BRIQUES: CoutBrique[] = [
   {
     brickId: "alpha-voice",
     nature: "consommation",
-    // Calculé, pas posé : voir `coutVoixMensuel`. Cette valeur est le socle
-    // hors volume (numéro loué), le variable s'ajoute selon les appels.
+    /**
+     * ⚠ CETTE VALEUR NE SERT PLUS — et pendant des semaines elle a menti.
+     *
+     * Le commentaire d'origine disait « calculé, pas posé : voir
+     * `coutVoixMensuel` ». **Cette fonction n'a jamais existé dans le dépôt.**
+     * Le variable ne s'ajoutait donc nulle part : `verdictBrique` chiffrait
+     * Alpha Voice à 2 € de consommation, c'est-à-dire SANS COMPTER UN SEUL
+     * APPEL. Sur la brique dont le coût est presque entièrement variable.
+     *
+     * Le vrai calcul existait à côté, dans `devisVoix` — encore deux modules
+     * corrects qui ne se parlaient pas. `volumeDependant` les raccorde.
+     * On garde le 2 € comme socle de repli si le modèle de volume échoue.
+     */
     consommationMensuelleEur: 2,
+    volumeDependant: true,
     heuresSetup: 12,
     heuresSupportMois: 2,
     reserve:
@@ -204,7 +224,8 @@ export function verdictBrique(c: CoutBrique, h: Hypotheses): VerdictBrique | nul
   if (!(h.tauxHoraireEur > 0)) return null;
 
   const coutSupport = c.heuresSupportMois * h.tauxHoraireEur;
-  const coutMensuel = c.consommationMensuelleEur + coutSupport;
+  const consommation = consommationDe(c);
+  const coutMensuel = consommation + coutSupport;
   const coutSetup = c.heuresSetup * h.tauxHoraireEur;
 
   const margeMensuelleEur = brique.monthlyHT - coutMensuel;
@@ -219,9 +240,9 @@ export function verdictBrique(c: CoutBrique, h: Hypotheses): VerdictBrique | nul
    * et on le DIT, au lieu de fabriquer un prix qui aurait l'air calculé.
    */
   const plancherMensuelEur =
-    c.nature === "logiciel" && c.consommationMensuelleEur <= 0
+    c.nature === "logiciel" && consommation <= 0
       ? null
-      : arrondi(c.consommationMensuelleEur * MULTIPLE_CONSOMMATION + coutSupport);
+      : arrondi(consommation * MULTIPLE_CONSOMMATION + coutSupport);
 
   let verdict: VerdictBrique["verdict"];
   let phrase: string;
@@ -237,7 +258,7 @@ export function verdictBrique(c: CoutBrique, h: Hypotheses): VerdictBrique | nul
     verdict = "sous-facture";
     phrase =
       `${brique.label} — SOUS-FACTURÉE. ${brique.monthlyHT} €/mois affichés pour un plancher de ` +
-      `${Math.round(plancherMensuelEur)} € (consommation ${arrondi(c.consommationMensuelleEur)} € ×${MULTIPLE_CONSOMMATION} ` +
+      `${Math.round(plancherMensuelEur)} € (consommation ${arrondi(consommation)} € ×${MULTIPLE_CONSOMMATION} ` +
       `+ support ${Math.round(coutSupport)} €). Il manque ${Math.round(plancherMensuelEur - brique.monthlyHT)} €.`;
   } else if (multipleReel !== null && multipleReel >= MULTIPLE_CONSOMMATION) {
     verdict = "conforme";
@@ -562,3 +583,56 @@ export const VOLUME_PALIER: CallVolumeInput = {
 };
 
 export const PRIX_PALIER_HT = OUTBOUND_UNIT_HT;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA CONSOMMATION RÉELLE D'UNE BRIQUE — le raccord qui manquait.
+ *
+ * ⚠ `verdictBrique` lisait `consommationMensuelleEur` telle quelle. Sur Alpha
+ * Voice, cette constante vaut 2 € : le prix du numéro loué. Le commentaire
+ * promettait qu'une fonction `coutVoixMensuel` ajouterait le variable —
+ * **elle n'a jamais existé**. La brique dont le coût est presque entièrement
+ * variable était donc chiffrée SANS COMPTER UN SEUL APPEL, et l'audit du
+ * catalogue rendait un verdict rassurant sur un coût faux.
+ *
+ * Le bon calcul existait à trois cents lignes de là, dans `devisVoix`.
+ * Encore deux modules corrects qui ne se parlaient pas.
+ *
+ * On retient la part VARIABLE : le fixe (hébergement, supervision) est
+ * mutualisé sur tous les clients et n'appartient à aucune brique.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+/**
+ * ⚠ UN MODÈLE PAR BRIQUE, ET PAS UN DE PLUS.
+ *
+ * Trouvé en cassant le code exprès : marquer `campagnes` comme dépendante du
+ * volume lui donnait silencieusement le coût de la VOIX. Un drapeau booléen
+ * ne dit pas QUEL modèle s'applique — il dit seulement « pas la constante »,
+ * ce qui laisse le résolveur choisir tout seul. On nomme donc le modèle.
+ *
+ * Une brique marquée sans modèle retombe sur sa constante (repli sûr), et un
+ * test refuse cette situation : c'est une erreur de déclaration, pas un cas
+ * légitime.
+ */
+const MODELES_VOLUME: Record<string, () => number> = {
+  "alpha-voice": () => {
+    const d = devisVoix(VOLUME_PALIER.calls, PRIX_PALIER_HT, VOLUME_PALIER);
+    const fixe = FIXED_COSTS.reduce((s, f) => s + f.eurPerMonth, 0);
+    return arrondi(d.coutTotalEur - fixe);
+  },
+};
+
+/** Les briques pour lesquelles un modèle de volume existe vraiment. */
+export const BRIQUES_A_MODELE_VOLUME = Object.keys(MODELES_VOLUME);
+
+export function consommationDe(c: CoutBrique): number {
+  if (!c.volumeDependant) return c.consommationMensuelleEur;
+  const modele = MODELES_VOLUME[c.brickId];
+  // Marquée « volume » sans modèle : on ne devine pas, on retombe sur le
+  // socle. Le test `toute brique volumeDependant a un modèle` le signale.
+  if (!modele) return c.consommationMensuelleEur;
+  const variable = modele();
+  // Repli : si le modèle rendait zéro ou moins (constantes vidées), on
+  // retombe sur le socle plutôt que d'annoncer une brique gratuite.
+  return variable > 0 ? variable : c.consommationMensuelleEur;
+}

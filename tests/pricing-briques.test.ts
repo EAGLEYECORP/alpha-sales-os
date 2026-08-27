@@ -1,11 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { FIXED_COSTS } from "../lib/voice-costs";
 import {
   APPEL_TYPE,
   COUTS_BRIQUES,
   MULTIPLE_CONSOMMATION,
   TARIFS_MODELES,
   auditerCatalogue,
+  BRIQUES_A_MODELE_VOLUME,
+  consommationDe,
   coutJetons,
   devisVoix,
   verdictBrique,
@@ -54,9 +59,17 @@ test("la règle ×4 ne s'applique PAS à une brique au coût marginal nul", () =
 });
 
 test("sur une brique de consommation, le plancher est bien la consommation ×4 plus le support", () => {
-  const conso = COUTS_BRIQUES.find((c) => c.nature === "consommation" && c.consommationMensuelleEur > 0)!;
+  /**
+   * ⚠ Ce test lisait `consommationMensuelleEur` — la CONSTANTE. Il tombait
+   * juste tant que la constante était la consommation réelle ; il est devenu
+   * faux le jour où Alpha Voice a été raccordée au modèle de volume, et c'est
+   * lui qui a signalé le changement. La règle n'a pas bougé : c'est la source
+   * de « la consommation » qui a changé, et le test lit maintenant la même
+   * que le verdict.
+   */
+  const conso = COUTS_BRIQUES.find((c) => c.nature === "consommation" && consommationDe(c) > 0)!;
   const v = verdictBrique(conso, { tauxHoraireEur: TAUX })!;
-  const attendu = conso.consommationMensuelleEur * MULTIPLE_CONSOMMATION + conso.heuresSupportMois * TAUX;
+  const attendu = consommationDe(conso) * MULTIPLE_CONSOMMATION + conso.heuresSupportMois * TAUX;
   assert.equal(v.plancherMensuelEur, Math.round(attendu * 100) / 100);
 });
 
@@ -211,4 +224,109 @@ test("toute brique dont le coût est estimé porte sa réserve écrite", () => {
       assert.ok(c.reserve.trim().length > 0, `${c.brickId} facture une consommation sans dire ce qui pourrait la faire varier`);
     }
   }
+});
+
+
+// ══════════ LA CONSOMMATION QUI NE COMPTAIT AUCUN APPEL ══════════
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ ALPHA VOICE ÉTAIT CHIFFRÉE SANS UN SEUL APPEL.
+ *
+ * `COUTS_BRIQUES` portait `consommationMensuelleEur: 2` — le prix du numéro
+ * loué — avec ce commentaire : « calculé, pas posé : voir `coutVoixMensuel` ;
+ * le variable s'ajoute selon les appels ».
+ *
+ * **`coutVoixMensuel` n'a jamais existé dans le dépôt.** Le variable ne
+ * s'ajoutait donc nulle part. La brique dont le coût est presque entièrement
+ * variable était jugée sur 2 €, et l'audit du catalogue rendait un verdict
+ * rassurant — « au-dessus, ×2,53 » — sur un coût faux d'un facteur 25.
+ *
+ * Le bon calcul existait à trois cents lignes de là, dans `devisVoix`.
+ * Encore deux modules corrects qui ne se parlaient pas.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+test("la consommation d'Alpha Voice vient du MODÈLE DE VOLUME, pas d'une constante", () => {
+  const c = COUTS_BRIQUES.find((x) => x.brickId === "alpha-voice")!;
+  assert.equal(c.volumeDependant, true, "la brique doit être marquée comme dépendante du volume");
+
+  const resolue = consommationDe(c);
+  assert.ok(
+    resolue > c.consommationMensuelleEur * 10,
+    `la consommation résolue (${resolue} €) doit être sans commune mesure avec le socle (${c.consommationMensuelleEur} €)`
+  );
+
+  // Et elle doit valoir EXACTEMENT la part variable du devis voix.
+  const d = devisVoix(VOLUME_PALIER.calls, PRIX_PALIER_HT, VOLUME_PALIER);
+  const fixe = FIXED_COSTS.reduce((s, f) => s + f.eurPerMonth, 0);
+  assert.ok(Math.abs(resolue - (d.coutTotalEur - fixe)) < 0.5, "elle doit venir de devisVoix, pas d'un autre calcul");
+});
+
+test("le FIXE mutualisé n'est pas imputé à la brique", () => {
+  /**
+   * Hébergement et supervision sont partagés par tous les clients. Les mettre
+   * dans la consommation d'une brique reviendrait à les facturer une fois par
+   * brique vendue — et à multiplier le tout par 4 dans le plancher.
+   */
+  const c = COUTS_BRIQUES.find((x) => x.brickId === "alpha-voice")!;
+  const fixe = FIXED_COSTS.reduce((s, f) => s + f.eurPerMonth, 0);
+  assert.ok(consommationDe(c) < fixe, "la consommation ne doit pas inclure le fixe mutualisé");
+});
+
+test("⚠ toute brique marquée « volume » a un modèle NOMMÉ", () => {
+  /**
+   * Trouvé en cassant le code : un simple booléen ne dit pas QUEL modèle
+   * s'applique. Marquer `campagnes` comme dépendante du volume lui donnait
+   * silencieusement le coût de la VOIX — une brique d'emailing chiffrée avec
+   * des minutes de téléphone, sans que rien ne proteste.
+   */
+  for (const c of COUTS_BRIQUES.filter((x) => x.volumeDependant)) {
+    assert.ok(
+      BRIQUES_A_MODELE_VOLUME.includes(c.brickId),
+      `« ${c.brickId} » est marquée volumeDependant mais aucun modèle ne lui correspond — elle hériterait du coût d'une autre brique`
+    );
+  }
+  // Et l'inverse : un modèle déclaré pour une brique qui ne le demande pas
+  // ne servirait à rien, donc signale une erreur de déclaration.
+  for (const id of BRIQUES_A_MODELE_VOLUME) {
+    const c = COUTS_BRIQUES.find((x) => x.brickId === id);
+    assert.ok(c?.volumeDependant, `un modèle existe pour « ${id} » mais la brique ne le réclame pas`);
+  }
+});
+
+test("les briques SANS volume gardent leur constante, inchangée", () => {
+  // Le contre-test : si le résolveur touchait à tout, il casserait neuf
+  // briques pour en réparer une.
+  for (const c of COUTS_BRIQUES.filter((x) => !x.volumeDependant)) {
+    assert.equal(consommationDe(c), c.consommationMensuelleEur, `${c.brickId} ne doit pas être recalculée`);
+  }
+});
+
+test("le verdict d'Alpha Voice reflète le VRAI coût", () => {
+  const v = auditerCatalogue({ tauxHoraireEur: TAUX }).verdicts.find((x) => x.brickId === "alpha-voice")!;
+  const c = COUTS_BRIQUES.find((x) => x.brickId === "alpha-voice")!;
+  // Avec l'ancienne constante, le coût mensuel était consommation(2) + support.
+  const ancien = c.consommationMensuelleEur + c.heuresSupportMois * TAUX;
+  assert.ok(v.coutMensuelEur > ancien * 1.2, `le coût (${Math.round(v.coutMensuelEur)} €) doit dépasser l'ancien (${Math.round(ancien)} €)`);
+  assert.ok(v.plancherMensuelEur !== null, "une brique de consommation doit avoir un plancher");
+  // Le prix public reste au-dessus — mais de bien moins qu'on ne le croyait.
+  assert.ok(v.mensuelAfficheEur >= v.plancherMensuelEur!, "le prix affiché doit rester au-dessus du plancher");
+});
+
+test("aucun renvoi vers une fonction qui n'existe pas", () => {
+  /**
+   * L'erreur d'origine tenait dans un commentaire : il promettait un calcul
+   * qui n'était jamais arrivé. Un renvoi mort est pire qu'une absence — il
+   * fait croire que le travail est fait.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/pricing-briques.ts"), "utf8");
+  const renvois = [...src.matchAll(/`([a-zA-Z][a-zA-Z0-9_]*)\(\)`/g)].map((m) => m[1]);
+  for (const nom of [...new Set(renvois)]) {
+    assert.ok(
+      src.includes(`function ${nom}`) || src.includes(`const ${nom}`) || src.includes(`${nom},`) || src.includes(`import`),
+      `le commentaire renvoie à ${nom}() — vérifier qu'elle existe`
+    );
+  }
+  assert.doesNotMatch(src, /voir `coutVoixMensuel`/, "ce renvoi pointait vers le vide");
 });
