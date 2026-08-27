@@ -53,6 +53,7 @@ const REDACTEURS = [
   "lib/offer-match.ts",
   "lib/lead-magnet.ts",
   "lib/ladder.ts",
+  "lib/proof.ts",
 ];
 
 const sansCommentaires = (src: string) =>
@@ -65,6 +66,17 @@ const sansCommentaires = (src: string) =>
  * c'est tout le sujet de la conversation. Seul le possessif à la première
  * personne fabrique de la preuve. Le motif est donc ancré sur « nos / on »,
  * pas sur le mot « client ».
+ *
+ * ⚠⚠ IL EST VOLONTAIREMENT UN PEU LARGE, ET ÇA A UN COÛT ASSUMÉ. En corrigeant
+ * `lib/proof.ts`, la phrase de remplacement que j'avais écrite — « la machine,
+ * celle QU'ON INSTALLE » — a déclenché ce test. Elle ne revendiquait aucun
+ * client ; c'est bien un faux positif.
+ *
+ * On a quand même reformulé plutôt que d'assouplir le motif. Resserrer
+ * demanderait de deviner si le mot qui précède désigne des clients — une
+ * heuristique qui se trompe ici laisserait passer « les garages qu'on équipe ».
+ * Un test strict qui impose parfois de tourner une phrase autrement coûte
+ * moins cher qu'une preuve inventée envoyée à un prospect.
  */
 const CLIENTELE_AFFIRMEE = [
   /\bnos (?:clients?|artisans?|restos?|pubs?|garages?|partenaires?)\b/i,

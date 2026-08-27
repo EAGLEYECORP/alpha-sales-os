@@ -156,6 +156,110 @@ coûté un écran blanc, en dérivant la liste des champs du type lui-même.
 
 ---
 
+## 🔎 Seconde passe — « ce qu'on vend » n'arrivait pas jusqu'au prospect
+
+**1 165 tests verts.** Déclenchée par une remarque de Zakaria : *un appel
+sortant doit avoir un script de base fondé sur l'offre représentée.* Il avait
+raison, et le défaut allait bien plus loin que l'appel.
+
+### Le même angle, écrit en dur à SIX endroits
+
+`deepDive` calcule l'offre correctement depuis toujours, en la contraignant aux
+offres autorisées du compte. `briefForScript` l'écrit noir sur blanc. Et six
+producteurs de texte l'ignoraient, chacun figé sur l'angle **Callflow** :
+
+| # | Où | Ce que recevait une fiche routée « visibilité » |
+|---|---|---|
+| 1 | rôle du script vocal | « proposer un audit de leur accueil téléphonique » |
+| 2 | corps + objet de l'email | « une question sur vos appels » |
+| 3 | message LinkedIn | les mêmes phrases, **dupliquées mot pour mot** |
+| 4 | questions de l'argumentaire | « quand le téléphone sonne, il se passe quoi ? » |
+| 5 | `gaps` du deep-dive | ordre d'aller chercher « le volume d'appels manqués » |
+| 6 | contexte de `/api/ai` | aucune offre → le modèle la devine ou l'invente |
+
+Le pire cas : l'autopilote envoyait un prompt contenant **« Offre pertinente :
+Visibilité »** et **« proposer un audit de leur accueil téléphonique »** — deux
+offres contradictoires, arbitrées par le modèle, en direct, devant le prospect.
+
+Chaque correction révélait la suivante : les tests par module étaient tous
+verts sur leur périmètre. D'où `tests/surface-prospect.test.ts`, qui **compose**
+toutes les sorties d'une même fiche et cherche le vocabulaire des offres qu'on
+ne lui vend pas. Sa limite est écrite : la liste des surfaces est explicite.
+
+### Deux défauts trouvés en LISANT le rendu, pas le code
+
+Les tests étaient verts dans les deux cas.
+
+- **L'observation de métier du playbook** était ajoutée après le bon critère et
+  ramenait le téléphone. Les onze critères du playbook parlent tous du
+  téléphone : ils appartiennent à Callflow. C'est vérifiable, et un test le
+  vérifie — le jour où ce n'est plus vrai, la règle se rediscute.
+- **Le brief d'appel emportait notre estimation du deal** : « Gros chantier
+  (> 40 000 €) — volume du deal estimé 48 000 € — trop lourd pour nous », dans
+  le prompt d'un appel en direct, pendant que la règle dure du même script dit
+  « aucun prix ». `ladderPitch` est désormais traitée comme une **frontière** :
+  les faits du prospect passent, notre arbitrage non.
+
+### ⚠ Le plus grave : cinq clients cités qui n'existent pas
+
+`lib/hormozi.ts` — le script hors-ligne, **celui qui tourne aujourd'hui**
+puisque `/api/health` rend `ai: { configured: false }` — affirmait sous
+l'intitulé « Le produit fonctionne » :
+
+> « les restos lyonnais **qu'on équipe** prennent leurs réservations la nuit »
+> « **nos** pubs clients remplissent leurs mardis soir »
+> « **nos** clients ambulanciers ne ratent plus une demande de nuit »
+
+Cinq secteurs, cinq affirmations de clientèle, **zéro vente**. C'est la ligne
+rouge explicite de CLAUDE.md, et un seul « lequel ? » met fin à l'entretien.
+
+Et c'était **déjà résolu à un fichier de distance** : `lib/templates.ts` porte
+depuis le début « une référence réelle si elle existe, sinon le mécanisme —
+jamais un client inventé ». La discipline existait, elle n'avait pas traversé.
+`proof` devient `mecanisme` : ce que le produit fait, vrai sans client et
+démontrable séance tenante.
+
+### Ce que j'ai refusé d'écrire
+
+Trois occasions d'« améliorer » qui auraient fabriqué de la preuve :
+
+- **La norme du marché** pour la visibilité et Alpha Sales OS. Ce sont des
+  affirmations sur le marché, dites à un prospect, sur des offres jamais
+  vendues. Le bloc reste vide et l'écran dit pourquoi.
+- **Renommer le document d'audit** au titre de l'aimant annoncé. `magnetReadiness`
+  montre qu'il ne tient que 3/4, 2/4 et 1/4 des promesses selon l'aimant : le
+  renommer lui ferait promettre davantage.
+- **Tripler `lib/templates.ts`** par offre. C'est une bibliothèque parcourue à
+  la main, indexée par métier, sans envoi automatique — pas le même défaut.
+
+> ⚠ **Ce qui reste à relire avant le premier lot.** Les raisons d'appel, les
+> questions d'ouverture et les cinq phrases de mécanisme sont de MOI. Elles
+> respectent la doctrine (aucun prix, une seule question, aucun client
+> inventé) et n'ont jamais été dites à personne. Elles vivent chacune en un
+> seul endroit : `lib/offer-match.ts`, `lib/approche-ecrite.ts`,
+> `lib/hormozi.ts`.
+
+**Coût mesuré** de l'offre recâblée partout : `deepDive` = 36 µs par fiche,
+60 ms pour le tunnel d'envoi complet sur 1 000 fiches. Aucune mémoïsation
+nécessaire.
+
+### ⚠ Correction — un test supprimé continuait de tourner
+
+`npm test` compilait vers `.test-build/` **sans jamais purger ce dossier**. Un
+fichier de test effacé de la source y restait compilé et continuait de
+s'exécuter. Constaté sur mes propres sondes temporaires : la suite annonçait
+1 167 tests, un nettoyage manuel l'a ramenée à 1 163. **J'avais annoncé les
+chiffres gonflés dans deux messages de commit et dans une version antérieure
+de cette page.** Les chiffres corrigés sont ceux affichés ici.
+
+Le cas qui coûte cher n'est pas le test en trop : c'est le test **supprimé
+parce qu'il était faux**. Il continue de passer, donc d'imposer une règle
+qu'on a justement décidé d'abandonner — et plus aucune source ne dit pourquoi.
+La purge se fait maintenant en Node (aucune dépendance ajoutée), et
+`tests/harnais.test.ts` vérifie qu'elle précède bien la compilation.
+
+---
+
 ## ⚠ Les angles morts (à traiter avant d'ouvrir aux clients)
 
 ### 1. Rien n'est prouvé contre les VRAIS services

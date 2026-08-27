@@ -104,6 +104,23 @@ const esc = (s: string) =>
  * DA encre & or. Chaque chiffre vient de proofStats → du CRM.
  */
 export function renderProofCard(s: ProofStats, operatorName = "EAGLEYE CORP"): string {
+  /**
+   * ⚠ LA CARTE SE CONTREDISAIT ELLE-MÊME À ZÉRO VENTE.
+   *
+   * Elle affichait « Clients signés : 0 » sous la phrase « la même machine que
+   * nous installons chez NOS CLIENTS », le tout titré « Des chiffres, pas des
+   * promesses » — et elle s'exporte en PDF pour un prospect.
+   *
+   * Les chiffres, eux, étaient honnêtes : `proofStats` rend des zéros et un
+   * `closingRate: null`, exactement comme la doctrine l'exige. C'est la PROSE
+   * autour qui affirmait une clientèle que les chiffres démentaient trois
+   * lignes plus bas.
+   *
+   * Aligner des zéros sous « des chiffres, pas des promesses » ne prouve rien
+   * et se retourne contre nous. On DIT l'absence — c'est la même règle que
+   * partout ailleurs : zéro donnée → on nomme l'angle mort.
+   */
+  const vide = s.signes === 0 && s.encaisse === 0 && s.touchesTotal === 0;
   const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   const stat = (label: string, value: string, sub = "", accent = "#E8C98A") => `
     <div style="background:#15110D;border:1px solid rgba(243,238,228,.12);border-radius:16px;padding:22px;">
@@ -140,13 +157,23 @@ export function renderProofCard(s: ProofStats, operatorName = "EAGLEYE CORP"): s
     Des chiffres, pas des promesses.
   </h1>
   <p style="color:#8E877B;max-width:560px;margin:0 0 26px;">
-    Extraits en direct de notre CRM — agrégés, anonymisés, datés. C'est
-    la même machine que nous installons chez nos clients.
+    Extraits en direct de notre CRM — agrégés, anonymisés, datés. Ces chiffres
+    sont produits par la machine elle-même : le produit tourne d'abord ici.
   </p>
+
+  ${vide ? `
+  <div style="border:1px solid #3A342C;border-radius:12px;padding:18px 20px;margin-bottom:26px;">
+    <p style="margin:0;color:#F3EEE4;font-weight:600;">Aucune vente à ce jour.</p>
+    <p style="margin:8px 0 0;color:#8E877B;">
+      Cette page n'a donc rien à prouver pour l'instant, et elle le dit plutôt que
+      d'aligner des zéros. Les compteurs ci-dessous sont réels : ils se rempliront
+      d'eux-mêmes, ou ils resteront à zéro. C'est le contrat.
+    </p>
+  </div>` : ""}
 
   <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
     ${stat("CA encaissé — clients apportés", eur(s.encaisse))}
-    ${stat("Taxe d'Ignorance rendue", eur(s.taxeRendueMensuelle) + " /mois", "ce que nos clients ne perdent plus", "#86C06A")}
+    ${stat("Taxe d'Ignorance rendue", eur(s.taxeRendueMensuelle) + " /mois", "ce qui n'est plus perdu", "#86C06A")}
     ${stat("Clients signés", String(s.signes), s.closingRate !== null ? `taux de closing ${s.closingRate} %` : "")}
     ${stat("Touches réelles consignées", s.touchesTotal.toLocaleString("fr-FR"), `${s.rdvTenus} RDV tenus${s.cycleJours !== null ? ` · cycle médian ${s.cycleJours} j` : ""}`)}
   </div>
