@@ -168,3 +168,81 @@ test("les polices ont un repli système — un tiers bloqué ne casse pas la lec
     assert.ok(familles.includes(repli), `repli « ${repli} » absent : sans lui la page devient illisible hors ligne`);
   }
 });
+
+// ─────────── 4. LE MOTEUR IA ABSENT N'EST PAS UNE PANNE ───────────
+
+/**
+ * `/api/icp` rendait **500** — trouvé en cliquant les boutons des Réglages au
+ * navigateur, avec `Aucun moteur IA configuré` dans les logs du serveur.
+ *
+ * La cause est un contrat mal lu : `runAIJson` ne rend pas `data: null` quand
+ * il n'y a pas de moteur, il LÈVE. La route promettait pourtant un « repli
+ * déterministe (jamais vide) » dans son propre commentaire.
+ *
+ * Ça vise exactement l'installation neuve — celle du client qui vient
+ * d'acheter et n'a pas encore de clé. Les quatre autres routes IA du dépôt
+ * enveloppaient déjà leur appel ; celle-ci était la seule oubliée, et rien ne
+ * l'aurait dit avant un écran rouge chez lui.
+ */
+const ROUTES_IA = [
+  "app/api/ai/route.ts",
+  "app/api/brain/route.ts",
+  "app/api/debrief/route.ts",
+  "app/api/icp/route.ts",
+  "app/api/social/draft/route.ts",
+];
+
+test("AUCUNE route IA n'appelle le moteur hors d'un try — il lève quand rien n'est configuré", () => {
+  for (const f of ROUTES_IA) {
+    const src = readFileSync(join(process.cwd(), f), "utf8");
+    const appel = src.search(/\brunAIJson?[<(]|\brunAI\(/);
+    assert.ok(appel > 0, `${f} : appel au moteur introuvable — le test ne prouverait rien`);
+
+    /**
+     * « Il y a un try quelque part avant » ne suffit PAS : ces routes ouvrent
+     * déjà un try/catch pour lire le JSON du corps. Vérifié en cassant la
+     * garde exprès — le test passait quand même. Ce qui compte, c'est que le
+     * try le plus proche soit encore OUVERT au moment de l'appel : donc aucun
+     * `catch` ne doit s'intercaler entre lui et l'appel.
+     */
+    const ouvert = src.lastIndexOf("try {", appel);
+    assert.ok(ouvert > 0, `${f} : le moteur est appelé sans aucun try`);
+    assert.doesNotMatch(
+      src.slice(ouvert, appel),
+      /\}\s*catch/,
+      `${f} : le try le plus proche est déjà refermé — sans clé IA, la route rend 500 au lieu du repli`
+    );
+  }
+});
+
+test("l'ICP hors ligne se rend QUAND MÊME, et il le dit", () => {
+  const src = readFileSync(join(process.cwd(), "app/api/icp/route.ts"), "utf8");
+  // L'ORDRE est la preuve : appel au moteur, PUIS un catch, PUIS le repli.
+  // Un repli placé avant le catch serait sauté par l'exception.
+  // ⚠ `indexOf("runAIJson")` tombait sur la LIGNE D'IMPORT, pas sur l'appel :
+  // le test passait alors que la garde était cassée. On vise `await`.
+  const appel = src.indexOf("await runAIJson");
+  const attrape = src.indexOf("} catch", appel);
+  const repli = src.indexOf("deriveICP(offer)", attrape);
+  assert.ok(attrape > appel, "l'appel au moteur doit être rattrapé");
+  assert.ok(repli > attrape, "le squelette déterministe doit venir APRÈS le catch");
+  assert.match(src.slice(repli - 200, repli + 200), /hors-ligne/, "et la réponse doit dire que l'IA n'a pas servi");
+});
+
+// ─────────── 5. ANNULER DOIT ANNULER ───────────
+
+test("fermer la fenêtre de feedback ne marque PAS le rendez-vous fait", () => {
+  /**
+   * `prompt()` rend `null` sur Échap ou Annuler, `""` sur une validation à
+   * vide. Le `?? ""` confondait les deux : un clic malencontreux suivi d'Échap
+   * sortait le rendez-vous du plan du matin et des relances, sans décision.
+   */
+  const src = readFileSync(join(process.cwd(), "app/(app)/meetings/page.tsx"), "utf8");
+  const bloc = src.slice(src.indexOf("Feedback du RDV") - 200, src.indexOf("Feedback du RDV") + 700);
+  assert.match(bloc, /outcome === null\)\s*return/, "l'annulation doit sortir avant l'écriture");
+  assert.doesNotMatch(
+    bloc.slice(0, bloc.indexOf("outcome === null")),
+    /prompt\([^)]*\)\s*\?\?/,
+    "le `?? \"\"` écrasait la différence entre annuler et répondre à vide"
+  );
+});

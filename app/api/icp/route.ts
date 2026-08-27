@@ -26,14 +26,35 @@ export async function POST(request: NextRequest) {
     .filter(Boolean)
     .join("\n\n");
 
-  const { data, engine } = await runAIJson<Partial<ICP>>(
-    [
-      { role: "system", content: system },
-      { role: "user", content: icpUserPrompt(offer) },
-    ],
-    { temperature: 0.4, json: true }
-  );
+  /**
+   * ⚠ LE REPLI DÉTERMINISTE N'EXISTAIT QUE DANS LE COMMENTAIRE.
+   *
+   * Mesuré au navigateur en cliquant les boutons des Réglages : `/api/icp`
+   * rendait **500**, avec `Aucun moteur IA configuré` dans les logs. Or
+   * `runAIJson` ne rend pas `data: null` quand il n'y a pas de moteur — il
+   * LÈVE. Sans `try`, l'exception traversait la route.
+   *
+   * Ça touche exactement l'état d'une installation neuve : pas encore de clé
+   * IA. Le client qui vient d'installer voit une erreur serveur là où l'app
+   * promet de marcher hors ligne. Les quatre autres routes IA du dépôt
+   * (`/ai`, `/brain`, `/debrief`, `/social/draft`) enveloppent toutes leur
+   * appel — celle-ci était la seule oubliée.
+   *
+   * `deriveICP` n'a besoin d'aucun réseau : le squelette part de l'offre du
+   * compte. L'IA affine, elle ne conditionne rien.
+   */
+  try {
+    const { data, engine } = await runAIJson<Partial<ICP>>(
+      [
+        { role: "system", content: system },
+        { role: "user", content: icpUserPrompt(offer) },
+      ],
+      { temperature: 0.4, json: true }
+    );
+    if (data) return NextResponse.json({ icp: mergeICP(offer, data), engine });
+  } catch {
+    /* pas de moteur, ou moteur muet → squelette ci-dessous */
+  }
 
-  const icp = data ? mergeICP(offer, data) : deriveICP(offer);
-  return NextResponse.json({ icp, engine: data ? engine : "squelette (hors-ligne)" });
+  return NextResponse.json({ icp: deriveICP(offer), engine: "squelette (hors-ligne)" });
 }

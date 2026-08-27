@@ -89,7 +89,18 @@ export default function MeetingsPage() {
                   className="btn-ghost px-2.5"
                   title="Marquer fait"
                   onClick={() => {
-                    const outcome = prompt("Feedback du RDV + next step daté ? (alimente l'IA)") ?? "";
+                    /**
+                     * ANNULER DOIT ANNULER.
+                     *
+                     * `prompt()` rend `null` quand on ferme ou qu'on fait
+                     * Échap, et `""` quand on valide à vide. Le `?? ""`
+                     * écrasait la différence : un clic malencontreux suivi
+                     * d'Échap marquait quand même le rendez-vous FAIT — il
+                     * sortait du plan du matin et des relances, sans que
+                     * personne ne l'ait décidé.
+                     */
+                    const outcome = prompt("Feedback du RDV + next step daté ? (alimente l'IA)");
+                    if (outcome === null) return;
                     upsertMeeting({ ...m, done: true, outcome, feedback: outcome });
                   }}
                 >
