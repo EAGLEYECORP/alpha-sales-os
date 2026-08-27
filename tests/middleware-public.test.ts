@@ -177,3 +177,72 @@ test("les boutons d'achat ne renvoient plus derrière le mot de passe", () => {
     assert.ok(publics.includes(p), `${p} doit être public, sinon les boutons retombent sur /gate`);
   }
 });
+
+
+// ══════════ LA PORTE D'ACCÈS N'EST PLUS UN MUR SUR TOUT ══════════
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * `SITE_PASSWORD` murait l'application ENTIÈRE, clients payants compris.
+ * Or ils n'auront jamais le mot de passe de notre outil interne : un client
+ * dont les droits étaient correctement provisionnés tombait quand même sur
+ * `/gate`. Le mur ne garde plus que les surfaces d'ADMINISTRATION.
+ *
+ * ⚠ CE QUE CES TESTS PROTÈGENT VRAIMENT — ce n'est pas la liste, c'est la
+ * GARDE. Lever le mur n'est sûr que s'il existe une autre serrure. Les deux
+ * qui la composent sont OPT-IN : sans elles, un déploiement se retrouverait
+ * entièrement public, avec `/api/send` qui envoie de vrais emails et
+ * `/api/voice/call` qui compose de vrais numéros.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const mw = readFileSync(join(process.cwd(), "middleware.ts"), "utf8");
+
+test("le mot de passe ne se lève QUE si une autre serrure est en place", () => {
+  const bloc = mw.slice(mw.indexOf("function verrouDeComptesActif"), mw.indexOf("let tokenCache"));
+  assert.match(bloc, /comptesActifs\(\)/, "les comptes doivent être actifs");
+  assert.match(bloc, /serverAuthEnforced\(\)/, "et le JWT réellement exigé côté serveur");
+  assert.match(bloc, /comptesActifs\(\) && serverAuthEnforced\(\)/, "les DEUX, pas l'un ou l'autre");
+  // La garde par défaut est la protection, pas l'ouverture.
+  assert.match(bloc, /return !verrouDeComptesActif\(\)/, "sans serrure de remplacement, tout reste muré");
+});
+
+test("les surfaces d'administration restent murées quoi qu'il arrive", () => {
+  /**
+   * Elles parlent de NOTRE économie, jamais de celle du client : commissions
+   * du portefeuille, calculateur de marge, synchro du pipe de l'opérateur.
+   * Le test vérifie qu'elles sont contrôlées AVANT la garde — sinon un
+   * déploiement avec comptes les ouvrirait à tout compte connecté.
+   */
+  const bloc = mw.slice(mw.indexOf("const ADMIN_PREFIXES"), mw.indexOf("let tokenCache"));
+  for (const p of ["/payouts", "/offre", "/api/sync"]) {
+    assert.ok(bloc.includes(`"${p}"`), `${p} doit rester derrière le mot de passe`);
+  }
+  const iAdmin = bloc.indexOf("startsWithAny(pathname, ADMIN_PREFIXES)");
+  const iGarde = bloc.indexOf("return !verrouDeComptesActif()");
+  assert.ok(iAdmin > 0 && iGarde > iAdmin, "l'admin doit être testé AVANT la garde générale");
+});
+
+test("l'admin muré est AUSSI réservé au compte maître par les droits", () => {
+  /**
+   * Le mot de passe est la seconde serrure, pas la seule. Si une de ces pages
+   * gagnait une brique, un client qui l'achète y accéderait dès que le mur se
+   * lève — et le mur, justement, est fait pour se lever.
+   */
+  const acces = readFileSync(join(process.cwd(), "lib/bricks-access.ts"), "utf8");
+  for (const p of ["/payouts", "/offre"]) {
+    assert.match(
+      acces,
+      new RegExp(`"${p}":\\s*\\[\\]`),
+      `${p} doit rester à zéro brique : réservé au compte maître`
+    );
+  }
+});
+
+test("les pages du PRODUIT ne sont pas classées comme administration", () => {
+  // Le contre-test : une liste d'admin trop large remurerait les clients, et
+  // on aurait fait tout ce chemin pour rien.
+  const bloc = mw.slice(mw.indexOf("const ADMIN_PREFIXES"), mw.indexOf("function verrouDeComptesActif"));
+  for (const p of ["/pipeline", "/aujourdhui", "/appels", "/voice", "/compte", "/settings", "/demarrage"]) {
+    assert.ok(!bloc.includes(`"${p}"`), `${p} est une page vendue au client : elle ne doit pas être murée`);
+  }
+});

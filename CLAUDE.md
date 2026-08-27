@@ -259,6 +259,20 @@ arcs de retour sont branchés ; ils se protègent par
 - `SITE_PASSWORD`, JWT Supabase, RLS : le cloisonnement des données est la RLS +
   le JWT (`lib/tenant.ts`). Un « compte » du portefeuille est une frontière
   d'**identité commerciale**, pas de sécurité. Ne pas confondre.
+- **`SITE_PASSWORD` n'est PLUS un mur sur toute l'app** (décision de Zakaria).
+  Il murait aussi les clients payants, qui n'auront jamais le mot de passe de
+  notre outil interne. Il ne garde plus que `ADMIN_PREFIXES` (`middleware.ts`) :
+  `/payouts`, `/offre`, `/api/sync` — ce qui parle de NOTRE économie, pas de
+  celle du client. Le reste est gouverné par le compte + les briques.
+  > ⚠ **La garde qui rend ça sûr, et qu'il ne faut jamais retirer** : le mur ne
+  > se lève QUE si `comptesActifs() && serverAuthEnforced()`. Les deux sont
+  > opt-in. Sans eux, il n'existe aucune autre serrure et l'app entière serait
+  > publique — `/api/send` envoie de vrais emails, `/api/voice/call` compose de
+  > vrais numéros. Par défaut on protège ; on n'ouvre que sur preuve.
+  >
+  > Vérifié sur serveur réel : sans comptes, tout reste muré ; avec comptes,
+  > une page produit renvoie vers `/compte?bloque=…` (parcours client) et une
+  > page admin vers `/gate` (mot de passe). Deux portes, deux publics.
 
 ## Contraintes d'environnement (sandbox)
 Le proxy sortant bloque : github.com, data.grandlyon.com, data.gouv, et les clés

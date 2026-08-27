@@ -13,11 +13,12 @@ import { CHEMIN_PAR_API } from "@/lib/api-access";
  * ─────────────────────────────────────────────────────────────────────
  * Garde-fous réseau (défense en profondeur) sur TOUTE l'app :
  *
- *  0. PORTE D'ACCÈS : si SITE_PASSWORD est défini (déploiement public),
- *     rien n'est servi sans le cookie d'accès signé — sauf le strict
- *     nécessaire anonyme (pixel/clic de tracking, webhooks entrants,
- *     sonde, l'écran /gate et son API). En local (variable absente), la
- *     porte est OFF.
+ *  0. PORTE D'ACCÈS : SITE_PASSWORD n'est plus un mur sur TOUTE l'app —
+ *     il murait aussi les clients payants, qui n'auront jamais le mot de
+ *     passe de notre outil interne. Il garde désormais les surfaces
+ *     d'ADMINISTRATION (voir ADMIN_PREFIXES), et le reste tant que la
+ *     serrure de remplacement — comptes Supabase + REQUIRE_AUTH — n'est
+ *     pas réellement en place. En local (variable absente), porte OFF.
  *  1. Anti-CSRF / anti-abus : les endpoints INTERNES n'acceptent que des
  *     requêtes MÊME ORIGINE.
  *  2. Rate-limit par IP : borne un pic de requêtes.
@@ -231,6 +232,50 @@ function rateLimited(ip: string, pathname: string): boolean {
  * mot de passe ne change pas pendant la vie du processus — on le mémorise,
  * indexé par mot de passe pour rester correct si l'environnement change.
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES SURFACES D'ADMINISTRATION — celles qui restent derrière le mot de passe.
+ *
+ * `SITE_PASSWORD` cesse d'être un mur sur TOUTE l'application : il murait
+ * aussi les clients payants, qui n'auront jamais le mot de passe de notre
+ * outil interne. Il ne garde plus que ce qu'aucun client ne doit voir.
+ *
+ * Le critère n'est pas « c'est sensible » — presque tout l'est — mais
+ * « ça parle de NOTRE économie, pas de la sienne » :
+ *   · /payouts : commissions et reversements du portefeuille ;
+ *   · /offre   : notre calculateur de marge ;
+ *   · /api/sync : la synchro du pipe de l'opérateur.
+ * Ces trois-là sont déjà réservés au compte MAÎTRE côté droits
+ * (`ACCES_PAR_CHEMIN` leur donne zéro brique) : le mot de passe est la
+ * seconde serrure, pas la seule.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const ADMIN_PREFIXES = ["/payouts", "/offre", "/api/sync"];
+
+/**
+ * ⚠ LA GARDE QUI EMPÊCHE D'OUVRIR L'APP PAR INADVERTANCE.
+ *
+ * Retirer le mur global n'est sûr que s'il existe une autre serrure. Elle
+ * existe : comptes Supabase + enforcement serveur du JWT. Mais les deux sont
+ * OPT-IN — `comptesActifs()` et `serverAuthEnforced()` sont faux tant que
+ * l'environnement n'est pas configuré.
+ *
+ * Si on levait le mur sans regarder, un déploiement sans comptes se
+ * retrouverait ENTIÈREMENT public : `/api/send` envoie de vrais emails,
+ * `/api/voice/call` compose de vrais numéros, `/api/ai` brûle des jetons.
+ * Le mur ne se lève donc QUE lorsque la serrure de remplacement est
+ * réellement en place. Tant qu'elle ne l'est pas, tout reste protégé —
+ * exactement comme avant.
+ */
+function verrouDeComptesActif(): boolean {
+  return comptesActifs() && serverAuthEnforced();
+}
+
+function exigeMotDePasse(pathname: string): boolean {
+  if (startsWithAny(pathname, ADMIN_PREFIXES)) return true;
+  return !verrouDeComptesActif();
+}
+
 let tokenCache: { password: string; token: string } | null = null;
 async function expectedToken(password: string): Promise<string> {
   if (tokenCache?.password === password) return tokenCache.token;
@@ -253,9 +298,9 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // ── 0. Porte d'accès (déploiement public) ──────────────────────────
+  // ── 0. Porte d'accès ────────────────────────────────────────────────
   const sitePassword = process.env.SITE_PASSWORD;
-  if (sitePassword && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
+  if (sitePassword && !startsWithAny(pathname, PUBLIC_PREFIXES) && exigeMotDePasse(pathname)) {
     const cookie = req.cookies.get(ACCESS_COOKIE)?.value ?? "";
     const expected = await expectedToken(sitePassword);
     if (!cookie || !safeEqual(cookie, expected)) {
