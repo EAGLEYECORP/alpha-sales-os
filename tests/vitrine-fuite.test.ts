@@ -274,7 +274,9 @@ function sources(dossiers: string[]): string[] {
 }
 
 test("bundle public — le graphe d'imports n'atteint AUCUN module à prix", () => {
-  for (const entree of ["app/vitrine/page", "app/vitrine/layout", "app/gate/page"]) {
+  // `/souscrire` est publique elle aussi depuis qu'on peut y acheter : elle
+  // doit subir exactement le même contrôle que la vitrine.
+  for (const entree of ["app/vitrine/page", "app/vitrine/layout", "app/gate/page", "app/souscrire/page", "app/souscrire/layout"]) {
     const graphe = grapheImports(entree);
     for (const interdit of MODULES_A_PRIX) {
       assert.ok(

@@ -136,7 +136,7 @@ export const OFFRES: OffrePublique[] = [
     auDela: `Au-delà de ${ESSAI_CALLS} appels, on bascule sur la grille mensuelle (${OUTBOUND_UNIT_HT} € HT le millier).`,
     // Déduit du premier mois : c'est une porte, pas un péage.
     priceEnv: "STRIPE_PRICE_ESSAI",
-    cta: { label: "Lancer l'essai", href: "/compte?offre=essai" },
+    cta: { label: "Lancer l'essai", href: "/souscrire?offre=essai" },
     capacites: ["alpha-voice"],
   },
   {
@@ -157,7 +157,7 @@ export const OFFRES: OffrePublique[] = [
     appelsInclus: null,
     auDela: null,
     priceEnv: "STRIPE_PRICE_SOLO",
-    cta: { label: "Prendre Solo", href: "/compte?offre=solo" },
+    cta: { label: "Prendre Solo", href: "/souscrire?offre=solo" },
     capacites: ["crm", "closer", "audits", "pilotage"],
   },
   {
@@ -176,7 +176,7 @@ export const OFFRES: OffrePublique[] = [
     appelsInclus: PRO_APPELS_INCLUS,
     auDela: `Au-delà de ${PRO_APPELS_INCLUS} appels/mois : ${OUTBOUND_UNIT_HT} € HT par millier supplémentaire, sans engagement.`,
     priceEnv: "STRIPE_PRICE_PRO",
-    cta: { label: "Prendre Pro", href: "/compte?offre=pro" },
+    cta: { label: "Prendre Pro", href: "/souscrire?offre=pro" },
     capacites: ["crm", "closer", "audits", "pilotage", "alpha-voice", "campagnes", "tracking"],
   },
   {
@@ -195,7 +195,7 @@ export const OFFRES: OffrePublique[] = [
     appelsInclus: OUTBOUND_UNIT_CALLS,
     auDela: `Chaque millier supplémentaire : ${OUTBOUND_UNIT_HT} € HT. Le 4ᵉ millier est offert.`,
     priceEnv: "STRIPE_PRICE_VOIX_1000",
-    cta: { label: "Lancer la campagne", href: "/compte?offre=voix-1000" },
+    cta: { label: "Lancer la campagne", href: "/souscrire?offre=voix-1000" },
     capacites: ["alpha-voice", "crm", "pilotage"],
   },
   {
@@ -221,6 +221,15 @@ export const OFFRES: OffrePublique[] = [
   },
 ];
 
+/**
+ * ⚠ LES CTA POINTENT VERS `/souscrire`, PAS VERS `/compte`.
+ *
+ * Ils visaient `/compte?offre=…` — une route de l'application, donc DERRIÈRE
+ * `SITE_PASSWORD`. Vérifié en démarrant le serveur avec la variable posée :
+ * chaque bouton d'achat rendait `307 → /gate`. Un inconnu qui voulait payer
+ * tombait sur le mot de passe de notre outil interne. `/compte` reste la page
+ * du client une fois CONNECTÉ ; l'entrée, elle, doit être publique.
+ */
 export const offreParId = (id: string): OffrePublique | undefined => OFFRES.find((o) => o.id === id);
 
 /** Prix affichés au public — sert au test qui verrouille la vitrine. */

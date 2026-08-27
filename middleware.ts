@@ -97,6 +97,29 @@ const PUBLIC_PREFIXES = [
   // Vitrine publique : c'est une page de VENTE, elle doit être lisible sans
   // mot de passe. Aucune donnée client n'y transite (pas de store, pas d'API).
   "/vitrine",
+  /**
+   * ⚠ LA PAGE OÙ ON ACHÈTE — et sans elle, personne ne pouvait acheter.
+   *
+   * Constaté en démarrant le serveur AVEC `SITE_PASSWORD` (le seul cas où ce
+   * mur s'active, donc invisible en local) : les boutons d'offre pointaient
+   * tous vers `/compte?offre=…`, qui rendait `307 → /gate`. La grille, la
+   * route Stripe et l'écran de retour existaient — il manquait la porte.
+   *
+   * `/souscrire` vit HORS de `(app)` : pas de coquille opérateur, pas de
+   * store, aucune donnée client. Elle ne fait qu'afficher des prix déjà
+   * publics et poster vers le checkout.
+   */
+  "/souscrire",
+  /**
+   * Le checkout : public par NÉCESSITÉ, protégé par sa propre porte.
+   *
+   * Il exige `getTenant(req)` — donc un JWT Supabase valide — et rend 401
+   * sans lui. Le laisser derrière `SITE_PASSWORD` reviendrait à demander à un
+   * acheteur le mot de passe de NOTRE application interne pour nous payer.
+   * Même raisonnement que `/api/v1` et `/api/mcp` : ce n'est pas un trou,
+   * c'est une porte différente, et elle est fermée à clé.
+   */
+  "/api/billing/checkout",
   // API publique v1 : appelée par des tiers (n8n, CRM client) qui n'ont pas
   // le cookie SITE_PASSWORD. Elle porte sa PROPRE authentification par clé
   // (ALPHA_API_KEYS) et refuse tout si aucune clé n'est configurée — ce n'est

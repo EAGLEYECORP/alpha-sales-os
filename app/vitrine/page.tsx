@@ -54,6 +54,7 @@ export default function VitrinePage() {
           <div className="flex items-center gap-7 text-[14px]" style={{ color: MUTED }}>
             <a href="#produit" className="hidden hover:text-[#191919] sm:inline">Produit</a>
             <a href="#tarifs" className="hidden hover:text-[#191919] sm:inline">Tarifs</a>
+            <a href="/souscrire" className="hidden hover:text-[#191919] sm:inline">Souscrire</a>
             <a href="#mission" className="hidden hover:text-[#191919] sm:inline">Mission</a>
             <a
               href="#cadrage"
@@ -90,6 +91,17 @@ export default function VitrinePage() {
               style={{ background: INK }}
             >
               Demander un cadrage
+            </a>
+            {/* La deuxième porte. Tout le monde ne veut pas d'un rendez-vous
+                avant d'avoir essayé — et jusqu'ici, celui-là n'avait nulle
+                part où aller : les offres payables n'étaient affichées sur
+                aucune page publique. */}
+            <a
+              href="/souscrire"
+              className="rounded-full px-6 py-3 text-[15px] font-medium"
+              style={{ border: `1px solid ${INK}`, color: INK }}
+            >
+              Commencer seul
             </a>
             <a href="#tarifs" className="text-[15px] underline underline-offset-4" style={{ color: MUTED }}>
               Voir les tarifs
