@@ -159,13 +159,19 @@ export const COST_LINES: CostLine[] = [
       "L'hypothèse précédente était 0,0104 $/min (1 390 o/min de parole × 50 % de temps de parole). " +
       "Le premier appel réel donne ×2,24. On retient la MESURE et non l'hypothèse, parce qu'elle " +
       "est plus CHÈRE : sur un modèle de coût, l'erreur qui se paie est celle qui sous-estime.\n\n" +
-      "⚠ Ce ×2,24 mérite une explication qu'on n'a pas encore. À ~1 000 o/min de parole française " +
-      "réelle (≈150 mots/min), 4 922 octets représentent près de 5 minutes de parole DANS un appel " +
-      "de 3 minutes. Deux pistes, et une seule se vérifie dans les journaux LiveKit : " +
-      "(a) le compteur du tableau de bord cumule plusieurs essais et pas seulement cet appel ; " +
-      "(b) on paie de la synthèse JAMAIS ENTENDUE — Fish facture les octets envoyés, donc chaque " +
-      "interruption du prospect jette de l'audio déjà payé. Si c'est (b), la correction n'est pas " +
-      "tarifaire : elle est dans la taille des morceaux envoyés au TTS.",
+      "⚠ Ce ×2,24 n'est toujours pas expliqué, mais UNE PISTE EST MAINTENANT ÉCARTÉE. À ~1 000 o/min " +
+      "de parole française réelle (≈150 mots/min), 4 922 octets représentent près de 5 minutes de " +
+      "parole DANS un appel de 3 minutes.\n\n" +
+      "J'avais avancé qu'on payait de la synthèse jamais entendue — LiveKit générant du TTS en " +
+      "spéculatif, jeté quand le prospect coupe. VÉRIFIÉ DANS LA SOURCE de livekit-agents 1.7.1 " +
+      "(`voice/turn.py`) : `_PREEMPTIVE_GENERATION_DEFAULTS` vaut `enabled: True` mais " +
+      "`preemptive_tts: False`. Seul le LLM tourne en spéculatif ; le TTS ne démarre qu'une fois " +
+      "le tour confirmé. `voice/agent.py` ne passe aucun `turn_handling`, donc ces défauts " +
+      "s'appliquent. L'hypothèse tombe.\n\n" +
+      "Reste l'explication la plus simple : le compteur du tableau de bord est CUMULÉ sur la " +
+      "période et couvrait plusieurs essais, pas ce seul appel. Si c'est le cas, le coût réel par " +
+      "minute est INFÉRIEUR à 0,023 $ et ce modèle est simplement prudent — ce qui est le bon sens " +
+      "de l'erreur. Se tranche en relevant le compteur avant et après UN appel isolé.",
   },
 ];
 

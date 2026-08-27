@@ -45,12 +45,13 @@ Sans ça, Alpha Sales OS est un logiciel de gestion. Avec ça, c'est un produit.
       27/08 : 2,05 $ dépensés sur le mois dont ~1 $ de numéro — un PLAFOND,
       pas un tarif. Selon le volume réel, ça vaut de 0,018 à 0,35 $/min, soit
       ×1,5 à ×29 l'hypothèse. L'écart décide de la marge.
-- [ ] Compter les **interruptions par appel** dans les journaux LiveKit. Fish
-      a été mesuré à ×2,24 l'hypothèse (4 922 octets pour ~3 min), ce qui
-      représente plus de parole que l'appel n'a duré. Soit le compteur cumule
-      plusieurs essais, soit **on paie de la synthèse jamais entendue** — Fish
-      facture les octets envoyés, donc chaque interruption jette de l'audio
-      payé. Dans le second cas la correction est dans le code, pas le tarif.
+- [ ] Relever le **compteur Fish AVANT et APRÈS un appel isolé** (30 s de
+      travail). Fish a été mesuré à ×2,24 l'hypothèse — 4 922 octets pour
+      ~3 min, soit plus de parole que l'appel n'a duré. La piste « on paie de
+      la synthèse jamais entendue » est **écartée** : `livekit-agents` 1.7.1
+      a `preemptive_tts: False` par défaut et l'agent ne le surcharge pas.
+      Reste le compteur cumulé sur plusieurs essais — auquel cas le coût réel
+      est plus BAS que ce que le modèle retient, et la marge meilleure.
 
 **Ne rien facturer avant ce bloc.** Le tier gratuit NVIDIA interdit
 contractuellement l'usage de production ; conduire des transactions

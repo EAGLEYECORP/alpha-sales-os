@@ -61,19 +61,25 @@ Mais rapporté à la minute de conversation :
 dans le sens prudent : sur un modèle de coût, l'erreur qui se paie est celle
 qui sous-estime.
 
-> ⚠ **Ce ×2,24 n'est pas expliqué, et il devrait l'être.** Du français à
-> ~150 mots/min fait ~1 000 octets/min de parole. 4 922 octets, c'est donc
-> près de **5 minutes de parole dans un appel de 3 minutes**. Deux
-> explications possibles, et une seule se vérifie :
-> · le compteur du tableau de bord est cumulé sur la période et couvre
->   plusieurs essais, pas seulement cet appel ;
-> · **on paie de la synthèse jamais entendue** — Fish facture les octets
->   ENVOYÉS, donc chaque fois que le prospect coupe l'agent, l'audio déjà
->   payé part à la poubelle.
+> ⚠ **Ce ×2,24 n'est pas expliqué — mais une piste est écartée.** Du français
+> à ~150 mots/min fait ~1 000 octets/min de parole. 4 922 octets, c'est donc
+> près de **5 minutes de parole dans un appel de 3 minutes**.
 >
-> Si c'est la seconde, la correction n'est pas tarifaire : elle est dans la
-> taille des morceaux envoyés au TTS. Ça se lit dans les journaux LiveKit
-> (nombre d'interruptions par appel).
+> J'avais avancé qu'on payait de la **synthèse jamais entendue** : LiveKit
+> générant du TTS en spéculatif, jeté quand le prospect coupe. **Vérifié dans
+> la source de `livekit-agents` 1.7.1** (`voice/turn.py`) :
+> `_PREEMPTIVE_GENERATION_DEFAULTS` vaut `enabled: True` mais
+> **`preemptive_tts: False`** — seul le LLM tourne en spéculatif, le TTS ne
+> démarre qu'une fois le tour confirmé. `voice/agent.py` ne passe aucun
+> `turn_handling`, donc ces défauts s'appliquent. **L'hypothèse tombe.**
+>
+> Reste l'explication la plus simple : le compteur du tableau de bord est
+> **cumulé sur la période** et couvrait plusieurs essais, pas ce seul appel.
+> Si c'est ça, le coût réel par minute est **inférieur** à 0,023 $ et le
+> modèle est simplement prudent — le bon sens de l'erreur.
+>
+> **Ça se tranche en trente secondes** : relève le compteur Fish avant et
+> après UN appel isolé.
 
 ### Telnyx — un plafond, toujours pas un tarif
 
@@ -358,7 +364,7 @@ sans vendre une heure de plus.
 | ~~Ton taux horaire~~ → **relevé sur le marché** (§ 4 bis) | Débloqué : 71 €/h (500 €/j ÷ 7 h). À remplacer par ta compta réelle dès qu'elle existe. |
 | **Le temps RÉEL d'une installation, chronométré** | Les 46 h du catalogue sont estimées. C'est ce qui décide si les frais de setup sont ×10 la main-d'œuvre ou ×3 — donc s'ils sont attaquables ou non. |
 | **L'export CDR Telnyx** (Reporting → Usage Reports) | Le solde du mois (2,05 $) est connu depuis le 27/08 — mais il ne donne pas un tarif à la minute. Il faut les minutes par appel. Dernière ligne du modèle encore supposée, et la plus lourde. |
-| **Le nombre d'interruptions par appel** (journaux LiveKit) | Décide si le ×2,24 sur Fish est un artefact du compteur ou de la synthèse payée puis jetée. Dans le second cas, c'est du code, pas du tarif. |
+| **Le compteur Fish avant/après UN appel isolé** | Tranche le ×2,24. La piste « synthèse payée puis jetée » est écartée (`preemptive_tts: False` dans livekit-agents 1.7.1) ; reste le compteur cumulé, auquel cas le coût réel est plus BAS que ce que le modèle retient. |
 | **Le taux de décroché réel** | Toute la comparaison à la minute en dépend. L'essai ScintIA le donnera. |
 | **Les pages de tarifs officielles** | Le relevé est secondaire. Avant de citer un concurrent en rendez-vous, rouvre sa page. |
 
