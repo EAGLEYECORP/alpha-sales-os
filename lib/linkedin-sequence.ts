@@ -1,6 +1,9 @@
 import type { Prospect } from "./types";
 import { LINKEDIN_INVITE_LIMIT } from "./linkedin";
 import { verticalForProspect } from "./playbook";
+// Le critère, la question et le signal d'audit viennent de l'aimant routé —
+// la même source que l'email, pour que les deux canaux ne se contredisent pas.
+import { approcheEcrite } from "./approche-ecrite";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -51,10 +54,20 @@ export function inviteText(p: Prospect): string {
  * Le message post-connexion : le critère, UNE question de diagnostic,
  * et la proposition d'audit — proposée, jamais imposée.
  */
-export function messageText(p: Prospect, bookingUrl?: string): string {
-  const v = verticalForProspect(p);
+export function messageText(p: Prospect, bookingUrl?: string, accountId?: string): string {
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
-  const diag = v?.diagnostic[0] ?? "Quand tout le monde est occupé et que le téléphone sonne, il se passe quoi chez vous ?";
+  /**
+   * ⚠ CES TROIS PHRASES ÉTAIENT ÉCRITES EN DUR, ET DUPLIQUÉES MOT POUR MOT
+   * DANS `mail-compose.ts`. Elles annonçaient toutes l'angle Callflow —
+   * « le téléphone est le premier point de contact », « un audit de son
+   * accueil téléphonique » — quel que soit le routage de la fiche.
+   *
+   * Sur un prospect classé « invisible en ligne », le message proposait donc
+   * un audit téléphonique pendant que l'aimant réellement servi s'appelle
+   * « Audit de votre visibilité locale ». Et corriger un des deux fichiers
+   * laissait l'autre mentir.
+   */
+  const a = approcheEcrite(p, accountId);
   const booking = bookingUrl?.trim()
     ? ["", `Mon agenda est ouvert si vous voulez en parler un jour : ${bookingUrl.trim()}`]
     : [];
@@ -63,11 +76,10 @@ export function messageText(p: Prospect, bookingUrl?: string): string {
     ``,
     `Merci pour la connexion. Je vais être direct et court.`,
     ``,
-    `Je n'écris pas au hasard : je travaille avec les métiers où le téléphone est le premier point de contact et où personne n'est dédié à le prendre. ${v ? v.criterion : ""}`.trim(),
+    `Je n'écris pas au hasard : je travaille avec ${a.critere}. ${a.critereMetier ?? ""}`.trim(),
     ``,
-    `Une seule question, celle qui m'intéresse vraiment : ${diag}`,
-    ``,
-    `Il m'arrive de préparer, pour une entreprise en particulier, un audit de son accueil téléphonique — ce qu'elle capte, ce qui lui échappe, ce que ça représente. Je ne vous le propose pas : je vous dis juste que ça existe, au cas où ce soit utile à ${p.company} un jour.`,
+    `Une seule question, celle qui m'intéresse vraiment : ${a.question}`,
+    ...(a.signal ? [``, a.signal] : []),
     ...booking,
     ``,
     `Zakaria — EAGLEYE CORP, Lyon`,
@@ -91,7 +103,7 @@ export function relanceText(p: Prospect): string {
   ].join("\n");
 }
 
-export function textForStep(p: Prospect, step: LinkedinStep, bookingUrl?: string): string {
+export function textForStep(p: Prospect, step: LinkedinStep, bookingUrl?: string, accountId?: string): string {
   if (step === "invitation") return inviteText(p);
   if (step === "message") return messageText(p, bookingUrl);
   if (step === "relance") return relanceText(p);
@@ -127,7 +139,9 @@ function linkedinEvents(p: Prospect) {
  */
 export function buildLinkedinQueue(
   prospects: Prospect[],
-  filter?: { city?: string; bookingUrl?: string }
+  // Le compte décide des aimants disponibles, donc de ce que le message a le
+  // droit d'annoncer. Absent, on retombe sur EAGLEYE.
+  filter?: { city?: string; bookingUrl?: string; accountId?: string }
 ): LinkedinTarget[] {
   const city = filter?.city?.trim().toLowerCase();
 
@@ -147,7 +161,7 @@ export function buildLinkedinQueue(
         step,
         touches,
         lastTouchDays,
-        text: textForStep(p, step, filter?.bookingUrl),
+        text: textForStep(p, step, filter?.bookingUrl, filter?.accountId),
         ready,
         waitDays,
       };

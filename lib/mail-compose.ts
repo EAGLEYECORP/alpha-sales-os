@@ -1,6 +1,8 @@
 import type { Prospect } from "./types";
-import { verticalForProspect } from "./playbook";
 import { isDemoProspect } from "./seed";
+// L'angle du message vient de l'aimant routé par le deep-dive, pas d'une
+// phrase figée : voir l'en-tête de ce module pour ce que ça corrigeait.
+import { approcheEcrite } from "./approche-ecrite";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -27,16 +29,27 @@ import { isDemoProspect } from "./seed";
 
 const firstName = (p: Prospect): string => (p.name || "").trim().split(/\s+/)[0] ?? "";
 
-/** Objet court, sans promesse, sans majuscules criardes. */
-export function emailSubject(p: Prospect): string {
-  const v = verticalForProspect(p);
-  return v ? `${p.company} — une question sur vos appels` : `${p.company} — une question`;
+/**
+ * Objet court, sans promesse, sans majuscules criardes.
+ *
+ * ⚠ Il annonçait « une question sur vos appels » dès qu'une verticale était
+ * connue — c'est-à-dire l'angle Callflow, sur toutes les fiches. À quelqu'un
+ * de routé vers la visibilité, l'objet parlait déjà d'autre chose que le
+ * corps du message et que la pièce jointe.
+ */
+export function emailSubject(p: Prospect, accountId?: string): string {
+  return `${p.company} — ${approcheEcrite(p, accountId).objet}`;
 }
 
 export interface ComposeOptions {
   bookingUrl?: string;
   closerName?: string;
   agencyName?: string;
+  /**
+   * Compte au nom duquel on écrit. Il décide des aimants disponibles — donc
+   * de ce qu'on a le droit d'annoncer. Absent, on retombe sur EAGLEYE.
+   */
+  accountId?: string;
 }
 
 /**
@@ -45,11 +58,10 @@ export interface ComposeOptions {
  * existe. C'est ce qui fait la différence entre un cadeau et une relance.
  */
 export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
-  const v = verticalForProspect(p);
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
-  const diag =
-    v?.diagnostic[0] ??
-    "Quand tout le monde est occupé et que le téléphone sonne, il se passe quoi chez vous ?";
+  // Critère, question et signal viennent tous les trois de l'aimant routé :
+  // un seul endroit décide de QUOI parle ce message.
+  const a = approcheEcrite(p, opts.accountId);
   const closer = opts.closerName?.trim() || "Zakaria";
   const agency = opts.agencyName?.trim() || "EAGLEYE CORP";
 
@@ -62,13 +74,10 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
     "",
     `Je vous écris directement, ce sera court.`,
     "",
-    `Je n'écris pas au hasard : je travaille avec les métiers où le téléphone est le premier point de contact et où personne n'est dédié à le prendre.${
-      v ? ` ${v.criterion}` : ""
-    }`,
+    `Je n'écris pas au hasard : je travaille avec ${a.critere}.${a.critereMetier ? ` ${a.critereMetier}` : ""}`,
     "",
-    `Une seule question, celle qui m'intéresse vraiment : ${diag}`,
-    "",
-    `Il m'arrive de préparer, pour une entreprise en particulier, un audit de son accueil téléphonique — ce qu'elle capte, ce qui lui échappe, ce que ça représente. Je ne vous le propose pas : je vous dis juste que ça existe, au cas où ce soit utile à ${p.company} un jour.`,
+    `Une seule question, celle qui m'intéresse vraiment : ${a.question}`,
+    ...(a.signal ? ["", a.signal] : []),
     ...booking,
     "",
     `${closer} — ${agency}, Lyon`,
@@ -161,7 +170,9 @@ export function buildOutbox(prospects: Prospect[], limit: number, opts: ComposeO
     .slice(0, Math.max(0, limit))
     .map((p) => ({
       prospect: p,
-      draft: { to: p.email!.trim(), subject: emailSubject(p), body: emailBody(p, opts) },
+      // Même compte pour l'objet et pour le corps : c'est la seule façon
+      // qu'ils annoncent le même audit.
+      draft: { to: p.email!.trim(), subject: emailSubject(p, opts.accountId), body: emailBody(p, opts) },
       reason:
         p.events.length === 0
           ? "jamais contactée"

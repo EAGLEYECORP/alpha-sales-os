@@ -36,8 +36,10 @@ export default function LinkedinPage() {
   const [copied, setCopied] = useState<string | null>(null);
 
   const queue = useMemo(
-    () => buildLinkedinQueue(prospects, { city, bookingUrl: settings.bookingUrl }),
-    [prospects, city, settings.bookingUrl]
+    // Le compte actif décide des aimants disponibles, donc de l'angle du
+    // message. Sans lui, chaque fiche recevait la proposition Callflow.
+    () => buildLinkedinQueue(prospects, { city, bookingUrl: settings.bookingUrl, accountId: settings.accountId }),
+    [prospects, city, settings.bookingUrl, settings.accountId]
   );
   /**
    * ⚠ Le quota ne se lit plus à la journée seule.

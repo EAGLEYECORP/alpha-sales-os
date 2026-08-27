@@ -61,7 +61,9 @@ export interface DraftBatchItem {
  * suppose que l'appelant a vérifié `hasSendableEmail`.
  */
 export function draftContentFor(p: Prospect, opts: GmailDraftOptions = {}): DraftContent {
-  const subject = emailSubject(p);
+  // L'objet suit le MÊME aimant que le corps : sinon l'un annonce un audit
+  // téléphonique pendant que l'autre parle de visibilité.
+  const subject = emailSubject(p, opts.accountId);
   const body = emailBody(p, opts);
   const emailOpts: EmailOptions = {
     subject,
