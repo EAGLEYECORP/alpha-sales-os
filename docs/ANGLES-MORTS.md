@@ -243,6 +243,25 @@ Trois occasions d'« améliorer » qui auraient fabriqué de la preuve :
 60 ms pour le tunnel d'envoi complet sur 1 000 fiches. Aucune mémoïsation
 nécessaire.
 
+### Vérification de clôture, sur le build de fin
+
+Tout a été rejoué APRÈS les onze commits, pas avant :
+
+- **36 écrans, 692 commandes cliquées** une par une, page rechargée entre
+  chaque clic. **Zéro erreur JS non rattrapée, zéro 4xx/5xx applicatif, zéro
+  écran blanc.** Les 17 dialogues remontés sont tous légitimes : confirmations
+  sur action destructrice (dont les 5 nouvelles sur les RDV, chacune nommant
+  son rendez-vous avec une date lisible), le `prompt` de feedback assumé, et
+  l'alerte de doctrine « conviction 9/10 — il faut 10/10 ».
+- **48 routes d'API** en GET, POST malformé et POST vide : aucun 5xx. Les 503
+  signalent un service non configuré et l'interface les AFFICHE avec la raison
+  du serveur.
+- **Bundle final** : aucun taux de partenariat sous 100 %, aucun nom de
+  prospect, aucune revendication de clientèle.
+- Le panneau d'argumentaire vérifié à l'écran sur une vraie fiche (onglet
+  *Audit & Offre*) : questions de visibilité sur une fiche routée visibilité,
+  et le bloc « norme du marché » qui explique son propre vide.
+
 ### ⚠ Correction — un test supprimé continuait de tourner
 
 `npm test` compilait vers `.test-build/` **sans jamais purger ce dossier**. Un
