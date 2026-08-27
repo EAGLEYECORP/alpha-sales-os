@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { BRICKS, OUTBOUND_TIERS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, quoteText, outboundPrice } from "@/lib/bricks";
 import { ACCOUNTS_COMMERCIAL } from "@/lib/accounts-commercial";
+import { resoudreDroits } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,15 +32,38 @@ export const dynamic = "force-dynamic";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-export async function GET() {
+/**
+ * ⚠ CE RAISONNEMENT S'ÉTAIT ARRÊTÉ À MI-CHEMIN, ET ÇA SE VOYAIT EN LIGNE.
+ *
+ * Tout ce qui précède oppose « navigateur » à « serveur ». C'est la bonne
+ * distinction pour la grille des briques, et c'est la MAUVAISE pour le volet
+ * commercial : une session authentifiée n'est pas nous. Un locataire, c'est
+ * un CLIENT de l'opérateur — et dans le portefeuille white-label, ça peut
+ * être ScintIA ou Nuwacom eux-mêmes.
+ *
+ * Mesuré sur serveur réel : avec un jeton d'un email non-maître, cette route
+ * répondait 200 et rendait `commissionPct`, `recurringPct`, le seuil des
+ * 40 k et les notes internes (« faisable par nous »). Autrement dit : les
+ * 30 % + 10 % de ScintIA et les 15 % de Nuwacom, lisibles par ScintIA et
+ * Nuwacom, avant le cadrage qui est justement notre levier.
+ *
+ * `tests/vitrine-fuite.test.ts` interdit déjà ces chiffres — sur une PAGE.
+ * La deuxième sortie n'avait jamais été reliée à la doctrine.
+ *
+ * Les briques, les paliers et le pack restent servis à tout locataire : ce
+ * sont ses prix, il a le droit de les lire, et le sélecteur de briques en
+ * dépend. Le portefeuille, non.
+ */
+export async function GET(req: NextRequest) {
+  // En mode solo (aucun système de comptes configuré), `resoudreDroits` rend
+  // le droit SOLO, qui est maître : l'usage d'aujourd'hui ne bouge pas.
+  const droits = await resoudreDroits(req);
+
   return NextResponse.json({
     bricks: BRICKS,
     outboundTiers: OUTBOUND_TIERS,
     pack: { setupHT: PACK_SETUP_HT, monthlyHT: PACK_MONTHLY_HT },
-    // Le volet commercial du portefeuille (montants par offre, coordonnées de
-    // closing partenaires) : même raisonnement que la grille des briques —
-    // `lib/accounts.ts` descend dans le navigateur, pas ça.
-    accounts: ACCOUNTS_COMMERCIAL,
+    ...(droits.maitre ? { accounts: ACCOUNTS_COMMERCIAL } : {}),
   });
 }
 
