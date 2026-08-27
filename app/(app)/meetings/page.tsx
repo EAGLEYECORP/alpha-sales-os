@@ -123,7 +123,18 @@ export default function MeetingsPage() {
                     // Le titre porte le nom lisible ; `prospectId` est le
                     // repli, parce qu'un identifiant nu vaut mieux qu'un vide
                     // au moment où on demande « tu es sûr ? ».
-                    const quand = m.date ? ` du ${m.date}` : "";
+                    // Vérifié au navigateur : `m.date` est un ISO complet, et
+                    // « du 2026-08-28T16:17:16.539Z » dans une boîte de
+                    // dialogue ne se lit pas — or c'est le moment précis où on
+                    // veut que la personne LISE.
+                    const quand = m.date
+                      ? ` du ${new Date(m.date).toLocaleString("fr-FR", {
+                          day: "numeric",
+                          month: "long",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}`
+                      : "";
                     if (confirm(`Supprimer le rendez-vous${quand} — ${m.title || m.prospectId} ?`)) {
                       deleteMeeting(m.id);
                     }
