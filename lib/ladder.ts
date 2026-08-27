@@ -196,9 +196,56 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
 }
 
 /** Le bloc d'argumentaire à injecter dans un script (vocal ou écrit). */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ CETTE FONCTION EST UNE FRONTIÈRE, PAS UN FORMATEUR.
+ *
+ * Son unique consommateur est `briefForScript`, c'est-à-dire le PROMPT d'un
+ * appel en direct. Tout ce qu'elle rend se retrouve sous les yeux du modèle
+ * pendant qu'il parle à quelqu'un.
+ *
+ * ── CE QUI PASSAIT ──
+ *
+ * Elle recopiait les marches telles quelles. Sur un deal estimé à 48 k, le
+ * prompt d'un premier appel de prospection contenait, mot pour mot :
+ *
+ *   « 1. Gros chantier (> 40 000 €) — plateforme Nuwacom — volume du deal
+ *      estimé 48 000 € — trop lourd pour nous »
+ *
+ * Soit : notre seuil de routage, notre estimation de SON budget, le nom du
+ * partenaire, et un jugement interne. Pendant que la règle dure du même
+ * script dit « tu ne donnes aucun prix ». Un modèle à qui on demande
+ * « combien ça coûte ? » a le chiffre trois lignes plus haut.
+ *
+ * ── LA RÈGLE ──
+ *
+ * Ce qui décrit la situation DU PROSPECT passe (« 9 appels manqués par
+ * semaine » : c'est son chiffre, il le connaît). Ce qui décrit NOTRE
+ * arbitrage ne passe pas : montants, seuils, jugements sur la taille du
+ * deal. Le filtre est volontairement large — retirer une ligne utile ne
+ * coûte rien, en laisser passer une coûte un prix annoncé au téléphone.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/** Un montant, sous les formes qu'on écrit vraiment (48 000 €, 40k, 2 400 euros). */
+const MONTANT = /\d[\d\s   ]*(?:€|k€|euros?|\bk\b)/i;
+
+/** Ce qui relève de NOTRE arbitrage et n'a rien à faire dans un prompt d'appel. */
+const ARBITRAGE_INTERNE = /trop lourd pour nous|pour nous\b|on passe la main|plancher|commission/i;
+
+const prospectSafe = (s: string): boolean => !MONTANT.test(s) && !ARBITRAGE_INTERNE.test(s);
+
 export function ladderPitch(l: LadderResult): string {
   if (!l.rungs.length) return "";
   return l.rungs
-    .map((r, i) => `${i + 1}. ${r.label} — ${r.evidence.join(", ")}\n   ${r.pitch}`)
+    .map((r, i) => {
+      // Le libellé peut porter le seuil (« Gros chantier (> 40 000 €) ») : on
+      // retire la parenthèse plutôt que la marche, sinon l'agent perd le fait
+      // qu'une marche existe.
+      const label = r.label.replace(/\s*\([^)]*\)/g, "").trim();
+      const faits = r.evidence.filter(prospectSafe);
+      const tete = faits.length ? `${label} — ${faits.join(", ")}` : label;
+      return `${i + 1}. ${tete}\n   ${r.pitch}`;
+    })
     .join("\n");
 }
