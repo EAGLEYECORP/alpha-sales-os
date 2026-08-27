@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
+import { verifierProprietaire } from "@/lib/proprietaire-coherence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,6 +89,25 @@ export async function GET(req: NextRequest) {
         // REQUIRE_AUTH demandé mais secret absent → misconfiguration (fail-closed).
         misconfigured: !has("SUPABASE_JWT_SECRET") && /^(1|true|yes)$/i.test(String(env.REQUIRE_AUTH ?? "")),
       },
+      /**
+       * ⚠ LES DEUX LISTES DE PROPRIÉTAIRES — aucun test ne peut les vérifier.
+       *
+       * Ce sont des VALEURS d'environnement, pas du code : la seule occasion
+       * de les confronter est l'exécution. Une divergence ne plante pas, elle
+       * MENT — l'écran promet ce que le serveur refuse, ou l'inverse. On ne
+       * publie que des NOMBRES et le conseil : la sonde détaillée est déjà
+       * protégée, mais une adresse reste une donnée personnelle.
+       */
+      proprietaire: (() => {
+        const c = verifierProprietaire(env.OWNER_EMAILS, env.NEXT_PUBLIC_OWNER_EMAILS);
+        return {
+          configure: c.configure,
+          coherent: c.coherent,
+          serveurSeul: c.serveurSeul.length,
+          navigateurSeul: c.navigateurSeul.length,
+          quoiFaire: c.quoiFaire,
+        };
+      })(),
       voice: {
         // Dispatch d'appel sortant vers LiveKit (l'agent Python + Fish TTS
         // tournent ailleurs, avec leurs propres clés — pas sur Vercel).

@@ -21,6 +21,13 @@ interface Health {
     };
     supabase: { publicEnv: boolean; serviceRole: boolean };
     auth?: { serverEnv: boolean; serverEnforced?: boolean; misconfigured?: boolean };
+    proprietaire?: {
+      configure: boolean;
+      coherent: boolean;
+      serveurSeul: number;
+      navigateurSeul: number;
+      quoiFaire: string;
+    };
     voice?: { livekit: boolean };
     transcription?: { configured: boolean; provider: string };
     alerts?: { sms: boolean; email: boolean };
@@ -312,6 +319,38 @@ export function SystemStatus() {
               level: c.alerts?.email ? "ok" : "off",
               hint: "Même récap urgent, par email.",
               optional: true,
+            },
+          ],
+        },
+        {
+          /**
+           * ⚠ AUCUN TEST NE PEUT VÉRIFIER CE BLOC — ce sont des VALEURS
+           * d'environnement, pas du code. La seule occasion de confronter les
+           * deux listes de propriétaires est l'exécution, et le seul endroit
+           * où quelqu'un les regardera est cet écran.
+           */
+          title: "Compte propriétaire",
+          items: [
+            {
+              label: health?.capabilities.proprietaire?.configure
+                ? "Propriétaire déclaré"
+                : "Aucun propriétaire (OWNER_EMAILS)",
+              level: health?.capabilities.proprietaire?.configure ? "ok" : "warn",
+              hint:
+                "Sans OWNER_EMAILS, PERSONNE n'est maître — toi compris. /payouts, /offre et les routes " +
+                "du patrimoine (/api/pipeline, /api/voice-costs, /api/knowledge) répondent 403 à tout le monde.",
+            },
+            {
+              label:
+                health?.capabilities.proprietaire?.coherent === false
+                  ? "⚠ Les deux listes de propriétaires DIVERGENT"
+                  : "Listes serveur et navigateur concordantes",
+              level: health?.capabilities.proprietaire?.coherent === false ? "warn" : "ok",
+              hint:
+                health?.capabilities.proprietaire?.quoiFaire ||
+                "OWNER_EMAILS (serveur, la vraie barrière) et NEXT_PUBLIC_OWNER_EMAILS (navigateur, " +
+                  "ce que l'écran affiche) doivent porter la même valeur. Une divergence ne plante pas : " +
+                  "elle fait promettre à l'écran ce que le serveur refuse, ou l'inverse.",
             },
           ],
         },
