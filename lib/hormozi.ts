@@ -178,36 +178,67 @@ export function nextBestAction(p: Prospect): { action: string; why: string; urge
 
 // ── Fallback AI engine (no API key needed) ───────────────────────────
 
-const SECTOR_HOOKS: Record<string, { pain: string; dream: string; proof: string }> = {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ `proof` AFFIRMAIT DES CLIENTS QUE NOUS N'AVONS PAS.
+ *
+ * Les cinq entrées disaient « les restos lyonnais QU'ON ÉQUIPE », « NOS pubs
+ * clients », « NOS clients ambulanciers », « NOS artisans reçoivent ». Zéro
+ * vente à ce jour. Ces phrases partent dans le script hors-ligne, au bloc
+ * « Les 3 Croyances », sous l'intitulé « Le produit fonctionne » — donc lues
+ * à voix haute devant un prospect.
+ *
+ * C'est la ligne rouge explicite de la doctrine maison : « Zéro vente = zéro
+ * preuve sociale disponible ; l'appliquer quand même fabrique de la preuve
+ * inventée. » Et un prospect qui demande « lequel ? » met fin à l'entretien.
+ *
+ * ⚠⚠ CE PROBLÈME ÉTAIT DÉJÀ RÉSOLU DANS LE MODULE D'À CÔTÉ. `buildTemplates`
+ * (lib/templates.ts) écrit : « Une référence réelle si elle existe, sinon le
+ * mécanisme — jamais un client inventé. » La discipline existait, à un
+ * fichier de distance, et elle n'avait pas traversé.
+ *
+ * `mecanisme` dit ce que le produit FAIT. C'est vrai sans client, ça se
+ * démontre séance tenante, et ça ne se retourne pas contre nous.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const SECTOR_HOOKS: Record<string, { pain: string; dream: string; mecanisme: string }> = {
   restaurant: {
     pain: "des tables vides en semaine et des no-shows qui coûtent cher",
     dream: "un service complet qui se remplit tout seul, réservations 24/7 même pendant le coup de feu",
-    proof: "les restos lyonnais qu'on équipe prennent leurs réservations la nuit, pendant que le patron dort",
+    mecanisme: "l'agent décroche et prend la réservation à 23 h comme à midi — vous écouterez l'enregistrement",
   },
   pub: {
     pain: "des soirées creuses en début de semaine",
     dream: "des événements annoncés automatiquement et une communauté d'habitués qui revient",
-    proof: "nos pubs clients remplissent leurs mardis soir avec l'agenda IA + relances WhatsApp",
+    mecanisme: "l'agenda publie l'événement et relance les habitués tout seul — je vous montre le calendrier",
   },
   ambulance: {
     pain: "un standard saturé et des demandes de transport perdues",
     dream: "une prise de demande 24/7 qui trie l'urgent du programmé",
-    proof: "nos clients ambulanciers ne ratent plus une demande de nuit — l'IA qualifie et route",
+    mecanisme: "une demande de nuit est prise, qualifiée urgent ou programmé, et routée — sans réveiller personne",
   },
   artisan: {
     pain: "des devis qui traînent et des appels manqués sur les chantiers",
     dream: "des demandes de devis qualifiées qui arrivent toutes seules pendant que tu es sur chantier",
-    proof: "nos artisans reçoivent des demandes pré-qualifiées : budget, délai, photos — tout est prêt",
+    mecanisme: "la demande arrive pré-qualifiée : budget, délai, photos — vous rappelez en sachant déjà",
   },
   autre: {
     pain: "des clients qui passent chez le concurrent faute de réponse rapide",
     dream: "une présence en ligne qui travaille 24/7",
-    proof: "nos clients lyonnais mesurent chaque euro généré par leur site",
+    mecanisme: "chaque euro généré est rattaché à sa source — vous voyez d'où vient le client",
   },
 };
 
-export function fallbackScript(p: Prospect, rules: string): string {
+export function fallbackScript(p: Prospect, rules: string, preuveReelle?: string): string {
   const hook = SECTOR_HOOKS[p.sector] ?? SECTOR_HOOKS.autre;
+  /**
+   * Même règle que `buildTemplates` : une référence RÉELLE si l'opérateur en
+   * a une et l'a saisie, sinon le mécanisme — qui est vrai sans client.
+   * Jamais un client inventé. Le paramètre existe pour le jour où il y aura
+   * une vraie référence à citer ; d'ici là, il n'est pas passé, et c'est le
+   * mécanisme qui sort.
+   */
+  const preuve = preuveReelle?.trim() || hook.mecanisme;
   const tax = p.ignoranceTax > 0 ? `${p.ignoranceTax.toLocaleString("fr-FR")} €/mois` : "à chiffrer sur place";
   return [
     `# Script terrain — ${p.company} (${p.name})`,
@@ -226,7 +257,7 @@ export function fallbackScript(p: Prospect, rules: string): string {
     p.obstacles.filter((o) => !o.resolved).length === 0 ? `- Aucun obstacle ouvert — dérouler.` : ``,
     ``,
     `## 5. Les 3 Croyances à installer`,
-    `1. **Le produit fonctionne** — ${hook.proof}.`,
+    `1. **Le produit fonctionne** — ${preuve}.`,
     `2. **Tu le soutiens** — « Je suis à Lyon, je passe. Vous m'appelez, je réponds. »`,
     `3. **Ça marche POUR LUI** — preuve même secteur, même quartier si possible.`,
     ``,

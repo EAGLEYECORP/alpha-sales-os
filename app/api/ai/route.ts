@@ -7,6 +7,7 @@ import { playbookPrompt } from "@/lib/playbook";
 import { prescripteurPrompt } from "@/lib/prescripteurs";
 import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
 import { clipDoctrine } from "@/lib/identity";
+import { deepDive } from "@/lib/deep-dive";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -91,6 +92,9 @@ function buildPrompt(req: AiRequest): string {
   }
 
   const p = req.prospect!;
+  // L'offre vient du MÊME calcul que le script déterministe, l'email et
+  // l'argumentaire — sinon le chemin IA redevient une source parallèle.
+  const offreRoutee = deepDive(p, req.accountId);
   const ctx = [
     `## Prospect`,
     `- ${p.name}, ${p.company} (${p.sector}) — ${p.city}`,
@@ -102,6 +106,24 @@ function buildPrompt(req: AiRequest): string {
     `- Obstacles ouverts : ${p.obstacles.filter((o) => !o.resolved).map((o) => o.label).join(" ; ") || "aucun"}`,
     `- Objections ouvertes : ${p.objections.filter((o) => o.status !== "traitee").map((o) => o.label).join(" ; ") || "aucune"}`,
     `- Contrat : ${p.contract.status} · Livraison : ${p.delivery}`,
+    /**
+     * ── L'OFFRE ROUTÉE — elle manquait, et c'est elle qui décide du texte ──
+     *
+     * ⚠ Le contexte donnait l'étape, les croyances, les objections, la valeur…
+     * et pas l'offre. Or la tâche `script` demande « un script de vente terrain
+     * complet ». Sans savoir ce qu'on vend à CETTE fiche, le modèle le déduit
+     * de la doctrine — qui parle surtout d'accueil téléphonique — ou l'invente.
+     *
+     * C'est la sixième couche du même défaut : le script déterministe,
+     * l'email, LinkedIn, l'argumentaire et les trous du deep-dive avaient tous
+     * été recâblés sur l'offre. Le chemin IA, lui, continuait de deviner —
+     * et c'est celui qu'on utilise quand on veut un texte sur mesure.
+     *
+     * Même source que partout ailleurs : `deepDive`, contraint aux offres
+     * autorisées du compte.
+     */
+    `- OFFRE À REPRÉSENTER : ${offreRoutee.offerLabel}. Le script ne parle que de celle-là.`,
+    `- Pourquoi elle : ${offreRoutee.routingReason}`,
     ``,
     // Les champs LIBRES sont isolés du reste : notes importées d'un CSV,
     // résumés d'appels transcrits, problèmes recopiés d'un audit reçu. Rien
