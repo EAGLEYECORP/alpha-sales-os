@@ -39,9 +39,18 @@ Sans ça, Alpha Sales OS est un logiciel de gestion. Avec ça, c'est un produit.
 - [ ] **Passer UN appel entrant réel** sur `+33451222182`. Écouter la première
       phrase : elle doit annoncer l'IA (art. 50), prononcée par le code.
 - [ ] **Passer UN appel sortant réel**, sur ton propre numéro d'abord.
-- [ ] Relever le **tarif Telnyx France réel** de ton compte et le reporter dans
-      `lib/voice-costs.ts` (`telnyx`). C'est la seule ligne du modèle de coût
-      qui n'a jamais été vérifiée — tout le calcul de marge en dépend.
+- [ ] Tirer l'**export CDR Telnyx** (Reporting → Usage Reports) et reporter le
+      tarif minute réel dans `lib/voice-costs.ts` (`telnyx`). Seule ligne du
+      modèle jamais vérifiée, et la plus lourde. Ce qu'on sait depuis le
+      27/08 : 2,05 $ dépensés sur le mois dont ~1 $ de numéro — un PLAFOND,
+      pas un tarif. Selon le volume réel, ça vaut de 0,018 à 0,35 $/min, soit
+      ×1,5 à ×29 l'hypothèse. L'écart décide de la marge.
+- [ ] Compter les **interruptions par appel** dans les journaux LiveKit. Fish
+      a été mesuré à ×2,24 l'hypothèse (4 922 octets pour ~3 min), ce qui
+      représente plus de parole que l'appel n'a duré. Soit le compteur cumule
+      plusieurs essais, soit **on paie de la synthèse jamais entendue** — Fish
+      facture les octets envoyés, donc chaque interruption jette de l'audio
+      payé. Dans le second cas la correction est dans le code, pas le tarif.
 
 **Ne rien facturer avant ce bloc.** Le tier gratuit NVIDIA interdit
 contractuellement l'usage de production ; conduire des transactions
@@ -55,10 +64,20 @@ LLM payant, c'est le seul chiffrage honnête.
 ## BLOC 2 — Le déploiement
 
 - [ ] DNS chez Amen → Vercel.
-- [ ] `SITE_PASSWORD` posé (l'app entière passe derrière ; `/vitrine`,
-      `/sw.js`, le manifeste et les crons restent publics par conception).
-- [ ] Variables d'environnement : il y en a **63**. Utiliser
-      Réglages → État système, qui liste exactement ce qui manque.
+- [ ] `SITE_PASSWORD` posé. ⚠ **Il ne mure plus l'app entière** (décision du
+      27/08) : il garde `ADMIN_PREFIXES` — `/payouts`, `/offre`, `/api/sync` —
+      et tout le reste TANT QUE la serrure de remplacement n'est pas en place.
+      `/vitrine`, `/souscrire`, `/sw.js`, le manifeste et les crons sont
+      publics par conception.
+- [ ] **Les quatre variables qui décident de tout**, à poser ensemble :
+      `OWNER_EMAILS` et `NEXT_PUBLIC_OWNER_EMAILS` (**la même valeur** — si
+      elles divergent, l'écran promet ce que le serveur refuse), plus
+      `REQUIRE_AUTH=1` et `SUPABASE_JWT_SECRET`. Sans ces deux dernières, le
+      mur ne se lève jamais et tes clients restent dehors **sans erreur
+      visible**. Réglages → État système → **Compte propriétaire** le dit.
+- [ ] Variables d'environnement : il y en a **63**, toutes documentées dans
+      `.env.example` (un test le vérifie). Utiliser Réglages → État système,
+      qui liste exactement ce qui manque.
 - [ ] `CRON_SECRET` + brancher l'ordonnanceur sur `/api/campaign/tick` et
       `/api/push/tick`. ⚠ Sans `CRON_SECRET`, ces routes **refusent tout** —
       c'est voulu, mais rien dans la réponse ne le relie au réglage.
@@ -70,13 +89,21 @@ LLM payant, c'est le seul chiffrage honnête.
 
 ## BLOC 3 — Les tables Supabase
 
-Aucune n'existe encore. Le SQL est dans les documents cités.
+Le SQL existe désormais en MIGRATIONS. ⚠ `supabase/schema.sql` est en
+`create table if not exists` : sur une base déjà créée **il ne fait rien**, et
+le SQL Editor annonce quand même « Success ». Passe les migrations.
 
-- [ ] `call_sessions` — sans elle, la salle de contrôle reste muette.
-- [ ] `push_subscriptions` — sans elle, aucune notification hors-app.
-- [ ] `entitlements` — voir `docs/COMPTES-ET-BRIQUES.md`. **Créer et
-      provisionner AVANT** de poser `SUPABASE_JWT_SECRET` : dès que les
-      comptes sont actifs, tout compte non provisionné est refusé.
+- [ ] `supabase/migrations/001-proprietaire-et-tables-serveur.sql` —
+      crée `propositions`, `call_sessions`, `push_subscriptions` et corrige
+      `prospects.user_id`. Sans `call_sessions`, la salle de contrôle reste
+      muette ; sans `push_subscriptions`, aucune notification hors-app.
+- [ ] `supabase/migrations/002-entitlements.sql` — crée `entitlements`, la
+      table que le middleware interroge à CHAQUE requête. **Sans elle, un
+      client paie et l'application le refuse** : le webhook enregistre
+      l'abonnement, le middleware ne trouve aucun droit, `DROIT_REFUSE`.
+      ⚠ À passer AVANT de poser `REQUIRE_AUTH` : dès que les comptes sont
+      actifs, tout compte non provisionné est refusé — y compris le tien si
+      `OWNER_EMAILS` n'est pas posé.
 - [ ] `prospects` — ⚠ **elle est lue par l'autopilote et remplie par
       personne.** Aucun composant de l'app ne pousse le CRM vers Supabase. Tant
       que la synchro n'existe pas, `/api/campaign/tick` tourne à vide en
@@ -88,13 +115,19 @@ Aucune n'existe encore. Le SQL est dans les documents cités.
 
 Rien de technique ici, et c'est le bloc qui compte.
 
-- [ ] **Envoyer le devis ScintIA** : 3 500 € + 364 €/mois. Il est prêt depuis
-      des semaines et n'est jamais parti.
+- [ ] **Envoyer le devis ScintIA**. ⚠ À arbitrer avant d'envoyer : le devis
+      historique est 3 500 € + 364 €/mois, mais la grille publique propose
+      désormais un **essai terrain à 290 € HT** (mise en route + 100 appels
+      réels, déduits du 1er mois). Le parcours recommandé dans
+      `docs/PRICING.md` est démo gratuite → essai payant → mensualité — c'est
+      l'essai qui donne le premier taux de décroché mesuré, celui qui remplace
+      l'hypothèse à 20 % dans toute l'app. Décide lequel part, mais décide.
 - [ ] **Dépôt French Tech** — échéance **2026-09-04 23:59**.
 - [ ] Choisir **un** prospect du pipe de juillet et le closer. Un seul.
 
-**Zéro vente à ce jour.** 33 000 lignes de code, 676 tests, et aucun euro. Tout
-ce qui est construit est une hypothèse tant que ce bloc n'est pas entamé.
+**Zéro vente à ce jour.** 1 080 tests, et aucun euro. Tout ce qui est construit
+est une hypothèse tant que ce bloc n'est pas entamé — le code n'a jamais été
+le facteur limitant.
 
 ---
 
@@ -105,8 +138,15 @@ ce qui est construit est une hypothèse tant que ce bloc n'est pas entamé.
 - [ ] Tester à **deux comptes réels** : un client mono-brique, un maître.
       Le test qui compte n'est **pas** la navigation, c'est un `fetch` direct
       vers une API interdite → doit renvoyer 403.
-- [ ] Brancher le webhook Stripe sur `entitlements.bricks` (aujourd'hui écrit
-      à la main).
+- [x] ~~Brancher le webhook Stripe sur `entitlements.bricks`~~ — **fait le
+      27/08**. Le webhook provisionne les droits à l'encaissement (et
+      seulement à l'encaissement), et les REFERME à la résiliation. Reste à
+      le prouver sur un vrai compte Stripe : `docs/FACTURATION.md`, étape 4,
+      qui vérifie LES DEUX tables et la résiliation.
+- [ ] Créer les **quatre** prix Stripe (`STRIPE_PRICE_ESSAI`, `_SOLO`, `_PRO`,
+      `_VOIX_1000`). ⚠ L'essai est un paiement **UNIQUE** : le créer en
+      récurrent prélèverait 290 € tous les mois à quelqu'un qui croyait payer
+      une mise en route.
 - [ ] **Ce qu'on peut vendre** : « accès limité à ce que tu as payé ».
       **Ce qu'on ne peut pas encore promettre** : « le code des autres briques
       t'est invisible ». Le JavaScript reste téléchargeable — le serveur
@@ -133,11 +173,21 @@ n'a de sens qu'après les premières ventes.
 
 Pour mémoire, parce que la liste ci-dessus donne une impression sombre :
 
-- 676 tests, dont les garde-fous vérifiés par mutation ;
+- **1 080 tests**, dont chaque garde-fou vérifié par MUTATION — on casse la
+  garde, on confirme que le test échoue, on restaure ;
+- **le tunnel de vente complet** : `/vitrine` → `/souscrire` → compte →
+  paiement Stripe → encaissement → ouverture des droits → onboarding daté →
+  résiliation qui referme. Chaque maillon a été cassé et retesté ;
 - la doctrine tenue **par construction** — le générateur de présentation ne
   peut pas produire un prix avant l'étape offre ;
 - l'article 50 prononcé par le code, et `audit_script` qui refuse un script
   non conforme ;
 - zéro dépendance runtime — rien à auditer que notre propre code ;
 - la grille tarifaire, les données de prospects réels et l'économie du
-  portefeuille **hors** des bundles navigateur (mesuré sur le build).
+  portefeuille **hors** des bundles navigateur (mesuré sur le build) — ET
+  hors de portée d'un client connecté depuis le 27/08 : `/api/pipeline`,
+  `/api/voice-costs` et `/api/knowledge` sont réservés au compte maître, ce
+  qui n'était pas le cas (une brique `crm` suffisait à charger nos fiches
+  réelles) ;
+- un **taux horaire** relevé sur le marché (71 €/h, TJM 500 €), qui débloque
+  le chiffrage des dix briques et de tout devis de setup.
