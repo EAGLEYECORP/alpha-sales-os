@@ -301,6 +301,19 @@ via Supabase ; le rate-limit HTTP du middleware, non. Acceptable au lancement,
 
 ### 5. ⚠ RGPD — les polices viennent des serveurs de Google
 
+> **Mesuré, et c'est la bonne nouvelle** : Google Fonts est le SEUL tiers que
+> le navigateur du visiteur contacte. Un balayage des URL du dépôt trouve cinq
+> hôtes appelés automatiquement — `fonts.googleapis.com`, `fonts.gstatic.com`,
+> `api.stripe.com`, `api.notion.com`, `api.json2video.com` — mais les trois
+> derniers partent de `lib/`, côté SERVEUR : vérifié, aucun composant client
+> ne les importe. `recherche-entreprises.api.gouv.fr` n'est qu'un lien
+> cliquable dans une aide, pas une requête.
+>
+> Rien ne l'empêchait, cela dit : ces trois modules n'étaient dans aucune
+> liste gardée. Un import distrait depuis un `.tsx` aurait déplacé l'appel
+> dans le navigateur — donc l'IP du visiteur chez Stripe et Notion. Ils sont
+> maintenant dans `MODULES_SERVEUR`.
+
 `app/layout.tsx` charge trois polices depuis `fonts.googleapis.com` /
 `fonts.gstatic.com`. **Chaque visiteur transmet son IP aux États-Unis sans
 l'avoir consenti** — c'est le motif de condamnations en Europe (LG München,

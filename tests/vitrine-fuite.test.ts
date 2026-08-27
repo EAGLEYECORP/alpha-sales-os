@@ -336,7 +336,24 @@ test("bundle public — le graphe d'imports n'atteint AUCUN module à prix", () 
  * On part donc de CHAQUE fichier `"use client"` du dépôt, pas seulement des
  * pages publiques.
  */
-const MODULES_SERVEUR = ["lib/bricks", "lib/accounts-commercial", "lib/voice-costs", "lib/knowledge-seed", "lib/business-rules", "lib/pipeline-juillet", "lib/prospects-icp", "lib/references-seed"];
+/**
+ * ⚠ LES TROIS DERNIERS ONT ÉTÉ AJOUTÉS APRÈS UNE MESURE, PAS PAR PRINCIPE.
+ *
+ * Un balayage des URL tierces du dépôt a montré que cinq hôtes sont appelés
+ * automatiquement : Google Fonts (depuis `app/layout.tsx`, donc le NAVIGATEUR
+ * — c'est l'exposition RGPD déjà documentée), et Stripe, Notion et json2video
+ * depuis `lib/`.
+ *
+ * Vérifié : aucun composant client n'importe ces trois-là aujourd'hui. Leurs
+ * appels partent donc du serveur, et le visiteur ne contacte personne.
+ *
+ * Mais RIEN ne l'empêchait : ils n'étaient dans aucune liste. Un import
+ * distrait depuis un `.tsx` déplacerait l'appel dans le navigateur — donc
+ * l'adresse IP du visiteur chez Stripe et Notion, et la grille `PLANS` dans
+ * le bundle. C'est exactement le motif de ce fichier : la garde existait, elle
+ * ne couvrait pas les voisins.
+ */
+const MODULES_SERVEUR = ["lib/bricks", "lib/accounts-commercial", "lib/voice-costs", "lib/knowledge-seed", "lib/business-rules", "lib/pipeline-juillet", "lib/prospects-icp", "lib/references-seed", "lib/stripe", "lib/notion", "lib/video-gen"];
 
 /**
  * `lib/pricing` n'est PAS dans cette liste, et c'est un choix, pas un oubli.
@@ -650,9 +667,34 @@ test("routes — celle qui sert un module serveur est forcément INTERNE", () =>
     if (!sert.length) continue;
     // Le chemin d'URL de la route : app/api/x/y/route.ts → /api/x/y
     const url = "/" + f.replace(/^app\//, "").replace(/\/route\.tsx?$/, "");
-    if (!internes.some((p) => url === p || url.startsWith(p + "/"))) {
-      fautes.push(`${url} sert ${sert.join(", ")} sans être dans INTERNAL`);
-    }
+    if (internes.some((p) => url === p || url.startsWith(p + "/"))) continue;
+
+    /**
+     * ⚠ UNE ROUTE PEUT ÊTRE PUBLIQUE ET SÛRE — mais elle doit le PROUVER.
+     *
+     * En ajoutant `lib/stripe` aux modules serveur, ce test a signalé
+     * `/api/webhooks/stripe`. Or cette route est publique EXPRÈS : c'est
+     * Stripe qui l'appelle, sans navigateur, donc sans cookie. Elle porte sa
+     * propre authentification — une signature HMAC vérifiée avant tout
+     * traitement. C'est le raisonnement déjà écrit dans `middleware.ts` :
+     * « ce n'est pas un trou, c'est une porte différente ».
+     *
+     * L'exemption ne se DÉCLARE donc pas dans une liste — elle se GAGNE en
+     * vérifiant réellement quelque chose. Une liste se remplit par commodité ;
+     * une preuve lue dans le code de la route, non. Si quelqu'un retire la
+     * vérification de signature, la route reperd son exemption et ce test
+     * échoue — ce qui est exactement le moment où on veut être prévenu.
+     */
+    const src = sansCommentaires(lire(f));
+    const porteSaPropreSerrure =
+      // Signature vérifiée — sur place, ou déléguée à un module dédié. Ce qui
+      // compte est que le RÉSULTAT gate la suite, pas où le HMAC est calculé.
+      /verify\w*Signature\(|createHmac|timingSafeEqual|constructEvent/.test(src) ||
+      // Clé d'API ou secret de cron, avec le refus qui va avec.
+      /autoriserApi\(|CRON_SECRET|ALPHA_API_KEYS|CALENDAR_TOKEN/.test(src);
+    if (porteSaPropreSerrure) continue;
+
+    fautes.push(`${url} sert ${sert.join(", ")} sans être dans INTERNAL ni vérifier de signature`);
   }
   assert.deepEqual(fautes, [], fautes.join("\n"));
 });
