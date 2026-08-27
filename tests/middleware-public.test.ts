@@ -161,6 +161,34 @@ test("la page publique de souscription n'affiche que des offres réellement paya
   assert.doesNotMatch(src, /lib\/(bricks|voice-costs|pricing-briques|offres-marge|taux-horaire)/);
 });
 
+test("⚠ un retour de paiement sans offre reconnue ne laisse pas l'acheteur devant une page vide", () => {
+  /**
+   * ⚠ CONSTATÉ AU NAVIGATEUR, PAS DÉDUIT. `/souscrire?achat=ok` sans `offre`
+   * reconnue rendait « Merci — On prend la suite. » et RIEN d'autre : ni
+   * confirmation, ni suite, ni issue. C'est l'écran de quelqu'un qui vient
+   * de payer.
+   *
+   * Le bloc de retour n'était rendu que sur `achat && choisie`. La branche
+   * `achat` seul existait et ne disait rien — il suffit d'un id d'offre
+   * renommé, d'une URL partagée ou d'un paramètre perdu pour y tomber.
+   *
+   * Ce test lit les deux branches, parce que c'est l'ABSENCE de la seconde
+   * qui était le défaut, et qu'une absence ne se voit pas en relisant.
+   */
+  const src = readFileSync(join(process.cwd(), "app/souscrire/page.tsx"), "utf8");
+  assert.match(src, /\{achat && choisie && <RetourPaiement/, "le cas nominal doit rester");
+  assert.match(src, /\{achat && !choisie && <RetourSansOffre/, "et le cas sans offre doit être traité");
+  assert.match(src, /function RetourSansOffre/, "le composant doit exister, pas seulement être appelé");
+
+  // Ce qu'il doit contenir : une issue, et jamais l'affirmation d'un
+  // encaissement — la redirection navigateur n'en est pas la preuve.
+  const bloc = src.slice(src.indexOf("function RetourSansOffre"), src.indexOf("function RetourPaiement"));
+  assert.match(bloc, /Commande envoyée/);
+  assert.match(bloc, /Rien n&apos;a été débité/, "la branche annulée doit le dire aussi");
+  assert.match(bloc, /mailto:/, "il doit rester une issue à l'acheteur");
+  assert.doesNotMatch(bloc, /paiement (confirmé|encaissé|validé)/i, "la redirection n'est pas une preuve");
+});
+
 test("les boutons d'achat ne renvoient plus derrière le mot de passe", () => {
   /**
    * ⚠ LE DÉFAUT QUI RENDAIT LA VENTE EN LIGNE IMPOSSIBLE.

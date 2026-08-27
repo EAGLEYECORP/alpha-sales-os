@@ -55,6 +55,57 @@ const jourFr = (iso: string) =>
  * que les dix minutes qui suivent un paiement décident si le client ouvre
  * l'app demain ou s'il attend qu'on le rappelle.
  */
+/**
+ * ── LE RETOUR QUAND ON NE SAIT PAS CE QUI A ÉTÉ ACHETÉ ──
+ *
+ * ⚠ CONSTATÉ AU NAVIGATEUR : `?achat=ok` sans `offre` reconnue affichait
+ * « Merci — On prend la suite. » suivi de RIEN. Pas de confirmation, pas de
+ * suite, pas d'issue : un lien vers les CGV et une page blanche. C'est l'écran
+ * que voit quelqu'un qui vient de payer.
+ *
+ * Le retour n'était rendu que si l'offre était retrouvée (`achat && choisie`),
+ * ce qui est le cas nominal. Il suffit d'un id d'offre renommé, d'une URL
+ * partagée ou d'un paramètre perdu en route pour tomber dans l'autre branche —
+ * et cette branche existait sans rien dire.
+ *
+ * On ne peut pas dérouler la mise en route sans savoir quelle offre : ce
+ * serait inventer. Mais on peut dire l'état vrai et donner une issue, ce qui
+ * est tout ce qu'un client attend à cet instant.
+ */
+function RetourSansOffre({ achat }: { achat: string }) {
+  const annule = achat === "annule";
+  return (
+    <div className="mt-10 rounded-2xl p-7" style={{ border: `1px solid ${annule ? LINE : ACCENT}`, background: "#FFFFFF" }}>
+      <p className="font-serif text-[24px] tracking-[-0.01em]">
+        {annule ? "Paiement interrompu" : "Commande envoyée"}
+      </p>
+      <p className="mt-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+        {annule ? (
+          <>Rien n&apos;a été débité. Vous pouvez reprendre quand vous voulez.</>
+        ) : (
+          <>
+            {/* Même règle que plus bas : la redirection n'est pas une preuve
+                d'encaissement, donc on ne l'écrit pas. */}
+            Stripe traite le paiement ; la confirmation arrive par email. Si rien n&apos;arrive dans le
+            quart d&apos;heure,{" "}
+            <a
+              href="mailto:contact@eagleyecorp.fr?subject=Confirmation%20de%20commande"
+              className="underline underline-offset-4"
+              style={{ color: ACCENT }}
+            >
+              écrivez-nous
+            </a>{" "}
+            — on retrouve la commande.
+          </>
+        )}
+      </p>
+      <a href="/souscrire" className="mt-5 inline-block text-[15px] underline underline-offset-4" style={{ color: ACCENT }}>
+        Revoir les offres
+      </a>
+    </div>
+  );
+}
+
 function RetourPaiement({ achat, offre }: { achat: string; offre: OffrePublique }) {
   const plan =
     achat === "ok"
@@ -250,6 +301,7 @@ export default function SouscrirePage() {
         </p>
 
         {achat && choisie && <RetourPaiement achat={achat} offre={choisie} />}
+        {achat && !choisie && <RetourSansOffre achat={achat} />}
 
         {/* ── 1. L'offre ── */}
         {!achat && !choisie && (
