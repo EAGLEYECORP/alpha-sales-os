@@ -42,10 +42,48 @@ import { daysAgo, daysAhead } from "./utils";
  *
  * Un tableau vide et un tableau absent doivent se comporter pareil. La règle :
  * TOUT champ de `Prospect` qui n'est pas optionnel dans le type a sa valeur
- * neutre ici, et `tests/store.test.ts` le vérifie champ par champ.
+ * neutre ici.
+ *
+ * ⚠⚠ CETTE LIGNE DISAIT « ET `tests/store.test.ts` LE VÉRIFIE CHAMP PAR
+ * CHAMP ». CE TEST N'EXISTAIT PAS — zéro occurrence de `prospectDefaults`
+ * dans ce fichier. La phrase rassurait exactement là où il fallait vérifier.
+ *
+ * Ce que ça cachait, mesuré en appelant le vrai point d'entrée
+ * `importerProfils()` : une fiche importée depuis LinkedIn sortait avec
+ * `trust`, `auditScore`, `conviction`, `probability`, `ignoranceTax`,
+ * `monthlyValue` et `setupValue` TOUS `undefined`. Le `as Prospect` en fin de
+ * `profilVersProspect` (et celui de `normalizeProspect`) empêche le
+ * compilateur de le voir ; les écrans, eux, font de l'arithmétique et des
+ * `toLocaleString()` dessus. C'est le même écran blanc que les cinq tableaux,
+ * sur un autre importeur.
+ *
+ * Les valeurs ci-dessous ne sont pas inventées : ce sont celles que `csv.ts`
+ * et `n8n.ts` posaient déjà, à l'identique, chacun de son côté. Les remonter
+ * ici supprime la copie en même temps que le trou. La garde vit maintenant
+ * dans `tests/prospect-defaults.test.ts`, et elle DÉRIVE la liste du type.
  */
 export const prospectDefaults = {
   likeness: 55,
+  /**
+   * Les curseurs 0–100 d'une fiche dont on ne sait encore rien.
+   * `trust: 10` / `conviction: 8` : un inconnu n'est pas à zéro (on a une
+   * raison de l'avoir importé) mais il est très bas. `auditScore: 0` : rien
+   * n'a été audité, et c'est exact.
+   */
+  trust: 10,
+  auditScore: 0,
+  conviction: 8,
+  /**
+   * Le stade réel écrase cette valeur à l'import (`STAGES[stage].probability`).
+   * 5 % est le plancher : une fiche sans stade connu est en entrée de
+   * pipeline, pas à la moitié du chemin.
+   */
+  probability: 5,
+  /** Les montants : zéro, jamais une estimation. On ne devine pas un chiffre d'affaires. */
+  monthlyValue: 0,
+  setupValue: 0,
+  ignoranceTax: 0,
+  notes: "",
   problems: [] as string[],
   solution: "",
   personalizedOffer: "",
