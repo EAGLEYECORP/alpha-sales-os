@@ -42,10 +42,20 @@ node -v              # doit être ≥ 18.18 (Next 15)
 
 ---
 
-## 2. `.env.local` — le gabarit complet
+## 2. `.env.local` — le MINIMUM pour tourner en local
 
-Créer/vérifier `.env.local` à la racine (copie de travail de `.env.example`).
-**Remplace chaque `⟨…⟩` par ta vraie valeur** — où la trouver est indiqué.
+> ⚠ **Ce gabarit n'est PAS complet, et se disait « complet ».** Il couvre ce
+> qu'il faut pour lancer la machine sur ta table : envoi, Supabase, tracking,
+> n8n, IA locale. Il ne couvre **ni la voix, ni Stripe, ni les comptes
+> clients, ni la sécurité de production** — 63 variables existent, il y en a
+> 18 ici.
+>
+> **La référence est `.env.example`** (un test vérifie que toute variable lue
+> par le code y figure). Ce fichier-ci est un raccourci de démarrage, pas un
+> inventaire. Pour la mise en ligne, c'est `docs/CHECKLIST-LANCEMENT.md`.
+
+Créer/vérifier `.env.local` à la racine. **Remplace chaque `⟨…⟩` par ta vraie
+valeur** — où la trouver est indiqué.
 
 ```bash
 # ── ENVOI EMAIL (obligatoire pour lancer) ────────────────────────────
@@ -96,9 +106,19 @@ TEXTBELT_KEY=
 ```
 
 **Côté Vercel** (Settings → Environment Variables — pas dans ce fichier) :
-`SITE_PASSWORD` (fort, obligatoire), `TRACKING_BASE_URL` + `APP_BASE_URL` =
-`https://alphasalesos.vercel.app`, `WEBHOOK_SECRET`, et les 3 clés Supabase.
+`SITE_PASSWORD` (fort), `TRACKING_BASE_URL` + `APP_BASE_URL`,
+`WEBHOOK_SECRET`, et les 3 clés Supabase.
 Production Branch = `claude/crm-n8n-email-tracking-4qxtwr`.
+
+⚠ **Et les quatre qui décident de qui entre**, absentes de ce document
+jusqu'ici : `OWNER_EMAILS` et `NEXT_PUBLIC_OWNER_EMAILS` (**la même
+valeur**), `REQUIRE_AUTH=1`, `SUPABASE_JWT_SECRET`.
+
+`SITE_PASSWORD` ne mure plus l'app entière : il garde l'administration
+(`/payouts`, `/offre`, `/api/sync`), et le reste **tant que** ces deux
+dernières ne sont pas posées. Sans elles, le mur ne se lève jamais et tes
+clients restent dehors **sans message d'erreur**. Réglages → État système →
+**Compte propriétaire** dit si les deux listes concordent.
 
 ---
 
@@ -136,8 +156,12 @@ npm run build && npm run start # mode prod local (recommandé pour le live)
 - [ ] `Code.gs` à jour recollé dans Apps Script + **nouvelle version** du
       déploiement Web App (37 colonnes, dont `linkedin`). Bouton « Réparer »
       dans l'app si la migration doit s'appliquer.
-- [ ] Vercel : env complètes (cf. §2) + Production Branch = la branche de
-      travail + domaine `alphasalesos.vercel.app` confirmé.
+- [ ] Vercel : env complètes — §2 ne suffit PAS, la liste qui fait foi est
+      `.env.example` + le bloc production ci-dessus. Production Branch = la
+      branche de travail + domaine `alphasalesos.vercel.app` confirmé.
+- [ ] **Les migrations Supabase passées** (`001` puis `002`). Sans la 002, la
+      table `entitlements` n'existe pas et un client qui paie se fait refuser
+      par le middleware — sans que rien ne plante.
 - [ ] Gmail/SMTP : mot de passe d'application actif, `MAX_SENDS_PER_HOUR=40`
       max au début (réputation à chauffer progressivement — voir
       `docs/RUNBOOK.md` pour la montée en volume).
@@ -154,7 +178,7 @@ npm run build && npm run start # mode prod local (recommandé pour le live)
 
 | Symptôme | Remède |
 |---|---|
-| `EADDRINUSE :3000` | `pgrep -f next-server` puis `kill ⟨PID⟩` (vieux serveur). |
+| `EADDRINUSE :3000` | `pkill -f 'next-serve[r]'` puis relancer. ⚠ **Pas** `pkill -f next-server` : le motif correspond à la ligne de commande du shell lui-même, qui se tue en même temps (constaté deux fois, dont un build perdu en cours de route). Les crochets cassent l'auto-correspondance. |
 | Le pull demande un login à chaque fois | `git config credential.helper store` (token stocké localement). |
 | `npm install` râle (ERESOLVE/deprecated) | Bénin — voir la note sécurité npm de `docs/INSTALLATION.md`. |
 | Emails sans logo aigle | `TRACKING_BASE_URL` absent/faux dans `.env.local` → l'image pointe dans le vide. |

@@ -124,3 +124,70 @@ test("« zéro vente » reste écrit tant que c'est vrai", () => {
   assert.match(doc, /\*\*Zéro vente à ce jour\.\*\*/);
   assert.match(doc, /aucun euro/i);
 });
+
+
+// ══════════ docs/LANCEMENT.md — le « comment » opérationnel ══════════
+
+const lancement = readFileSync(join(process.cwd(), "docs/LANCEMENT.md"), "utf8");
+
+test("le gabarit local ne se prétend plus COMPLET", () => {
+  /**
+   * Il s'annonçait « le gabarit complet » avec 18 variables sur 63 — sans la
+   * voix, sans Stripe, sans les comptes clients, sans la sécurité de
+   * production. Un gabarit qui se dit complet dispense de chercher ailleurs :
+   * c'est ce qui le rend dangereux, pas ce qu'il omet.
+   */
+  assert.doesNotMatch(lancement, /le gabarit complet/, "cette promesse était fausse");
+  assert.match(lancement, /n'est PAS complet/i, "il doit dire ce qu'il n'est pas");
+  assert.match(lancement, /\.env\.example/, "…et pointer vers la référence");
+});
+
+test("le bloc production nomme les quatre variables qui décident de qui entre", () => {
+  const bloc = lancement.slice(lancement.indexOf("**Côté Vercel**"), lancement.indexOf("## 3."));
+  for (const v of ["OWNER_EMAILS", "NEXT_PUBLIC_OWNER_EMAILS", "REQUIRE_AUTH", "SUPABASE_JWT_SECRET"]) {
+    assert.ok(bloc.includes(v), `${v} absente du bloc production`);
+  }
+  assert.match(bloc, /sans message d'erreur|sans erreur/i, "le symptôme silencieux doit être dit");
+});
+
+test("⚠ le dépannage n'enseigne plus une commande qui se tue elle-même", () => {
+  /**
+   * `pgrep -f next-server` / `pkill -f next-server` : le motif correspond à la
+   * ligne de commande du SHELL qui l'exécute, qui meurt donc avec sa cible.
+   * Ça m'a coûté deux builds aujourd'hui, dont un perdu en cours de route —
+   * et le symptôme (« la commande s'est arrêtée toute seule ») ne pointe vers
+   * rien. Les crochets cassent l'auto-correspondance.
+   */
+  /**
+   * ⚠ ET C'EST LA QUATRIÈME FOIS AUJOURD'HUI QUE CE PIÈGE SE PRÉSENTE.
+   *
+   * Premier jet : « le bloc ne doit pas contenir `pkill -f next-server` ».
+   * Il échoue — parce que la phrase qui AVERTIT contre cette commande la
+   * cite forcément. Interdire la chaîne obligerait à supprimer
+   * l'avertissement pour faire taire le test, soit exactement l'inverse du
+   * but. (Déjà vu dans vitrine-fuite, linkedin, et le test de `.env.example`.)
+   *
+   * On ne juge donc pas la PRÉSENCE mais la PRESCRIPTION : la commande
+   * recommandée doit être la forme sûre, et toute occurrence de la forme
+   * dangereuse doit être précédée d'un « Pas ».
+   */
+  const bloc = lancement.slice(lancement.indexOf("## 5. Dépannage"), lancement.indexOf("## 6."));
+  assert.match(bloc, /next-serve\[r\]/, "la forme sûre utilise des crochets");
+  assert.match(bloc, /se tue en même temps|auto-correspondance/i, "et la raison doit être écrite");
+
+  for (const m of bloc.matchAll(/p(?:kill|grep) -f next-server/g)) {
+    const avant = bloc.slice(Math.max(0, m.index! - 60), m.index!);
+    assert.match(
+      avant,
+      /\*\*Pas\*\*|jamais|ne pas/i,
+      "la forme dangereuse ne peut apparaître que comme contre-exemple explicite"
+    );
+  }
+});
+
+test("la checklist GO-LIVE exige les migrations", () => {
+  const bloc = lancement.slice(lancement.indexOf("## 4. Checklist GO-LIVE"), lancement.indexOf("## 5."));
+  assert.match(bloc, /migrations Supabase/i);
+  assert.match(bloc, /002/, "la migration des droits doit être nommée");
+  assert.match(bloc, /se fait refuser|refuse/i, "et sa conséquence si elle manque");
+});
