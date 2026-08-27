@@ -99,6 +99,28 @@ prouvé** — ce sont des vérifications à faire côté toi, une fois :
 - Telnyx / LiveKit / Fish : aucun appel réel passé depuis ici.
 - Le webhook Stripe n'a jamais reçu d'événement authentique signé.
 
+### Ce qui laisse ce type de défaut passer, et ce que ça coûterait de fermer
+
+Le défaut n° 6 (sept champs `undefined` sur une fiche LinkedIn) n'était pas
+visible du compilateur pour deux raisons cumulées :
+
+1. **Les `as Prospect`** en fin de constructeur (`profilVersProspect`,
+   `normalizeProspect`). Un cast affirme, il ne vérifie pas. Le socle
+   `prospectDefaults` est un littéral sans annotation : ajouter un champ non
+   optionnel à `Prospect` ne produit **aucune erreur** là où il manque.
+2. **`noUncheckedIndexedAccess: false`** dans `tsconfig.json` — explicitement
+   désactivé. `tab[0]` est donc typé `T` et non `T | undefined`, alors qu'il
+   peut parfaitement être vide.
+
+Mesuré : l'activer produit **438 erreurs**, dont **195 hors tests** — surtout
+`lib/store.ts` (28) et les pages (22). Ce n'est pas un interrupteur, c'est un
+chantier d'une journée. Il n'est pas fait, et je ne l'ouvre pas sans que ce soit
+décidé : la moitié des corrections seraient mécaniques, l'autre demande de
+choisir quoi faire quand la valeur manque — c'est-à-dire du produit.
+
+En attendant, `tests/prospect-defaults.test.ts` couvre le cas précis qui a
+coûté un écran blanc, en dérivant la liste des champs du type lui-même.
+
 ### Deux points laissés en l'état, volontairement
 
 - **`prompt()` natif sur « Marquer fait » (`/meetings`)** — alors que
