@@ -284,6 +284,23 @@ drop policy if exists "sub select own" on public.subscriptions;
 create policy "sub select own" on public.subscriptions for select using (auth.uid() = user_id);
 -- pas de policy insert/update/delete : réservé au service role (webhook Stripe)
 
+-- Droits d'accès (provisionnés par le webhook Stripe) ------------------------
+-- ⚠ Cette table était INTERROGÉE par lib/entitlements.ts (resoudreDroits, via
+-- le middleware, donc à chaque requête) sans exister nulle part. Toute lecture
+-- échouait et retombait sur DROIT_REFUSE : un client payant était refusé.
+-- Voir supabase/migrations/002-entitlements.sql pour les bases déjà créées.
+create table if not exists public.entitlements (
+  tenant_id uuid primary key references auth.users (id) on delete cascade,
+  bricks text[] not null default '{}',
+  statut text not null default 'suspendu',
+  essai_jusqu_a timestamptz,
+  updated_at timestamptz not null default now()
+);
+alter table public.entitlements enable row level security;
+drop policy if exists "ent select own" on public.entitlements;
+create policy "ent select own" on public.entitlements for select using (auth.uid() = tenant_id);
+-- pas de policy insert/update/delete : réservé au service role (webhook Stripe)
+
 -- Realtime -------------------------------------------------------------------
 -- Dashboard → Database → Replication → enable for prospects/meetings if you
 -- want live team sync, then subscribe client-side with sb.channel(...).

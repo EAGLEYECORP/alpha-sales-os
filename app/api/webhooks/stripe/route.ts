@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyStripeSignature, planForPriceId } from "@/lib/stripe";
+import { ligneEntitlements } from "@/lib/entitlements-provision";
 import {
   ligneDepuisAbonnement,
   ligneDepuisSession,
@@ -69,6 +70,29 @@ export async function POST(req: NextRequest) {
     await sb
       .from("subscriptions")
       .upsert({ ...sansInconnus(ligne), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+
+    /**
+     * ⚠ ET LES DROITS — sans quoi tout ce qui précède ne sert à rien.
+     *
+     * `subscriptions` enregistre le PAIEMENT ; le contrôle d'accès, lui, lit
+     * `entitlements` (`resoudreDroits`, appelé par le middleware). Les deux
+     * tables ne se parlaient pas, et `entitlements` n'existait même pas dans
+     * le schéma. Le chemin normal d'un client payant était donc : il paie, on
+     * enregistre son abonnement, et l'application le refuse.
+     *
+     * On ne provisionne QUE sur encaissement réel : `ligneEntitlements` rend
+     * `null` autrement, et une offre inconnue ne provisionne rien non plus —
+     * un compte à zéro brique afficherait une application vide au lieu d'un
+     * message disant qu'on n'a pas fini.
+     */
+    const droits = ligneEntitlements({
+      tenantId: String(ligne.user_id),
+      offreId: typeof ligne.plan === "string" ? ligne.plan : null,
+      encaisse: ligne.status === "active",
+    });
+    if (droits) {
+      await sb.from("entitlements").upsert(droits, { onConflict: "tenant_id" });
+    }
   };
 
   try {

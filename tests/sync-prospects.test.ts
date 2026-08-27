@@ -265,11 +265,22 @@ test("schéma — toute table interrogée par le code EXISTE dans schema.sql", (
   };
   for (const d of ["lib", "app"]) visiter(d);
 
+  /**
+   * ⚠ DEUX FAÇONS D'INTERROGER UNE TABLE, ET LE TEST N'EN VOYAIT QU'UNE.
+   *
+   * Le balayage ne cherchait que `.from("x")`, la forme du client Supabase.
+   * Mais `lib/entitlements.ts` interroge en REST brut
+   * (`fetch(`${url}/rest/v1/entitlements?...`)`) — invisible ici. Résultat :
+   * `entitlements` était lue par le middleware À CHAQUE REQUÊTE et n'existait
+   * dans aucun fichier SQL, sans qu'aucun test ne s'en aperçoive.
+   *
+   * C'est le trou qui a laissé passer le défaut, pas l'absence de test.
+   */
   const tables = new Set<string>();
   for (const f of fichiers) {
-    for (const m of readFileSync(join(racine, f), "utf8").matchAll(/\.from\("([a-z_]+)"\)/g)) {
-      tables.add(m[1]);
-    }
+    const src = readFileSync(join(racine, f), "utf8");
+    for (const m of src.matchAll(/\.from\("([a-z_]+)"\)/g)) tables.add(m[1]);
+    for (const m of src.matchAll(/\/rest\/v1\/([a-z_]+)/g)) tables.add(m[1]);
   }
 
   assert.ok(tables.size >= 8, `seulement ${tables.size} tables détectées — le balayage est cassé`);
@@ -296,6 +307,20 @@ test("schéma — une correction de structure existe AUSSI en migration", () => 
   for (const t of ["propositions", "call_sessions", "push_subscriptions"]) {
     assert.match(mig, new RegExp(`create table if not exists public\\.${t}`), `migration : ${t} manquante`);
   }
+
+  /**
+   * `entitlements` a le même problème en pire : elle est lue par le
+   * MIDDLEWARE, donc sur chaque requête, et son absence renvoyait
+   * `DROIT_REFUSE` — un client payant refusé par l'application.
+   */
+  const ent = readFileSync(join(process.cwd(), "supabase/migrations/002-entitlements.sql"), "utf8");
+  assert.match(ent, /create table if not exists public\.entitlements/);
+  for (const col of ["tenant_id", "bricks", "statut", "essai_jusqu_a"]) {
+    assert.match(ent, new RegExp(`\\b${col}\\b`), `migration 002 : colonne ${col} manquante`);
+  }
+  assert.match(ent, /enable row level security/, "une table de droits sans RLS est une table de droits publique");
+  // Aucune policy d'écriture : un client ne s'accorde pas ses propres droits.
+  assert.doesNotMatch(ent, /for (insert|update|delete)/, "l'écriture doit rester au service role");
   // Idempotence : relancer la migration ne doit rien casser.
   assert.match(mig, /information_schema\.columns/, "les ALTER doivent être conditionnels");
   assert.ok(mig.includes("begin;") && mig.includes("commit;"), "la migration doit être transactionnelle");
