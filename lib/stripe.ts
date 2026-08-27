@@ -245,18 +245,31 @@ export async function createCheckoutSession(opts: {
       cancel_url: opts.cancelUrl,
       client_reference_id: opts.userId,
       customer_email: opts.email,
-      // Rattache l'achat au compte — relu par le webhook. Les métadonnées
-      // vont sur l'abonnement quand il y en a un, sur la session sinon :
-      // c'est le seul endroit où un paiement unique peut les porter.
+      /**
+       * ⚠ LE CONTRAT AVEC LE WEBHOOK — il était cassé des DEUX côtés.
+       *
+       *  1. Le paiement unique posait `metadata[offre]`, le webhook lisait
+       *     `metadata.plan`. Résultat : l'essai à 290 € était encaissé et la
+       *     ligne d'abonnement s'écrivait avec `plan: null`. Le client payait
+       *     et n'obtenait droit à rien — sans la moindre erreur nulle part.
+       *
+       *  2. L'abonnement ne posait de métadonnées QUE sur l'abonnement, donc
+       *     l'événement `checkout.session.completed` arrivait sans plan et
+       *     écrivait `null` lui aussi. Ça se rattrapait au coup d'après —
+       *     SI l'ordre des événements coopérait, ce que Stripe ne garantit
+       *     pas. Dans l'autre ordre, la session ÉCRASAIT le bon plan.
+       *
+       * Le nom de la clé est `plan` partout, et la session porte toujours ses
+       * métadonnées, abonnement ou pas.
+       */
+      "metadata[user_id]": opts.userId,
+      "metadata[plan]": opts.offreId,
       ...(abonnement
         ? {
             "subscription_data[metadata][user_id]": opts.userId,
             "subscription_data[metadata][plan]": opts.offreId,
           }
-        : {
-            "metadata[user_id]": opts.userId,
-            "metadata[offre]": opts.offreId,
-          }),
+        : {}),
       allow_promotion_codes: "true",
     })
   );

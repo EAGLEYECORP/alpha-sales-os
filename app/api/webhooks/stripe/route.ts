@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyStripeSignature, planForPriceId } from "@/lib/stripe";
+import {
+  ligneDepuisAbonnement,
+  ligneDepuisSession,
+  sansInconnus,
+  type ObjetStripe,
+} from "@/lib/stripe-webhook";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,19 +29,6 @@ function serviceClient() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-interface StripeObject {
-  id?: string;
-  object?: string;
-  customer?: string;
-  subscription?: string;
-  status?: string;
-  client_reference_id?: string;
-  customer_email?: string;
-  current_period_end?: number;
-  metadata?: Record<string, string>;
-  customer_details?: { email?: string };
-  items?: { data?: { price?: { id?: string } }[] };
-}
 
 export async function POST(req: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -50,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "signature invalide" }, { status: 400 });
   }
 
-  let event: { type?: string; data?: { object?: StripeObject } };
+  let event: { type?: string; data?: { object?: ObjetStripe } };
   try {
     event = JSON.parse(payload);
   } catch {
@@ -66,38 +59,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true, persisted: false });
   }
 
-  const upsert = async (row: Record<string, unknown>) => {
-    await sb.from("subscriptions").upsert({ ...row, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  /**
+   * Les DÉCISIONS vivent dans `lib/stripe-webhook.ts`, où elles sont testées.
+   * Ici on ne fait plus qu'écrire — et `sansInconnus` garantit qu'un
+   * événement partiel n'efface jamais ce qu'on sait déjà.
+   */
+  const ecrire = async (ligne: ReturnType<typeof ligneDepuisSession>) => {
+    if (!ligne) return;
+    await sb
+      .from("subscriptions")
+      .upsert({ ...sansInconnus(ligne), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   };
 
   try {
     if (type === "checkout.session.completed") {
-      const userId = obj.client_reference_id || obj.metadata?.user_id;
-      if (userId) {
-        await upsert({
-          user_id: userId,
-          email: obj.customer_email ?? obj.customer_details?.email ?? null,
-          stripe_customer_id: obj.customer ?? null,
-          stripe_subscription_id: obj.subscription ?? null,
-          plan: obj.metadata?.plan ?? null,
-          status: "active",
-        });
-      }
+      await ecrire(ligneDepuisSession(obj));
     } else if (type.startsWith("customer.subscription.")) {
-      const userId = obj.metadata?.user_id;
-      if (userId) {
-        const priceId = obj.items?.data?.[0]?.price?.id;
-        await upsert({
-          user_id: userId,
-          stripe_customer_id: obj.customer ?? null,
-          stripe_subscription_id: obj.id ?? null,
-          plan: obj.metadata?.plan ?? planForPriceId(priceId) ?? null,
-          status: type.endsWith("deleted") ? "canceled" : obj.status ?? "inactive",
-          current_period_end: obj.current_period_end
-            ? new Date(obj.current_period_end * 1000).toISOString()
-            : null,
-        });
-      }
+      await ecrire(ligneDepuisAbonnement(type, obj, (id) => planForPriceId(id)));
     }
   } catch (e) {
     return NextResponse.json(
