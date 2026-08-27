@@ -23,6 +23,70 @@
 /** Taux de change retenu pour convertir les tarifs en USD. Ajustable. */
 export const USD_TO_EUR = 0.92;
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUI A ÉTÉ MESURÉ CHEZ NOUS — la seule catégorie qui mérite « vérité ».
+ *
+ * Tout le reste de ce fichier est relevé sur des pages de tarifs publiques.
+ * Ici, et seulement ici, vivent les chiffres constatés sur NOS factures.
+ * Chacun porte sa date, sa provenance et sa TAILLE D'ÉCHANTILLON — parce
+ * qu'un relevé sur un appel n'est pas un taux, et que le confondre avec un
+ * taux est exactement la façon dont on se ment sur une marge.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface Mesure {
+  id: string;
+  quoi: string;
+  /** Ce qu'on a vu, en clair. */
+  releve: string;
+  date: string;
+  source: string;
+  /** Nombre d'observations. 1 = une anecdote utile, pas une statistique. */
+  n: number;
+  /** Ce que ça permet de conclure, et ce que ça ne permet PAS. */
+  portee: string;
+}
+
+export const MESURES: Mesure[] = [
+  {
+    id: "fish-tarif",
+    quoi: "Fish Audio — prix au volume",
+    releve: "4 922 octets facturés 0,07 $ (modèle S2.1 Pro)",
+    date: "2026-08-27",
+    source: "fish.audio/fr/app/developer — tableau de bord, capture",
+    n: 1,
+    portee:
+      "CONFIRME le tarif de 15 $/Mo à 5 % près (0,0738 $ attendus, 0,07 $ facturés). " +
+      "Un tarif public se vérifie sur une seule facture : c'est un prix affiché, pas une moyenne.",
+  },
+  {
+    id: "fish-volume",
+    quoi: "Fish Audio — octets par minute de conversation",
+    releve: "4 922 octets pour ~3 min de conversation = ~1 641 o/min",
+    date: "2026-08-27",
+    source: "même capture, rapprochée de la durée d'appel annoncée",
+    n: 1,
+    portee:
+      "L'hypothèse du modèle était 695 o/min (1 390 o/min de parole × 50 % de temps de parole). " +
+      "Le relevé est ×2,24. ⚠ Sur UN appel : la durée est déclarée, pas chronométrée, et le " +
+      "compteur du tableau de bord est cumulé sur la période — il peut couvrir plus d'un essai.",
+  },
+  {
+    id: "telnyx-mois",
+    quoi: "Telnyx — dépense mensuelle totale",
+    releve: "2,05 $ sur le mois, dont ~1,00 $ de location du numéro",
+    date: "2026-08-27",
+    source: "portal.telnyx.com/#/billing — Billing Overview, capture",
+    n: 1,
+    portee:
+      "⚠ NE DONNE PAS un tarif à la minute. C'est un CUMUL de mois, sur un nombre de minutes " +
+      "d'essai inconnu, et rien ne dit que le solde est intégralement de la voix (frais SIP, " +
+      "mise en service). Utile comme PLAFOND : le mois d'essai a coûté 2,05 $ en tout. " +
+      "Pour trancher, il faut l'export CDR (Reporting → Usage Reports), qui donne minutes et " +
+      "coût par appel. C'est la ligne la plus lourde du modèle et la seule encore non vérifiée.",
+  },
+];
+
 export interface CostLine {
   id: string;
   label: string;
@@ -58,8 +122,14 @@ export const COST_LINES: CostLine[] = [
     usdPerMin: 0.012,
     source: "telnyx.com/pricing/voice-api — à partir de 0,002 $/min, tarif France non publié",
     note:
-      "HYPOTHÈSE PRUDENTE. Le mobile français coûte nettement plus cher que le fixe. " +
-      "À remplacer par le tarif réel de ton compte Telnyx — c'est la seule ligne que je n'ai pas pu vérifier.",
+      "HYPOTHÈSE, TOUJOURS NON VÉRIFIÉE. Le mobile français coûte nettement plus cher que le fixe.\n\n" +
+      "Ce qu'on sait depuis le 27/08/2026 : le compte a dépensé 2,05 $ sur le mois, dont ~1,00 $ " +
+      "de location de numéro — donc AU PLUS 1,05 $ d'usage. Ça ne donne pas un tarif à la minute : " +
+      "on ignore combien de minutes d'essai ce mois-là, et si tout est bien de la voix. " +
+      "Selon le volume réel, ces 1,05 $ valent 0,35 $/min (3 min) ou 0,018 $/min (60 min) — " +
+      "soit de ×29 à ×1,5 l'hypothèse ci-dessus. L'écart décide de la marge, pas d'un détail.\n\n" +
+      "CE QU'IL FAUT TIRER : Telnyx → Reporting → Usage Reports, export CDR du mois. " +
+      "Minutes et coût par appel. C'est la dernière ligne du modèle qui repose sur une supposition.",
   },
   {
     id: "deepgram",
@@ -80,11 +150,22 @@ export const COST_LINES: CostLine[] = [
   {
     id: "fish",
     label: "Fish Audio — synthèse vocale",
-    usdPerMin: 0.0104,
-    source: "fish.audio — 15 $ / 1 M octets UTF-8 (~12 h de parole)",
+    // ⚠ CHIFFRE MESURÉ, pas déduit — voir MESURES ci-dessus (2026-08-27).
+    // 4 922 octets pour ~3 min de conversation = 1 641 o/min → 0,0246 $/min
+    // au tarif de 15 $/Mo. On retient le relevé arrondi à 0,023 $/min.
+    usdPerMin: 0.023,
+    source: "MESURE MAISON 2026-08-27 (n=1) — 4 922 octets facturés 0,07 $, ~3 min de conversation",
     note:
-      "1 min de parole ≈ 1 390 octets ≈ 0,0208 $. L'agent parle ~50 % du temps → 0,0104 $/min de conversation. " +
-      "Le français accentué consomme plus d'octets que l'anglais (2 octets par accent).",
+      "L'hypothèse précédente était 0,0104 $/min (1 390 o/min de parole × 50 % de temps de parole). " +
+      "Le premier appel réel donne ×2,24. On retient la MESURE et non l'hypothèse, parce qu'elle " +
+      "est plus CHÈRE : sur un modèle de coût, l'erreur qui se paie est celle qui sous-estime.\n\n" +
+      "⚠ Ce ×2,24 mérite une explication qu'on n'a pas encore. À ~1 000 o/min de parole française " +
+      "réelle (≈150 mots/min), 4 922 octets représentent près de 5 minutes de parole DANS un appel " +
+      "de 3 minutes. Deux pistes, et une seule se vérifie dans les journaux LiveKit : " +
+      "(a) le compteur du tableau de bord cumule plusieurs essais et pas seulement cet appel ; " +
+      "(b) on paie de la synthèse JAMAIS ENTENDUE — Fish facture les octets envoyés, donc chaque " +
+      "interruption du prospect jette de l'audio déjà payé. Si c'est (b), la correction n'est pas " +
+      "tarifaire : elle est dans la taille des morceaux envoyés au TTS.",
   },
 ];
 
