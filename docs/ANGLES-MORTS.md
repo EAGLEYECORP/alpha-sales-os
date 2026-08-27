@@ -18,7 +18,12 @@ ce qui reste. Pas de « c'est bon » de complaisance.
   garde-fou d'envoi, **accès propriétaire par domaine**. 9 tests + smoke test live.
 - **Économie IA** — compression de contexte opt-in au chokepoint `runAI`,
   adoptée dans l'agent + audit/extract. 6 tests.
-- Total : **168 tests**, typecheck 0, build OK.
+- Total : **1 080 tests**, typecheck 0, build OK.
+
+> ⚠ La liste ci-dessus date du chantier SaaS et n'a pas suivi. Une dizaine de
+> défauts trouvés depuis — tous dans le tunnel de vente, tous du code JUSTE mal
+> raccordé — sont documentés dans l'historique git, pas ici. Ne prends pas
+> cette section pour un état des lieux à jour.
 
 ---
 
@@ -58,6 +63,37 @@ via Supabase ; le rate-limit HTTP du middleware, non. Acceptable au lancement,
 ### 5. Dépendances (CVE)
 `next`/`sharp` portent des CVE (libvips) corrigées seulement par Next 16
 (changement cassant). Planifier la montée de version + re-tester.
+
+---
+
+### 5. ⚠ RGPD — les polices viennent des serveurs de Google
+
+`app/layout.tsx` charge trois polices depuis `fonts.googleapis.com` /
+`fonts.gstatic.com`. **Chaque visiteur transmet son IP aux États-Unis sans
+l'avoir consenti** — c'est le motif de condamnations en Europe (LG München,
+janvier 2022) et un point de contrôle CNIL connu. Sur une app qui affiche un
+DPA et des mentions RGPD, l'incohérence se voit à la première question.
+
+**Ce qui est vérifié** : les 37 écrans se rendent complètement avec Google
+Fonts injoignable — la pile de repli de `tailwind.config.ts` est correcte
+(`system-ui`, `sans-serif`, `monospace`). L'app ne casse pas sans elles.
+
+**Trois sorties**, et une seule est testable depuis le bac à sable :
+
+| | Effet | Testable ici |
+|---|---|---|
+| `next/font/google` | téléchargées au BUILD, servies depuis notre domaine. Aspect identique. | non — le proxy bloque `fonts.gstatic.com` au build |
+| auto-héberger les `.woff2` | idem, plus de contrôle | non — il faut les télécharger |
+| retirer le lien, garder la pile système | zéro tiers. **Change l'aspect.** | oui |
+
+C'est une décision d'aspect autant que de conformité : elle appartient à
+Zakaria, elle n'est pas prise, et je ne restyle pas le produit à l'aveugle.
+
+> Effet de bord à connaître avant de chasser un fantôme : dans le bac à sable,
+> ces requêtes échouent en `ERR_CONNECTION_RESET` ou `ERR_CERT_AUTHORITY_INVALID`
+> selon les jours. Au balayage navigateur, l'erreur s'attribue au bouton
+> cliqué au même instant — sept routes et des boutons sans le moindre appel
+> réseau. Ça a ressemblé trois fois à un défaut applicatif. Ce n'en est pas un.
 
 ---
 
