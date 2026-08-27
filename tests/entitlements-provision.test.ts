@@ -2,7 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { droitsPourOffre, ligneEntitlements, offresSansDroits } from "../lib/entitlements-provision";
+import {
+  ETATS_ABO_OUVERTS,
+  droitsPourOffre,
+  ligneEntitlements,
+  ligneRevocation,
+  offresSansDroits,
+  revocationPour,
+} from "../lib/entitlements-provision";
 import { OFFRES } from "../lib/offres-publiques";
 import { ESSAI_JOURS } from "../lib/client-onboarding";
 
@@ -94,7 +101,7 @@ test("le webhook provisionne VRAIMENT les droits, pas seulement l'abonnement", (
   assert.match(src, /from\("entitlements"\)/, "…et les écrire");
   assert.match(src, /onConflict: "tenant_id"/, "un rachat met à jour, il ne duplique pas");
   // L'encaissement est la condition, et elle se lit dans le statut écrit.
-  assert.match(src, /encaisse: ligne\.status === "active"/, "les droits ne s'ouvrent que sur un paiement encaissé");
+  assert.match(src, /ETATS_ABO_OUVERTS\.includes\(statut\)/, "les droits ne s'ouvrent que sur un état d'abonnement ouvert");
 });
 
 test("les briques provisionnées sont celles que le contrôle d'accès connaît", () => {
@@ -113,4 +120,70 @@ test("les briques provisionnées sont celles que le contrôle d'accès connaît"
       assert.ok(connues.has(c), `l'offre « ${o.id} » vend la capacité « ${c} », que BrickId ne connaît pas`);
     }
   }
+});
+
+
+// ─────────── RÉVOQUER — sinon résilier ne coûte rien ───────────
+
+test("⚠ une résiliation FERME les droits", () => {
+  /**
+   * LE TROU LAISSÉ PAR LE PROVISIONNEMENT SEUL. On n'écrivait que sur
+   * encaissement. À la résiliation, le webhook mettait bien
+   * `subscriptions.status = "canceled"` — et la ligne `entitlements` restait
+   * `actif`. Le client annulait et gardait l'accès complet, indéfiniment.
+   * Les deux tables se contredisaient en silence, et c'est celle des droits
+   * qui décide.
+   */
+  for (const etat of ["canceled", "unpaid", "incomplete_expired", "paused"]) {
+    assert.deepEqual(revocationPour(etat), { statut: "suspendu" }, `${etat} doit fermer les droits`);
+  }
+});
+
+test("…mais un impayé RÉCUPÉRABLE ne coupe pas tout de suite", () => {
+  /**
+   * `past_due` est un délai de grâce assumé : couper au premier prélèvement
+   * raté ne récupère aucun impayé et transforme une carte expirée en client
+   * perdu. Stripe réessaie, nous attendons.
+   */
+  for (const etat of ["active", "trialing", "past_due"]) {
+    assert.equal(revocationPour(etat), null, `${etat} doit laisser les droits ouverts`);
+  }
+  // Un état inconnu ne doit pas se lire comme un état ouvert.
+  assert.deepEqual(revocationPour("nawak"), { statut: "suspendu" });
+  // Un état absent ne décide de rien : on ne ferme pas sur une ignorance.
+  assert.equal(revocationPour(null), null);
+});
+
+test("la révocation garde les briques — elle ne fait que suspendre", () => {
+  const l = ligneRevocation("u-9");
+  assert.equal(l.tenant_id, "u-9");
+  assert.equal(l.statut, "suspendu");
+  assert.equal("bricks" in l, false, "effacer les briques perdrait ce que le client avait");
+});
+
+test("le webhook FERME avant d'ouvrir", () => {
+  /**
+   * L'ordre est la garde : un état fermé doit l'emporter sur ce que l'offre
+   * voudrait provisionner. Inversé, un événement de résiliation portant
+   * encore un plan rouvrirait les droits qu'il vient de fermer.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/webhooks/stripe/route.ts"), "utf8");
+  const iFerme = src.indexOf("revocationPour(statut)");
+  const iOuvre = src.indexOf("ligneEntitlements({");
+  assert.ok(iFerme > 0 && iOuvre > 0, "les deux chemins doivent exister");
+  assert.ok(iFerme < iOuvre, "la fermeture doit être évaluée AVANT l'ouverture");
+  assert.match(src, /ligneRevocation\(tenantId\)/, "la fermeture doit être écrite en base");
+});
+
+test("les deux listes d'états ouverts ne peuvent pas diverger", () => {
+  /**
+   * `ACTIVE` dans `lib/billing.ts` gouverne le même jugement côté écran.
+   * Deux listes dans deux fichiers finissent toujours par diverger — et là
+   * l'écran dirait « actif » pendant que le middleware refuse, ce qui produit
+   * un ticket de support impossible à reproduire.
+   */
+  const billing = readFileSync(join(process.cwd(), "lib/billing.ts"), "utf8");
+  const ligne = billing.slice(billing.indexOf("const ACTIVE"), billing.indexOf("const ACTIVE") + 160);
+  const cote = [...ligne.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]).sort();
+  assert.deepEqual(cote, [...ETATS_ABO_OUVERTS].sort(), "lib/billing.ts et lib/entitlements-provision.ts divergent");
 });

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyStripeSignature, planForPriceId } from "@/lib/stripe";
-import { ligneEntitlements } from "@/lib/entitlements-provision";
+import {
+  ETATS_ABO_OUVERTS,
+  ligneEntitlements,
+  ligneRevocation,
+  revocationPour,
+} from "@/lib/entitlements-provision";
 import {
   ligneDepuisAbonnement,
   ligneDepuisSession,
@@ -85,10 +90,26 @@ export async function POST(req: NextRequest) {
      * un compte à zéro brique afficherait une application vide au lieu d'un
      * message disant qu'on n'a pas fini.
      */
+    const tenantId = String(ligne.user_id);
+    const statut = typeof ligne.status === "string" ? ligne.status : null;
+
+    /**
+     * ⚠ ET LA RÉVOCATION, sinon résilier ne coûte rien.
+     *
+     * L'ordre compte : on ferme AVANT d'ouvrir. Un état fermé (`canceled`,
+     * `unpaid`, `incomplete_expired`) doit toujours l'emporter, quel que soit
+     * ce que l'offre voudrait provisionner.
+     */
+    const fermeture = revocationPour(statut);
+    if (fermeture) {
+      await sb.from("entitlements").upsert(ligneRevocation(tenantId), { onConflict: "tenant_id" });
+      return;
+    }
+
     const droits = ligneEntitlements({
-      tenantId: String(ligne.user_id),
+      tenantId,
       offreId: typeof ligne.plan === "string" ? ligne.plan : null,
-      encaisse: ligne.status === "active",
+      encaisse: statut !== null && ETATS_ABO_OUVERTS.includes(statut),
     });
     if (droits) {
       await sb.from("entitlements").upsert(droits, { onConflict: "tenant_id" });

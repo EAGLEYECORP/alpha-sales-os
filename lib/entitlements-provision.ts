@@ -107,6 +107,57 @@ export function ligneEntitlements(opts: {
 }
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * ET LA RÉVOCATION — sans elle, résilier ne coûtait rien au client.
+ *
+ * ⚠ LE TROU LAISSÉ PAR LE PROVISIONNEMENT SEUL. `ligneEntitlements` n'écrit
+ * que sur encaissement. À la résiliation, le webhook mettait bien
+ * `subscriptions.status = "canceled"` — et la ligne `entitlements` restait
+ * `actif`. Le client annulait son abonnement et gardait l'accès complet,
+ * indéfiniment. Rien n'alertait : les deux tables se contredisaient en
+ * silence, et c'est celle des droits qui décide.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Les états d'abonnement Stripe qui laissent l'accès OUVERT.
+ *
+ * `past_due` en fait partie volontairement : c'est un délai de grâce. Couper
+ * l'accès au premier prélèvement raté ne récupère aucun impayé et transforme
+ * une carte expirée en client perdu. Stripe réessaie ; nous attendons.
+ *
+ * ⚠ Cette liste DOIT rester identique à `ACTIVE` dans `lib/billing.ts`, qui
+ * gouverne le même jugement côté écran. Un test le vérifie : deux listes dans
+ * deux fichiers finissent toujours par diverger, et là l'écran dirait « actif »
+ * pendant que le middleware refuse.
+ */
+export const ETATS_ABO_OUVERTS: readonly string[] = ["active", "trialing", "past_due"];
+
+/**
+ * Que faire des droits à la lecture d'un état d'abonnement ?
+ *
+ * `null` = ne rien toucher. On ne réactive JAMAIS depuis ici : rouvrir des
+ * droits demande de savoir QUELLES briques, donc de repasser par l'offre.
+ * Cette fonction ne sait que fermer.
+ */
+export function revocationPour(statusAbonnement: string | null | undefined): { statut: "suspendu" } | null {
+  if (!statusAbonnement) return null;
+  return ETATS_ABO_OUVERTS.includes(statusAbonnement) ? null : { statut: "suspendu" };
+}
+
+/**
+ * La ligne à écrire pour FERMER les droits d'un compte.
+ *
+ * On garde les briques : elles disent ce qu'il avait, ce qui sert au moment de
+ * la reprise et au support. `autorise()` les ignore de toute façon dès que le
+ * statut est « suspendu » — un compte suspendu ne garde que les chemins
+ * communs, ceux qui lui permettent de se connecter, comprendre et payer.
+ */
+export function ligneRevocation(tenantId: string): Record<string, unknown> {
+  return { tenant_id: tenantId, statut: "suspendu", updated_at: new Date().toISOString() };
+}
+
+/**
  * Toutes les offres doivent ouvrir au moins une brique.
  *
  * Sert de test ET de garde-fou à l'exécution : une offre ajoutée au catalogue
