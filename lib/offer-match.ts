@@ -40,16 +40,77 @@ export interface OfferMatch {
   pitch: string;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QU'UNE OFFRE EST, EN UN SEUL ENDROIT.
+ *
+ * Le libellé, l'accroche écrite et ce qui se DIT au téléphone vivent
+ * ensemble. Les trois se lisent au même moment sur la même fiche : séparés,
+ * ils divergent, et le prospect entend une offre pendant qu'il lit l'autre.
+ *
+ * ⚠ LA RAISON D'ÊTRE DES DEUX DERNIERS CHAMPS. Le script d'appel sortant
+ * annonçait « proposer un audit de leur accueil téléphonique » — l'angle
+ * Callflow — QUEL QUE SOIT le routage. Un prospect routé vers la visibilité
+ * s'entendait donc proposer autre chose que ce qu'on avait décidé de lui
+ * vendre. Pire : quand le brief du deep-dive accompagnait l'appel, il portait
+ * « Offre pertinente : Visibilité / Growth » pendant que le rôle disait
+ * Callflow. Deux offres contradictoires dans le même prompt.
+ *
+ * `raisonAppel` est la phrase que l'agent dit APRÈS la divulgation, et
+ * `question` est la seule question qu'il pose avant d'écouter. Elles sont
+ * écrites pour être PRONONCÉES : courtes, sans jargon, sans chiffre — la
+ * règle « jamais de prix au téléphone » ne se négocie pas.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface OffreCommerciale {
+  label: string;
+  /** Accroche écrite (fiche, email, deck). */
+  pitch: string;
+  /** Pourquoi on appelle, en UNE phrase dite à voix haute. */
+  raisonAppel: string;
+  /** La seule question posée avant d'écouter. */
+  question: string;
+}
+
+export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
+  "alpha-sales-os": {
+    label: "Alpha Sales OS — l'OS de vente intelligent",
+    pitch: "« Vous avez des leads. Le vrai enjeu n'est pas d'en avoir plus — c'est de n'en perdre aucun. »",
+    raisonAppel:
+      "comprendre comment vous suivez vos demandes aujourd'hui, parce que la plupart des affaires se perdent entre le premier contact et la relance, pas au moment de vendre",
+    question: "Quand quelqu'un vous contacte aujourd'hui, qu'est-ce qui se passe ensuite, concrètement ?",
+  },
+  callflow: {
+    label: "ScintIA Callflow — l'accueil & relance IA au téléphone",
+    pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
+    raisonAppel:
+      "comprendre ce qui se passe chez vous quand le téléphone sonne et que personne ne peut décrocher",
+    question: "Dans une semaine normale, il vous arrive de ne pas pouvoir répondre ? À peu près combien de fois ?",
+  },
+  "visibilite-growth": {
+    label: "Visibilité / Growth — offre personnalisée",
+    pitch: "« On vous rend visible là où vos clients cherchent — puis on transforme ce trafic. »",
+    raisonAppel:
+      "comprendre comment vos clients vous trouvent aujourd'hui, parce que de l'extérieur on vous voit assez peu",
+    question: "Vos nouveaux clients, ils viennent d'où en ce moment — bouche-à-oreille, recherche, autre chose ?",
+  },
+};
+
+/**
+ * ⚠ CES DEUX TABLES SONT DÉRIVÉES, PAS RECOPIÉES. Elles gardent leur nom
+ * parce que des écrans les importent déjà ; ce qui change, c'est qu'il n'existe
+ * plus qu'une seule saisie derrière.
+ */
 export const OFFER_LABELS: Record<EagleyeOffer, string> = {
-  "alpha-sales-os": "Alpha Sales OS — l'OS de vente intelligent",
-  callflow: "ScintIA Callflow — l'accueil & relance IA au téléphone",
-  "visibilite-growth": "Visibilité / Growth — offre personnalisée",
+  "alpha-sales-os": OFFRES["alpha-sales-os"].label,
+  callflow: OFFRES.callflow.label,
+  "visibilite-growth": OFFRES["visibilite-growth"].label,
 };
 
 const OFFER_PITCH: Record<EagleyeOffer, string> = {
-  "alpha-sales-os": "« Vous avez des leads. Le vrai enjeu n'est pas d'en avoir plus — c'est de n'en perdre aucun. »",
-  callflow: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
-  "visibilite-growth": "« On vous rend visible là où vos clients cherchent — puis on transforme ce trafic. »",
+  "alpha-sales-os": OFFRES["alpha-sales-os"].pitch,
+  callflow: OFFRES.callflow.pitch,
+  "visibilite-growth": OFFRES["visibilite-growth"].pitch,
 };
 
 // Métiers très dépendants du téléphone (accueil, prise de RDV, urgence).

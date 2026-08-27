@@ -6,6 +6,7 @@ import { deepDive, briefForScript } from "./deep-dive";
 import { buildArgumentaire } from "./argumentaire";
 import { callAllowedNow, outboundComplianceGate, toE164, DO_NOT_CALL_TAG, type CallMode } from "./voice-script";
 import { CALL_DAILY_SAFE } from "./daily-plan";
+import type { EagleyeOffer } from "./offer-match";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -59,6 +60,20 @@ export interface CallTask {
   objective: string;
   /** Compte au nom duquel on appelle. */
   accountId: string;
+  /**
+   * ── L'OFFRE REPRÉSENTÉE, ET LE MAILLON QUI LA LAISSAIT TOMBER ──
+   *
+   * `deepDive` la calcule déjà, contrainte aux offres autorisées du compte, et
+   * `briefForScript` l'écrit en toutes lettres dans le brief. Mais la tâche
+   * d'appel ne transportait que le brief : le script vocal, lui, annonçait
+   * « un audit de leur accueil téléphonique » en dur, c'est-à-dire Callflow,
+   * quel que soit le routage.
+   *
+   * Un prospect routé vers la visibilité partait donc avec un RÔLE Callflow et
+   * un DOSSIER visibilité dans le même prompt. Le champ existe pour que
+   * l'offre arrive jusqu'à l'agent, et pas seulement jusqu'à la prose.
+   */
+  offre: EagleyeOffer;
   /** Ce qu'il faut absolument récolter pendant l'appel. */
   mustCapture: string[];
 }
@@ -139,7 +154,7 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
     skipped.push({ prospectId: p.id, company: p.company, reason, detail });
 
   // ── 1. Filtrage : on écarte AVANT de trier, pour ne pas classer du vide ──
-  interface Candidate { p: Prospect; priority: number; recallIndex: number; brief: string; objective: string; mustCapture: string[]; phone: string }
+  interface Candidate { p: Prospect; priority: number; recallIndex: number; brief: string; objective: string; mustCapture: string[]; phone: string; offre: EagleyeOffer }
   const candidates: Candidate[] = [];
 
   for (const p of prospects) {
@@ -219,6 +234,9 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
       priority,
       recallIndex: cadence.recallsUsed,
       brief,
+      // L'offre vient du MÊME `deepDive` que le brief : une seule décision,
+      // pas deux qui peuvent diverger.
+      offre: dive.offer,
       objective: dive.objective,
       mustCapture: dive.gaps.slice(0, 4),
       phone,
@@ -244,6 +262,9 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
       brief: c.brief,
       objective: c.objective,
       accountId,
+      // La même offre que celle écrite dans le brief — une seule décision,
+      // prise par `deepDive`, portée jusqu'au script.
+      offre: c.offre,
       mustCapture: c.mustCapture,
     });
     budget -= 1;

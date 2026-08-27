@@ -6,6 +6,10 @@ import { AlertTriangle, Check, Clock, Copy, Loader2, PhoneOutgoing, ShieldCheck,
 import { useAlpha } from "@/lib/store";
 import { CALL_MODES, DO_NOT_CALL_TAG, type CallMode } from "@/lib/voice-script";
 import { VERTICALS, verticalForProspect } from "@/lib/playbook";
+// L'offre représentée vient du MÊME calcul que celui de l'autopilote
+// (`deepDive`), pour que les deux chemins d'appel ne puissent pas proposer
+// deux choses différentes à la même fiche.
+import { deepDive } from "@/lib/deep-dive";
 import { speak, stopSpeak, getTtsProvider, setTtsProvider, type TtsProvider } from "@/lib/browser-tts";
 import { cn } from "@/lib/utils";
 import { CostPanel } from "@/components/voice/cost-panel";
@@ -86,8 +90,19 @@ export default function VoicePage() {
       onBehalfOf: settings.agencyName || "EAGLEYE CORP",
       isProfessional: confirmB2B,
       optedOut: Boolean(prospect?.tags?.includes(DO_NOT_CALL_TAG)),
+      accountId: settings.accountId,
+      /**
+       * ⚠ L'APPEL MANUEL NE DISAIT RIEN DE L'OFFRE, et le script sortant
+       * annonçait donc Callflow en dur — y compris pour une fiche routée
+       * vers la visibilité ou Alpha Sales OS.
+       *
+       * Sans fiche (numéro tapé à la main), on n'envoie rien : la route
+       * tranche alors par le compte, ou bascule en qualification pure. On ne
+       * suppose pas une offre pour quelqu'un dont on ne sait rien.
+       */
+      offre: prospect ? deepDive(prospect, settings.accountId).offer : undefined,
     }),
-    [mode, phone, prospect, vertical, agentName, settings.agencyName, confirmB2B]
+    [mode, phone, prospect, vertical, agentName, settings.agencyName, settings.accountId, confirmB2B]
   );
 
   // Relecture permanente : on voit ce que dirait l'agent avant tout appel.
@@ -98,6 +113,9 @@ export default function VoicePage() {
       onBehalfOf: payload.onBehalfOf,
       ...(payload.company ? { company: payload.company } : {}),
       ...(payload.verticalId ? { verticalId: payload.verticalId } : {}),
+      // La relecture doit montrer LE script qui partira, offre comprise.
+      ...(payload.offre ? { offre: payload.offre } : {}),
+      ...(payload.accountId ? { accountId: payload.accountId } : {}),
     });
     fetch(`/api/voice/call?${q}`)
       .then((r) => r.json())

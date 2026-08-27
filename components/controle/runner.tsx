@@ -92,6 +92,16 @@ export function CampaignRunner({
             prospectBrief: task.brief,
             prospectId: task.prospectId,
             accountId: task.accountId,
+            /**
+             * ⚠ SANS CETTE LIGNE, LE BRIEF ET LE RÔLE SE CONTREDISAIENT.
+             *
+             * `task.brief` porte « Offre pertinente : … » depuis toujours,
+             * mais l'offre elle-même ne voyageait pas — et le script sortant
+             * annonçait Callflow en dur. Sur une fiche routée vers la
+             * visibilité, l'agent recevait deux offres différentes dans le
+             * même prompt et tranchait tout seul, en direct.
+             */
+            offre: task.offre,
             isProfessional: true,
             optedOut: false,
             force,

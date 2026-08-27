@@ -9,6 +9,10 @@ import {
   type CallMode,
   type VoiceConfig,
 } from "@/lib/voice-script";
+// La résolution de l'offre est pure et testable : elle vit dans lib/.
+// Next.js n'autorise de toute façon aucun export hors handler dans ce fichier.
+import { resoudreOffre } from "@/lib/voice-offre";
+import type { EagleyeOffer } from "@/lib/offer-match";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -62,6 +66,11 @@ interface Body {
   prospectId?: string;
   /** Compte au nom duquel on appelle (portefeuille white-label). */
   accountId?: string;
+  /**
+   * L'offre REPRÉSENTÉE sur cet appel — celle que `deepDive` a retenue pour
+   * cette fiche. C'est elle qui écrit le rôle de l'agent (voir `resoudreOffre`).
+   */
+  offre?: EagleyeOffer;
 }
 
 /** Modes exposés. Le démarchage grand public reste absent. */
@@ -91,6 +100,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const offreResolue = resoudreOffre(body.offre, body.accountId);
+
   const cfg: VoiceConfig = {
     mode,
     agentName: body.agentName?.trim() || "ALPHA",
@@ -98,6 +109,7 @@ export async function POST(request: NextRequest) {
     company: body.company?.trim(),
     verticalId: body.verticalId,
     prospectBrief: body.prospectBrief,
+    offre: offreResolue.offre,
   };
 
   const script = buildVoiceScript(cfg);
@@ -159,6 +171,10 @@ export async function POST(request: NextRequest) {
       audit,
       phone,
       window,
+      // L'offre représentée voyage avec le script : l'opérateur doit pouvoir
+      // vérifier CE QUE l'appel va proposer avant de le lancer, pas le
+      // découvrir en écoutant.
+      offre: offreResolue,
     });
   }
 
@@ -178,7 +194,7 @@ export async function POST(request: NextRequest) {
       prospectId: body.prospectId ?? "",
       accountId: body.accountId ?? "",
     });
-    return NextResponse.json({ dispatched: true, room, dispatchId, script, audit, phone });
+    return NextResponse.json({ dispatched: true, room, dispatchId, script, audit, phone, offre: offreResolue });
   } catch (e) {
     return NextResponse.json(
       {
@@ -248,16 +264,21 @@ async function createDispatch(room: string, metadata: Record<string, unknown>): 
 /** Relecture du script sans rien déclencher. */
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams;
+  const offreRelue = resoudreOffre(q.get("offre"), q.get("accountId"));
   const cfg: VoiceConfig = {
     mode: (q.get("mode") as CallMode) ?? "demo-sortante",
     agentName: q.get("agentName") || "ALPHA",
     onBehalfOf: q.get("onBehalfOf") || "EAGLEYE CORP",
     company: q.get("company") ?? undefined,
     verticalId: q.get("verticalId"),
+    // La relecture doit montrer LE script qui partira, offre comprise. Sans
+    // ça, l'opérateur valide un texte et l'agent en dit un autre.
+    offre: offreRelue.offre,
   };
   const script = buildVoiceScript(cfg);
   return NextResponse.json({
     script,
+    offre: offreRelue,
     audit: auditScript(script),
     window: callAllowedNow(),
     livekit: livekitConfigured(),

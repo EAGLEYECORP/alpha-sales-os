@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { deepDive, deepDiveBatch, briefForScript } from "../lib/deep-dive";
 import { buildVoiceScript, auditScript } from "../lib/voice-script";
+import { OFFRES, type EagleyeOffer } from "../lib/offer-match";
 import type { Prospect } from "../lib/types";
 
 /** Fiche minimale — on ne remplit que ce que chaque test veut éprouver. */
@@ -133,4 +134,68 @@ test("deep-dive — le brief entre dans le script SANS casser la divulgation art
   assert.match(script, /Marc Dubois/);
   // La conformité reste intacte : c'est la règle qu'on ne contourne jamais.
   assert.equal(auditScript(script).ok, true);
+});
+
+test("⚠ deep-dive — le RÔLE et le DOSSIER ne peuvent plus nommer deux offres différentes", () => {
+  /**
+   * ⚠ LE DÉFAUT QUE CE TEST FERME, ET QUE LE TEST DU DESSUS A LAISSÉ PASSER.
+   *
+   * Celui du dessus construit exactement la situation fautive — un brief qui
+   * porte « Offre pertinente : … » assemblé avec un script de prospection —
+   * et ne vérifiait que la divulgation. Il n'a donc rien vu quand le corps du
+   * script annonçait « proposer un audit de leur accueil téléphonique », soit
+   * l'angle Callflow, ÉCRIT EN DUR, quel que soit le routage.
+   *
+   * Sur une fiche routée vers la visibilité, l'agent recevait donc un RÔLE
+   * Callflow et un DOSSIER visibilité dans le même prompt. Il tranchait seul,
+   * en direct, devant le prospect.
+   *
+   * On éprouve ici trois fiches qui routent différemment, et on exige que les
+   * deux blocs disent la MÊME offre — et qu'aucun autre angle ne traîne.
+   */
+  const cas: { quoi: string; p: Prospect }[] = [
+    {
+      quoi: "téléphone qui déborde",
+      p: fixture({ deepAudit: { websiteState: "ok", socialState: "actif", localCompetition: "", currentProcess: "", missedCallsPerWeek: 9 } }),
+    },
+    {
+      quoi: "invisible en ligne",
+      p: fixture({ deepAudit: { websiteState: "aucun", socialState: "aucun", localCompetition: "", currentProcess: "", googleReviews: 2 } }),
+    },
+    {
+      quoi: "du deal à outiller",
+      p: fixture({ sector: "autre", monthlyValue: 4000, deepAudit: { websiteState: "ok", socialState: "actif", localCompetition: "", currentProcess: "" } }),
+    },
+  ];
+
+  for (const { quoi, p } of cas) {
+    const dive = deepDive(p);
+    const script = buildVoiceScript({
+      onBehalfOf: "EAGLEYE CORP",
+      agentName: "Alpha",
+      mode: "prospection-b2b",
+      company: p.company,
+      prospectBrief: briefForScript(dive, p),
+      // Ce que l'application fait maintenant : la MÊME décision alimente les
+      // deux blocs. C'est cette ligne qui manquait partout.
+      offre: dive.offer,
+    });
+
+    assert.ok(
+      script.includes(`Offre pertinente : ${dive.offerLabel}`),
+      `${quoi} : le dossier doit porter l'offre du deep-dive`
+    );
+    assert.ok(
+      script.includes(`Offre représentée sur cet appel : ${dive.offerLabel}`),
+      `${quoi} : le rôle doit porter la MÊME offre que le dossier`
+    );
+
+    for (const autre of (Object.keys(OFFRES) as EagleyeOffer[]).filter((x) => x !== dive.offer)) {
+      assert.ok(
+        !script.includes(OFFRES[autre].raisonAppel),
+        `${quoi} : l'angle de ${autre} traîne encore dans un script qui vend ${dive.offer}`
+      );
+    }
+    assert.equal(auditScript(script).ok, true, `${quoi} : la divulgation doit tenir`);
+  }
 });

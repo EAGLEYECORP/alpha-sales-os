@@ -1,5 +1,8 @@
 import { localTime, BUSINESS_TZ } from "./business-hours";
 import { VERTICALS, type VerticalPlaybook } from "./playbook";
+// L'offre représentée écrit le rôle de l'agent. Une seule saisie par offre :
+// le libellé, l'accroche écrite et ce qui se dit au téléphone vivent ensemble.
+import { OFFRES, type EagleyeOffer } from "./offer-match";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -123,6 +126,25 @@ export interface VoiceConfig {
    * un script générique ne convertit pas (cf. juillet 2026).
    */
   prospectBrief?: string;
+  /**
+   * ── L'OFFRE REPRÉSENTÉE. C'EST ELLE QUI ÉCRIT LE SCRIPT. ──
+   *
+   * ⚠ CE CHAMP N'EXISTAIT PAS, ET LE SCRIPT SORTANT PITCHAIT DONC TOUJOURS
+   * LA MÊME CHOSE : « proposer un audit de leur accueil téléphonique », soit
+   * l'angle Callflow, écrit en dur, quel que soit le routage.
+   *
+   * Toute la chaîne était pourtant juste : `deepDive` calcule l'offre
+   * (contrainte aux offres autorisées du compte), `briefForScript` l'écrit
+   * — « Offre pertinente : … » —, et `CallTask` la laissait tomber en route.
+   * Résultat, sur un prospect routé vers la visibilité : le RÔLE disait
+   * Callflow, le DOSSIER disait visibilité, dans le même prompt. L'agent
+   * arbitrait tout seul, en direct, devant le prospect.
+   *
+   * Absente, on ne devine PAS. Le script bascule en qualification pure et ne
+   * présente aucune offre — proposer la mauvaise coûte plus cher que de ne
+   * rien proposer, et c'est la seule des deux erreurs qui se rattrape.
+   */
+  offre?: EagleyeOffer | null;
 }
 
 /**
@@ -171,17 +193,37 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
       `Tu ne parles JAMAIS de prix. Tu ne cherches pas à convaincre : tu montres, et tu rends la main.`
     );
   } else if (cfg.mode === "prospection-b2b") {
+    const o = cfg.offre ? OFFRES[cfg.offre] : null;
     corps.push(
       `Tu appelles ${company}, une ENTREPRISE, dans le cadre d'une prospection commerciale B2B pour le compte de ${cfg.onBehalfOf}.`,
-      `Après la divulgation, tu dis en UNE phrase pourquoi tu appelles : proposer un audit de leur accueil téléphonique. Puis tu poses une seule question courte et tu écoutes.`,
+      /**
+       * ⚠ CETTE LIGNE ÉTAIT ÉCRITE EN DUR : « proposer un audit de leur
+       * accueil téléphonique ». C'est l'angle Callflow, et il partait sur
+       * TOUS les appels — y compris ceux routés vers la visibilité ou
+       * Alpha Sales OS. Elle vient maintenant de l'offre représentée.
+       */
+      o
+        ? `Après la divulgation, tu dis en UNE phrase pourquoi tu appelles : ${o.raisonAppel}. Puis tu poses cette seule question, et tu écoutes : « ${o.question} »`
+        : // Sans offre résolue, on ne devine pas : proposer la mauvaise offre
+          // coûte plus cher que de n'en proposer aucune, et c'est la seule
+          // des deux erreurs qui ne se rattrape pas au deuxième appel.
+          `Après la divulgation, tu dis en UNE phrase que tu appelles pour COMPRENDRE comment ils travaillent, sans rien leur proposer aujourd'hui. Tu ne présentes AUCUNE offre et tu n'en inventes pas : tu qualifies, puis tu proposes de faire le point avec un humain.`,
+      o ? `Offre représentée sur cet appel : ${o.label}. Tu ne parles d'aucune autre.` : "",
       v ? `Angle métier : ${v.structuralPain}` : "",
       `Tu précises, si on te le demande, que leurs coordonnées PROFESSIONNELLES proviennent de sources publiques (annuaires, site web).`,
       `Droit d'opposition, prioritaire : dès que la personne montre qu'elle ne veut pas être appelée — même à demi-mot — tu confirmes qu'elle ne sera plus contactée, tu la remercies et tu raccroches. Immédiat, définitif, sans insister.`,
       `Tu ne parles JAMAIS de prix. Tu ne relances pas. Au mieux, tu proposes un rendez-vous court avec un humain, et tu rends la main.`
     );
   } else {
+    // Un rappel est un contact CHAUD : la personne a laissé ses coordonnées.
+    // L'offre sert donc de contexte — de quoi on avait parlé — et pas
+    // d'accroche à dérouler. Sans elle, on ne suppose rien.
+    const o = cfg.offre ? OFFRES[cfg.offre] : null;
     corps.push(
       `Tu rappelles une personne qui a laissé ses coordonnées à ${cfg.onBehalfOf}.`,
+      o
+        ? `Le sujet sur lequel elle s'est manifestée : ${o.label}. Tu t'y tiens, tu n'élargis pas.`
+        : `Tu ne supposes PAS de quoi il s'agissait : tu demandes ce qui l'avait amenée à laisser ses coordonnées.`,
       `Tu rappelles pourquoi tu appelles, tu vérifies que le moment est bon, et tu proposes un créneau avec un humain.`,
       `Si la personne dit qu'elle ne souhaite plus être contactée, tu le confirmes, tu remercies et tu raccroches. Aucune relance.`
     );
