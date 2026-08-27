@@ -71,16 +71,26 @@ export interface Account {
    */
   offers: EagleyeOffer[];
   /**
-   * Taux « vitrine » du compte — celui appliqué par défaut dans la page
-   * Payouts (settings.commissionPct). C'est l'offre PRINCIPALE du compte
-   * (Callflow 30 % pour ScintIA, 15 % pour Nuwacom). Les taux fins par
-   * offre/taille vivent dans `lib/accounts-commercial.ts` (commissionFor()).
+   * ⚠ LE TAUX DU COMPTE N'EST PLUS ICI, ET LA RAISON EST UNE MESURE.
    *
-   * Il reste ici — donc dans le navigateur — sciemment : il irrigue
-   * l'escalier, la fiche et les payouts à chaque rendu, et chaque partenaire
-   * connaît déjà son propre taux. Les MONTANTS, eux, sont partis.
+   * Ce champ portait 100 / 30 / 15. Ce module descend dans le navigateur, et
+   * `_next/static/**` est exclu du middleware : le chunk qui le contient
+   * répond 200 sans cookie, SITE_PASSWORD actif — vérifié sur serveur réel.
+   * Notre part chez ScintIA et chez Nuwacom était donc publique.
+   *
+   * Le commentaire qui l'y laissait plaidait que « chaque partenaire connaît
+   * déjà son propre taux ». La moitié tient. L'autre non : le chunk les
+   * montre TOUS LES TROIS, à n'importe qui — et CLAUDE.md pose que le taux
+   * Nuwacom se dresse APRÈS le cadrage. Ce n'est pas un chiffre connu, c'est
+   * celui qu'on négocie.
+   *
+   * Il vient maintenant du serveur, dérivé des offres du compte
+   * (`tauxVitrinePct`, lib/client-catalogue.ts) et servi au compte MAÎTRE
+   * seulement (`/api/catalogue`). La bascule de compte l'applique aux
+   * Réglages ; tant qu'il n'est pas arrivé, elle est désactivée — un
+   * `/payouts` qui calculerait une part ScintIA à 100 % en silence serait
+   * pire que la fuite qu'on vient de fermer.
    */
-  commissionPct: number;
   /**
    * Comment on CLOSE sur ce compte. Chaque marque a son rituel de signature :
    * un devis EAGLEYE, une proposition via le panel ScintIA, un cadrage avec le
@@ -115,18 +125,15 @@ export const ACCOUNTS: Account[] = [
       "On outille les forces de vente avec l'automatisation IA : zéro lead perdu, la machine tourne 24/7.",
     // Le maître voit et propose tout — c'est lui qui arbitre l'offre.
     offers: ["alpha-sales-os", "callflow", "visibilite-growth"],
-    // 100 %, et ce n'est pas une faute de frappe : EAGLEYE CORP, c'est NOUS.
-    // Sur nos propres offres — visibilité, Alpha Sales OS, à la carte, OS
-    // personnalisé — il n'y a personne à qui reverser quoi que ce soit. Le
-    // « taux » d'un compte mesure ce qui nous revient sur un deal ; sur notre
-    // propre société, c'est tout.
+    // Le taux d'EAGLEYE est à 100 % et ne se lit plus ici (voir `Account`) :
+    // EAGLEYE CORP, c'est NOUS, il n'y a personne à qui reverser. Il vit avec
+    // les autres dans `lib/accounts-commercial.ts`.
     //
     // ⚠ À ne pas confondre avec les 30 % de l'offre « setup + 30 % du CA
     // généré » : ceux-là, c'est ce qu'on FACTURE à un client sur le chiffre
     // qu'on lui fait gagner (lib/pricing → REV_SHARE). Deux choses différentes
     // qui portaient le même nombre — c'est précisément ce qui rendait l'erreur
     // invisible.
-    commissionPct: 100,
     closing: {
       action: "Envoyer le DEVIS EAGLEYE CORP (chiffré, daté, avec la date de décision convenue).",
     },
@@ -144,7 +151,6 @@ export const ACCOUNTS: Account[] = [
     // Callflow UNIQUEMENT — négocié : ScintIA se concentre sur Callflow comme
     // PRODUIT. Le « ScintIA Lab » est repassé à EAGLEYE.
     offers: ["callflow"],
-    commissionPct: 30,
     closing: {
       action: "Envoyer la PROPOSITION COMMERCIALE depuis le panel de vente ScintIA Callflow.",
     },
@@ -162,7 +168,6 @@ export const ACCOUNTS: Account[] = [
     // GROS chantiers seulement (> 40 k) : en dessous, c'est faisable par nous
     // et ça reste chez EAGLEYE. Au-dessus, c'est trop lourd pour nous.
     offers: ["visibilite-growth", "alpha-sales-os"],
-    commissionPct: 15,
     closing: {
       // Le NOM du CEO est dans `lib/accounts-commercial.ts` : l'acte se dit
       // sans lui, et cette chaîne-ci part dans le navigateur.
@@ -206,7 +211,7 @@ export const ACCOUNTS: Account[] = [
   },
 ];
 
-const DEFAULT_ACCOUNT_ID = "eagleye";
+export const DEFAULT_ACCOUNT_ID = "eagleye";
 
 /** Le compte par id, ou le maître par défaut si l'id est inconnu/absent. */
 export function getAccount(id?: string): Account {
@@ -220,17 +225,26 @@ export function masterAccount(): Account {
 
 /**
  * Le patch de Réglages qui fait basculer l'app sur CE compte : identité
- * (nom + offre), commission, et l'accountId qui trace le compte actif.
+ * (nom + offre) et l'accountId qui trace le compte actif.
  * Volontairement RESTREINT — on ne touche ni aux données (prospects), ni à
  * la sécurité, ni aux clés. Basculer de compte change QUI on est, pas ce
  * qu'on possède.
+ *
+ * ⚠ `commissionPct` NE FAIT PLUS PARTIE DU PATCH, et l'omission est le fond
+ * du correctif : ce module descend dans le navigateur, donc le taux de
+ * chaque compte y descendait avec lui (voir l'interface `Account`).
+ *
+ * Le taux arrive maintenant du serveur et c'est le SÉLECTEUR de comptes qui
+ * l'écrit dans les Réglages, une fois qu'il l'a reçu. Tant qu'il ne l'a pas,
+ * il n'y a pas de bascule : mieux vaut un bouton en attente qu'un `/payouts`
+ * calculant notre part d'un deal ScintIA à 100 % sans que personne ne le
+ * voie.
  */
 export function applyAccount(id: string): Partial<AppSettings> {
   const a = getAccount(id);
   return {
     accountId: a.id,
     agencyName: a.name,
-    commissionPct: a.commissionPct,
     offer: { city: a.city, whatYouSell: a.whatYouSell, valueProp: a.valueProp },
   };
 }

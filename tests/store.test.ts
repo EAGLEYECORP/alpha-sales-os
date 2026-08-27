@@ -137,23 +137,54 @@ test("store — la signature passe quand tout est au vert", () => {
 });
 
 test("store — basculer de compte change l'identité, PAS les données", () => {
-  const { upsertProspect, switchAccount } = useAlpha.getState();
+  const { upsertProspect, switchAccount, patchSettings } = useAlpha.getState();
   upsertProspect(fixture({ id: "keep", company: "Ne doit pas bouger" }));
 
   switchAccount("scintia");
   let s = useAlpha.getState();
   assert.equal(s.settings.accountId, "scintia");
   assert.equal(s.settings.agencyName, "ScintIA");
-  assert.equal(s.settings.commissionPct, 30);
   assert.equal(s.prospects.length, 1, "les prospects ne bougent pas en changeant de compte");
 
   switchAccount("nuwacom");
   s = useAlpha.getState();
   assert.equal(s.settings.agencyName, "Nuwacom");
-  assert.equal(s.settings.commissionPct, 15);
   assert.equal(s.prospects[0].company, "Ne doit pas bouger");
 
   switchAccount("eagleye");
+});
+
+test("⚠ store — la bascule n'écrit PLUS le taux : c'est l'écran qui le pose", () => {
+  /**
+   * ⚠ CE TEST VÉRIFIAIT `settings.commissionPct === 30` APRÈS LA BASCULE.
+   *
+   * Le taux ne descend plus dans le navigateur : il publiait notre part chez
+   * ScintIA et Nuwacom dans un chunk servi sans mot de passe. `switchAccount`
+   * ne change donc plus que l'identité, et le sélecteur écrit le taux une
+   * fois qu'il l'a reçu du serveur (bouton désactivé tant qu'il ne l'a pas).
+   *
+   * Le danger de ce découpage, et ce que ce test surveille : si personne ne
+   * pose le taux ensuite, les Réglages gardent celui du compte PRÉCÉDENT et
+   * `/payouts` calcule notre part d'un deal ScintIA à 100 % sans rien dire.
+   * On vérifie donc les deux moitiés — que la bascule ne touche pas au taux,
+   * ET que le patch qui suit le fait réellement bouger.
+   */
+  const { switchAccount, patchSettings } = useAlpha.getState();
+
+  patchSettings({ commissionPct: 100 });
+  switchAccount("scintia");
+  assert.equal(
+    useAlpha.getState().settings.commissionPct,
+    100,
+    "la bascule seule ne doit pas inventer un taux"
+  );
+
+  // Ce que fait le sélecteur une fois la réponse serveur arrivée.
+  patchSettings({ commissionPct: 30 });
+  assert.equal(useAlpha.getState().settings.commissionPct, 30);
+
+  switchAccount("eagleye");
+  patchSettings({ commissionPct: 100 });
 });
 
 test("store — une note créée depuis un compte lui reste attachée", () => {

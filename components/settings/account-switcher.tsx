@@ -5,7 +5,8 @@ import { useAlpha } from "@/lib/store";
 import { ACCOUNTS, accountICP, getAccount } from "@/lib/accounts";
 // Les montants par offre et la note d'économie du compte NE sont pas importés :
 // ils viennent du serveur (voir lib/client-catalogue.ts).
-import { useAccountCommercial } from "@/lib/client-catalogue";
+import { useAccountCommercial, useAccountsCommercial } from "@/lib/client-catalogue";
+import { tauxVitrinePct } from "@/lib/taux-vitrine";
 import { OFFER_LABELS } from "@/lib/offer-match";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,8 @@ import { cn } from "@/lib/utils";
  * branding partout — pas de fausse impression de cloisonnement des données.
  */
 export function AccountSwitcher() {
-  const { settings, switchAccount } = useAlpha();
+  const { settings, switchAccount, patchSettings } = useAlpha();
+  const portefeuille = useAccountsCommercial();
   const activeId = settings.accountId ?? "eagleye";
   const active = getAccount(activeId);
   const icp = accountICP(activeId);
@@ -46,10 +48,31 @@ export function AccountSwitcher() {
       <div className="grid gap-2 sm:grid-cols-3">
         {ACCOUNTS.map((a) => {
           const on = a.id === activeId;
+          const taux = tauxVitrinePct(portefeuille?.find((c) => c.accountId === a.id));
           return (
             <button
               key={a.id}
-              onClick={() => switchAccount(a.id)}
+              /**
+               * ⚠ LA BASCULE ATTEND LE TAUX, ET C'EST VOULU.
+               *
+               * Le taux de chaque compte ne descend plus dans le bundle : il
+               * publiait notre part chez ScintIA et Nuwacom dans un chunk
+               * servi sans mot de passe. Il arrive donc du serveur.
+               *
+               * Conséquence : `applyAccount` ne l'écrit plus, c'est ici qu'il
+               * s'écrit. Basculer avant de l'avoir reçu laisserait les
+               * Réglages sur le taux du compte PRÉCÉDENT — et `/payouts`
+               * calculerait notre part d'un deal ScintIA à 100 % sans que
+               * rien ne le signale. Un bouton qui attend une demi-seconde est
+               * moins cher qu'un chiffre faux en silence.
+               */
+              disabled={taux == null}
+              title={taux == null ? "Détail commercial en cours de chargement…" : undefined}
+              onClick={() => {
+                switchAccount(a.id);
+                // `taux` est non-null ici : le bouton est désactivé sinon.
+                patchSettings({ commissionPct: taux as number });
+              }}
               className={cn(
                 "rounded-xl border p-3 text-left transition-colors",
                 on
@@ -68,8 +91,11 @@ export function AccountSwitcher() {
               </div>
               <p className="mt-1 line-clamp-2 text-[11px] text-paper-faint">{a.whatYouSell}</p>
               <div className="mt-2 flex flex-wrap gap-1.5 text-[10.5px]">
+                {/* Le taux vient du serveur, comme les montants. Tant qu'il
+                    n'est pas là, on le DIT — on n'affiche pas un chiffre
+                    provisoire qui serait lu comme définitif. */}
                 <span className="inline-flex items-center gap-1 rounded-full bg-bronze-900/30 px-1.5 py-0.5 text-bronze-300">
-                  <Coins size={10} /> {a.commissionPct}%
+                  <Coins size={10} /> {taux == null ? "…" : `${taux}%`}
                 </span>
                 {/* L'objectif par projet est un MONTANT : il arrive du serveur,
                     et seulement pour le compte actif. */}

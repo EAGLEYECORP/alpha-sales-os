@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 // le module serveur sans rien rembarquer dans le navigateur.
 import type { AccountCommercial, CommissionQuote } from "./accounts-commercial";
 import type { DeckPrix } from "./deck";
+// Le taux du compte vit dans son propre module : il doit être lisible du
+// navigateur ET des tests, sans traîner les hooks de celui-ci.
+export { tauxVitrinePct } from "./taux-vitrine";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -47,11 +50,13 @@ async function charger(): Promise<AccountCommercial[]> {
 }
 
 /**
- * Le volet commercial d'un compte. `null` tant que la réponse n'est pas là ou
- * si elle a échoué — l'appelant affiche alors un état d'attente, jamais des
- * chiffres inventés.
+ * Le portefeuille entier — pour les écrans qui listent les comptes, comme le
+ * sélecteur, qui doit afficher le taux de CHACUN et pas seulement de l'actif.
+ *
+ * `null` tant que la réponse n'est pas là ou si elle a échoué : l'appelant
+ * montre une attente, jamais un chiffre inventé.
  */
-export function useAccountCommercial(accountId: string): AccountCommercial | null {
+export function useAccountsCommercial(): AccountCommercial[] | null {
   const [all, setAll] = useState<AccountCommercial[] | null>(cache);
 
   useEffect(() => {
@@ -69,6 +74,15 @@ export function useAccountCommercial(accountId: string): AccountCommercial | nul
     };
   }, []);
 
+  return all;
+}
+
+/**
+ * Le volet commercial d'UN compte. Même contrat que ci-dessus : `null` tant
+ * qu'on ne sait pas, jamais un chiffre par défaut.
+ */
+export function useAccountCommercial(accountId: string): AccountCommercial | null {
+  const all = useAccountsCommercial();
   return all?.find((c) => c.accountId === accountId) ?? null;
 }
 

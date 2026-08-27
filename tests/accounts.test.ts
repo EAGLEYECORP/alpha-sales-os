@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, routeAccount } from "../lib/accounts";
 import { commercialFor, commissionFor } from "../lib/accounts-commercial";
+import { tauxVitrinePct } from "../lib/taux-vitrine";
 import { matchOffer } from "../lib/offer-match";
 
 test("accounts — le portefeuille contient EAGLEYE (maître), ScintIA, Nuwacom", () => {
@@ -23,9 +24,11 @@ test("accounts — ScintIA ne propose QUE callflow", () => {
 });
 
 test("accounts — Nuwacom : commission 15 %, plancher 40 k, entrée FR", () => {
-  const n = getAccount("nuwacom");
-  assert.equal(n.commissionPct, 15);
   const nc = commercialFor("nuwacom");
+  // ⚠ Cette ligne lisait `getAccount("nuwacom").commissionPct`. Le taux est
+  // sorti du registre client : il descendait dans un chunk public. On le lit
+  // là où il vit maintenant — dans les offres du compte.
+  assert.equal(tauxVitrinePct(nc), 15);
   assert.equal(nc.targetPerProject, 40000);
   assert.match(nc.note ?? "", /Allemagne|Benelux|Christophe/);
   const transfo = nc.offerings.find((o) => o.key === "transformation");
@@ -103,7 +106,7 @@ test("accounts — TOUTE offre EAGLEYE est à 100 % : c'est notre société", ()
     assert.equal(o.commissionPct, 100, `${o.key} : une offre à nous n'est jamais partielle`);
     assert.equal(o.recurringPct, 100, `${o.key} : le récurrent non plus`);
   }
-  assert.equal(getAccount("eagleye").commissionPct, 100);
+  assert.equal(tauxVitrinePct(commercialFor("eagleye")), 100);
 
   // Et les offres nommées par la doctrine sont bien là.
   const cles = commercialFor("eagleye").offerings.map((o) => o.key);
@@ -115,8 +118,8 @@ test("accounts — TOUTE offre EAGLEYE est à 100 % : c'est notre société", ()
 test("accounts — les taux partiels ne concernent QUE les intermédiaires", () => {
   // ScintIA et Nuwacom sont des tiers : là, on reverse. C'est la seule
   // situation où le taux descend sous 100 %.
-  assert.equal(getAccount("scintia").commissionPct, 30);
-  assert.equal(getAccount("nuwacom").commissionPct, 15);
+  assert.equal(tauxVitrinePct(commercialFor("scintia")), 30);
+  assert.equal(tauxVitrinePct(commercialFor("nuwacom")), 15);
   for (const id of ["scintia", "nuwacom"]) {
     assert.ok(
       commercialFor(id).offerings.some((o) => o.commissionPct < 100),
@@ -145,7 +148,19 @@ test("accounts — applyAccount produit un patch d'identité restreint (pas de f
   const patch = applyAccount("nuwacom");
   assert.equal(patch.accountId, "nuwacom");
   assert.equal(patch.agencyName, "Nuwacom");
-  assert.equal(patch.commissionPct, 15);
+  /**
+   * ⚠ CETTE LIGNE ATTENDAIT `patch.commissionPct === 15`. L'ABSENCE EST
+   * MAINTENANT LE CORRECTIF, PAS UNE RÉGRESSION.
+   *
+   * `applyAccount` vit dans un module qui descend dans le navigateur : le
+   * taux qu'il recopiait descendait avec, et publiait notre part chez
+   * Nuwacom dans un chunk servi sans mot de passe. Le taux vient du serveur,
+   * et c'est le sélecteur qui l'écrit dans les Réglages une fois reçu.
+   *
+   * On vérifie donc l'inverse de ce qui était vérifié : le patch ne DOIT
+   * plus porter de taux.
+   */
+  assert.equal(patch.commissionPct, undefined, "le taux ne voyage plus dans le patch d'identité");
   assert.equal(patch.offer?.city, "Lyon");
   assert.match(patch.offer?.whatYouSell ?? "", /[Tt]ransformation/);
   // Ne doit JAMAIS toucher aux données/sécurité en basculant de compte.

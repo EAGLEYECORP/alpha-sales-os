@@ -419,29 +419,26 @@ function tauxDePartenariat(src: string): number[] {
 }
 
 /**
- * ⚠ L'EXPOSITION ASSUMÉE, ET POURQUOI ELLE EST ÉCRITE ICI PLUTÔT QUE TUE.
+ * ⚠ CETTE LISTE A ÉTÉ VIDÉE, ET C'EST LE POINT — ELLE NE DOIT PAS SE REMPLIR.
  *
- * `lib/accounts.ts` porte encore le taux « vitrine » des trois comptes, et
- * son propre commentaire dit que c'est délibéré : le taux irrigue l'escalier,
- * la fiche et les payouts à chaque rendu, et chaque partenaire connaît son
- * propre taux.
+ * Elle a existé le temps d'un commit, avec `lib/accounts` dedans : ce module
+ * portait encore le taux des trois comptes, son propre commentaire disait que
+ * c'était délibéré (« chaque partenaire connaît déjà son propre taux »), et le
+ * sortir n'était pas gratuit — `applyAccount` écrivait `settings.commissionPct`
+ * à chaque bascule, donc l'enlever sans plus faisait calculer à `/payouts` la
+ * part d'un deal ScintIA à 100 %. Un chiffre FAUX en silence est pire qu'un
+ * chiffre exposé.
  *
- * La moitié du raisonnement tient, l'autre non, et ça se dit franchement :
- * le chunk montre les TROIS taux ensemble, à quiconque, et pas seulement au
- * partenaire concerné. Or CLAUDE.md pose que le taux Nuwacom se négocie APRÈS
- * le cadrage — il n'est donc pas « déjà connu », c'est l'enjeu.
+ * La sortie était ailleurs : le taux vient du serveur (`tauxVitrinePct` dérivé
+ * des offres, servi au maître seulement), c'est le sélecteur qui l'écrit dans
+ * les Réglages, et il est désactivé tant qu'il ne l'a pas reçu. Un bouton qui
+ * attend une demi-seconde a réglé les deux problèmes à la fois.
  *
- * Le sortir n'est pas gratuit : `applyAccount` écrit `settings.commissionPct`
- * à chaque bascule de compte, et sans lui `/payouts` calculerait notre part
- * d'un deal ScintIA à 100 %. Un chiffre FAUX en silence est pire qu'un
- * chiffre exposé. Ça se fait avec la bascule qui va chercher le taux au
- * serveur (`useAccountCommercial` existe déjà et sert ce rôle pour les
- * montants) — c'est un arbitrage de produit, pas une correction évidente.
- *
- * D'ici là : liste d'UN seul élément, avec la raison écrite. Toute copie
- * suivante fait échouer le test.
+ * On garde la liste vide plutôt que de supprimer le mécanisme : le jour où
+ * quelqu'un voudra y remettre un module, il devra écrire pourquoi ici, et
+ * cette note-là sera le premier contre-argument.
  */
-const EXPOSITION_ASSUMEE = new Set(["lib/accounts"]);
+const EXPOSITION_ASSUMEE = new Set<string>();
 
 test("bundle app — aucun TAUX de partenariat en dur dans un module que le navigateur atteint", () => {
   const clients = sources(["app", "components"]).filter((f) =>

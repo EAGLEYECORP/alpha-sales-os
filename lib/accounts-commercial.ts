@@ -1,4 +1,4 @@
-import { getAccount } from "./accounts";
+import { DEFAULT_ACCOUNT_ID, getAccount } from "./accounts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -303,7 +303,21 @@ export function commissionFor(
     offerings.find(fits) ||
     offerings[0];
 
-  const offering: Offering = picked ?? { key: "default", label: a.name, commissionPct: a.commissionPct };
+  /**
+   * ⚠ CE REPLI LISAIT `a.commissionPct`, C'EST-À-DIRE LE REGISTRE CLIENT.
+   *
+   * Ce champ est parti : il descendait dans le navigateur avec le registre, et
+   * publiait notre part chez chaque partenaire (voir `lib/accounts.ts`).
+   *
+   * Le repli ne se déclenche que pour un compte SANS offre — donc un compte
+   * inconnu, puisque les trois du portefeuille en ont. `getAccount` renvoyait
+   * déjà le compte maître dans ce cas, et son taux était 100 %. On lit donc ce
+   * même 100 % à sa source ici, plutôt que de le réécrire : le comportement ne
+   * change pas, et il n'y a toujours qu'une saisie.
+   */
+  const replMaitre = ACCOUNTS_COMMERCIAL.find((c) => c.accountId === DEFAULT_ACCOUNT_ID)?.offerings[0];
+  const offering: Offering = picked ??
+    replMaitre ?? { key: "default", label: a.name, commissionPct: 100 };
 
   // La RÉFÉRENCE : ce qu'on prend d'habitude sur ce type de deal.
   const reference = opts.recurring && offering.recurringPct != null ? offering.recurringPct : offering.commissionPct;
