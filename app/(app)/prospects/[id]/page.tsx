@@ -76,6 +76,7 @@ import { DeepdiveTools } from "@/components/prospects/deepdive-tools";
 import { RecoveryProjection } from "@/components/prospects/recovery-projection";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
+import { BlocagesSignature } from "@/components/blocages-signature";
 
 type Tab = "doctrine" | "audit" | "timeline" | "commercial" | "coach" | "templates" | "tracking" | "fichiers";
 
@@ -114,11 +115,15 @@ export default function ProspectDetailPage() {
   }
 
   const blockers = signingBlockers(p);
+  const [blocages, setBlocages] = useState<string[]>([]);
   const nba = nextBestAction(p);
 
   const trySign = () => {
-    if (signingBlockers(p).length > 0) {
-      alert(`⛔ Doctrine :\n\n${signingBlockers(p).join("\n")}`);
+    const bloc = signingBlockers(p);
+    if (bloc.length > 0) {
+      // Voir components/blocages-signature.tsx : un `alert()` natif effaçait
+      // la seule information utile de ce moment au premier clic sur OK.
+      setBlocages(bloc);
       return;
     }
     setReasonAsk({ kind: "won", stage: "signe" });
@@ -347,6 +352,8 @@ export default function ProspectDetailPage() {
         />
       )}
       {sparring && <Sparring p={p} onClose={() => setSparring(false)} />}
+      <BlocagesSignature blocages={blocages} onClose={() => setBlocages([])} company={p.company} />
+
       <ReasonDialog
         open={!!reasonAsk}
         kind={reasonAsk?.kind ?? "won"}
@@ -1400,12 +1407,27 @@ function TimelineTab({
   const [nextAction, setNextAction] = useState("");
   const [nextDate, setNextDate] = useState(daysAhead(2).slice(0, 10));
 
+  /**
+   * ⚠ CE MESSAGE PARTAIT DANS UN `alert()`. C'est le formulaire le plus
+   * utilisé de l'app — un contact s'y consigne plusieurs fois par jour.
+   *
+   * Une boîte système pour une validation de champ oblige à un clic de plus,
+   * efface le message dès qu'on l'a fermée, et ne montre PAS lequel des deux
+   * champs manque. Le message vit maintenant sous le champ concerné, il y
+   * reste tant que le champ est vide, et il disparaît dès qu'on écrit.
+   */
+  const [manque, setManque] = useState<"resume" | "next" | null>(null);
+
   const submit = () => {
-    if (!summary.trim()) return;
-    if (!nextAction.trim()) {
-      alert("Doctrine : chaque contact se termine par un next step DATÉ.");
+    if (!summary.trim()) {
+      setManque("resume");
       return;
     }
+    if (!nextAction.trim()) {
+      setManque("next");
+      return;
+    }
+    setManque(null);
     addEvent(p.id, {
       date: new Date().toISOString(),
       kind,
@@ -1457,9 +1479,34 @@ function TimelineTab({
           <option value="note">Note</option>
         </select>
         <label className="label mt-3">Résumé</label>
-        <textarea className="input min-h-20" value={summary} onChange={(e) => setSummary(e.target.value)} />
+        <textarea
+          className="input min-h-20"
+          value={summary}
+          onChange={(e) => {
+            setSummary(e.target.value);
+            if (manque === "resume") setManque(null);
+          }}
+        />
+        {manque === "resume" && (
+          <p className="mt-1 text-[11.5px] text-signal-amber">
+            Écris ce qui s&apos;est dit — même en une ligne. Un contact non résumé est un contact perdu.
+          </p>
+        )}
         <label className="label mt-3">Next step (obligatoire)</label>
-        <input className="input" value={nextAction} onChange={(e) => setNextAction(e.target.value)} placeholder="Action précise" />
+        <input
+          className="input"
+          value={nextAction}
+          onChange={(e) => {
+            setNextAction(e.target.value);
+            if (manque === "next") setManque(null);
+          }}
+          placeholder="Action précise"
+        />
+        {manque === "next" && (
+          <p className="mt-1 text-[11.5px] text-signal-amber">
+            Doctrine : chaque contact se termine par un next step DATÉ. Sans lui, le dossier va dormir.
+          </p>
+        )}
         <input type="date" className="input mt-2" value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
         <button className="btn-bronze mt-4 w-full" onClick={submit}>
           Enregistrer le contact

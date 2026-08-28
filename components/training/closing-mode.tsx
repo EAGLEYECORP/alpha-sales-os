@@ -10,6 +10,7 @@ import { fireSignedConfetti } from "@/lib/confetti";
 import { Eagle } from "@/components/eagle";
 import { ReasonDialog } from "@/components/ui/reason-dialog";
 import { cn } from "@/lib/utils";
+import { BlocagesSignature } from "@/components/blocages-signature";
 
 /**
  * Mode Closing — plein écran, à dérouler PENDANT le rendez-vous.
@@ -22,6 +23,7 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
   const [openObj, setOpenObj] = useState<number | null>(null);
   const [done, setDone] = useState(false);
   const [reasonAsk, setReasonAsk] = useState<"signe" | "perdu" | null>(null);
+  const [blocages, setBlocages] = useState<string[]>([]);
 
   useEffect(() => {
     // Ne pas fermer tout le mode si c'est le dialog de raison qui est ouvert.
@@ -80,8 +82,10 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
 
   const finish = (outcome: "signe" | "redzone" | "perdu") => {
     if (outcome === "signe") {
-      if (signingBlockers(p).length > 0) {
-        alert(`⛔ Doctrine :\n\n${signingBlockers(p).join("\n")}`);
+      const bloc = signingBlockers(p);
+      if (bloc.length > 0) {
+        // Cet écran est ouvert DEVANT le client : pas de boîte du navigateur.
+        setBlocages(bloc);
         return;
       }
       setReasonAsk("signe");
@@ -187,6 +191,8 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
           )}
         </div>
       )}
+
+      <BlocagesSignature blocages={blocages} onClose={() => setBlocages([])} company={p.company} />
 
       <ReasonDialog
         open={!!reasonAsk}
