@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Eye, Loader2, Mail, Send, ShieldAlert, Users } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect, Sector } from "@/lib/types";
+import { isDemoProspect } from "@/lib/seed";
 import { cn } from "@/lib/utils";
 
 /**
@@ -88,10 +89,28 @@ export default function NewsletterPage() {
    * L'audience : fiches avec email, filtrées.
    * Les désinscrits sont exclus par l'étape « perdu » — c'est le workflow
    * n8n alpha-inbound qui bascule une réponse STOP vers cette étape.
+   *
+   * ⚠ LES FICHES DE DÉMONSTRATION N'Y SONT PLUS. TROUVÉ EN SE SERVANT DU
+   * PRODUIT : sur un store neuf, cet écran proposait « Envoyer à 4
+   * destinataire(s) » — quatre adresses INVENTÉES
+   * (contact@bouchondescanuts.fr et compagnie).
+   *
+   * La boîte d'envoi, elle, le refusait déjà, et sa propre explication dit
+   * pourquoi : « Écrire à l'une d'elles produit un rebond dur, et les rebonds
+   * comptent contre ton domaine pendant des mois. Sur une boîte qui démarre
+   * son historique d'envoi, c'est la pire première journée possible. »
+   *
+   * Ici c'est PIRE qu'ailleurs, et c'est ce qui justifie d'exclure plutôt que
+   * d'avertir : la newsletter part en LOT, d'un seul bouton. Il n'y a pas de
+   * geste par fiche pendant lequel on pourrait se raviser — quatre rebonds
+   * durs d'un coup, sur un domaine qui n'a aucun historique.
    */
+  const demoExclues = useMemo(() => prospects.filter((p) => isDemoProspect(p.id) && p.email?.trim()).length, [prospects]);
+
   const audience = useMemo(
     () =>
       prospects
+        .filter((p) => !isDemoProspect(p.id))
         .filter((p) => p.stage !== "perdu")
         .filter((p) => p.email?.trim())
         .filter((p) => (sector === "tous" ? true : p.sector === sector))
@@ -193,6 +212,24 @@ export default function NewsletterPage() {
           <Users size={15} className="text-bronze-400" /> Audience
           <span className="font-mono text-[12px] font-normal text-bronze-300">{audience.length} destinataire(s)</span>
         </p>
+
+        {/* Ce qui a été retiré de la liste, et pourquoi — voir le commentaire
+            sur `audience`. On le DIT : une audience qui rétrécit sans
+            explication se lit comme un bug. */}
+        {demoExclues > 0 && (
+          <p className="flex items-start gap-2 rounded-lg border border-signal-amber/40 bg-signal-amber/5 px-2.5 py-2 text-[11.5px] leading-relaxed text-signal-amber">
+            <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+            <span>
+              {demoExclues} fiche(s) de <strong>démonstration</strong> retirées de l&apos;audience : leurs adresses sont
+              inventées. Un lot de rebonds durs sur un domaine sans historique, c&apos;est la pire première journée
+              possible — et la newsletter part d&apos;un seul bouton, sans geste par fiche pour se raviser.
+              <span className="text-paper-faint">
+                {" "}
+                Charge tes vraies fiches (Réglages → Tout vider, puis importe ton CSV) et elles reviendront.
+              </span>
+            </span>
+          </p>
+        )}
         <div className="flex flex-wrap gap-1.5">
           {SECTORS.map((s) => (
             <button

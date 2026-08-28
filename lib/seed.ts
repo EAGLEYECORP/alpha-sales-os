@@ -629,3 +629,19 @@ export const isDemoProspect = (id: string): boolean => DEMO_PROSPECT_IDS.has(id)
 export const DEMO_CAMPAIGN_IDS: ReadonlySet<string> = new Set(seedCampaigns.map((c) => c.id));
 
 export const isDemoCampaign = (id: string): boolean => DEMO_CAMPAIGN_IDS.has(id);
+
+/**
+ * Les ADRESSES du jeu de démonstration, en minuscules.
+ *
+ * ⚠ Dérivée elle aussi, jamais recopiée. Elle sert de seconde clé au verrou
+ * d'envoi (`/api/send`) : un appelant qui ne transmet pas `prospectId` — ou
+ * qui le transmet mal — serait sinon libre d'écrire à
+ * `contact@bouchondescanuts.fr`, domaine inventé, rebond dur garanti.
+ *
+ * Deux clés pour la même règle, ce n'est pas de la redondance décorative :
+ * l'identifiant est l'autorité, l'adresse est le filet quand l'identifiant
+ * n'arrive pas.
+ */
+export const EMAILS_DE_DEMO: ReadonlySet<string> = new Set(
+  seedProspects.map((p) => (p.email ?? "").trim().toLowerCase()).filter(Boolean)
+);

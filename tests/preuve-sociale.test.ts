@@ -2,8 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { seedMeetings, seedProspects, seedCampaigns, isDemoCampaign } from "../lib/seed";
+import { seedMeetings, seedProspects, seedCampaigns, isDemoCampaign, isDemoProspect, EMAILS_DE_DEMO } from "../lib/seed";
 import { buildTemplates } from "../lib/templates";
+import { useAlpha } from "../lib/store";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -72,6 +73,25 @@ const REDACTEURS = [
 
 const sansCommentaires = (src: string) =>
   src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+/** Idem pour du JSX : `{/* … *\/}` est un commentaire, pas du texte affiché. */
+const sansCommentairesTsx = (src: string) =>
+  sansCommentaires(src).replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+
+/** Tous les .ts/.tsx sous les dossiers donnés — le garde DÉDUIT son périmètre. */
+function fichiersSources(dirs: string[]): string[] {
+  const out: string[] = [];
+  const visite = (d: string) => {
+    for (const f of readdirSync(d)) {
+      if (f === "node_modules" || f.startsWith(".")) continue;
+      const p = join(d, f);
+      if (statSync(p).isDirectory()) visite(p);
+      else if (/\.tsx?$/.test(p)) out.push(p);
+    }
+  };
+  for (const d of dirs) visite(join(RACINE, d));
+  return out;
+}
 
 /**
  * Les tournures qui AFFIRMENT une clientèle.
@@ -299,4 +319,121 @@ test("la liste des campagnes de démo est DÉRIVÉE, jamais recopiée", () => {
   );
   for (const c of seedCampaigns) assert.ok(isDemoCampaign(c.id), `${c.id} manque à la liste dérivée`);
   assert.equal(isDemoCampaign("c-une-vraie-campagne-de-l-operateur"), false);
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * PAS DE « STANDARD DU MARCHÉ » DANS UN ÉCRAN MONTRÉ À UN PROSPECT.
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT. Le calculateur de ROI de `/offre` — celui
+ * qu'on ouvre EN RENDEZ-VOUS, dont la légende dit « la décision devient une
+ * évidence chiffrée » — se terminait par :
+ *
+ *   « Chiffres calés sur les standards du marché ; devis personnalisé… »
+ *
+ * Les « chiffres » sont les quatre curseurs que l'opérateur déplace lui-même.
+ * Aucune moyenne n'a été constatée : ni chez nous (zéro vente), ni ailleurs
+ * (aucune source attachée). C'est la même faute que « nos clients », déplacée
+ * du témoignage vers la statistique — et elle se vérifie encore plus vite.
+ *
+ * Le motif ne juge que les écrans, pas `lib/` : le modèle économique a le
+ * droit de RAISONNER sur des comparables dans un commentaire interne. Ce qui
+ * est interdit, c'est de l'AFFIRMER à quelqu'un qui va payer.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const NORME_AFFIRMEE = [
+  /standards? du march[ée]/i,
+  /moyennes? du march[ée]/i,
+  /moyennes? constat[ée]es? (?:du|dans le) (?:march[ée]|secteur)/i,
+];
+
+test("⚠ aucun écran n'affirme un « standard du marché » qu'on n'a pas mesuré", () => {
+  const fautes: string[] = [];
+  for (const f of fichiersSources(["app", "components"])) {
+    const code = sansCommentairesTsx(readFileSync(f, "utf8"));
+    for (const motif of NORME_AFFIRMEE) {
+      const m = code.match(motif);
+      if (m) fautes.push(`${relative(RACINE, f)} → « ${m[0]} »`);
+    }
+  }
+  assert.deepEqual(
+    fautes,
+    [],
+    "ces écrans affirment une norme de marché sans source — un prospect la vérifie plus vite qu'un témoignage :\n  " +
+      fautes.join("\n  ")
+  );
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE REFUS D'ÉCRIRE À UNE FICHE DE DÉMO VIT AU POINT DE PASSAGE.
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT. La boîte d'envoi bloquait ces fiches et
+ * disait pourquoi (« rebond dur, ton domaine en paie le prix pendant des
+ * mois »). Trois autres surfaces appelaient `/api/send` sans ce contrôle,
+ * dont `/newsletter` qui proposait « Envoyer à 4 destinataire(s) » — en LOT,
+ * d'un seul bouton, vers quatre domaines inventés.
+ *
+ * Le contrôle est descendu dans la route : une surface écrite demain est
+ * couverte sans que personne y pense. Ce test garde les deux clés, et il
+ * DÉDUIT la liste des surfaces au lieu de la nommer.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ /api/send refuse les fiches de démonstration, par id ET par adresse", () => {
+  const src = sansCommentaires(readFileSync(join(RACINE, "app/api/send/route.ts"), "utf8"));
+  assert.match(src, /isDemoProspect\(body\.prospectId\)/, "la route doit refuser par identifiant");
+  assert.match(src, /EMAILS_DE_DEMO\.has/, "et par adresse, pour l'appelant qui n'envoie pas d'identifiant");
+  assert.match(src, /status:\s*409/, "la requête est correcte : c'est la cible qui est refusée, pas la forme");
+
+  // Les deux clés sont dérivées du seed — pas de liste tenue à la main.
+  const seedSrc = readFileSync(join(RACINE, "lib/seed.ts"), "utf8");
+  assert.match(seedSrc, /EMAILS_DE_DEMO[^=]*= new Set\(\s*seedProspects\.map/, "EMAILS_DE_DEMO doit être dérivée");
+  for (const p of seedProspects) {
+    assert.ok(isDemoProspect(p.id), `${p.id} manque à la liste dérivée des ids`);
+    if (p.email?.trim()) {
+      assert.ok(EMAILS_DE_DEMO.has(p.email.trim().toLowerCase()), `${p.email} manque à la liste dérivée des adresses`);
+    }
+  }
+  assert.equal(EMAILS_DE_DEMO.has("contact@une-vraie-boite.fr"), false);
+});
+
+test("aucune surface d'envoi ne compose une liste envoyable de fiches de démo", () => {
+  /**
+   * La route est le verrou : rien ne part. Mais un écran qui ANNONCE
+   * « Envoyer à 4 destinataire(s) », ou qui prépare quarante brouillons dont
+   * huit seront refusés un par un, est un mensonge d'interface — l'opérateur
+   * approuve, puis regarde des échecs sans comprendre lesquels ni pourquoi.
+   *
+   * Deux surfaces composent une liste, et on les vérifie différemment :
+   *  · la revue de campagne — par le COMPORTEMENT, c'est plus solide qu'un
+   *    scan de source : on prépare les brouillons et on regarde leur statut ;
+   *  · la newsletter — par la source, parce que son audience est calculée
+   *    dans le composant et n'est pas atteignable depuis un test node.
+   *
+   * `components/recette/go-live-checklist.tsx` envoie à l'adresse que
+   * l'opérateur TAPE, pas à une fiche : rien à filtrer.
+   */
+  // ── La revue de campagne : aucun brouillon « pending » sur une fiche de démo.
+  const store = useAlpha.getState();
+  const campagne = seedCampaigns.find((c) => c.sector === "restaurant") ?? seedCampaigns[0];
+  store.prepareCampaignDrafts(campagne.id);
+  const drafts = useAlpha.getState().drafts.filter((d) => d.campaignId === campagne.id);
+  assert.ok(drafts.length > 0, "le jeu de démo doit produire des brouillons — sinon ce test ne garde rien");
+
+  const demoEnvoyables = drafts.filter((d) => isDemoProspect(d.prospectId) && d.status === "pending");
+  assert.deepEqual(
+    demoEnvoyables.map((d) => `${d.company} → ${d.to}`),
+    [],
+    "des brouillons de campagne partiraient vers des adresses inventées"
+  );
+  // Et la raison doit être ÉCRITE : un brouillon écarté sans motif se relit
+  // comme un bug de l'app.
+  for (const d of drafts.filter((d) => isDemoProspect(d.prospectId))) {
+    assert.match(d.error ?? "", /démonstration/i, `${d.company} : brouillon écarté sans dire pourquoi`);
+  }
+
+  // ── La newsletter : son audience écarte la démo, et elle le dit.
+  const news = readFileSync(join(RACINE, "app/(app)/newsletter/page.tsx"), "utf8");
+  assert.match(news, /\.filter\(\(p\) => !isDemoProspect\(p\.id\)\)/, "l'audience newsletter doit écarter la démo");
+  assert.match(news, /demoExclues/, "et l'écran doit dire combien de fiches ont été retirées");
 });

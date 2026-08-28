@@ -190,10 +190,28 @@ export default function OffrePage() {
         </div>
       </section>
 
+      {/*
+        ⚠ « CHIFFRES CALÉS SUR LES STANDARDS DU MARCHÉ » — LU EN OUVRANT L'ÉCRAN.
+
+        Cette phrase-là est montrée à un prospect, dans l'écran qui sert à
+        décider. Les « chiffres » en question sont les quatre curseurs :
+        prospects, taux de RDV, taux de closing, panier moyen. Ce sont des
+        HYPOTHÈSES que l'opérateur déplace — pas des moyennes constatées, ni
+        chez nous (zéro vente), ni ailleurs (aucune source attachée).
+
+        Le reste du paragraphe était honnête ; c'est ce membre de phrase qui
+        transformait une projection en donnée de marché. Un prospect qui le
+        vérifie ne perd pas confiance dans la ligne, il la perd dans le devis.
+
+        Les valeurs de départ (500 · 8 % · 25 % · 6 000 €) restent — il faut
+        bien poser le curseur quelque part — mais elles sont désormais dites
+        pour ce qu'elles sont : un point de départ à remplacer par SES chiffres.
+      */}
       <p className="mx-auto max-w-2xl text-center text-[11px] text-paper-faint">
-        <strong className="text-paper-dim">Estimation, pas une garantie</strong> — basée sur les hypothèses saisies, sans
-        valeur d&apos;engagement. On garantit le procédé (zéro lead perdu, 24/7), jamais un montant de CA. Chiffres calés
-        sur les standards du marché ; devis personnalisé selon secteur et volume.
+        <strong className="text-paper-dim">Estimation, pas une garantie</strong> — les quatre curseurs sont des
+        <strong className="text-paper-dim"> hypothèses</strong>, pas des moyennes constatées : remplacez-les par vos
+        chiffres, c&apos;est là que le calcul devient utile. On garantit le procédé (zéro lead perdu, 24/7), jamais un
+        montant de CA. Devis personnalisé selon secteur et volume.
       </p>
       </>}
     </div>

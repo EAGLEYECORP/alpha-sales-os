@@ -5,6 +5,7 @@ import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliv
 import { getTenant } from "@/lib/tenant";
 import { accountTier } from "@/lib/stripe";
 import { FREE_TIER, startOfMonthMs } from "@/lib/plans";
+import { isDemoProspect, EMAILS_DE_DEMO } from "@/lib/seed";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -93,6 +94,44 @@ export async function POST(request: NextRequest) {
   }
   if (!body.to?.trim() || !body.body?.trim()) {
     return NextResponse.json({ error: "champs to et body requis" }, { status: 400 });
+  }
+
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * AUCUN ENVOI VERS UNE FICHE DE DÉMONSTRATION — AU POINT DE PASSAGE.
+   *
+   * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT. La boîte d'envoi refusait ces fiches,
+   * et elle expliquait pourquoi : « Écrire à l'une d'elles produit un rebond
+   * dur, et les rebonds comptent contre ton domaine pendant des mois. »
+   *
+   * Trois AUTRES surfaces appelaient cette route sans ce contrôle :
+   * `/newsletter` (« Envoyer à 4 destinataire(s) », en LOT, d'un seul
+   * bouton), la revue de campagne, et la barre d'envoi d'une fiche. La garde
+   * existait, câblée à un seul endroit — le défaut le plus fréquent de ce
+   * dépôt.
+   *
+   * Le contrôle vit donc ICI, où passent tous les envois. Une quatrième
+   * surface écrite demain est couverte sans que personne y pense.
+   *
+   * Deux clés, toutes deux DÉRIVÉES du jeu de démonstration :
+   *  · `prospectId` — l'identifiant, quand l'appelant le fournit ;
+   *  · l'adresse elle-même — pour l'appelant qui ne le fournirait pas.
+   * On refuse en 409 (conflit d'état), pas en 400 : la requête est correcte,
+   * c'est la CIBLE qui ne doit pas être écrite.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const cibleDemo =
+    (body.prospectId ? isDemoProspect(body.prospectId) : false) ||
+    EMAILS_DE_DEMO.has(body.to.trim().toLowerCase());
+  if (cibleDemo) {
+    return NextResponse.json(
+      {
+        error:
+          "Fiche de démonstration — adresse inventée. Écrire dessus produit un rebond dur, et les rebonds comptent contre ton domaine pendant des mois. Charge tes vraies fiches (Réglages → Tout vider, puis importe ton CSV).",
+        demo: true,
+      },
+      { status: 409 }
+    );
   }
 
   // Locataire courant (multi-compte) : identité + accès. Résolu une fois, réutilisé.

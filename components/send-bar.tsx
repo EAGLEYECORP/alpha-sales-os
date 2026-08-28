@@ -9,6 +9,7 @@ import { auditDepth } from "@/lib/milestones";
 import { linkedinUrl, linkedinTouchesToday, LINKEDIN_DAILY_SAFE } from "@/lib/linkedin";
 import { clipboardText, composeFitsInUrl, gmailComposeUrl } from "@/lib/mail-compose";
 import { cn } from "@/lib/utils";
+import { isDemoProspect } from "@/lib/seed";
 
 /** 06 12 34 56 78 → 33612345678 (format wa.me / SMS international) */
 export function toIntlPhone(phone: string): string {
@@ -251,11 +252,24 @@ export function SendBar({
           <TrendingUp size={12} /> Projection
         </label>
       )}
+      {/*
+        ⚠ Fiche de démonstration = adresse INVENTÉE. `/api/send` la refuse
+        désormais au point de passage (409), mais un bouton actif qui échoue
+        n'apprend rien : on le désactive ici et on dit pourquoi dans l'infobulle.
+        Les boutons Gmail / WhatsApp / LinkedIn restent ouverts — ils
+        n'envoient rien, ils OUVRENT une fenêtre que l'opérateur relit.
+      */}
       {prospect.email && (
         <button
           className={btn}
-          disabled={status === "sending" || !caps?.email}
-          title={caps?.email ? `Envoyer à ${prospect.email}` : "SMTP non configuré (Réglages → .env : SMTP_HOST/USER/PASS)"}
+          disabled={status === "sending" || !caps?.email || isDemoProspect(prospect.id)}
+          title={
+            isDemoProspect(prospect.id)
+              ? "Fiche de démonstration — adresse inventée. Un rebond dur compte contre ton domaine pendant des mois."
+              : caps?.email
+                ? `Envoyer à ${prospect.email}`
+                : "SMTP non configuré (Réglages → .env : SMTP_HOST/USER/PASS)"
+          }
           onClick={() => send("email")}
         >
           {status === "sent" ? <Check size={13} className="text-signal-green" /> : <Mail size={13} />}
@@ -278,7 +292,16 @@ export function SendBar({
         </button>
       )}
       {prospect.phone && caps?.sms && (
-        <button className={btn} disabled={status === "sending"} title={`SMS vers ${prospect.phone}`} onClick={() => send("sms")}>
+        <button
+          className={btn}
+          disabled={status === "sending" || isDemoProspect(prospect.id)}
+          title={
+            isDemoProspect(prospect.id)
+              ? "Fiche de démonstration — numéro inventé."
+              : `SMS vers ${prospect.phone}`
+          }
+          onClick={() => send("sms")}
+        >
           <Smartphone size={13} /> SMS
         </button>
       )}

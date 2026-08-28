@@ -30,6 +30,7 @@ import {
   seedNurture,
   seedProspects,
   prospectDefaults,
+  isDemoProspect,
 } from "./seed";
 import { stageById, signingBlockers } from "./hormozi";
 // ⚠ Le SOCLE de notes n'est plus importé ici. Il portait le playbook en clair
@@ -600,6 +601,19 @@ export const useAlpha = create<AlphaState>()(
         );
         const drafts: CampaignDraft[] = recipients.map((p) => {
           const to = step.kind === "email" ? (p.email ?? "") : (p.phone ?? "");
+          /**
+           * ⚠ Une fiche de DÉMONSTRATION ne devient jamais un brouillon
+           * envoyable. Son adresse est inventée : écrire dessus produit un
+           * rebond dur, et les rebonds comptent contre le domaine pendant des
+           * mois. `/api/send` le refuse au point de passage, mais un brouillon
+           * « pending » qui échouera à l'envoi est un mensonge d'interface —
+           * l'opérateur approuve quarante messages et en voit huit tomber.
+           *
+           * On réutilise le mécanisme qui existe déjà pour « pas d'email sur
+           * la fiche » : statut `skipped` + raison écrite. L'écran de revue
+           * l'affiche sans une ligne de code de plus.
+           */
+          const demo = isDemoProspect(p.id);
           return {
             id: uid(),
             campaignId,
@@ -609,8 +623,14 @@ export const useAlpha = create<AlphaState>()(
             to,
             subject: step.kind === "email" ? fillTemplate(step.subject, p, closer) : "",
             body: fillTemplate(step.body, p, closer),
-            status: to ? "pending" : "skipped",
-            error: to ? undefined : step.kind === "email" ? "pas d'email sur la fiche" : "pas de téléphone",
+            status: demo || !to ? "skipped" : "pending",
+            error: demo
+              ? "fiche de démonstration — adresse inventée, rebond dur garanti"
+              : to
+                ? undefined
+                : step.kind === "email"
+                  ? "pas d'email sur la fiche"
+                  : "pas de téléphone",
           };
         });
         set((st) => ({ drafts: [...st.drafts.filter((d) => d.campaignId !== campaignId), ...drafts] }));
