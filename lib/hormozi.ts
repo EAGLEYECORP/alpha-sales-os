@@ -17,6 +17,7 @@ import type {
 // porte aucun montant par brique.
 import { CAPACITES } from "./public-catalogue";
 import { guessSegmentForProspect } from "./segments";
+import { citer } from "./citation";
 
 export const STAGES: {
   id: Stage;
@@ -155,7 +156,7 @@ export function nextBestAction(p: Prospect): { action: string; why: string; urge
     if (open.length) {
       const target = open[0];
       const c = CROYANCES_META.find((m) => m.num === target.croyance)!;
-      return { action: `Traiter « ${target.label} » — recadrer sur la croyance ${c.num} (${c.label})`, why: "En Red Zone, chaque objection pointe une croyance cassée. On répare la croyance, pas l'argument.", urgency: "haute" };
+      return { action: `Traiter ${citer(target.label)} — recadrer sur la croyance ${c.num} (${c.label})`, why: "En Red Zone, chaque objection pointe une croyance cassée. On répare la croyance, pas l'argument.", urgency: "haute" };
     }
     return { action: "Demander la signature — les 3 croyances sont réparées", why: "Plus d'objection ouverte : la décision est mûre. La décision EST le produit.", urgency: "haute" };
   }
@@ -168,7 +169,7 @@ export function nextBestAction(p: Prospect): { action: string; why: string; urge
   if (p.stage === "contact") {
     const unresolved = p.obstacles.filter((o) => !o.resolved);
     if (unresolved.length)
-      return { action: `Éplucher l'Oignon du Blâme : « ${unresolved[0].label} »`, why: `Couche « ${BLAME_LAYERS[unresolved[0].blameLayer].label} » — ${BLAME_LAYERS[unresolved[0].blameLayer].peel}`, urgency: "moyenne" };
+      return { action: `Éplucher l'Oignon du Blâme : ${citer(unresolved[0].label)}`, why: `Couche « ${BLAME_LAYERS[unresolved[0].blameLayer].label} » — ${BLAME_LAYERS[unresolved[0].blameLayer].peel}`, urgency: "moyenne" };
     return { action: "Proposer l'audit terrain gratuit (20 min sur place)", why: "L'audit crée la dette de réciprocité et chiffre la Taxe d'Ignorance.", urgency: "moyenne" };
   }
   if (p.stage === "prospect")

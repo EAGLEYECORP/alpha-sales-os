@@ -8,6 +8,7 @@ import { vitalSigns } from "./vital-signs";
 // serait une deuxième source, et elle divergerait.
 import { deepDive } from "./deep-dive";
 import { OFFRES } from "./offer-match";
+import { citer } from "./citation";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -333,7 +334,7 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
   // Ses objections RÉELLES passent devant les objections génériques.
   for (const o of (p.objections ?? []).filter((x) => x.status !== "traitee").slice(0, 3)) {
     objections.unshift({
-      says: `« ${o.label} »`,
+      says: citer(o.label),
       means: "Objection réellement entendue sur ce dossier — à traiter en priorité.",
       answer: o.counter?.trim() || "À préparer AVANT le prochain échange : elle est déjà sortie une fois.",
     });

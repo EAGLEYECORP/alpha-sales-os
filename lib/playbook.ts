@@ -1,4 +1,5 @@
 import type { Prospect, Sector } from "./types";
+import { citer } from "./citation";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -561,7 +562,7 @@ export function playbookPrompt(sector?: Sector, verticalId?: string): string {
       `- Diagnostic (poser puis se taire) : ${v.diagnostic.join(" / ")}`,
       `- Miroir : ${v.mirror}`,
       `- Ne pas dire à froid : ${v.forbidden.join(" ; ")}`,
-      `- Objections travaillées : ${v.objections.map((o) => `« ${o.q} » → ${o.a}`).join(" | ")}`,
+      `- Objections travaillées : ${v.objections.map((o) => `${citer(o.q)} → ${o.a}`).join(" | ")}`,
       `- Ordre de grandeur de la fuite : ≈ ${leak.monthly.toLocaleString("fr-FR")} €/mois (${leak.basis}) — TOUJOURS présenté comme une estimation à valider.`
     );
   }

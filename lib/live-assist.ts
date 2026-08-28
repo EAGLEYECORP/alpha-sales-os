@@ -1,5 +1,6 @@
 import { VERTICALS, type VerticalPlaybook } from "./playbook";
 import { normalize, overlap } from "./speech-text";
+import { citer } from "./citation";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -220,7 +221,7 @@ export function matchObjections(heard: string, vertical?: VerticalPlaybook | nul
       if (score >= MATCH_FLOOR) {
         out.push({
           id: `${vertical.id}-${i}`,
-          label: `« ${o.q} »`,
+          label: citer(o.q),
           answer: o.a,
           source: "verticale",
           score,
