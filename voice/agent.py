@@ -53,7 +53,16 @@ import re
 
 from dotenv import load_dotenv
 from livekit import agents, api, rtc
-from livekit.agents import Agent, AgentSession, AgentServer, JobContext, RoomInputOptions, WorkerOptions, cli
+from livekit.agents import (
+    Agent,
+    AgentServer,
+    AgentSession,
+    JobContext,
+    RoomInputOptions,
+    WorkerOptions,
+    cli,
+    function_tool,
+)
 from livekit.plugins import deepgram, openai, silero
 
 # Les plugins DOIVENT s'enregistrer sur le thread principal (à l'import du
@@ -153,9 +162,66 @@ def first_sentence(script: str) -> str:
 
 
 class AlphaVoice(Agent):
+    """L'agent, et le SEUL moyen qu'il a de déclarer un oui.
+
+    ─────────────────────────────────────────────────────────────────────
+    ⚠ SANS CET OUTIL, LA NOUVELLE DOCTRINE ÉTAIT MORTE EN PRODUCTION.
+
+    Doctrine du 28/08/2026 : Alpha Voice mène l'appel à froid entier et ne
+    passe la main que sur INTÉRÊT QUALIFIÉ (`outcome: "interesse"`). Toute la
+    chaîne TypeScript a été câblée pour ça — `cadenceFor`, `masterRappel`,
+    `RESULTATS_MANUELS`, la capacité d'appels.
+
+    Sauf que CE fichier écrivait toujours `outcome = "repondu"`, en dur. Il ne
+    pouvait donc JAMAIS émettre `interesse` : le prospect disait oui, la
+    chaîne le lisait comme un simple décroché, `handoffToHuman` restait faux —
+    et personne n'était prévenu. J'ai changé la chaîne et laissé l'émetteur
+    derrière : exactement le défaut que ce dépôt corrige partout.
+
+    ── POURQUOI UN OUTIL ET PAS UNE ANALYSE DE TRANSCRIPTION ──
+
+    Détecter l'accord en relisant le français produit par le modèle, c'est
+    remettre une expression régulière sur du texte libre. Le même jour, un
+    `\b` après une lettre accentuée avait rendu un motif d'intérêt
+    silencieusement mort — le piège est réel et il ne prévient pas.
+
+    Ici le modèle DÉCLARE. C'est explicite, c'est vérifiable dans le journal,
+    et ça ne dépend d'aucune tournure.
+    ─────────────────────────────────────────────────────────────────────
+    """
+
     def __init__(self, script: str) -> None:
         audit_script(script)
         super().__init__(instructions=script)
+        # Le résultat vit sur l'agent : l'outil l'écrit, la clôture le lit.
+        self.resultat_declare: str | None = None
+        self.creneau_obtenu: str | None = None
+
+    @function_tool()
+    async def rendez_vous_obtenu(self, creneau: str) -> str:
+        """À appeler UNIQUEMENT quand la personne a accepté un rendez-vous.
+
+        C'est le seul cas qui mobilise un humain. Ne l'appelle pas sur un
+        « peut-être », un « rappelez-moi » ou une simple politesse.
+
+        Args:
+            creneau: le jour et l'heure convenus, tels que la personne les a dits.
+        """
+        self.resultat_declare = "interesse"
+        self.creneau_obtenu = (creneau or "").strip() or None
+        logger.info("Alpha Voice — INTÉRÊT QUALIFIÉ déclaré, créneau : %s", self.creneau_obtenu)
+        return "Rendez-vous noté. Confirme-le à voix haute, remercie, et termine l'appel."
+
+    @function_tool()
+    async def refus_definitif(self) -> str:
+        """À appeler quand la personne demande à ne plus être contactée.
+
+        Coupe TOUTE relance, définitivement. À ne pas confondre avec un simple
+        « pas intéressé » : celui-là autorise encore une réactivation plus tard.
+        """
+        self.resultat_declare = "opposition"
+        logger.info("Alpha Voice — OPPOSITION déclarée : plus aucun appel.")
+        return "C'est noté. Confirme qu'elle ne sera plus contactée, remercie, et raccroche."
 
 
 def build_tts():
@@ -549,9 +615,16 @@ async def entrypoint(ctx: JobContext) -> None:
     resultat: dict[str, str | None] = {"outcome": None, "error": None}
 
     async def _cloturer(*_args) -> None:
-        """Poste `end` au vrai raccroché. Ne lève JAMAIS : on est en extinction."""
+        """Poste `end` au vrai raccroché. Ne lève JAMAIS : on est en extinction.
+
+        ⚠ Le résultat DÉCLARÉ par l'agent prime sur le provisoire. Sans cette
+        ligne, l'outil `rendez_vous_obtenu` écrirait dans le vide et la chaîne
+        continuerait de lire « repondu » — donc personne ne serait réveillé sur
+        un oui. C'est le point exact où la doctrine se perdait.
+        """
         try:
-            await reporter.end(outcome=resultat["outcome"], error=resultat["error"])
+            final = agent.resultat_declare or resultat["outcome"]
+            await reporter.end(outcome=final, error=resultat["error"])
         except Exception as e:  # noqa: BLE001
             logger.warning("Clôture de session non journalisée : %s", e)
 
@@ -579,7 +652,12 @@ async def entrypoint(ctx: JobContext) -> None:
 
         # La divulgation est passée : quelqu'un est au bout du fil. C'est le
         # moment où le résultat devient « repondu » — mais il ne sera POSTÉ
-        # qu'au raccroché.
+        # qu'au raccroché, et l'agent peut encore le RELEVER entre-temps.
+        #
+        # ⚠ « repondu » est PROVISOIRE, jamais définitif. C'est le plancher :
+        # quelqu'un a décroché. Si l'agent obtient un rendez-vous ou essuie un
+        # refus définitif, il le déclare par un outil (`rendez_vous_obtenu`,
+        # `refus_definitif`) et c'est CETTE déclaration qui part.
         resultat["outcome"] = "repondu"
 
         # Le modèle prend la main ensuite, avec le script en instructions.

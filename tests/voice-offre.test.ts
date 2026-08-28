@@ -215,7 +215,13 @@ test("appel à froid — le NON se raccroche, le OUI seul réveille un humain", 
     offre: "callflow",
   });
   assert.match(script, /Si c'est NON[\s\S]*?tu raccroches/i, "un refus se traite sans mobiliser personne");
-  assert.match(script, /Si c'est OUI[\s\S]*?PASSES LA MAIN/i, "seul un oui vaut le temps d'un closer");
+  /**
+   * ⚠ Le script doit NOMMER l'outil. Sans ça, le modèle « passe la main »
+   * en paroles et personne n'est prévenu : `voice/agent.py` écrivait toujours
+   * « repondu », donc `handoffToHuman` restait faux même sur un oui.
+   */
+  assert.match(script, /Si c'est OUI[\s\S]*?rendez_vous_obtenu/i, "le oui doit déclencher l'outil, pas une phrase");
+  assert.match(script, /refus_definitif/, "et le refus définitif doit avoir le sien");
 });
 
 test("⚠ sur Callflow, le script interdit de citer une autre société ou offre", () => {
@@ -277,4 +283,48 @@ test("les deux points d'audit de /api/voice/call jugent la même chose", () => {
   assert.equal(appels[0], appels[1], "et avec exactement le même contexte");
   assert.match(appels[0]!, /mode: cfg\.mode/);
   assert.match(appels[0]!, /offre: cfg\.offre/);
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE SCRIPT ET L'AGENT PYTHON DOIVENT NOMMER LES MÊMES OUTILS.
+ *
+ * ⚠ C'EST LA COUTURE QUI A CASSÉ AUJOURD'HUI, ET ELLE EST INVISIBLE.
+ *
+ * La doctrine du 28/08/2026 fait que SEUL un intérêt qualifié réveille un
+ * humain. Toute la chaîne TypeScript a été câblée pour ça — mais
+ * `voice/agent.py` écrivait `outcome = "repondu"` en dur et ne pouvait donc
+ * JAMAIS émettre `interesse`. Résultat : le prospect disait oui, et personne
+ * n'était prévenu.
+ *
+ * Deux langages, un seul contrat. Un test qui vérifie que les deux côtés
+ * nomment le même outil est le seul endroit où cette couture se voit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ les outils nommés dans le script existent vraiment dans l'agent Python", () => {
+  const py = readFileSync(join(process.cwd(), "voice/agent.py"), "utf8");
+  const script = buildVoiceScript({
+    onBehalfOf: "ScintIA",
+    agentName: "ALPHA",
+    mode: "prospection-b2b",
+    offre: "callflow",
+  });
+
+  for (const outil of ["rendez_vous_obtenu", "refus_definitif"]) {
+    assert.match(script, new RegExp(outil), `le script doit nommer ${outil}`);
+    assert.match(
+      py,
+      new RegExp(`async def ${outil}\\(`),
+      `voice/agent.py doit définir ${outil} — sinon le modèle appelle un outil qui n'existe pas`
+    );
+    assert.match(py, new RegExp(`@function_tool\\(\\)[\\s\\S]{0,300}${outil}`), `${outil} doit être exposé au modèle`);
+  }
+
+  // Et le résultat déclaré doit primer sur le provisoire, sinon l'outil écrit
+  // dans le vide.
+  assert.match(
+    py,
+    /agent\.resultat_declare or resultat\["outcome"\]/,
+    "la clôture doit préférer le résultat DÉCLARÉ au provisoire « repondu »"
+  );
 });
