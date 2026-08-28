@@ -225,16 +225,65 @@ test("le mode empreintes reste intact — c'est lui qui rend la synchro fréquen
  * C'est le défaut récurrent de ce dépôt ; ce test le refuse d'avance.
  * ─────────────────────────────────────────────────────────────────────
  */
-test("le composant de synchro DEMANDE la permission avant de pousser", () => {
-  const code = sansCommentaires(readFileSync(join(process.cwd(), "components/sync-prospects.tsx"), "utf8"));
+test("le moteur de synchro DEMANDE la permission avant de pousser", () => {
+  const code = sansCommentaires(readFileSync(join(process.cwd(), "components/sync-moteur.tsx"), "utf8"));
   assert.match(code, /peutSynchroniser\(/, "la seule réponse à « a-t-on le droit de pousser » doit être appelée ici");
 
-  // Et elle doit être évaluée AVANT la construction du plan : planifier puis
-  // vérifier laisserait le plan s'exécuter au prochain minuteur.
-  const iPermission = code.indexOf("peutSynchroniser(");
+  // La permission se vérifie DANS `pousser`, avant le premier envoi — pas
+  // seulement pour griser un bouton, qu'un minuteur contournerait.
+  const iPousser = code.indexOf("const pousser = useCallback(");
   const iEnvoi = code.indexOf('method: "POST"');
-  assert.ok(iPermission > 0 && iEnvoi > 0);
+  const iPermission = code.indexOf("peutSynchroniser(", iPousser);
+  assert.ok(iPousser > 0 && iEnvoi > 0 && iPermission > 0);
   assert.ok(iPermission < iEnvoi, "la permission se vérifie avant l'envoi, pas après");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE MOTEUR TOURNE PARTOUT — c'est ce qui empêche le mode serveur d'être
+ * un piège.
+ *
+ * ⚠ Tant que la synchro sortante vivait dans la carte de `/settings`, elle ne
+ * tournait que sur cette page. En mode `pipeServeur` les fiches ne sont plus
+ * écrites sur le disque : un opérateur qui n'ouvre jamais Réglages n'aurait
+ * RIEN poussé, et aurait tout perdu en fermant l'onglet. Pas un risque — le
+ * cas normal.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ le moteur est monté dans la COQUILLE, et une seule fois", () => {
+  const shell = sansCommentaires(readFileSync(join(process.cwd(), "components/shell/app-shell.tsx"), "utf8"));
+  assert.match(shell, /<SyncMoteur>/, "sans montage global, la synchro ne tourne que sur /settings");
+
+  // Une seule instance : deux moteurs pousseraient deux fois le même lot et se
+  // disputeraient l'état de confirmation d'effacement.
+  const montages = [...shell.matchAll(/<SyncMoteur>/g)].length;
+  assert.equal(montages, 1);
+
+  // Et la vue n'en est qu'une vue : plus aucun envoi ne part d'elle.
+  const vue = sansCommentaires(readFileSync(join(process.cwd(), "components/sync-prospects.tsx"), "utf8"));
+  assert.ok(!/fetch\(/.test(vue), "la carte de Réglages ne doit plus contenir de moteur");
+  assert.ok(!/setTimeout\(/.test(vue), "ni de minuteur de poussée");
+  assert.match(vue, /useMoteurSync\(/, "elle lit l'état du moteur monté dans la coquille");
+});
+
+test("l'envoi différé ne perd pas la saisie quand l'onglet se ferme", () => {
+  /**
+   * ⚠ Même piège que l'écriture localStorage différée (`lib/store.ts`) : les
+   * 8 secondes de silence avant envoi sont 8 secondes pendant lesquelles la
+   * saisie n'existe NULLE PART en mode pipe serveur. `fetch` est annulé avec
+   * la page ; `sendBeacon` est le seul envoi qu'un navigateur garantisse.
+   */
+  const code = sansCommentaires(readFileSync(join(process.cwd(), "components/sync-moteur.tsx"), "utf8"));
+  assert.match(code, /sendBeacon/, "sans beacon, fermer l'onglet perd ce qui n'a pas encore été poussé");
+  assert.match(code, /"pagehide"/);
+  assert.match(code, /"visibilitychange"/, "iOS ne déclenche pas `beforeunload`");
+
+  // Le beacon ne porte QUE des écritures : on ne peut pas vérifier son accusé
+  // de réception, et une suppression non vérifiée n'a pas sa place.
+  const i = code.indexOf("sendBeacon");
+  const bloc = code.slice(Math.max(0, i - 900), i + 300);
+  assert.match(bloc, /ecrire:/);
+  assert.ok(!/supprimer:/.test(bloc), "aucune suppression ne part par beacon");
 });
 
 test("l'hydratation ne réveille pas la synchro sortante en réécrivant les fiches", () => {

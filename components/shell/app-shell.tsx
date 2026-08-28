@@ -60,6 +60,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { N8nAutoSync } from "@/components/n8n-autosync";
 import { StorageAlert } from "@/components/security/storage-alert";
 import { PipeServeur } from "@/components/pipe-serveur";
+import { SyncMoteur } from "@/components/sync-moteur";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
 import { afficherChemin, useDroits } from "@/lib/use-droits";
 
@@ -277,6 +278,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <AuthSync />
     <AuthGate>
     <LockGate>
+    {/* ⚠ Le moteur de synchro est monté ICI, pas dans Réglages. En mode pipe
+        serveur les fiches ne sont plus écrites sur le disque : un opérateur
+        qui n'ouvre jamais Réglages ne pousserait rien, et perdrait sa journée
+        en fermant l'onglet. Réglages n'en garde que la vue. */}
+    <SyncMoteur>
     <Onboarding />
     <OperatorTour />
     <PageGuide />
@@ -466,6 +472,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
     </div>
+    </SyncMoteur>
     </LockGate>
     </AuthGate>
     </>
