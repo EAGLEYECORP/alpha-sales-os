@@ -120,6 +120,62 @@ export const INVARIANTS = {
       "ne peut distinguer ce qui vient du terrain de ce qui vient du modèle.",
     motif: /N'invente rien|jamais un chiffre (?:inventé|générique)|sans interprétation/i,
   },
+  /**
+   * ── Les invariants de l'APPEL À FROID ──
+   *
+   * Doctrine du 28/08/2026 : Alpha Voice démarche. Une IA qui démarche n'a
+   * droit à aucune improvisation — c'est la contrepartie de la décision, et
+   * elle se vérifie au lieu de se recommander.
+   */
+  objectifUnique: {
+    cle: "objectif-unique",
+    exige: "La ligne « OBJECTIF UNIQUE » : obtenir un rendez-vous, rien d'autre.",
+    pourquoi:
+      "Un agent sans objectif unique négocie, explique, argumente — et sort du cadre validé. Au téléphone " +
+      "avec un inconnu, chaque phrase de trop est une phrase qu'on ne peut plus reprendre.",
+    motif: /OBJECTIF UNIQUE/i,
+  },
+  aucunPrix: {
+    cle: "aucun-prix",
+    exige: "L'interdiction explicite de parler de PRIX.",
+    pourquoi:
+      "Un chiffre lâché à froid transforme un premier contact en négociation, et engage la marque au nom de " +
+      "laquelle l'agent parle — qui n'est pas toujours la nôtre.",
+    /**
+     * ⚠ « aucune modalité » NE compte PAS comme une interdiction de prix.
+     *
+     * Le motif l'acceptait, et les deux phrases vivent sur la même ligne de la
+     * trame. Retirer « aucun prix — jamais » laissait donc l'invariant au vert
+     * derrière « aucune modalité » : le test qui ampute ligne par ligne l'a
+     * montré. Deux obligations distinctes — le périmètre et le tarif — ne
+     * peuvent pas se couvrir l'une l'autre.
+     */
+    motif: /aucun prix|jamais de prix|ne parles JAMAIS de prix/i,
+  },
+  nonRaccroche: {
+    cle: "non-raccroche",
+    exige: "La consigne qui traite le NON : remercier, noter, raccrocher.",
+    pourquoi:
+      "Sans elle, l'agent insiste. C'est ce qui transforme un prospect tiède en détracteur, et c'est le " +
+      "comportement qui fait perdre un compte partenaire.",
+    motif: /si c'est NON/i,
+  },
+  ouiPasseLaMain: {
+    cle: "oui-passe-la-main",
+    exige: "La consigne qui traite le OUI : confirmer le créneau et passer la main.",
+    pourquoi:
+      "C'est le seul cas qui vaut le temps d'un closer. Sans la règle, l'agent continue à parler et dilue " +
+      "l'accord qu'il vient d'obtenir.",
+    motif: /si c'est OUI/i,
+  },
+  droitOpposition: {
+    cle: "droit-opposition",
+    exige: "Le droit d'opposition, traité immédiatement et définitivement.",
+    pourquoi:
+      "Ce n'est pas une politesse : c'est une condition de licéité (RGPD art. 21). Un refus ignoré est une " +
+      "faute, pas une maladresse.",
+    motif: /droit d'opposition/i,
+  },
   chiffrerTaxe: {
     cle: "chiffrer-taxe",
     exige: "L'obligation de chiffrer la Taxe d'Ignorance avec SES chiffres à lui.",
@@ -199,6 +255,29 @@ export const PROMPTS: PromptDef[] = [
     variables: ["{état du pipeline en JSON}", "{identité}", "{extraits du Cerveau}"],
     sortie: "texte",
     invariants: [INVARIANTS.prixApresDemo, INVARIANTS.nextStepDate, INVARIANTS.chiffrerTaxe],
+  },
+  {
+    id: "voix-froid",
+    label: "Alpha Voice — l'appel à froid",
+    aQuoiCaSert:
+      "La trame que l'agent vocal suit quand il appelle un inconnu. C'est le texte qui parle au téléphone — " +
+      "celui qu'on ajuste le plus souvent, et le seul qui engage la marque au nom de laquelle on appelle.",
+    lieu: { ou: "app", route: "POST /api/voice/call" },
+    variables: ["{company}", "{onBehalfOf}", "{accroche}", "{offreLigne}", "{angleMetier}", "{marquePartenaire}"],
+    sortie: "texte",
+    /**
+     * ⚠ `{accroche}` et `{marquePartenaire}` sont substitués par le CODE, pas
+     * par l'opérateur : l'accroche vient de l'offre ROUTÉE (c'est ce qui
+     * empêche l'angle Callflow de partir sur un prospect routé ailleurs), et
+     * la garde de marque partenaire ne s'ajoute que sur Callflow.
+     */
+    invariants: [
+      INVARIANTS.objectifUnique,
+      INVARIANTS.aucunPrix,
+      INVARIANTS.nonRaccroche,
+      INVARIANTS.ouiPasseLaMain,
+      INVARIANTS.droitOpposition,
+    ],
   },
   {
     id: "debrief",

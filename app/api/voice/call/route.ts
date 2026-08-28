@@ -62,6 +62,15 @@ interface Body {
    * un script générique — et un script générique ne convertit pas.
    */
   prospectBrief?: string;
+  /**
+   * Trame de l'appel à froid éditée par l'opérateur (`/prompts`).
+   *
+   * ⚠ Elle vient du NAVIGATEUR, donc on ne lui fait aucune confiance : elle
+   * traverse `auditScript` comme le texte livré, et un corps amputé de
+   * l'objectif unique, de l'interdiction de prix, du NON ou du OUI reçoit un
+   * 422. La validation d'écran n'est qu'un confort ; celle-ci décide.
+   */
+  corpsFroid?: string;
   /** Fiche appelée — trace la session dans le journal d'appels. */
   prospectId?: string;
   /** Compte au nom duquel on appelle (portefeuille white-label). */
@@ -110,6 +119,7 @@ export async function POST(request: NextRequest) {
     verticalId: body.verticalId,
     prospectBrief: body.prospectBrief,
     offre: offreResolue.offre,
+    corpsFroid: body.corpsFroid,
   };
 
   const script = buildVoiceScript(cfg);
@@ -276,6 +286,8 @@ export async function GET(request: NextRequest) {
     // La relecture doit montrer LE script qui partira, offre comprise. Sans
     // ça, l'opérateur valide un texte et l'agent en dit un autre.
     offre: offreRelue.offre,
+    // La relecture doit montrer la trame QUI PARTIRA, édition comprise.
+    corpsFroid: q.get("corpsFroid") ?? undefined,
   };
   const script = buildVoiceScript(cfg);
   return NextResponse.json({

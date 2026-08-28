@@ -273,3 +273,57 @@ test("promptById — un identifiant inconnu ne renvoie jamais un prompt au hasar
   assert.equal(promptById("doctrine")?.id, "doctrine");
   assert.equal(promptById("nawak"), undefined);
 });
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA VOIX EST ÉDITABLE — ET ELLE NE PEUT PAS PERDRE SES OBLIGATIONS.
+ *
+ * ⚠ `/prompts` permettait d'éditer la doctrine, le socle n8n, le copilote,
+ * l'agent et le débrief — et laissait la VOIX en TypeScript. C'est pourtant le
+ * texte qui parle à un inconnu au téléphone : celui qu'on veut ajuster le plus
+ * souvent, et le seul qui engage la marque au nom de laquelle on appelle.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("la trame d'appel à froid livrée passe ses propres invariants", () => {
+  const t = TEXTES_LIVRES["voix-froid"];
+  assert.ok(t, "la trame doit être servie comme les autres prompts");
+  assert.equal(validerPrompt("voix-froid", t!, t).ok, true);
+});
+
+test("une trame amputée est REFUSÉE, invariant par invariant", () => {
+  const t = TEXTES_LIVRES["voix-froid"]!;
+  const cas: [string, RegExp, string][] = [
+    ["objectif unique", /^OBJECTIF UNIQUE.*$/m, "objectif-unique"],
+    ["interdiction de prix", /aucun prix — jamais\./, "aucun-prix"],
+    ["le NON", /^Si c'est NON.*$/m, "non-raccroche"],
+    ["le OUI", /^Si c'est OUI.*$/m, "oui-passe-la-main"],
+    ["droit d'opposition", /^Droit d'opposition.*$/m, "droit-opposition"],
+  ];
+  for (const [quoi, motif, cle] of cas) {
+    const ampute = t.replace(motif, "");
+    const v = validerPrompt("voix-froid", ampute);
+    assert.equal(v.ok, false, `retirer « ${quoi} » doit être refusé`);
+    assert.ok(
+      v.manques.some((m) => m.cle === cle),
+      `le refus doit nommer « ${cle} », obtenu : ${v.manques.map((m) => m.cle).join(", ")}`
+    );
+  }
+});
+
+test("⚠ le routage de l'offre n'est PAS dans le texte éditable", () => {
+  /**
+   * L'accroche (raison d'appel + LA question) vient de l'offre ROUTÉE et est
+   * substituée par le code. C'est ce qui empêche l'angle Callflow de partir
+   * sur un prospect routé vers la visibilité — le bug qui avait coûté six
+   * endroits en dur. Un opérateur qui réécrit la trame ne peut donc pas se
+   * tromper d'offre : le routage n'est pas à sa portée.
+   */
+  const t = TEXTES_LIVRES["voix-froid"]!;
+  assert.match(t, /\{accroche\}/, "l'accroche doit rester un emplacement, jamais un texte");
+  assert.match(t, /\{offreLigne\}/);
+  assert.match(t, /\{marquePartenaire\}/, "la garde ScintIA s'ajoute par le code, sur Callflow seulement");
+  // Et aucune offre n'est nommée en dur dans la trame.
+  for (const mot of ["Callflow", "accueil téléphonique", "visibilité", "Alpha Sales OS"]) {
+    assert.ok(!t.includes(mot), `« ${mot} » est écrit en dur dans la trame : l'angle repartirait sur tous les appels`);
+  }
+});

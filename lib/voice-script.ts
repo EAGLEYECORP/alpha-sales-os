@@ -128,6 +128,57 @@ export const CALL_MODES: CallModeMeta[] = [
 export const COLD_CALLING_DISCIPLINE =
   "Alpha Voice démarche à froid. Une IA qui démarche n'a droit à AUCUNE improvisation : un objectif unique par appel, aucune modalité discutée, aucun prix, et la main rendue dès qu'il y a un oui.";
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE CORPS DE L'APPEL À FROID — éditable par l'opérateur.
+ *
+ * ⚠ IL ÉTAIT ÉCRIT EN DUR, ET C'ÉTAIT UN TROU. `/prompts` permet d'éditer la
+ * doctrine, le socle n8n, le copilote, l'agent, le débrief — et laissait la
+ * VOIX en TypeScript. Or c'est le texte qui parle à un inconnu au téléphone,
+ * donc celui qu'on veut ajuster le plus souvent.
+ *
+ * ── CE QUI EST ÉDITABLE, ET CE QUI NE L'EST PAS ──
+ *
+ * Éditable : la trame, les consignes, les formulations.
+ *
+ * PAS éditable, et substitué par le code :
+ *   · {accroche} ......... la raison d'appel + LA question, tirées de l'offre
+ *                          ROUTÉE. C'est ce qui empêche l'angle Callflow de
+ *                          partir sur un prospect routé vers la visibilité —
+ *                          le bug qui avait coûté six endroits en dur.
+ *   · {offreLigne} ....... l'offre représentée, ou rien si non résolue.
+ *   · {angleMetier} ...... la douleur structurelle de la verticale.
+ *   · {marquePartenaire} . la garde ScintIA, seulement sur Callflow.
+ *
+ * Un opérateur qui réécrit la trame ne peut donc PAS se tromper d'offre : le
+ * routage n'est pas dans le texte.
+ *
+ * ⚠⚠ Et il ne peut pas non plus retirer une obligation : `auditScript` refuse
+ * un corps qui a perdu l'objectif unique, l'interdiction de prix, le NON qui
+ * raccroche ou le OUI qui passe la main. Le refus est SERVEUR (422), donc il
+ * ne se contourne pas depuis le navigateur.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const CORPS_APPEL_FROID = `Tu appelles {company}, une ENTREPRISE, dans le cadre d'une prospection commerciale B2B pour le compte de {onBehalfOf}.
+{accroche}
+{offreLigne}
+{angleMetier}
+Tu précises, si on te le demande, que leurs coordonnées PROFESSIONNELLES proviennent de sources publiques (annuaires, site web).
+Droit d'opposition, prioritaire : dès que la personne montre qu'elle ne veut pas être appelée — même à demi-mot — tu confirmes qu'elle ne sera plus contactée, tu la remercies et tu raccroches. Immédiat, définitif, sans insister.
+OBJECTIF UNIQUE : obtenir un rendez-vous court avec un humain. Tu ne discutes aucune modalité, aucun détail technique, aucun prix — jamais.
+Si c'est NON, ou « pas le moment » : tu remercies, tu notes, tu raccroches. Tu ne rappelles pas, tu ne mobilises personne. Ce n'est pas un échec, c'est une réponse.
+Si c'est OUI : tu confirmes le créneau, tu le répètes à voix haute, et TU PASSES LA MAIN — c'est le seul cas qui réveille un humain.
+{marquePartenaire}`;
+
+/** Remplit la trame. Une valeur absente disparaît avec sa ligne. */
+export function remplirCorpsFroid(trame: string, valeurs: Record<string, string>): string {
+  return trame
+    .split("\n")
+    .map((ligne) => ligne.replace(/\{(\w+)\}/g, (_, cle: string) => valeurs[cle] ?? ""))
+    .filter((ligne) => ligne.trim().length > 0)
+    .join("\n");
+}
+
 export interface VoiceConfig {
   /** Raison sociale au nom de laquelle l'agent parle. */
   onBehalfOf: string;
@@ -145,6 +196,14 @@ export interface VoiceConfig {
    * un script générique ne convertit pas (cf. juillet 2026).
    */
   prospectBrief?: string;
+  /**
+   * Trame de l'appel à froid, éditée par l'opérateur (`/prompts`).
+   *
+   * ⚠ Vide ou absente = `CORPS_APPEL_FROID`. Elle ne peut PAS contourner
+   * `auditScript` : le refus est SERVEUR (422), pas une validation d'écran.
+   * Un navigateur qui poste une trame amputée reçoit un refus, pas un appel.
+   */
+  corpsFroid?: string;
   /**
    * ── L'OFFRE REPRÉSENTÉE. C'EST ELLE QUI ÉCRIT LE SCRIPT. ──
    *
@@ -213,48 +272,36 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
     );
   } else if (cfg.mode === "prospection-b2b") {
     const o = cfg.offre ? OFFRES[cfg.offre] : null;
+    /**
+     * ⚠ L'ACCROCHE VIENT DE L'OFFRE ROUTÉE, PAS DE LA TRAME.
+     *
+     * Elle était écrite en dur (« proposer un audit de leur accueil
+     * téléphonique ») : l'angle Callflow partait sur TOUS les appels, y
+     * compris ceux routés vers la visibilité. La garder hors du texte
+     * éditable est ce qui empêche ce bug de revenir par l'édition.
+     *
+     * Sans offre résolue on ne devine pas : proposer la mauvaise offre coûte
+     * plus cher que de n'en proposer aucune, et c'est la seule des deux
+     * erreurs qui ne se rattrape pas au deuxième appel.
+     */
+    const accroche = o
+      ? `Après la divulgation, tu dis en UNE phrase pourquoi tu appelles : ${o.raisonAppel}. Puis tu poses cette seule question, et tu écoutes : « ${o.question} »`
+      : `Après la divulgation, tu dis en UNE phrase que tu appelles pour COMPRENDRE comment ils travaillent, sans rien leur proposer aujourd'hui. Tu ne présentes AUCUNE offre et tu n'en inventes pas : tu qualifies, puis tu proposes de faire le point avec un humain.`;
+
     corps.push(
-      `Tu appelles ${company}, une ENTREPRISE, dans le cadre d'une prospection commerciale B2B pour le compte de ${cfg.onBehalfOf}.`,
-      /**
-       * ⚠ CETTE LIGNE ÉTAIT ÉCRITE EN DUR : « proposer un audit de leur
-       * accueil téléphonique ». C'est l'angle Callflow, et il partait sur
-       * TOUS les appels — y compris ceux routés vers la visibilité ou
-       * Alpha Sales OS. Elle vient maintenant de l'offre représentée.
-       */
-      o
-        ? `Après la divulgation, tu dis en UNE phrase pourquoi tu appelles : ${o.raisonAppel}. Puis tu poses cette seule question, et tu écoutes : « ${o.question} »`
-        : // Sans offre résolue, on ne devine pas : proposer la mauvaise offre
-          // coûte plus cher que de n'en proposer aucune, et c'est la seule
-          // des deux erreurs qui ne se rattrape pas au deuxième appel.
-          `Après la divulgation, tu dis en UNE phrase que tu appelles pour COMPRENDRE comment ils travaillent, sans rien leur proposer aujourd'hui. Tu ne présentes AUCUNE offre et tu n'en inventes pas : tu qualifies, puis tu proposes de faire le point avec un humain.`,
-      o ? `Offre représentée sur cet appel : ${o.label}. Tu ne parles d'aucune autre.` : "",
-      v ? `Angle métier : ${v.structuralPain}` : "",
-      `Tu précises, si on te le demande, que leurs coordonnées PROFESSIONNELLES proviennent de sources publiques (annuaires, site web).`,
-      `Droit d'opposition, prioritaire : dès que la personne montre qu'elle ne veut pas être appelée — même à demi-mot — tu confirmes qu'elle ne sera plus contactée, tu la remercies et tu raccroches. Immédiat, définitif, sans insister.`,
-      /**
-       * ⚠ DOCTRINE DU 28/08/2026 — ALPHA VOICE MÈNE L'APPEL ENTIER.
-       *
-       * La ligne disait « au mieux, tu proposes un rendez-vous et tu rends la
-       * main ». L'agent ne rendait donc la main qu'au mieux, et dans les faits
-       * `cadenceFor` la rendait à CHAQUE décroché — un refus mobilisait un
-       * closer autant qu'un oui.
-       *
-       * Désormais : l'agent qualifie et conclut lui-même. Il ne réveille un
-       * humain que sur un OUI, et c'est ce résultat-là (`interesse`) qui le
-       * déclenche dans toute la chaîne.
-       */
-      // « décrocher » a déclenché le garde qui interdit le vocabulaire du
-      // téléphone hors Callflow (tests/surface-prospect). Faux positif ici,
-      // mais on reformule plutôt que d'assouplir un motif qui protège de
-      // l'angle Callflow servi à un prospect routé ailleurs.
-      `OBJECTIF UNIQUE : obtenir un rendez-vous court avec un humain. Tu ne discutes aucune modalité, aucun détail technique, aucun prix — jamais.`,
-      `Si c'est NON, ou « pas le moment » : tu remercies, tu notes, tu raccroches. Tu ne rappelles pas, tu ne mobilises personne. Ce n'est pas un échec, c'est une réponse.`,
-      `Si c'est OUI : tu confirmes le créneau, tu le répètes à voix haute, et TU PASSES LA MAIN — c'est le seul cas qui réveille un humain.`,
-      // Le compte partenaire est nerveux sur SON produit, et il a raison : sur
-      // un appel à froid, c'est SA marque qui prend le risque, pas la nôtre.
-      cfg.offre === "callflow"
-        ? `⚠ Tu parles au nom de ${cfg.onBehalfOf} et de RIEN d'autre : tu ne cites aucune autre société, aucune autre offre, aucun partenaire. Une seule question, un créneau, tu raccroches. Si on te pose une question à laquelle le script ne répond pas, tu dis que tu ne veux pas répondre de travers et que l'humain le fera au rendez-vous.`
-        : ""
+      remplirCorpsFroid(cfg.corpsFroid?.trim() || CORPS_APPEL_FROID, {
+        company,
+        onBehalfOf: cfg.onBehalfOf,
+        accroche,
+        offreLigne: o ? `Offre représentée sur cet appel : ${o.label}. Tu ne parles d'aucune autre.` : "",
+        angleMetier: v ? `Angle métier : ${v.structuralPain}` : "",
+        // Le compte partenaire est nerveux sur SON produit, et il a raison :
+        // sur un appel à froid, c'est SA marque qui prend le risque.
+        marquePartenaire:
+          cfg.offre === "callflow"
+            ? `⚠ Tu parles au nom de ${cfg.onBehalfOf} et de RIEN d'autre : tu ne cites aucune autre société, aucune autre offre, aucun partenaire. Une seule question, un créneau, tu raccroches. Si on te pose une question à laquelle le script ne répond pas, tu dis que tu ne veux pas répondre de travers et que l'humain le fera au rendez-vous.`
+            : "",
+      })
     );
   } else {
     // Un rappel est un contact CHAUD : la personne a laissé ses coordonnées.

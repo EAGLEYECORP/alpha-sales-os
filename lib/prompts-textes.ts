@@ -28,6 +28,7 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 import { DEFAULT_BUSINESS_RULES } from "./business-rules";
+import { CORPS_APPEL_FROID } from "./voice-script";
 
 /**
  * Le SOCLE commun — à mettre en tête de CHAQUE nœud IA de n8n.
@@ -107,4 +108,5 @@ export const TEXTES_LIVRES: Record<string, string> = {
   copilote: SYSTEME_COPILOTE,
   agent: SYSTEME_AGENT,
   debrief: SYSTEME_DEBRIEF,
+  "voix-froid": CORPS_APPEL_FROID,
 };

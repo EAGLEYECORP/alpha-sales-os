@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import type { CallTask } from "@/lib/campaign-runner";
 import { cn } from "@/lib/utils";
+import { useAlpha } from "@/lib/store";
+import { validerPrompt } from "@/lib/prompts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -60,6 +62,20 @@ export function CampaignRunner({
   accountId?: string;
   agencyName: string;
 }) {
+  /**
+   * La trame d'appel à froid éditée dans /prompts.
+   *
+   * ⚠ On ne l'envoie QUE si elle passe encore ses invariants. Le serveur
+   * revérifie et refuse en 422 de toute façon — mais envoyer sciemment une
+   * trame invalide ferait échouer l'appel au lieu de retomber proprement sur
+   * le texte livré. Absente = le serveur prend `CORPS_APPEL_FROID`.
+   */
+  const trameFroide = useAlpha((s) => {
+    const m = (s.settings.prompts ?? []).find((p) => p.id === "voix-froid");
+    if (!m?.texte.trim()) return undefined;
+    return validerPrompt("voix-froid", m.texte).ok ? m.texte : undefined;
+  });
+
   const [state, setState] = useState<RunnerState>("repos");
   const [mode, setMode] = useState<"manuel" | "auto">("manuel");
   const [index, setIndex] = useState(0);
@@ -90,6 +106,13 @@ export function CampaignRunner({
             company: task.company,
             onBehalfOf: agencyName,
             prospectBrief: task.brief,
+            /**
+             * La trame éditée dans /prompts, si elle existe ET si elle est
+             * encore conforme. `texteEffectif` retombe sur le texte livré
+             * quand la version modifiée a perdu un invariant — et le serveur
+             * revérifie de toute façon (422).
+             */
+            corpsFroid: trameFroide,
             prospectId: task.prospectId,
             accountId: task.accountId,
             /**
