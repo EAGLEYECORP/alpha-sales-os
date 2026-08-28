@@ -46,9 +46,19 @@ import { CLOSER_USINE } from "./signature";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
+import { etatInitial, type EtatHydratation } from "./hydratation";
 
 interface AlphaState {
   hydrated: boolean;
+  /**
+   * Où en est le chargement du pipe depuis le serveur.
+   *
+   * ⚠ JAMAIS PERSISTÉ (voir `partialize`). Cet état dit « la liste affichée
+   * est-elle vraiment le pipe ? » ; le relire du disque, ce serait affirmer
+   * « oui » sur une liste vide qu'on n'a pas chargée, et la synchro sortante
+   * effacerait alors tout côté serveur au simple fait de rouvrir l'onglet.
+   */
+  hydratationPipe: EtatHydratation;
   prospects: Prospect[];
   campaigns: Campaign[];
   meetings: Meeting[];
@@ -86,6 +96,16 @@ interface AlphaState {
   upsertProspect: (p: Prospect) => void;
   patchProspect: (id: string, patch: Partial<Prospect>) => void;
   deleteProspect: (id: string) => void;
+  /**
+   * Pose les fiches venues du SERVEUR, sans les considérer comme modifiées.
+   *
+   * ⚠ Ne surtout pas passer par `upsertProspect` : il redate `updatedAt`, donc
+   * les 2 500 fiches qu'on vient de recevoir repartiraient vers le serveur à
+   * chaque démarrage. Ni journal d'activité, ni audit : recevoir son propre
+   * pipe n'est pas un événement commercial.
+   */
+  hydraterProspects: (fiches: Prospect[]) => void;
+  setHydratationPipe: (etat: EtatHydratation) => void;
   moveStage: (
     id: string,
     stage: Stage,
@@ -408,6 +428,7 @@ export const useAlpha = create<AlphaState>()(
   persist(
     (set, get) => ({
       hydrated: false,
+      hydratationPipe: etatInitial(Boolean(defaultSettings.pipeServeur)),
       prospects: seedProspects,
       campaigns: seedCampaigns,
       meetings: seedMeetings,
@@ -445,6 +466,19 @@ export const useAlpha = create<AlphaState>()(
             p.id === id ? { ...p, ...patch, updatedAt: new Date().toISOString() } : p
           ),
         })),
+
+      hydraterProspects: (fiches) =>
+        set((s) => {
+          // Ce que le serveur envoie fait foi pour les identifiants qu'il
+          // connaît. Ce que le navigateur a créé PENDANT le chargement (un
+          // import lancé dans la seconde) n'est pas sur le serveur : on le
+          // garde, il partira à la prochaine poussée.
+          const duServeur = new Set(fiches.map((f) => f.id));
+          const restees = s.prospects.filter((p) => !duServeur.has(p.id));
+          return { prospects: [...fiches.map(normalizeProspect), ...restees] };
+        }),
+
+      setHydratationPipe: (etat) => set({ hydratationPipe: etat }),
 
       deleteProspect: (id) =>
         set((s) => ({
@@ -804,7 +838,21 @@ export const useAlpha = create<AlphaState>()(
           return { standardLog: s.standardLog.map((d, i) => (i === idx ? { ...d, held } : d)) };
         }),
 
-      patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+      patchSettings: (patch) =>
+        set((s) => {
+          const settings = { ...s.settings, ...patch };
+          /**
+           * ⚠ Basculer `pipeServeur` change l'endroit où vivent les fiches. Si
+           * l'état d'hydratation ne suivait pas dans le MÊME geste, on
+           * resterait un instant en « locale » avec le mode serveur actif —
+           * donc autorisé à pousser depuis une liste qu'on n'a pas chargée.
+           * Un seul endroit décide, et c'est celui-ci.
+           */
+          if (patch.pipeServeur !== undefined && patch.pipeServeur !== s.settings.pipeServeur) {
+            return { settings, hydratationPipe: etatInitial(Boolean(patch.pipeServeur)) };
+          }
+          return { settings };
+        }),
 
       setPrompt: (id, texte) =>
         set((s) => {
@@ -1034,6 +1082,32 @@ export const useAlpha = create<AlphaState>()(
         if (typeof localStorage === "undefined") throw new Error("localStorage indisponible");
         return guardedLocalStorage;
       }),
+      /**
+       * ─────────────────────────────────────────────────────────────────
+       * CE QUI PART SUR LE DISQUE — et les deux choses qui n'y vont plus.
+       *
+       * 1. `hydratationPipe`. Il répond à « la liste affichée est-elle
+       *    vraiment le pipe ? ». Persister `chargee` ferait répondre « oui »
+       *    au démarrage suivant, sur une liste vide qu'on n'a pas chargée : la
+       *    synchro sortante proposerait alors la suppression de TOUT le pipe
+       *    serveur, au simple fait de rouvrir l'onglet. On réécrit donc
+       *    l'état de DÉPART, pas l'état courant.
+       *
+       * 2. Les fiches, quand `pipeServeur` est actif. C'est tout l'objet du
+       *    mode : mesuré dans `tests/mur-stockage.test.ts`, localStorage
+       *    sature vers 1 200 fiches et `setItem` échoue EN SILENCE. Au-delà,
+       *    le pipe doit vivre côté serveur et le navigateur n'en garder
+       *    qu'une copie de travail, en mémoire.
+       *
+       * ⚠ En mode local (défaut), on écrit `prospects` comme avant : ce
+       * réglage est opt-in, et une mise à jour ne doit jamais déplacer les
+       * données de quelqu'un qui n'a rien demandé.
+       * ─────────────────────────────────────────────────────────────────
+       */
+      partialize: (s) => {
+        const base = { ...s, hydratationPipe: etatInitial(Boolean(s.settings.pipeServeur)) };
+        return (s.settings.pipeServeur ? { ...base, prospects: [] } : base) as AlphaState;
+      },
       /**
        * ⚠ `merge` TOURNE À CHAQUE RÉHYDRATATION, `migrate` seulement au
        * changement de version. C'est toute la différence.

@@ -59,6 +59,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { N8nAutoSync } from "@/components/n8n-autosync";
 import { StorageAlert } from "@/components/security/storage-alert";
+import { PipeServeur } from "@/components/pipe-serveur";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
 import { afficherChemin, useDroits } from "@/lib/use-droits";
 
@@ -436,6 +437,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Au-dessus de tout : si le stockage local n'enregistre plus, aucune
             autre information n'a d'importance tant que ce n'est pas réglé. */}
         <StorageAlert />
+        {/* Et juste en dessous : si le pipe vit sur le serveur, dire s'il est
+            chargé. Une liste vide en cours de chargement ressemble trait pour
+            trait à un pipe perdu — c'est la confusion qui fait réimporter. */}
+        <PipeServeur />
         {/* Le socle du Cerveau arrive du serveur : il ne peut plus être compilé
             dans le bundle, où il était lisible sans mot de passe. */}
         <KnowledgeSeedLoader />

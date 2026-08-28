@@ -48,9 +48,55 @@ const indisponible = () =>
  * savoir quoi envoyer. Sur 1 000 fiches, ça fait ~40 Ko au lieu de 3 Mo — et
  * c'est ce qui rend une synchro fréquente supportable.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const db = serviceClient();
   if (!db) return indisponible();
+
+  /**
+   * ── LE CHARGEMENT COMPLET (`?fiches=1`) — l'autre sens du tuyau ──
+   *
+   * Les empreintes suffisent tant que le navigateur DÉTIENT le pipe. Elles ne
+   * suffisent plus quand il ne le détient pas : au-delà de ~1 200 fiches,
+   * localStorage sature et `setItem` échoue en silence (voir
+   * `lib/hydratation.ts`). Le pipe doit alors vivre ici, et le navigateur le
+   * charger au démarrage.
+   *
+   * ⚠ PAGINÉ, ORDONNÉ, ET COMPTÉ — les trois ensemble, sinon rien.
+   * · sans `range`, PostgREST plafonne à 1 000 lignes SANS le dire : on
+   *   croirait avoir tout chargé avec un pipe amputé ;
+   * · sans `order`, l'ordre entre deux requêtes n'est pas garanti : une même
+   *   fiche pourrait revenir deux fois pendant qu'une autre manque ;
+   * · sans `count`, personne ne peut savoir si le chargement est complet — et
+   *   c'est cette réponse-là qui autorise ou interdit la poussée retour.
+   */
+  if (new URL(req.url).searchParams.get("fiches") === "1") {
+    const p = new URL(req.url).searchParams;
+    const depuis = Math.max(0, Math.floor(Number(p.get("depuis")) || 0));
+    // Plafonnée : un `?taille=100000` ne doit pas devenir une requête qui fait
+    // tomber la fonction. Même borne que les écritures — une seule taille de
+    // lot pour cette table, dans les deux sens.
+    const taille = Math.min(LOT_MAX, Math.max(1, Math.floor(Number(p.get("taille")) || LOT_MAX)));
+
+    const { data, error, count } = await db
+      .from("prospects")
+      .select("data", { count: "exact" })
+      .eq("proprietaire", PROPRIETAIRE_OPERATEUR)
+      .order("id", { ascending: true })
+      .range(depuis, depuis + taille - 1);
+
+    if (error) {
+      return NextResponse.json({ error: "lecture impossible", detail: error.message }, { status: 500 });
+    }
+
+    // `data` porte la fiche entière telle qu'elle a été poussée. On ne
+    // recompose rien ici : le serveur est un dépôt, pas une source de vérité
+    // qui réinterprète.
+    const fiches = (data ?? [])
+      .map((r) => (r as Record<string, unknown>).data as Prospect)
+      .filter((f): f is Prospect => Boolean(f && typeof f.id === "string"));
+
+    return NextResponse.json({ fiches, total: count ?? 0, depuis, taille });
+  }
 
   const { data, error } = await db
     .from("prospects")

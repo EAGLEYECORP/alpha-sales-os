@@ -7,6 +7,7 @@ import {
   allegerPourSync, etatSync, lots, planifierSync,
   type EmpreinteServeur, type EtatSync,
 } from "@/lib/sync-prospects";
+import { peutSynchroniser } from "@/lib/hydratation";
 import { cn } from "@/lib/utils";
 
 /**
@@ -51,7 +52,18 @@ export function SyncProspects() {
   const [enCours, setEnCours] = useState(false);
   const [confirmerEffacement, setConfirmerEffacement] = useState(false);
 
+  const etatHydratation = useAlpha((s) => s.hydratationPipe);
+
   const active = settings.supabaseSync;
+  /**
+   * ⚠ LA PERMISSION DE POUSSER — une seule réponse dans tout le produit
+   * (`lib/hydratation.ts`). En mode pipe serveur, un navigateur qui n'a pas
+   * réussi à charger a une liste VIDE : pousser depuis là proposerait de
+   * supprimer l'intégralité du pipe. `planifierSync` refuserait
+   * (`SEUIL_EFFACEMENT`), mais compter sur un seul filet, c'est attendre le
+   * jour où il cède.
+   */
+  const autorise = peutSynchroniser(etatHydratation);
   const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lireEmpreintes = useCallback(async () => {
@@ -78,9 +90,26 @@ export function SyncProspects() {
   }, [active, lireEmpreintes]);
 
   const plan = empreintes ? planifierSync(prospects, empreintes) : null;
+  const pipeServeur = Boolean(settings.pipeServeur);
+  /**
+   * ⚠ On n'active PAS le mode serveur tant qu'il reste quoi que ce soit à
+   * envoyer. Dès qu'il est actif, les fiches ne sont plus écrites dans
+   * localStorage : ce qui n'avait pas été poussé n'existerait plus au
+   * prochain rechargement. Ce n'est pas un garde-fou théorique — c'est le cas
+   * NORMAL, puisqu'on active ce mode précisément quand on a beaucoup de
+   * fiches locales.
+   */
+  const toutPousse = Boolean(plan && plan.aEcrire.length === 0 && plan.aSupprimer.length === 0);
 
   const pousser = useCallback(
     async (forcer = false) => {
+      if (!peutSynchroniser(etatHydratation)) {
+        setErreur(
+          "Poussée bloquée : le pipe n'a pas été chargé depuis le serveur. Ce que ce navigateur affiche n'est " +
+            "pas ton pipeline — l'envoyer maintenant supprimerait côté serveur tout ce qui n'a pas été chargé."
+        );
+        return;
+      }
       const base = (await lireEmpreintes()) ?? [];
       const p = planifierSync(prospects, base);
 
@@ -126,18 +155,19 @@ export function SyncProspects() {
         setEnCours(false);
       }
     },
-    [prospects, lireEmpreintes]
+    [prospects, lireEmpreintes, etatHydratation]
   );
 
-  // Poussée automatique après un silence — jamais pendant la saisie.
+  // Poussée automatique après un silence — jamais pendant la saisie, et
+  // jamais depuis un état qu'on n'a pas chargé.
   useEffect(() => {
-    if (!active || enCours || confirmerEffacement) return;
+    if (!active || enCours || confirmerEffacement || !autorise) return;
     if (minuteur.current) clearTimeout(minuteur.current);
     minuteur.current = setTimeout(() => void pousser(), DELAI_MS);
     return () => {
       if (minuteur.current) clearTimeout(minuteur.current);
     };
-  }, [prospects, active, enCours, confirmerEffacement, pousser]);
+  }, [prospects, active, enCours, confirmerEffacement, autorise, pousser]);
 
   const { etat, message } = etatSync({
     active,
@@ -190,8 +220,49 @@ export function SyncProspects() {
       )}
 
       {active && (
+        <div className="mt-3 rounded-lg border border-ink-700 px-3 py-2.5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-[12px] font-medium text-paper">Le pipe vit sur le serveur</p>
+            <button
+              className={cn(
+                "chip cursor-pointer",
+                pipeServeur ? "border-signal-green/50 text-signal-green" : "border-ink-600 text-paper-faint"
+              )}
+              disabled={!pipeServeur && !toutPousse}
+              onClick={() => {
+                if (!pipeServeur && !toutPousse) return;
+                patchSettings({ pipeServeur: !pipeServeur });
+              }}
+            >
+              {pipeServeur ? "activé" : "désactivé"}
+            </button>
+          </div>
+          <p className="mt-1 text-[11.5px] leading-relaxed text-paper-faint">
+            Sans ça, tes fiches sont écrites dans <strong className="text-paper-dim">localStorage</strong>, qui sature
+            vers <strong className="text-paper-dim">1 200 fiches</strong> — et au-delà, l&apos;enregistrement échoue{" "}
+            <strong className="text-paper-dim">en silence</strong> : l&apos;écran continue d&apos;afficher tes fiches,
+            elles disparaissent en fermant l&apos;onglet. Avec ça, le navigateur ne garde plus qu&apos;une copie de
+            travail et charge le pipe au démarrage. C&apos;est ce qui permet de tenir 2 500 fiches.
+          </p>
+          {!pipeServeur && !toutPousse && (
+            <p className="mt-1.5 text-[11.5px] leading-relaxed text-signal-amber">
+              Impossible d&apos;activer maintenant : {plan ? plan.resume : "l'état du serveur n'est pas connu"}. Une
+              fois activé, les fiches ne sont plus écrites localement — ce qui n&apos;a pas été envoyé serait perdu au
+              prochain rechargement. Synchronise d&apos;abord.
+            </p>
+          )}
+          {pipeServeur && (
+            <p className="mt-1.5 text-[11.5px] leading-relaxed text-paper-faint">
+              Désactiver remet les fiches dans le navigateur — donc les remet sous le quota de 5 Mo. Au-delà de
+              1 200 fiches, l&apos;écriture échouera à nouveau.
+            </p>
+          )}
+        </div>
+      )}
+
+      {active && (
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <button className="btn-bronze px-3 py-1.5 text-[12px]" disabled={enCours} onClick={() => void pousser()}>
+          <button className="btn-bronze px-3 py-1.5 text-[12px]" disabled={enCours || !autorise} onClick={() => void pousser()}>
             {enCours ? <RefreshCw size={13} className="animate-spin" /> : <Upload size={13} />}
             {enCours ? "Envoi…" : "Synchroniser maintenant"}
           </button>

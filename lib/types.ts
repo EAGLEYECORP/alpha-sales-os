@@ -410,6 +410,19 @@ export interface AppSettings {
   bookingUrl?: string;
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
+  /**
+   * LE PIPE VIT SUR LE SERVEUR, plus dans ce navigateur.
+   *
+   * Absent/faux = mode historique : localStorage détient les fiches, la
+   * synchro n'est qu'une sauvegarde. Vrai = les fiches ne sont plus persistées
+   * localement, elles se chargent au démarrage depuis Supabase.
+   *
+   * ⚠ OPT-IN, et ça doit le rester : ce réglage déplace l'endroit où vivent
+   * les données de l'opérateur. Personne ne doit le découvrir après coup.
+   * Il n'a de sens qu'avec `supabaseSync` — sans elle, rien n'a jamais été
+   * envoyé et le chargement rendrait un pipe vide.
+   */
+  pipeServeur?: boolean;
   /** First-run choice made (demo vs real data) */
   onboarded: boolean;
   /** Tarifs du compte (white-label). Absent = modèle EAGLEYE par défaut. */
