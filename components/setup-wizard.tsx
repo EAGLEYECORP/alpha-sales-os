@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -106,6 +106,42 @@ interface Health {
     inboundWebhook: { configured: boolean };
     tracking: { persistence: string };
   };
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * « PASSER » DOIT SORTIR. PAS AVANCER D'UN ÉCRAN.
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT, PAS EN LE TESTANT.
+ *
+ * Le lien de l'étape 1 disait « je veux d'abord tester l'app sans Google
+ * Sheets » et appelait `next`. Il déposait donc l'opérateur sur l'étape 2 —
+ * Docker, n8n, onze workflows, Ollama — dont le « Suivant » est verrouillé par
+ * une case à cocher et qui n'offrait, elle, AUCUNE sortie. Le seul moyen
+ * d'entrer dans l'app était la croix en haut à droite, sans libellé.
+ *
+ * Un bouton qui promet « tester l'app » et livre un mur d'installation ne
+ * coûte pas une gêne : c'est la troisième minute d'un opérateur neuf, et il
+ * conclut que l'app ne s'ouvre pas sans une heure de plomberie. C'est faux —
+ * l'assistant est entièrement optionnel, `differer` le repousse en gardant la
+ * progression.
+ *
+ * Ce composant existe pour que la sortie ait UNE seule implémentation : le
+ * jour où on ajoute une étape bloquante de plus, on copie une sortie qui
+ * sort vraiment. `tests/assistant-sortie.test.ts` interdit qu'un lien
+ * « Passer » soit recâblé sur `next`.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+function SortirDeLAssistant({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      className="mt-2 block text-[11px] text-paper-faint underline-offset-2 hover:text-paper-dim hover:underline"
+      onClick={onClick}
+      title="Ferme l'assistant — la progression est gardée, il ne se rouvrira pas tout seul"
+    >
+      {children}
+    </button>
+  );
 }
 
 export function SetupWizard({ onClose }: { onClose: () => void }) {
@@ -345,9 +381,9 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                   <input type="checkbox" className="accent-bronze-500" checked={sheetsReady} onChange={(e) => setSheetsReady(e.target.checked)} />
                   <span className="text-sm text-paper">Mon Sheet répond au test (JSON ok)</span>
                 </label>
-                <button className="mt-2 text-[11px] text-paper-faint underline-offset-2 hover:text-paper-dim hover:underline" onClick={next}>
+                <SortirDeLAssistant onClick={differer}>
                   Passer — je veux d&apos;abord tester l&apos;app sans Google Sheets
-                </button>
+                </SortirDeLAssistant>
               </div>
             )}
 
@@ -391,6 +427,9 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                   Au minimum le n°1 (<code className="code">alpha-dashboard-api</code>) — c&apos;est lui que l&apos;app appelle.
                   Les autres peuvent attendre.
                 </p>
+                <SortirDeLAssistant onClick={differer}>
+                  Passer — je veux d&apos;abord tester l&apos;app sans n8n
+                </SortirDeLAssistant>
               </div>
             )}
 

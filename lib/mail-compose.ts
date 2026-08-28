@@ -3,6 +3,7 @@ import { isDemoProspect } from "./seed";
 // L'angle du message vient de l'aimant routé par le deep-dive, pas d'une
 // phrase figée : voir l'en-tête de ce module pour ce que ça corrigeait.
 import { approcheEcrite } from "./approche-ecrite";
+import { signataire } from "./signature";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -62,8 +63,11 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
   // Critère, question et signal viennent tous les trois de l'aimant routé :
   // un seul endroit décide de QUOI parle ce message.
   const a = approcheEcrite(p, opts.accountId);
-  const closer = opts.closerName?.trim() || "Zakaria";
   const agency = opts.agencyName?.trim() || "EAGLEYE CORP";
+  // Un seul endroit décide QUI signe (`lib/signature`). Le repli en dur qui
+  // vivait ici signait « Zakaria » — le prénom du propriétaire de l'outil —
+  // dans les emails d'un revendeur white-label.
+  const closer = signataire(opts.closerName, agency).nom;
 
   const booking = opts.bookingUrl?.trim()
     ? ["", `Si un jour vous voulez en parler, mon agenda est ouvert : ${opts.bookingUrl.trim()}`]

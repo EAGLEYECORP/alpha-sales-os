@@ -1,4 +1,5 @@
 import { localTime, BUSINESS_TZ } from "./business-hours";
+import { CLOSER_USINE } from "./signature";
 /**
  * ─────────────────────────────────────────────────────────────────────
  * Conformité de la prospection B2B — France, août 2026.
@@ -169,7 +170,17 @@ export const MENTIONS_OBLIGATOIRES = [
 export function verifieMentions(body: string, closerName: string, agencyName: string): string[] {
   const manques: string[] = [];
   const t = body.toLowerCase();
-  if (closerName && !t.includes(closerName.toLowerCase())) manques.push("Nom de l'expéditeur absent");
+  /**
+   * ⚠ « Le Closer » satisfaisait ce contrôle.
+   *
+   * La mention exigée est l'IDENTITÉ de l'expéditeur. Le réglage d'usine est
+   * un libellé de démonstration : il n'identifie personne, mais il était bien
+   * présent dans le corps, donc la vérification passait au vert. Un contrôle
+   * de conformité qu'un placeholder satisfait ne contrôle rien.
+   */
+  if (closerName.trim() === CLOSER_USINE)
+    manques.push(`Nom de l'expéditeur non renseigné (« ${CLOSER_USINE} » est le réglage d'usine)`);
+  else if (closerName && !t.includes(closerName.toLowerCase())) manques.push("Nom de l'expéditeur absent");
   if (agencyName && !t.includes(agencyName.toLowerCase())) manques.push("Société de l'expéditeur absente");
   if (!/stop|désinscri|desinscri|ne plus recevoir|opposition/i.test(body))
     manques.push("Moyen de refus absent — obligatoire dans CHAQUE message");

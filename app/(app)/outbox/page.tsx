@@ -26,6 +26,7 @@ import {
   type OutboxTarget,
 } from "@/lib/mail-compose";
 import { renderEmail, plainText } from "@/lib/email-html";
+import { signataire, identiteDUsine, CLOSER_USINE } from "@/lib/signature";
 import type { DraftContent } from "@/lib/gmail-draft";
 import { stageById } from "@/lib/hormozi";
 import type { Prospect } from "@/lib/types";
@@ -225,7 +226,7 @@ export default function OutboxPage() {
     const opts = {
       subject: d.subject,
       body: d.body,
-      closerName: settings.closerName?.trim() || "Zakaria",
+      closerName: signataire(settings.closerName, settings.agencyName).nom,
       addressLine: settings.agencyName?.trim() ? `${settings.agencyName.trim()} — Lyon, France` : undefined,
       logoUrl: origin ? `${origin}/email-eagle.png` : undefined,
     };
@@ -446,6 +447,39 @@ export default function OutboxPage() {
             Charge tes vraies fiches — <Link href="/settings" className="text-bronze-400 underline">Réglages →
             Données réelles → « Tout vider »</Link>, puis importe ton CSV. Les boutons d&apos;envoi se rallumeront
             tout seuls.
+          </p>
+        </section>
+      )}
+
+      {/*
+        L'identité d'envoi est encore celle sortie d'usine.
+
+        ⚠ TROUVÉ EN SE SERVANT DU PRODUIT. Un opérateur qui n'ouvre jamais
+        Réglages signe ses emails « Le Closer » et remet un PDF d'audit
+        « préparé par Le Closer ». Le bandeau des fiches de démo, juste
+        au-dessus, protégeait l'ADRESSE du destinataire ; rien ne protégeait
+        l'identité de l'expéditeur, qui est pourtant une mention obligatoire.
+
+        Il ne bloque pas : le nom est un réglage, pas une donnée corrompue, et
+        l'opérateur peut avoir de bonnes raisons d'envoyer avant de l'avoir
+        posé. Il NOMME, et il disparaît dès que le champ est rempli.
+      */}
+      {identiteDUsine(settings.closerName, settings.agencyName) && (
+        <section className="card border-signal-amber/50 p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-signal-amber">
+            <AlertTriangle size={15} /> Tes messages sont signés « {CLOSER_USINE} »
+          </h2>
+          <p className="mt-1.5 text-[12px] text-paper">
+            C&apos;est le réglage d&apos;usine — un libellé, pas un nom. Il part tel quel dans la signature de chaque
+            email, et sur le PDF d&apos;audit remis au prospect (« préparé par {CLOSER_USINE} »). L&apos;identité
+            exacte de l&apos;expéditeur est l&apos;une des trois mentions obligatoires d&apos;un message de
+            prospection : un placeholder ne la remplit pas.
+          </p>
+          <p className="mt-1.5 text-[12px] text-paper-dim">
+            <Link href="/settings" className="text-bronze-400 underline">
+              Réglages → ton nom
+            </Link>{" "}
+            — trente secondes, et ce bandeau disparaît.
           </p>
         </section>
       )}

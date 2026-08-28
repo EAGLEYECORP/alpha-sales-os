@@ -2,6 +2,7 @@ import type { Prospect } from "./types";
 import { emailSubject, emailBody, type ComposeOptions } from "./mail-compose";
 import { renderEmail, plainText, type EmailOptions } from "./email-html";
 import { isDemoProspect } from "./seed";
+import { signataire } from "./signature";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -68,7 +69,9 @@ export function draftContentFor(p: Prospect, opts: GmailDraftOptions = {}): Draf
   const emailOpts: EmailOptions = {
     subject,
     body,
-    closerName: opts.closerName?.trim() || "Zakaria",
+    // Même arbitre que le texte brut : les deux chemins doivent signer
+    // du MÊME nom, sinon le brouillon HTML et l'email collé divergent.
+    closerName: signataire(opts.closerName, opts.agencyName).nom,
     addressLine: opts.agencyName?.trim() ? `${opts.agencyName.trim()} — Lyon, France` : undefined,
     logoUrl: opts.logoUrl,
     preheader: opts.preheader,

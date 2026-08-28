@@ -41,6 +41,7 @@ import type { Lecon } from "./apprentissage";
 import { OFFRES_SYSTEME, idDepuisLabel, peutSupprimer, validerOffre, type ErreurOffre, type Offre } from "./offer-catalogue";
 import { elaguer } from "./apprentissage";
 import { applyAccount } from "./accounts";
+import { CLOSER_USINE } from "./signature";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
@@ -161,7 +162,10 @@ interface AlphaState {
 const defaultSettings: AppSettings = {
   accountId: "eagleye",
   agencyName: "EAGLEYE CORP",
-  closerName: "Le Closer",
+  // Le nom d'usine vient de `lib/signature` : c'est LUI que les contrôles
+  // reconnaissent comme « personne n'est identifié ». Une copie de la chaîne
+  // ici dériverait, et le détecteur cesserait de l'attraper en silence.
+  closerName: CLOSER_USINE,
   // Défaut EAGLEYE : Alpha Sales OS se vend lui-même. Un revendeur remplace.
   offer: {
     city: "Lyon",
