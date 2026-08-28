@@ -465,8 +465,8 @@ export const seedCampaigns: Campaign[] = [
     marketInfo: "~180 sociétés de transport sanitaire dans le Rhône. 31 % des demandes de transport programmé arrivent entre 20h et 7h. Décideurs joignables avant 8h (avant les tournées). Cycle de décision : 2 co-gérants → toujours les deux à la démo.",
     leadMagnet: "Rapport : « Les demandes de transport que votre standard ne voit jamais » (grille d'auto-diagnostic)",
     steps: [
-      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Les demandes de nuit que vous ne voyez jamais", body: "Bonjour {prenom},\n\nEntre 20h et 7h, votre standard dort. Les demandes de transport programmé, elles, continuent d'arriver — chez ceux qui répondent.\n\nOn équipe des ambulanciers du Rhône avec un standard IA qui qualifie et route 24/7. Audit gratuit de vos flux : 20 minutes au dépôt.\n\n{closer} — EAGLEYE" },
-      { id: "s2", kind: "appel", role: "relance", delayDays: 4, subject: "Appel avant tournées", body: "Appeler avant 8h. Mentionner les confrères équipés. Objectif : RDV dépôt daté." },
+      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Les demandes de nuit que vous ne voyez jamais", body: "Bonjour {prenom},\n\nEntre 20h et 7h, votre standard dort. Les demandes de transport programmé, elles, continuent d'arriver — chez ceux qui répondent.\n\nIl existe un standard IA qui qualifie et route ces demandes 24/7 — je vous montre lesquelles vous ne voyez pas. Audit gratuit de vos flux : 20 minutes au dépôt.\n\n{closer} — EAGLEYE" },
+      { id: "s2", kind: "appel", role: "relance", delayDays: 4, subject: "Appel avant tournées", body: "Appeler avant 8h. Partir de SON créneau de nuit relevé à l'audit, pas des confrères. Objectif : RDV dépôt daté." },
     ],
     stats: { sent: 18, opened: 12, replied: 5, booked: 2 },
     createdAt: daysAgo(12),
@@ -613,3 +613,19 @@ export const seedActivities: Activity[] = [
 export const DEMO_PROSPECT_IDS: ReadonlySet<string> = new Set(SEED_PROSPECT_IDS);
 
 export const isDemoProspect = (id: string): boolean => DEMO_PROSPECT_IDS.has(id);
+
+/**
+ * Même mécanique pour les CAMPAGNES, et pour la même raison.
+ *
+ * Dérivée de `seedCampaigns` elle aussi : la liste des identifiants ne se
+ * recopie pas. Ajouter une campagne de démo demain la marque comme démo sans
+ * que personne pense à revenir ici — c'est tout l'intérêt.
+ *
+ * ⚠ Ce qu'elle garde n'est pas une adresse mais un TAUX. `stats` du seed
+ * affiche « 67 % d'ouverture » sur `/campaigns`, à deux centimètres du
+ * panneau de tracking qui compte le réel et affiche 0 %. Un taux se cite en
+ * rendez-vous ; celui-là n'a jamais été mesuré.
+ */
+export const DEMO_CAMPAIGN_IDS: ReadonlySet<string> = new Set(seedCampaigns.map((c) => c.id));
+
+export const isDemoCampaign = (id: string): boolean => DEMO_CAMPAIGN_IDS.has(id);

@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { ArrowRight, Check, Coins, Info } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { buildPayoutLedger } from "@/lib/payouts";
-import { ArgentDeDemo } from "@/components/argent-de-demo";
+import { ArgentDeDemo } from "@/components/donnees-de-demo";
 import { eur } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 

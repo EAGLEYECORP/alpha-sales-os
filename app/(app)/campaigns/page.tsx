@@ -8,6 +8,7 @@ import { cn, eur, uid } from "@/lib/utils";
 import { computeCampaignFunnel, pct, type FunnelRecord } from "@/lib/campaign-funnel";
 import { Modal } from "@/components/ui/modal";
 import { InboundInbox } from "@/components/campaigns/inbox";
+import { ChiffresDeCampagneDemo } from "@/components/donnees-de-demo";
 import { IndustryTrackingStats } from "@/components/tracking/tracking-stats";
 import { CampaignReview } from "@/components/campaigns/campaign-review";
 
@@ -93,6 +94,14 @@ export default function CampaignsPage() {
       <InboundInbox />
 
       <IndustryTrackingStats />
+
+      {/*
+        Juste SOUS le panneau de tracking, et c'est délibéré : celui-ci dit
+        honnêtement « MESSAGES 0 · TAUX D'OUVERTURE 0 % », les cartes du
+        dessous affichent 67 %. Le bandeau doit se lire entre les deux, là où
+        la contradiction se voit.
+      */}
+      <ChiffresDeCampagneDemo campaigns={campaigns} />
 
       <div className="grid gap-4 md:grid-cols-2">
         {campaigns.map((c) => {

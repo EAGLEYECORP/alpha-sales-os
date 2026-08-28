@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { seedMeetings, seedProspects } from "../lib/seed";
+import { seedMeetings, seedProspects, seedCampaigns, isDemoCampaign } from "../lib/seed";
 import { buildTemplates } from "../lib/templates";
 
 /**
@@ -91,6 +91,25 @@ const sansCommentaires = (src: string) =>
  * heuristique qui se trompe ici laisserait passer « les garages qu'on équipe ».
  * Un test strict qui impose parfois de tourner une phrase autrement coûte
  * moins cher qu'une preuve inventée envoyée à un prospect.
+ *
+ * ⚠⚠⚠ DEUX TOURNURES ONT MARCHÉ SUR CE GARDE, DANS UN FICHIER DÉJÀ SURVEILLÉ.
+ *
+ * `lib/seed.ts` était dans REDACTEURS depuis la correction précédente. Les
+ * campagnes de démonstration contenaient pourtant, en clair :
+ *
+ *   · « On équipe des ambulanciers du Rhône avec un standard IA » — corps
+ *     d'email envoyé au prospect ;
+ *   · « Mentionner les confrères équipés. » — consigne d'appel.
+ *
+ * Aucune ne matchait. Le motif était ancré sur le POSSESSIF (« nos », « qu'on
+ * équipe ») ; ces deux-là affirment la même clientèle sans possessif : un
+ * « on » nu, et une troisième personne (« les confrères équipés »).
+ *
+ * La leçon n'est pas « ajouter deux regex ». C'est que le fichier était dans
+ * le périmètre, le garde tournait, et la fabrication est passée quand même
+ * parce qu'elle était formulée autrement. Un garde par motif attrape ce qu'on
+ * a déjà vu ; il faut le rouvrir chaque fois qu'on trouve une formulation
+ * neuve, et c'est la lecture de l'écran qui les trouve, pas le test.
  */
 const CLIENTELE_AFFIRMEE = [
   /\bnos (?:clients?|artisans?|restos?|pubs?|garages?|partenaires?)\b/i,
@@ -98,6 +117,11 @@ const CLIENTELE_AFFIRMEE = [
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,
   /\bils sont \d+ à nous\b/i,
+  // Le « on » nu : « On équipe des ambulanciers du Rhône avec… »
+  /\bon (?:équipe|accompagne|installe|a équipé|a installé)\b/i,
+  // La clientèle affirmée à la troisième personne : « les confrères équipés »,
+  // « des voisins déjà équipés ». C'est la même promesse, sans le possessif.
+  /\b(?:confrères?|voisins?|concurrents?|collègues?) (?:déjà )?(?:équipés?|clients?)\b/i,
 ];
 
 test("⚠ aucun texte destiné au prospect n'affirme une clientèle", () => {
@@ -220,7 +244,59 @@ test("⚠ l'argent de DÉMONSTRATION est nommé sur les écrans d'argent", () =>
 
   // Le bandeau se retire TOUT SEUL : un avertissement qu'il faut penser à
   // enlever est un avertissement qu'on oublie, puis qu'on montre.
-  const bandeau = readFileSync(join(RACINE, "components/argent-de-demo.tsx"), "utf8");
+  const bandeau = readFileSync(join(RACINE, "components/donnees-de-demo.tsx"), "utf8");
   assert.match(bandeau, /if \(demoAvecArgent\.length === 0\) return null;/, "il doit disparaître sans intervention");
   assert.match(bandeau, /status === "paye"/, "et ne se déclencher que sur de l'argent réellement compté");
+});
+
+test("⚠ les TAUX de démonstration sont nommés sur l'écran des campagnes", () => {
+  /**
+   * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT.
+   *
+   * Sur `/campaigns`, deux panneaux se contredisaient à deux centimètres près :
+   *
+   *   « MESSAGES 0 · OUVERTURES 0 · TAUX D'OUVERTURE 0 % »   (le réel, honnête)
+   *   « 42 ENVOYÉS · 67 % OUVERTS · 21 % RÉPONSES · 4 RDV »  (le seed, inventé)
+   *
+   * Un TAUX est plus dangereux qu'un total : il se retient, se cite en
+   * rendez-vous, et sert à comparer deux campagnes. Celui-là n'a jamais été
+   * mesuré — « zéro donnée → zéro chiffre » et « jamais un taux nu » sont
+   * précisément la doctrine de la boucle.
+   */
+  const avecStats = seedCampaigns.filter((c) => c.stats.sent > 0);
+  assert.ok(
+    avecStats.length > 0,
+    "le jeu de démo doit encore porter des compteurs — sinon ce test ne garde rien"
+  );
+  for (const c of avecStats) {
+    assert.ok(isDemoCampaign(c.id), `${c.id} n'est pas reconnue comme campagne de démo`);
+  }
+
+  const src = readFileSync(join(RACINE, "app/(app)/campaigns/page.tsx"), "utf8");
+  assert.match(
+    src,
+    /<ChiffresDeCampagneDemo campaigns=\{campaigns\} \/>/,
+    "l'écran des campagnes doit nommer les compteurs de démonstration"
+  );
+
+  // Le bandeau se retire TOUT SEUL, comme celui de l'argent.
+  const bandeau = readFileSync(join(RACINE, "components/donnees-de-demo.tsx"), "utf8");
+  assert.match(bandeau, /if \(demo\.length === 0\) return null;/, "il doit disparaître sans intervention");
+  assert.match(bandeau, /c\.stats\.sent > 0/, "et ne se déclencher que sur des compteurs réellement affichés");
+});
+
+test("la liste des campagnes de démo est DÉRIVÉE, jamais recopiée", () => {
+  /**
+   * Même règle que `DEMO_PROSPECT_IDS` : une seconde liste tenue à la main
+   * diverge, et diverger veut dire ici qu'une campagne de démo affiche ses
+   * 67 % sans bandeau.
+   */
+  const src = readFileSync(join(RACINE, "lib/seed.ts"), "utf8");
+  assert.match(
+    src,
+    /DEMO_CAMPAIGN_IDS[^=]*= new Set\(seedCampaigns\.map\(\(c\) => c\.id\)\)/,
+    "DEMO_CAMPAIGN_IDS doit être dérivée de seedCampaigns"
+  );
+  for (const c of seedCampaigns) assert.ok(isDemoCampaign(c.id), `${c.id} manque à la liste dérivée`);
+  assert.equal(isDemoCampaign("c-une-vraie-campagne-de-l-operateur"), false);
 });

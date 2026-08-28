@@ -246,15 +246,29 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
    * font constater, les pertes sont chiffrées sur SES données. Ce qui ne se
    * tiendrait pas, c'est une norme inventée qu'un prospect vérifie.
    *
-   * Réserve valable aussi pour les trois lignes qui restent : elles n'ont
-   * aucune source attachée. Elles étaient là avant, elles sont plausibles, et
-   * ce n'est pas pareil que mesuré.
+   * Réserve valable aussi pour les lignes qui restent : elles n'ont aucune
+   * source attachée. Elles étaient là avant, elles sont plausibles, et ce
+   * n'est pas pareil que mesuré.
+   *
+   * ⚠⚠⚠ UNE DES TROIS EST TOMBÉE, ET C'ÉTAIT LA PLUS DANGEREUSE.
+   *
+   * « Vos concurrents équipés répondent 24/7 » affirmait au prospect un fait
+   * sur SON marché, que nous n'avons jamais mesuré — et que lui peut vérifier
+   * en trois appels. S'il en trouve deux qui ne décrochent pas le soir, ce
+   * n'est pas cette ligne qui tombe : c'est tout l'échange.
+   *
+   * Le paragraphe juste au-dessus condamnait déjà l'idée (« une norme inventée
+   * qu'un prospect vérifie ») ; la ligne restait parce qu'« elle était là
+   * avant ». Elle est remplacée par le TEST lui-même : on ne lui affirme rien,
+   * on lui donne le geste qui vérifie. Si le marché ne répond pas le soir,
+   * l'argument s'établit tout seul et il est vrai ; si le marché répond,
+   * mieux vaut le savoir avant de le dire.
    */
   const marketStandard =
     offre === "callflow"
       ? [
           "Aujourd'hui un client qui n'obtient pas de réponse appelle le suivant dans les 5 minutes — il n'attend plus.",
-          "Vos concurrents équipés répondent 24/7, y compris le soir et le week-end, sans embaucher.",
+          "Appelez trois de vos concurrents un soir à 21h : c'est exactement le test que fait votre client, et vous aurez la réponse avant moi.",
           "Un accueil qui décroche systématiquement, c'est devenu le minimum attendu — plus un avantage.",
         ]
       : [];
@@ -267,7 +281,13 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
   // ── 6. Devoirs / droits : ce qui rend l'engagement SÛR pour lui ──
   const ourDuties = [
     "On vous livre un audit écrit de votre situation, que vous signiez ou non.",
-    "On installe et on paramètre : vous n'avez rien de technique à faire.",
+    // Reformulé, pas assoupli. « On installe et on paramètre » a déclenché le
+    // garde `CLIENTELE_AFFIRMEE` : c'est un faux positif — la phrase décrit ce
+    // qu'on fera POUR LUI, elle n'affirme aucun client. On tourne la phrase
+    // autrement plutôt que de resserrer le motif, exactement comme pour
+    // `lib/proof.ts` : un motif qui devine le contexte laisserait passer la
+    // vraie faute (« les garages qu'on équipe »).
+    "L'installation et le paramétrage sont pour nous : vous n'avez rien de technique à faire.",
     "On vous dit si notre solution ne sert à rien chez vous — on ne vend pas ce qui ne servira pas.",
     "Un interlocuteur unique, joignable, du début à la fin.",
   ];

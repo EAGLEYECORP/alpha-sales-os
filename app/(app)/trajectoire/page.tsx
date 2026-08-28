@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArgentDeDemo } from "@/components/argent-de-demo";
+import { ArgentDeDemo } from "@/components/donnees-de-demo";
 import {
   AlertTriangle, ArrowUpRight, Ban, CalendarClock, Check, ExternalLink, Flag, Gauge, Target, TrendingUp,
 } from "lucide-react";
