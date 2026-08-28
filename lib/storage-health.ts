@@ -154,14 +154,57 @@ export interface ProjectionImport {
 /** Au-delà, on ne laisse pas coller sans prévenir. */
 export const SEUIL_ALERTE_PCT = 80;
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * UNE FICHE NE PÈSE PAS SON POIDS D'IMPORT. ELLE PÈSE SA VIE.
+ *
+ * ⚠ MESURÉ, ET C'EST LE DÉFAUT QUE CETTE CONSTANTE CORRIGE.
+ *
+ * La projection ne comptait que le poids des fiches COLLÉES. Or chaque appel,
+ * chaque email et chaque note ajoutent un événement à la timeline. Mesure sur
+ * 2 500 fiches d'import Places :
+ *
+ *     à l'import (0 touche) ........ 4 803 Ko ...  94 %  → « ok »
+ *     après 1 appel ................ 5 436 Ko ... 106 %  ⛔
+ *     cadence complète (4 appels) .. 7 348 Ko ... 144 %  ⛔
+ *     + 1 email + 1 note ........... 8 623 Ko ... 168 %  ⛔
+ *
+ * Autrement dit : l'opérateur collait 2 500 fiches, recevait un feu vert à
+ * 94 %, et l'application cessait d'enregistrer AU PREMIER APPEL. L'écran
+ * continue d'afficher les fiches ; elles disparaissent en fermant l'onglet.
+ *
+ * Le mur était donc juste et il regardait au mauvais endroit : il projetait
+ * l'IMPORT, pas la VIE de la fiche. Une fiche qu'on n'appelle jamais ne coûte
+ * rien — et n'a aucune raison d'être importée.
+ *
+ * `TOUCHES_PROJETEES` est le nombre d'événements qu'une fiche accumule avant
+ * d'être tranchée : la cadence complète (4 appels, plafond légal sans SIREN)
+ * plus un email et une note. C'est le scénario NORMAL, pas le pire.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const TOUCHES_PROJETEES = 6;
+
+/** Poids moyen d'un événement de timeline, mesuré (UTF-16 compris). */
+export const OCTETS_PAR_EVENEMENT = 260;
+
 export function projeterImport(
   sante: StorageHealth | null,
   fiches: { length: number },
-  octetsParFiche: number
+  octetsParFiche: number,
+  /**
+   * Projeter aussi la VIE de la fiche (timeline). Défaut : oui.
+   *
+   * ⚠ Passer `false` reproduit l'ancien calcul — celui qui donnait un feu vert
+   * à 94 % avant de tomber au premier appel. Ne sert qu'aux tests qui
+   * comparent les deux.
+   */
+  avecVie = true
 ): ProjectionImport {
   const n = Math.max(0, fiches.length);
   // ×2 : localStorage compte en UTF-16, pas en octets JSON.
-  const ajoutBytes = n * Math.max(0, octetsParFiche) * 2;
+  const fichesBytes = n * Math.max(0, octetsParFiche) * 2;
+  const vieBytes = avecVie ? n * TOUCHES_PROJETEES * OCTETS_PAR_EVENEMENT : 0;
+  const ajoutBytes = fichesBytes + vieBytes;
 
   if (!sante) {
     return {
@@ -182,12 +225,19 @@ export function projeterImport(
     ? `${(ajoutBytes / 1024 / 1024).toFixed(1)} Mo`
     : `${Math.round(ajoutBytes / 1024)} Ko`;
 
+  // Ce que la timeline ajoutera, dit séparément : sinon l'opérateur compare le
+  // chiffre annoncé au poids de son CSV et croit la projection fausse.
+  const detailVie =
+    vieBytes > 0
+      ? ` Dont ~${Math.round(vieBytes / 1024)} Ko d'historique : chaque appel, email et note ajoute une ligne à la timeline (${TOUCHES_PROJETEES} par fiche, cadence complète).`
+      : "";
+
   const phrase = alerte
-    ? `⚠ Ce lot ajoute ~${combien} : le stockage passerait de ${sante.usedPct} % à ~${pctApres} % du quota du navigateur. ` +
+    ? `⚠ Ce lot ajoute ~${combien} : le stockage passerait de ${sante.usedPct} % à ~${pctApres} % du quota du navigateur.${detailVie} ` +
       (pctApres >= 100
         ? "Au-delà de 100 %, plus rien ne s'enregistre — et ça échoue EN SILENCE, l'écran continue d'afficher les fiches jusqu'à ce que tu fermes l'onglet. Active la synchronisation Supabase AVANT de coller ce lot."
         : "Active la synchronisation Supabase avant, ou importe par lots plus petits. Estimation pessimiste : les doublons fusionnés ne comptent pas.")
-    : `~${combien} ajoutés · stockage ${sante.usedPct} % → ~${pctApres} % du quota. Estimation.`;
+    : `~${combien} ajoutés · stockage ${sante.usedPct} % → ~${pctApres} % du quota. Estimation.${detailVie}`;
 
   return { ajoutBytes, pctApres, niveauApres, alerte, phrase };
 }
