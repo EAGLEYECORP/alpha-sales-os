@@ -18,7 +18,7 @@
  * marche pour que l'app fonctionne toujours.
  *
  *   NVIDIA_API_KEY   clé nvapi-… depuis build.nvidia.com
- *   NVIDIA_MODEL     défaut : meta/llama-3.3-70b-instruct
+ *   NVIDIA_MODEL     défaut : voir MODELE_NIM_DEFAUT (lib/modeles.ts)
  *   NVIDIA_BASE_URL  défaut : https://integrate.api.nvidia.com/v1
  *
  * Limite du palier gratuit : 40 requêtes/minute. ALPHA n'en approche pas
@@ -26,12 +26,25 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import { MODELE_NIM_DEFAUT, expliquerModele } from "./modeles";
+
 export function nvidiaConfigured(): boolean {
   return Boolean(process.env.NVIDIA_API_KEY?.trim());
 }
 
+/**
+ * ⚠ LE DÉFAUT ÉTAIT `meta/llama-3.3-70b-instruct`, MORT LE 26 AOÛT 2026.
+ *
+ * Toute l'IA de l'app tournait donc sur un modèle que le fournisseur avait
+ * retiré : 410 Gone sur /api/ai, /api/agent, /api/debrief. Trouvé parce que
+ * l'agent vocal est tombé, pas parce qu'un test l'a vu — aucun test ne peut
+ * connaître la date de fin de vie d'un modèle tiers.
+ *
+ * L'identifiant vient maintenant de `lib/modeles.ts`, où il n'est écrit
+ * qu'une fois et où les modèles morts sont NOTÉS.
+ */
 export function nvidiaModel(): string {
-  return process.env.NVIDIA_MODEL?.trim() || "meta/llama-3.3-70b-instruct";
+  return process.env.NVIDIA_MODEL?.trim() || MODELE_NIM_DEFAUT;
 }
 
 function baseUrl(): string {
@@ -81,7 +94,9 @@ export async function nvidiaChat(
     throw new Error(
       `NVIDIA ${res.status} — ${detail.slice(0, 300) || "réponse sans détail"}${
         res.status === 401 ? " · vérifie NVIDIA_API_KEY (elle commence par nvapi-)" : ""
-      }${res.status === 429 ? " · palier gratuit à 40 requêtes/minute, attends une minute" : ""}`
+      }${res.status === 429 ? " · palier gratuit à 40 requêtes/minute, attends une minute" : ""}${
+        expliquerModele(nvidiaModel(), res.status) ? ` · ${expliquerModele(nvidiaModel(), res.status)}` : ""
+      }`
     );
   }
 
@@ -94,9 +109,11 @@ export async function nvidiaChat(
 /** Modèles conseillés, du plus capable au plus rapide. */
 export const NVIDIA_MODELS = [
   {
-    id: "meta/llama-3.3-70b-instruct",
-    label: "Llama 3.3 70B",
-    note: "Le défaut. Bon français, raisonnement solide, suit les consignes longues du playbook.",
+    id: MODELE_NIM_DEFAUT,
+    label: "GPT-OSS 20B",
+    note:
+      "Le défaut. Petit et vif — c'est celui que l'agent vocal utilise, donc le seul dont on ait la preuve " +
+      "opérationnelle qu'il répond. Sur des consignes très longues, un plus gros suit mieux : essaie les suivants.",
   },
   {
     id: "qwen/qwen2.5-72b-instruct",

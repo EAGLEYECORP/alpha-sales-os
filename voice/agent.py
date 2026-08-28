@@ -313,7 +313,7 @@ def build_llm():
         # → 404 ; il faut « openai/gpt-oss-20b ». C'est le piège n°1.
         logger.warning(
             "LLM vocal : VOICE_MODEL=« %s » sans namespace — NVIDIA NIM attend un id complet "
-            "(ex. openai/gpt-oss-20b, meta/llama-3.3-70b-instruct) → 404 probable. Ajoute le préfixe.",
+            "(ex. openai/gpt-oss-20b) → 404 probable. Ajoute le préfixe.",
             model,
         )
 

@@ -143,6 +143,21 @@ interface AlphaState {
 
   // settings / data
   patchSettings: (patch: Partial<AppSettings>) => void;
+  /**
+   * Écrit (ou efface) la version modifiée d'un prompt.
+   *
+   * ⚠ Le texte n'est PAS validé ici : la validation appartient à l'écran, qui
+   * doit pouvoir MONTRER ce qui manque avant d'écrire. Un store qui refuse en
+   * silence produit un bouton qui ne fait rien. `texteEffectif` protège la
+   * sortie de toute façon : une version devenue non conforme retombe sur le
+   * défaut, et l'écran le dit.
+   *
+   * Passer une chaîne vide REVIENT AU TEXTE LIVRÉ — c'est le « annuler ma
+   * modification » de l'écran, et il ne doit pas laisser d'entrée fantôme.
+   */
+  setPrompt: (id: string, texte: string) => void;
+  /** Marque des prompts comme poussés vers n8n, à l'instant donné. */
+  marquerPromptsPousses: (ids: string[], quand?: string) => void;
   /** Bascule le compte white-label actif (identité + offre + commission). */
   switchAccount: (accountId: string) => void;
   /** Bascule « ta part versée » sur un paiement (payout). */
@@ -790,6 +805,31 @@ export const useAlpha = create<AlphaState>()(
         }),
 
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+
+      setPrompt: (id, texte) =>
+        set((s) => {
+          const autres = (s.settings.prompts ?? []).filter((p) => p.id !== id);
+          const t = texte.trim();
+          if (!t) return { settings: { ...s.settings, prompts: autres } };
+          return {
+            settings: {
+              ...s.settings,
+              prompts: [...autres, { id, texte: t, modifieLe: new Date().toISOString() }],
+            },
+          };
+        }),
+
+      marquerPromptsPousses: (ids, quand) =>
+        set((s) => {
+          const at = quand ?? new Date().toISOString();
+          const set_ = new Set(ids);
+          return {
+            settings: {
+              ...s.settings,
+              prompts: (s.settings.prompts ?? []).map((p) => (set_.has(p.id) ? { ...p, pousseLe: at } : p)),
+            },
+          };
+        }),
 
       switchAccount: (accountId) =>
         set((s) => ({ settings: { ...s.settings, ...applyAccount(accountId) } })),

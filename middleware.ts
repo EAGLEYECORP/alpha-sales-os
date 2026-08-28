@@ -66,6 +66,13 @@ const INTERNAL = [
   // Catalogue et chiffrage : la grille tarifaire ne sort que pour une session
   // authentifiée. C'est ce qui la garde hors des bundles du navigateur.
   "/api/catalogue",
+  /**
+   * Les TEXTES de prompt. Ils récitent la doctrine — donc l'offre, la grille
+   * par brique et le taux de chaque compte. La route les réserve déjà au
+   * compte maître ; INTERNE ajoute l'exigence de même origine, comme pour
+   * `/api/catalogue` dont elle est le jumeau.
+   */
+  "/api/prompts",
   // Coût usine d'Alpha Voice : c'est notre marge ligne à ligne. Même
   // traitement que le catalogue — elle ne se calcule que côté serveur, pour
   // une session authentifiée.

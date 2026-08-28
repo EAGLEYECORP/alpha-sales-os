@@ -56,6 +56,16 @@ export const CHEMINS_COMMUNS = [
   "/compte",
   "/settings",
   "/demarrage",
+  /**
+   * Les prompts sont un réglage de la MACHINE, pas une brique vendue : ils
+   * décident de ce que l'IA a le droit de dire pour ce compte. Les ouvrir à
+   * tout compte authentifié suit la même logique que `/settings` — sauf que la
+   * route qui sert les TEXTES, elle, reste réservée au compte maître
+   * (`/api/prompts` : la doctrine récite les taux du portefeuille). L'écran
+   * s'ouvre donc pour tous, et il dit franchement à un non-maître qu'il ne
+   * peut rien y lire, au lieu de renvoyer un 404 incompréhensible.
+   */
+  "/prompts",
 ];
 
 /**

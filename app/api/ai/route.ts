@@ -8,6 +8,7 @@ import { prescripteurPrompt } from "@/lib/prescripteurs";
 import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
 import { clipDoctrine } from "@/lib/identity";
 import { deepDive } from "@/lib/deep-dive";
+import { SYSTEME_COPILOTE } from "@/lib/prompts-textes";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -46,15 +47,9 @@ interface AiRequest {
   question?: string;
 }
 
-const SYSTEM = `Tu es le copilote de vente de l'agence (son identité et son offre te sont données en tête).
-Doctrine Hormozi non négociable :
-- La décision EST le produit. Émotion d'abord (démo mobile avant le prix), logique ensuite.
-- OBSTACLES (pré-offre) ≠ OBJECTIONS (post-offre / Red Zone). Ne jamais confondre.
-- Oignon du Blâme : Circonstances → Les Autres → Soi. On épluche couche par couche.
-- Toujours chiffrer la Taxe d'Ignorance (€/mois perdus à ne rien faire).
-- 3 Croyances à 10/10 avant signature : le produit fonctionne, tu le soutiens, ça marche POUR LUI.
-- Chaque contact se termine par un next step DATÉ. Conviction 10/10 requise.
-Réponds en français, format Markdown, concret et terrain — zéro corporate.`;
+// Le texte vit dans `lib/prompts-textes.ts` : c'était la 1re des sept copies
+// de la doctrine (voir l'en-tête de ce module).
+const SYSTEM = SYSTEME_COPILOTE;
 
 function buildPrompt(req: AiRequest): string {
   // Un prescripteur n'a PAS le problème qu'on résout : il connaît des gens

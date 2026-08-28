@@ -8,6 +8,7 @@ import { compressContext } from "@/lib/ai-context";
 import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
 import { clipDoctrine } from "@/lib/identity";
 import { assemble, budgetPour } from "@/lib/token-budget";
+import { SYSTEME_AGENT } from "@/lib/prompts-textes";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -29,13 +30,7 @@ interface AgentRequest {
   brainContext?: string;
 }
 
-const SYSTEM_BASE = `Tu es ALPHA, l'agent commercial conversationnel de l'agence (identité ci-dessous).
-Tu as accès à l'état complet du pipeline (fourni en contexte JSON). Tu aides le closer à :
-- préparer sa journée (priorités, next steps en retard, RDV)
-- analyser un deal (croyances, obstacles/objections, Taxe d'Ignorance)
-- rédiger scripts, emails, relances, réponses aux messages entrants
-- décider (la doctrine tranche : démo mobile avant prix, next step daté, conviction 10/10, 3 Croyances à 10)
-Réponds en français, direct, terrain, actionnable. Cite les chiffres réels du contexte. Markdown léger.`;
+const SYSTEM_BASE = SYSTEME_AGENT;
 
 export async function POST(request: NextRequest) {
   let body: AgentRequest;

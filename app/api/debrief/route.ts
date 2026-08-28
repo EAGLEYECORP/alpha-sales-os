@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractDebrief, parseFrenchDate, type DebriefDraft } from "@/lib/debrief";
 import { aiAvailable, runAIJson } from "@/lib/ai-engine";
+import { SYSTEME_DEBRIEF } from "@/lib/prompts-textes";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,14 +16,7 @@ export const maxDuration = 60;
  * date : une date hallucinée devient un rendez-vous manqué.
  */
 
-const SYSTEM = `Tu extrais des informations d'un débrief oral de commercial de terrain, en français.
-Tu réponds UNIQUEMENT par un objet JSON, sans texte autour, avec exactement ces clés :
-{"interlocutor": string|null, "summary": string, "objections": string[], "action": string|null}
-- interlocutor : le prénom ou nom de la personne rencontrée, uniquement s'il est explicitement dit. Sinon null.
-- summary : UNE phrase factuelle de 140 caractères maximum, à la troisième personne, sans interprétation.
-- objections : les freins réellement exprimés par le prospect, courts, tels qu'ils ont été dits.
-- action : la prochaine action décidée (verbe à l'infinitif), sans date. Sinon null.
-N'invente rien. Ce qui n'est pas dit vaut null ou tableau vide.`;
+const SYSTEM = SYSTEME_DEBRIEF;
 
 interface Body {
   transcript?: string;

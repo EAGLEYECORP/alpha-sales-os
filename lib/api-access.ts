@@ -27,6 +27,10 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // Le catalogue sert le chiffrage et l'offre : accessible à tout compte,
   // sinon un client ne peut pas voir ce qu'il pourrait acheter en plus.
   "/api/catalogue": "/compte",
+  // Les textes de prompt s'éditent depuis /prompts. La route est en plus
+  // réservée au compte maître (la doctrine récite les taux du portefeuille) :
+  // la porte de l'écran ne suffit pas, et c'est voulu.
+  "/api/prompts": "/prompts",
   "/api/compte": "/compte",
   // File de propositions : c'est du pilotage du pipe, donc du CRM.
   "/api/propositions": "/pipeline",

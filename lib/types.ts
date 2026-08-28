@@ -414,6 +414,16 @@ export interface AppSettings {
   onboarded: boolean;
   /** Tarifs du compte (white-label). Absent = modèle EAGLEYE par défaut. */
   pricing?: import("./pricing").PricingConfig;
+  /**
+   * Les prompts modifiés par l'opérateur, par identifiant du registre
+   * (`lib/prompts.ts`). Absent = tout le monde tourne sur les textes livrés.
+   *
+   * ⚠ On stocke la MODIFICATION, jamais le texte livré. Recopier le défaut
+   * ici fige la version du jour où l'opérateur a ouvert l'écran : une
+   * amélioration livrée plus tard ne l'atteindrait plus, et personne ne
+   * saurait pourquoi son agent est resté en arrière.
+   */
+  prompts?: import("./prompts").PromptModifie[];
   security: {
     /** SHA-256 of the app-lock PIN; null = no lock */
     pinHash: string | null;

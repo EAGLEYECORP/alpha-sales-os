@@ -282,3 +282,68 @@ export async function syncProspectToCrm(p: Prospect): Promise<{ ok: boolean; via
   }
   return { ok: via.length > 0, via };
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * POUSSER LES PROMPTS VERS n8n.
+ *
+ * ⚠ CE CHEMIN N'EXISTAIT PAS, ET C'EST CE QUI FAISAIT DIVERGER LA DOCTRINE.
+ *
+ * Les nœuds IA de n8n portaient une COPIE COLLÉE À LA MAIN de la doctrine,
+ * prise dans `integrations/n8n/PROMPTS.md`. Changer une règle demandait de
+ * rouvrir n8n, de retrouver chaque nœud, et de recoller. En pratique on ne le
+ * faisait pas : l'app évoluait, n8n restait sur la version du jour de
+ * l'installation, et rien ne le disait.
+ *
+ * ── LE CONTRAT, ET CE QU'IL EXIGE CÔTÉ n8n ──
+ *
+ * L'app envoie au webhook :
+ *
+ *   { action: "prompts.set", prompts: [ { id, texte, modifieLe } ] }
+ *
+ * n8n doit les ÉCRIRE quelque part que ses nœuds IA relisent — l'onglet
+ * `PROMPTS` de la feuille CRM est le choix naturel : c'est déjà la mémoire du
+ * système. Chaque nœud IA prend alors son texte dans cet onglet plutôt que
+ * dans son propre champ.
+ *
+ * ⚠⚠ TANT QUE LES WORKFLOWS NE FONT PAS ÇA, POUSSER NE CHANGE RIEN. C'est une
+ * modification à faire dans n8n (deux branches de routeur + un nœud Sheets,
+ * décrites dans `docs/PROMPTS-GUIDE.md`), et je ne peux pas la vérifier depuis
+ * ici. L'écran le dit : « poussé » signifie « n8n a accusé réception », pas
+ * « les workflows l'utilisent ».
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface PromptAPousser {
+  id: string;
+  texte: string;
+  modifieLe: string;
+}
+
+export async function pousserPrompts(
+  prompts: PromptAPousser[]
+): Promise<{ ok: boolean; pousses: number; error?: string }> {
+  if (!n8nConnected()) return { ok: false, pousses: 0, error: "n8n non connecté (Réglages → Connexion n8n)" };
+  if (prompts.length === 0) return { ok: true, pousses: 0 };
+
+  const res = await callN8n<{ ok?: boolean; written?: number }>("prompts.set", { prompts });
+  if (!res.ok) return { ok: false, pousses: 0, error: res.error };
+
+  /**
+   * ⚠ On ne compte PAS `prompts.length` comme « poussés » sans regarder la
+   * réponse. Le routeur du workflow a un `fallbackOutput` qui répond `ping` à
+   * toute action inconnue : sans workflow à jour, l'appel renvoie donc un 200
+   * réjouissant et rien n'a été écrit. Compter à l'aveugle ferait afficher
+   * « 3 prompts poussés » à quelqu'un dont les workflows n'ont pas bougé.
+   */
+  const written = typeof res.data?.written === "number" ? res.data.written : null;
+  if (written === null) {
+    return {
+      ok: false,
+      pousses: 0,
+      error:
+        "n8n a répondu, mais sans confirmer l'écriture (`written`). Le workflow alpha-dashboard-api ne connaît " +
+        "probablement pas encore l'action « prompts.set » — voir docs/PROMPTS-GUIDE.md.",
+    };
+  }
+  return { ok: true, pousses: written };
+}
