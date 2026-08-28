@@ -17,6 +17,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { n8nConnected } from "@/lib/n8n";
 import { buildPath, type PathStep } from "@/lib/onboarding-path";
+import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
 import { SurfacePreuve } from "@/components/demarrage/surface-preuve";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +34,7 @@ const MANUAL_KEY = "alpha_path_manual";
 export default function DemarragePage() {
   const { prospects, meetings, settings } = useAlpha();
   const [health, setHealth] = useState<Parameters<typeof buildPath>[0]["health"]>(null);
-  const [dns, setDns] = useState<{ manquants: number; inconnus: number } | null>(null);
+  const [dns, setDns] = useState<EtatDns | null>(null);
   const [n8n, setN8n] = useState(false);
   const [manual, setManual] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
@@ -48,7 +49,9 @@ export default function DemarragePage() {
         .catch(() => setHealth(null)),
       fetch("/api/deliverability/dns")
         .then((r) => (r.ok ? r.json() : null))
-        .then(setDns)
+        // `r.json()` rend `any` : c'est par là que `undefined` est arrivé à
+        // l'écran. On passe par le lecteur typé, au bord.
+        .then((j) => setDns(j === null ? null : lireRapportDns(j)))
         .catch(() => setDns(null)),
     ]).finally(() => setLoading(false));
     setN8n(n8nConnected());

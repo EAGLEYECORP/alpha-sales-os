@@ -262,3 +262,60 @@ export function buildDnsReport(facts: DnsFacts): DnsReport {
     checks,
   };
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LIRE LA RÉPONSE DE `/api/deliverability/dns` — DEPUIS UN ÉCRAN.
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT, PAS EN LE TESTANT.
+ *
+ * `/demarrage` affichait, en toutes lettres :
+ *
+ *   « Publier SPF, DKIM et DMARC — undefined enregistrement(s) DNS manquant(s) »
+ *
+ * La route a DEUX formes de réponse, toutes deux en HTTP 200 :
+ *   · le rapport complet (`DnsReport`) quand un domaine d'envoi est connu ;
+ *   · `{ configure: false, domain: null, quoiFaire: … }` quand SMTP_FROM est
+ *     absent — le cas par défaut d'une installation neuve.
+ *
+ * L'écran ne connaissait que la première. `r.json()` rend `any`, donc le
+ * compilateur laissait passer l'affectation ; `if (!dns)` était faux (l'objet
+ * existe), `dns.inconnus > 0` était faux (`undefined > 0`), et la dernière
+ * branche interpolait `undefined` dans une phrase montrée à l'opérateur.
+ *
+ * ⚠⚠ ET LA CONNAISSANCE ÉTAIT À UN FICHIER DE DISTANCE. `/pilote` traitait le
+ * cas correctement (`j && j.configure === false ? null : j`). Deux écrans, un
+ * seul au courant : le motif exact que ce dépôt corrige partout.
+ *
+ * Le contrôle vit donc ICI, au bord, où il est testé — et où le prochain
+ * écran qui lira cette route le trouvera au lieu de le réinventer.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export type EtatDns =
+  /** Pas de domaine d'envoi (SMTP_FROM absent) : il n'y a RIEN à mesurer. */
+  | { etat: "non-configure" }
+  /** Réponse absente, en échec, ou d'une forme qu'on ne sait pas lire. */
+  | { etat: "illisible" }
+  /** Une vraie mesure. */
+  | { etat: "mesure"; domain: string; verdict: string; manquants: number; inconnus: number };
+
+/**
+ * Convertit le JSON brut d'une route en état lisible. Prend `unknown` — c'est
+ * volontaire : le `any` de `r.json()` est précisément le trou par lequel
+ * `undefined` est arrivé à l'écran.
+ */
+export function lireRapportDns(json: unknown): EtatDns {
+  if (!json || typeof json !== "object") return { etat: "illisible" };
+  const j = json as Record<string, unknown>;
+  if (j.configure === false) return { etat: "non-configure" };
+  // On exige les champs dont on se sert, pas la forme entière : un champ
+  // ajouté demain à la route ne doit pas rendre le rapport illisible.
+  if (typeof j.manquants !== "number" || typeof j.inconnus !== "number") return { etat: "illisible" };
+  return {
+    etat: "mesure",
+    domain: typeof j.domain === "string" ? j.domain : "domaine inconnu",
+    verdict: typeof j.verdict === "string" ? j.verdict : "verdict inconnu",
+    manquants: j.manquants,
+    inconnus: j.inconnus,
+  };
+}

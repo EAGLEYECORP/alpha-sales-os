@@ -39,7 +39,7 @@ const evt = (kind: TimelineEvent["kind"], date = daysAgo(1)): TimelineEvent => (
 
 const ALL_ON = {
   health: { email: { configured: true }, ai: { configured: true }, inboundWebhook: { configured: true } },
-  dns: { manquants: 0, inconnus: 0 },
+  dns: { etat: "mesure" as const, domain: "eagleyecorp.fr", verdict: "bon", manquants: 0, inconnus: 0 },
   n8n: true,
   bookingUrl: "https://cal.com/x",
 };
@@ -61,14 +61,14 @@ test("chemin — l'état serveur non chargé ne vaut PAS une étape faite", () =
 
 test("chemin — un DNS non concluant n'est pas un DNS conforme", () => {
   // Une résolution qui échoue ne prouve rien : ne jamais la compter comme un succès.
-  const p = buildPath(ctx({ dns: { manquants: 0, inconnus: 1 } }));
+  const p = buildPath(ctx({ dns: { etat: "mesure" as const, domain: "eagleyecorp.fr", verdict: "non concluant", manquants: 0, inconnus: 1 } }));
   const dns = p.phases[0].steps.find((s) => s.id === "dns")!;
   assert.equal(dns.done, false);
   assert.match(dns.detail, /non concluante/);
 });
 
 test("chemin — DNS complet coche l'étape", () => {
-  const p = buildPath(ctx({ dns: { manquants: 0, inconnus: 0 } }));
+  const p = buildPath(ctx({ dns: { etat: "mesure" as const, domain: "eagleyecorp.fr", verdict: "bon", manquants: 0, inconnus: 0 } }));
   assert.equal(p.phases[0].steps.find((s) => s.id === "dns")!.done, true);
 });
 

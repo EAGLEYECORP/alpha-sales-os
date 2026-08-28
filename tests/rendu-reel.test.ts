@@ -1,8 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { memeOrigine, peutLireSessions, REFUS_LECTURE } from "../lib/voice-session-acces";
+import { lireRapportDns } from "../lib/deliverability-dns";
+
+/** Tous les .ts/.tsx sous les dossiers donnés — sert aux gardes DÉDUITS. */
+function fichiersSources(dirs: string[]): string[] {
+  const out: string[] = [];
+  const visite = (d: string) => {
+    for (const f of readdirSync(d)) {
+      if (f === "node_modules" || f.startsWith(".")) continue;
+      const p = join(d, f);
+      if (statSync(p).isDirectory()) visite(p);
+      else if (/\.tsx?$/.test(p)) out.push(p);
+    }
+  };
+  for (const d of dirs) visite(join(process.cwd(), d));
+  return out;
+}
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -105,20 +121,53 @@ test("l'absence de domaine d'envoi ne rend plus un 400", () => {
   assert.match(bloc, /quoiFaire/, "et la réponse doit dire l'étape à faire");
 });
 
-test("les deux écrans distinguent « pas configuré » de « en panne »", () => {
-  const reglages = readFileSync(join(process.cwd(), "components/settings/deliverability.tsx"), "utf8");
-  assert.match(
-    reglages,
-    /json\?\.configure === false/,
-    "l'écran de réglages doit reconnaître l'état non configuré"
+test("TOUT écran qui lit la route DNS distingue « pas configuré » de « en panne »", () => {
+  /**
+   * ⚠ CE TEST NOMMAIT DEUX ÉCRANS. IL Y EN AVAIT TROIS.
+   *
+   * `/demarrage` lisait la même route sans connaître la forme
+   * `{ configure: false }` — et affichait, en toutes lettres :
+   * « Publier SPF, DKIM et DMARC — undefined enregistrement(s) DNS
+   * manquant(s) ». `r.json()` rend `any`, donc rien ne l'a arrêté : ni le
+   * compilateur, ni ce test, qui gardait une liste écrite à la main.
+   *
+   * La liste est donc DÉDUITE : on cherche qui appelle la route. Le quatrième
+   * écran qui la lira sera couvert le jour où il sera écrit.
+   */
+  const lecteurs = fichiersSources(["app", "components"]).filter((f) =>
+    readFileSync(f, "utf8").includes("/api/deliverability/dns")
   );
+  assert.ok(lecteurs.length >= 3, `attendu au moins 3 lecteurs de la route DNS, trouvé ${lecteurs.length}`);
 
-  const pilote = readFileSync(join(process.cwd(), "app/(app)/pilote/page.tsx"), "utf8");
-  assert.match(
-    pilote,
-    /configure === false \? null : j/,
-    "le pilote ne doit pas afficher un rapport vide comme s'il en était un"
+  const fautes: string[] = [];
+  for (const f of lecteurs) {
+    const src = readFileSync(f, "utf8");
+    // Deux façons acceptables de traiter le cas : le lecteur typé partagé,
+    // ou une branche explicite pour l'écran qui a besoin du rapport complet.
+    const ok = /lireRapportDns\(/.test(src) || /configure === false/.test(src);
+    if (!ok) fautes.push(relative(process.cwd(), f));
+  }
+  assert.deepEqual(
+    fautes,
+    [],
+    "ces écrans lisent la route DNS sans traiter « aucun domaine d'envoi » — c'est ce qui affichait `undefined` :\n  " +
+      fautes.join("\n  ")
   );
+});
+
+test("le lecteur typé refuse ce qu'il ne sait pas lire, au lieu d'interpoler undefined", () => {
+  // La forme réelle renvoyée par la route quand SMTP_FROM est absent.
+  assert.deepEqual(lireRapportDns({ configure: false, domain: null, quoiFaire: "…" }), {
+    etat: "non-configure",
+  });
+  // Ce qui arrivait avant : un objet sans les champs attendus passait pour un
+  // rapport, et `${undefined}` finissait à l'écran.
+  assert.equal(lireRapportDns({ domain: "x.fr" }).etat, "illisible");
+  assert.equal(lireRapportDns(null).etat, "illisible");
+  assert.equal(lireRapportDns("nope").etat, "illisible");
+  // Et une vraie mesure reste une vraie mesure.
+  const m = lireRapportDns({ domain: "x.fr", verdict: "bon", manquants: 0, inconnus: 0, checks: [] });
+  assert.deepEqual(m, { etat: "mesure", domain: "x.fr", verdict: "bon", manquants: 0, inconnus: 0 });
 });
 
 // ─────────── 3. LES TIERS QUE LA PAGE APPELLE ───────────

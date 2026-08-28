@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
 import { CATEGORY_META, computeRoutines, type Routine } from "@/lib/routines";
 import { n8nConnected } from "@/lib/n8n";
 import { DEFAULT_DAILY_TARGET, buildDailyPlan } from "@/lib/daily-plan";
@@ -69,9 +70,7 @@ export default function PilotePage() {
   const [loading, setLoading] = useState(true);
   const [n8n, setN8n] = useState(false);
   /** Verdict DNS du domaine d'envoi — null tant qu'on n'a pas de réponse. */
-  const [dns, setDns] = useState<{ domain: string; verdict: string; manquants: number; inconnus: number } | null>(
-    null
-  );
+  const [dns, setDns] = useState<EtatDns | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -84,8 +83,9 @@ export default function PilotePage() {
       .then((r) => (r.ok ? r.json() : null))
       // `configure: false` = pas encore de domaine d'envoi. Ce n'est pas un
       // rapport vide, c'est l'absence de configuration : on ne l'affiche pas
-      // comme un résultat.
-      .then((j) => setDns(j && j.configure === false ? null : j))
+      // comme un résultat. Un seul lecteur pour les deux écrans : `/demarrage` avait sa propre
+      // version de ce test, et elle lui manquait.
+      .then((j) => setDns(j === null ? null : lireRapportDns(j)))
       .catch(() => setDns(null));
   };
 
@@ -155,14 +155,17 @@ export default function PilotePage() {
     },
     {
       label: "Délivrabilité",
-      ok: Boolean(dns && dns.manquants === 0 && dns.inconnus === 0),
-      detail: dns
-        ? dns.manquants > 0
-          ? `${dns.domain} · ${dns.manquants} enregistrement(s) DNS manquant(s)`
-          : dns.inconnus > 0
-            ? `${dns.domain} · vérification non concluante (DNS injoignable)`
-            : `${dns.domain} · ${dns.verdict}`
-        : "domaine d'envoi inconnu (SMTP_FROM)",
+      ok: dns?.etat === "mesure" && dns.manquants === 0 && dns.inconnus === 0,
+      detail:
+        !dns || dns.etat === "non-configure"
+          ? "domaine d'envoi inconnu (SMTP_FROM)"
+          : dns.etat === "illisible"
+            ? "vérification illisible — relance-la"
+            : dns.manquants > 0
+              ? `${dns.domain} · ${dns.manquants} enregistrement(s) DNS manquant(s)`
+              : dns.inconnus > 0
+                ? `${dns.domain} · vérification non concluante (DNS injoignable)`
+                : `${dns.domain} · ${dns.verdict}`,
       autonomous:
         "SPF, DKIM et DMARC décident si tes mails arrivent en boîte de réception. Détail et correctifs dans Réglages.",
     },

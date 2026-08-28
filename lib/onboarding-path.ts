@@ -1,4 +1,5 @@
 import type { Meeting, Prospect } from "./types";
+import type { EtatDns } from "./deliverability-dns";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -383,8 +384,17 @@ export interface PathContext {
     ai?: { configured?: boolean };
     inboundWebhook?: { configured?: boolean };
   } | null;
-  /** Verdict DNS (/api/deliverability/dns). null = pas encore chargé. */
-  dns: { manquants: number; inconnus: number } | null;
+  /**
+   * Verdict DNS (/api/deliverability/dns), lu par `lireRapportDns`.
+   * null = pas encore chargé.
+   *
+   * ⚠ Le type était `{ manquants: number; inconnus: number }` et l'écran y
+   * versait le JSON brut. La route rend AUSSI `{ configure: false }` quand
+   * aucun domaine d'envoi n'est réglé — l'étape affichait alors
+   * « undefined enregistrement(s) DNS manquant(s) ». Le cas « rien à
+   * mesurer » doit exister dans le type, sinon il n'existe nulle part.
+   */
+  dns: EtatDns | null;
   n8n: boolean;
   /** Étapes cochées à la main (celles qu'aucune donnée n'atteste). */
   manual: string[];
@@ -443,6 +453,11 @@ export function buildPath(ctx: PathContext): Path {
           : { done: false, detail: "SMTP absent — rien ne peut partir" };
       case "dns":
         if (!dns) return { done: false, detail: "vérification DNS non chargée" };
+        // Pas de domaine d'envoi : l'étape n'est pas « ratée », elle n'est
+        // pas encore mesurable. Le dire vaut mieux qu'un compte à zéro.
+        if (dns.etat === "non-configure")
+          return { done: false, detail: "aucun domaine d'envoi (SMTP_FROM) — rien à vérifier pour l'instant" };
+        if (dns.etat === "illisible") return { done: false, detail: "vérification DNS illisible — relance-la" };
         if (dns.inconnus > 0) return { done: false, detail: "vérification non concluante — relance-la" };
         return dns.manquants === 0
           ? { done: true, detail: "SPF, DMARC et MX en place" }
