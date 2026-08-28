@@ -53,6 +53,36 @@ export const OUTBOUND_UNIT_HT = 364;
 export const PACK_SETUP_HT = 10_000;
 export const PACK_MONTHLY_HT = 1_000;
 
+/**
+ * ── TARIFS PUBLICS CALLFLOW (ScintIA) ──
+ *
+ * Ils vivaient dans `lib/pipeline-juillet.ts`, un module qui porte de VRAIES
+ * fiches prospects (noms, téléphones, montants) et qu'aucun composant client
+ * ne doit atteindre. Le calculateur d'offres en a besoin : les descendre ici
+ * est le même geste que pour le pack — ce qui est PUBLIC vit dans le module
+ * public, et l'autre le réimporte.
+ *
+ * Ce sont les prix affichés par ScintIA à ses clients. Ce que NOUS touchons
+ * dessus (30 % du setup, 10 % du mensuel) n'est pas ici : c'est dans
+ * `lib/accounts-commercial.ts`, servi au seul compte maître.
+ */
+export const CALLFLOW_SETUP_HT = 990;
+
+export interface PalierCallflow {
+  minutes: number;
+  prixHT: number;
+  /** Ordre de grandeur en appels — ce que le client comprend. */
+  appels: string;
+}
+
+export const CALLFLOW_PALIERS: PalierCallflow[] = [
+  { minutes: 250, prixHT: 59, appels: "~100 appels courts" },
+  { minutes: 500, prixHT: 115, appels: "~200 appels" },
+  { minutes: 750, prixHT: 169, appels: "~300 appels" },
+  { minutes: 1000, prixHT: 219, appels: "~400 appels" },
+  { minutes: 1500, prixHT: 319, appels: "~600 appels" },
+];
+
 /** Comment l'offre se paie. */
 export type CadenceOffre =
   /** Un paiement, une fois. */

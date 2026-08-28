@@ -49,15 +49,15 @@ interface Seed {
   objections?: string[];
 }
 
-/** Tarifs publics Callflow, lus dans l'audit ***NOM-RETIRE***. */
-export const CALLFLOW_SETUP = 990;
-export const CALLFLOW_PALIERS = [
-  { minutes: 250, prix: 59, appels: "~100 appels courts" },
-  { minutes: 500, prix: 115, appels: "~200 appels" },
-  { minutes: 750, prix: 169, appels: "~300 appels" },
-  { minutes: 1000, prix: 219, appels: "~400 appels" },
-  { minutes: 1500, prix: 319, appels: "~600 appels" },
-];
+/**
+ * Tarifs publics Callflow, lus dans l'audit ***NOM-RETIRE***.
+ *
+ * ⚠ Ils sont DÉCLARÉS dans `lib/offres-publiques.ts` et réimportés ici. Ce
+ * module porte de vraies fiches prospects : aucun composant client ne doit
+ * l'atteindre, or le calculateur d'offres a besoin de ces prix. Ce qui est
+ * public vit dans le module public — même arbitrage que pour le pack.
+ */
+export { CALLFLOW_SETUP_HT as CALLFLOW_SETUP, CALLFLOW_PALIERS } from "./offres-publiques";
 
 const SEEDS: Seed[] = [
   {

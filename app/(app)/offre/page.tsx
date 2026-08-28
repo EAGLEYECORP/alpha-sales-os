@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BadgeEuro, Check, Crown, Handshake, PhoneCall, Rocket, TrendingUp } from "lucide-react";
+import { BadgeEuro, Check, Crown, Handshake, Layers, PhoneCall, Rocket, TrendingUp } from "lucide-react";
 import { cn, eur } from "@/lib/utils";
 import { calc, calcSaas, defaultPricing, defaultSaasInput, type CalcInput, type SaasEconInput } from "@/lib/pricing";
 import { calcTelephony, defaultTelephony, type TelephonyInput } from "@/lib/telephony";
 import { useAlpha } from "@/lib/store";
+import { CalculateurComplet } from "@/components/offre/calculateur-complet";
 
 export default function OffrePage() {
   // Tarifs du compte (white-label) — défaut = modèle EAGLEYE.
@@ -24,7 +25,15 @@ export default function OffrePage() {
 
   // Mode « vendre Alpha Sales OS » (SaaS) — l'économie de TON business, pas
   // l'offre montrée au prospect. Interne, pour décider et pour la démo.
-  const [mode, setMode] = useState<"client" | "saas">("client");
+  /**
+   * ⚠ « toutes » est le mode par DÉFAUT depuis qu'il existe.
+   *
+   * L'ancien écran d'accueil ne chiffrait qu'un seul modèle sur trois paliers
+   * — les petites offres. Les deux plus grosses du portefeuille (le chantier
+   * Nuwacom, l'OS personnalisé) n'étaient chiffrables nulle part. Laisser
+   * l'ancien en premier revenait à continuer de ne montrer que le petit bout.
+   */
+  const [mode, setMode] = useState<"toutes" | "client" | "saas">("toutes");
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -32,17 +41,25 @@ export default function OffrePage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-paper">Offre &amp; Tarifs</h1>
           <p className="text-sm text-paper-faint">
-            {mode === "client"
-              ? "Outreach ultra-qualifié, exécuté pour vous. On ne remplit pas une base — on remplit un agenda."
-              : "L'économie de ton business : ce que rapporte de vendre Alpha Sales OS. CAC · LTV · break-even · cash-flow."}
+            {mode === "toutes"
+              ? "Les dix offres du portefeuille, sur les trois comptes. Ce que le client paie, et ce qui nous revient — jamais confondus."
+              : mode === "client"
+                ? "Outreach ultra-qualifié, exécuté pour vous. On ne remplit pas une base — on remplit un agenda."
+                : "L'économie de ton business : ce que rapporte de vendre Alpha Sales OS. CAC · LTV · break-even · cash-flow."}
           </p>
         </div>
         <div className="flex rounded-lg border border-ink-700 bg-ink-900 p-0.5 text-[12px]">
           <button
+            className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "toutes" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
+            onClick={() => setMode("toutes")}
+          >
+            <Layers size={13} /> Toutes les offres
+          </button>
+          <button
             className={cn("rounded-md px-3 py-1.5 font-medium transition", mode === "client" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
             onClick={() => setMode("client")}
           >
-            Offre client
+            ROI client
           </button>
           <button
             className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "saas" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
@@ -52,6 +69,8 @@ export default function OffrePage() {
           </button>
         </div>
       </header>
+
+      {mode === "toutes" && <CalculateurComplet />}
 
       {mode === "saas" && <SaasEconomics />}
 

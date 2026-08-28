@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { BRICKS, OUTBOUND_TIERS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, quoteText, outboundPrice } from "@/lib/bricks";
-import { ACCOUNTS_COMMERCIAL } from "@/lib/accounts-commercial";
+import { ACCOUNTS_COMMERCIAL, baremesPourCalculateur } from "@/lib/accounts-commercial";
+import { getAccount } from "@/lib/accounts";
 import { resoudreDroits } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
@@ -63,7 +64,17 @@ export async function GET(req: NextRequest) {
     bricks: BRICKS,
     outboundTiers: OUTBOUND_TIERS,
     pack: { setupHT: PACK_SETUP_HT, monthlyHT: PACK_MONTHLY_HT },
-    ...(droits.maitre ? { accounts: ACCOUNTS_COMMERCIAL } : {}),
+    /**
+     * Le portefeuille ET son barème dérivé, au seul compte maître. Le barème
+     * est calculé ICI plutôt que dans le navigateur pour la même raison que
+     * les prix : le dériver côté client suppose d'y avoir les taux.
+     */
+    ...(droits.maitre
+      ? {
+          accounts: ACCOUNTS_COMMERCIAL,
+          baremes: baremesPourCalculateur((id) => getAccount(id).name),
+        }
+      : {}),
   });
 }
 

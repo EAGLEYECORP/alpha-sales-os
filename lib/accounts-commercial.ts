@@ -372,3 +372,62 @@ function alerteDe(
   }
   return {};
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE BARÈME PAR COMPTE — pour le calculateur d'offres.
+ *
+ * `lib/calculateur-offres.ts` applique UN taux par compte. C'est exact
+ * aujourd'hui — chaque compte partenaire n'a qu'une offre, et les cinq offres
+ * EAGLEYE sont toutes à 100 % — mais ce n'est pas garanti demain.
+ *
+ * ⚠ La dérivation REFUSE donc de choisir quand les offres d'un compte ne
+ * s'accordent pas : elle rend le taux le plus BAS et le signale. Prendre la
+ * première offre au hasard afficherait une part qui n'est celle d'aucune
+ * affaire réelle, et ce serait invisible — c'est exactement le genre de chiffre
+ * qui se retrouve dans une prévision de trésorerie.
+ *
+ * Le taux le plus bas plutôt que le plus haut : se tromper vers le bas fait
+ * rater une bonne nouvelle, se tromper vers le haut fait promettre de l'argent
+ * qui n'arrivera pas.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface BaremeDerive {
+  accountId: string;
+  nom: string;
+  setupPct: number;
+  mensuelPct: number;
+  plancher?: boolean;
+  /** Renseigné quand les offres du compte ne portent pas le même taux. */
+  divergence?: string;
+}
+
+export function baremesPourCalculateur(nomDuCompte: (id: string) => string): BaremeDerive[] {
+  return ACCOUNTS_COMMERCIAL.map((a) => {
+    const offres = a.offerings ?? [];
+    if (offres.length === 0) {
+      return { accountId: a.accountId, nom: nomDuCompte(a.accountId), setupPct: 100, mensuelPct: 100 };
+    }
+    const setups = offres.map((o) => o.commissionPct);
+    const mensuels = offres.map((o) => o.recurringPct ?? o.commissionPct);
+    const setupPct = Math.min(...setups);
+    const mensuelPct = Math.min(...mensuels);
+    const divergent = new Set(setups).size > 1 || new Set(mensuels).size > 1;
+
+    return {
+      accountId: a.accountId,
+      nom: nomDuCompte(a.accountId),
+      setupPct,
+      mensuelPct,
+      plancher: offres.some((o) => o.pctEstPlancher),
+      ...(divergent
+        ? {
+            divergence:
+              `Les offres de ce compte n'ont pas toutes le même taux (setup ${[...new Set(setups)].join("/")} %, ` +
+              `mensuel ${[...new Set(mensuels)].join("/")} %). Le calculateur applique le plus BAS — chiffre une ` +
+              `affaire précise si le taux compte.`,
+          }
+        : {}),
+    };
+  });
+}
