@@ -244,7 +244,10 @@ export function masterRappel(
       owner: "humain",
       do:
         cadence.state === "repondu-passer-humain"
-          ? "REPRENDRE LA MAIN : il a répondu. Alpha Voice s'est arrêté, à toi de jouer."
+          // ⚠ Disait « il a répondu ». Depuis la doctrine du 28/08/2026, le
+          // passage de main se déclenche sur INTÉRÊT QUALIFIÉ, pas sur le
+          // décroché : un simple « il a répondu » ne remonte plus jusqu'ici.
+          ? "REPRENDRE LA MAIN : il a dit OUI. Alpha Voice a obtenu l'accord et s'est arrêté — à toi de closer."
           : "Reprendre la main : 5 rappels sans réponse — changer de canal (terrain, LinkedIn, email).",
       channel: cadence.state === "repondu-passer-humain" ? "appel" : "terrain",
       when: now.toISOString(),
