@@ -27,8 +27,21 @@ import type { EagleyeOffer } from "./offer-match";
  * script générique envoyé à 1 000 personnes ne convertit pas — c'est la
  * seule chose qui nous distingue vraiment du marché.
  *
- * Un plafond quotidien existe et il est volontaire : au-delà de ~30 appels,
- * la qualité de conversation décroche et on brûle du fichier pour rien.
+ * ⚠ LE PLAFOND QUOTIDIEN N'EST PLUS CELUI D'UN HUMAIN.
+ *
+ * Il prenait `CALL_DAILY_SAFE` (30) en défaut — une constante définie dans
+ * `lib/daily-plan.ts` avec sa raison écrite à côté : « au-delà, la qualité de
+ * conversation décroche ». C'est une contrainte de FATIGUE, celle d'un closer
+ * qui enchaîne. Un agent vocal ne fatigue pas au 31e appel, et rien dans l'app
+ * ne passait jamais autre chose : l'autopilote tournait en permanence au
+ * rythme d'un humain.
+ *
+ * Ce qui borne réellement la machine n'est pas sa fatigue, c'est la nôtre :
+ * Alpha Voice passe la main dès qu'on décroche, donc chaque décroché devient
+ * le travail d'un humain. Le plafond se DÉRIVE de la capacité de closing —
+ * voir `lib/capacite-appels.ts`. Le défaut reste le plafond humain, parce
+ * qu'une machine qui accélère sans qu'on l'ait décidé est pire qu'une machine
+ * lente.
  * ─────────────────────────────────────────────────────────────────────
  */
 
