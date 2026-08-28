@@ -137,9 +137,26 @@ export default function ControlePage() {
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
             <AlertTriangle size={15} className="text-signal-amber" /> Ce qui bloque le pipeline
           </h2>
+          {/*
+            ⚠ LA PHRASE DISAIT L'INVERSE DE LA DOCTRINE. TROUVÉ EN LISANT L'ÉCRAN.
+
+            Elle s'écrivait « N fiche(s) bloquées par le même point : La démo a
+            été montrée AVANT le prix. » — c'est-à-dire, lu simplement : montrer
+            la démo avant le prix bloquerait le deal. C'est exactement le
+            contraire de la règle, et la ligne d'explication juste en dessous
+            disait déjà le bon sens (« Un prix annoncé sans démo transforme la
+            conversation en négociation »).
+
+            La cause n'est pas le libellé : les `CHECKPOINTS` sont formulés
+            comme des conditions REMPLIES, parce qu'ailleurs ils s'affichent en
+            case à cocher (« ✓ La démo a été montrée AVANT le prix »). C'est
+            cette phrase-ci qui les présentait comme des causes de blocage. On
+            nomme donc la condition comme une condition, et on dit sur combien
+            de fiches elle n'est pas encore vraie.
+          */}
           <p className="mt-1 text-[12px] text-paper">
-            <strong className="text-signal-amber">{coverage.topBlocker.count} fiche(s)</strong> bloquées
-            par le même point : <strong>{coverage.topBlocker.label}</strong>.
+            Le point qui manque au plus grand nombre : <strong>{coverage.topBlocker.label}</strong> — pas encore
+            vrai sur <strong className="text-signal-amber">{coverage.topBlocker.count} fiche(s)</strong>.
           </p>
           <p className="mt-0.5 text-[11.5px] text-paper-faint">{coverage.topBlocker.why}</p>
           <p className="mt-1.5 text-[11px] text-paper-faint">

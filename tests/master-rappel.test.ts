@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { vitalSigns, triageByReadiness } from "../lib/vital-signs";
 import { masterRappel } from "../lib/master-rappel";
+import { humainDejaEnLigne } from "../lib/call-cadence";
 import type { Prospect, TimelineEvent } from "../lib/types";
 
 const NOW = new Date("2026-08-21T09:00:00.000Z");
@@ -222,4 +223,68 @@ test("triage — les saturés sortent de la file du jour, les prêts passent dev
   const file = triageByReadiness([sature, tiede, chaud], NOW);
   assert.equal(file[0].prospect.id, "chaud");
   assert.equal(file.some((x) => x.prospect.id === "sature"), false, "un saturé ne doit pas être rappelé aujourd'hui");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ALPHA VOICE NE RAPPELLE PAS QUELQU'UN QU'UN HUMAIN A DÉJÀ VU.
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT. Sur `/controle`, « Alpha exécute »
+ * proposait « Passer le rappel 1/3 (cadence Callflow) » sur les huit fiches,
+ * dont celle affichée deux blocs plus haut comme « PRÊT À SIGNER — Envoyer le
+ * DEVIS ».
+ *
+ * `attemptsFromEvents` ne lit que `kind === "appel"` : une fiche avancée par
+ * visites, rendez-vous et démo n'a aucune tentative enregistrée, donc la
+ * cadence la croit froide. La règle ScintIA — « dès qu'il répond, Alpha Voice
+ * arrête et passe la main » — parle de la CONVERSATION, pas d'un canal.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("humainDejaEnLigne — l'échange à deux sens compte, la touche sortante non", () => {
+  assert.equal(humainDejaEnLigne({ events: [] }), false, "aucun événement : personne n'a parlé");
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "email" }] }), false, "un email envoyé ne prouve aucune réponse");
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "linkedin" }] }), false);
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "whatsapp" }] }), false);
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "note" }] }), false, "une note interne n'est pas un échange");
+
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "visite" }] }), true);
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "meeting" }] }), true);
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "demo" }] }), true);
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "offre" }] }), true);
+
+  // Un appel ne compte que s'il a RÉPONDU — même prudence qu'attemptsFromEvents.
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "appel", summary: "messagerie" }] }), false);
+  assert.equal(humainDejaEnLigne({ events: [{ kind: "appel", summary: "a décroché, échange court" }] }), true);
+});
+
+test("une fiche vue en rendez-vous ne reçoit plus de cadence Callflow", () => {
+  const vu = fixture({
+    stage: "offre",
+    events: [
+      ev({ kind: "visite", date: ago(20), summary: "Passage 15h, heure creuse." }),
+      ev({ kind: "meeting", date: ago(14), summary: "Audit sur place." }),
+      ev({ kind: "demo", date: ago(7), summary: "Démo mobile." }),
+      ev({ kind: "offre", date: ago(2), summary: "Offre présentée." }),
+    ],
+  });
+  const plan = masterRappel(vu, { now: NOW });
+  const cadences = plan.alpha.filter((a) => a.id.startsWith("cadence"));
+  assert.deepEqual(
+    cadences.map((a) => a.do),
+    [],
+    "Alpha Voice ne doit plus proposer d'appel de cadence sur une fiche que l'humain a déjà rencontrée"
+  );
+
+  // Et l'humain, lui, garde bien son action : on ne supprime pas le travail,
+  // on retire seulement la main d'Alpha.
+  assert.ok(plan.human.length > 0, "le plan humain doit rester rempli");
+});
+
+test("un PREMIER appel ne s'annonce pas comme un rappel", () => {
+  const froid = fixture({ stage: "prospect", events: [] });
+  const plan = masterRappel(froid, { now: NOW });
+  const appel = plan.alpha.find((a) => a.id === "cadence-appel");
+  assert.ok(appel, "une fiche froide doit bien recevoir un premier appel");
+  assert.match(appel!.do, /PREMIER appel/, "à zéro tentative, ce n'est pas un « rappel 1/N »");
+  assert.doesNotMatch(appel!.do, /rappel 1\//, "le libellé « rappel 1/N » comptait un rappel qui n'existe pas");
 });

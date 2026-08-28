@@ -260,3 +260,63 @@ export function plannedRecalls(firstCallAt: string): string[] {
   const t0 = new Date(firstCallAt).getTime();
   return CALLFLOW_RECALL_OFFSETS_H.map((h) => new Date(t0 + h * H).toISOString());
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * UN HUMAIN A-T-IL DÉJÀ EU UN ÉCHANGE AVEC LUI ?
+ *
+ * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT, PAS EN LE TESTANT.
+ *
+ * Sur `/controle`, le bloc « Alpha exécute » proposait
+ * « Passer le rappel 1/3 (cadence Callflow) » sur LES HUIT fiches — dont
+ * Plomberie Fabre, affichée deux blocs plus haut comme « PRÊT À SIGNER —
+ * Envoyer le DEVIS », et Paddy's Corner, qui est perdue et en nurture.
+ *
+ * ── POURQUOI ──
+ *
+ * La règle ScintIA est écrite en haut de ce module : « dès qu'il répond,
+ * Alpha Voice ARRÊTE et passe la main au closer ». `cadenceFor` l'applique
+ * correctement — mais sur le seul journal d'APPELS. Or `attemptsFromEvents`
+ * ne retient que `kind === "appel"` : une fiche qui a avancé par visite,
+ * rendez-vous, démo et remise d'offre n'a AUCUNE tentative enregistrée. Pour
+ * la cadence, elle est donc froide, et le plan annonce un premier contact
+ * téléphonique à quelqu'un qu'on a vu quatre fois.
+ *
+ * Ce n'est pas une erreur de `cadenceFor` : c'est la question posée à un seul
+ * canal. Le passage de main ne se produit pas « au téléphone », il se produit
+ * quand un humain est entré dans la conversation — par n'importe quelle
+ * porte. Même structure que `aRefuseTouteRelance` : une seule fonction pour
+ * une question qui se posait à plusieurs endroits et recevait des réponses
+ * différentes.
+ *
+ * ── CE QUI COMPTE COMME ÉCHANGE, ET CE QUI NE COMPTE PAS ──
+ *
+ * Un échange à DEUX SENS : visite, rendez-vous, démo, remise d'offre, ou un
+ * appel auquel il a répondu. Un email envoyé, un message LinkedIn, un
+ * WhatsApp, une note interne ne comptent pas : ce sont des touches sortantes,
+ * elles ne prouvent aucune réponse. C'est exactement la prudence de
+ * `attemptsFromEvents` (« en cas de doute, sans-reponse ») appliquée ici :
+ * se tromper dans ce sens fait dormir un dossier, se tromper dans l'autre
+ * fait rappeler quelqu'un qui nous a déjà reçus.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+/**
+ * « Il a décroché / répondu », lu dans le résumé écrit à la main.
+ *
+ * ⚠ Ce motif vivait dans `lib/master-rappel.ts`. Il descend ici parce que
+ * « a-t-il répondu ? » est une question de CADENCE — c'est elle qui s'arrête
+ * dessus. Deux définitions du même test finissent toujours par diverger, et
+ * ici diverger veut dire : rappeler quelqu'un qui a déjà décroché.
+ */
+export const REPONSE_DANS_LE_RESUME =
+  /r[ée]pond|a rappel[ée]|rappelle|d[ée]croch|[ée]chang|discut|vu (?:à|a) \d|visite|rdv obtenu|accord/i;
+
+const ECHANGE_DEUX_SENS = new Set(["visite", "meeting", "demo", "offre"]);
+
+export function humainDejaEnLigne(p: {
+  events?: { kind: string; summary?: string }[];
+}): boolean {
+  return (p.events ?? []).some(
+    (e) => ECHANGE_DEUX_SENS.has(e.kind) || (e.kind === "appel" && REPONSE_DANS_LE_RESUME.test(e.summary ?? ""))
+  );
+}

@@ -1,7 +1,14 @@
 import type { Prospect, Stage } from "./types";
 import { getAccount } from "./accounts";
 import { vitalSigns, type VitalSigns } from "./vital-signs";
-import { cadenceFor, cibleDepuisProspect, plafondRappels, type CallAttempt } from "./call-cadence";
+import {
+  cadenceFor,
+  cibleDepuisProspect,
+  humainDejaEnLigne,
+  plafondRappels,
+  REPONSE_DANS_LE_RESUME,
+  type CallAttempt,
+} from "./call-cadence";
 import type { Reactivite } from "./reactivite";
 
 /**
@@ -109,8 +116,8 @@ export interface MasterPlan {
 
 const filled = (v: string | undefined | null) => Boolean((v ?? "").trim());
 
-/** Il a décroché / répondu. */
-const ANSWERED = /r[ée]pond|a rappel[ée]|rappelle|d[ée]croch|[ée]chang|discut|vu (?:à|a) \d|visite|rdv obtenu|accord/i;
+/** Il a décroché / répondu — motif partagé avec la cadence (`lib/call-cadence`). */
+const ANSWERED = REPONSE_DANS_LE_RESUME;
 /** Il refuse d'être recontacté. */
 const OPPOSED = /ne plus (?:me |nous )?(?:appeler|contacter)|stop|opposition|ne pas rappeler|d[ée]sinscri/i;
 /** Numéro mort. */
@@ -179,11 +186,32 @@ export function masterRappel(
       when: now.toISOString(),
       why: signs.bestWindow.why,
     });
-  } else if (cadence.callNow) {
+  } else if (cadence.callNow && !humainDejaEnLigne(p)) {
+    /**
+     * ⚠ LA CONDITION `!humainDejaEnLigne` MANQUAIT, ET ÇA SE VOYAIT À L'ÉCRAN.
+     *
+     * `/controle` proposait « Passer le rappel 1/3 (cadence Callflow) » sur
+     * LES HUIT fiches, dont celle affichée deux blocs plus haut comme
+     * « PRÊT À SIGNER — Envoyer le DEVIS ». La cause est dans
+     * `attemptsFromEvents` : elle ne lit que `kind === "appel"`, donc une
+     * fiche avancée par visites, rendez-vous et démo n'a aucune tentative
+     * enregistrée et passe pour froide.
+     *
+     * La règle ScintIA — « dès qu'il répond, Alpha Voice arrête et passe la
+     * main au closer » — ne parle pas du téléphone, elle parle de la
+     * conversation. On la lit donc sur toute la timeline.
+     *
+     * ⚠⚠ Et le libellé : à zéro tentative, `recallsUsed + 1` affichait
+     * « rappel 1/N » pour un PREMIER appel. Un premier appel n'est pas un
+     * rappel, et l'opérateur lit ce texte avant de composer.
+     */
+    const premier = cadence.recallsUsed === 0 && cadence.state === "a-appeler";
     alpha.push({
       id: "cadence-appel",
       owner: "alpha",
-      do: `Passer le rappel ${cadence.recallsUsed + 1}/${plafond.max} (cadence Callflow).`,
+      do: premier
+        ? "Passer le PREMIER appel (cadence Callflow ensuite)."
+        : `Passer le rappel ${cadence.recallsUsed + 1}/${plafond.max} (cadence Callflow).`,
       channel: "appel",
       when: now.toISOString(),
       why: cadence.reason,
