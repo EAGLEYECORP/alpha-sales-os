@@ -135,9 +135,30 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
 - **Art. 50 EU AI Act** : la 1re phrase (IA + pas une personne + pour le compte
   de X) est prononcée par le CODE (`first_sentence`, `allow_interruptions=False`)
   et `audit_script` refuse un script non conforme. **Ne jamais contourner.**
+- **APPEL À FROID — doctrine du 28/08/2026.** Alpha Voice **démarche à froid**
+  et mène l'appel ENTIER : il qualifie et conclut lui-même. La constante
+  `COLD_CALLING_REFUSED` qui l'interdisait décrivait un état faux
+  (`prospection-b2b` était déjà `allowed: true`) — elle est devenue
+  `COLD_CALLING_DISCIPLINE`. L'ancien argument reste vrai et devient une
+  contrainte de script : **une IA qui démarche n'a droit à aucune
+  improvisation**.
+- **Le passage de main se fait sur INTÉRÊT QUALIFIÉ, plus sur le décroché.**
+  Nouveau résultat `interesse` (`lib/call-cadence.ts`) : lui seul rend
+  `handoffToHuman: true`. Un « non » ou un « rappelez-moi » se traite et se
+  consigne **sans mobiliser personne**. Avant, les quatre résultats « il a
+  décroché » réveillaient un closer — un refus coûtait autant qu'un RDV, et
+  c'est ce qui rendait le volume impossible.
+  > ⚠ `interesse` est un SOUS-ENSEMBLE de « a décroché » : tout ce qui compte
+  > les décrochés passe par `aDecroche()`. La calibration avait déjà perdu les
+  > RDV de son dénominateur en une ligne.
+- **Script d'appel à froid — ce que `auditScript` REFUSE** : objectif unique
+  (le RDV), aucun prix, le NON qui raccroche, le OUI qui passe la main. Et sur
+  **Callflow**, une exigence de plus, demandée par ScintIA qui a peur pour son
+  script : **aucune autre société, aucune autre offre citée**. Sur leur appel
+  c'est LEUR marque qui parle — nous ne sommes qu'intermédiaires.
 - **Cadence de relance Callflow (exigée par ScintIA)** : après le 1er appel sans
-  réponse → **5 rappels sur 2 jours**. Dès qu'il répond : Alpha Voice **arrête**,
-  met à jour le pipeline, et **passe la main à l'humain** (closer).
+  réponse → **5 rappels sur 2 jours**. Dès qu'il répond, la cadence **s'arrête**
+  et le pipeline est mis à jour — mais l'humain n'est appelé que sur un OUI.
   > ⚠ **Cette cadence fait 6 contacts en 2 jours. Le décret n° 2022-1313
   > plafonne le démarchage à 4 sollicitations par consommateur sur 30 jours
   > glissants.** Il vise le B2C, mais une liste terrain est MÊLÉE et c'est nous

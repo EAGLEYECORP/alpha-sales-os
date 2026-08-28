@@ -2,6 +2,7 @@ import { attemptsFromEvents } from "./master-rappel";
 import { verticalById } from "./playbook";
 import { AVIS_DEMANDE_ELEVEE, NOTE_EXCELLENTE } from "./sourcing-terrain";
 import type { Prospect } from "./types";
+import { aDecroche } from "./call-cadence";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -258,7 +259,8 @@ function relire(p: Prospect): Vecu {
   const rdv = (p.events ?? []).some((e) => e.kind === "appel" && MARQUE_RDV.test(e.summary ?? ""));
   return {
     composes: attempts.length,
-    joint: attempts.some((a) => a.outcome === "repondu"),
+    // `aDecroche` : « interesse » est aussi un décroché (lib/call-cadence).
+    joint: attempts.some((a) => aDecroche(a.outcome)),
     rdv,
     opposition: attempts.some((a) => a.outcome === "opposition"),
   };
@@ -322,7 +324,7 @@ export function calibrer(prospects: Prospect[], axe: AxeSucces = "decroche"): Ca
       const a = attemptsFromEvents(p)[t - 1];
       if (!a) continue;
       c++;
-      if (a.outcome === "repondu") j++;
+      if (aDecroche(a.outcome)) j++;
     }
     parTour.push({ tour: t, composes: c, joints: j, taux: tauxMesure(j, c, `Décroché au tour ${t}`) });
   }

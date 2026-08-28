@@ -20,15 +20,24 @@ import { CALL_DAILY_SAFE } from "./daily-plan";
  *
  * ── CE QUI BORNE RÉELLEMENT LA MACHINE ──
  *
- * Pas sa fatigue : la nôtre. La règle ScintIA, encodée dans `cadenceFor`, dit
- * que dès qu'il RÉPOND, Alpha Voice arrête et PASSE LA MAIN au closer. Chaque
- * appel décroché devient donc le travail d'un humain.
+ * Pas sa fatigue : la nôtre. Mais PLUS sur chaque décroché.
  *
- *     appels/jour × taux de décroché = conversations à absorber
+ * ⚠ DOCTRINE DU 28/08/2026 — ALPHA VOICE MÈNE L'APPEL À FROID ENTIER.
  *
- * À 30 % de décroché, 500 appels par jour produisent 150 conversations. C'est
- * le chiffre que personne ne calcule avant de demander du volume — et c'est
- * lui qui décide, pas la capacité d'appel.
+ * Avant, il ne faisait que composer : dès qu'on décrochait il se retirait, et
+ * un closer prenait la conversation. Le calcul était alors
+ * `appels × décroché`, et il donnait des chiffres décourageants : 500 appels
+ * à 30 % = 150 conversations = cinq closers.
+ *
+ * Désormais l'agent conduit l'appel, qualifie, et ne passe la main que sur
+ * INTÉRÊT QUALIFIÉ (`outcome: "interesse"`). Un refus ou un « rappelez-moi »
+ * se traite et se consigne sans personne. Le calcul devient :
+ *
+ *     appels × taux de décroché × taux d'intérêt = closings à absorber
+ *
+ * À 30 % de décroché et 20 % d'intérêt parmi eux, 500 appels par jour
+ * produisent 30 rendez-vous — UN closer. C'est ce facteur-là qui rend le
+ * volume tenable, et c'est lui qu'on oublie de mesurer.
  *
  * ⚠⚠ CE MODULE NE LÈVE AUCUN PLAFOND LÉGAL. La fréquence PAR PROSPECT reste
  * gouvernée par `plafondRappels` (décret n° 2022-1313 : 4 sollicitations sur
@@ -50,6 +59,15 @@ export interface CapaciteEntree {
   conversationsParCloser?: number;
   /** Taux de décroché observé, en %. */
   tauxDecrochePct: number;
+  /**
+   * Part des décrochés qui donnent un INTÉRÊT QUALIFIÉ, en %.
+   *
+   * ⚠ Absent = on ne sait pas, et on retombe sur l'ancienne hypothèse
+   * (100 % : tout décroché mobilise un humain). C'est le repli PRUDENT : il
+   * sous-estime la capacité, donc il ne fait pas promettre un volume qu'on ne
+   * tiendrait pas. Zéro donnée → zéro chiffre optimiste.
+   */
+  tauxInteretPct?: number;
   /**
    * Plafond dur imposé par la téléphonie (canaux simultanés × fenêtre).
    * Absent = non mesuré, et on le DIT plutôt que de supposer.
@@ -103,7 +121,11 @@ export function capaciteAppels(e: CapaciteEntree): Capacite {
   }
 
   const absorbables = parCloser * closers;
-  const parHumains = Math.floor(absorbables / (taux / 100));
+  // Sans mesure d'intérêt, on suppose que tout décroché mobilise un humain —
+  // l'ancien monde. Prudent, donc jamais surpromettant.
+  const interet = e.tauxInteretPct != null && e.tauxInteretPct > 0 ? e.tauxInteretPct : 100;
+  const partQuiMobilise = (taux / 100) * (interet / 100);
+  const parHumains = Math.floor(absorbables / partQuiMobilise);
   const borneTel = e.plafondTelephonie;
 
   if (typeof borneTel === "number" && borneTel < parHumains) {
@@ -122,17 +144,30 @@ export function capaciteAppels(e: CapaciteEntree): Capacite {
     conversationsAttendues: absorbables,
     bornePar: "humains",
     pourquoi:
-      `${closers} closer(s) × ${parCloser} conversations = ${absorbables} décrochés absorbables. ` +
-      `À ${taux} % de décroché, ça autorise ${parHumains} appels/jour. Au-delà, la machine produit des ` +
-      `conversations que personne ne prend — et un prospect qui a parlé puis qu'on ne rappelle pas est perdu ` +
-      `plus sûrement qu'un prospect jamais appelé.`,
+      `${closers} closer(s) × ${parCloser} = ${absorbables} closings absorbables par jour. ` +
+      `À ${taux} % de décroché` +
+      (interet < 100 ? ` et ${interet} % d'intérêt qualifié` : ` (intérêt non mesuré : on suppose que TOUT décroché mobilise un humain)`) +
+      `, ça autorise ${parHumains} appels/jour. Au-delà, la machine produit des rendez-vous que personne ne ` +
+      `prend — et un prospect qui a dit oui puis qu'on ne rappelle pas est perdu plus sûrement qu'un prospect ` +
+      `jamais appelé.`,
   };
 }
 
-/** Ce qu'il faut d'humains pour soutenir un volume visé. */
-export function closersRequis(appelsParJour: number, tauxDecrochePct: number, conversationsParCloser = CALL_DAILY_SAFE): number {
+/**
+ * Ce qu'il faut d'humains pour soutenir un volume visé.
+ *
+ * `tauxInteretPct` absent = repli prudent à 100 % (tout décroché mobilise),
+ * cohérent avec `capaciteAppels`.
+ */
+export function closersRequis(
+  appelsParJour: number,
+  tauxDecrochePct: number,
+  opts: { tauxInteretPct?: number; conversationsParCloser?: number } = {}
+): number {
   if (!(tauxDecrochePct > 0) || appelsParJour <= 0) return 0;
-  return Math.ceil((appelsParJour * (tauxDecrochePct / 100)) / Math.max(1, conversationsParCloser));
+  const interet = opts.tauxInteretPct != null && opts.tauxInteretPct > 0 ? opts.tauxInteretPct : 100;
+  const parCloser = Math.max(1, opts.conversationsParCloser ?? CALL_DAILY_SAFE);
+  return Math.ceil((appelsParJour * (tauxDecrochePct / 100) * (interet / 100)) / parCloser);
 }
 
 /**

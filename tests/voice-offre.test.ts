@@ -179,3 +179,102 @@ test("⚠ plus aucun angle d'offre n'est écrit en dur dans le constructeur de s
   assert.doesNotMatch(code, /audit de leur accueil/i, "l'angle Callflow ne doit plus être en dur");
   assert.match(code, /OFFRES\[cfg\.offre\]/, "l'angle doit venir du catalogue d'offres");
 });
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * SCINTIA A PEUR POUR SON SCRIPT — ET C'EST LÉGITIME.
+ *
+ * Sur un appel à FROID au nom de Callflow, c'est LEUR marque qui parle, pas la
+ * nôtre : nous ne sommes qu'intermédiaires (30 % du setup, 10 % du mensuel).
+ * Un agent qui improvise une modalité, lâche un prix ou cite une autre société
+ * leur coûte un client qu'ils n'ont jamais vu.
+ *
+ * Doctrine du 28/08/2026 : Alpha Voice démarche à froid. La contrepartie est
+ * une discipline de script VÉRIFIABLE — c'est ce que ces tests gardent.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("appel à froid — le script porte un objectif unique et aucun prix", () => {
+  const script = buildVoiceScript({
+    onBehalfOf: "ScintIA",
+    agentName: "ALPHA",
+    mode: "prospection-b2b",
+    company: "Carrosserie Test",
+    offre: "callflow",
+  });
+  const v = auditScript(script, { mode: "prospection-b2b", offre: "callflow" });
+  assert.deepEqual(v.manquantes, [], "le script livré doit passer son propre audit");
+  assert.match(script, /OBJECTIF UNIQUE/, "un seul but : le rendez-vous");
+  assert.match(script, /aucun prix|jamais de prix/i);
+});
+
+test("appel à froid — le NON se raccroche, le OUI seul réveille un humain", () => {
+  const script = buildVoiceScript({
+    onBehalfOf: "ScintIA",
+    agentName: "ALPHA",
+    mode: "prospection-b2b",
+    offre: "callflow",
+  });
+  assert.match(script, /Si c'est NON[\s\S]*?tu raccroches/i, "un refus se traite sans mobiliser personne");
+  assert.match(script, /Si c'est OUI[\s\S]*?PASSES LA MAIN/i, "seul un oui vaut le temps d'un closer");
+});
+
+test("⚠ sur Callflow, le script interdit de citer une autre société ou offre", () => {
+  const scintia = buildVoiceScript({
+    onBehalfOf: "ScintIA",
+    agentName: "ALPHA",
+    mode: "prospection-b2b",
+    offre: "callflow",
+  });
+  assert.match(scintia, /tu ne cites aucune autre société/i, "c'est la demande explicite de ScintIA");
+  assert.equal(auditScript(scintia, { mode: "prospection-b2b", offre: "callflow" }).ok, true);
+
+  // Un script d'où la garde a disparu doit être REFUSÉ, pas juste signalé.
+  const ampute = scintia.replace(/tu ne cites aucune autre société[^\n]*/i, "");
+  const v = auditScript(ampute, { mode: "prospection-b2b", offre: "callflow" });
+  assert.equal(v.ok, false);
+  assert.ok(v.manquantes.some((m) => /autre société/i.test(m)));
+});
+
+test("l'exigence de marque partenaire ne s'applique QU'À Callflow", () => {
+  /**
+   * Sur nos propres offres, c'est notre marque : la contrainte n'a pas lieu
+   * d'être, et l'imposer partout finirait par la faire contourner.
+   */
+  const nous = buildVoiceScript({
+    onBehalfOf: "EAGLEYE CORP",
+    agentName: "ALPHA",
+    mode: "prospection-b2b",
+    offre: "visibilite-growth",
+  });
+  assert.equal(auditScript(nous, { mode: "prospection-b2b", offre: "visibilite-growth" }).ok, true);
+});
+
+test("hors appel à froid, l'audit ne réclame que la divulgation", () => {
+  /**
+   * Une démo entrante n'a pas d'objectif de rendez-vous : y exiger
+   * « OBJECTIF UNIQUE » ferait échouer un script parfaitement conforme, et un
+   * garde qui refuse le bon usage finit désactivé.
+   */
+  const demo = buildVoiceScript({
+    onBehalfOf: "EAGLEYE CORP",
+    agentName: "ALPHA",
+    mode: "demo-entrante",
+    company: "Carrosserie Test",
+  });
+  assert.equal(auditScript(demo).ok, true);
+  assert.equal(auditScript(demo, { mode: "demo-entrante" }).ok, true);
+});
+
+test("les deux points d'audit de /api/voice/call jugent la même chose", () => {
+  /**
+   * ⚠ La route relit le script AVANT l'appel et l'audite AU MOMENT de
+   * l'appel. Si la relecture auditait moins, l'opérateur validerait un texte
+   * que la route rejetterait ensuite — ou pire, l'inverse.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/voice/call/route.ts"), "utf8");
+  const appels = [...src.matchAll(/auditScript\(script([^)]*)\)/g)].map((m) => m[1]!.trim());
+  assert.equal(appels.length, 2, "la route doit auditer aux deux endroits");
+  assert.equal(appels[0], appels[1], "et avec exactement le même contexte");
+  assert.match(appels[0]!, /mode: cfg\.mode/);
+  assert.match(appels[0]!, /offre: cfg\.offre/);
+});

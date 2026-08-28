@@ -50,8 +50,15 @@ export interface CallSession {
   endedAt?: string;
   state: CallSessionState;
   turns: TranscriptTurn[];
-  /** Résultat déclaré en fin d'appel. */
-  outcome?: "repondu" | "sans-reponse" | "opposition" | "invalide";
+  /**
+   * Résultat déclaré en fin d'appel.
+   *
+   * ⚠ `interesse` ajouté avec la doctrine du 28/08/2026 : Alpha Voice mène
+   * l'appel à froid entier et ne passe la main que sur INTÉRÊT QUALIFIÉ.
+   * Sans ce résultat, la session ne pouvait dire que « il a répondu » — et
+   * tout décroché réveillait un closer, y compris un refus.
+   */
+  outcome?: "repondu" | "interesse" | "sans-reponse" | "opposition" | "invalide";
   /** L'interlocuteur a-t-il été informé d'un enregistrement ? */
   recordingAnnounced?: boolean;
   /** URL de l'enregistrement, si Egress est activé ET annoncé. */

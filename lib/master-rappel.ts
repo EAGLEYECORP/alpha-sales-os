@@ -6,6 +6,7 @@ import {
   cibleDepuisProspect,
   humainDejaEnLigne,
   plafondRappels,
+  INTERET_DANS_LE_RESUME,
   REPONSE_DANS_LE_RESUME,
   type CallAttempt,
 } from "./call-cadence";
@@ -118,6 +119,8 @@ const filled = (v: string | undefined | null) => Boolean((v ?? "").trim());
 
 /** Il a décroché / répondu — motif partagé avec la cadence (`lib/call-cadence`). */
 const ANSWERED = REPONSE_DANS_LE_RESUME;
+/** Il a dit OUI — le seul cas qui réveille un humain. Même source partagée. */
+const INTERESSE = INTERET_DANS_LE_RESUME;
 /** Il refuse d'être recontacté. */
 const OPPOSED = /ne plus (?:me |nous )?(?:appeler|contacter)|stop|opposition|ne pas rappeler|d[ée]sinscri/i;
 /** Numéro mort. */
@@ -136,13 +139,20 @@ export function attemptsFromEvents(p: Prospect): CallAttempt[] {
     .filter((e) => e.kind === "appel")
     .map((e) => {
       const s = e.summary ?? "";
+      /**
+       * ⚠ L'ORDRE COMPTE. `INTERESSE` se teste avant `ANSWERED`, qui matche
+       * déjà « rdv obtenu » : l'intérêt qualifié se lirait sinon comme un
+       * simple décroché, et plus aucun humain ne serait réveillé.
+       */
       const outcome = OPPOSED.test(s)
         ? "opposition"
         : INVALID.test(s)
           ? "invalide"
-          : ANSWERED.test(s)
-            ? "repondu"
-            : "sans-reponse";
+          : INTERESSE.test(s)
+            ? "interesse"
+            : ANSWERED.test(s)
+              ? "repondu"
+              : "sans-reponse";
       return { at: e.date, outcome } as CallAttempt;
     })
     .sort((a, b) => a.at.localeCompare(b.at));

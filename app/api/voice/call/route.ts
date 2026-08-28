@@ -115,7 +115,9 @@ export async function POST(request: NextRequest) {
   const script = buildVoiceScript(cfg);
 
   // ── Porte 2 : la conformité du script ──
-  const audit = auditScript(script);
+  // Le contexte déclenche les exigences de l'appel à froid, et celles de la
+  // marque partenaire sur Callflow (voir lib/voice-script).
+  const audit = auditScript(script, { mode: cfg.mode, offre: cfg.offre });
   if (!audit.ok) {
     return NextResponse.json(
       {
@@ -279,7 +281,10 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     script,
     offre: offreRelue,
-    audit: auditScript(script),
+    // Même contexte qu'à l'envoi : l'écran de relecture doit voir EXACTEMENT
+    // les manques que la route d'appel refusera. Auditer moins ici, c'est
+    // valider un script que l'appel rejettera ensuite.
+    audit: auditScript(script, { mode: cfg.mode, offre: cfg.offre }),
     window: callAllowedNow(),
     livekit: livekitConfigured(),
   });

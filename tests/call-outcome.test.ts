@@ -53,13 +53,22 @@ test("réconciliation — l'événement EN ATTENTE est corrigé, pas doublé", (
   assert.match(r.prospect.events[0].summary, /répondu/i);
 });
 
-test("réconciliation — après un « répondu », la machine s'arrête et passe la main", () => {
+test("réconciliation — après un « répondu », la machine s'arrête SANS mobiliser d'humain", () => {
+  // Nouvelle doctrine (28/08/2026) : Alpha Voice mène l'appel entier. Un
+  // décroché sans suite ne réveille personne — seul l'intérêt qualifié le fait.
   const pending = appendCallAttempt(fixture(), NOW);
   const r = applyOutcome(pending, session({ outcome: "repondu" }), NOW);
   const d = cadenceFor(attemptsFromEvents(r.prospect), NOW);
   assert.equal(d.state, "repondu-passer-humain");
   assert.equal(d.callNow, false, "on ne rappelle JAMAIS quelqu'un qui a décroché");
-  assert.equal(d.handoffToHuman, true);
+  assert.equal(d.handoffToHuman, false);
+});
+
+test("réconciliation — un INTÉRÊT QUALIFIÉ traverse toute la chaîne et réveille le closer", () => {
+  const pending = appendCallAttempt(fixture(), NOW);
+  const r = applyOutcome(pending, session({ outcome: "interesse" }), NOW);
+  const d = cadenceFor(attemptsFromEvents(r.prospect), NOW);
+  assert.equal(d.handoffToHuman, true, "le oui doit survivre à l'aller-retour session → timeline → cadence");
 });
 
 test("réconciliation — un appel sans événement en attente crée sa trace", () => {

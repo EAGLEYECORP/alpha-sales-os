@@ -172,7 +172,13 @@ test("master rappel — la checklist dit si ça tourne et si Alpha reçoit la do
   assert.equal(vivant.checks.find((c) => c.id === "retour-donnee")?.state, "actif");
 });
 
-test("master rappel — quand il a répondu, Alpha Voice s'arrête et l'humain reprend", () => {
+/**
+ * NOUVELLE DOCTRINE (28/08/2026) — Alpha Voice mène l'appel à froid entier.
+ * Un décroché sans suite ne réveille personne ; seul l'INTÉRÊT QUALIFIÉ le
+ * fait. Ce qui reste vrai dans les deux cas : on ne rappelle jamais quelqu'un
+ * qui a décroché.
+ */
+test("master rappel — décroché sans suite : Alpha s'arrête, l'humain n'est PAS mobilisé", () => {
   const plan = masterRappel(fixture(), {
     now: NOW,
     attempts: [
@@ -180,10 +186,26 @@ test("master rappel — quand il a répondu, Alpha Voice s'arrête et l'humain r
       { at: ago(1), outcome: "repondu" },
     ],
   });
+  assert.equal(
+    plan.human.some((a) => a.id === "reprise-humaine"),
+    false,
+    "un « pas intéressé » ne doit pas coûter le temps d'un closer"
+  );
+  // Et aucune action Alpha ne rappelle ce prospect.
+  assert.equal(plan.alpha.some((a) => a.channel === "appel" && a.id === "cadence-appel"), false);
+});
+
+test("master rappel — INTÉRÊT QUALIFIÉ : l'humain reprend la main", () => {
+  const plan = masterRappel(fixture(), {
+    now: NOW,
+    attempts: [
+      { at: ago(2), outcome: "sans-reponse" },
+      { at: ago(1), outcome: "interesse" },
+    ],
+  });
   const reprise = plan.human.find((a) => a.id === "reprise-humaine");
   assert.ok(reprise, "l'humain doit reprendre la main");
   assert.match(reprise!.do, /REPRENDRE LA MAIN/);
-  // Et aucune action Alpha ne rappelle ce prospect.
   assert.equal(plan.alpha.some((a) => a.channel === "appel" && a.id === "cadence-appel"), false);
 });
 

@@ -36,11 +36,22 @@ import { OFFRES, type EagleyeOffer } from "./offer-match";
  * ce qui a converti la Carrosserie des Brotteaux : visite terrain, démo
  * live, puis prix.
  *
- * Il ne fait pas : du démarchage à froid vers des inconnus. Techniquement
- * il en serait capable ; le mode existe et il est bridé (voir
- * `CallMode`). La raison n'est pas juridique — c'est qu'on vend une IA
- * qui répond bien aux clients de nos prospects, et que notre propre
- * premier contact ne peut pas être une IA qui démarche.
+ * Il fait AUSSI, depuis le 28/08/2026 : l'APPEL À FROID, entier.
+ *
+ * ⚠ CE PARAGRAPHE DISAIT L'INVERSE, ET IL DÉCRIVAIT DÉJÀ UN ÉTAT FAUX.
+ *
+ * Il affirmait que le démarchage à froid « est bridé » et que le mode était
+ * « délibérément absent de CALL_MODES ». Or `prospection-b2b` y figurait,
+ * `allowed: true`, décrit comme « premier contact commercial vers une
+ * ENTREPRISE ». La prose interdisait ce que le code autorisait — encore une
+ * phrase qui affirmait une protection inexistante.
+ *
+ * L'argument qui la portait était bon et mérite d'être gardé en mémoire : on
+ * vend une IA qui répond bien aux clients de nos prospects, donc notre propre
+ * premier contact ne devrait pas être une IA qui démarche. Zakaria a tranché
+ * l'inverse, en connaissance de cause. Ce qui reste de cet argument, c'est la
+ * DISCIPLINE du script : plus l'agent démarche, moins il a le droit
+ * d'improviser.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -101,13 +112,21 @@ export const CALL_MODES: CallModeMeta[] = [
 ];
 
 /**
- * Le démarchage à froid par agent vocal — délibérément absent de
- * CALL_MODES. Il serait techniquement identique à `demo-sortante` ; la
- * décision de ne pas l'exposer est documentée dans docs/MARCHE.md §4.2 et
- * ce commentaire existe pour qu'on ne la réintroduise pas par distraction.
+ * ─────────────────────────────────────────────────────────────────────
+ * L'APPEL À FROID EST ASSUMÉ — ET IL SE PAIE EN DISCIPLINE DE SCRIPT.
+ *
+ * ⚠ Cette constante s'appelait `COLD_CALLING_REFUSED` et affirmait que le
+ * démarchage à froid « n'est pas exposé ». C'était faux depuis que
+ * `prospection-b2b` est passé `allowed: true` : la prose interdisait ce que la
+ * liste juste au-dessus autorisait.
+ *
+ * Ce qu'on garde de l'ancien raisonnement, parce qu'il était juste : quand
+ * c'est une IA qui démarche, la moindre improvisation se retourne contre la
+ * marque au nom de laquelle elle parle. D'où la règle ci-dessous.
+ * ─────────────────────────────────────────────────────────────────────
  */
-export const COLD_CALLING_REFUSED =
-  "Le démarchage à froid par agent vocal n'est pas exposé : on vend une IA qui répond bien aux clients de nos prospects, notre premier contact ne peut pas être une IA qui démarche.";
+export const COLD_CALLING_DISCIPLINE =
+  "Alpha Voice démarche à froid. Une IA qui démarche n'a droit à AUCUNE improvisation : un objectif unique par appel, aucune modalité discutée, aucun prix, et la main rendue dès qu'il y a un oui.";
 
 export interface VoiceConfig {
   /** Raison sociale au nom de laquelle l'agent parle. */
@@ -212,7 +231,30 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
       v ? `Angle métier : ${v.structuralPain}` : "",
       `Tu précises, si on te le demande, que leurs coordonnées PROFESSIONNELLES proviennent de sources publiques (annuaires, site web).`,
       `Droit d'opposition, prioritaire : dès que la personne montre qu'elle ne veut pas être appelée — même à demi-mot — tu confirmes qu'elle ne sera plus contactée, tu la remercies et tu raccroches. Immédiat, définitif, sans insister.`,
-      `Tu ne parles JAMAIS de prix. Tu ne relances pas. Au mieux, tu proposes un rendez-vous court avec un humain, et tu rends la main.`
+      /**
+       * ⚠ DOCTRINE DU 28/08/2026 — ALPHA VOICE MÈNE L'APPEL ENTIER.
+       *
+       * La ligne disait « au mieux, tu proposes un rendez-vous et tu rends la
+       * main ». L'agent ne rendait donc la main qu'au mieux, et dans les faits
+       * `cadenceFor` la rendait à CHAQUE décroché — un refus mobilisait un
+       * closer autant qu'un oui.
+       *
+       * Désormais : l'agent qualifie et conclut lui-même. Il ne réveille un
+       * humain que sur un OUI, et c'est ce résultat-là (`interesse`) qui le
+       * déclenche dans toute la chaîne.
+       */
+      // « décrocher » a déclenché le garde qui interdit le vocabulaire du
+      // téléphone hors Callflow (tests/surface-prospect). Faux positif ici,
+      // mais on reformule plutôt que d'assouplir un motif qui protège de
+      // l'angle Callflow servi à un prospect routé ailleurs.
+      `OBJECTIF UNIQUE : obtenir un rendez-vous court avec un humain. Tu ne discutes aucune modalité, aucun détail technique, aucun prix — jamais.`,
+      `Si c'est NON, ou « pas le moment » : tu remercies, tu notes, tu raccroches. Tu ne rappelles pas, tu ne mobilises personne. Ce n'est pas un échec, c'est une réponse.`,
+      `Si c'est OUI : tu confirmes le créneau, tu le répètes à voix haute, et TU PASSES LA MAIN — c'est le seul cas qui réveille un humain.`,
+      // Le compte partenaire est nerveux sur SON produit, et il a raison : sur
+      // un appel à froid, c'est SA marque qui prend le risque, pas la nôtre.
+      cfg.offre === "callflow"
+        ? `⚠ Tu parles au nom de ${cfg.onBehalfOf} et de RIEN d'autre : tu ne cites aucune autre société, aucune autre offre, aucun partenaire. Une seule question, un créneau, tu raccroches. Si on te pose une question à laquelle le script ne répond pas, tu dis que tu ne veux pas répondre de travers et que l'humain le fera au rendez-vous.`
+        : ""
     );
   } else {
     // Un rappel est un contact CHAUD : la personne a laissé ses coordonnées.
@@ -256,8 +298,80 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
 }
 
 /** Le script porte-t-il toutes les mentions dues ? Utilisé avant chaque appel. */
-export function auditScript(script: string): { ok: boolean; manquantes: string[] } {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QU'UN SCRIPT D'APPEL À FROID DOIT PORTER — au-delà de l'article 50.
+ *
+ * ⚠ POURQUOI CES EXIGENCES EXISTENT : SCINTIA A PEUR POUR SON SCRIPT.
+ *
+ * Et ils ont raison. Sur un appel à froid vers un inconnu, c'est LEUR marque
+ * qui parle, pas la nôtre — nous ne sommes qu'intermédiaires (30 % + 10 %).
+ * Un agent qui improvise une modalité, lâche un prix ou cite une autre société
+ * leur coûte un client qu'ils n'ont jamais vu.
+ *
+ * L'ancien raisonnement du dépôt le disait déjà, en refusant l'appel à froid :
+ * « on vend une IA qui répond bien aux clients de nos prospects, notre premier
+ * contact ne peut pas être une IA qui démarche ». La décision a changé ; la
+ * prudence qui la motivait devient une CONTRAINTE DE SCRIPT vérifiable.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const EXIGENCES_APPEL_FROID = [
+  {
+    label: "Objectif unique : le rendez-vous",
+    pattern: /OBJECTIF UNIQUE/i,
+    pourquoi:
+      "Un agent sans objectif unique négocie, explique, argumente — et sort du cadre que le partenaire a validé.",
+  },
+  {
+    label: "Aucun prix, jamais",
+    pattern: /aucun prix|jamais de prix|ne parles JAMAIS de prix/i,
+    pourquoi: "Un chiffre lâché à froid transforme un premier contact en négociation, et engage le partenaire.",
+  },
+  {
+    label: "Le NON se traite et se raccroche, sans mobiliser personne",
+    pattern: /si c'est NON/i,
+    pourquoi:
+      "Sans cette consigne, l'agent insiste. C'est ce qui transforme un prospect tiède en détracteur — et " +
+      "c'est le comportement qui fait perdre un compte partenaire.",
+  },
+  {
+    label: "Le OUI passe la main à un humain",
+    pattern: /si c'est OUI/i,
+    pourquoi: "C'est le seul cas qui vaut le temps d'un closer. Sans la règle, l'agent continue à parler.",
+  },
+] as const;
+
+/**
+ * Exigence supplémentaire quand on parle au nom d'un PARTENAIRE : ne rien
+ * ouvrir d'autre. C'est la demande explicite de ScintIA.
+ */
+export const EXIGENCE_MARQUE_PARTENAIRE = {
+  label: "Aucune autre société, aucune autre offre",
+  pattern: /tu ne cites aucune autre société/i,
+  pourquoi:
+    "Sur leur appel, on ne vend que leur produit. Mentionner EAGLEYE ou une autre offre transforme leur " +
+    "prospection en la nôtre — c'est précisément ce qu'ils craignent.",
+} as const;
+
+/**
+ * Audit du script.
+ *
+ * `mode` et `offre` sont optionnels pour ne pas casser les appelants qui ne
+ * vérifient que la divulgation. Fournis, ils déclenchent les exigences de
+ * l'appel à froid — et celles de la marque partenaire sur Callflow.
+ */
+export function auditScript(
+  script: string,
+  contexte: { mode?: CallMode; offre?: EagleyeOffer | null } = {}
+): { ok: boolean; manquantes: string[] } {
   const manquantes = DISCLOSURE_REQUIREMENTS.filter((r) => !r.pattern.test(script)).map((r) => r.label);
+
+  if (contexte.mode === "prospection-b2b") {
+    for (const e of EXIGENCES_APPEL_FROID) if (!e.pattern.test(script)) manquantes.push(e.label);
+    if (contexte.offre === "callflow" && !EXIGENCE_MARQUE_PARTENAIRE.pattern.test(script))
+      manquantes.push(EXIGENCE_MARQUE_PARTENAIRE.label);
+  }
+
   return { ok: manquantes.length === 0, manquantes };
 }
 

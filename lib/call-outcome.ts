@@ -36,6 +36,9 @@ export const PENDING_MARK = "en attente du résultat";
 export function summaryFor(outcome: CallOutcome, extra?: string): string {
   const base: Record<CallOutcome, string> = {
     repondu: "Il a répondu — échange avec l'agent",
+    // Le mot « intéressé » porte la lecture : `attemptsFromEvents` s'en sert
+    // pour distinguer un oui d'un simple décroché. Il n'est pas décoratif.
+    interesse: "Il a répondu — intéressé, RDV à caler",
     "sans-reponse": "Sans réponse",
     opposition: "Opposition : ne plus appeler",
     invalide: "Numéro invalide",
@@ -78,7 +81,15 @@ export interface LectureManuelle {
 export const RESULTATS_MANUELS: Record<ResultatManuel, LectureManuelle> = {
   rdv: {
     summary: "Appel sortant — il a décroché, RDV obtenu",
-    lecture: "repondu",
+    /**
+     * ⚠ Lu comme « interesse », pas « repondu ». NOUVELLE DOCTRINE (28/08/2026).
+     *
+     * C'est le SEUL résultat qui réveille un humain. Avant, les quatre
+     * résultats « il a décroché » passaient tous la main à un closer — y
+     * compris « pas intéressé pour l'instant ». Alpha Voice mène maintenant
+     * l'appel à froid entier : seul un oui vaut le temps de quelqu'un.
+     */
+    lecture: "interesse",
     dansJours: 2,
     action: "Confirmer le RDV et préparer l'audit",
   },

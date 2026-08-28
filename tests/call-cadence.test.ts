@@ -39,7 +39,20 @@ test("cadence — sans réponse, elle attend l'heure puis redevient due", () => 
   assert.equal(due.recallsUsed, 0);
 });
 
-test("cadence — dès qu'il RÉPOND, Alpha Voice arrête et passe la main au closer", () => {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * NOUVELLE DOCTRINE (28/08/2026) — Alpha Voice mène l'appel à froid ENTIER.
+ *
+ * L'ancienne règle passait la main dès qu'on décrochait : Alpha Voice ne
+ * faisait que composer. Un « pas intéressé pour l'instant » consommait alors
+ * autant de temps humain qu'un rendez-vous obtenu — et c'est ce qui rendait le
+ * volume impossible (500 appels à 30 % de décroché = 150 conversations).
+ *
+ * Ce qui n'a PAS changé, et qui reste non négociable : on ne rappelle jamais
+ * quelqu'un qui a décroché.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("cadence — il a décroché sans dire oui : on s'arrête, mais AUCUN humain n'est mobilisé", () => {
   const attempts: CallAttempt[] = [
     { at: T0, outcome: "sans-reponse" },
     { at: at(3).toISOString(), outcome: "repondu" },
@@ -47,9 +60,37 @@ test("cadence — dès qu'il RÉPOND, Alpha Voice arrête et passe la main au cl
   const d = cadenceFor(attempts, at(4));
   assert.equal(d.state, "repondu-passer-humain");
   assert.equal(d.callNow, false, "ne JAMAIS rappeler quelqu'un qui a décroché");
-  assert.equal(d.handoffToHuman, true);
   assert.equal(d.nextCallAt, null);
+  assert.equal(d.handoffToHuman, false, "un décroché sans suite ne vaut pas le temps d'un closer");
+  assert.match(d.reason, /aucun humain/i);
+});
+
+test("cadence — INTÉRÊT QUALIFIÉ : c'est le seul cas qui réveille un closer", () => {
+  const attempts: CallAttempt[] = [
+    { at: T0, outcome: "sans-reponse" },
+    { at: at(3).toISOString(), outcome: "interesse" },
+  ];
+  const d = cadenceFor(attempts, at(4));
+  assert.equal(d.state, "repondu-passer-humain");
+  assert.equal(d.callNow, false);
+  assert.equal(d.handoffToHuman, true);
   assert.match(d.reason, /closer|humain/i);
+});
+
+test("cadence — l'intérêt prime sur le simple décroché, quel que soit l'ordre", () => {
+  /**
+   * Une fiche peut porter les deux : il a parlé un jour, il a dit oui un
+   * autre. Si « repondu » était testé en premier, le oui disparaîtrait et
+   * personne ne serait prévenu.
+   */
+  const d = cadenceFor(
+    [
+      { at: T0, outcome: "repondu" },
+      { at: at(3).toISOString(), outcome: "interesse" },
+    ],
+    at(4)
+  );
+  assert.equal(d.handoffToHuman, true);
 });
 
 test("cadence — l'opposition coupe tout, définitivement et immédiatement", () => {

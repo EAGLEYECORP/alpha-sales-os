@@ -38,18 +38,36 @@ test("la capacité machine se dérive du closing, pas de la fatigue d'un agent",
  * une conversation : 500 appels à 30 % de décroché produisent 150
  * conversations, et il faut cinq closers pour les prendre.
  */
-test("500 appels/jour exigent cinq closers — c'est ça, la contrainte", () => {
+test("500 appels/jour — l'ancien monde exigeait cinq closers", () => {
+  // Sans mesure d'intérêt, le repli PRUDENT suppose que tout décroché mobilise
+  // un humain : c'est l'ancienne doctrine, et elle donne cinq closers.
   assert.equal(closersRequis(500, 30), 5, "500 × 30 % = 150 conversations, / 30 par closer = 5");
 
-  // Et avec cinq closers, la capacité autorise bien 500.
-  const c = capaciteAppels({ closers: 5, tauxDecrochePct: 30 });
-  assert.ok(c.appelsParJour >= 500, `attendu ≥ 500, obtenu ${c.appelsParJour}`);
-  assert.equal(c.conversationsAttendues, 150);
-
-  // Avec UN closer, 500 appels noieraient la journée : la capacité le refuse.
   const seul = capaciteAppels({ closers: 1, tauxDecrochePct: 30 });
-  assert.ok(seul.appelsParJour < 500);
-  assert.match(seul.pourquoi, /personne ne prend/, "et la raison doit être dite");
+  assert.ok(seul.appelsParJour < 500, "un closer seul ne soutient pas 500 appels sans mesure d'intérêt");
+  assert.match(seul.pourquoi, /intérêt non mesuré/, "et le repli doit être DIT, pas subi");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA NOUVELLE DOCTRINE CHANGE LE CHIFFRE D'UN ORDRE DE GRANDEUR.
+ *
+ * Alpha Voice mène l'appel à froid entier et ne passe la main que sur INTÉRÊT
+ * QUALIFIÉ. Un refus se traite sans personne. Le closer n'est donc plus
+ * consommé par chaque décroché, mais par chaque OUI.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("500 appels/jour avec Alpha Voice qui qualifie : UN closer suffit", () => {
+  // 30 % de décroché, 20 % d'intérêt parmi eux → 500 × 0,30 × 0,20 = 30 oui.
+  assert.equal(closersRequis(500, 30, { tauxInteretPct: 20 }), 1);
+
+  const c = capaciteAppels({ closers: 1, tauxDecrochePct: 30, tauxInteretPct: 20 });
+  assert.ok(c.appelsParJour >= 500, `attendu ≥ 500 avec un seul closer, obtenu ${c.appelsParJour}`);
+  assert.match(c.pourquoi, /20 % d'intérêt qualifié/);
+
+  // Et le facteur d'intérêt ne doit pas faire disparaître la contrainte : à
+  // 100 % d'intérêt, on retombe exactement sur l'ancien calcul.
+  assert.equal(closersRequis(500, 30, { tauxInteretPct: 100 }), 5);
 });
 
 test("la téléphonie borne quand elle est plus basse que l'équipe", () => {

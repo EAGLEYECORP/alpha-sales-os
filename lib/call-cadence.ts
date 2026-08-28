@@ -117,8 +117,30 @@ export function plafondRappels(cible: RisqueCible = {}): { max: number; plafonne
 export type CallOutcome =
   /** Personne n'a décroché (sonnerie, répondeur). */
   | "sans-reponse"
-  /** Il a décroché et parlé — la cadence s'arrête ici. */
+  /**
+   * Il a décroché et parlé, sans intérêt qualifié — la cadence s'arrête, mais
+   * AUCUN humain n'est appelé.
+   *
+   * ⚠ CE CAS RENVOYAIT `handoffToHuman: true`. NOUVELLE DOCTRINE (28/08/2026).
+   *
+   * Avant, Alpha Voice ne faisait que composer : dès qu'on décrochait, il se
+   * retirait et un closer prenait la conversation. Un « pas intéressé pour
+   * l'instant » consommait donc autant de temps humain qu'un rendez-vous
+   * obtenu — et c'est ce qui rendait le volume impossible (500 appels à 30 %
+   * de décroché = 150 conversations = cinq closers).
+   *
+   * Alpha Voice mène désormais l'appel à froid entier. Un refus ou un
+   * « rappelez-moi » se traite et se consigne sans personne.
+   */
   | "repondu"
+  /**
+   * INTÉRÊT QUALIFIÉ — il a dit oui à la suite (rendez-vous, audit).
+   *
+   * C'est le SEUL cas qui réveille un humain, et c'est tout le sens de la
+   * nouvelle doctrine : la machine dépense les appels, l'humain dépense son
+   * temps uniquement là où il y a quelque chose à closer.
+   */
+  | "interesse"
   /** Il a demandé à ne plus être appelé — arrêt définitif. */
   | "opposition"
   /** Numéro invalide / injoignable — inutile d'insister. */
@@ -193,7 +215,31 @@ export function cadenceFor(
     };
   }
 
-  // ── Il a répondu : Alpha Voice s'arrête et passe la main ──
+  /**
+   * ── INTÉRÊT QUALIFIÉ : c'est ICI, et seulement ici, qu'on réveille un humain ──
+   *
+   * Testé AVANT « répondu » : une fiche qui porte les deux (il a parlé lors
+   * d'un appel, il a dit oui lors d'un autre) doit passer la main.
+   */
+  const interested = sorted.find((a) => a.outcome === "interesse");
+  if (interested) {
+    return {
+      state: "repondu-passer-humain",
+      callNow: false,
+      nextCallAt: null,
+      recallsUsed: Math.max(0, sorted.length - 1),
+      recallsLeft: 0,
+      handoffToHuman: true,
+      reason: "Intérêt qualifié — Alpha Voice arrête, pipeline mis à jour, la main passe au closer.",
+    };
+  }
+
+  /**
+   * ── Il a parlé, sans dire oui : la cadence s'arrête, l'humain n'est PAS appelé ──
+   *
+   * ⚠ Ce cas rendait `handoffToHuman: true`. Voir la note sur `CallOutcome` :
+   * un « pas intéressé » coûtait autant de temps humain qu'un rendez-vous.
+   */
   const answered = sorted.find((a) => a.outcome === "repondu");
   if (answered) {
     return {
@@ -202,8 +248,10 @@ export function cadenceFor(
       nextCallAt: null,
       recallsUsed: Math.max(0, sorted.length - 1),
       recallsLeft: 0,
-      handoffToHuman: true,
-      reason: "Il a répondu — Alpha Voice arrête, pipeline mis à jour, la main passe au closer.",
+      handoffToHuman: false,
+      reason:
+        "Il a parlé à Alpha Voice sans donner suite — la cadence s'arrête, mais aucun humain n'est mobilisé. " +
+        "La fiche repart en réactivation.",
     };
   }
 
@@ -308,6 +356,46 @@ export function plannedRecalls(firstCallAt: string): string[] {
  * dessus. Deux définitions du même test finissent toujours par diverger, et
  * ici diverger veut dire : rappeler quelqu'un qui a déjà décroché.
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * A-T-IL DÉCROCHÉ ? — une seule réponse.
+ *
+ * ⚠ `interesse` est un SOUS-ENSEMBLE de « il a décroché » : on ne peut pas
+ * dire oui sans avoir répondu. Tout ce qui compte les décrochés doit donc
+ * accepter les deux — taux de décroché, calibration, statistiques.
+ *
+ * En ajoutant `interesse`, `lib/calibration.ts` a immédiatement perdu les
+ * rendez-vous obtenus de son dénominateur : l'axe « RDV » se calculait sur
+ * ceux qui avaient décroché, et les meilleurs venaient d'en sortir. Le taux
+ * aurait monté tout seul, sans que rien ne change sur le terrain.
+ *
+ * C'est le motif habituel du dépôt : une question posée à deux endroits qui
+ * finissent par répondre différemment. Elle se pose ici, une fois.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const aDecroche = (o: CallOutcome): boolean => o === "repondu" || o === "interesse";
+
+/**
+ * « Il a dit OUI », lu dans le résumé écrit à la main.
+ *
+ * ⚠ Testé AVANT `REPONSE_DANS_LE_RESUME`, qui matche déjà « rdv obtenu » : le
+ * même texte se lirait sinon comme un simple décroché, et l'intérêt qualifié
+ * disparaîtrait — donc plus aucun humain ne serait réveillé.
+ *
+ * ⚠⚠ « pas intéressé » ne doit PAS matcher. C'est le résultat le plus fréquent
+ * d'un appel à froid, et le confondre avec un oui enverrait un closer sur
+ * chaque refus — exactement le gaspillage que la nouvelle doctrine supprime.
+ *
+ * ⚠⚠⚠ PAS DE `\b` APRÈS UNE LETTRE ACCENTUÉE. En JavaScript, `\b` se définit
+ * sur les caractères de mot ASCII : « é » n'en est pas un, donc `intéress[ée]\b`
+ * ne matche JAMAIS « intéressé ». Ma première version portait ce `\b` et le
+ * motif était mort — le test de bout en bout l'a attrapé, pas la relecture.
+ * Dans un dépôt entièrement en français, c'est un piège qui reviendra : on
+ * borne avec `(?![a-zà-ÿ])`, qui, lui, connaît les accents.
+ */
+export const INTERET_DANS_LE_RESUME =
+  /\bRDV obtenu\b|\brendez-vous obtenu\b|(?<!pas )intéress[ée](?![a-zà-ÿ])|accord pour (?:un |l')(?:RDV|rendez-vous|audit)/i;
+
 export const REPONSE_DANS_LE_RESUME =
   /r[ée]pond|a rappel[ée]|rappelle|d[ée]croch|[ée]chang|discut|vu (?:à|a) \d|visite|rdv obtenu|accord/i;
 
