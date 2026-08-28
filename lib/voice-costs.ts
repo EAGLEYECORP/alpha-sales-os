@@ -175,6 +175,23 @@ export const COST_LINES: CostLine[] = [
   },
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA BORNE HAUTE DE TELNYX — le seul chiffre du modèle qui peut tout changer.
+ *
+ * La ligne `telnyx` retient 0,012 $/min, une HYPOTHÈSE. Le seul relevé réel
+ * (27/08/2026) dit : au plus 1,05 $ d'usage sur le mois, pour un nombre de
+ * minutes inconnu. Si ce mois-là ne comptait que 3 minutes d'essai, le tarif
+ * réel est de 0,35 $/min — soit ×29.
+ *
+ * Ce chiffre existe pour qu'aucun budget affiché dans l'app ne soit un
+ * point unique quand il est en réalité une fourchette. Il DISPARAÎTRA le jour
+ * où l'export CDR sera relevé : à ce moment-là, `telnyx.usdPerMin` devient une
+ * mesure et cette borne n'a plus de raison d'être.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const TELNYX_BORNE_HAUTE_USD_MIN = 0.35;
+
 /** Coût total d'une minute de conversation, en USD. */
 export const usdPerConversationMinute = (): number =>
   COST_LINES.reduce((s, l) => s + l.usdPerMin, 0);

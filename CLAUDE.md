@@ -237,6 +237,26 @@ arcs de retour sont branchés ; ils se protègent par
    plan humain (`cibleDepuisProspect`).
 5. **Ouvertures / clics → plan de comms** (`lib/reactivite.ts`).
 
+### LES PALIERS DE CAMPAGNE — 10 · 100 · 1 000 (`lib/paliers-campagne.ts`)
+Trois chiffres gouvernent tout le dimensionnement et **aucun n'est mesuré** :
+décroché (hyp. 30 %), intérêt qualifié parmi les décrochés (hyp. 20 % — c'est
+lui qui fait dire « un closer suffit pour 500/jour »), tarif Telnyx à la minute
+(le relevé réel autorise un facteur 29). On les mesure par paliers.
+- **Un palier BORNE, il ne décore pas.** Le plafond est un compte CUMULÉ passé
+  à `buildCampaignRun` ; les fiches en trop sont écartées en `palier-atteint`.
+  Ne jamais le confondre avec `dailyCap` (fatigue, remis à zéro chaque matin) —
+  ce dépôt a déjà payé une constante à deux sens.
+- **Deux gestes, deux endroits, et c'est voulu** : l'écran suit les paliers
+  validés dans les réglages ; le cron suit `CAMPAIGN_PALIER` (10/100/1000/aucun,
+  **absente = plafond le plus bas**). Valider dans l'app ne débride pas le cron.
+- Points `mesure` (la base répond, ils ne se cochent pas) vs `declaratif` (même
+  vocabulaire que `lib/checkpoints.ts`) — et **un point déclaratif ne s'offre
+  pas** tant que sa condition n'existe pas : cocher « j'ai entendu la phrase
+  art. 50 » sans décroché fabriquerait la preuve.
+- **Aucun palier ne se valide seul**, même tout vert. Automatique = le REFUS.
+- Le coût d'un palier vit dans `lib/paliers-campagne-cout.ts` (**serveur
+  uniquement** — `voice-costs` porte nos marges) et sort en fourchette.
+
 > ⚠ **Les trois règles qui empêchent la boucle de fabriquer de la fausse
 > science** — elles valent pour tout nouveau module de mesure :
 > · **zéro donnée → zéro chiffre.** `source: "aucune"`, `valeur: null`. Un

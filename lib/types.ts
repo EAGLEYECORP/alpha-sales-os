@@ -423,6 +423,19 @@ export interface AppSettings {
    * envoyé et le chargement rendrait un pipe vide.
    */
   pipeServeur?: boolean;
+  /**
+   * Où en est la montée en charge de la campagne (`lib/paliers-campagne.ts`).
+   *
+   * ⚠ On stocke UNIQUEMENT ce qu'aucune donnée ne peut redire : les paliers
+   * validés à la main et les points déclaratifs cochés. Tout le reste — appels
+   * composés, décrochés, intérêts, oppositions — se relit de la base à chaque
+   * affichage. Recopier une mesure ici, ce serait figer un chiffre du jour où
+   * l'écran a été ouvert, et personne ne saurait pourquoi il ne bouge plus.
+   */
+  paliersCampagne?: {
+    valides: import("./paliers-campagne").IdPalierCampagne[];
+    coches: string[];
+  };
   /** First-run choice made (demo vs real data) */
   onboarded: boolean;
   /** Tarifs du compte (white-label). Absent = modèle EAGLEYE par défaut. */

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
 import { buildCampaignRun } from "@/lib/campaign-runner";
+import { PALIERS_CAMPAGNE } from "@/lib/paliers-campagne";
 import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-tick";
 import { safeEqual } from "@/lib/access";
 
@@ -116,8 +117,38 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  /**
+   * ── LE PALIER DE CAMPAGNE, CÔTÉ SERVEUR ──
+   *
+   * Même philosophie que `CAMPAIGN_AUTOPILOT` : déployer ne suffit jamais, il
+   * faut un second geste délibéré. Le palier ne se lit PAS dans les réglages
+   * du navigateur — ils n'arrivent pas jusqu'ici, et un cron qui déduirait
+   * tout seul qu'il a le droit de monter à 1 000 appels serait précisément le
+   * bug qu'on refuse.
+   *
+   * ⚠ Absent ou illisible = palier le plus bas. Jamais « pas de plafond » :
+   * une variable mal orthographiée ne doit pas ouvrir les vannes.
+   */
+  const palierEnv = (process.env.CAMPAIGN_PALIER ?? "").trim();
+  const plafondPalier =
+    palierEnv === "aucun"
+      ? null
+      : PALIERS_CAMPAGNE.find((p) => String(p.appels) === palierEnv)?.appels ?? PALIERS_CAMPAGNE[0].appels;
+
   // ── La file, avec toutes les portes habituelles (jamais de force) ──
-  const run = buildCampaignRun(prospects, { accountId });
+  const run = buildCampaignRun(prospects, { accountId, plafondPalier });
+
+  if (run.queue.length === 0 && run.skipped.some((s) => s.reason === "palier-atteint")) {
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      palier: plafondPalier,
+      composes: run.composesTotal,
+      why:
+        `Palier de ${plafondPalier} appels atteint (${run.composesTotal} composés). L'autopilote s'arrête ici : ` +
+        `mesure ce qui est déjà sorti, valide le palier dans l'app, puis passe CAMPAIGN_PALIER au cran suivant.`,
+    });
+  }
   if (!run.windowOpen) {
     return NextResponse.json({
       ok: true,
@@ -214,6 +245,9 @@ export async function GET(req: NextRequest) {
     autopilot: armed() ? "armé" : "désarmé (simulation)",
     supabase: serviceClient() ? "configuré" : "absent — le cron ne verrait aucun prospect",
     maxParTick: MAX_CALLS_PER_TICK,
+    palier:
+      (process.env.CAMPAIGN_PALIER ?? "").trim() ||
+      `non défini — plafond le plus bas appliqué (${PALIERS_CAMPAGNE[0].appels} appels cumulés)`,
     note: "POST pour exécuter. Sans CAMPAIGN_AUTOPILOT=on, la route simule et rend ce qu'elle aurait fait.",
   });
 }

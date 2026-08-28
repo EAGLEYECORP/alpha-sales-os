@@ -10,6 +10,8 @@ import { masterRappelAll, type MasterPlan } from "@/lib/master-rappel";
 import { buildCampaignRun, skipBreakdown, SKIP_LABELS } from "@/lib/campaign-runner";
 import { CampaignRunner } from "@/components/controle/runner";
 import { PropositionsPanel } from "@/components/controle/propositions-panel";
+import { PaliersPanel } from "@/components/controle/paliers-panel";
+import { plafondPalierCampagne } from "@/lib/paliers-campagne";
 import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
 import { pipelineCoverage } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ export default function ControlePage() {
   const prospects = useAlpha((s) => s.prospects);
   const accountId = useAlpha((s) => s.settings.accountId);
   const agencyName = useAlpha((s) => s.settings.agencyName);
+  const paliersValides = useAlpha((s) => s.settings.paliersCampagne?.valides) ?? [];
 
   const [sessions, setSessions] = useState<CallSession[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -41,7 +44,17 @@ export default function ControlePage() {
     [prospects, now, accountId]
   );
   // La file d'appels : qui appeler, dans quel ordre, et qui NE PAS appeler.
-  const run = useMemo(() => buildCampaignRun(prospects, { now, accountId }), [prospects, now, accountId]);
+  /**
+   * ⚠ Le plafond de PALIER, pas le plafond quotidien. Il se compte sur tout
+   * l'historique et ne se remet jamais à zéro : c'est ce qui empêche de
+   * monter à 1 000 appels avant d'avoir mesuré sur 100. Une seule réponse à
+   * « combien a-t-on le droit d'en passer » — `plafondPalierCampagne`.
+   */
+  const plafondPalier = plafondPalierCampagne(paliersValides);
+  const run = useMemo(
+    () => buildCampaignRun(prospects, { now, accountId, plafondPalier }),
+    [prospects, now, accountId, plafondPalier]
+  );
   const breakdown = useMemo(() => skipBreakdown(run), [run]);
   // Où le pipeline est troué : le point qui bloque le plus de fiches.
   const coverage = useMemo(() => {
@@ -166,7 +179,10 @@ export default function ControlePage() {
         </section>
       )}
 
-      {/* ── 1bis. La file d'appels de la campagne ── */}
+      {/* ── 1bis. La montée en charge, AVANT la file : c'est elle qui la borne ── */}
+      <PaliersPanel />
+
+      {/* ── 1ter. La file d'appels de la campagne ── */}
       <section className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
@@ -181,6 +197,18 @@ export default function ControlePage() {
           Plafond {run.dailyCap} appels/jour · {run.alreadyToday} déjà passé(s) — au-delà, la qualité de
           conversation décroche.
         </p>
+        {/* Deux plafonds, deux raisons. Celui du jour parle de fatigue ; celui du
+            palier parle d'apprentissage et ne se remet jamais à zéro. Les
+            afficher ensemble évite de chercher pourquoi la file est vide alors
+            que le compteur du jour est à zéro. */}
+        {run.plafondPalier !== null && (
+          <p className="mt-0.5 text-[11px] text-paper-faint">
+            Palier de campagne : {run.composesTotal} / {run.plafondPalier} appels composés au total
+            {run.composesTotal >= run.plafondPalier && (
+              <strong className="text-signal-amber"> — atteint, la file est fermée tant que le palier n&apos;est pas validé.</strong>
+            )}
+          </p>
+        )}
 
         {/* Le lanceur — manuel ou auto, avec armement explicite */}
         <div className="mt-3">

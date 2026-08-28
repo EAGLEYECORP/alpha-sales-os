@@ -6,6 +6,7 @@ import { deepDive, briefForScript } from "./deep-dive";
 import { buildArgumentaire } from "./argumentaire";
 import { callAllowedNow, outboundComplianceGate, toE164, DO_NOT_CALL_TAG, type CallMode } from "./voice-script";
 import { CALL_DAILY_SAFE } from "./daily-plan";
+import { vecuAppels } from "./paliers-campagne";
 import type { EagleyeOffer } from "./offer-match";
 
 /**
@@ -54,6 +55,7 @@ export type SkipReason =
   | "numero-invalide"
   | "hors-icp"
   | "plafond-atteint"
+  | "palier-atteint"
   | "conformite";
 
 export interface CallTask {
@@ -110,6 +112,10 @@ export interface CampaignRun {
   dailyCap: number;
   /** Appels déjà passés aujourd'hui (comptés depuis la timeline). */
   alreadyToday: number;
+  /** Plafond de palier appliqué, `null` si aucun. */
+  plafondPalier: number | null;
+  /** Appels composés depuis le début, tous jours confondus. */
+  composesTotal: number;
   summary: string;
 }
 
@@ -119,6 +125,20 @@ export interface RunOptions {
   mode?: CallMode;
   /** Plafond quotidien — défaut : le seuil au-delà duquel la qualité décroche. */
   dailyCap?: number;
+  /**
+   * Plafond CUMULÉ d'appels composés imposé par le palier de campagne
+   * (`lib/paliers-campagne.ts`). Absent/`null` = pas de bornage par palier.
+   *
+   * ⚠ DEUX PLAFONDS DISTINCTS, ET NE JAMAIS LES CONFONDRE. `dailyCap` est une
+   * contrainte de FATIGUE, remise à zéro chaque matin. Celui-ci est une
+   * contrainte d'APPRENTISSAGE : on ne monte pas à 1 000 appels avant d'avoir
+   * mesuré sur 100 ce que 1 000 vont produire. Il ne se remet jamais à zéro —
+   * il se lève en validant le palier, à la main.
+   *
+   * Ce dépôt a déjà payé une constante qui voulait dire deux choses
+   * (`CALL_DAILY_SAFE`, plafond machine ET plafond humain). Deux noms.
+   */
+  plafondPalier?: number | null;
   /** Forcer hors fenêtre horaire (démo calée un samedi, ça arrive). */
   forceWindow?: boolean;
   /**
@@ -159,6 +179,20 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
   const windowOpen = window.allowed || opts.forceWindow === true;
 
   const alreadyToday = callsMadeToday(prospects, now);
+
+  /**
+   * ── LE PLAFOND DE PALIER ──
+   *
+   * Il se compte sur TOUT l'historique, pas sur la journée : « 10 appels pour
+   * vérifier que la chaîne marche » ne veut rien dire si c'est 10 par jour.
+   * Le comptage passe par `vecuAppels`, la même lecture que celle qui alimente
+   * l'écran des paliers — deux comptages du même événement finiraient par
+   * afficher deux nombres différents pour la même question.
+   */
+  const composesTotal = vecuAppels(prospects).composes;
+  const plafondPalier = opts.plafondPalier ?? null;
+  const resteAvantPalier = plafondPalier === null ? Infinity : Math.max(0, plafondPalier - composesTotal);
+
   let budget = Math.max(0, dailyCap - alreadyToday);
 
   const queue: CallTask[] = [];
@@ -259,8 +293,22 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
   // ── 2. Tri : le plus près de signer d'abord ──
   candidates.sort((a, b) => b.priority - a.priority);
 
-  // ── 3. Plafond quotidien : la qualité de conversation avant le volume ──
+  // ── 3. Plafonds : la qualité de conversation avant le volume, et la mesure
+  //       avant l'échelle. Le palier est testé EN PREMIER : c'est le plus
+  //       coûteux à franchir par erreur — un palier sauté brûle des fiches
+  //       qu'on ne récupère pas, un plafond quotidien dépassé coûte une
+  //       journée de qualité.
+  let poseAujourdhui = 0;
   for (const c of candidates) {
+    if (poseAujourdhui >= resteAvantPalier) {
+      push(
+        c.p,
+        "palier-atteint",
+        `Palier de ${plafondPalier} appels atteint (${composesTotal} composés). On mesure ce qui est déjà sorti ` +
+          `avant de monter : un palier sauté brûle des fiches qu'aucun rappel ne récupère.`
+      );
+      continue;
+    }
     if (budget <= 0) {
       push(c.p, "plafond-atteint", `Plafond de ${dailyCap} appels/jour atteint — au-delà, la qualité de conversation décroche.`);
       continue;
@@ -281,6 +329,7 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
       mustCapture: c.mustCapture,
     });
     budget -= 1;
+    poseAujourdhui += 1;
   }
 
   const summary = !windowOpen
@@ -290,7 +339,7 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
       : `${queue.length} appel(s) à passer${alreadyToday > 0 ? ` (${alreadyToday} déjà passés aujourd'hui)` : ""}. ` +
         `${skipped.length} écartée(s).`;
 
-  return { queue, skipped, windowOpen, windowWhy: window.why, dailyCap, alreadyToday, summary };
+  return { queue, skipped, windowOpen, windowWhy: window.why, dailyCap, alreadyToday, plafondPalier, composesTotal, summary };
 }
 
 /** Répartition des écarts par raison — pour comprendre ce qui bloque le volume. */
@@ -309,5 +358,6 @@ export const SKIP_LABELS: Record<SkipReason, string> = {
   "numero-invalide": "Numéro absent ou inexploitable",
   "hors-icp": "Fiche trop pauvre — à compléter",
   "plafond-atteint": "Plafond quotidien atteint",
+  "palier-atteint": "Palier de campagne atteint — mesurer avant de monter",
   conformite: "Bloqué par la conformité",
 };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { computeCosts, defaultVolume, FIXED_COSTS, FREE_TIERS, FREE_VERDICT, type CallVolumeInput } from "@/lib/voice-costs";
 import { outboundPrice } from "@/lib/bricks";
+import { budgetPaliers } from "@/lib/paliers-campagne-cout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,5 +65,16 @@ export async function POST(req: Request) {
     // d'obliger le panneau à réimporter le module.
     freeTiers: FREE_TIERS,
     freeVerdict: FREE_VERDICT,
+    /**
+     * Ce qu'il faut créditer chez les fournisseurs pour tenir chaque palier
+     * (`lib/paliers-campagne.ts`). Une FOURCHETTE, jamais un point : le tarif
+     * Telnyx n'est pas mesuré et l'écart possible va de ×1,5 à ×29. Afficher
+     * un montant unique ferait recharger le mauvais, et la campagne
+     * s'arrêterait au milieu.
+     *
+     * Comme le reste de cette route, seul le RÉSULTAT en euros voyage — les
+     * tarifs unitaires qui le produisent restent côté serveur.
+     */
+    paliers: budgetPaliers(),
   });
 }
