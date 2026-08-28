@@ -268,6 +268,20 @@ arcs de retour sont branchés ; ils se protègent par
    d'afficher les fiches, elles disparaissent en fermant l'onglet. Une fiche
    terrain ≈ 1,3 Ko → 1 000 numéros ≈ la moitié du quota de 5 Mo.
 
+> **La sortie de la 4, quand le volume la dépasse** (`lib/hydratation.ts`) :
+> au-delà de ~1 200 fiches aucun élagage ne suffit, et le pipe doit vivre sur
+> le serveur — réglage **opt-in** `pipeServeur`, les fiches ne sont plus
+> persistées localement (`partialize`) et se chargent au démarrage.
+> ⚠ **L'invariant unique qui rend ça sûr : on ne pousse JAMAIS depuis un état
+> qu'on n'a pas chargé** (`peutSynchroniser`). Un navigateur qui a raté son
+> chargement a une liste vide, et la synchro sortante calcule des
+> suppressions. L'état d'hydratation **ne se persiste pas** : le relire du
+> disque affirmerait « chargé » sur une liste vide, et rouvrir l'onglet
+> effacerait le pipe. Deuxième filet, distinct et voulu : `SEUIL_EFFACEMENT`.
+> Corollaire : le moteur de synchro se monte dans la **coquille**, jamais dans
+> un écran — sans persistance locale, une synchro qui ne tourne que sur
+> `/settings` perd la journée de qui n'y va pas.
+
 > ⚠ Corollaire de la 4 : **ne jamais recopier de la doctrine dans une fiche.**
 > Les notes d'import portaient l'explication de chaque signal — mille copies du
 > même paragraphe, 47 % du poids — pendant que la phrase du client, elle, était
