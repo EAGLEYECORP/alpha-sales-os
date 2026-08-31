@@ -192,7 +192,7 @@ test("⚠ deep-dive — le RÔLE et le DOSSIER ne peuvent plus nommer deux offre
 
     for (const autre of (Object.keys(OFFRES) as EagleyeOffer[]).filter((x) => x !== dive.offer)) {
       assert.ok(
-        !script.includes(OFFRES[autre].raisonAppel),
+        !script.includes(OFFRES[autre].benefice),
         `${quoi} : l'angle de ${autre} traîne encore dans un script qui vend ${dive.offer}`
       );
     }

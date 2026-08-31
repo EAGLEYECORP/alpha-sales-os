@@ -38,13 +38,13 @@ const IDS = Object.keys(OFFRES) as EagleyeOffer[];
 
 const base = { agentName: "ALPHA", onBehalfOf: "EAGLEYE CORP", company: "Carrosserie Test" };
 
-test("⚠ le script sortant dit la raison d'appel DE SON OFFRE, et d'aucune autre", () => {
+test("⚠ le script sortant dit le bénéfice DE SON OFFRE, et d'aucune autre", () => {
   for (const id of IDS) {
     const script = buildVoiceScript({ ...base, mode: "prospection-b2b", offre: id });
 
     assert.ok(
-      script.includes(OFFRES[id].raisonAppel),
-      `${id} : la raison d'appel de l'offre doit être dans le script`
+      script.includes(OFFRES[id].benefice),
+      `${id} : le bénéfice de l'offre doit être dans le script`
     );
     assert.ok(script.includes(OFFRES[id].question), `${id} : la question d'ouverture doit y être`);
     assert.ok(script.includes(OFFRES[id].label), `${id} : l'offre représentée doit être nommée`);
@@ -53,7 +53,7 @@ test("⚠ le script sortant dit la raison d'appel DE SON OFFRE, et d'aucune autr
     // aurait attrapé le défaut d'origine.
     for (const autre of IDS.filter((x) => x !== id)) {
       assert.ok(
-        !script.includes(OFFRES[autre].raisonAppel),
+        !script.includes(OFFRES[autre].benefice),
         `${id} : le script parle aussi de ${autre} — le prospect entendrait deux offres`
       );
       assert.ok(!script.includes(OFFRES[autre].label), `${id} : le libellé de ${autre} n'a rien à y faire`);
@@ -70,7 +70,7 @@ test("sans offre résolue, l'agent ne présente RIEN — il ne se rabat pas sur 
    */
   const script = buildVoiceScript({ ...base, mode: "prospection-b2b", offre: null });
   for (const id of IDS) {
-    assert.ok(!script.includes(OFFRES[id].raisonAppel), `sans offre, ${id} ne doit pas être pitchée`);
+    assert.ok(!script.includes(OFFRES[id].benefice), `sans offre, ${id} ne doit pas être pitchée`);
   }
   assert.match(script, /AUCUNE offre/, "le script doit DIRE qu'il ne présente rien");
   assert.match(script, /qualifie/i, "et ce qu'il fait à la place");
@@ -95,7 +95,7 @@ test("aucune offre ne fait dire un prix au téléphone", () => {
   // Règle dure de la maison : jamais de prix avant la démo. Les textes
   // d'offre sont écrits pour être PRONONCÉS — un chiffre s'y glisse vite.
   for (const id of IDS) {
-    for (const champ of ["raisonAppel", "question"] as const) {
+    for (const champ of ["benefice", "question"] as const) {
       assert.doesNotMatch(
         OFFRES[id][champ],
         /\d+\s*(€|euros?|k€)/i,

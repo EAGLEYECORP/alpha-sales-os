@@ -56,20 +56,51 @@ export interface OfferMatch {
  * « Offre pertinente : Visibilité / Growth » pendant que le rôle disait
  * Callflow. Deux offres contradictoires dans le même prompt.
  *
- * `raisonAppel` est la phrase que l'agent dit APRÈS la divulgation, et
- * `question` est la seule question qu'il pose avant d'écouter. Elles sont
+ * `benefice` est ce que l'agent annonce APRÈS la divulgation, et `question`
+ * est la seule question — FERMÉE — qu'il pose avant de se taire. Elles sont
  * écrites pour être PRONONCÉES : courtes, sans jargon, sans chiffre — la
  * règle « jamais de prix au téléphone » ne se négocie pas.
+ *
+ * ⚠ `raisonAppel` a été SUPPRIMÉ le 28/08/2026, pas mis de côté. Il portait
+ * l'ouverture en diagnostic (« comprendre comment vous suivez vos demandes »)
+ * que `benefice` remplace. Le garder « au cas où » aurait laissé un champ que
+ * plus rien ne lit, avec un commentaire affirmant qu'il sert — et ce dépôt
+ * paie déjà assez cher les mécanismes câblés nulle part.
  * ─────────────────────────────────────────────────────────────────────
  */
 export interface OffreCommerciale {
   label: string;
   /** Accroche écrite (fiche, email, deck). */
   pitch: string;
-  /** Pourquoi on appelle, en UNE phrase dite à voix haute. */
-  raisonAppel: string;
-  /** La seule question posée avant d'écouter. */
+  /**
+   * ── LE BÉNÉFICE, ET RIEN D'AUTRE (doctrine du 28/08/2026) ──
+   *
+   * ⚠ CE QUI A CHANGÉ, ET POURQUOI. L'appel ouvrait en DIAGNOSTIC :
+   * « je voudrais comprendre comment vous suivez vos demandes aujourd'hui ».
+   * C'est une bonne question de découverte — dans un rendez-vous. À froid,
+   * elle demande au prospect de faire un effort d'introspection sur son
+   * propre désordre, avant même de savoir ce qu'il a à y gagner. Il n'a
+   * aucune raison de le fournir à un inconnu qui vient de se présenter comme
+   * une IA.
+   *
+   * On dit donc d'abord le RÉSULTAT qu'il veut, et on lui demande s'il le
+   * veut. C'est une question FERMÉE : oui ou non. Un oui ouvre le rendez-vous,
+   * un non raccroche. Aucun des deux ne demande à l'agent d'improviser — et
+   * c'est exactement la contrainte que s'impose une IA qui démarche.
+   *
+   * Le bénéfice se dit dans les mots du client, jamais dans les nôtres :
+   * `auditBenefice` refuse le jargon (voir plus bas). « Ton calendrier se
+   * remplit tout seul » est un bénéfice ; « automatisation de la prise de
+   * rendez-vous » est une fiche produit.
+   */
+  benefice: string;
+  /** La question FERMÉE qui suit le bénéfice. Oui → RDV. Non → on raccroche. */
   question: string;
+  /**
+   * Ce qu'on répond au OUI, avant de proposer le créneau. Une phrase.
+   * Jamais un COMMENT : le comment est le sujet du rendez-vous.
+   */
+  miseEnPlace: string;
   /**
    * Ce qui SE PERD sur ce canal — la question qui fait chiffrer la fuite.
    * Elle suit toujours l'ouverture : d'abord ce qui se passe, ensuite combien.
@@ -79,22 +110,87 @@ export interface OffreCommerciale {
   consequence: string;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE JARGON QUI TUE UN APPEL À FROID.
+ *
+ * Un bénéfice se dit dans les mots du client. Dès qu'on prononce un mot de
+ * NOTRE métier, on demande au prospect de traduire — et un artisan qui doit
+ * traduire raccroche. « Automatisation de la relance » n'est pas un bénéfice,
+ * c'est la description de notre travail.
+ *
+ * ⚠ CE QUI SE VÉRIFIE ICI, ET CE QUI NE SE VÉRIFIE PAS. Cette garde porte sur
+ * les CHAMPS du catalogue (`benefice`, `question`), jamais sur le script
+ * assemblé. La raison est dure : l'article 50 EXIGE que la première phrase
+ * dise « intelligence artificielle ». Passer le script entier ici ferait
+ * refuser tout appel conforme — la garde du bénéfice et l'obligation légale
+ * se contrediraient, et c'est la légale qui perdrait, parce que c'est celle
+ * qu'on serait tenté d'assouplir.
+ *
+ * On interdit le NOM abstrait, pas l'effet. « Votre agenda se remplit tout
+ * seul » est autorisé et recherché ; « automatisation » ne l'est pas.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const JARGON_INTERDIT: { mot: string; pattern: RegExp; pourquoi: string }[] = [
+  // ⚠ Pas de `\b` en fin de motif après une lettre accentuée : « é » n'est pas
+  // un caractère de mot ASCII et la limite ne matche jamais. Ce dépôt a déjà
+  // payé ce bug une fois (`intéressé\b`, mort-né).
+  { mot: "IA / intelligence artificielle", pattern: /\b(?:i\.?a\.?|intelligence artificielle)\b/i, pourquoi: "La divulgation légale l'a déjà dit une fois. Le répéter dans l'argumentaire vend la technique, pas le résultat." },
+  { mot: "agent vocal", pattern: /agents? vocal/i, pourquoi: "Le client n'achète pas un agent, il achète un agenda plein." },
+  { mot: "automatisation", pattern: /automatisation|automatis[ée]/i, pourquoi: "C'est le nom de NOTRE travail. Le sien, c'est « je n'ai plus à y penser »." },
+  { mot: "workflow / process", pattern: /workflow|process(?:us)?\b/i, pourquoi: "Vocabulaire de consultant. Il fait reculer un artisan." },
+  { mot: "CRM / pipeline", pattern: /\bcrm\b|\bpipelines?\b/i, pourquoi: "Un outil, pas un bénéfice. Il n'a jamais voulu de CRM." },
+  { mot: "solution / plateforme / SaaS", pattern: /\bsolutions?\b|plateformes?|\bsaas\b/i, pourquoi: "Mots vides. Ils ne décrivent aucun résultat et sonnent comme tous les autres appels de la journée." },
+  { mot: "intégration / API", pattern: /int[ée]gration|\bapi\b/i, pourquoi: "Le comment. Il est le sujet du rendez-vous, jamais de l'appel." },
+  { mot: "digitalisation / transformation", pattern: /digitalisation|transformation digitale/i, pourquoi: "Le mot que tout le monde lui a déjà servi. Il ne veut rien dire pour lui." },
+  { mot: "optimiser / booster", pattern: /optimis|boost/i, pourquoi: "Verbes de brochure. Ils promettent « mieux » sans dire quoi." },
+  { mot: "innovant / révolutionnaire", pattern: /innovant|r[ée]volutionnaire|disrupti/i, pourquoi: "Invérifiable, et zéro vente à ce jour ne permet de l'affirmer." },
+];
+
+export interface VerdictBenefice {
+  ok: boolean;
+  /** Les mots trouvés, avec la raison de leur interdiction. */
+  trouves: { mot: string; pourquoi: string }[];
+}
+
+/**
+ * Le texte est-il un BÉNÉFICE, ou une fiche produit ?
+ *
+ * Rend le verdict et les mots fautifs. Pur : aucune correction automatique —
+ * réécrire à la place de l'opérateur produirait une phrase que personne
+ * n'assume, et c'est lui qui la fera prononcer à de vraies personnes.
+ */
+export function auditBenefice(texte: string): VerdictBenefice {
+  const trouves = JARGON_INTERDIT.filter((j) => j.pattern.test(texte)).map((j) => ({
+    mot: j.mot,
+    pourquoi: j.pourquoi,
+  }));
+  return { ok: trouves.length === 0, trouves };
+}
+
 export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
   "alpha-sales-os": {
     label: "Alpha Sales OS — l'OS de vente intelligent",
     pitch: "« Vous avez des leads. Le vrai enjeu n'est pas d'en avoir plus — c'est de n'en perdre aucun. »",
-    raisonAppel:
-      "comprendre comment vous suivez vos demandes aujourd'hui, parce que la plupart des affaires se perdent entre le premier contact et la relance, pas au moment de vendre",
-    question: "Quand quelqu'un vous contacte aujourd'hui, qu'est-ce qui se passe ensuite, concrètement ?",
+    benefice:
+      "vous ne perdez plus une seule demande : chaque personne qui vous contacte est suivie, relancée et " +
+      "recontactée au bon moment, sans que vous ayez à y penser",
+    question:
+      "Vous aimeriez ne plus jamais perdre une demande parce que personne n'a eu le temps de la relancer ?",
+    miseEnPlace: "C'est exactement ce qu'on met en place.",
     perte: "Sur dix personnes qui vous contactent, combien vont jusqu'au devis ?",
     consequence: "Et celles qui s'arrêtent en route — vous savez pourquoi, ou ça se perd sans qu'on le sache ?",
   },
   callflow: {
     label: "ScintIA Callflow — l'accueil & relance IA au téléphone",
     pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
-    raisonAppel:
-      "comprendre ce qui se passe chez vous quand le téléphone sonne et que personne ne peut décrocher",
-    question: "Dans une semaine normale, il vous arrive de ne pas pouvoir répondre ? À peu près combien de fois ?",
+    benefice:
+      "votre agenda se remplit tout seul pendant que vous vous occupez de votre métier et de vos clients : " +
+      "on décroche à votre place, on note ce qu'il faut, et vous ne rappelez que les gens qui comptent",
+    question:
+      "Vous aimeriez que votre agenda se remplisse tout seul pendant que vous vous concentrez sur votre " +
+      "métier et vos clients ?",
+    miseEnPlace: "C'est exactement ce qu'on met en place.",
     // Ces deux-là existaient déjà, mot pour mot, dans `buildArgumentaire` :
     // elles sont remontées ici pour que les trois offres se lisent au même
     // endroit — rien n'a été réécrit.
@@ -104,9 +200,13 @@ export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
   "visibilite-growth": {
     label: "Visibilité / Growth — offre personnalisée",
     pitch: "« On vous rend visible là où vos clients cherchent — puis on transforme ce trafic. »",
-    raisonAppel:
-      "comprendre comment vos clients vous trouvent aujourd'hui, parce que de l'extérieur on vous voit assez peu",
-    question: "Vos nouveaux clients, ils viennent d'où en ce moment — bouche-à-oreille, recherche, autre chose ?",
+    benefice:
+      "les gens qui cherchent votre métier près de chez vous tombent sur vous, pas sur le concurrent d'à côté, " +
+      "et vous arrêtez de dépendre du bouche-à-oreille",
+    question:
+      "Vous aimeriez que les gens qui cherchent votre métier dans le secteur tombent sur vous plutôt que sur " +
+      "le concurrent ?",
+    miseEnPlace: "C'est exactement ce qu'on met en place.",
     perte: "Quelqu'un qui cherche votre métier dans le secteur, sans vous connaître : il vous trouve ?",
     consequence: "Et ceux qui ne vous trouvent pas — ils prennent qui, à votre avis ?",
   },

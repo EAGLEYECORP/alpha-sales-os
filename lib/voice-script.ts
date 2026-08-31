@@ -286,7 +286,11 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
      * erreurs qui ne se rattrape pas au deuxième appel.
      */
     const accroche = o
-      ? `Après la divulgation, tu dis en UNE phrase pourquoi tu appelles : ${o.raisonAppel}. Puis tu poses cette seule question, et tu écoutes : « ${o.question} »`
+      ? `Après la divulgation, tu annonces le RÉSULTAT, jamais la méthode : ${o.benefice}. ` +
+        `Puis tu poses cette seule question fermée, et tu te TAIS : « ${o.question} » ` +
+        `S'il dit oui : « ${o.miseEnPlace} » puis tu proposes un rendez-vous court avec un consultant, et tu prends le créneau. ` +
+        `Tu n'expliques JAMAIS comment ça marche, même s'il le demande : tu réponds que c'est précisément le sujet du rendez-vous. ` +
+        `Tu ne prononces aucun mot technique — ni « intelligence artificielle » au-delà de la phrase d'ouverture obligatoire, ni « automatisation », ni « solution », ni « plateforme ».`
       : `Après la divulgation, tu dis en UNE phrase que tu appelles pour COMPRENDRE comment ils travaillent, sans rien leur proposer aujourd'hui. Tu ne présentes AUCUNE offre et tu n'en inventes pas : tu qualifies, puis tu proposes de faire le point avec un humain.`;
 
     corps.push(
@@ -386,6 +390,22 @@ export const EXIGENCES_APPEL_FROID = [
     label: "Le OUI passe la main à un humain",
     pattern: /si c'est OUI/i,
     pourquoi: "C'est le seul cas qui vaut le temps d'un closer. Sans la règle, l'agent continue à parler.",
+  },
+  {
+    /**
+     * ⚠ LE COMMENT NE SE DIT PAS AU TÉLÉPHONE (doctrine du 28/08/2026).
+     *
+     * Un agent qui explique comment ça marche fait deux dégâts en une phrase :
+     * il donne au prospect de quoi décider tout seul que « ce n'est pas pour
+     * moi », et il transforme le rendez-vous — le seul objectif — en question
+     * déjà répondue. On vend le RÉSULTAT ; le mécanisme est le contenu du
+     * rendez-vous, c'est-à-dire sa raison d'exister.
+     */
+    label: "Aucune explication technique — le comment est le sujet du rendez-vous",
+    pattern: /n'expliques JAMAIS comment/i,
+    pourquoi:
+      "Expliquer le mécanisme à froid donne au prospect de quoi refuser seul, et vide le rendez-vous de son " +
+      "contenu. Le résultat se dit, la méthode se garde.",
   },
 ] as const;
 

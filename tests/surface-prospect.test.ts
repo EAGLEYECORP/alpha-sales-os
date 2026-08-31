@@ -144,7 +144,7 @@ test("⚠ aucune surface ne parle d'une offre qu'on ne vend pas à CE prospect",
 
     for (const { nom, texte } of surfaces(p)) {
       for (const a of autres) {
-        for (const champ of ["label", "raisonAppel", "question", "perte", "consequence"] as const) {
+        for (const champ of ["label", "benefice", "question", "perte", "consequence"] as const) {
           if (texte.includes(OFFRES[a][champ])) {
             fautes.push(`${quoi} (${offre}) · ${nom} → contient ${a}.${champ}`);
           }
@@ -206,7 +206,7 @@ test("un compte mono-offre ne laisse passer aucune autre offre, sur aucune surfa
    */
   const invisible = CAS[1].p;
   for (const { nom, texte } of surfaces(invisible, "scintia")) {
-    for (const champ of ["label", "raisonAppel", "question"] as const) {
+    for (const champ of ["label", "benefice", "question"] as const) {
       assert.ok(
         !texte.includes(OFFRES["visibilite-growth"][champ]),
         `${nom} : une offre hors périmètre ScintIA a fuité (${champ})`
