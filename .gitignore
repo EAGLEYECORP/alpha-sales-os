@@ -42,3 +42,7 @@ yarn-error.log*
 __pycache__/
 *.pyc
 voice/.venv/
+
+# Captures produit (motion design) — matière de travail, pas du code.
+# 19 Mo de PNG regénérables par un script : rien à faire dans le dépôt.
+.captures/
