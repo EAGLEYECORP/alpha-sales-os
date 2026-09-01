@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Clock, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Clock, ShieldCheck } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { ACCOUNTS } from "@/lib/accounts";
 import {
@@ -51,6 +51,18 @@ export function ValidationPartenairePanel() {
   const [textes, setTextes] = useState<Record<string, string> | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [qui, setQui] = useState("");
+  /**
+   * ⚠ LES TEXTES SONT REPLIÉS PAR DÉFAUT — règle d'écran n°3 du dépôt.
+   *
+   * Constaté à l'écran : 20 textes déroulés en entier font une page de 10 800
+   * pixels. On ne lit pas ça, on scrolle jusqu'en bas et on clique. Un écran
+   * qui décourage la lecture transforme la validation en formalité, ce qui est
+   * précisément ce qu'il devait empêcher.
+   *
+   * Ce qui est replié reste COMPTÉ : le bandeau du haut dit toujours combien
+   * de textes bloquent.
+   */
+  const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
   const [canal, setCanal] = useState<CanalValidation>("visio");
 
   /**
@@ -239,14 +251,28 @@ export function ValidationPartenairePanel() {
                   <p className="mt-1 text-[11.5px] leading-relaxed text-paper-faint">{verdict.pourquoi}</p>
 
                   {/* Le texte exact, tel qu'il partira. C'est CE bloc qu'on leur fait lire. */}
-                  <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded border border-ink-700 bg-ink-950 px-3 py-2 font-mono text-[11px] leading-relaxed text-paper-dim">
-                    {texte || "(texte indisponible)"}
-                  </pre>
+                  <button
+                    onClick={() => setOuverts((o) => ({ ...o, [cible.id]: !o[cible.id] }))}
+                    className="mt-2 flex items-center gap-1.5 text-[11.5px] text-paper-faint hover:text-paper"
+                  >
+                    {ouverts[cible.id] ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                    {ouverts[cible.id] ? "Replier le texte" : `Lire le texte (${texte.length} caractères)`}
+                  </button>
+                  {ouverts[cible.id] && (
+                    <pre className="mt-1.5 max-h-72 overflow-auto whitespace-pre-wrap rounded border border-ink-700 bg-ink-950 px-3 py-2 font-mono text-[11px] leading-relaxed text-paper-dim">
+                      {texte || "(texte indisponible)"}
+                    </pre>
+                  )}
 
                   {verdict.etat !== "validee" && (
                     <button
                       className="btn-bronze mt-2 px-3 py-1.5 text-[12px]"
-                      disabled={!qui.trim() || !texte}
+                      disabled={!qui.trim() || !texte || !ouverts[cible.id]}
+                      title={
+                        !ouverts[cible.id]
+                          ? "Ouvre le texte d'abord : on ne valide pas ce qu'on n'a pas lu"
+                          : undefined
+                      }
                       onClick={() => valider(cible.id)}
                     >
                       {verdict.etat === "perimee" ? "Revalider cette version" : "Enregistrer leur validation"}

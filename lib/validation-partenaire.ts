@@ -241,7 +241,9 @@ export function etatValidation(
   if (!v) {
     return {
       etat: "jamais",
-      pourquoi: `Jamais soumis à ${nom}. Sur leur appel, c'est leur marque qui parle — rien ne part avant qu'ils aient lu ce texte.`,
+      // ⚠ Formulation valable pour l'APPEL comme pour L'ÉCRIT : ce module sert
+      // les deux, et « sur leur appel » s'affichait sur des emails.
+      pourquoi: `Jamais soumis à ${nom}. C'est leur marque que le prospect voit — rien ne part avant qu'ils aient lu ce texte.`,
     };
   }
 
