@@ -122,6 +122,10 @@ export function SendBar({
           prospectId: prospect.id,
           attachments,
           force,
+          // Le compte au nom duquel on écrit. Un message saisi ici n'est pas
+          // soumis à validation — celui qui l'écrit l'assume — mais la route
+          // doit savoir de quelle marque il s'agit.
+          accountId: settings.accountId ?? "eagleye",
         }),
       });
       const data = await res.json();

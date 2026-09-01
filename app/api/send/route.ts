@@ -157,53 +157,51 @@ export async function POST(request: NextRequest) {
    * marque qui n'est pas la nôtre doit avoir été relu par elle, et l'accord
    * porte sur le TEXTE EXACT — il tombe dès qu'un caractère bouge.
    *
-   * ⚠ CE QUI EST CONTRÔLÉ, ET CE QUI NE L'EST PAS. La porte vise ce qui part
-   * SANS QUE PERSONNE RELISE : un gabarit (`cadreId`) ou une campagne
-   * (`campaignId`). Un message écrit à la main dans la barre d'envoi n'est pas
-   * bloqué — l'humain qui l'écrit l'assume, et exiger une validation pour
-   * répondre à un prospect rendrait le contrôle insupportable, donc contourné.
+   * ⚠ CE QUE CETTE PORTE COUVRE, ET CE QU'ELLE NE COUVRE PAS — dit
+   * exactement, parce qu'une garde dont on surestime la portée est pire
+   * qu'une garde absente.
    *
-   * Une campagne SANS cadre déclaré est refusée : on ne peut pas vérifier ce
-   * qui part en masse, et « on ne peut pas vérifier » ne vaut pas « c'est bon ».
+   * Elle ne vérifie QUE les gabarits de la bibliothèque (`cadreId`), parce que
+   * ce sont les seuls textes que le SERVEUR connaît : ils vivent dans
+   * `lib/templates.ts`, partagé. Il recalcule l'empreinte lui-même, donc le
+   * client ne peut pas mentir sur le contenu.
+   *
+   * Elle ne couvre PAS les campagnes de l'opérateur ni la newsletter : leurs
+   * textes vivent dans le navigateur (`campaign.steps[].body`), le serveur ne
+   * les a jamais vus et ne peut rien recalculer. Une première version refusait
+   * tout envoi portant un `campaignId` sans cadre — ça bloquait l'envoi de
+   * RECETTE (un test à soi-même) et la newsletter, deux usages légitimes, sans
+   * protéger quoi que ce soit de plus. Le garde-fou des campagnes est côté
+   * écran (`campaign-review`), et il est plus faible : c'est écrit là-bas.
+   *
+   * Un message écrit à la main n'est pas bloqué non plus — l'humain qui
+   * l'écrit l'assume, et exiger une validation pour répondre à un prospect
+   * rendrait le contrôle insupportable, donc contourné.
    *
    * ⚠⚠ Comme pour l'appel, ça ne résiste pas à une requête qui forgerait
    * l'empreinte. Assumé : le modèle de menace est notre propre oubli, pas un
    * adversaire — voir `lib/validation-partenaire.ts`.
    * ─────────────────────────────────────────────────────────────────────
    */
-  if (estPartenaire(body.accountId ?? "")) {
+  if (estPartenaire(body.accountId ?? "") && body.cadreId) {
     const marque = getAccount(body.accountId).name;
-    const enMasse = Boolean(body.campaignId) || Boolean(body.cadreId);
-
-    if (enMasse) {
-      const cadre = body.cadreId ? cadreParId(body.cadreId) : undefined;
-      if (!cadre) {
-        return NextResponse.json(
-          {
-            error: "Gabarit non identifié — rien ne part au nom d'un partenaire.",
-            why:
-              `Cet envoi part au nom de ${marque} sans dire de quel gabarit il vient. ` +
-              `Ce qui part en masse doit pouvoir être rapproché d'un texte qu'ils ont relu.`,
-            quoiFaire: "Envoyer depuis un modèle de la bibliothèque, ou écrire le message à la main.",
-          },
-          { status: 422 }
-        );
-      }
-      const v = body.validationPartenaire;
-      if (!v || v.empreinte !== empreinte(cadre.body)) {
-        return NextResponse.json(
-          {
-            error: "Texte non validé par le partenaire — rien ne part.",
-            why:
-              `Vous écrivez au nom de ${marque}. ` +
-              (v
+    const cadre = cadreParId(body.cadreId);
+    const v = body.validationPartenaire;
+    if (!cadre || !v || v.empreinte !== empreinte(cadre.body)) {
+      return NextResponse.json(
+        {
+          error: "Texte non validé par le partenaire — rien ne part.",
+          why:
+            `Vous écrivez au nom de ${marque}. ` +
+            (!cadre
+              ? "Le gabarit annoncé est inconnu de la bibliothèque."
+              : v
                 ? "Ce gabarit a changé depuis leur validation : leur accord ne couvre pas cette version."
                 : "Ce gabarit ne leur a jamais été soumis."),
-            quoiFaire: "Ouvrir Réglages → Validation partenaire, faire relire le texte, puis enregistrer qui a validé.",
-          },
-          { status: 422 }
-        );
-      }
+          quoiFaire: "Ouvrir Réglages → Validation partenaire, faire relire le texte, puis enregistrer qui a validé.",
+        },
+        { status: 422 }
+      );
     }
   }
 

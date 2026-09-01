@@ -123,6 +123,39 @@ Les scripts de format `appel` de la bibliothèque en sont exclus : ils sont lus
 par un humain qui décroche lui-même. C'est la **trame Alpha Voice** qui est
 validée pour la voix, pas ces fiches-là.
 
+### Ce que la porte serveur couvre — et ce qu'elle ne couvre pas
+
+Dit exactement, parce qu'une garde dont on surestime la portée est pire qu'une
+garde absente.
+
+| Chemin | Gardé par | Force |
+|---|---|---|
+| Appel Alpha Voice | `/api/voice/call` → **422** | Le serveur recalcule l'empreinte de la trame. Le client ne peut pas mentir sur le contenu. |
+| Gabarit de la bibliothèque | `/api/send` → **422** | Idem : `lib/templates.ts` est partagé, le serveur connaît le texte. |
+| **Campagne de l'opérateur** | Écran `campaign-review` | **Plus faible.** Les textes vivent dans le navigateur ; le serveur ne les a jamais vus et ne peut rien revérifier. |
+| Message écrit à la main | rien | Volontaire : celui qui l'écrit l'assume. |
+| Envoi de recette (test à soi-même) | rien | Volontaire : ce n'est pas un envoi commercial. |
+
+> ⚠ Une première version refusait tout envoi portant un `campaignId` sans
+> gabarit déclaré. Ça bloquait l'**envoi de recette** et la **newsletter** —
+> deux usages légitimes — sans rien protéger de plus. Corrigé : la porte
+> serveur ne garde que ce que le serveur peut vérifier.
+
+### Les campagnes : c'est là que le volume part
+
+Les cadres de la bibliothèque servent au **copier-coller** : l'opérateur les
+recopie dans sa campagne, puis les modifie. Faire valider le modèle sans
+valider l'étape qui en descend laisserait partir un texte que personne n'a
+relu — celui-là même qui est envoyé mille fois.
+
+Chaque **étape de campagne** est donc une cible de validation
+(`campagne:<id>:<étape>`), sur **sujet + corps** : changer l'objet d'un email
+change ce que le prospect voit en premier.
+
+L'écran de relecture refuse de lancer et **nomme les étapes** qui bloquent —
+« campagne bloquée » sans dire laquelle oblige à tout rouvrir, et on finit par
+contourner.
+
 ### Comment on s'en sert, en face d'eux
 
 **Réglages → Validation partenaire.** On choisit le compte (ScintIA, Nuwacom),

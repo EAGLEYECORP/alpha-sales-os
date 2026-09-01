@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { campagnePeutPartir } from "@/lib/validation-partenaire";
 import type { Campaign, CampaignDraft, CampaignStepKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
@@ -51,11 +52,17 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
     addEvent,
     logActivity,
     upsertCampaign,
+    settings,
   } = useAlpha();
+
+  const accountId = settings.accountId ?? "eagleye";
+  const validations = settings.validationsPartenaire ?? [];
 
   const drafts = allDrafts.filter((d) => d.campaignId === campaign.id);
   const prepared = useRef(false);
   const [sending, setSending] = useState(false);
+  /** Les étapes qui empêchent la campagne de partir, avec leur raison. */
+  const [blocage, setBlocage] = useState<{ label: string; pourquoi: string }[]>([]);
   const [previews, setPreviews] = useState<Record<string, Preview>>({});
   const [openPreview, setOpenPreview] = useState<Record<string, boolean>>({});
   const [copiedHtml, setCopiedHtml] = useState<string | null>(null);
@@ -155,6 +162,20 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
     pending.filter((d) => d.to).forEach((d) => setDraftStatus(d.id, "approved"));
 
   const sendApproved = async () => {
+    /**
+     * ⚠ CE QUI PART EN MASSE AU NOM D'UN PARTENAIRE DOIT AVOIR ÉTÉ RELU PAR LUI.
+     *
+     * Garde-fou d'ÉCRAN, et il faut le savoir : les textes de campagne vivent
+     * dans le navigateur, le serveur ne les a jamais vus et ne peut rien
+     * revérifier. C'est plus faible qu'un 422 — mais c'est le seul endroit où
+     * la question peut se poser, et ne rien poser du tout serait pire.
+     */
+    const verdict = campagnePeutPartir(campaign, accountId, validations);
+    if (!verdict.ok) {
+      setBlocage(verdict.bloquantes);
+      return;
+    }
+    setBlocage([]);
     setSending(true);
     let ok = 0;
     for (const d of sendableEmails) {
@@ -162,7 +183,17 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
         const res = await fetch("/api/send", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ channel: "email", to: d.to, subject: d.subject, body: d.body, prospectId: d.prospectId, campaignId: campaign.id }),
+          body: JSON.stringify({
+            channel: "email",
+            to: d.to,
+            subject: d.subject,
+            body: d.body,
+            prospectId: d.prospectId,
+            campaignId: campaign.id,
+            // Le compte au nom duquel on écrit : sans lui, la porte serveur
+            // ne se déclenche jamais et le contrôle est mort.
+            accountId,
+          }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -227,6 +258,26 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
           </button>
         </div>
       </div>
+
+      {/* ⚠ Le refus doit DIRE quelle étape bloque. « Campagne bloquée » sans
+          nommer le texte oblige à tout rouvrir, et on finit par contourner. */}
+      {blocage.length > 0 && (
+        <div className="mt-3 rounded-lg border border-signal-red/50 bg-signal-red/5 px-3 py-2.5">
+          <p className="text-[12px] font-medium text-signal-red">
+            Rien n&apos;est parti : {blocage.length} étape(s) n&apos;ont pas été validées par le partenaire.
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {blocage.map((b) => (
+              <li key={b.label} className="text-[11.5px] text-paper-dim">
+                <strong className="text-paper">{b.label}</strong> — {b.pourquoi}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-[11px] text-paper-faint">
+            Réglages → Validation partenaire. Sur leur campagne, c&apos;est leur marque que le prospect voit.
+          </p>
+        </div>
+      )}
 
       {!allReviewed && drafts.length > 0 && (
         <p className="mb-3 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper-dim">

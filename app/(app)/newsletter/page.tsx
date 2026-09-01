@@ -163,6 +163,7 @@ export default function NewsletterPage() {
             ctaUrl: settings.bookingUrl?.trim() || undefined,
             prospectId: p.id,
             campaignId: "newsletter",
+            accountId: settings.accountId ?? "eagleye",
           }),
         });
         const data = await res.json();

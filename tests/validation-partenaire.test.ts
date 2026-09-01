@@ -9,8 +9,11 @@ import {
   etatValidation,
   peutSortir,
   planValidation,
+  campagnePeutPartir,
+  ciblesCampagne,
   ciblesEcrits,
   poserValidation,
+  preuvePourEnvoi,
   toutesLesCibles,
   validerTexte,
   type EtatValidation,
@@ -316,29 +319,132 @@ test("⚠ /api/send refuse un gabarit non validé — et LAISSE PASSER l'écritu
    */
   assert.match(
     bloc,
-    /if\s*\(\s*!v\s*\|\|\s*v\.empreinte\s*!==\s*empreinte\(cadre\.body\)\s*\)/,
+    /if\s*\(!cadre\s*\|\|\s*!v\s*\|\|\s*v\.empreinte\s*!==\s*empreinte\(cadre\.body\)\)/,
     "le refus doit comparer l'empreinte du CADRE, recalculée côté serveur"
   );
   assert.match(bloc, /status:\s*422/);
 
   /**
-   * ⚠ ET LA PORTE DOIT ÊTRE ÉTROITE. Bloquer un email écrit à la main rendrait
-   * le contrôle insupportable — donc contourné, donc inutile. On garde ce qui
-   * part SANS QUE PERSONNE RELISE : un gabarit ou une campagne.
+   * ⚠ LA PORTE NE GARDE QUE CE QUE LE SERVEUR PEUT VÉRIFIER — un gabarit de la
+   * bibliothèque, dont il recalcule l'empreinte lui-même.
+   *
+   * Une première version refusait aussi tout envoi portant un `campaignId`
+   * sans cadre. Ça bloquait l'envoi de RECETTE (un test qu'on s'envoie à
+   * soi-même, `campaignId: "recette"`) et la newsletter — deux usages
+   * légitimes — sans rien protéger de plus : les textes de campagne vivent
+   * dans le navigateur, le serveur ne les a jamais vus. Une garde dont on
+   * surestime la portée est pire qu'une garde absente.
    */
   assert.match(
     bloc,
-    /const enMasse = Boolean\(body\.campaignId\) \|\| Boolean\(body\.cadreId\)/,
-    "seul l'envoi en masse est gardé"
+    /estPartenaire\(body\.accountId \?\? ""\) && body\.cadreId/,
+    "la porte se déclenche sur un CADRE déclaré, pas sur un campaignId"
   );
-
-  // Une campagne sans cadre déclaré est REFUSÉE : « on ne peut pas vérifier »
-  // ne vaut pas « c'est bon ».
-  assert.match(bloc, /Gabarit non identifié/);
+  assert.ok(
+    !/Gabarit non identifié/.test(bloc),
+    "refuser une campagne sans cadre bloquerait la recette et la newsletter pour rien"
+  );
 
   // Le refus doit précéder l'envoi réel.
   const iEnvoi = code.indexOf("createTrackedEmail(");
   assert.ok(iEnvoi > 0 && i < iEnvoi, "la porte se ferme avant l'envoi, jamais après");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE CÂBLAGE — sans `accountId`, la porte ne se déclenche JAMAIS.
+ *
+ * ⚠ C'est le défaut récurrent du dépôt : une garde juste, câblée nulle part.
+ * La route sait refuser, mais elle ne sait de quelle marque il s'agit que si
+ * l'appelant le lui dit. Un appelant qui l'oublie rend le contrôle muet, et
+ * personne ne s'en aperçoit — tout passe, comme avant.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ tous les appelants de /api/send annoncent le compte", () => {
+  const appelants = [
+    "components/send-bar.tsx",
+    "components/campaigns/campaign-review.tsx",
+    "app/(app)/newsletter/page.tsx",
+  ];
+  for (const f of appelants) {
+    const code = sansCommentaires(readFileSync(join(process.cwd(), f), "utf8"));
+    assert.match(code, /accountId/, `${f} n'annonce pas le compte : la porte serveur serait muette`);
+  }
+});
+
+test("⚠ une campagne ne part pas si ses étapes ne sont pas validées", () => {
+  const campagne = {
+    id: "c1",
+    name: "Relance septembre",
+    steps: [
+      { id: "s1", kind: "email", subject: "Vos appels manqués", body: "Bonjour {prenom}, on répond à votre place." },
+      { id: "s2", kind: "email", subject: "Petit rappel", body: "Toujours d'actualité ?" },
+    ],
+  };
+
+  // Rien de validé : les deux étapes bloquent, et chacune est NOMMÉE.
+  const rien = campagnePeutPartir(campagne, "scintia", []);
+  assert.equal(rien.ok, false);
+  assert.equal(rien.bloquantes.length, 2);
+  assert.match(rien.bloquantes[0].label, /Relance septembre/, "il faut savoir QUELLE étape rouvrir");
+
+  // Validées : ça passe.
+  const cibles = ciblesCampagne(campagne);
+  const validations = cibles.map(({ cible, texte }) =>
+    validerTexte(cible.id, texte, "scintia", "Karim", "reunion")
+  );
+  assert.equal(campagnePeutPartir(campagne, "scintia", validations).ok, true);
+
+  /**
+   * ⚠ CHANGER L'OBJET SUFFIT À TOUT ROUVRIR. C'est la première chose que le
+   * prospect voit ; le valider sans lui laisserait passer la modification la
+   * plus visible de l'email.
+   */
+  const objetChange = {
+    ...campagne,
+    steps: [{ ...campagne.steps[0], subject: "URGENT — dernière chance" }, campagne.steps[1]],
+  };
+  const apres = campagnePeutPartir(objetChange, "scintia", validations);
+  assert.equal(apres.ok, false);
+  assert.equal(apres.bloquantes.length, 1, "seule l'étape modifiée retombe");
+
+  // Sur le compte maître, aucune campagne n'est bloquée.
+  assert.equal(campagnePeutPartir(campagne, "eagleye", []).ok, true);
+});
+
+test("l'écran de campagne REFUSE avant d'envoyer, pas après", () => {
+  const code = sansCommentaires(readFileSync(join(process.cwd(), "components/campaigns/campaign-review.tsx"), "utf8"));
+  const iGarde = code.indexOf("campagnePeutPartir(");
+  const iEnvoi = code.indexOf('"/api/send"');
+  assert.ok(iGarde > 0, "l'écran doit poser la question");
+  assert.ok(iGarde < iEnvoi, "le refus doit précéder le premier envoi");
+
+  /**
+   * ⚠ LA CONDITION, PAS SA PRÉSENCE. Quatrième fois que ce piège se referme
+   * dans cette session : `if (!verdict.ok)` → `if (false)` laisse le
+   * `setBlocage` en place, simplement plus jamais atteint, et le test passe.
+   * C'est le test du refus qui doit contenir le refus.
+   */
+  assert.match(
+    code,
+    /if\s*\(!verdict\.ok\)\s*\{\s*setBlocage\(verdict\.bloquantes\);\s*return;/,
+    "le refus doit tester le verdict ET interrompre l'envoi"
+  );
+  assert.match(code, /blocage\.map/, "les étapes bloquantes doivent s'afficher une par une");
+});
+
+test("la preuve d'envoi se construit à UN seul endroit", () => {
+  /**
+   * Quatre constructions à la main auraient divergé, et c'est celle qui aurait
+   * oublié un champ qui aurait fait passer un texte non validé.
+   */
+  const v = validerTexte("ecrit:premier-contact:email", "coucou", "scintia", "Karim", "email");
+  const preuve = preuvePourEnvoi("ecrit:premier-contact:email", "scintia", [v]);
+  assert.deepEqual(preuve, { par: v.par, le: v.le, empreinte: v.empreinte });
+
+  // Rien à prouver sur le compte maître, ni sur une cible jamais validée.
+  assert.equal(preuvePourEnvoi("ecrit:premier-contact:email", "eagleye", [v]), undefined);
+  assert.equal(preuvePourEnvoi("inconnue", "scintia", [v]), undefined);
 });
 
 test("le compte maître traverse la porte sans validation", () => {

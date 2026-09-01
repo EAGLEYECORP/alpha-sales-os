@@ -149,6 +149,60 @@ export function toutesLesCibles(): CibleValidation[] {
   return [...ciblesPrompts(), ...ciblesEcrits()];
 }
 
+/** L'identifiant de validation d'une étape de campagne. Stable, lisible. */
+export const idEtapeCampagne = (campagneId: string, etapeId: string): string =>
+  `campagne:${campagneId}:${etapeId}`;
+
+/**
+ * Les étapes d'UNE campagne, à faire valider avant de l'envoyer.
+ *
+ * ⚠ POURQUOI LES CAMPAGNES ET PAS SEULEMENT LES GABARITS. Les cadres de la
+ * bibliothèque servent au copier-coller : l'opérateur les recopie dans sa
+ * campagne, puis les modifie. Ce qui part réellement en masse, ce sont les
+ * ÉTAPES de campagne — et c'est donc leur texte qu'il faut faire relire, pas
+ * le modèle dont elles descendent.
+ *
+ * ⚠⚠ Ces textes vivent dans le navigateur. Le serveur ne les a jamais vus et
+ * ne peut rien recalculer : le garde-fou est côté écran, et il est plus faible
+ * qu'un 422. Dit ici pour que personne ne surestime ce qu'il couvre.
+ */
+export function ciblesCampagne(campagne: {
+  id: string;
+  name: string;
+  steps: { id: string; kind: string; subject: string; body: string }[];
+}): { cible: CibleValidation; texte: string }[] {
+  return campagne.steps.map((e, i) => ({
+    cible: {
+      id: idEtapeCampagne(campagne.id, e.id),
+      label: `${campagne.name} — étape ${i + 1}`,
+      quoi: e.subject?.trim() || e.body.slice(0, 60),
+      canal: e.kind === "email" ? ("email" as const) : ("sms" as const),
+    },
+    // Sujet ET corps : changer l'objet d'un email change ce que le prospect
+    // voit en premier. Le valider sans lui laisserait passer la modification
+    // la plus visible.
+    texte: `${e.subject ?? ""}\n${e.body}`,
+  }));
+}
+
+/**
+ * Une campagne peut-elle partir au nom de ce compte ?
+ *
+ * Rend la liste des étapes qui bloquent — jamais un simple booléen : « la
+ * campagne est bloquée » sans dire QUELLE étape oblige à tout rouvrir.
+ */
+export function campagnePeutPartir(
+  campagne: { id: string; name: string; steps: { id: string; kind: string; subject: string; body: string }[] },
+  compteId: string,
+  validations: Validation[]
+): { ok: boolean; bloquantes: { label: string; pourquoi: string }[] } {
+  const bloquantes = ciblesCampagne(campagne)
+    .map(({ cible, texte }) => ({ cible, verdict: etatValidation(cible.id, texte, compteId, validations) }))
+    .filter(({ verdict }) => !peutSortir(verdict.etat))
+    .map(({ cible, verdict }) => ({ label: cible.label, pourquoi: verdict.pourquoi }));
+  return { ok: bloquantes.length === 0, bloquantes };
+}
+
 /** Un compte partenaire engage une marque qui n'est pas la nôtre. */
 export function estPartenaire(compteId: string): boolean {
   const c = getAccount(compteId);
@@ -249,6 +303,28 @@ export function validerTexte(
  */
 export function poserValidation(validations: Validation[], v: Validation): Validation[] {
   return [...validations.filter((x) => !(x.cible === v.cible && x.compte === v.compte)), v];
+}
+
+/**
+ * La preuve à joindre à un envoi, prête pour le corps de requête.
+ *
+ * ⚠ UNE SEULE FONCTION POUR LES QUATRE APPELANTS de `/api/send` (barre
+ * d'envoi, campagnes, recette, newsletter). Quatre constructions à la main
+ * auraient divergé — et c'est celle qui aurait oublié un champ qui aurait
+ * fait passer un texte non validé.
+ *
+ * Rend `undefined` quand il n'y a rien à prouver : compte maître, ou cible
+ * jamais validée. Le serveur tranche de toute façon, il ne fait pas confiance
+ * à ce qu'on lui envoie sur le CONTENU — il recalcule l'empreinte lui-même.
+ */
+export function preuvePourEnvoi(
+  cible: string,
+  compteId: string,
+  validations: Validation[]
+): { par: string; le: string; empreinte: string } | undefined {
+  if (!estPartenaire(compteId)) return undefined;
+  const v = validations.find((x) => x.cible === cible && x.compte === compteId);
+  return v ? { par: v.par, le: v.le, empreinte: v.empreinte } : undefined;
 }
 
 /** Ce qu'il reste à faire valider, pour l'écran d'onboarding partenaire. */

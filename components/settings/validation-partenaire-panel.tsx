@@ -9,6 +9,7 @@ import {
   estPartenaire,
   planValidation,
   poserValidation,
+  ciblesCampagne,
   toutesLesCibles,
   validerTexte,
   type CanalValidation,
@@ -67,6 +68,16 @@ export function ValidationPartenairePanel() {
   const validations = settings.validationsPartenaire ?? [];
   const partenaire = estPartenaire(compte);
 
+  /**
+   * ⚠ LES CAMPAGNES ENTRENT DANS LA LISTE, et c'est là que le volume part.
+   *
+   * Les cadres de la bibliothèque servent au copier-coller : l'opérateur les
+   * recopie dans sa campagne puis les modifie. Faire valider le modèle sans
+   * valider l'étape qui en descend laisserait partir un texte que personne n'a
+   * relu — celui-là même qui est envoyé mille fois.
+   */
+  const campagnes = useAlpha((s) => s.campaigns);
+
   useEffect(() => {
     let vivant = true;
     void (async () => {
@@ -103,18 +114,21 @@ export function ValidationPartenairePanel() {
   const texteCourant = (id: string): string => {
     const cadre = cadreParId(id);
     if (cadre) return cadre.body;
+    // Étape de campagne : le texte vient du store, et c'est le MÊME calcul que
+    // `ciblesCampagne` (sujet + corps) — sinon on validerait une chose et on
+    // enverrait l'autre.
+    const etape = campagnes.flatMap((c) => ciblesCampagne(c)).find((e) => e.cible.id === id);
+    if (etape) return etape.texte;
     return (settings.prompts ?? []).find((p) => p.id === id)?.texte ?? textes?.[id] ?? "";
   };
 
   const plan = useMemo(() => {
     if (!textes) return null;
-    return planValidation(
-      toutesLesCibles().map((cible) => ({ cible, texte: texteCourant(cible.id) })),
-      compte,
-      validations
-    );
+    const fixes = toutesLesCibles().map((cible) => ({ cible, texte: texteCourant(cible.id) }));
+    const etapes = campagnes.flatMap((c) => ciblesCampagne(c));
+    return planValidation([...fixes, ...etapes], compte, validations);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textes, compte, validations, settings.prompts]);
+  }, [textes, compte, validations, settings.prompts, campagnes]);
 
   const valider = (cibleId: string) => {
     const nom = qui.trim();
