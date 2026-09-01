@@ -370,6 +370,32 @@ test("⚠ les taux s'écrivent en FRANÇAIS, et le formatage n'existe qu'une foi
   assert.match(src, /import \{[^}]*\bpct\b[^}]*\} from "\.\/calibration"/);
 });
 
+test("⚠ la capacité d'appels est AFFICHÉE, pas seulement calculée", () => {
+  /**
+   * `lib/capacite-appels.ts` répond à « combien d'appels je peux passer
+   * aujourd'hui » — c'est le chiffre qui décide du dimensionnement, et il
+   * n'était affiché NULLE PART. Un module juste que personne ne lit ne pilote
+   * rien : c'est le défaut récurrent de ce dépôt, commis dans notre propre
+   * code et attrapé par l'audit des exports orphelins.
+   */
+  const src = sansCommentaires(readFileSync(join(process.cwd(), "components/controle/paliers-panel.tsx"), "utf8"));
+  assert.match(src, /capaciteAppels\(/, "l'écran doit dériver la capacité, pas la deviner");
+  assert.match(src, /capacite\.appelsParJour/, "et l'afficher");
+  assert.match(src, /capacite\.pourquoi/, "avec la raison — un chiffre nu ne dit pas quoi corriger");
+
+  /**
+   * ⚠ Il doit la dériver des taux MESURÉS. Passer une hypothèse en dur
+   * afficherait un volume que rien ne soutient — et c'est exactement ce que
+   * les paliers existent pour empêcher.
+   */
+  assert.match(src, /progression\.tauxDecroche\.valeur/);
+  assert.match(src, /progression\.tauxInteret\.valeur/);
+  assert.ok(
+    !/tauxDecrochePct:\s*30/.test(src),
+    "aucun taux d'hypothèse ne doit être écrit en dur dans l'écran"
+  );
+});
+
 test("le budget d'un palier est une fourchette, et ne sort que du serveur", () => {
   const budgets = budgetPaliers();
   assert.equal(budgets.length, PALIERS_CAMPAGNE.length);

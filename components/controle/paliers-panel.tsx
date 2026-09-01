@@ -9,6 +9,7 @@ import {
   type EtatPalierCampagne,
   type IdPalierCampagne,
 } from "@/lib/paliers-campagne";
+import { capaciteAppels } from "@/lib/capacite-appels";
 import { cn } from "@/lib/utils";
 
 /**
@@ -55,6 +56,21 @@ export function PaliersPanel() {
     [prospects, etat.valides, etat.coches]
   );
 
+  /**
+   * ⚠ Les taux MESURÉS, jamais les hypothèses. Tant que rien n'est mesuré,
+   * `capaciteAppels` retombe sur le plafond humain et le DIT — c'est la règle
+   * « zéro donnée → zéro chiffre » appliquée au dimensionnement.
+   */
+  const capacite = useMemo(
+    () =>
+      capaciteAppels({
+        closers: 1,
+        tauxDecrochePct: (progression.tauxDecroche.valeur ?? 0) * 100,
+        tauxInteretPct: progression.tauxInteret.valeur != null ? progression.tauxInteret.valeur * 100 : undefined,
+      }),
+    [progression.tauxDecroche.valeur, progression.tauxInteret.valeur]
+  );
+
   const basculerCoche = (id: string) => {
     const coches = etat.coches.includes(id) ? etat.coches.filter((x) => x !== id) : [...etat.coches, id];
     patchSettings({ paliersCampagne: { ...etat, coches } });
@@ -83,6 +99,24 @@ export function PaliersPanel() {
         c&apos;est brûler 1 000 fiches pour apprendre ce que 10 auraient dit.{" "}
         <strong className="text-paper-dim">Le plafond du palier borne réellement la file d&apos;appels.</strong>
       </p>
+
+      {/* ── CE QUE ÇA AUTORISE AUJOURD'HUI ──
+          ⚠ `capaciteAppels` existait depuis le 28/08 et n'était affiché NULLE
+          PART : le calcul qui répond à « combien d'appels je peux passer » ne
+          sortait d'aucun écran. Un module juste que personne ne lit ne pilote
+          rien — c'est le défaut récurrent de ce dépôt, ici dans notre propre
+          code. */}
+      <div className="mt-3 rounded-lg border border-ink-700 px-3 py-2">
+        <p className="flex flex-wrap items-baseline justify-between gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-paper-faint">
+            Ce que ça autorise aujourd&apos;hui
+          </span>
+          <span className="font-display text-lg font-extrabold text-bronze-400">
+            {capacite.appelsParJour} appels/jour
+          </span>
+        </p>
+        <p className="mt-1 text-[11.5px] leading-relaxed text-paper-faint">{capacite.pourquoi}</p>
+      </div>
 
       {/* Ce qui est mesuré aujourd'hui — jamais un taux nu. */}
       <div className="mt-3 space-y-1 rounded-lg border border-ink-700 px-3 py-2">

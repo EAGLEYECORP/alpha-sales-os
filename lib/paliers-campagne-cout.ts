@@ -2,7 +2,6 @@ import { PALIERS_CAMPAGNE, type PalierCampagne } from "./paliers-campagne";
 import {
   COST_LINES,
   TELNYX_BORNE_HAUTE_USD_MIN,
-  USD_TO_EUR,
   computeCosts,
   defaultVolume,
 } from "./voice-costs";
@@ -56,9 +55,6 @@ export function coutPalierCampagne(palier: PalierCampagne): CoutPalierCampagne {
         : `${eur(bas)} de coût fournisseurs.`,
   };
 }
-
-/** Conversion utilitaire, pour que la fourchette s'affiche dans la même unité. */
-export const usdEnEur = (usd: number): number => usd * USD_TO_EUR;
 
 /**
  * Le budget des trois paliers, prêt à afficher.
