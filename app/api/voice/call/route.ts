@@ -6,9 +6,13 @@ import {
   callAllowedNow,
   outboundComplianceGate,
   toE164,
+  CORPS_APPEL_FROID,
   type CallMode,
   type VoiceConfig,
 } from "@/lib/voice-script";
+import { estPartenaire } from "@/lib/validation-partenaire";
+import { empreinte } from "@/lib/apprentissage";
+import { getAccount } from "@/lib/accounts";
 // La résolution de l'offre est pure et testable : elle vit dans lib/.
 // Next.js n'autorise de toute façon aucun export hors handler dans ce fichier.
 import { resoudreOffre } from "@/lib/voice-offre";
@@ -76,6 +80,11 @@ interface Body {
   /** Compte au nom duquel on appelle (portefeuille white-label). */
   accountId?: string;
   /**
+   * La preuve que le partenaire a validé CETTE trame (`lib/validation-partenaire.ts`).
+   * Absente sur un compte maître, exigée sur un compte partenaire.
+   */
+  validationPartenaire?: { par: string; le: string; empreinte: string };
+  /**
    * L'offre REPRÉSENTÉE sur cet appel — celle que `deepDive` a retenue pour
    * cette fiche. C'est elle qui écrit le rôle de l'agent (voir `resoudreOffre`).
    */
@@ -137,6 +146,46 @@ export async function POST(request: NextRequest) {
       },
       { status: 422 }
     );
+  }
+
+  /**
+   * ── Porte 2 ter : L'ACCORD DU PARTENAIRE ──
+   *
+   * La conformité n'est pas l'accord. Un script peut être parfaitement légal
+   * et ne pas être celui que ScintIA a relu — et sur un appel Callflow, c'est
+   * LEUR marque que le prospect entend.
+   *
+   * ⚠ L'EMPREINTE PORTE SUR LA TRAME, PAS SUR LE SCRIPT ASSEMBLÉ. Le script
+   * contient le nom du prospect : son empreinte changerait à chaque appel et
+   * aucune validation ne tiendrait deux minutes. Le partenaire valide le
+   * texte qu'on lui fait lire — la trame — et le code vérifie que c'est bien
+   * celle-là qui part.
+   *
+   * ⚠⚠ CE QUE CETTE PORTE NE FAIT PAS : elle ne résiste pas à quelqu'un qui
+   * forgerait l'empreinte dans la requête. C'est assumé, et c'est cohérent
+   * avec le modèle de menace écrit dans `lib/validation-partenaire.ts` : on ne
+   * se protège pas d'un adversaire, on se protège de NOUS — d'un texte modifié
+   * il y a trois semaines dont plus personne ne se souvient qu'il n'a pas été
+   * relu. Le client qui appelle cette route, c'est l'opérateur lui-même.
+   */
+  if (estPartenaire(body.accountId ?? "")) {
+    const trame = cfg.corpsFroid?.trim() || CORPS_APPEL_FROID;
+    const attendue = empreinte(trame);
+    const v = body.validationPartenaire;
+    if (!v || v.empreinte !== attendue) {
+      return NextResponse.json(
+        {
+          error: "Texte non validé par le partenaire — aucun appel ne partira.",
+          why:
+            `Vous appelez au nom de ${getAccount(body.accountId).name}. Sur leur appel, c'est leur marque qui parle : ` +
+            (v
+              ? "la trame a changé depuis leur validation, leur accord ne couvre pas cette version."
+              : "cette trame ne leur a jamais été soumise."),
+          quoiFaire: "Ouvrir Réglages → Validation partenaire, faire relire le texte, puis enregistrer qui a validé.",
+        },
+        { status: 422 }
+      );
+    }
   }
 
   // ── Porte 2 bis : conformité DURE (non forçable) ──

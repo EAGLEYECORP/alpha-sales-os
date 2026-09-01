@@ -5,6 +5,7 @@ import { Cable, Cloud, CloudOff, Compass, Download, Eraser, FileSpreadsheet, Key
 import Link from "next/link";
 import { useAlpha } from "@/lib/store";
 import { SyncProspects } from "@/components/sync-prospects";
+import { ValidationPartenairePanel } from "@/components/settings/validation-partenaire-panel";
 import { importerFiches, ressembleAuTerrain } from "@/lib/sourcing-terrain-import";
 import {
   pushSnapshot,
@@ -848,6 +849,8 @@ export default function SettingsPage() {
             elle dépend, pour qu'on ne cherche pas l'interrupteur ailleurs. */}
         <div className="lg:col-span-2">
           <SyncProspects />
+          {/* Ce qui sort au nom d'un partenaire passe devant lui d'abord. */}
+          <ValidationPartenairePanel />
         </div>
 
         {/* Supabase — linkable from the UI */}

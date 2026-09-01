@@ -450,6 +450,17 @@ export interface AppSettings {
    * saurait pourquoi son agent est resté en arrière.
    */
   prompts?: import("./prompts").PromptModifie[];
+  /**
+   * Ce qu'un partenaire (ScintIA, Nuwacom) a relu et validé — par texte et
+   * par compte (`lib/validation-partenaire.ts`).
+   *
+   * ⚠ On stocke l'EMPREINTE du texte validé, pas un simple « oui ». Une
+   * validation attachée à un identifiant survivrait à la réécriture du texte :
+   * on fait relire, on modifie le lendemain, et le tampon reste. C'est pire
+   * que pas de validation, parce que tout le monde croit que le contrôle a
+   * eu lieu.
+   */
+  validationsPartenaire?: import("./validation-partenaire").Validation[];
   security: {
     /** SHA-256 of the app-lock PIN; null = no lock */
     pinHash: string | null;
