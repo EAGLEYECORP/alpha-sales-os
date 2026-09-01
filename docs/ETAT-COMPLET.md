@@ -38,7 +38,8 @@ optionnel, n8n auto-hébergeable.
 
 ## Vérification (dernier passage)
 
-- **137 tests** au vert · **typecheck** 0 erreur · **build** 53 routes.
+- Suite de tests au vert · **typecheck** 0 erreur · **build** OK.
+  (Le compte exact se lit avec `npm test` — l'écrire ici le périme.)
 - L'app démarre, toutes les pages répondent 200, tous les endpoints répondent.
 - Rendu vérifié : Débrief (micro corrigé), site vitrine (clair + sombre).
 

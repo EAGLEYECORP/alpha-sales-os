@@ -126,7 +126,7 @@ Rien de technique ici, et c'est le bloc qui compte.
 - [ ] **Dépôt French Tech** — échéance **2026-09-04 23:59**.
 - [ ] Choisir **un** prospect du pipe de juillet et le closer. Un seul.
 
-**Zéro vente à ce jour.** 1 080 tests, et aucun euro. Tout ce qui est construit
+**Zéro vente à ce jour.** Une suite de tests complète, et aucun euro. Tout ce qui est construit
 est une hypothèse tant que ce bloc n'est pas entamé — le code n'a jamais été
 le facteur limitant.
 
@@ -174,7 +174,7 @@ n'a de sens qu'après les premières ventes.
 
 Pour mémoire, parce que la liste ci-dessus donne une impression sombre :
 
-- **1 080 tests**, dont chaque garde-fou vérifié par MUTATION — on casse la
+- **Chaque garde-fou vérifié par MUTATION** — on casse la
   garde, on confirme que le test échoue, on restaure ;
 - **le tunnel de vente complet** : `/vitrine` → `/souscrire` → compte →
   paiement Stripe → encaissement → ouverture des droits → onboarding daté →

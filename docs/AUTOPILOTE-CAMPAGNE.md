@@ -32,11 +32,69 @@ En automatique, une seule ligne de défense ne suffit pas.
 | `CRON_SECRET` | **401.** Sans secret configuré, la route refuse de tourner — une route qui passe des appels réels ne s'ouvre pas au monde. |
 | `CAMPAIGN_AUTOPILOT=on` | **Simulation.** La route rend ce qu'elle *aurait* fait. Déployer le code ne suffit jamais : il faut un second geste délibéré. |
 | Supabase synchronisé | **412.** Le store vit dans le navigateur ; sans synchro, un cron serveur ne voit aucun prospect. La route le dit au lieu de rendre un succès vide. |
+| `CAMPAIGN_PALIER` | **Plafond le plus bas.** Absente, mal orthographiée ou vide, l'autopilote reste à 10 appels cumulés. Une faute de frappe ne doit jamais ouvrir les vannes sur 1 000 vraies personnes. |
 
 Plafond **dur** : `MAX_CALLS_PER_TICK = 5`, non contournable même en passant
 `?max=999`. Et la **fenêtre horaire ne se force jamais** en automatique —
 `force` n'existe pas sur cette route. Un humain peut décider d'appeler un
 samedi ; une machine, non.
+
+
+## Les paliers — 10 · 100 · 1 000 (`lib/paliers-campagne.ts`)
+
+> Ajouté le 01/09/2026. Le verrou qui manquait : le volume.
+
+Trois chiffres gouvernent **tout** le dimensionnement de la campagne, et aucun
+n'est mesuré à ce jour :
+
+| Chiffre | Hypothèse | Ce qui en dépend |
+|---|---|---|
+| Taux de décroché | 30 % | Le volume d'appels nécessaire |
+| Intérêt qualifié parmi les décrochés | 20 % | **« un closer suffit pour 500 appels/jour »** (`lib/capacite-appels.ts`) |
+| Tarif Telnyx à la minute | 0,012 $ | Le coût de la campagne — le relevé réel autorise un **facteur 29** |
+
+Lancer 1 000 appels sans les avoir mesurés, ce n'est pas de l'ambition : c'est
+brûler 1 000 fiches pour apprendre ce que 10 auraient dit. Un prospect appelé
+avec un script cassé ne se rappelle pas.
+
+### Un palier BORNE, il ne décore pas
+
+Le plafond est un compte **CUMULÉ** d'appels composés, passé à
+`buildCampaignRun`. Les fiches en trop sont écartées avec la raison écrite
+(`palier-atteint`). Une checklist se coche ; un palier ferme la file.
+
+> ⚠ **Ne jamais confondre avec `dailyCap`.** Celui-là est une contrainte de
+> FATIGUE, remise à zéro chaque matin. Le palier est une contrainte
+> d'APPRENTISSAGE : il ne se remet jamais à zéro, il se lève à la main. Ce
+> dépôt a déjà payé une constante qui voulait dire deux choses.
+
+### Deux gestes, deux endroits, et c'est voulu
+
+- **L'écran** (`/controle`) suit les paliers validés dans les réglages.
+- **Le cron** suit `CAMPAIGN_PALIER` : `10`, `100`, `1000`, ou `aucun`.
+
+Valider un palier dans l'app **ne débride pas le cron**. Un cron ne se débride
+pas depuis un navigateur — même philosophie que `CAMPAIGN_AUTOPILOT`.
+
+### Ce qui se coche et ce qui ne se coche pas
+
+- Points de **mesure** : la base répond seule, ils n'ont pas de case. On ne
+  peut pas se mentir dessus.
+- Points **déclaratifs** : seul l'opérateur peut les observer (avoir *entendu*
+  la phrase de l'article 50, avoir relevé le CDR Telnyx). Ils se cochent — mais
+  **ils ne s'offrent pas** tant que leur condition n'existe pas. Cocher « j'ai
+  entendu la phrase » sans qu'un seul appel n'ait été décroché fabriquerait la
+  preuve du seul point qui soit une obligation légale.
+
+**Aucun palier ne se valide seul**, même tout vert. Ce qui est automatique,
+c'est le REFUS.
+
+### Combien ça coûte
+
+`lib/paliers-campagne-cout.ts` (**serveur uniquement** — `voice-costs` porte
+nos marges, et `_next/static/**` est téléchargeable par n'importe qui) rend une
+**fourchette**, jamais un point : le tarif Telnyx n'est pas mesuré. Les
+montants sortent par `/api/voice-costs`.
 
 ## Quelle URL utiliser ?
 

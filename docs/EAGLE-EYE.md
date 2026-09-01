@@ -6,7 +6,9 @@
 
 ## 1. Ce qu'il y a (l'inventaire réel)
 
-- **34 écrans**, **27 routes API**, **63 modules**, **173 tests**, **12 workflows n8n**, **30 docs**.
+- Le compte d'écrans, de routes, de modules et de tests n'est pas recopié ici :
+  il périmait à chaque commit. `npm test` et `find app -name page.tsx | wc -l`
+  répondent, et ils ne mentent jamais.
 - Un vrai **CRM/pipeline** opinionné (doctrine Hormozi : « la décision EST le produit »).
 - **Prospection multi-canal** : e-mail HTML tracké, LinkedIn assisté, séquences, relances.
 - **IA** en cascade (Ollama local → NVIDIA → Claude) : agent, audits, sparring, coaching.

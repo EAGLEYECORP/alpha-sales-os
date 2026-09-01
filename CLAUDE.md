@@ -13,7 +13,7 @@
   (crypto, CSV, RAG, PDF : tout est fait main). Ne JAMAIS ajouter une dépendance
   npm sans raison impérieuse.
 - **Branche de travail** : `claude/crm-n8n-email-tracking-4qxtwr`. Commit + push
-  systématiques. Tests : `npm test` (node:test, ~235). Types : `npx tsc --noEmit`.
+  systématiques. Tests : `npm test` (node:test). Types : `npx tsc --noEmit`.
   Les deux doivent être verts avant push.
 
 ## Ton

@@ -2,9 +2,11 @@
 
 > Carte technique lue dans le code source (l'équivalent versionné de l'artifact
 > « Carte technique »). Next.js 15 · React 19 · TypeScript strict ·
-> **zéro dépendance runtime tierce**. 34 pages, 30 routes API, ~90 modules `lib/`.
+> **zéro dépendance runtime tierce**.
 >
-> Instantané du dépôt à sa dernière révision — à régénérer si le code bouge.
+> ⚠ Les compteurs (pages, routes, modules) ne sont plus recopiés ici : ils
+> périmaient au commit suivant sans que personne les rouvre. `find app -name
+> page.tsx | wc -l` et `ls lib/*.ts | wc -l` répondent, et ils ne mentent pas.
 > Version interactive & interrogeable, sur ta machine : `npx graphify .`
 > (→ `graphify-out/graph.html` + `GRAPH_REPORT.md`). Voir aussi `lib/os-map.ts`
 > pour la carte **produit** (les routes, donnée à l'IA pour qu'elle se guide).
@@ -16,7 +18,7 @@
                               │
         ┌─────────────────────▼──────────────────────┐
         │  NAVIGATEUR — local-first                   │
-        │  • 34 pages (/pipeline /voice /prospects/:id)│
+        │  • Pages (/pipeline /voice /prospects/:id …) │
         │  • Store Zustand  alpha-sales-os-v2 (persist)│
         │  • Réglages — white-label (agence · offre ·  │
         │    tarifs · règles)  ⇢ pilote docs/IA/voix   │
@@ -73,6 +75,57 @@
 6. **Isolation multi-locataire** — `/login` (magic link) → Supabase Auth → JWT →
    RLS par `user_id` → le store ne reçoit que SES lignes.
 
+## Où vivent les fiches — et le mur qui oblige à choisir
+
+> Ajouté le 01/09/2026.
+
+**Par défaut, le pipe vit dans le navigateur** (Zustand + `localStorage`). C'est
+le mode historique, et il ne change pas.
+
+**MESURÉ** (`tests/mur-stockage.test.ts`) : une fiche d'import pèse ~1,9 Ko, sa
+timeline autant sur six touches, et le quota est de 5 Mo.
+
+| | Fiches |
+|---|---|
+| Alerte (80 %) | ~1 200 |
+| Dépassement (100 %) | ~1 500 |
+
+Au-delà, `localStorage.setItem` échoue **en silence** : l'écran continue
+d'afficher les fiches, elles disparaissent en fermant l'onglet. Aucun élagage ne
+repousse cette limite — supprimer les phrases répétées des événements ne gagne
+que 30 %.
+
+### La sortie : `pipeServeur` (opt-in)
+
+Les fiches ne sont plus persistées localement (`partialize`), elles se chargent
+au démarrage depuis Supabase — route paginée, **ordonnée**, **comptée**
+(`GET /api/sync/prospects?fiches=1`).
+
+> ⚠ **L'invariant unique qui rend ça sûr** (`lib/hydratation.ts`) :
+> **on ne pousse JAMAIS depuis un état qu'on n'a pas chargé**
+> (`peutSynchroniser`). Un navigateur qui a raté son chargement a une liste
+> vide, et la synchro sortante calcule des suppressions. Pousser de là
+> effacerait le pipe.
+
+L'état d'hydratation **ne se persiste pas** : le relire du disque affirmerait
+« chargé » sur une liste vide, et rouvrir l'onglet effacerait tout. `partialize`
+réécrit donc l'état de DÉPART, jamais l'état courant.
+
+Deux filets qui se recouvrent, et c'est voulu : celui-ci empêche d'essayer,
+`SEUIL_EFFACEMENT` (`lib/sync-prospects.ts`) empêche d'aboutir.
+
+### Corollaire : le moteur de synchro vit dans la coquille
+
+`components/sync-moteur.tsx` est monté **une fois**, dans `AppShell` — pas dans
+Réglages. Tant qu'il vivait dans l'écran de réglages, un opérateur en mode pipe
+serveur qui n'ouvrait jamais cette page ne poussait rien, et perdait sa journée
+en fermant l'onglet. Réglages n'en garde que la vue.
+
+Et parce que les 8 secondes de silence avant envoi sont 8 secondes pendant
+lesquelles la saisie n'existe nulle part : `sendBeacon` sur `pagehide` et
+`visibilitychange` (`fetch` est annulé avec la page). Écritures uniquement,
+jamais de suppression — on ne vérifie pas l'accusé de réception d'un beacon.
+
 ## Frontière de sécurité
 
 La garde JWT du middleware : en mode `REQUIRE_AUTH`, toute route API est
@@ -84,7 +137,7 @@ runtime.
 
 **✓ Vérifié en session**
 - TypeScript strict — `tsc --noEmit` clean
-- 194 tests (`node:test`) — 0 échec
+- Suite `node:test` complète, 0 échec (`npm test` pour le compte du jour)
 - Build production Next.js — OK
 - White-label complet : documents · prompts IA · voix · tarifs
 - Divulgation voix art. 50 — testée

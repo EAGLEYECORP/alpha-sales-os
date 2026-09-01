@@ -123,7 +123,7 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 
 ## Structure du projet
 
-`108 modules · 39 pages · 38 routes API · 63 composants · 579 tests`
+`npm test` pour le compte exact — un chiffre recopié ici périme au prochain commit.
 
 ```
 alpha-sales-os/
@@ -155,7 +155,7 @@ alpha-sales-os/
 │   ├── token-budget · mission-french-tech   # ⭐ coût des prompts, dossier FT2030
 │   └── knowledge · store · types
 ├── voice/                       # Agent Python (LiveKit) + guides SIP
-├── tests/                       # 66 fichiers, 579 tests (node:test)
+├── tests/                       # node:test — `npm test` pour le compte
 └── docs/                        # Déploiement, API v1, autopilote, roadmap
 ```
 

@@ -100,20 +100,19 @@ test("ce qui est FAIT est marqué fait — sinon on refait le travail", () => {
   assert.match(bloc, /Reste à\s*\n?\s*le prouver/i, "…et ce qui reste doit être dit");
 });
 
-test("le compte de tests annoncé n'est pas resté en arrière", () => {
-  /**
-   * Trois documents annonçaient encore 168, 676 et « 33 000 lignes ». Un
-   * chiffre périmé est une petite chose, mais il apprend au lecteur que le
-   * document n'est pas tenu — et il arrête alors de le croire sur le reste.
-   */
-  const annonces = [...doc.matchAll(/(\d[\d\s ]{2,})\s*tests/g)].map((m) =>
-    Number(m[1].replace(/[\s ]/g, ""))
-  );
-  assert.ok(annonces.length > 0, "la checklist doit annoncer un nombre de tests");
-  for (const n of annonces) {
-    assert.ok(n >= 1000, `la checklist annonce ${n} tests — le compte réel est bien plus haut`);
-  }
-});
+/**
+ * ⚠ CE TEST A ÉTÉ RETIRÉ, ET C'EST UNE DÉCISION.
+ *
+ * Il exigeait que la checklist annonce un nombre de tests ≥ 1 000. Il
+ * garantissait donc un ORDRE DE GRANDEUR, jamais la justesse : le document
+ * disait « 1 080 tests » quand il y en avait 1 314, et le test passait. Pire,
+ * il OBLIGEAIT à porter un compteur figé — exactement ce qui périme.
+ *
+ * `tests/docs-chiffres.test.ts` prend le relais avec la règle inverse et sans
+ * maintenance : aucun document d'état courant ne porte de compteur, on écrit
+ * la commande qui le produit. Les journaux datés gardent les leurs, parce
+ * qu'un relevé daté raconte au lieu de prétendre.
+ */
 
 test("« zéro vente » reste écrit tant que c'est vrai", () => {
   /**
