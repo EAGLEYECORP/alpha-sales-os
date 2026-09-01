@@ -1,7 +1,7 @@
 import type { Prospect } from "./types";
 import { attemptsFromEvents } from "./master-rappel";
 import { aDecroche } from "./call-cadence";
-import { tauxMesure, ECHANTILLON_MIN, type Taux } from "./calibration";
+import { tauxMesure, pct, ECHANTILLON_MIN, type Taux } from "./calibration";
 import { closersRequis } from "./capacite-appels";
 
 /**
@@ -293,7 +293,6 @@ export function plafondPalierCampagne(valides: IdPalierCampagne[] = []): number 
   return null;
 }
 
-const pct = (x: number) => `${Math.round(x * 1000) / 10} %`;
 
 export function evaluerProgression(prospects: Prospect[], e: EntreeProgression = {}): Progression {
   const vecu = vecuAppels(prospects);

@@ -70,7 +70,21 @@ export const ECHANTILLON_MIN_BRAS = 12;
 /** 1,96 — l'écart-type normal à 95 %. */
 const Z = 1.96;
 
-const pct = (x: number) => `${Math.round(x * 1000) / 10} %`;
+/**
+ * Un pourcentage à une décimale, écrit EN FRANÇAIS.
+ *
+ * ⚠ `${Math.round(x * 1000) / 10} %` rendait « 66.7 % » — séparateur anglais,
+ * dans une application dont l'interface est intégralement en français, sur des
+ * chiffres montrés à l'opérateur et repris dans les captures produit. Constaté
+ * à l'écran (salle de contrôle, panneau des paliers).
+ *
+ * Exporté, et c'est le point important : ce formatage existait en double, ici
+ * et dans `lib/paliers-campagne.ts`. Deux écritures du même nombre finissent
+ * toujours par diverger d'une décimale ou d'une espace, et l'écran donne alors
+ * deux valeurs pour la même mesure.
+ */
+export const pct = (x: number) =>
+  `${(Math.round(x * 1000) / 10).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
 
 /** Le taux « rien mesuré ». Le seul objet qu'on a le droit de rendre à vide. */
 function aucunTaux(quoi: string): Taux {

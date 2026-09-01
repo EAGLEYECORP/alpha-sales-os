@@ -346,6 +346,30 @@ test("⚠ l'écran de contrôle ET le cron appliquent le plafond, pas seulement 
   assert.ok(!/\?\?\s*null/.test(decl), "aucun repli ne doit valoir « pas de plafond »");
 });
 
+test("⚠ les taux s'écrivent en FRANÇAIS, et le formatage n'existe qu'une fois", () => {
+  /**
+   * Constaté à l'écran : la salle de contrôle affichait « Décroché : 66.7 % ».
+   * Séparateur anglais, dans une application dont toute l'interface est en
+   * français, sur un chiffre que l'opérateur montre à ses prospects.
+   */
+  const decroches = Array.from({ length: 3 }, (_, i) =>
+    fiche(`t-${i}`, [appel(27, i < 2 ? "repondu" : "sans-reponse")])
+  );
+  const p = evaluerProgression(decroches);
+  assert.match(p.tauxDecroche.phrase, /66,7 %/, "virgule décimale, pas point");
+  assert.ok(!/\d\.\d/.test(p.tauxDecroche.phrase), "aucun séparateur anglais ne doit subsister");
+
+  /**
+   * ⚠ Et le formatage ne doit exister qu'à UN endroit. Il était défini deux
+   * fois — `lib/calibration.ts` et `lib/paliers-campagne.ts` — pour le même
+   * nombre. Deux écritures divergent toujours d'une décimale ou d'une espace,
+   * et l'écran finit par donner deux valeurs pour la même mesure.
+   */
+  const src = sansCommentaires(readFileSync(join(process.cwd(), "lib/paliers-campagne.ts"), "utf8"));
+  assert.ok(!/const pct\s*=/.test(src), "le module des paliers doit IMPORTER le formatage, pas le redéfinir");
+  assert.match(src, /import \{[^}]*\bpct\b[^}]*\} from "\.\/calibration"/);
+});
+
 test("le budget d'un palier est une fourchette, et ne sort que du serveur", () => {
   const budgets = budgetPaliers();
   assert.equal(budgets.length, PALIERS_CAMPAGNE.length);
