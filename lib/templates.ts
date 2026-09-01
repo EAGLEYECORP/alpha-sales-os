@@ -381,6 +381,52 @@ export interface TemplateOptions {
   agency?: string;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES CADRES SORTANTS — ce qui atteint le prospect PAR ÉCRIT.
+ *
+ * ⚠ ON VALIDE LE CADRE, PAS SES DÉCLINAISONS. `buildTemplates` produit
+ * cadres × industries : faire relire chaque déclinaison à un partenaire, ce
+ * serait des centaines de textes quasi identiques. Personne ne lit des
+ * centaines de textes — le contrôle serait survolé, donc inutile.
+ *
+ * Le partenaire relit le GABARIT, variables non substituées. Le remplissage
+ * sectoriel est mécanique : il change le vocabulaire, jamais la promesse.
+ * C'est la même règle que pour l'appel, où c'est la TRAME qui est validée et
+ * pas le script assemblé avec le nom du prospect.
+ *
+ * Les scripts de format `appel` en sont exclus : ils sont lus par un HUMAIN
+ * qui décroche lui-même et assume ce qu'il dit. Ce qui doit être validé, c'est
+ * ce qui part sans que personne relise.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface CadreSortant {
+  /** Identifiant stable, préfixé pour ne jamais collider avec un prompt. */
+  id: string;
+  group: StageGroup;
+  format: Exclude<TemplateFormat, "appel">;
+  title: string;
+  /** Le gabarit, variables NON substituées — c'est ce texte qu'on fait relire. */
+  body: string;
+}
+
+export const idCadre = (group: StageGroup, format: TemplateFormat): string =>
+  `ecrit:${group}:${format}`;
+
+export function cadresSortants(): CadreSortant[] {
+  return FRAMES.filter((f) => f.format !== "appel").map((f) => ({
+    id: idCadre(f.group, f.format),
+    group: f.group,
+    format: f.format as Exclude<TemplateFormat, "appel">,
+    title: f.title,
+    body: f.body,
+  }));
+}
+
+/** Le gabarit derrière un identifiant de cadre. `undefined` = inconnu. */
+export const cadreParId = (id: string): CadreSortant | undefined =>
+  cadresSortants().find((c) => c.id === id);
+
 /** Compose la bibliothèque complète : cadres × industries. */
 export function buildTemplates(opts: TemplateOptions = {}): ScriptTemplate[] {
   const realProof = opts.proof?.trim();

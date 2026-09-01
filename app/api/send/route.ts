@@ -6,6 +6,10 @@ import { getTenant } from "@/lib/tenant";
 import { accountTier } from "@/lib/stripe";
 import { FREE_TIER, startOfMonthMs } from "@/lib/plans";
 import { isDemoProspect, EMAILS_DE_DEMO } from "@/lib/seed";
+import { estPartenaire } from "@/lib/validation-partenaire";
+import { cadreParId } from "@/lib/templates";
+import { empreinte } from "@/lib/apprentissage";
+import { getAccount } from "@/lib/accounts";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -33,6 +37,17 @@ interface SendRequest {
   /** Métadonnées de tracking (facultatives). */
   prospectId?: string;
   campaignId?: string;
+  /**
+   * Compte au nom duquel on écrit (portefeuille white-label). Absent = maître.
+   */
+  accountId?: string;
+  /**
+   * Le CADRE dont ce message est issu (`lib/templates.ts` → `idCadre`).
+   * Absent = message écrit à la main, que l'humain assume lui-même.
+   */
+  cadreId?: string;
+  /** La preuve que le partenaire a validé ce cadre (`lib/validation-partenaire.ts`). */
+  validationPartenaire?: { par: string; le: string; empreinte: string };
   /** Bouton d'appel à l'action optionnel dans l'email. */
   ctaLabel?: string;
   ctaUrl?: string;
@@ -132,6 +147,64 @@ export async function POST(request: NextRequest) {
       },
       { status: 409 }
     );
+  }
+
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * L'ACCORD DU PARTENAIRE SUR CE QUI PART PAR ÉCRIT.
+   *
+   * Même règle que pour l'appel (`/api/voice/call`) : ce qui sort au nom d'une
+   * marque qui n'est pas la nôtre doit avoir été relu par elle, et l'accord
+   * porte sur le TEXTE EXACT — il tombe dès qu'un caractère bouge.
+   *
+   * ⚠ CE QUI EST CONTRÔLÉ, ET CE QUI NE L'EST PAS. La porte vise ce qui part
+   * SANS QUE PERSONNE RELISE : un gabarit (`cadreId`) ou une campagne
+   * (`campaignId`). Un message écrit à la main dans la barre d'envoi n'est pas
+   * bloqué — l'humain qui l'écrit l'assume, et exiger une validation pour
+   * répondre à un prospect rendrait le contrôle insupportable, donc contourné.
+   *
+   * Une campagne SANS cadre déclaré est refusée : on ne peut pas vérifier ce
+   * qui part en masse, et « on ne peut pas vérifier » ne vaut pas « c'est bon ».
+   *
+   * ⚠⚠ Comme pour l'appel, ça ne résiste pas à une requête qui forgerait
+   * l'empreinte. Assumé : le modèle de menace est notre propre oubli, pas un
+   * adversaire — voir `lib/validation-partenaire.ts`.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  if (estPartenaire(body.accountId ?? "")) {
+    const marque = getAccount(body.accountId).name;
+    const enMasse = Boolean(body.campaignId) || Boolean(body.cadreId);
+
+    if (enMasse) {
+      const cadre = body.cadreId ? cadreParId(body.cadreId) : undefined;
+      if (!cadre) {
+        return NextResponse.json(
+          {
+            error: "Gabarit non identifié — rien ne part au nom d'un partenaire.",
+            why:
+              `Cet envoi part au nom de ${marque} sans dire de quel gabarit il vient. ` +
+              `Ce qui part en masse doit pouvoir être rapproché d'un texte qu'ils ont relu.`,
+            quoiFaire: "Envoyer depuis un modèle de la bibliothèque, ou écrire le message à la main.",
+          },
+          { status: 422 }
+        );
+      }
+      const v = body.validationPartenaire;
+      if (!v || v.empreinte !== empreinte(cadre.body)) {
+        return NextResponse.json(
+          {
+            error: "Texte non validé par le partenaire — rien ne part.",
+            why:
+              `Vous écrivez au nom de ${marque}. ` +
+              (v
+                ? "Ce gabarit a changé depuis leur validation : leur accord ne couvre pas cette version."
+                : "Ce gabarit ne leur a jamais été soumis."),
+            quoiFaire: "Ouvrir Réglages → Validation partenaire, faire relire le texte, puis enregistrer qui a validé.",
+          },
+          { status: 422 }
+        );
+      }
+    }
   }
 
   // Locataire courant (multi-compte) : identité + accès. Résolu une fois, réutilisé.

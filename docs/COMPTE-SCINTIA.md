@@ -98,6 +98,31 @@ appel ne part pas.
 > contient le nom du prospect : son empreinte changerait à chaque appel, le
 > contrôle serait rouge en permanence, donc ignoré, donc retiré.
 
+### Les mails et les SMS aussi
+
+Même règle, même module. `POST /api/send` rend **422** quand le compte est
+partenaire et que le gabarit n'est pas validé.
+
+**On valide le CADRE, pas ses déclinaisons.** `buildTemplates` produit
+cadres × industries : soumettre chaque déclinaison ferait des centaines de
+textes quasi identiques, personne ne les lit, et un contrôle survolé ne
+contrôle rien. Le partenaire relit **12 gabarits** (6 moments × email/DM),
+variables non substituées — ça se lit en une réunion.
+
+> ⚠ **La porte est ÉTROITE, et c'est délibéré.** Elle vise ce qui part *sans
+> que personne relise* : un gabarit (`cadreId`) ou une campagne
+> (`campaignId`). Un message écrit **à la main** dans la barre d'envoi n'est
+> pas bloqué — celui qui l'écrit l'assume, et exiger une validation pour
+> répondre à un prospect rendrait le contrôle insupportable, donc contourné,
+> donc inutile.
+>
+> Une campagne **sans cadre déclaré** est refusée : on ne peut pas vérifier ce
+> qui part en masse, et « on ne peut pas vérifier » ne vaut pas « c'est bon ».
+
+Les scripts de format `appel` de la bibliothèque en sont exclus : ils sont lus
+par un humain qui décroche lui-même. C'est la **trame Alpha Voice** qui est
+validée pour la voix, pas ces fiches-là.
+
 ### Comment on s'en sert, en face d'eux
 
 **Réglages → Validation partenaire.** On choisit le compte (ScintIA, Nuwacom),

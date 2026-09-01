@@ -9,12 +9,15 @@ import {
   etatValidation,
   peutSortir,
   planValidation,
+  ciblesEcrits,
   poserValidation,
+  toutesLesCibles,
   validerTexte,
   type EtatValidation,
   type Validation,
 } from "../lib/validation-partenaire";
 import { PROMPTS } from "../lib/prompts";
+import { buildTemplates, cadresSortants } from "../lib/templates";
 import { ACCOUNTS } from "../lib/accounts";
 
 const sansCommentaires = (s: string) =>
@@ -230,6 +233,112 @@ test("⚠ la route REFUSE un appel partenaire non validé, AVANT de composer", (
     !/empreinte\(script\)/.test(bloc),
     "l'empreinte ne doit PAS porter sur le script assemblé : il change à chaque prospect"
   );
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES ÉCRITS SORTANTS — même règle que la voix.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ on valide le CADRE, jamais ses déclinaisons sectorielles", () => {
+  /**
+   * `buildTemplates` produit cadres × industries. Soumettre chaque déclinaison
+   * au partenaire, ce serait des centaines de textes quasi identiques —
+   * personne ne les lit, le contrôle est survolé, donc inutile. Le gabarit
+   * porte la promesse ; le remplissage sectoriel change le vocabulaire.
+   */
+  const cadres = cadresSortants();
+  const complet = buildTemplates({ agency: "ScintIA" });
+
+  assert.ok(cadres.length > 0);
+  assert.ok(
+    complet.length > cadres.length * 3,
+    `la bibliothèque complète (${complet.length}) doit être bien plus grosse que les cadres (${cadres.length})`
+  );
+
+  /**
+   * Aucun script d'APPEL parmi les écrits — vérifié sur la DONNÉE, pas sur le
+   * type : `cadresSortants()` le garantit déjà à la compilation, mais c'est le
+   * filtre qui pourrait sauter, pas la signature. Les scripts d'appel sont lus
+   * par un humain qui décroche et assume ce qu'il dit.
+   */
+  assert.ok(!cadres.some((c) => c.id.endsWith(":appel")));
+  assert.ok(
+    complet.some((t) => t.format === "appel"),
+    "la bibliothèque en contient bien : c'est la sélection qui les écarte, pas leur absence"
+  );
+
+  // Le gabarit garde ses variables : c'est ce texte-là qu'on fait relire.
+  assert.ok(
+    cadres.some((c) => /\{[a-z_]+\}/.test(c.body)),
+    "les variables ne doivent pas être substituées dans le texte validé"
+  );
+});
+
+test("les écrits sortants se DÉDUISENT de la bibliothèque", () => {
+  const cibles = ciblesEcrits();
+  const cadres = cadresSortants();
+  assert.equal(cibles.length, cadres.length, "un cadre ajouté doit être soumis sans toucher au module");
+  for (const c of cibles) {
+    assert.ok(c.id.startsWith("ecrit:"), "l'identifiant doit être préfixé pour ne jamais collider avec un prompt");
+    assert.ok(c.canal === "email" || c.canal === "sms");
+  }
+
+  // Et les deux familles cohabitent sans se marcher dessus.
+  const toutes = toutesLesCibles();
+  assert.equal(toutes.length, ciblesPrompts().length + cibles.length);
+  assert.equal(new Set(toutes.map((c) => c.id)).size, toutes.length, "aucun identifiant en double");
+});
+
+test("un écrit modifié périme sa validation, comme la voix", () => {
+  const cadre = cadresSortants()[0];
+  const v = validerTexte(cadre.id, cadre.body, "scintia", "Karim", "email");
+
+  assert.equal(etatValidation(cadre.id, cadre.body, "scintia", [v]).etat, "validee");
+  assert.equal(
+    etatValidation(cadre.id, cadre.body + " PS : rappelez-moi vite.", "scintia", [v]).etat,
+    "perimee",
+    "ajouter une phrase à un email suffit à faire tomber l'accord"
+  );
+});
+
+test("⚠ /api/send refuse un gabarit non validé — et LAISSE PASSER l'écriture à la main", () => {
+  const code = sansCommentaires(readFileSync(join(process.cwd(), "app/api/send/route.ts"), "utf8"));
+
+  const i = code.indexOf("estPartenaire(");
+  assert.ok(i > 0, "la route d'envoi doit demander si le compte engage une marque partenaire");
+  const bloc = code.slice(i, i + 1400);
+
+  /**
+   * ⚠ La CONDITION, pas la présence du 422 — le piège qui s'est déjà refermé
+   * trois fois dans ce dépôt. Un `if (false)` laisserait le refus en place et
+   * plus jamais atteint.
+   */
+  assert.match(
+    bloc,
+    /if\s*\(\s*!v\s*\|\|\s*v\.empreinte\s*!==\s*empreinte\(cadre\.body\)\s*\)/,
+    "le refus doit comparer l'empreinte du CADRE, recalculée côté serveur"
+  );
+  assert.match(bloc, /status:\s*422/);
+
+  /**
+   * ⚠ ET LA PORTE DOIT ÊTRE ÉTROITE. Bloquer un email écrit à la main rendrait
+   * le contrôle insupportable — donc contourné, donc inutile. On garde ce qui
+   * part SANS QUE PERSONNE RELISE : un gabarit ou une campagne.
+   */
+  assert.match(
+    bloc,
+    /const enMasse = Boolean\(body\.campaignId\) \|\| Boolean\(body\.cadreId\)/,
+    "seul l'envoi en masse est gardé"
+  );
+
+  // Une campagne sans cadre déclaré est REFUSÉE : « on ne peut pas vérifier »
+  // ne vaut pas « c'est bon ».
+  assert.match(bloc, /Gabarit non identifié/);
+
+  // Le refus doit précéder l'envoi réel.
+  const iEnvoi = code.indexOf("createTrackedEmail(");
+  assert.ok(iEnvoi > 0 && i < iEnvoi, "la porte se ferme avant l'envoi, jamais après");
 });
 
 test("le compte maître traverse la porte sans validation", () => {

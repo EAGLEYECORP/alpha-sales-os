@@ -6,14 +6,15 @@ import { useAlpha } from "@/lib/store";
 import { ACCOUNTS } from "@/lib/accounts";
 import {
   CANAUX,
-  ciblesPrompts,
   estPartenaire,
   planValidation,
   poserValidation,
+  toutesLesCibles,
   validerTexte,
   type CanalValidation,
   type EtatValidation,
 } from "@/lib/validation-partenaire";
+import { cadreParId } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 
 /**
@@ -91,14 +92,24 @@ export function ValidationPartenairePanel() {
     };
   }, []);
 
-  /** Le texte réellement en vigueur : la modification de l'opérateur, sinon le livré. */
-  const texteCourant = (id: string): string =>
-    (settings.prompts ?? []).find((p) => p.id === id)?.texte ?? textes?.[id] ?? "";
+  /**
+   * Le texte réellement en vigueur pour une cible.
+   *
+   * ⚠ Deux sources, une seule fonction. Les PROMPTS s'éditent (`/prompts`) et
+   * descendent du serveur ; les ÉCRITS sont des gabarits de la bibliothèque
+   * (`lib/templates.ts`), déjà côté client. Les traiter séparément ferait
+   * valider un texte et en envoyer un autre.
+   */
+  const texteCourant = (id: string): string => {
+    const cadre = cadreParId(id);
+    if (cadre) return cadre.body;
+    return (settings.prompts ?? []).find((p) => p.id === id)?.texte ?? textes?.[id] ?? "";
+  };
 
   const plan = useMemo(() => {
     if (!textes) return null;
     return planValidation(
-      ciblesPrompts().map((cible) => ({ cible, texte: texteCourant(cible.id) })),
+      toutesLesCibles().map((cible) => ({ cible, texte: texteCourant(cible.id) })),
       compte,
       validations
     );
@@ -132,8 +143,8 @@ export function ValidationPartenairePanel() {
       </div>
 
       <p className="mt-1 text-[11.5px] leading-relaxed text-paper-faint">
-        Sur un appel passé au nom d&apos;un partenaire, c&apos;est <strong className="text-paper-dim">leur marque</strong>{" "}
-        que le prospect entend. La conformité légale ne suffit pas : un texte peut être parfaitement licite et ne pas
+        Sur un appel ou un email envoyé au nom d&apos;un partenaire, c&apos;est{" "}
+        <strong className="text-paper-dim">leur marque</strong> que le prospect voit. La conformité légale ne suffit pas : un texte peut être parfaitement licite et ne pas
         être celui qu&apos;ils ont relu. Ici on note ce qu&apos;ils ont validé, et l&apos;accord{" "}
         <strong className="text-paper-dim">tombe dès que le texte change</strong>.
       </p>
@@ -234,9 +245,13 @@ export function ValidationPartenairePanel() {
 
           {/* ⚠ Dire ce que le contrôle fait vraiment, sinon on croit à une formalité. */}
           <p className="mt-3 text-[11px] leading-relaxed text-paper-faint">
-            Tant qu&apos;un texte n&apos;est pas validé, <strong className="text-paper-dim">l&apos;appel est refusé
-            côté serveur</strong> (422) — pas seulement grisé ici. Et modifier une seule phrase dans Prompts fait
+            Tant qu&apos;un texte n&apos;est pas validé, <strong className="text-paper-dim">l&apos;appel et l&apos;envoi
+            sont refusés côté serveur</strong> (422) — pas seulement grisés ici. Modifier une seule phrase fait
             retomber l&apos;état à « périmé » : l&apos;accord portait sur l&apos;ancienne version.
+            <br />
+            Un message écrit <strong className="text-paper-dim">à la main</strong> n&apos;est pas bloqué : celui qui
+            l&apos;écrit l&apos;assume. Ce qui est gardé, c&apos;est ce qui part sans que personne relise — un gabarit
+            ou une campagne.
           </p>
         </>
       )}

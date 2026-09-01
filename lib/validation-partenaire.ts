@@ -1,6 +1,7 @@
 import { empreinte } from "./apprentissage";
 import { getAccount } from "./accounts";
 import { PROMPTS } from "./prompts";
+import { cadresSortants, FORMAT_LABELS, STAGE_GROUPS } from "./templates";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -118,6 +119,34 @@ export function ciblesPrompts(): CibleValidation[] {
       canal: "appel" as const,
     })
   );
+}
+
+/**
+ * Les ÉCRITS sortants — emails et messages directs.
+ *
+ * ⚠ Dérivés de `cadresSortants()`, jamais recopiés : ajouter un cadre à la
+ * bibliothèque le soumet automatiquement au partenaire. Une liste tenue ici
+ * oublierait le prochain, et personne ne s'en apercevrait avant qu'il parte
+ * non validé au nom de leur marque.
+ */
+export function ciblesEcrits(): CibleValidation[] {
+  return cadresSortants().map((c) => ({
+    id: c.id,
+    label: `${STAGE_GROUPS.find((g) => g.id === c.group)?.label ?? c.group} — ${FORMAT_LABELS[c.format]}`,
+    quoi: c.title,
+    canal: c.format === "email" ? ("email" as const) : ("sms" as const),
+  }));
+}
+
+/**
+ * TOUT ce qui doit passer devant le partenaire : la voix et l'écrit.
+ *
+ * ⚠ Une seule fonction, parce qu'il n'y a qu'une seule question — « qu'est-ce
+ * qui sort au nom de leur marque ? ». Deux listes maintenues séparément
+ * finiraient par diverger, et c'est la moins tenue qui laisserait passer.
+ */
+export function toutesLesCibles(): CibleValidation[] {
+  return [...ciblesPrompts(), ...ciblesEcrits()];
 }
 
 /** Un compte partenaire engage une marque qui n'est pas la nôtre. */
