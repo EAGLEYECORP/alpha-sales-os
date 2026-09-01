@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Check, Copy, Lightbulb } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { SendBar } from "@/components/send-bar";
+import { idCadre } from "@/lib/templates";
 import { CustomScripts } from "@/components/custom-scripts";
 import {
   FORMAT_LABELS,
@@ -206,7 +207,7 @@ export default function TemplatesPage() {
                   </button>
                 )}
                 {prospect && t.format !== "appel" && (
-                  <SendBar prospect={prospect} subject={subject} body={sendBody} compact />
+                  <SendBar prospect={prospect} subject={subject} body={sendBody} compact cadreId={idCadre(t.group, t.format)} />
                 )}
               </div>
             </div>

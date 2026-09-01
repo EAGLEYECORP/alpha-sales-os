@@ -20,7 +20,7 @@ import {
   type Validation,
 } from "../lib/validation-partenaire";
 import { PROMPTS } from "../lib/prompts";
-import { buildTemplates, cadresSortants } from "../lib/templates";
+import { buildTemplates, cadreParId, cadresSortants, idCadre } from "../lib/templates";
 import { ACCOUNTS } from "../lib/accounts";
 
 const sansCommentaires = (s: string) =>
@@ -369,6 +369,52 @@ test("⚠ tous les appelants de /api/send annoncent le compte", () => {
   for (const f of appelants) {
     const code = sansCommentaires(readFileSync(join(process.cwd(), f), "utf8"));
     assert.match(code, /accountId/, `${f} n'annonce pas le compte : la porte serveur serait muette`);
+  }
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA PORTE DES GABARITS DOIT AVOIR UN APPELANT.
+ *
+ * ⚠ ELLE N'EN AVAIT AUCUN, et c'est moi qui l'avais écrite. `/api/send` sait
+ * refuser un gabarit non validé — mais la porte ne se déclenche que si
+ * l'appelant annonce un `cadreId`, et aucun écran ne le faisait. Une garde
+ * câblée nulle part ne protège de rien : elle donne seulement l'impression
+ * que le sujet est traité, ce qui est pire.
+ *
+ * Le chemin existait pourtant : `/templates` monte `SendBar` directement.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ la page des modèles ANNONCE le gabarit qu'elle envoie", () => {
+  const page = sansCommentaires(readFileSync(join(process.cwd(), "app/(app)/templates/page.tsx"), "utf8"));
+  assert.match(page, /<SendBar/, "la page envoie bien depuis la bibliothèque");
+  assert.match(
+    page,
+    /cadreId=\{idCadre\(t\.group, t\.format\)\}/,
+    "sans cadreId, la porte serveur des gabarits ne se déclenche jamais"
+  );
+
+  const bar = sansCommentaires(readFileSync(join(process.cwd(), "components/send-bar.tsx"), "utf8"));
+  assert.match(bar, /cadreId\?: string/, "la barre d'envoi doit accepter le gabarit");
+  assert.match(bar, /cadreId,/, "et le transmettre à la route");
+  assert.match(
+    bar,
+    /validationPartenaire: cadreId/,
+    "la preuve ne part que s'il y a un gabarit — un message écrit à la main n'en a pas"
+  );
+  assert.match(bar, /preuvePourEnvoi\(/, "la preuve se construit par le module, jamais à la main");
+});
+
+test("l'identifiant de gabarit envoyé est celui que le serveur sait relire", () => {
+  /**
+   * Le contrat entre l'écran et la route : `idCadre(group, format)` doit
+   * retrouver un cadre par `cadreParId`. S'ils divergeaient, la route
+   * refuserait tout — « gabarit inconnu » — et on retirerait la garde en
+   * croyant qu'elle est cassée.
+   */
+  for (const c of cadresSortants()) {
+    assert.equal(idCadre(c.group, c.format), c.id);
+    assert.ok(cadreParId(c.id), `${c.id} doit être relisible côté serveur`);
   }
 });
 

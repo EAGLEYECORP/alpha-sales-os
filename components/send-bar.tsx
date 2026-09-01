@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, ExternalLink, Gift, Linkedin, Mail, MessageCircle, Smartphone, TrendingUp } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { preuvePourEnvoi } from "@/lib/validation-partenaire";
 import type { Prospect } from "@/lib/types";
 import { renderAuditDoc, renderRecoveryDoc, brandFromSettings } from "@/lib/audit-doc";
 import { auditDepth } from "@/lib/milestones";
@@ -32,11 +33,22 @@ export function SendBar({
   body,
   compact,
   offerAudit,
+  cadreId,
 }: {
   prospect: Prospect;
   subject: string;
   body: string;
   compact?: boolean;
+  /**
+   * Le GABARIT de la bibliothèque dont ce message vient (`idCadre`).
+   *
+   * ⚠ C'est lui qui déclenche la porte partenaire côté serveur. Sans lui, le
+   * message est traité comme écrit à la main — ce qui est vrai dans la barre
+   * d'envoi d'une fiche, et faux sur la page des modèles. Une garde qu'aucun
+   * appelant ne déclenche ne protège de rien : c'est le défaut récurrent de ce
+   * dépôt, et celui-ci a bien failli y rester.
+   */
+  cadreId?: string;
   /** Propose de joindre l'audit cadeau (email de première impression). */
   offerAudit?: boolean;
 }) {
@@ -126,6 +138,12 @@ export function SendBar({
           // soumis à validation — celui qui l'écrit l'assume — mais la route
           // doit savoir de quelle marque il s'agit.
           accountId: settings.accountId ?? "eagleye",
+          cadreId,
+          // La preuve se construit à UN seul endroit (`preuvePourEnvoi`) :
+          // quatre constructions à la main auraient divergé.
+          validationPartenaire: cadreId
+            ? preuvePourEnvoi(cadreId, settings.accountId ?? "eagleye", settings.validationsPartenaire ?? [])
+            : undefined,
         }),
       });
       const data = await res.json();

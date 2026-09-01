@@ -131,7 +131,7 @@ garde absente.
 | Chemin | Gardé par | Force |
 |---|---|---|
 | Appel Alpha Voice | `/api/voice/call` → **422** | Le serveur recalcule l'empreinte de la trame. Le client ne peut pas mentir sur le contenu. |
-| Gabarit de la bibliothèque | `/api/send` → **422** | Idem : `lib/templates.ts` est partagé, le serveur connaît le texte. |
+| Gabarit de la bibliothèque (page **Modèles**) | `/api/send` → **422** | Idem : `lib/templates.ts` est partagé, le serveur connaît le texte et recalcule l'empreinte. |
 | **Campagne de l'opérateur** | Écran `campaign-review` | **Plus faible.** Les textes vivent dans le navigateur ; le serveur ne les a jamais vus et ne peut rien revérifier. |
 | Message écrit à la main | rien | Volontaire : celui qui l'écrit l'assume. |
 | Envoi de recette (test à soi-même) | rien | Volontaire : ce n'est pas un envoi commercial. |
