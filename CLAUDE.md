@@ -176,6 +176,25 @@ Se tromper de rituel = perdre le deal au dernier mètre.
 - **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
   **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
 
+## VALIDATION PARTENAIRE (`lib/validation-partenaire.ts`)
+Sur un compte revendeur, le prospect n'entend pas « Alpha pour le compte de
+ScintIA » : il entend **ScintIA**. Ce qui se dit là engage une réputation qui
+n'est pas la nôtre. Rien ne sort d'un compte partenaire — script d'appel, email,
+SMS — sans un tampon de relecture.
+- **La conformité n'est PAS l'accord.** `auditScript` refuse un texte illicite ;
+  il ne dit rien de ce que le partenaire a effectivement relu. Deux contrôles
+  distincts, aucun ne remplace l'autre.
+- **Le tampon porte sur le TEXTE EXACT, pas sur son nom** : il stocke
+  l'empreinte (`empreinte()`, un hash 32 bits — pas de la cryptographie, la
+  menace c'est notre propre oubli). Un tampon attaché à « la trame d'appel »
+  survivrait à sa réécriture : on fait relire, on modifie le lendemain, et tout
+  le monde croit que le contrôle a eu lieu. Réécrire ⇒ `perimee`.
+- Un compte non partenaire est `non-requise` — on ne se demande pas
+  l'autorisation à nous-mêmes. Détail complet : `docs/COMPTE-SCINTIA.md`.
+> ⚠ Le piège de test rencontré quatre fois ici : asserter la PRÉSENCE du refus
+> (`status: 422`) au lieu de la CONDITION qui y mène. Un `if (false)` laisse le
+> 422 en place et le test passe. Toujours muter la condition pour vérifier.
+
 ## Références externes (`lib/references.ts`) — un livre n'est PAS une vérité
 Les sources extérieures (livres, vidéos, cours) entrent dans le Cerveau avec
 trois choses attachées, jamais sans :
@@ -334,6 +353,22 @@ Le proxy sortant bloque : github.com, data.grandlyon.com, data.gouv, et les clé
 live NVIDIA/Supabase/Stripe. pypi passe. **Je ne peux pas tester un service live
 depuis ici** — tout ce qui touche Telnyx/LiveKit/Vercel se vérifie côté Zakaria.
 Ne pas prétendre avoir testé ce qui ne l'a pas été.
+
+## LE DÉFAUT RÉCURRENT DU DÉPÔT — le brancher, pas seulement l'écrire
+C'est de LOIN la panne la plus fréquente ici, et elle ne ressemble pas à un
+bug : **un mécanisme juste, testé, correct — branché à un seul endroit, ou à
+aucun.** Le module rend la bonne réponse, personne ne la lit. Rien n'échoue,
+donc rien n'alerte. Exemples payés : la garde d'`/api/send` sans appelant,
+`capaciteAppels` calculé et affiché nulle part, « a-t-il dit non ? » posée à
+trois endroits dont deux répondaient faux.
+- **Avant de dire qu'une fonctionnalité est livrée** : chercher qui l'importe.
+  Un export `lib/` que rien ne consomme est mort, pas « prêt ».
+- **La question à poser, quand une règle existe** : *combien d'endroits la
+  posent, et répondent-ils tous pareil ?* Une seule source, sinon un test qui
+  interdit la deuxième (cf. `aRefuseTouteRelance`, `RESULTATS_MANUELS`).
+- Le pendant côté doc : `tests/docs-chiffres.test.ts` exige qu'un module
+  doctrinaire soit cité quelque part — sinon la session suivante le réécrit
+  à côté.
 
 ## Conventions de code
 - Commentaires en français, denses, qui expliquent le POURQUOI (le style du repo).
