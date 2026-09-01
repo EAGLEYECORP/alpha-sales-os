@@ -1132,6 +1132,30 @@ export const useAlpha = create<AlphaState>()(
           prospects: (s.prospects ?? courant.prospects).map(normalizeProspect),
           campaigns: (s.campaigns ?? courant.campaigns).map(normalizeCampaign),
           meetings: (s.meetings ?? courant.meetings).map(normalizeMeeting),
+          /**
+           * ⚠ LES RÉGLAGES AUSSI — et ça manquait.
+           *
+           * `...s` remplace `settings` EN BLOC. Un store persisté auquel il
+           * manque un champ ajouté après coup rend donc `undefined`, sous la
+           * version courante, donc hors de portée de `migrate` (qui, lui,
+           * faisait déjà ce repli). Constaté à l'écran, pas déduit : le
+           * Dashboard affichait « COMMISSION UNDEFINED% » et « NaN € » sur le
+           * MRR — les deux premiers chiffres que voit l'opérateur.
+           *
+           * C'est mot pour mot la règle n°1 du dépôt (`prospectDefaults` est
+           * le socle de tous les imports), appliquée aux réglages : un champ
+           * non optionnel doit avoir sa valeur neutre à CHAQUE réhydratation,
+           * pas seulement au changement de version.
+           *
+           * `security` est refusionné à part parce qu'il est imbriqué : un
+           * spread de surface le remplacerait en bloc et rendrait `pinHash`
+           * indéfini, c'est-à-dire une serrure sans verrou.
+           */
+          settings: {
+            ...defaultSettings,
+            ...s.settings,
+            security: { ...defaultSettings.security, ...s.settings?.security },
+          },
         } as AlphaState;
       },
       migrate: (persisted) => {
