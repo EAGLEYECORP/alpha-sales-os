@@ -676,7 +676,7 @@ export default function SettingsPage() {
                   <div className="flex flex-wrap gap-2">
                 <button
                   className="btn-bronze px-2.5 py-1.5 text-[12px]"
-                  title="Charge les 16 fiches réelles de juillet 2026 (Scintia · Lyon) avec leurs rendez-vous datés. Remplace les données actuelles."
+                  title="Charge les 16 fiches réelles de juillet 2026 (Lyon) avec leurs rendez-vous datés. Remplace les données actuelles."
                   /**
                    * ⚠ CETTE BOÎTE NOMMAIT TROIS VRAIS PROSPECTS ET LEURS DATES
                    * DE RENDEZ-VOUS. Mesuré dans le build : la chaîne

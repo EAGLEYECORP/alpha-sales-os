@@ -147,9 +147,15 @@ celui qui la fait.
 Ce que l'OPÉRATEUR vend à SES prospects (≠ `lib/bricks.ts`, qui est NOTRE
 catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
 - Chaque offre se rattache à une **famille de routage** (`alpha-sales-os`,
-  `callflow`, `visibilite-growth`). La famille décide du compte, de l'aimant
+  `alpha-voice`, `visibilite-growth`). La famille décide du compte, de l'aimant
   et de la marche — **pas le nom**. Créer une 4ᵉ mécanique de routage demande
   encore du code.
+  > ⚠ La doc nommait ici la famille du revendeur disparu. Le code, lui, avait
+  > déjà été renommé en `alpha-voice` : **la doc décrivait une famille qui
+  > n'existe plus**, et quiconque l'aurait recopiée aurait créé une offre que
+  > `validerOffre` refuse. Une doc fausse coûte plus cher qu'une doc absente.
+  > `tests/marque-morte.test.ts` refuse désormais un identifiant portant cette
+  > marque dans la doctrine — la citer en prose reste permis, la PRESCRIRE non.
 - On **désactive**, on ne supprime pas : une offre portée par une fiche signée
   ne s'efface pas sans rendre l'historique illisible.
 

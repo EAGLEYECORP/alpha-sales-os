@@ -2,7 +2,12 @@ import type { Meeting, Prospect, Sector, Stage } from "./types";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * Le pipeline réel de juillet 2026 — Zakaria Tazi · Scintia · Lyon.
+ * Le pipeline réel de juillet 2026 — Zakaria Tazi · Lyon.
+ *
+ * ⚠ Cette ligne nommait le revendeur sous les couleurs duquel ces fiches ont
+ * été travaillées. L'accord est mort le 02/09/2026 et cette marque n'est pas
+ * la nôtre. Ce qui reste vrai — et qui est tout ce qui compte pour lire ces
+ * chiffres — c'est QUI a passé les appels, QUAND et OÙ.
  *
  * Ce n'est PAS de la donnée de démonstration. Tout ce qui suit vient du
  * dossier commercial : 78 prospects travaillés, 132 appels, 18 audits,
@@ -116,7 +121,7 @@ const SEEDS: Seed[] = [
     events: [
       { date: "2026-07-17", kind: "appel", summary: "Premier contact" },
       { date: "2026-07-22", kind: "note", summary: "***NOM-RETIRE***" },
-      { date: "2026-07-27", kind: "email", summary: "Audit ***NOM-RETIRE*** × Scintia (14 pages) + proposition" },
+      { date: "2026-07-27", kind: "email", summary: "***NOM-RETIRE***" },
       { date: "2026-07-29", kind: "email", summary: "***NOM-RETIRE***" },
     ],
     nextStep: { date: "2026-08-05", action: "RDV CLOSING 14h30 — décision attendue" },

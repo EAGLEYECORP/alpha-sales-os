@@ -189,7 +189,7 @@ interface AlphaState {
   clearAllData: () => void;
   exportData: () => string;
   resetToSeed: () => void;
-  /** Charge le pipeline réel de juillet 2026 (Scintia · Lyon) — remplace tout. */
+  /** Charge le pipeline réel de juillet 2026 (Lyon) — remplace tout. */
   loadPipelineJuillet: () => Promise<void>;
   /** Ajoute les prospects ICP Alpha Voice (Sheets réels) — fusionne, n'efface rien. */
   loadProspectsICP: () => Promise<{ added: number; updated: number }>;
