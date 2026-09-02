@@ -35,7 +35,6 @@ interface Health {
     video?: { json2video: boolean; endpoint: boolean };
     audit?: { scrapeEndpoint: boolean };
     access: { gated: boolean; publicHost: boolean };
-    branding: { closerName: boolean };
   };
 }
 
@@ -66,7 +65,6 @@ SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=
-CLOSER_NAME=EAGLEYE
 
 # ── SMS (Textbelt open-source) ──
 TEXTBELT_URL=
@@ -236,12 +234,6 @@ export function SystemStatus() {
               label: c.email.from ? "Expéditeur (From) défini" : "Expéditeur (SMTP_FROM)",
               level: c.email.from ? "ok" : "off",
               hint: "Sinon l'adresse SMTP_USER est utilisée.",
-              optional: true,
-            },
-            {
-              label: health?.capabilities.branding.closerName ? "Nom du closer (signature)" : "Nom du closer (CLOSER_NAME)",
-              level: health?.capabilities.branding.closerName ? "ok" : "off",
-              hint: "Signature des emails — défaut « EAGLEYE ».",
               optional: true,
             },
           ],

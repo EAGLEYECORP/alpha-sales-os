@@ -368,7 +368,17 @@ test("⚠ tous les appelants de /api/send annoncent le compte", () => {
   ];
   for (const f of appelants) {
     const code = sansCommentaires(readFileSync(join(process.cwd(), f), "utf8"));
-    assert.match(code, /accountId/, `${f} n'annonce pas le compte : la porte serveur serait muette`);
+    /**
+     * Le compte peut être annoncé directement ou via `identiteEnvoi`, qui le
+     * porte avec le signataire (`lib/expediteur.ts`). Le second est plus fort :
+     * il empêche d'oublier l'un des trois champs. On accepte les deux, mais on
+     * exige que l'un des deux soit là.
+     */
+    assert.match(
+      code,
+      /accountId|identiteEnvoi\(/,
+      `${f} n'annonce pas le compte : la porte serveur serait muette`
+    );
   }
 });
 

@@ -35,7 +35,9 @@ Charger les régies. Déploie le Web App (token). n8n lit/écrit ici.
 
 ### L'envoi (SMTP)
 Renseigne `SMTP_HOST/PORT/USER/PASS/FROM` (voir checkpoints ci-dessous pour le
-choix de l'infra selon le volume). `CLOSER_NAME` pour la signature.
+choix de l'infra selon le volume). La signature, elle, ne vient PAS d'une
+env : elle se règle dans Réglages → Agence et le serveur l'arbitre par compte
+(`lib/expediteur.ts`).
 
 ### Vérifier
 **Réglages → État du système** : tout doit passer au vert. `npm run build`

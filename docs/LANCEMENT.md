@@ -66,7 +66,6 @@ SMTP_PORT=587
 SMTP_USER=eagleyecorp.ad@gmail.com
 SMTP_PASS=⟨mot-de-passe-application-16-lettres⟩
 SMTP_FROM="EAGLEYE CORP <eagleyecorp.ad@gmail.com>"
-CLOSER_NAME=⟨ton prénom ou EAGLEYE⟩
 
 # ── SUPABASE (mémoire durable partagée avec Vercel) ──────────────────
 # Dashboard Supabase → Settings → API. Les MÊMES valeurs que sur Vercel.

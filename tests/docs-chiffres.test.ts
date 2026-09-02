@@ -108,6 +108,8 @@ test("les modules qui portent une doctrine sont cités dans la documentation", (
     "paliers-campagne",
     "validation-partenaire",
     "capacite-appels",
+    "signature",
+    "expediteur",
     "call-cadence",
     "checkpoints",
     "calibration",

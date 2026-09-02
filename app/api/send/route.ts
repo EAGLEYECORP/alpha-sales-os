@@ -9,7 +9,8 @@ import { isDemoProspect, EMAILS_DE_DEMO } from "@/lib/seed";
 import { estPartenaire } from "@/lib/validation-partenaire";
 import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
-import { getAccount } from "@/lib/accounts";
+import { habillageEnvoi } from "@/lib/expediteur";
+import { verifieMentions } from "@/lib/conformite";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -48,6 +49,13 @@ interface SendRequest {
   cadreId?: string;
   /** La preuve que le partenaire a validé ce cadre (`lib/validation-partenaire.ts`). */
   validationPartenaire?: { par: string; le: string; empreinte: string };
+  /**
+   * QUI SIGNE. Le nom saisi par l'opérateur dans Réglages, et sa société.
+   * Absents, le serveur retombe sur la marque du COMPTE — jamais sur la
+   * nôtre (`lib/signature.ts`).
+   */
+  closerName?: string;
+  agencyName?: string;
   /** Bouton d'appel à l'action optionnel dans l'email. */
   ctaLabel?: string;
   ctaUrl?: string;
@@ -56,6 +64,13 @@ interface SendRequest {
   /** Pièces jointes (ex. audit cadeau). Contenu en base64. */
   attachments?: { filename: string; contentBase64: string; contentType?: string }[];
 }
+
+/**
+ * Ce qu'on répond quand une mention manque. Une seule chaîne : deux copies
+ * dérivent, et l'écran finit par expliquer autre chose que le SMS.
+ */
+const QUOI_FAIRE_MENTIONS =
+  "Le message doit dire QUI écrit (ton nom ou ta société, Réglages → Agence) et COMMENT refuser (« répondez STOP »). Ajoute les deux, puis renvoie.";
 
 /** Borne les pièces jointes : ≤ 3 fichiers, ≤ 400 Ko chacun (décodé). */
 function safeAttachments(atts: SendRequest["attachments"]) {
@@ -151,6 +166,39 @@ export async function POST(request: NextRequest) {
 
   /**
    * ─────────────────────────────────────────────────────────────────────
+   * QUI SIGNE CE MESSAGE — RÉSOLU DEPUIS LE COMPTE, PAS DEPUIS UNE ENV.
+   *
+   * ⚠ CETTE ROUTE ÉTAIT LA CINQUIÈME RÉPONSE À « qui signe ? ».
+   * `lib/signature.ts` a été écrit pour réunir les quatre premières, et
+   * personne ne l'a branché ICI — le seul endroit d'où un email PART.
+   * Elle lisait une variable d'environnement de signature, avec repli sur
+   * « EAGLEYE ».
+   *
+   * Deux fautes dans cette ligne :
+   *  · une ENV UNIQUE pour un produit MULTI-COMPTE : le même nom signe les
+   *    envois de tous les comptes du portefeuille ;
+   *  · un repli sur NOTRE marque : un email envoyé au nom de ScintIA
+   *    partait signé « EAGLEYE », avec « EAGLEYE CORP — Lyon, France » en
+   *    pied. C'est une identité d'expéditeur fausse dans un message
+   *    commercial — et c'est précisément la réputation que la validation
+   *    partenaire, dix lignes plus haut, s'emploie à protéger.
+   *
+   * L'ordre de repli est celui de `signataire()` : le nom saisi, sinon la
+   * SOCIÉTÉ (une raison sociale identifie légalement, et elle appartient
+   * bien à l'expéditeur), sinon le libellé d'usine — qui sera refusé plus
+   * bas au lieu de partir en silence.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const habillage = habillageEnvoi({
+    accountId: body.accountId,
+    closerName: body.closerName,
+    agencyName: body.agencyName,
+    base: baseUrlFrom(request),
+  });
+  const marque = habillage.marque;
+
+  /**
+   * ─────────────────────────────────────────────────────────────────────
    * L'ACCORD DU PARTENAIRE SUR CE QUI PART PAR ÉCRIT.
    *
    * Même règle que pour l'appel (`/api/voice/call`) : ce qui sort au nom d'une
@@ -184,7 +232,6 @@ export async function POST(request: NextRequest) {
    * ─────────────────────────────────────────────────────────────────────
    */
   if (estPartenaire(body.accountId ?? "") && body.cadreId) {
-    const marque = getAccount(body.accountId).name;
     const cadre = cadreParId(body.cadreId);
     const v = body.validationPartenaire;
     if (!cadre || !v || v.empreinte !== empreinte(cadre.body)) {
@@ -278,14 +325,36 @@ export async function POST(request: NextRequest) {
     const emailOpts = {
       subject,
       body: body.body,
-      closerName: process.env.CLOSER_NAME || "EAGLEYE",
+      closerName: habillage.closerName,
+      addressLine: habillage.addressLine,
       ctaLabel: body.ctaLabel,
       ctaUrl: body.ctaUrl,
-      // Logo aigle hébergé (PNG public, non gaté par le middleware).
-      logoUrl: `${base}/email-eagle.png`,
+      /**
+       * Logo aigle hébergé (PNG public, non gaté par le middleware) — mais
+       * SEULEMENT sur le compte maître (`habillageEnvoi`). Il partait sur
+       * tous les comptes : un email ScintIA s'ouvrait sur NOTRE aigle. Sans
+       * logo, le rendu retombe sur le monogramme de l'expéditeur
+       * (`lib/email-html.ts`). Le jour où un revendeur fournit le sien, ça
+       * se passe dans `lib/expediteur.ts`, pour l'aperçu comme pour l'envoi.
+       */
+      logoUrl: habillage.logoUrl,
     };
     const html = renderEmail(emailOpts);
     const text = plainText(emailOpts);
+
+    /**
+     * Les mentions obligatoires, vérifiées sur le texte RENDU — pas sur le
+     * corps saisi. La différence n'est pas cosmétique : le pied « Répondez
+     * STOP », la signature et l'adresse légale sont ajoutés par le rendu.
+     * Contrôler `body.body` refuserait tous les emails du produit.
+     */
+    const manques = verifieMentions(text, habillage.closerName, marque);
+    if (manques.length > 0) {
+      return NextResponse.json(
+        { error: "Mentions obligatoires manquantes — rien ne part.", manques, quoiFaire: QUOI_FAIRE_MENTIONS },
+        { status: 422 }
+      );
+    }
 
     // Lint anti-spam — ne compter que les VRAIS liens de contenu (uniques,
     // hors désinscription ; le bouton « bulletproof » duplique son href).
@@ -346,6 +415,37 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
+
+    /**
+     * ─────────────────────────────────────────────────────────────────────
+     * LE SMS PARTAIT NU. C'EST LE TROU LE PLUS CHER DE CETTE ROUTE.
+     *
+     * L'email reçoit son pied « Répondez STOP », sa signature et son adresse
+     * légale du RENDU (`lib/email-html.ts`). Le SMS, lui, partait tel quel :
+     * `message: body.body`. Rien n'ajoutait de moyen de refus, rien ne
+     * vérifiait qu'il y en avait un — donc un SMS de prospection partait sans
+     * la seule mention qui n'est pas négociable.
+     *
+     * ⚠ ON NE L'AJOUTE PAS EN SILENCE, ON REFUSE. Deux raisons :
+     *  · un SMS se paie au segment ; rallonger le texte du client sans le lui
+     *    dire change son coût et peut couper sa phrase ;
+     *  · c'est la doctrine de `lib/signature.ts` — masquer un trou le rend
+     *    indétectable. On le montre, et on dit quoi écrire.
+     *
+     * ⚠⚠ ET `force` NE PASSE PAS OUTRE. `force` sert au score anti-spam et à
+     * la fenêtre de recontact : deux jugements. Une mention obligatoire n'en
+     * est pas un. Une garde qu'un booléen désarme n'est pas une garde — elle
+     * fabrique juste la preuve qu'on savait.
+     * ─────────────────────────────────────────────────────────────────────
+     */
+    const manquesSms = verifieMentions(body.body, habillage.closerName, marque);
+    if (manquesSms.length > 0) {
+      return NextResponse.json(
+        { error: "Mentions obligatoires manquantes dans le SMS — rien ne part.", manques: manquesSms, quoiFaire: QUOI_FAIRE_MENTIONS },
+        { status: 422 }
+      );
+    }
+
     try {
       const res = await fetch(url, {
         signal: AbortSignal.timeout(30_000),

@@ -132,7 +132,6 @@ curl -X POST http://localhost:5678/webhook/alpha \
 2. Ouvre `.env.local` et renseigne au minimum :
    - `WEBHOOK_SECRET=` **le même** que `ALPHA_WEBHOOK_SECRET` (Phase 2.1) ;
    - pour envoyer : `SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM`
-     + `CLOSER_NAME=TonPrénom` ;
    - *(IA locale)* `OLLAMA_MODEL=qwen2.5:3b` (ou `ANTHROPIC_API_KEY=`) ; *(si Supabase, Phase 4)* les 3 clés Supabase.
 3. Lance :
    ```bash

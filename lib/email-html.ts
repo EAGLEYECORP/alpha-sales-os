@@ -13,6 +13,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import { CLOSER_USINE } from "./signature";
+
 export interface EmailOptions {
   subject: string;
   /** Corps en texte brut (paragraphes séparés par des sauts de ligne). */
@@ -116,16 +118,83 @@ function button(label: string, url: string): string {
   </td></tr></tbody></table>`;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE PIED PORTAIT NOTRE MARQUE SOUS CHAQUE EMAIL, TOUS COMPTES CONFONDUS.
+ *
+ * Trois choses en dur, dans un produit WHITE-LABEL :
+ *  · un bandeau « Eagleye Corp · Lyon », SOUS le pied expéditeur — donc à la
+ *    place que l'œil lit comme « qui m'écrit ». Sur un envoi ScintIA, le
+ *    prospect lisait deux sociétés, dont une qui n'était pas l'expéditeur ;
+ *  · les replis `|| "EAGLEYE"` de la signature et de l'adresse légale ;
+ *  · « nous accompagnons les professionnels de votre secteur à Lyon » — faux
+ *    dès qu'un compte vend ailleurs.
+ *
+ * Ce qui RESTE, et qui est d'une autre nature : « Envoyé avec Alpha Sales
+ * OS® — Eagleye Corp, Lyon ». Celle-là nomme l'ÉDITEUR DE L'OUTIL, pas celui
+ * qui écrit. Elle est vraie partout, et c'est la mention de plateforme que
+ * porte n'importe quel emailing.
+ * ─────────────────────────────────────────────────────────────────────
+ */
 export function renderEmail(opts: EmailOptions): string {
-  const closer = opts.closerName || "EAGLEYE";
+  /**
+   * ⚠ LE REPLI NE NOMME PLUS « EAGLEYE ».
+   *
+   * Il le faisait pour la signature ET pour l'adresse légale. Sur un compte
+   * revendeur qui n'aurait pas passé son identité, l'email partait signé de
+   * NOUS — c'est-à-dire une identité d'expéditeur fausse dans un message
+   * commercial, exactement ce que `MENTIONS_OBLIGATOIRES` interdit.
+   *
+   * Même règle que `lib/signature.ts` : on ne devine pas une identité. Le
+   * libellé d'usine reste visible (`CLOSER_USINE`) pour que le trou se voie ;
+   * l'adresse légale, elle, reste VIDE plutôt que fausse — et `/api/send`
+   * refuse désormais un envoi dont l'identité manque, donc ce repli ne doit
+   * jamais partir en vrai.
+   */
+  const closer = opts.closerName || CLOSER_USINE;
   const preheader = (opts.preheader || opts.body.replace(/\s+/g, " ").trim()).slice(0, 140);
   const cta = opts.ctaLabel && opts.ctaUrl ? button(opts.ctaLabel, opts.ctaUrl) : "";
-  const address = opts.addressLine || "EAGLEYE CORP — Lyon, France";
-  // Logo aigle : PNG hébergé (encre sur transparent). Repli sans image :
-  // monogramme serif italique — même voix, zéro dépendance.
+  const address = opts.addressLine || "";
+  /**
+   * Logo : PNG hébergé (encre sur transparent). Repli sans image : monogramme
+   * serif italique — même voix, zéro dépendance.
+   *
+   * ⚠ Les deux étaient à NOUS en dur : `alt="EAGLEYE"` et un « E. » de repli.
+   * Sur un compte revendeur, l'aigle et l'initiale d'EAGLEYE s'affichaient en
+   * tête d'un email signé d'une autre société. L'appelant décide maintenant
+   * s'il envoie un logo (`/api/send` ne passe le nôtre que sur le compte
+   * maître) et le monogramme prend l'initiale de l'EXPÉDITEUR.
+   *
+   * L'`alt` devient vide : l'image est décorative. Y écrire une marque, c'est
+   * la faire lire par les lecteurs d'écran et par les clients qui bloquent
+   * les images — la moitié des destinataires.
+   */
+  /**
+   * ⚠ L'EN-TÊTE — LA PLACE LA PLUS VISIBLE DE TOUT L'EMAIL — DISAIT
+   * « Eagleye / Sales OS — Lyon » EN DUR, SUR TOUS LES COMPTES.
+   *
+   * C'est le papier à en-tête : la première chose lue, celle qui répond à
+   * « de qui vient ce message ». Un email envoyé au nom de ScintIA s'ouvrait
+   * donc sur NOTRE marque, au-dessus d'un corps signé d'une autre société.
+   *
+   * Il se déduit maintenant de l'adresse légale, qui est déjà l'identité de
+   * l'expéditeur : « ScintIA — Lyon, France » → « ScintIA » / « Lyon, France ».
+   * Sans identité fournie, aucun en-tête n'est rendu : mieux vaut un email
+   * sans papier à en-tête qu'un email au papier de quelqu'un d'autre.
+   */
+  const [enTeteMarque, enTeteLieu] = (() => {
+    const ligne = (opts.addressLine || "").trim();
+    if (!ligne) return ["", ""];
+    const i = ligne.indexOf("—");
+    return i < 0 ? [ligne, ""] : [ligne.slice(0, i).trim(), ligne.slice(i + 1).trim()];
+  })();
+
+  const initiale = (opts.addressLine || opts.closerName || "").trim().charAt(0).toUpperCase();
   const logo = opts.logoUrl
-    ? `<img src="${esc(opts.logoUrl)}" width="52" height="42" alt="EAGLEYE" style="display:block;border:0;width:52px;height:42px;" />`
-    : `<span style="font-family:${SERIF};font-style:italic;font-size:30px;line-height:42px;color:${INK};">E.</span>`;
+    ? `<img src="${esc(opts.logoUrl)}" width="52" height="42" alt="" style="display:block;border:0;width:52px;height:42px;" />`
+    : initiale
+      ? `<span style="font-family:${SERIF};font-style:italic;font-size:30px;line-height:42px;color:${INK};">${esc(initiale)}.</span>`
+      : "";
 
   return `<!doctype html>
 <html lang="fr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -161,8 +230,12 @@ export function renderEmail(opts: EmailOptions): string {
         <table role="presentation" cellpadding="0" cellspacing="0"><tbody><tr>
           <td style="vertical-align:middle;padding-right:14px;">${logo}</td>
           <td style="vertical-align:middle;">
-            <span style="display:block;font-family:${SERIF};font-style:italic;font-size:22px;line-height:1.1;color:${INK};">Eagleye</span>
-            <span style="display:block;font-family:${SANS};font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${SAGE};margin-top:3px;">Sales OS — Lyon</span>
+            <span style="display:block;font-family:${SERIF};font-style:italic;font-size:22px;line-height:1.1;color:${INK};">${esc(
+              enTeteMarque
+            )}</span>
+            <span style="display:block;font-family:${SANS};font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${SAGE};margin-top:3px;">${esc(
+              enTeteLieu
+            )}</span>
           </td>
         </tr></tbody></table>
       </td></tr>
@@ -184,7 +257,8 @@ export function renderEmail(opts: EmailOptions): string {
           address
         )}</p>
         <p style="margin:0 0 6px;font-family:${SANS};font-size:12px;line-height:1.55;color:${INK_SOFT};">
-          Vous recevez cet email car nous accompagnons les professionnels de votre secteur à Lyon.
+          <!-- « à Lyon » était en dur : faux dès qu'un compte vend ailleurs. -->
+          Vous recevez cet email car nous accompagnons les professionnels de votre secteur.
           Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels,
           site web de votre entreprise).
         </p>
@@ -196,10 +270,8 @@ export function renderEmail(opts: EmailOptions): string {
       </td></tr>
     </table>
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
-      <tr><td style="padding:16px 8px 4px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
-        Eagleye Corp · Lyon
-      </td></tr>
-      <tr><td style="padding:0 8px 14px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
+      <!-- Bandeau expéditeur : voir la note au-dessus de renderEmail. -->
+      <tr><td style="padding:16px 8px 14px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
         Envoyé avec <span style="font-family:${SERIF};font-style:italic;font-size:12px;letter-spacing:.04em;text-transform:none;color:${INK};">Alpha Sales OS</span><span style="color:${INK};">&#174;</span>
       </td></tr>
     </table>
@@ -213,7 +285,9 @@ export function renderEmail(opts: EmailOptions): string {
 export function plainText(opts: EmailOptions): string {
   const lines = [opts.subject, "", opts.body.trim()];
   if (opts.ctaLabel && opts.ctaUrl) lines.push("", `${opts.ctaLabel} : ${opts.ctaUrl}`);
-  lines.push("", `— ${opts.closerName || "EAGLEYE"}`, "", opts.addressLine || "EAGLEYE CORP — Lyon, France");
+  // Même repli honnête que dans le HTML : jamais notre marque à la place
+  // d'une identité manquante.
+  lines.push("", `— ${opts.closerName || CLOSER_USINE}`, "", opts.addressLine || "");
   lines.push("Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels, site web de votre entreprise).");
   lines.push("Vous ne souhaitez plus être contacté ? Répondez STOP. Conformément au RGPD, vous pouvez aussi demander l'accès, la rectification ou la suppression de vos données en répondant à cet email.");
   lines.push("", "Envoyé avec ALPHA SALES OS® — Eagleye Corp, Lyon");

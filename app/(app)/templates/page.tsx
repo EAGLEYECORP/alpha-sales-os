@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Check, Copy, Lightbulb } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { identiteEnvoi } from "@/lib/expediteur";
 import { SendBar } from "@/components/send-bar";
 import { idCadre } from "@/lib/templates";
 import { CustomScripts } from "@/components/custom-scripts";
@@ -57,7 +58,7 @@ export default function TemplatesPage() {
       const res = await fetch("/api/email/preview", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ subject, body }),
+        body: JSON.stringify({ subject, body, ...identiteEnvoi(settings) }),
       });
       const data = (await res.json()) as { html?: string };
       if (data.html) {

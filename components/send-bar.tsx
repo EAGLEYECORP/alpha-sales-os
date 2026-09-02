@@ -11,6 +11,7 @@ import { linkedinUrl, linkedinTouchesToday, LINKEDIN_DAILY_SAFE } from "@/lib/li
 import { clipboardText, composeFitsInUrl, gmailComposeUrl } from "@/lib/mail-compose";
 import { cn } from "@/lib/utils";
 import { isDemoProspect } from "@/lib/seed";
+import { identiteEnvoi } from "@/lib/expediteur";
 
 /** 06 12 34 56 78 → 33612345678 (format wa.me / SMS international) */
 export function toIntlPhone(phone: string): string {
@@ -134,10 +135,11 @@ export function SendBar({
           prospectId: prospect.id,
           attachments,
           force,
-          // Le compte au nom duquel on écrit. Un message saisi ici n'est pas
-          // soumis à validation — celui qui l'écrit l'assume — mais la route
-          // doit savoir de quelle marque il s'agit.
-          accountId: settings.accountId ?? "eagleye",
+          // Le compte au nom duquel on écrit, et QUI signe. Un message saisi
+          // ici n'est pas soumis à validation — celui qui l'écrit l'assume —
+          // mais la route doit savoir de quelle marque il s'agit, sinon elle
+          // signe avec la nôtre (`lib/expediteur.ts`).
+          ...identiteEnvoi(settings),
           cadreId,
           // La preuve se construit à UN seul endroit (`preuvePourEnvoi`) :
           // quatre constructions à la main auraient divergé.

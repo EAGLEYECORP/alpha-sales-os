@@ -195,6 +195,33 @@ SMS — sans un tampon de relecture.
 > (`status: 422`) au lieu de la CONDITION qui y mène. Un `if (false)` laisse le
 > 422 en place et le test passe. Toujours muter la condition pour vérifier.
 
+## QUI SIGNE, ET CE QUI NE PART PAS SANS MENTIONS
+Deux contrôles distincts sur **tout** message sortant, tous deux arbitrés
+côté serveur dans `/api/send` — le seul endroit d'où un message PART.
+- **Le signataire** (`lib/signature.ts`) : on ne devine JAMAIS l'identité d'un
+  humain. Ordre de repli : le nom saisi → la **société** (une raison sociale
+  identifie légalement, et elle est à l'expéditeur) → le libellé d'usine,
+  **rendu visible** (`usine: true`) au lieu d'être masqué.
+  > ⚠ Le produit est **white-label**. Aucun repli ne remet « EAGLEYE » : la
+  > marque, l'adresse légale, le papier à en-tête et le logo suivent le
+  > **compte**. Ils étaient tous les quatre en dur — un email ScintIA partait
+  > avec notre en-tête, notre raison sociale et notre aigle. Seule survit la
+  > mention de **plateforme** (« Envoyé avec Alpha Sales OS® »), qui nomme
+  > l'éditeur de l'outil et reste vraie partout.
+- **Les mentions obligatoires** (`lib/conformite.ts` → `verifieMentions`) :
+  qui écrit + moyen de refus. Vérifiées sur **ce qui part réellement** —
+  l'email sur le texte RENDU (le pied « STOP » est ajouté par le rendu), le
+  SMS sur `body.body` (rien ne s'y ajoute : il partait nu).
+  > ⚠ On **refuse**, on n'ajoute pas en douce : un SMS se paie au segment, et
+  > masquer un trou le rend indétectable. Et **`force` ne passe pas outre** —
+  > il arbitre le score anti-spam et la fenêtre de recontact, deux jugements ;
+  > une mention obligatoire n'en est pas un.
+- **Le câblage** (`lib/expediteur.ts` → `identiteEnvoi`) : les **quatre**
+  appelants de `/api/send` (barre d'envoi, revue de campagne, newsletter,
+  recette) étalent le même triplet. Trois annonçaient le compte, aucun le
+  signataire, la recette rien du tout. Le client ne tranche rien : il
+  transmet, le serveur arbitre.
+
 ## Références externes (`lib/references.ts`) — un livre n'est PAS une vérité
 Les sources extérieures (livres, vidéos, cours) entrent dans le Cerveau avec
 trois choses attachées, jamais sans :

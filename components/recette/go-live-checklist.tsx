@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAlpha } from "@/lib/store";
+import { identiteEnvoi } from "@/lib/expediteur";
 import {
   CheckCircle2,
   Circle,
@@ -90,6 +92,8 @@ function Item({
 }
 
 export function GoLiveChecklist() {
+  // L'identité d'envoi réelle : le banc d'essai doit tester CE qui part.
+  const { settings } = useAlpha();
   // ── Prérequis (auto) ──
   const [preOk, setPreOk] = useState<{ smtp: Status; secret: Status; baseUrl: Status; n8n: Status }>({
     smtp: "idle",
@@ -188,6 +192,13 @@ export function GoLiveChecklist() {
           ctaUrl: window.location.origin,
           prospectId: "recette-test",
           campaignId: "recette",
+          /**
+           * ⚠ La recette est le banc d'essai : elle doit partir avec la MÊME
+           * identité que les vrais envois, sinon elle valide une chaîne que
+           * personne n'utilise. C'était le seul des quatre appelants à
+           * n'annoncer ni compte ni signataire.
+           */
+          ...identiteEnvoi(settings),
           force,
         }),
       });

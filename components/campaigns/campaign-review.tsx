@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { identiteEnvoi } from "@/lib/expediteur";
 import { campagnePeutPartir } from "@/lib/validation-partenaire";
 import type { Campaign, CampaignDraft, CampaignStepKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -120,7 +121,7 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
         const res = await fetch("/api/email/preview", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ subject: d.subject, body: d.body }),
+          body: JSON.stringify({ subject: d.subject, body: d.body, ...identiteEnvoi(settings) }),
         });
         const data = (await res.json()) as Preview;
         setPreviews((m) => ({ ...m, [d.id]: data }));
@@ -190,9 +191,10 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
             body: d.body,
             prospectId: d.prospectId,
             campaignId: campaign.id,
-            // Le compte au nom duquel on écrit : sans lui, la porte serveur
-            // ne se déclenche jamais et le contrôle est mort.
-            accountId,
+            // Le compte au nom duquel on écrit ET qui signe : sans eux, la
+            // porte serveur ne se déclenche jamais et l'email part signé de
+            // NOTRE marque (`lib/expediteur.ts`).
+            ...identiteEnvoi(settings),
           }),
         });
         const data = await res.json();

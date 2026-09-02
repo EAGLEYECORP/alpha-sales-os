@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Eye, Loader2, Mail, Send, ShieldAlert, Users } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { identiteEnvoi } from "@/lib/expediteur";
 import type { Prospect, Sector } from "@/lib/types";
 import { isDemoProspect } from "@/lib/seed";
 import { cn } from "@/lib/utils";
@@ -130,6 +131,8 @@ export default function NewsletterPage() {
           body: withBooking(sample ? fill(body, sample) : body, settings.bookingUrl),
           ctaLabel: settings.bookingUrl?.trim() ? "Réserver 15 minutes" : undefined,
           ctaUrl: settings.bookingUrl?.trim() || undefined,
+          // Même identité que l'envoi : un aperçu signé autrement ne prouve rien.
+          ...identiteEnvoi(settings),
         }),
       });
       setPreview(await res.json());
@@ -163,7 +166,9 @@ export default function NewsletterPage() {
             ctaUrl: settings.bookingUrl?.trim() || undefined,
             prospectId: p.id,
             campaignId: "newsletter",
-            accountId: settings.accountId ?? "eagleye",
+            // Compte + signataire : la newsletter partait signée « EAGLEYE »
+            // quel que soit le compte (`lib/expediteur.ts`).
+            ...identiteEnvoi(settings),
           }),
         });
         const data = await res.json();

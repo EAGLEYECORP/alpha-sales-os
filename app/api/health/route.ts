@@ -148,7 +148,6 @@ export async function GET(req: NextRequest) {
         // « déployé sans mot de passe »
         publicHost: has("VERCEL") || has("VERCEL_URL"),
       },
-      branding: { closerName: has("CLOSER_NAME") },
     },
   });
 }
