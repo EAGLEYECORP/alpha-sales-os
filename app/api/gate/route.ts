@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
+import { verrouDeComptesActif } from "@/lib/entitlements";
 import { AttemptLimiter, callerKey } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -18,7 +19,43 @@ const limiter = new AttemptLimiter();
  * si la porte est active). Sans SITE_PASSWORD, la porte est désactivée.
  */
 export async function GET() {
-  return NextResponse.json({ required: Boolean(process.env.SITE_PASSWORD) });
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * QUELLE SERRURE CE DÉPLOIEMENT DEMANDE-T-IL ?
+   *
+   * `required` : la porte MOT DE PASSE est-elle active (SITE_PASSWORD posé).
+   * `compteRequis` : le SERVEUR exige-t-il un COMPTE (Supabase + REQUIRE_AUTH).
+   *
+   * ⚠ POURQUOI LE SECOND EST NÉCESSAIRE, ET POURQUOI IL EST PUBLIC.
+   *
+   * L'écran de connexion (`AuthGate`) se déclenchait sur un réglage stocké
+   * dans le NAVIGATEUR (`settings.security.requireAuth`). Un navigateur neuf
+   * — celui d'un client à qui on ouvre un accès, ou le tien en navigation
+   * privée — ne l'a pas : il ne voyait donc JAMAIS l'écran de connexion,
+   * quelle que soit la configuration du serveur. Une serrure dont l'existence
+   * dépend du trousseau de celui qui entre n'est pas une serrure.
+   *
+   * Le rendre public ne révèle rien d'exploitable. Si `compteRequis` est faux,
+   * c'est que `SITE_PASSWORD` mure encore TOUT (c'est l'invariant de
+   * `verrouDeComptesActif`) : l'appelant reste dehors et n'apprend rien qu'il
+   * puisse utiliser. S'il est vrai, il apprend qu'il faut se connecter — ce
+   * que l'écran de connexion lui dit de toute façon.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  return NextResponse.json({
+    required: Boolean(process.env.SITE_PASSWORD),
+    compteRequis: verrouDeComptesActif(),
+    /**
+     * ⚠ LE CAS QUI CASSE TOUT EN SILENCE : le serveur exige un compte, et le
+     * navigateur n'a pas de quoi en ouvrir un (`NEXT_PUBLIC_SUPABASE_URL` /
+     * `ANON_KEY` absents du build). L'utilisateur verrait alors une coquille
+     * vide dont chaque appel répond 401, sans jamais pouvoir se connecter.
+     * On le NOMME pour que l'écran puisse le dire au lieu de tourner en rond.
+     */
+    clientPeutSeConnecter: Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ),
+  });
 }
 
 export async function POST(request: NextRequest) {

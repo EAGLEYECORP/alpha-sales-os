@@ -230,12 +230,29 @@ test("les boutons d'achat ne renvoient plus derrière le mot de passe", () => {
 const mw = readFileSync(join(process.cwd(), "middleware.ts"), "utf8");
 
 test("le mot de passe ne se lève QUE si une autre serrure est en place", () => {
-  const bloc = mw.slice(mw.indexOf("function verrouDeComptesActif"), mw.indexOf("let tokenCache"));
+  /**
+   * ⚠ LA DÉFINITION A DÉMÉNAGÉ dans `lib/entitlements.ts` — l'écran de
+   * connexion pose la MÊME question (le serveur exige-t-il un compte ?), et
+   * la recopier aurait créé deux réponses possibles à « l'app est-elle
+   * protégée ? ». L'invariant, lui, n'a pas bougé d'un caractère : on le
+   * vérifie donc là où il vit, et on vérifie EN PLUS que le middleware
+   * consomme bien cette définition-là plutôt que la sienne.
+   */
+  const ent = readFileSync(join(process.cwd(), "lib/entitlements.ts"), "utf8");
+  const bloc = ent.slice(ent.indexOf("export function verrouDeComptesActif"));
   assert.match(bloc, /comptesActifs\(\)/, "les comptes doivent être actifs");
   assert.match(bloc, /serverAuthEnforced\(\)/, "et le JWT réellement exigé côté serveur");
   assert.match(bloc, /comptesActifs\(\) && serverAuthEnforced\(\)/, "les DEUX, pas l'un ou l'autre");
+
+  // Le middleware l'IMPORTE au lieu de la redéfinir : une seule serrure.
+  assert.match(mw, /import \{[^}]*verrouDeComptesActif[^}]*\} from "@\/lib\/entitlements"/);
+  assert.ok(
+    !/function verrouDeComptesActif/.test(mw),
+    "une seconde définition dans le middleware finirait par diverger — et l'une des deux ouvre tout"
+  );
+
   // La garde par défaut est la protection, pas l'ouverture.
-  assert.match(bloc, /return !verrouDeComptesActif\(\)/, "sans serrure de remplacement, tout reste muré");
+  assert.match(mw, /return !verrouDeComptesActif\(\)/, "sans serrure de remplacement, tout reste muré");
 });
 
 test("les surfaces d'administration restent murées quoi qu'il arrive", () => {
@@ -273,7 +290,16 @@ test("l'admin muré est AUSSI réservé au compte maître par les droits", () =>
 test("les pages du PRODUIT ne sont pas classées comme administration", () => {
   // Le contre-test : une liste d'admin trop large remurerait les clients, et
   // on aurait fait tout ce chemin pour rien.
-  const bloc = mw.slice(mw.indexOf("const ADMIN_PREFIXES"), mw.indexOf("function verrouDeComptesActif"));
+  /**
+   * ⚠ La borne de fin était `function verrouDeComptesActif`, qui a déménagé.
+   * `indexOf` rendait donc -1, `slice` remontait jusqu'à la fin du fichier, et
+   * le test échouait en trouvant « /compte » ailleurs. On borne sur ce qui
+   * suit réellement la liste — et si cette borne disparaît à son tour, le
+   * test le dira au lieu de lire tout le fichier.
+   */
+  const fin = mw.indexOf("function exigeMotDePasse");
+  assert.ok(fin > 0, "la borne de fin du bloc ADMIN a disparu : ce test ne mesure plus rien");
+  const bloc = mw.slice(mw.indexOf("const ADMIN_PREFIXES"), fin);
   for (const p of ["/pipeline", "/aujourdhui", "/appels", "/voice", "/compte", "/settings", "/demarrage"]) {
     assert.ok(!bloc.includes(`"${p}"`), `${p} est une page vendue au client : elle ne doit pas être murée`);
   }

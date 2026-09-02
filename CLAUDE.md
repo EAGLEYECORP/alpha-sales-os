@@ -459,6 +459,35 @@ lui qui fait dire « un closer suffit pour 500/jour »), tarif Telnyx à la minu
   > publique — `/api/send` envoie de vrais emails, `/api/voice/call` compose de
   > vrais numéros. Par défaut on protège ; on n'ouvre que sur preuve.
   >
+  > ⚠⚠ **Cette question ne se pose QU'À UN ENDROIT** : `verrouDeComptesActif`
+  > (`lib/entitlements.ts`). Le middleware ET l'écran de connexion la posent ;
+  > deux définitions de « l'app est-elle protégée ? » finiraient par diverger,
+  > et l'une des deux ouvrirait tout.
+
+### DU MOT DE PASSE AU COMPTE — la bascule (02/09/2026)
+`SITE_PASSWORD` est un mot de passe PARTAGÉ, sans identifiant, changeable
+seulement par redéploiement. Le vrai login (email + mot de passe, que le
+titulaire change lui-même) est le compte Supabase, et l'écran existe déjà :
+`components/security/auth-gate.tsx`.
+- **Ce qui bascule** : poser `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_JWT_SECRET`
+  + `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste), **puis**
+  `REQUIRE_AUTH=1` **en dernier**. Les trois premières ne changent RIEN tant
+  que la quatrième n'est pas là — vérifié sur serveur réel.
+- **Le fail-closed** : `REQUIRE_AUTH=1` sans `SUPABASE_JWT_SECRET` → les API
+  de données répondent **503**, et le mot de passe continue de tout murer. La
+  misconfiguration n'ouvre jamais.
+- **Après bascule, le mot de passe reste** sur `ADMIN_PREFIXES` (`/payouts`,
+  `/offre`, `/api/sync`) : notre économie, jamais celle du client.
+  > ⚠ **Le défaut corrigé, et il ne se voyait pas** : l'écran de connexion ne
+  > se fermait que sur `settings.security.requireAuth` — un réglage du
+  > NAVIGATEUR. Un navigateur neuf (client, navigation privée, autre appareil)
+  > ne le voyait donc JAMAIS, quelle que soit la config serveur. **Une serrure
+  > dont l'existence dépend du trousseau de celui qui entre n'est pas une
+  > serrure.** Il lit maintenant le serveur (`GET /api/gate` → `compteRequis`)
+  > **OU** le réglage local — un `&&` reproduirait exactement le bug.
+  > Corollaire testé : une panne réseau ne conclut jamais « pas de compte
+  > requis » ; elle retombe sur le réglage local, jamais sur « ouvert ».
+  >
   > Vérifié sur serveur réel : sans comptes, tout reste muré ; avec comptes,
   > une page produit renvoie vers `/compte?bloque=…` (parcours client) et une
   > page admin vers `/gate` (mot de passe). Deux portes, deux publics.

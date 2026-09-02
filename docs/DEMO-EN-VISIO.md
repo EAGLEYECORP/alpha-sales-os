@@ -30,6 +30,13 @@ emails à n'importe qui.
 
 ---
 
+> ⚠ **Si tu as basculé sur le LOGIN** (`REQUIRE_AUTH=1` + Supabase), ce
+> paragraphe change : l'entrée n'est plus un mot de passe partagé mais un
+> **compte** (email + mot de passe, que tu changes toi-même sans redéployer).
+> `SITE_PASSWORD` ne garde alors plus que `/payouts`, `/offre` et `/api/sync`.
+> Détail de la bascule et de son ordre : CLAUDE.md § « Du mot de passe au
+> compte ». **Ne bascule pas la veille d'une démonstration.**
+
 ## 2. Les trois écrans à NE PAS ouvrir en partage d'écran
 
 Ils sont protégés par le mot de passe — que **tu as**. La protection ne te

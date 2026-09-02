@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getTenant } from "./tenant";
 import { peutOuvrir, type BrickId } from "./bricks-access";
+import { serverAuthEnforced } from "./supabase-jwt";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -77,6 +78,32 @@ export const DROIT_REFUSE: Entitlement = {
 /** Le système de comptes est-il actif sur ce déploiement ? */
 export function comptesActifs(): boolean {
   return Boolean(process.env.SUPABASE_JWT_SECRET && process.env.NEXT_PUBLIC_SUPABASE_URL);
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA SERRURE DE REMPLACEMENT EST-ELLE RÉELLEMENT EN PLACE ?
+ *
+ * ⚠ C'EST LA QUESTION LA PLUS DANGEREUSE DU DÉPÔT, ET ELLE ÉTAIT POSÉE À DEUX
+ * ENDROITS.
+ *
+ * `middleware.ts` la posait chez lui (`verrouDeComptesActif`) pour décider si
+ * `SITE_PASSWORD` mure encore toute l'application. Dès qu'un deuxième
+ * appelant en a eu besoin — l'écran de connexion, qui doit savoir si le
+ * SERVEUR exige un compte — la recopier aurait créé deux réponses possibles
+ * à « l'app est-elle protégée ? ». Le jour où elles divergent, l'une des deux
+ * ouvre tout.
+ *
+ * Une seule définition, ici, importée des deux côtés.
+ *
+ * Les deux moitiés sont OPT-IN et doivent l'être : sans elles, il n'existe
+ * aucune autre serrure et `/api/send` enverrait de vrais emails à n'importe
+ * qui. Tant qu'elles ne sont pas toutes les deux vraies, le mot de passe
+ * continue de tout garder — c'est le comportement par défaut, et il protège.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function verrouDeComptesActif(): boolean {
+  return comptesActifs() && serverAuthEnforced();
 }
 
 /** Emails du compte MAÎTRE (le nôtre), séparés par des virgules. */

@@ -6,7 +6,7 @@ import {
   serverAuthMisconfigured,
   verifySupabaseJwt,
 } from "@/lib/supabase-jwt";
-import { autorise, comptesActifs, resoudreDroits } from "@/lib/entitlements";
+import { autorise, comptesActifs, resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
 import { CHEMIN_PAR_API } from "@/lib/api-access";
 
 /**
@@ -294,9 +294,9 @@ const MAITRE_SEULEMENT = ["/api/pipeline", "/api/voice-costs", "/api/knowledge",
  * réellement en place. Tant qu'elle ne l'est pas, tout reste protégé —
  * exactement comme avant.
  */
-function verrouDeComptesActif(): boolean {
-  return comptesActifs() && serverAuthEnforced();
-}
+// `verrouDeComptesActif` vit dans `lib/entitlements.ts` : l'écran de
+// connexion pose la MÊME question, et deux définitions finiraient par donner
+// deux réponses — dont une qui ouvre tout.
 
 function exigeMotDePasse(pathname: string): boolean {
   if (startsWithAny(pathname, ADMIN_PREFIXES)) return true;
