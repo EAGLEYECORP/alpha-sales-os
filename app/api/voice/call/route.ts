@@ -128,6 +128,9 @@ export async function POST(request: NextRequest) {
     verticalId: body.verticalId,
     prospectBrief: body.prospectBrief,
     offre: offreResolue.offre,
+    // ⚠ Le compte décide de la garde de marque, dans le SCRIPT comme dans son
+    // audit. Passé à un seul des deux, l'un écrit ce que l'autre refuse.
+    compteId: body.accountId,
     corpsFroid: body.corpsFroid,
   };
 
@@ -135,8 +138,11 @@ export async function POST(request: NextRequest) {
 
   // ── Porte 2 : la conformité du script ──
   // Le contexte déclenche les exigences de l'appel à froid, et celles de la
-  // marque partenaire sur Callflow (voir lib/voice-script).
-  const audit = auditScript(script, { mode: cfg.mode, offre: cfg.offre });
+  // marque partenaire sur un compte revendeur (voir lib/voice-script).
+  // ⚠ `compteId` est ce qui ARME la garde de marque partenaire. Sans lui,
+  // `auditScript` ne peut pas savoir au nom de qui on parle, et la garde ne
+  // se déclenche jamais — une garde muette, le défaut habituel du dépôt.
+  const audit = auditScript(script, { mode: cfg.mode, offre: cfg.offre, compteId: cfg.compteId });
   if (!audit.ok) {
     return NextResponse.json(
       {
@@ -152,7 +158,7 @@ export async function POST(request: NextRequest) {
    * ── Porte 2 ter : L'ACCORD DU PARTENAIRE ──
    *
    * La conformité n'est pas l'accord. Un script peut être parfaitement légal
-   * et ne pas être celui que ScintIA a relu — et sur un appel Callflow, c'est
+   * et ne pas être celui que le partenaire a relu — et sur son appel, c'est
    * LEUR marque que le prospect entend.
    *
    * ⚠ L'EMPREINTE PORTE SUR LA TRAME, PAS SUR LE SCRIPT ASSEMBLÉ. Le script
@@ -335,6 +341,8 @@ export async function GET(request: NextRequest) {
     // La relecture doit montrer LE script qui partira, offre comprise. Sans
     // ça, l'opérateur valide un texte et l'agent en dit un autre.
     offre: offreRelue.offre,
+    // Même raison qu'à l'envoi : la garde de marque suit le COMPTE.
+    compteId: q.get("accountId") ?? undefined,
     // La relecture doit montrer la trame QUI PARTIRA, édition comprise.
     corpsFroid: q.get("corpsFroid") ?? undefined,
   };
@@ -345,7 +353,7 @@ export async function GET(request: NextRequest) {
     // Même contexte qu'à l'envoi : l'écran de relecture doit voir EXACTEMENT
     // les manques que la route d'appel refusera. Auditer moins ici, c'est
     // valider un script que l'appel rejettera ensuite.
-    audit: auditScript(script, { mode: cfg.mode, offre: cfg.offre }),
+    audit: auditScript(script, { mode: cfg.mode, offre: cfg.offre, compteId: cfg.compteId }),
     window: callAllowedNow(),
     livekit: livekitConfigured(),
   });

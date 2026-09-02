@@ -120,7 +120,7 @@ export function CampaignRunner({
              *
              * `task.brief` porte « Offre pertinente : … » depuis toujours,
              * mais l'offre elle-même ne voyageait pas — et le script sortant
-             * annonçait Callflow en dur. Sur une fiche routée vers la
+             * annonçait l'angle voix en dur. Sur une fiche routée vers la
              * visibilité, l'agent recevait deux offres différentes dans le
              * même prompt et tranchait tout seul, en direct.
              */

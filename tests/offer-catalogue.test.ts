@@ -32,8 +32,8 @@ const offre = (over: Partial<Offre> = {}): Offre => ({
 test("validation — on refuse ce qui produirait un email cassé", () => {
   // Un libellé vide sort TEL QUEL dans un email au prospect. Une description
   // vide fait écrire du vide à l'IA. Ce sont les deux seuls refus durs.
-  assert.ok(validerOffre({ label: "", what: "x".repeat(20), famille: "callflow" }).some((e) => e.champ === "label"));
-  assert.ok(validerOffre({ label: "Toiture", what: "trop court", famille: "callflow" }).some((e) => e.champ === "what"));
+  assert.ok(validerOffre({ label: "", what: "x".repeat(20), famille: "alpha-voice" }).some((e) => e.champ === "label"));
+  assert.ok(validerOffre({ label: "Toiture", what: "trop court", famille: "alpha-voice" }).some((e) => e.champ === "what"));
   assert.deepEqual(validerOffre(offre()), [], "une offre complète passe");
 });
 
@@ -60,13 +60,13 @@ test("validation — un prix à zéro est légitime, un prix négatif non", () =
 test("validation — deux offres homonymes rendent tout choix ambigu", () => {
   const existantes = [offre({ id: "a", label: "Toiture complète" })];
   const err = validerOffre(
-    { label: "toiture COMPLÈTE", what: "Une description assez longue.", famille: "callflow" },
+    { label: "toiture COMPLÈTE", what: "Une description assez longue.", famille: "alpha-voice" },
     existantes
   );
   assert.ok(err.some((e) => e.champ === "label"), "la comparaison ignore la casse");
   // Se renommer soi-même reste possible.
   assert.deepEqual(
-    validerOffre({ id: "a", label: "Toiture complète", what: "Une description assez longue.", famille: "callflow" }, existantes),
+    validerOffre({ id: "a", label: "Toiture complète", what: "Une description assez longue.", famille: "alpha-voice" }, existantes),
     []
   );
 });
@@ -98,13 +98,13 @@ test("suppression — la DERNIÈRE offre active d'une famille est protégée", (
    * Sans ce garde-fou, supprimer la dernière offre d'une famille laisserait
    * des prospects sans destination — et rien ne casserait visiblement.
    */
-  const seule = offre({ id: "perso", famille: "callflow", systeme: undefined });
+  const seule = offre({ id: "perso", famille: "alpha-voice", systeme: undefined });
   const v = peutSupprimer(seule, [seule]);
   assert.equal(v.ok, false);
   assert.match(v.raison ?? "", /dernière offre active/i);
 
   // Avec une sœur active, la suppression passe.
-  const soeur = offre({ id: "perso2", famille: "callflow" });
+  const soeur = offre({ id: "perso2", famille: "alpha-voice" });
   assert.equal(peutSupprimer(seule, [seule, soeur]).ok, true);
   // Une sœur DÉSACTIVÉE ne compte pas : elle ne reçoit aucun prospect.
   assert.equal(peutSupprimer(seule, [seule, { ...soeur, actif: false }]).ok, false);

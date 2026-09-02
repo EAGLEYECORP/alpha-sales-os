@@ -6,6 +6,7 @@ import { buildVoiceScript } from "../lib/voice-script";
 import { emailSubject, emailBody } from "../lib/mail-compose";
 import { messageText } from "../lib/linkedin-sequence";
 import { OFFRES, type EagleyeOffer } from "../lib/offer-match";
+import { getAccount } from "../lib/accounts";
 import { buildLadder, ladderPitch } from "../lib/ladder";
 import type { Prospect } from "../lib/types";
 
@@ -175,7 +176,7 @@ test("⚠ hors Callflow, aucune surface ne ramène le vocabulaire du téléphone
 
   for (const { quoi, p } of CAS) {
     const offre = deepDive(p).offer;
-    if (offre === "callflow") continue;
+    if (offre === "alpha-voice") continue;
     for (const { nom, texte } of surfaces(p)) {
       const m = texte.match(VOCABULAIRE_TELEPHONE);
       if (m) fautes.push(`${quoi} (${offre}) · ${nom} → « ${m[0]} »`);
@@ -191,29 +192,33 @@ test("la surface Callflow, elle, PARLE bien du téléphone", () => {
    * le retirer là où il est le sujet. Une offre d'accueil téléphonique qui
    * n'en parlerait plus ne vendrait plus rien.
    */
-  const cf = CAS.find(({ p }) => deepDive(p).offer === "callflow")!;
+  const cf = CAS.find(({ p }) => deepDive(p).offer === "alpha-voice")!;
   const tout = surfaces(cf.p)
     .map((s) => s.texte)
     .join("\n");
   assert.match(tout, /téléphone|appels/i, "Callflow doit continuer de parler de son sujet");
 });
 
-test("un compte mono-offre ne laisse passer aucune autre offre, sur aucune surface", () => {
+test("un compte revendeur ne laisse passer aucune autre offre, sur aucune surface", () => {
   /**
-   * ScintIA ne vend QUE Callflow. Même sur une fiche dont les signaux crient
-   * « visibilité », rien de ce qui part en son nom ne doit proposer autre
-   * chose — c'est une règle commerciale négociée, pas un réglage d'affichage.
+   * Un compte revendeur est borné à SES offres. Même sur une fiche dont les
+   * signaux crient « appels manqués », rien de ce qui part en son nom ne doit
+   * proposer notre agent vocal — c'est une règle commerciale, pas un réglage
+   * d'affichage.
+   *
+   * ⚠ L'exemple était l'inverse (un compte qui ne vendait QUE l'accueil
+   * téléphonique). Ce compte est parti et son offre est revenue chez nous.
+   * L'invariant testé, lui, n'a pas changé d'un mot : le COMPTE borne.
    */
-  const invisible = CAS[1].p;
-  for (const { nom, texte } of surfaces(invisible, "scintia")) {
+  const telephone = CAS[0].p;
+  const permises = getAccount("nuwacom").offers;
+  assert.ok(!permises.includes("alpha-voice"), "le cas n'a de sens que si l'offre est hors périmètre");
+
+  for (const { nom, texte } of surfaces(telephone, "nuwacom")) {
     for (const champ of ["label", "benefice", "question"] as const) {
       assert.ok(
-        !texte.includes(OFFRES["visibilite-growth"][champ]),
-        `${nom} : une offre hors périmètre ScintIA a fuité (${champ})`
-      );
-      assert.ok(
-        !texte.includes(OFFRES["alpha-sales-os"][champ]),
-        `${nom} : une offre hors périmètre ScintIA a fuité (${champ})`
+        !texte.includes(OFFRES["alpha-voice"][champ]),
+        `${nom} : une offre hors périmètre du compte a fuité (${champ})`
       );
     }
   }

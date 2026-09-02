@@ -33,7 +33,7 @@ optionnel, n8n auto-hébergeable.
 | Délivrabilité + emails HTML « calme » | `lib/deliverability.ts`, `lib/email-html.ts` | ✅ |
 | Tracking ouvertures/clics | `lib/tracking.ts` | ✅ code · Supabase pour la durabilité |
 | Pilote automatique (n8n) | `integrations/n8n/*` | ✅ workflows · n8n à lancer |
-| Import CSV / Sheets / ICP Callflow | `lib/csv.ts`, `lib/prospects-icp.ts` | ✅ |
+| Import CSV / Sheets / ICP Alpha Voice | `lib/csv.ts`, `lib/prospects-icp.ts` | ✅ |
 | Site vitrine eagleyecorp.fr | `site/` | ✅ Netlify-ready |
 
 ## Vérification (dernier passage)

@@ -1,15 +1,24 @@
 /**
  * ─────────────────────────────────────────────────────────────────────
- * Cadence de rappel — la règle EXIGÉE par ScintIA pour Callflow.
+ * Cadence de rappel — 5 rappels sur 2 jours après le premier appel sans
+ * réponse. Dès qu'il répond, Alpha Voice ARRÊTE d'appeler, met à jour le
+ * pipeline, et passe la main à l'humain (closer).
  *
- * « Après le premier appel sans réponse : 5 rappels sur 2 jours. Dès qu'il
- *   répond, Alpha Voice ARRÊTE d'appeler, met à jour le pipeline, et passe
- *   la main à l'humain (closer). »
+ * ⚠⚠ QUI DÉCIDE DE CE CHIFFRE — LA RÉPONSE A CHANGÉ, LIS-LA.
+ *
+ * Ces 5 rappels étaient EXIGÉS par un partenaire, pour son produit. L'accord
+ * est mort. Personne ne les exige donc plus : ce n'est plus une contrainte
+ * subie, c'est un CHOIX, et il t'appartient.
+ *
+ * Ça mérite d'être redit parce que le chiffre est agressif : 6 contacts en
+ * 2 jours (voir le conflit avec le décret plus bas). On le tenait parce qu'il
+ * fallait tenir un compte. Ce compte n'existe plus. Si tu le gardes, garde-le
+ * en le sachant — et il n'y a plus de raison commerciale de ne pas le baisser.
  *
  * Deux points non négociables, et c'est le cœur du module :
  *  1. Le compteur s'arrête à la RÉPONSE, pas au nombre d'essais. Un agent qui
  *     continue d'appeler quelqu'un qui a décroché détruit la relation — et
- *     nous ferait perdre le compte ScintIA.
+ *     maintenant c'est NOTRE marque qui le fait, plus celle d'un tiers.
  *  2. Une opposition (« ne me rappelez plus ») coupe TOUT, définitivement,
  *     immédiatement. Elle prime sur la cadence, sur le quota, sur tout.
  *
@@ -19,14 +28,14 @@
  */
 
 /** 5 rappels après le 1er appel, étalés sur 2 jours (heures depuis le 1er appel). */
-export const CALLFLOW_RECALL_OFFSETS_H = [3, 8, 24, 32, 48];
-export const CALLFLOW_MAX_RECALLS = CALLFLOW_RECALL_OFFSETS_H.length;
+export const RAPPELS_OFFSETS_H = [3, 8, 24, 32, 48];
+export const RAPPELS_MAX = RAPPELS_OFFSETS_H.length;
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * ⚠ LE CONFLIT ENTRE LA CADENCE ScintIA ET LE DROIT FRANÇAIS.
+ * ⚠ LE CONFLIT ENTRE CETTE CADENCE ET LE DROIT FRANÇAIS.
  *
- * La cadence exigée par ScintIA fait **6 contacts en 2 jours** (le premier
+ * La cadence fait **6 contacts en 2 jours** (le premier
  * appel plus cinq rappels). Le décret n° 2022-1313 plafonne le démarchage
  * téléphonique à **4 sollicitations par consommateur sur 30 jours glissants**.
  *
@@ -36,9 +45,9 @@ export const CALLFLOW_MAX_RECALLS = CALLFLOW_RECALL_OFFSETS_H.length;
  *
  * ── CE QUE CE CODE FAIT, ET CE QU'IL NE FAIT PAS ──
  *
- * Il ne tranche PAS l'accord commercial : sur une cible clairement
- * professionnelle, la cadence ScintIA s'applique entière. Il empêche
- * seulement la cadence longue de partir en silence sur une cible à risque.
+ * Il ne tranche PAS le choix commercial : sur une cible clairement
+ * professionnelle, la cadence complète s'applique. Il empêche seulement la
+ * cadence longue de partir en silence sur une cible à risque.
  *
  * Le discriminant est le SIREN. Une fiche croisée avec le registre des
  * entreprises est une entreprise inscrite — donc B2B. Une fiche sans SIREN,
@@ -72,7 +81,7 @@ const SIREN_DANS_NOTES = /\bSIREN\s*:?\s*(\d{9})\b/i;
 /**
  * La cible de risque d'un prospect — LE point d'entrée unique.
  *
- * ⚠ Appeler `cadenceFor` sans cible retombe sur la cadence Callflow complète
+ * ⚠ Appeler `cadenceFor` sans cible retombe sur la cadence complète
  * (5 rappels), c'est-à-dire au-dessus du plafond légal quand la fiche n'a pas
  * de SIREN. C'était le cas de `masterRappel` : le plan affiché à l'humain
  * annonçait « rappel 3/5 » pendant que l'autopilote, lui, s'arrêtait à 4.
@@ -96,9 +105,9 @@ export function plafondRappels(cible: RisqueCible = {}): { max: number; plafonne
   const siren = (cible.siren ?? "").replace(/\D/g, "");
   if (siren.length >= 9) {
     return {
-      max: CALLFLOW_MAX_RECALLS,
+      max: RAPPELS_MAX,
       plafonne: false,
-      pourquoi: `SIREN ${siren} — entreprise inscrite au registre, la cadence Callflow complète s'applique.`,
+      pourquoi: `SIREN ${siren} — entreprise inscrite au registre, la cadence complète s'applique.`,
     };
   }
 
@@ -106,7 +115,7 @@ export function plafondRappels(cible: RisqueCible = {}): { max: number; plafonne
   // Le premier appel compte dans les sollicitations : 4 au total = 3 rappels.
   const max = PLAFOND_SOLLICITATIONS_B2C - 1;
   return {
-    max: Math.min(max, CALLFLOW_MAX_RECALLS),
+    max: Math.min(max, RAPPELS_MAX),
     plafonne: true,
     pourquoi: mobile
       ? "Mobile sans SIREN : la cible peut être un particulier ou un artisan en nom propre. Plafonné à 4 sollicitations sur 30 jours (décret n° 2022-1313) — croise la fiche avec le registre pour lever le plafond."
@@ -263,7 +272,7 @@ export function cadenceFor(
       callNow: true,
       nextCallAt: now.toISOString(),
       recallsUsed: 0,
-      recallsLeft: CALLFLOW_MAX_RECALLS,
+      recallsLeft: RAPPELS_MAX,
       handoffToHuman: false,
       reason: "Premier appel à passer.",
     };
@@ -288,7 +297,7 @@ export function cadenceFor(
     };
   }
 
-  const nextAt = new Date(t0 + CALLFLOW_RECALL_OFFSETS_H[recallsUsed] * H);
+  const nextAt = new Date(t0 + RAPPELS_OFFSETS_H[recallsUsed] * H);
   const due = nextAt.getTime() <= now.getTime();
   return {
     state: due ? "en-cadence" : "attente",
@@ -306,7 +315,7 @@ export function cadenceFor(
 /** Le planning complet des rappels à partir d'un premier appel (prévisualisation). */
 export function plannedRecalls(firstCallAt: string): string[] {
   const t0 = new Date(firstCallAt).getTime();
-  return CALLFLOW_RECALL_OFFSETS_H.map((h) => new Date(t0 + h * H).toISOString());
+  return RAPPELS_OFFSETS_H.map((h) => new Date(t0 + h * H).toISOString());
 }
 
 /**
@@ -316,13 +325,13 @@ export function plannedRecalls(firstCallAt: string): string[] {
  * ⚠ TROUVÉ EN SE SERVANT DU PRODUIT, PAS EN LE TESTANT.
  *
  * Sur `/controle`, le bloc « Alpha exécute » proposait
- * « Passer le rappel 1/3 (cadence Callflow) » sur LES HUIT fiches — dont
+ * « Passer le rappel 1/3 » sur LES HUIT fiches — dont
  * Plomberie Fabre, affichée deux blocs plus haut comme « PRÊT À SIGNER —
  * Envoyer le DEVIS », et Paddy's Corner, qui est perdue et en nurture.
  *
  * ── POURQUOI ──
  *
- * La règle ScintIA est écrite en haut de ce module : « dès qu'il répond,
+ * La règle est écrite en haut de ce module : « dès qu'il répond,
  * Alpha Voice ARRÊTE et passe la main au closer ». `cadenceFor` l'applique
  * correctement — mais sur le seul journal d'APPELS. Or `attemptsFromEvents`
  * ne retient que `kind === "appel"` : une fiche qui a avancé par visite,

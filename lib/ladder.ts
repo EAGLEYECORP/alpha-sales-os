@@ -11,12 +11,18 @@ import { NUWACOM_THRESHOLD_HT } from "./accounts";
  *
  *   1. VISIBILITÉ ........... besoin détecté → EAGLEYE le gère (100 % : c'est
  *        notre société, il n'y a personne à qui reverser).
- *   2. VOLUME DE DEMANDES ... très élevé → CALLFLOW (ScintIA), 30 % + 10 %.
+ *   2. VOLUME DE DEMANDES ... très élevé → ALPHA VOICE (EAGLEYE, 100 %).
  *   3. AUTOMATISATION ....... demande en plus → EAGLEYE (100 %).
- *        └─ argument de vente : Callflow est le POINT D'ENTRÉE. Il capte
+ *        └─ argument de vente : Alpha Voice est le POINT D'ENTRÉE. Il capte
  *           l'information exacte sur chaque personne qui appelle. Quand on
  *           automatise ensuite, les données sont déjà là → moins de setup à
  *           payer. C'est ce qui rend l'ordre des marches vendable.
+ *
+ * ⚠ LA MARCHE 2 A CHANGÉ DE MAIN, PAS DE NATURE. Elle partait chez un
+ * revendeur, à 30 % + 10 % du mensuel ; l'accord est mort. Le besoin ne meurt
+ * pas avec lui — un commerce qui ne décroche pas perd le client — et Alpha
+ * Voice fait ce travail. L'escalier garde donc ses quatre marches, et celle-ci
+ * rapporte maintenant 100 % au lieu de 30 %.
  *   4. TROP GROS ............ parties qu'EAGLEYE ne peut pas porter →
  *        NUWACOM. Le gros devis justifie les 15 %, et la maintenance
  *        mensuelle qui suit revient à 100 % chez nous.
@@ -26,10 +32,10 @@ import { NUWACOM_THRESHOLD_HT } from "./accounts";
  */
 
 /** Marches, dans l'ordre imposé. */
-export type RungId = "visibilite" | "callflow" | "automatisation" | "gros-chantier";
+export type RungId = "visibilite" | "alpha-voice" | "automatisation" | "gros-chantier";
 
 /**
- * Seuil « volume de demandes très élevé » qui déclenche Callflow
+ * Seuil « volume de demandes très élevé » qui déclenche Alpha Voice
  * (appels/demandes manqués par semaine). Ajustable : c'est un curseur
  * commercial, pas une vérité — remonte-le si tu veux être plus sélectif.
  */
@@ -54,8 +60,8 @@ export interface Rung {
    * importe finit dans un chunk de `_next/static/**`, et ce chemin est
    * EXCLU du middleware : servi 200, sans cookie, sans mot de passe.
    *
-   * Mesuré sur le build : `commissionPct:30` / `recurringPct:10` à côté de
-   * « ScintIA », et `commissionPct:15` à côté de « Nuwacom ». Autrement dit
+   * Mesuré sur le build : `commissionPct:30` / `recurringPct:10` à côté du
+   * nom d'un partenaire, et `commissionPct:15` à côté de « Nuwacom ». Autrement dit
    * notre part chez chaque partenaire, téléchargeable par ce partenaire —
    * alors que le taux Nuwacom est précisément ce qui se négocie APRÈS le
    * cadrage (CLAUDE.md).
@@ -106,7 +112,7 @@ function visibilityEvidence(p: Prospect): string[] {
   return out;
 }
 
-/** Le prospect croule-t-il sous les demandes ? (le déclencheur Callflow) */
+/** Le prospect croule-t-il sous les demandes ? (le déclencheur Alpha Voice) */
 function demandEvidence(p: Prospect): string[] {
   const a = p.deepAudit ?? {};
   const out: string[] = [];
@@ -139,32 +145,32 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
     });
   }
 
-  // ── Marche 2 : volume de demandes très élevé → Callflow (ScintIA) ──
+  // ── Marche 2 : volume de demandes très élevé → Alpha Voice (EAGLEYE) ──
   const dem = demandEvidence(p);
   if (dem.length) {
     rungs.push({
-      id: "callflow",
-      label: "ScintIA Callflow (accueil & relance téléphone)",
-      accountId: "scintia",
-      accountName: "ScintIA",
+      id: "alpha-voice",
+      label: "Alpha Voice (accueil & relance téléphone)",
+      accountId: "eagleye",
+      accountName: "EAGLEYE CORP",
       evidence: dem,
       pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
     });
   }
 
   // ── Marche 3 : automatisation en plus → EAGLEYE ──
-  // L'argument dépend de la présence de Callflow en amont : s'il est là, le
+  // L'argument dépend de la présence d'Alpha Voice en amont : s'il est là, le
   // setup coûte MOINS cher parce que la donnée d'entrée est déjà captée.
   if (opts.automationWanted) {
-    const hasCallflow = rungs.some((r) => r.id === "callflow");
+    const enAmont = rungs.some((r) => r.id === "alpha-voice");
     rungs.push({
       id: "automatisation",
       label: "Automatisation / digitalisation",
       accountId: "eagleye",
       accountName: "EAGLEYE CORP",
       evidence: ["demande d'automatisation exprimée"],
-      pitch: hasCallflow
-        ? "« Callflow est votre point d'entrée : il capte l'information exacte sur chaque personne qui vous " +
+      pitch: enAmont
+        ? "« Alpha Voice est votre point d'entrée : il capte l'information exacte sur chaque personne qui vous " +
           "appelle. Quand on automatise ensuite, on a déjà toutes les données et le process est cartographié — " +
           "vous payez donc MOINS de setup que si on partait de zéro. »"
         : "« On automatise le process là où il vous coûte du temps — en partant de vos vraies données, pas d'un modèle. »",

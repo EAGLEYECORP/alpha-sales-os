@@ -297,7 +297,7 @@ export const CASHVERTISING: Reference = {
       quoi: "L'endossement par une personne ou une organisation respectée transfère sa crédibilité au produit — le mécanisme de l'ambassadeur de marque.",
       statut: "bloque",
       reserve:
-        "Rien à transférer aujourd'hui. Les deux seules crédibilités réelles sont les PARTENAIRES (ScintIA, Nuwacom) — et les citer engage leur nom, donc ça se demande avant, pas après.",
+        "Rien à transférer aujourd'hui. Les deux seules crédibilités réelles sont les PARTENAIRES (Nuwacom) — et les citer engage leur nom, donc ça se demande avant, pas après.",
       tags: ["bloque", "preuve", "partenaires"],
     },
     {

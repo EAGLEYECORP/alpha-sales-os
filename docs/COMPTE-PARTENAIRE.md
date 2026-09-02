@@ -1,74 +1,75 @@
-# Compte ScintIA — loger le pipe de juillet
+# Compte partenaire — ce qui sort à SON nom
 
-> Décision : le pipeline réel de juillet 2026 (16 fiches Lyon —
-> `lib/pipeline-juillet.ts`) appartient à **ScintIA / Callflow**, pas à
-> EAGLEYE. On crée donc un **compte ScintIA** et on y met ce pipe. C'est le
-> premier vrai test du multi-locataire : un compte revendeur, ses données à
-> lui, isolées.
+> **Ce document a changé de sujet le 02/09/2026.** Il décrivait la mise en
+> place d'un compte revendeur précis — celui qui portait l'accueil téléphonique
+> (« Callflow »). **Cet accord est mort.** Le compte a été retiré du
+> portefeuille, et son offre est revenue chez EAGLEYE sous le nom d'**Alpha
+> Voice**, à 100 % au lieu de 30 % + 10 %.
+>
+> Ce qui restait vrai a été gardé : le **mécanisme de validation**, qui ne
+> dépendait pas de ce partenaire-là. **Nuwacom** est toujours un compte
+> revendeur, et le jour où un autre arrive, tout ce qui suit s'applique sans
+> une ligne de code en plus.
 
-## Ce qu'est « le compte ScintIA »
+## Qu'est-ce qu'un compte partenaire
 
-- **Marque (`agencyName`)** : `ScintIA`.
-- **Offre (`offer.whatYouSell`)** : « Callflow — accueil & relance IA au
-  téléphone pour les commerces ». `offer.city` : `Lyon`.
-- **Tarifs (`settings.pricing`)** : setup **990 €** (`CALLFLOW_SETUP`) + paliers
-  Callflow (`CALLFLOW_PALIERS`, `lib/pipeline-juillet.ts`).
-- **Données** : les 16 fiches de juillet (***NOM-RETIRE***, Vauban, ***NOM-RETIRE***, Brotteaux,
-  ***NOM-RETIRE***, ***NOM-RETIRE***, ***NOM-RETIRE***, ***NOM-RETIRE***, ***NOM-RETIRE***…).
+Un compte du portefeuille dont la marque **n'est pas la nôtre**. On y parle et
+on y écrit au nom de quelqu'un d'autre : le prospect n'entend pas « Alpha Sales
+OS pour le compte d'Untel », il entend **Untel**.
 
-## Marche à suivre
+- **Identité** : nom, ville, ce qu'il vend, sa proposition de valeur
+  (`lib/accounts.ts` — descend dans le navigateur, donc rien de confidentiel).
+- **Montants, commissions, coordonnées** : `lib/accounts-commercial.ts`, servi
+  au seul compte maître par `/api/catalogue`.
+- **Offres autorisées** : un compte ne peut proposer QUE ses offres. La garde
+  vaut sur toutes les surfaces — routeur d'offre, aimants, segments, script
+  d'appel, approche écrite.
+- **Rituel de closing** : se tromper de rituel perd le deal au dernier mètre.
+- **Habillage des envois** : marque, signature, pied et logo suivent le compte
+  (`lib/expediteur.ts`). Notre aigle ne part QUE sur le compte maître.
 
-### Option A — en solo/local (rapide, pour toi tout de suite)
-L'app est local-first : « compte » = l'identité white-label du navigateur.
-1. **Réglages → Agence** : `Nom d'agence` = **ScintIA**.
-2. **Réglages → Mon offre** : ce que tu vends = **Callflow…**, ville = **Lyon**,
-   proposition de valeur = « chaque appel manqué est un client perdu — on répond
-   à votre place, 24/7 ».
-3. **Réglages → Tarifs — mon offre** : setup **990 €** + tes paliers Callflow.
-4. **Réglages → Données → « Charger mon pipeline juillet »** : les 16 fiches
-   entrent, avec leurs RDV datés.
-5. **Réglages → « Client parfait (ICP) » → Générer** : l'ICP se déduit
-   automatiquement de l'offre Callflow (métiers au téléphone).
+## Ouvrir un vrai compte isolé (multi-locataire Supabase)
 
-> Documents, ICP, prompts IA et voix parlent désormais au nom de **ScintIA** —
-> c'est le white-label qui fait le travail.
+Quand un partenaire doit être un **compte séparé** (isolation RLS, revente) :
 
-### Option B — vrai compte isolé (multi-locataire Supabase)
-Quand tu veux ScintIA comme **compte séparé** (isolation RLS, revente) :
-1. Suis `docs/OUVRIR-UN-COMPTE-CLIENT.md` : crée le compte (Supabase →
-   Invite user) avec l'email ScintIA.
-2. Connecte-toi **avec ce compte**, refais les réglages white-label ci-dessus
-   (marque/offre/tarifs ScintIA).
-3. Charge le pipe juillet **sous ce compte** → ses 16 fiches vivent sous son
-   `user_id`, invisibles des autres comptes (RLS).
+1. Suis `docs/OUVRIR-UN-COMPTE-CLIENT.md` : crée le compte (Supabase → Invite
+   user) avec son email.
+2. Connecte-toi **avec ce compte**, fais les réglages white-label (marque,
+   offre, tarifs).
+3. Charge ses fiches **sous ce compte** → elles vivent sous son `user_id`,
+   invisibles des autres comptes (RLS).
 4. **Avant de facturer** : le test d'isolation à deux comptes
    (`docs/PREUVE-RLS.md`).
 
-## Pourquoi ça compte
-
-- Ça **prouve le white-label sur un cas réel** : EAGLEYE et ScintIA cohabitent,
-  chacun son offre, ses tarifs, ses données.
-- Le pipe de juillet devient **le pipe de ScintIA** — propre, attribué, prêt à
-  travailler (les RDV ***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08 sont déjà datés).
-- C'est la répétition générale avant d'ouvrir des comptes à d'autres revendeurs.
-
 ---
 
-## Faire valider les textes par ScintIA (`lib/validation-partenaire.ts`)
+## Faire valider les textes par le partenaire (`lib/validation-partenaire.ts`)
 
-> Ajouté le 01/09/2026, après la demande de ScintIA : *ils ont peur pour leur
-> script.* Ils ont raison — sur un appel Callflow, le prospect n'entend pas
-> « Alpha Sales OS pour le compte de ScintIA », il entend **ScintIA**. Ce qui
-> se dit là engage une réputation qui n'est pas la nôtre.
+> Ajouté le 01/09/2026, après la demande d'un partenaire : *il a peur pour son
+> script.* Il a raison — sur un appel passé en son nom, le prospect n'entend
+> pas « Alpha Sales OS pour le compte d'Untel », il entend **Untel**. Ce qui se
+> dit là engage une réputation qui n'est pas la nôtre.
+>
+> ⚠ Le partenaire qui l'avait demandé est parti. Le module reste : la règle ne
+> dépendait pas de lui.
 
 ### Ce que ça règle, et que la conformité ne réglait pas
 
 Le dépôt savait déjà refuser un script **non conforme** : `auditScript` exige
-la divulgation de l'article 50, l'objectif unique, l'absence de prix, et sur
-Callflow la garde de marque partenaire (`EXIGENCE_MARQUE_PARTENAIRE`).
+la divulgation de l'article 50, l'objectif unique, l'absence de prix, et sur un
+**compte partenaire** la garde de marque (`EXIGENCE_MARQUE_PARTENAIRE`).
+
+> ⚠ **Cette garde s'armait sur l'OFFRE, et c'était un accident de l'histoire.**
+> Elle avait été demandée par le revendeur qui portait l'accueil téléphonique,
+> alors elle se déclenchait sur cette offre-là. Ça a marché tant que l'offre et
+> le partenaire ne faisaient qu'un. Depuis que l'offre est revenue chez nous,
+> laissée en l'état elle aurait fait les deux fautes à la fois : interdire de
+> citer EAGLEYE sur NOTRE propre appel, et ne rien garder sur un appel Nuwacom.
+> Elle s'arme maintenant sur le **compte** — dans le script comme dans son
+> audit, la même question des deux côtés.
 
 Mais **la conformité n'est pas l'accord**. Un texte peut être parfaitement
-licite et ne pas être celui que ScintIA a relu. C'est cet écart-là que ce
+licite et ne pas être celui que le partenaire a relu. C'est cet écart-là que ce
 module ferme.
 
 ### La règle qui rend la validation utile
@@ -158,12 +159,11 @@ contourner.
 
 ### Comment on s'en sert, en face d'eux
 
-**Réglages → Validation partenaire.** On choisit le compte (ScintIA, Nuwacom),
-on leur fait lire le texte affiché — c'est celui qui partira, mot pour mot —
+**Réglages → Validation partenaire.** On choisit le compte, on lui fait lire le texte affiché — c'est celui qui partira, mot pour mot —
 et on enregistre **qui** a validé.
 
 > ⚠ Le nom est obligatoire, et c'est le seul détail qui rend tout le reste
-> vérifiable. « ScintIA a validé » ne vaut rien le jour où un appel dérape ;
+> vérifiable. « la société a validé » ne vaut rien le jour où un appel dérape ;
 > « Karim, le 3 septembre, en visio » se vérifie en un message.
 
 L'écran vit sur le **compte maître** : c'est toi qui es en face d'eux, sur ton

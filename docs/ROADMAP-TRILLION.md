@@ -14,7 +14,7 @@ classé par « ça rapproche d'un virement bancaire ».
 
 ### Le moteur de vente
 - [x] **Escalier de routage** (`lib/ladder.ts`) — visibilité → EAGLEYE ·
-      volume d'appels → ScintIA · automatisation → EAGLEYE · > 40 k → Nuwacom.
+      volume d'appels → Alpha Voice/EAGLEYE · automatisation → EAGLEYE · > 40 k → Nuwacom.
       Cascade, pas aiguillage : un prospect nourrit plusieurs comptes.
 - [x] **Deep-dive à l'import** (`lib/deep-dive.ts`) — déterministe, hors-ligne,
       sans coût. Signaux dicibles, trous à combler, score/fit, angle, objectif.
@@ -35,7 +35,7 @@ classé par « ça rapproche d'un virement bancaire ».
 
 ### Alpha Voice
 - [x] **Entrant opérationnel** — Telnyx → LiveKit → agent (`voice/INBOUND.md`).
-- [x] **Cadence Callflow** — 5 rappels sur 2 jours ; arrêt dès qu'il répond,
+- [x] **Cadence de rappel** — 5 rappels sur 2 jours ; arrêt dès qu'il répond,
       passage au closer ; opposition = arrêt définitif.
 - [x] **Article 50** — divulgation prononcée par le code, `audit_script` refuse
       un script non conforme.
@@ -53,7 +53,7 @@ classé par « ça rapproche d'un virement bancaire ».
 - [x] **Salle de contrôle** (`/controle`) — appels en cours, file, blocages.
 
 ### Le produit
-- [x] **Portefeuille de comptes** — EAGLEYE maître, ScintIA, Nuwacom, avec
+- [x] **Portefeuille de comptes** — EAGLEYE maître, Nuwacom, avec
       rituels de closing distincts.
 - [x] **Segments / ICP** (`lib/segments.ts`) — équipes terrain, centres
       d'appels, agences, réseaux, commerce local, assurance.
@@ -100,7 +100,10 @@ classé par « ça rapproche d'un virement bancaire ».
 - [ ] **Table `call_sessions` dans Supabase** — sans elle, l'historique repart
       à zéro à chaque déploiement.
 - [ ] **French Tech 2030** — dépôt avant le 4 septembre 2026, 23h59.
-- [ ] **Envoyer le devis ScintIA** — 3 500 € + 364 €/mois, prêt.
+- [ ] ~~**Envoyer le devis du revendeur**~~ — **ANNULÉ le 02/09/2026 : l'accord
+      est mort.** L'offre vocale est revenue chez EAGLEYE (Alpha Voice, 100 %).
+      Le prochain devis à envoyer est un devis EAGLEYE, sur notre grille — qui
+      reste à décider (`lib/offres-publiques.ts`).
 - [ ] **Tarif Telnyx France réel** — c'est le premier poste variable ; mon
       hypothèse est à 0,012 $/min.
 - [ ] **UN appel sortant réel** — il valide toute la chaîne d'un coup.
@@ -148,5 +151,5 @@ classé par « ça rapproche d'un virement bancaire ».
    la dette. Mieux vaut trois écrans maîtrisés que quarante survolés.
 
 ## L'ordre qui rapporte
-`devis ScintIA` → `un appel réel` → `French Tech` → `rotate les clés` →
+`un appel réel` → `French Tech` → `rotate les clés` →
 `table Supabase` → le reste.

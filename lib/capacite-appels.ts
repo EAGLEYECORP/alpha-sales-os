@@ -175,7 +175,7 @@ export function closersRequis(
  * COMBIEN DE FICHES IL FAUT POUR TENIR UN VOLUME — la contrainte qu'on oublie.
  *
  * Un volume quotidien ne se tient pas avec une petite liste : la fréquence par
- * prospect est plafonnée (décret n° 2022-1313 sans SIREN, cadence ScintIA
+ * prospect est plafonnée (décret n° 2022-1313 sans SIREN, cadence complète
  * avec). Demander 500 touches/jour à 300 fiches, c'est demander 50 touches par
  * personne en un mois — illégal, et commercialement suicidaire.
  *

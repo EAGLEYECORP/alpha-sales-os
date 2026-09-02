@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
  * ── POURQUOI RÉSERVÉ AU MAÎTRE ──
  *
  * Une session authentifiée n'est pas nous : dans le portefeuille white-label,
- * un locataire peut être ScintIA ou Nuwacom. Les prompts nomment les taux et
+ * un locataire peut être Nuwacom. Les prompts nomment les taux et
  * le seuil des 40 k — c'est le même raisonnement que pour
  * `ACCOUNTS_COMMERCIAL`, et il s'arrête au même endroit.
  *

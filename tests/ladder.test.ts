@@ -49,14 +49,20 @@ test("escalier — marche 1 : un trou de visibilité revient à EAGLEYE", () => 
   assert.ok(l.entry?.evidence.some((e) => /aucun site/.test(e)));
 });
 
-test("escalier — marche 2 : un volume de demandes élevé déclenche Callflow (ScintIA)", () => {
+test("escalier — marche 2 : un volume de demandes élevé déclenche Alpha Voice (EAGLEYE)", () => {
   const l = buildLadder(
     fixture({
       deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: HIGH_DEMAND_PER_WEEK },
     })
   );
-  const cf = l.rungs.find((r) => r.id === "callflow");
-  assert.equal(cf?.accountId, "scintia");
+  const cf = l.rungs.find((r) => r.id === "alpha-voice");
+  /**
+   * ⚠ CETTE MARCHE A CHANGÉ DE MAIN. Elle revenait à un revendeur, à 30 % du
+   * setup et 10 % du mensuel. L'accord est mort ; l'offre est revenue chez
+   * nous sous le nom d'Alpha Voice. La marche existe toujours — le besoin
+   * qu'elle détecte n'a pas bougé — mais elle rapporte maintenant 100 %.
+   */
+  assert.equal(cf?.accountId, "eagleye");
 
   /**
    * ⚠ CES DEUX ASSERTIONS LISAIENT `cf.commissionPct` ET `cf.recurringPct`.
@@ -64,7 +70,7 @@ test("escalier — marche 2 : un volume de demandes élevé déclenche Callflow 
    * Ces champs ont été retirés de l'escalier : ce module descend dans le
    * navigateur, et les chunks de `_next/static/**` sont servis sans cookie.
    * `commissionPct:30` et `recurringPct:10` étaient donc téléchargeables à
-   * côté du mot « ScintIA » — par ScintIA comme par n'importe qui.
+   * côté du nom du partenaire — par lui comme par n'importe qui.
    *
    * Aucun écran ne les lisait : SEULS ces tests les touchaient. Ils
    * garantissaient la doctrine sur une COPIE des chiffres, pendant que
@@ -72,17 +78,17 @@ test("escalier — marche 2 : un volume de demandes élevé déclenche Callflow 
    * l'original, par le compte que la marche désigne — ce qui vérifie en plus
    * que l'escalier et l'économie ne se sont pas désynchronisés.
    */
-  const eco = commissionFor(cf!.accountId, { amountHT: 990 });
-  assert.equal(eco.pct, 30, "ScintIA Callflow : 30 % sur le setup");
-  const recurrent = commissionFor(cf!.accountId, { amountHT: 200, recurring: true });
-  assert.equal(recurrent.pct, 10, "et 10 % sur le mensuel");
+  const eco = commissionFor(cf!.accountId, { amountHT: 990, offeringKey: "alpha-voice" });
+  assert.equal(eco.pct, 100, "Alpha Voice est à nous : rien à reverser sur le setup");
+  const recurrent = commissionFor(cf!.accountId, { amountHT: 200, recurring: true, offeringKey: "alpha-voice" });
+  assert.equal(recurrent.pct, 100, "ni sur le mensuel");
 });
 
 test("escalier — sous le seuil, Callflow ne se déclenche pas", () => {
   const l = buildLadder(
     fixture({ deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: HIGH_DEMAND_PER_WEEK - 1 } })
   );
-  assert.equal(l.rungs.some((r) => r.id === "callflow"), false);
+  assert.equal(l.rungs.some((r) => r.id === "alpha-voice"), false);
 });
 
 test("escalier — marche 3 : l'automatisation après Callflow porte l'argument « moins de setup »", () => {
@@ -138,13 +144,15 @@ test("escalier — un prospect complet empile PLUSIEURS marches, dans l'ordre", 
   const l = buildLadder(p, { automationWanted: true });
   assert.deepEqual(
     l.rungs.map((r) => r.id),
-    ["visibilite", "callflow", "automatisation", "gros-chantier"],
+    ["visibilite", "alpha-voice", "automatisation", "gros-chantier"],
     "l'ordre de l'escalier est imposé"
   );
-  // Les 3 comptes sont concernés par ce seul prospect.
-  assert.deepEqual(l.accountIds.sort(), ["eagleye", "nuwacom", "scintia"]);
+  // Les DEUX comptes du portefeuille sont concernés par ce seul prospect —
+  // ils étaient trois avant le départ du revendeur, et trois marches sur
+  // quatre reviennent maintenant à EAGLEYE.
+  assert.deepEqual(l.accountIds.sort(), ["eagleye", "nuwacom"]);
   assert.equal(l.entry?.id, "visibilite");
-  assert.match(ladderPitch(l), /Callflow/);
+  assert.match(ladderPitch(l), /Alpha Voice/);
 });
 
 test("escalier — fiche vide : aucune marche, il faut d'abord qualifier", () => {

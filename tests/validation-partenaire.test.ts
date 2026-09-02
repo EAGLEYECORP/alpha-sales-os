@@ -26,7 +26,7 @@ import { ACCOUNTS } from "../lib/accounts";
 const sansCommentaires = (s: string) =>
   s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
-const TRAME = "Tu appelles pour le compte de ScintIA. OBJECTIF UNIQUE : obtenir un rendez-vous court.";
+const TRAME = "Tu appelles pour le compte de Nuwacom. OBJECTIF UNIQUE : obtenir un rendez-vous court.";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -37,17 +37,17 @@ const TRAME = "Tu appelles pour le compte de ScintIA. OBJECTIF UNIQUE : obtenir 
  * ─────────────────────────────────────────────────────────────────────
  */
 test("⚠ modifier le texte PÉRIME la validation, et ça ferme la sortie", () => {
-  const v = validerTexte("voix-froid", TRAME, "scintia", "Karim", "visio", new Date("2026-09-03T10:00:00Z"));
+  const v = validerTexte("voix-froid", TRAME, "nuwacom", "Karim", "visio", new Date("2026-09-03T10:00:00Z"));
   const validations = [v];
 
   // Texte inchangé : l'accord porte.
-  const avant = etatValidation("voix-froid", TRAME, "scintia", validations);
+  const avant = etatValidation("voix-froid", TRAME, "nuwacom", validations);
   assert.equal(avant.etat, "validee");
   assert.equal(peutSortir(avant.etat), true);
   assert.match(avant.pourquoi, /Karim/, "le nom de qui a validé doit être rendu");
 
   // Un seul mot change — et l'accord ne porte plus.
-  const apres = etatValidation("voix-froid", TRAME.replace("court", "de trente minutes"), "scintia", validations);
+  const apres = etatValidation("voix-froid", TRAME.replace("court", "de trente minutes"), "nuwacom", validations);
   assert.equal(apres.etat, "perimee");
   assert.equal(peutSortir(apres.etat), false, "un texte périmé ne doit PAS pouvoir partir");
   assert.match(apres.pourquoi, /a changé depuis la validation/);
@@ -72,14 +72,13 @@ test("le compte MAÎTRE ne se valide pas lui-même", () => {
   /**
    * Sur EAGLEYE, c'est notre marque, notre risque. Exiger qu'on se valide
    * soi-même ne protégerait personne et transformerait le contrôle en case
-   * qu'on apprend à cliquer sans lire — ce qui le tuerait aussi pour ScintIA.
+   * qu'on apprend à cliquer sans lire — ce qui le tuerait aussi pour le partenaire.
    */
   const verdict = etatValidation("voix-froid", TRAME, "eagleye", []);
   assert.equal(verdict.etat, "non-requise");
   assert.equal(peutSortir(verdict.etat), true);
 
   assert.equal(estPartenaire("eagleye"), false);
-  assert.equal(estPartenaire("scintia"), true);
   assert.equal(estPartenaire("nuwacom"), true);
 
   // Et la distinction vient du registre des comptes, pas d'une liste ici.
@@ -89,20 +88,20 @@ test("le compte MAÎTRE ne se valide pas lui-même", () => {
 });
 
 test("rien n'est validé par défaut, et le refus dit quoi faire", () => {
-  const verdict = etatValidation("voix-froid", TRAME, "scintia", []);
+  const verdict = etatValidation("voix-froid", TRAME, "nuwacom", []);
   assert.equal(verdict.etat, "jamais");
   assert.equal(peutSortir(verdict.etat), false);
-  assert.match(verdict.pourquoi, /ScintIA/, "le partenaire doit être nommé");
+  assert.match(verdict.pourquoi, /Nuwacom/, "le partenaire doit être nommé");
   assert.match(verdict.pourquoi, /leur marque/, "et la raison doit être leur risque, pas notre process");
 });
 
 test("une validation porte un NOM de personne, pas une société", () => {
   /**
    * ⚠ Sans nom, une validation est une case qu'on coche soi-même. Le jour où
-   * un appel dérape, « ScintIA a validé » ne vaut rien ; « Karim a validé le
+   * un appel dérape, « la société a validé » ne vaut rien ; « Karim a validé le
    * 3 septembre en visio » se vérifie en un message.
    */
-  const v = validerTexte("voix-froid", TRAME, "scintia", "  Karim  ", "visio");
+  const v = validerTexte("voix-froid", TRAME, "nuwacom", "  Karim  ", "visio");
   assert.equal(v.par, "Karim", "le nom est nettoyé, pas inventé");
   assert.equal(v.canal, "visio");
   assert.ok(v.le.endsWith("Z"), "la date est horodatée en ISO");
@@ -118,23 +117,36 @@ test("une même cible n'a jamais deux validations pour le même compte", () => {
    * Deux validations pour la même paire rendraient l'état dépendant de
    * l'ordre du tableau — donc de la façon dont il a été écrit sur le disque.
    */
-  const v1 = validerTexte("voix-froid", TRAME, "scintia", "Karim", "visio", new Date("2026-09-03T10:00:00Z"));
-  const v2 = validerTexte("voix-froid", "autre texte", "scintia", "Sofia", "email", new Date("2026-09-10T10:00:00Z"));
+  const v1 = validerTexte("voix-froid", TRAME, "nuwacom", "Karim", "visio", new Date("2026-09-03T10:00:00Z"));
+  const v2 = validerTexte("voix-froid", "autre texte", "nuwacom", "Sofia", "email", new Date("2026-09-10T10:00:00Z"));
 
   const apres = poserValidation([v1], v2);
   assert.equal(apres.length, 1, "la seconde REMPLACE la première");
   assert.equal(apres[0].par, "Sofia");
 
-  // Mais un autre compte cohabite : Nuwacom valide ses propres textes.
-  const avecNuwacom = poserValidation(apres, validerTexte("voix-froid", TRAME, "nuwacom", "Christophe", "visio"));
-  assert.equal(avecNuwacom.length, 2);
+  /**
+   * ⚠ Mais une AUTRE cible cohabite : le remplacement porte sur la paire
+   * (cible, compte), pas sur le compte seul. Le test comparait autrefois deux
+   * comptes partenaires ; il n'en reste qu'un au portefeuille, alors on
+   * exerce l'autre moitié de la clé — sinon la garde serait vérifiée à moitié.
+   */
+  const autreCible = poserValidation(apres, validerTexte("voix-chaud", TRAME, "nuwacom", "Christophe", "visio"));
+  assert.equal(autreCible.length, 2);
 });
 
-test("chaque compte valide POUR LUI — une validation ScintIA ne couvre pas Nuwacom", () => {
-  const validations: Validation[] = [validerTexte("voix-froid", TRAME, "scintia", "Karim", "visio")];
-  assert.equal(etatValidation("voix-froid", TRAME, "scintia", validations).etat, "validee");
+test("⚠ une validation ne couvre QUE le compte qui l'a donnée", () => {
+  /**
+   * Le portefeuille ne compte plus qu'UN partenaire depuis la fin de l'accord
+   * revendeur : on ne peut donc plus opposer deux comptes réels. On vérifie le
+   * FILTRE lui-même, avec une validation posée sous un autre identifiant de
+   * compte — c'est la condition qui compte, pas la présence de deux comptes.
+   */
+  const validations: Validation[] = [validerTexte("voix-froid", TRAME, "nuwacom", "Karim", "visio")];
+  assert.equal(etatValidation("voix-froid", TRAME, "nuwacom", validations).etat, "validee");
+
+  const dAilleurs: Validation[] = [{ ...validations[0], compte: "un-autre-partenaire" }];
   assert.equal(
-    etatValidation("voix-froid", TRAME, "nuwacom", validations).etat,
+    etatValidation("voix-froid", TRAME, "nuwacom", dAilleurs).etat,
     "jamais",
     "l'accord d'un partenaire n'engage pas l'autre"
   );
@@ -295,11 +307,11 @@ test("les écrits sortants se DÉDUISENT de la bibliothèque", () => {
 
 test("un écrit modifié périme sa validation, comme la voix", () => {
   const cadre = cadresSortants()[0];
-  const v = validerTexte(cadre.id, cadre.body, "scintia", "Karim", "email");
+  const v = validerTexte(cadre.id, cadre.body, "nuwacom", "Karim", "email");
 
-  assert.equal(etatValidation(cadre.id, cadre.body, "scintia", [v]).etat, "validee");
+  assert.equal(etatValidation(cadre.id, cadre.body, "nuwacom", [v]).etat, "validee");
   assert.equal(
-    etatValidation(cadre.id, cadre.body + " PS : rappelez-moi vite.", "scintia", [v]).etat,
+    etatValidation(cadre.id, cadre.body + " PS : rappelez-moi vite.", "nuwacom", [v]).etat,
     "perimee",
     "ajouter une phrase à un email suffit à faire tomber l'accord"
   );
@@ -439,7 +451,7 @@ test("⚠ une campagne ne part pas si ses étapes ne sont pas validées", () => 
   };
 
   // Rien de validé : les deux étapes bloquent, et chacune est NOMMÉE.
-  const rien = campagnePeutPartir(campagne, "scintia", []);
+  const rien = campagnePeutPartir(campagne, "nuwacom", []);
   assert.equal(rien.ok, false);
   assert.equal(rien.bloquantes.length, 2);
   assert.match(rien.bloquantes[0].label, /Relance septembre/, "il faut savoir QUELLE étape rouvrir");
@@ -447,9 +459,9 @@ test("⚠ une campagne ne part pas si ses étapes ne sont pas validées", () => 
   // Validées : ça passe.
   const cibles = ciblesCampagne(campagne);
   const validations = cibles.map(({ cible, texte }) =>
-    validerTexte(cible.id, texte, "scintia", "Karim", "reunion")
+    validerTexte(cible.id, texte, "nuwacom", "Karim", "reunion")
   );
-  assert.equal(campagnePeutPartir(campagne, "scintia", validations).ok, true);
+  assert.equal(campagnePeutPartir(campagne, "nuwacom", validations).ok, true);
 
   /**
    * ⚠ CHANGER L'OBJET SUFFIT À TOUT ROUVRIR. C'est la première chose que le
@@ -460,7 +472,7 @@ test("⚠ une campagne ne part pas si ses étapes ne sont pas validées", () => 
     ...campagne,
     steps: [{ ...campagne.steps[0], subject: "URGENT — dernière chance" }, campagne.steps[1]],
   };
-  const apres = campagnePeutPartir(objetChange, "scintia", validations);
+  const apres = campagnePeutPartir(objetChange, "nuwacom", validations);
   assert.equal(apres.ok, false);
   assert.equal(apres.bloquantes.length, 1, "seule l'étape modifiée retombe");
 
@@ -494,13 +506,13 @@ test("la preuve d'envoi se construit à UN seul endroit", () => {
    * Quatre constructions à la main auraient divergé, et c'est celle qui aurait
    * oublié un champ qui aurait fait passer un texte non validé.
    */
-  const v = validerTexte("ecrit:premier-contact:email", "coucou", "scintia", "Karim", "email");
-  const preuve = preuvePourEnvoi("ecrit:premier-contact:email", "scintia", [v]);
+  const v = validerTexte("ecrit:premier-contact:email", "coucou", "nuwacom", "Karim", "email");
+  const preuve = preuvePourEnvoi("ecrit:premier-contact:email", "nuwacom", [v]);
   assert.deepEqual(preuve, { par: v.par, le: v.le, empreinte: v.empreinte });
 
   // Rien à prouver sur le compte maître, ni sur une cible jamais validée.
   assert.equal(preuvePourEnvoi("ecrit:premier-contact:email", "eagleye", [v]), undefined);
-  assert.equal(preuvePourEnvoi("inconnue", "scintia", [v]), undefined);
+  assert.equal(preuvePourEnvoi("inconnue", "nuwacom", [v]), undefined);
 });
 
 test("le compte maître traverse la porte sans validation", () => {
@@ -516,14 +528,14 @@ test("le compte maître traverse la porte sans validation", () => {
 test("le plan d'onboarding compte ce qui bloque, et le dit en français", () => {
   const cible = { id: "voix-froid", label: "Trame d'appel", quoi: "ce qui se dit au téléphone", canal: "appel" as const };
 
-  const rien = planValidation([{ cible, texte: TRAME }], "scintia", []);
+  const rien = planValidation([{ cible, texte: TRAME }], "nuwacom", []);
   assert.equal(rien.restantes, 1);
   assert.match(rien.resume, /ne peuvent pas partir/);
 
   const fait = planValidation(
     [{ cible, texte: TRAME }],
-    "scintia",
-    [validerTexte("voix-froid", TRAME, "scintia", "Karim", "visio")]
+    "nuwacom",
+    [validerTexte("voix-froid", TRAME, "nuwacom", "Karim", "visio")]
   );
   assert.equal(fait.restantes, 0);
   assert.match(fait.resume, /a été validé/);

@@ -21,38 +21,56 @@ Brutalement honnête. Pas de flatterie, pas de « tu as raison ». Si un chiffre
 est faux, une idée irréaliste ou un truc pas testé — le dire net. L'utilisateur
 demande explicitement ça et il a besoin de **ventes réelles**, pas de démos.
 
-## Les 3 comptes (portefeuille white-label) — `lib/accounts.ts`
+## Les 2 comptes (portefeuille white-label) — `lib/accounts.ts`
 Le compte MAÎTRE (EAGLEYE) est l'interface qui pilote tout. Basculer de compte
 change l'identité + l'offre + la commission, **pas** les données.
 
 | Compte | Ce qu'il prend | Ce qui NOUS revient |
 |---|---|---|
-| **EAGLEYE CORP** (maître) | **nos offres** : visibilité (sites, growth), **Alpha Sales OS** (VIP ou **à la carte**), **OS personnalisé**, digitalisation **< 40 k**, ex-« ScintIA Lab » | **100 %** |
-| **ScintIA** | **Callflow UNIQUEMENT**, vendu comme un PRODUIT | 990 € HT setup → **30 %** + **10 % du mensuel** |
+| **EAGLEYE CORP** (maître) | **nos offres** : visibilité (sites, growth), **Alpha Sales OS** (VIP ou **à la carte**), **OS personnalisé**, digitalisation **< 40 k**, **Alpha Voice** | **100 %** |
 | **Nuwacom** | chantiers **> 40 k** (sinon trop lourd pour nous) | **15 %**, puis **100 %** de la maintenance |
+
+> ⚠ **ILS ÉTAIENT TROIS — 02/09/2026, l'accord ScintIA / Callflow est MORT.**
+> Le compte a été retiré du portefeuille. Son offre, elle, n'est pas morte : le
+> besoin (« un commerce qui ne décroche pas perd le client ») ne dépendait pas
+> de l'accord, et **Alpha Voice fait ce travail et il est à nous**. Elle est
+> donc revenue chez EAGLEYE sous ce nom, à **100 %** au lieu de 30 % + 10 %.
+> · Le nom « Callflow » ne doit plus apparaître nulle part : c'était **leur**
+>   marque, pas la nôtre.
+> · Les tarifs (990 € + paliers 59/115/169/219/319) étaient **leur grille**.
+>   Ils restent en place pour que le calculateur fonctionne, marqués
+>   **provisoires** — la marge tient (74–76 % sur notre coût mesuré de
+>   0,0563 €/min), mais **le prix n'a pas encore été décidé par nous**.
+>   ⚠ Le socle fixe est ~57 €/mois : le premier palier à 59 € ne paie pas
+>   l'infrastructure à lui seul.
+> · La **cadence de 5 rappels sur 2 jours** était EXIGÉE par eux. Personne ne
+>   l'exige plus : c'est devenu un **choix**, et il est agressif. Le plafond
+>   légal sans SIREN (4/30 j) continue de s'appliquer tout seul.
 
 > ⚠ **Deux « 30 % » différents, ne jamais les confondre.**
 > · Le taux d'un compte = ce qui NOUS revient. Sur EAGLEYE c'est **100 %** :
 >   c'est notre société, il n'y a personne à qui reverser. Il ne descend sous
->   100 % que là où nous sommes **intermédiaires** (ScintIA, Nuwacom).
+>   100 % que là où nous sommes **intermédiaires** — il n'en reste qu'un : Nuwacom.
 > · Les **30 % + setup** de l'offre commerciale = ce qu'on **facture au
 >   client** sur le CA qu'on lui fait gagner (`lib/pricing` → `REV_SHARE`).
 >   C'est un PRIX, pas une commission reversée.
 
-**Règle de routage (négociée, définitive)** : faisable par nous → EAGLEYE ·
-Callflow → ScintIA · > 40 k → Nuwacom.
+**Règle de routage** : faisable par nous → EAGLEYE · > 40 k → Nuwacom.
+Il n'y a plus d'exception par OFFRE : c'est la TAILLE qui sous-traite.
 
 ### L'ESCALIER — le check de CHAQUE prospect (`lib/ladder.ts`)
 Cascade, pas aiguillage : un prospect peut déclencher plusieurs marches, et
 chacune revient à un compte. On monte **une marche à la fois**, jamais tout d'un
 coup.
 1. **Visibilité** détectée → **EAGLEYE** (100 % — c'est nous).
-2. **Volume de demandes très élevé** → **Callflow / ScintIA** (30 % + 10 % mensuel).
+2. **Volume de demandes très élevé** → **ALPHA VOICE / EAGLEYE** (100 %).
+   *(Cette marche revenait à un revendeur à 30 % + 10 %. L'accord est mort ; la
+   marche reste, le besoin n'ayant jamais dépendu de lui.)*
 3. **Automatisation demandée en plus** → **EAGLEYE** (100 %). *Argument clé* :
-   Callflow est le **point d'entrée** — il capte l'info exacte sur chaque
+   Alpha Voice est le **point d'entrée** — il capte l'info exacte sur chaque
    appelant, donc l'automatisation qui suit coûte **moins de setup** (les données
    sont déjà là, le process est cartographié). Cet argument n'est servi QUE si
-   Callflow est effectivement en amont.
+   Alpha Voice est effectivement en amont.
 4. **Trop gros pour nous (> 40 k)** → **NUWACOM** : le gros devis justifie les
    **15 %**, puis **100 % de toute la maintenance mensuelle**.
 
@@ -62,8 +80,6 @@ contrat se dresse **après le cadrage** → levier de négociation. Doctrine :
 **si un open-source GitHub ou nous-mêmes pouvons le faire vite → on le fait
 nous** (meilleur levier) ; si trop lourd, ou si on leur a présenté et qu'ils
 n'en veulent pas → on passe par leur plateforme.
-**ScintIA** : sites `scintia.ai` / `scintiacallflow.ai`. Ils veulent se
-concentrer sur Callflow comme produit.
 
 ## Tarifs Alpha Sales OS (à refléter sur le site)
 - **10 000 € VIP** (offre haute), OU **30 % + frais de setup** (local / cloud)
@@ -75,7 +91,9 @@ concentrer sur Callflow comme produit.
   Il ne voit QUE sa brique ; nous voyons tout.
 - **OS personnalisé** : un OS taillé sur le métier du client, pas une
   déclinaison du nôtre. Chiffré au cadrage.
-- Callflow (ScintIA) : **990 € HT** setup + paliers minutes (59/115/169/219/319).
+- **Alpha Voice** : **990 € HT** setup + paliers minutes (59/115/169/219/319).
+  ⚠ Grille **héritée** de l'ancien revendeur, donc **provisoire** : viable
+  (74–76 % de marge sur notre coût mesuré) mais jamais décidée par nous.
 
 ## Répartition du travail — ce qu'Alpha fait, ce que le client fait
 Doctrine de cadrage, à dire au client dès le premier rendez-vous : elle évite
@@ -153,32 +171,40 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   > RDV de son dénominateur en une ligne.
 - **Script d'appel à froid — ce que `auditScript` REFUSE** : objectif unique
   (le RDV), aucun prix, le NON qui raccroche, le OUI qui passe la main. Et sur
-  **Callflow**, une exigence de plus, demandée par ScintIA qui a peur pour son
-  script : **aucune autre société, aucune autre offre citée**. Sur leur appel
-  c'est LEUR marque qui parle — nous ne sommes qu'intermédiaires.
-- **Cadence de relance Callflow (exigée par ScintIA)** : après le 1er appel sans
-  réponse → **5 rappels sur 2 jours**. Dès qu'il répond, la cadence **s'arrête**
-  et le pipeline est mis à jour — mais l'humain n'est appelé que sur un OUI.
+  un **COMPTE PARTENAIRE**, une exigence de plus : **aucune autre société,
+  aucune autre offre citée**. Sur son appel c'est SA marque qui parle — nous ne
+  sommes qu'intermédiaires.
+  > ⚠ **Cette garde s'armait sur l'OFFRE (l'accueil téléphonique), parce que
+  > c'est le revendeur qui la portait qui l'avait demandée.** L'offre est
+  > revenue chez nous : laissée en l'état, elle aurait interdit de citer
+  > EAGLEYE sur NOTRE propre appel, et n'aurait rien gardé sur un appel
+  > Nuwacom. Elle suit maintenant le **COMPTE** — et **des deux côtés** : ce
+  > que `buildVoiceScript` ÉCRIT et ce qu'`auditScript` EXIGE doivent poser la
+  > même question, sinon l'un des deux ment.
+- **Cadence de relance** : après le 1er appel sans réponse → **5 rappels sur
+  2 jours**. Dès qu'il répond, la cadence **s'arrête** et le pipeline est mis à
+  jour — mais l'humain n'est appelé que sur un OUI.
+  > ⚠ **Ces 5 rappels étaient EXIGÉS par le revendeur disparu. Plus personne ne
+  > les exige.** Ce n'est plus une contrainte subie, c'est un CHOIX, et il
+  > t'appartient — il n'y a plus de raison commerciale de ne pas le baisser.
   > ⚠ **Cette cadence fait 6 contacts en 2 jours. Le décret n° 2022-1313
   > plafonne le démarchage à 4 sollicitations par consommateur sur 30 jours
   > glissants.** Il vise le B2C, mais une liste terrain est MÊLÉE et c'est nous
   > qui portons le risque. `plafondRappels` (`lib/call-cadence.ts`) arbitre :
-  > **SIREN connu → cadence ScintIA entière ; pas de SIREN → plafond à 4**.
+  > **SIREN connu → cadence entière ; pas de SIREN → plafond à 4**.
   > Le croisement au registre lève donc le plafond, et c'est le seul moyen.
-  > **À arbitrer avec ScintIA** — le code ne tranche pas l'accord, il empêche
-  > seulement la cadence longue de partir en silence sur une cible à risque.
+  > Le code ne tranche pas le choix commercial, il empêche seulement la cadence
+  > longue de partir en silence sur une cible à risque.
 
 ## Rituels de closing (par compte) — `Account.closing`
 Se tromper de rituel = perdre le deal au dernier mètre.
 - **EAGLEYE** → DEVIS EAGLEYE CORP, envoyé depuis `contact@eagleyecorp.fr`.
-- **ScintIA** → PROPOSITION COMMERCIALE depuis `z.tazi@scintia.ai` via le panel
-  `https://sales.scintiacallflow.ai/`.
 - **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
   **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
 
 ## VALIDATION PARTENAIRE (`lib/validation-partenaire.ts`)
-Sur un compte revendeur, le prospect n'entend pas « Alpha pour le compte de
-ScintIA » : il entend **ScintIA**. Ce qui se dit là engage une réputation qui
+Sur un compte revendeur, le prospect n'entend pas « Alpha pour le compte
+d'Untel » : il entend **Untel**. Ce qui se dit là engage une réputation qui
 n'est pas la nôtre. Rien ne sort d'un compte partenaire — script d'appel, email,
 SMS — sans un tampon de relecture.
 - **La conformité n'est PAS l'accord.** `auditScript` refuse un texte illicite ;
@@ -190,7 +216,7 @@ SMS — sans un tampon de relecture.
   survivrait à sa réécriture : on fait relire, on modifie le lendemain, et tout
   le monde croit que le contrôle a eu lieu. Réécrire ⇒ `perimee`.
 - Un compte non partenaire est `non-requise` — on ne se demande pas
-  l'autorisation à nous-mêmes. Détail complet : `docs/COMPTE-SCINTIA.md`.
+  l'autorisation à nous-mêmes. Détail complet : `docs/COMPTE-PARTENAIRE.md`.
 > ⚠ Le piège de test rencontré quatre fois ici : asserter la PRÉSENCE du refus
 > (`status: 422`) au lieu de la CONDITION qui y mène. Un `if (false)` laisse le
 > 422 en place et le test passe. Toujours muter la condition pour vérifier.
@@ -204,7 +230,7 @@ côté serveur dans `/api/send` — le seul endroit d'où un message PART.
   **rendu visible** (`usine: true`) au lieu d'être masqué.
   > ⚠ Le produit est **white-label**. Aucun repli ne remet « EAGLEYE » : la
   > marque, l'adresse légale, le papier à en-tête et le logo suivent le
-  > **compte**. Ils étaient tous les quatre en dur — un email ScintIA partait
+  > **compte**. Ils étaient tous les quatre en dur — un email partenaire partait
   > avec notre en-tête, notre raison sociale et notre aigle. Seule survit la
   > mention de **plateforme** (« Envoyé avec Alpha Sales OS® »), qui nomme
   > l'éditeur de l'outil et reste vraie partout.

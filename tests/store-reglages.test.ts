@@ -32,9 +32,14 @@ test("⚠ `merge` renormalise les RÉGLAGES, pas seulement les fiches", () => {
   assert.ok(i > 0, "le store doit avoir un `merge`");
   const bloc = CODE.slice(i, CODE.indexOf("migrate:", i));
 
+  /**
+   * Le socle peut être ENVELOPPÉ (`normaliserCompte({ ...defaultSettings })`,
+   * qui répare un compte retiré du portefeuille). Ce qu'on exige, c'est que
+   * `defaultSettings` soit bien la base — pas la forme exacte de l'expression.
+   */
   assert.match(
     bloc,
-    /settings:\s*\{\s*\.\.\.defaultSettings/,
+    /settings:[^\n]*\{\s*\.\.\.defaultSettings/,
     "sans repli sur defaultSettings, un réglage absent devient `undefined` et l'écran affiche NaN"
   );
 
@@ -62,8 +67,15 @@ test("`migrate` et `merge` posent le MÊME socle de réglages", () => {
   const blocMerge = CODE.slice(iMerge, iMigrate);
   const blocMigrate = CODE.slice(iMigrate);
 
-  const motif = /settings:\s*\{\s*\.\.\.defaultSettings,\s*\.\.\.s\.settings,\s*security:\s*\{\s*\.\.\.defaultSettings\.security,\s*\.\.\.s\.settings\?\.security\s*\}/;
-  assert.match(blocMerge, motif, "merge doit poser le socle complet");
+  /**
+   * Le socle est ENVELOPPÉ dans `normaliserCompte(...)` depuis qu'un compte
+   * peut disparaître du portefeuille. Les deux chemins doivent porter
+   * l'enveloppe ET le socle — l'oubli de l'enveloppe sur `migrate` ferait
+   * exactement le bug que ce test surveille : deux comportements selon qu'on
+   * a changé de version ou non.
+   */
+  const motif = /settings:\s*normaliserCompte\(\{\s*\.\.\.defaultSettings,\s*\.\.\.s\.settings,\s*security:\s*\{\s*\.\.\.defaultSettings\.security,\s*\.\.\.s\.settings\?\.security\s*\}/;
+  assert.match(blocMerge, motif, "merge doit poser le socle complet, normalisation comprise");
   assert.match(blocMigrate, motif, "migrate aussi — et de la même façon");
 });
 

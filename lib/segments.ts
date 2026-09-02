@@ -14,7 +14,7 @@ import type { EagleyeOffer } from "./offer-match";
  *   · une ÉQUIPE TERRAIN achète Alpha Live (l'assistance pendant le RDV) ;
  *   · un CENTRE D'APPELS achète Alpha Voice (le volume qualifié) ;
  *   · une AGENCE achète l'OS complet (le pipeline reproductible) ;
- *   · un COMMERCE LOCAL achète Callflow (ne plus rater d'appel).
+ *   · un COMMERCE LOCAL achète Alpha Voice (ne plus rater d'appel).
  *
  * Confondre ces segments produit un pitch tiède qui ne parle à personne.
  * Chaque segment porte donc SA douleur, SES déclencheurs, SA brique d'entrée
@@ -126,7 +126,7 @@ export const SEGMENTS: Segment[] = [
       "Les pics d'activité ne se couvrent qu'en surdimensionnant l'effectif",
     ],
     entryBricks: ["alpha-voice", "pilotage"],
-    offer: "callflow",
+    offer: "alpha-voice",
     triggers: [
       "Pics saisonniers récurrents mal absorbés",
       "Difficulté de recrutement sur les postes de téléopérateur",
@@ -200,7 +200,7 @@ export const SEGMENTS: Segment[] = [
       "Aucune trace de qui a appelé ni pourquoi",
     ],
     entryBricks: ["alpha-voice"],
-    offer: "callflow",
+    offer: "alpha-voice",
     triggers: [
       "Appels manqués constatés ou déclarés",
       "Le gérant décroche lui-même entre deux chantiers",

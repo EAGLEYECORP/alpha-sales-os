@@ -9,8 +9,8 @@ import type { KnowledgeNote } from "./knowledge";
  * Ces notes sont le playbook : rituels de closing avec les adresses
  * partenaires, prix de setup, taux de commission par offre, seuil de routage.
  * Elles vivaient dans `lib/knowledge.ts`, importé par `lib/store.ts` — donc
- * par TOUTES les pages client. Mesuré sur le build : `z.tazi@scintia.ai` et
- * `https://sales.scintiacallflow.ai/` étaient dans un chunk téléchargeable
+ * par TOUTES les pages client. Mesuré sur le build : l'email d'expédition et
+ * le panel de vente d'un partenaire étaient dans un chunk téléchargeable
  * sans mot de passe, alors même qu'on venait de les sortir de `lib/accounts`.
  *
  * Sortir une donnée d'un fichier ne sert à rien si la même phrase est recopiée
@@ -49,7 +49,7 @@ export const seedKnowledge: KnowledgeNote[] = [
   {
     id: "seed-routage",
     title: "Routage d'offre",
-    body: "Après l'audit, on route le prospect :\n\n- Appels manqués / métier téléphone → **ScintIA Callflow**\n- Leads & deals à structurer → **Alpha Sales OS**\n- Invisible en ligne (pas de site, peu d'avis) → **Visibilité / Growth** (offre personnalisée)\n\nPersonne ne sort les mains vides. Voir [[Play — Permis Lyon]].",
+    body: "Après l'audit, on route le prospect :\n\n- Appels manqués / métier téléphone → **Alpha Voice**\n- Leads & deals à structurer → **Alpha Sales OS**\n- Invisible en ligne (pas de site, peu d'avis) → **Visibilité / Growth** (offre personnalisée)\n\nPersonne ne sort les mains vides. Voir [[Play — Permis Lyon]].",
     tags: ["doctrine", "routage"],
     createdAt: "2026-08-10T00:00:00.000Z",
     updatedAt: "2026-08-10T00:00:00.000Z",
@@ -67,30 +67,41 @@ export const seedKnowledge: KnowledgeNote[] = [
 ];
 
 /**
- * Notes propres au compte ScintIA — le pipe réel de juillet 2026.
+ * ─────────────────────────────────────────────────────────────────────
+ * LE PIPE DE JUILLET 2026 — RAPATRIÉ, PAS JETÉ.
  *
- * Ce ne sont pas des exemples : ce sont les chiffres du dossier commercial.
- * Ils servent de contexte à CHAQUE échange fait au nom de ScintIA — l'agent
- * sait ce qui a marché, ce qui a échoué, et pourquoi.
+ * ⚠ Ces notes appartenaient au compte d'un revendeur. Le compte a disparu
+ * avec l'accord ; les CHIFFRES, eux, sont à nous — c'est nous qui avons passé
+ * les 132 appels. C'est aussi la seule mesure `mesure-maison` du dépôt (voir
+ * `lib/references.ts` : la seule catégorie qui mérite le mot « vérité »).
+ *
+ * Les supprimer parce qu'un partenariat s'arrête aurait effacé la seule chose
+ * que ce dépôt sait pour l'avoir constatée, et laissé les hypothèses seules.
+ * Elles passent donc sous EAGLEYE, qui porte désormais l'offre.
+ *
+ * Ce qui a été SUPPRIMÉ, en revanche : le rituel de closing du revendeur
+ * (email d'expédition, panel de vente). Ce n'est plus un chemin, c'est une
+ * fausse piste — et l'agent le lirait comme une consigne.
+ * ─────────────────────────────────────────────────────────────────────
  */
-export const seedScintia: KnowledgeNote[] = [
+export const seedTerrain: KnowledgeNote[] = [
   {
     id: "sc-juillet-chiffres",
-    accountId: "scintia",
+    accountId: "eagleye",
     title: "Juillet 2026 — ce que le mois a réellement produit",
     body:
       "78 prospects travaillés · 51 dans l'univers · 132 appels · 18 audits · 24 SMS.\n" +
       "Résultat : 6 RDV obtenus, 7 opportunités, 5 940 € de pipeline installation, **0 gagné**.\n\n" +
       "Taux travaillés → RDV : 11,8 %.\n\n" +
       "La lecture qui compte : voir [[Juillet 2026 — l'audit fait la différence]].",
-    tags: ["scintia", "chiffres", "juillet-2026"],
+    tags: ["terrain", "chiffres", "juillet-2026"],
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",
     source: "playbook",
   },
   {
     id: "sc-juillet-lecon",
-    accountId: "scintia",
+    accountId: "eagleye",
     title: "Juillet 2026 — l'audit fait la différence",
     body:
       "Par secteur (prospects · appels · audits · opportunités) :\n\n" +
@@ -104,15 +115,15 @@ export const seedScintia: KnowledgeNote[] = [
       "des appels, il reste à zéro. 26 appels en plomberie sans une seule pièce écrite " +
       "n'ont rien produit.\n\n" +
       "Conséquence opérationnelle : aucun prospect ne va en séquence sans audit écrit.",
-    tags: ["scintia", "doctrine", "audit"],
+    tags: ["terrain", "doctrine", "audit"],
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",
     source: "playbook",
   },
   {
-    id: "sc-callflow-tarifs",
-    accountId: "scintia",
-    title: "Callflow — tarifs publics",
+    id: "sc-voix-tarifs",
+    accountId: "eagleye",
+    title: "Alpha Voice — grille tarifaire (héritée, à décider)",
     body:
       "Installation : **990 € HT**.\n\n" +
       "Paliers minutes (abonnement mensuel) :\n" +
@@ -121,46 +132,37 @@ export const seedScintia: KnowledgeNote[] = [
       "- 750 min — 169 € (~300 appels)\n" +
       "- 1 000 min — 219 € (~400 appels)\n" +
       "- 1 500 min — 319 € (~600 appels)\n\n" +
-      "Commission EAGLEYE : 30 % du setup + 10 % du mensuel.\n" +
-      "Jamais de prix avant la démo. Voir [[Cadence de relance Callflow]].",
-    tags: ["scintia", "tarifs", "callflow"],
+      "⚠ **Ces montants viennent de la grille publique de l'ancien partenaire.** " +
+      "L'offre est revenue chez EAGLEYE (100 %, plus de commission reversée), mais le PRIX " +
+      "n'a pas encore été décidé par nous. Vérifié en revanche : la marge tient — 74 à 76 % " +
+      "sur notre coût de revient mesuré (0,0563 €/min). Bémol : le socle fixe est ~57 €/mois, " +
+      "donc le premier palier à 59 € ne paie pas l'infrastructure à lui seul.\n\n" +
+      "Jamais de prix avant la démo. Voir [[Cadence de relance téléphonique]].",
+    tags: ["tarifs", "alpha-voice", "a-decider"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-09-02T00:00:00.000Z",
     source: "playbook",
   },
   {
     id: "sc-cadence",
-    accountId: "scintia",
-    title: "Cadence de relance Callflow",
+    accountId: "eagleye",
+    title: "Cadence de relance téléphonique",
     body:
-      "Exigée par ScintIA, non négociable :\n\n" +
       "Après le premier appel sans réponse → **5 rappels sur 2 jours** (3 h, 8 h, 24 h, 32 h, 48 h).\n\n" +
       "**Dès qu'il répond** : Alpha Voice ARRÊTE d'appeler, met à jour le pipeline, et passe " +
       "la main à l'humain (closer).\n\n" +
       "Opposition (« ne me rappelez plus ») ou numéro invalide : arrêt DÉFINITIF immédiat, " +
-      "prioritaire sur la cadence.",
-    tags: ["scintia", "doctrine", "cadence"],
+      "prioritaire sur la cadence.\n\n" +
+      "⚠ Ces 5 rappels étaient EXIGÉS par l'ancien partenaire. Personne ne les exige plus : " +
+      "c'est devenu un choix, et il est agressif (6 contacts en 2 jours, à comparer au " +
+      "plafond de 4/30 j du décret n° 2022-1313 sur les cibles non professionnelles). " +
+      "Sans SIREN, le code plafonne à 4 de lui-même.",
+    tags: ["doctrine", "cadence", "a-decider"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-08-01T00:00:00.000Z",
-    source: "playbook",
-  },
-  {
-    id: "sc-closing",
-    accountId: "scintia",
-    title: "ScintIA — rituel de closing",
-    body:
-      "Quand le prospect est prêt : envoyer la **PROPOSITION COMMERCIALE** depuis " +
-      "`z.tazi@scintia.ai`, via le panel `https://sales.scintiacallflow.ai/`.\n\n" +
-      "Se tromper de rituel (envoyer un devis EAGLEYE sur un deal ScintIA) fait perdre " +
-      "le deal au dernier mètre.\n\n" +
-      "ScintIA vend Callflow comme un **produit** — c'est leur seule offre. " +
-      "Tout le reste (visibilité, digitalisation < 40 k) revient à EAGLEYE.",
-    tags: ["scintia", "closing"],
-    createdAt: "2026-08-21T00:00:00.000Z",
-    updatedAt: "2026-08-21T00:00:00.000Z",
+    updatedAt: "2026-09-02T00:00:00.000Z",
     source: "playbook",
   },
 ];
 
 /** Le socle complet, dans l'ordre d'insertion. */
-export const SEED_NOTES: KnowledgeNote[] = [...seedKnowledge, ...seedScintia];
+export const SEED_NOTES: KnowledgeNote[] = [...seedKnowledge, ...seedTerrain];

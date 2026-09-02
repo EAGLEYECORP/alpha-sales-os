@@ -108,28 +108,38 @@ test("aucune offre ne fait dire un prix au téléphone", () => {
 // ─────────── La résolution : trois cas, et le refus de deviner ───────────
 
 test("resoudreOffre — l'offre demandée est retenue si le compte la vend", () => {
-  const r = resoudreOffre("callflow", "eagleye");
-  assert.equal(r.offre, "callflow");
+  const r = resoudreOffre("alpha-voice", "eagleye");
+  assert.equal(r.offre, "alpha-voice");
 });
 
 test("⚠ resoudreOffre — une offre hors périmètre du compte est REFUSÉE", () => {
   /**
-   * ScintIA ne vend QUE Callflow : c'est une règle commerciale négociée
-   * (CLAUDE.md), pas une préférence d'affichage. Un appel passé en son nom ne
-   * peut pas proposer Alpha Sales OS, même si l'appelant le demande — une
-   * erreur d'appelant ne doit pas devenir une promesse au téléphone.
+   * Un compte revendeur est borné à SES offres : c'est une règle commerciale,
+   * pas une préférence d'affichage. Un appel passé en son nom ne peut pas
+   * proposer notre agent vocal, même si l'appelant le demande — une erreur
+   * d'appelant ne doit pas devenir une promesse au téléphone.
    */
-  const r = resoudreOffre("alpha-sales-os", "scintia");
+  const r = resoudreOffre("alpha-voice", "nuwacom");
   assert.equal(r.offre, null, "hors périmètre → aucune offre, pas un repli");
-  assert.match(r.pourquoi, /ScintIA/, "et on dit à l'opérateur pourquoi");
+  assert.match(r.pourquoi, /Nuwacom/, "et on dit à l'opérateur pourquoi");
 });
 
 test("resoudreOffre — un compte mono-offre n'a rien à trancher", () => {
+  /**
+   * ⚠ Le portefeuille N'A PLUS de compte mono-offre depuis le départ du
+   * revendeur téléphonique. On teste donc la RÈGLE, sur un périmètre d'une
+   * seule offre, plutôt que de faire dépendre le test de la composition du
+   * portefeuille — qui vient de changer, et changera encore.
+   */
   const mono = ACCOUNTS.filter((a) => a.offers.length === 1);
-  assert.ok(mono.length > 0, "le portefeuille doit encore contenir un compte mono-offre");
   for (const a of mono) {
     assert.equal(resoudreOffre(undefined, a.id).offre, a.offers[0], `${a.id} : déduit sans ambiguïté`);
   }
+
+  // Et la règle elle-même, indépendamment du portefeuille du jour.
+  const nuwacom = ACCOUNTS.find((a) => a.id === "nuwacom")!;
+  assert.ok(nuwacom.offers.length > 1, "Nuwacom est multi-offres : il DOIT qu'on tranche");
+  assert.equal(resoudreOffre(undefined, "nuwacom").offre, null, "sans consigne, un multi-offres ne devine pas");
 });
 
 test("resoudreOffre — un compte multi-offres sans consigne ne devine pas", () => {
@@ -199,9 +209,9 @@ test("appel à froid — le script porte un objectif unique et aucun prix", () =
     agentName: "ALPHA",
     mode: "prospection-b2b",
     company: "Carrosserie Test",
-    offre: "callflow",
+    offre: "alpha-voice",
   });
-  const v = auditScript(script, { mode: "prospection-b2b", offre: "callflow" });
+  const v = auditScript(script, { mode: "prospection-b2b", offre: "alpha-voice" });
   assert.deepEqual(v.manquantes, [], "le script livré doit passer son propre audit");
   assert.match(script, /OBJECTIF UNIQUE/, "un seul but : le rendez-vous");
   assert.match(script, /aucun prix|jamais de prix/i);
@@ -212,7 +222,7 @@ test("appel à froid — le NON se raccroche, le OUI seul réveille un humain", 
     onBehalfOf: "ScintIA",
     agentName: "ALPHA",
     mode: "prospection-b2b",
-    offre: "callflow",
+    offre: "alpha-voice",
   });
   assert.match(script, /Si c'est NON[\s\S]*?tu raccroches/i, "un refus se traite sans mobiliser personne");
   /**
@@ -224,35 +234,56 @@ test("appel à froid — le NON se raccroche, le OUI seul réveille un humain", 
   assert.match(script, /refus_definitif/, "et le refus définitif doit avoir le sien");
 });
 
-test("⚠ sur Callflow, le script interdit de citer une autre société ou offre", () => {
-  const scintia = buildVoiceScript({
-    onBehalfOf: "ScintIA",
+test("⚠ sur un compte PARTENAIRE, le script interdit de citer une autre société", () => {
+  /**
+   * ⚠ CETTE GARDE S'ARMAIT SUR L'OFFRE, ET C'ÉTAIT UN ACCIDENT DE L'HISTOIRE.
+   *
+   * Elle avait été demandée par le revendeur qui portait l'accueil
+   * téléphonique, donc elle se déclenchait sur cette OFFRE. Ça a marché tant
+   * que l'offre et le partenaire ne faisaient qu'un. L'accord est mort et
+   * l'offre est revenue chez nous : laissée en l'état, la garde aurait
+   * interdit de citer EAGLEYE sur NOTRE propre appel, et n'aurait rien gardé
+   * sur un appel Nuwacom — le seul cas de marque partenaire qui reste.
+   *
+   * La vraie condition est le COMPTE. Et elle doit être la même des deux
+   * côtés : ce que le script ÉCRIT et ce que l'audit EXIGE.
+   */
+  const partenaire = buildVoiceScript({
+    onBehalfOf: "Nuwacom",
     agentName: "ALPHA",
     mode: "prospection-b2b",
-    offre: "callflow",
+    compteId: "nuwacom",
+    offre: "visibilite-growth",
   });
-  assert.match(scintia, /tu ne cites aucune autre société/i, "c'est la demande explicite de ScintIA");
-  assert.equal(auditScript(scintia, { mode: "prospection-b2b", offre: "callflow" }).ok, true);
+  assert.match(partenaire, /tu ne cites aucune autre société/i, "la garde doit être écrite dans le script");
+  assert.equal(auditScript(partenaire, { mode: "prospection-b2b", compteId: "nuwacom" }).ok, true);
 
   // Un script d'où la garde a disparu doit être REFUSÉ, pas juste signalé.
-  const ampute = scintia.replace(/tu ne cites aucune autre société[^\n]*/i, "");
-  const v = auditScript(ampute, { mode: "prospection-b2b", offre: "callflow" });
+  const ampute = partenaire.replace(/tu ne cites aucune autre société[^\n]*/i, "");
+  const v = auditScript(ampute, { mode: "prospection-b2b", compteId: "nuwacom" });
   assert.equal(v.ok, false);
   assert.ok(v.manquantes.some((m) => /autre société/i.test(m)));
 });
 
-test("l'exigence de marque partenaire ne s'applique QU'À Callflow", () => {
+test("l'exigence de marque partenaire ne s'applique QU'À un compte partenaire", () => {
   /**
-   * Sur nos propres offres, c'est notre marque : la contrainte n'a pas lieu
-   * d'être, et l'imposer partout finirait par la faire contourner.
+   * Sur NOS comptes, c'est notre marque : la contrainte n'a pas lieu d'être,
+   * et l'imposer partout finirait par la faire contourner.
+   *
+   * ⚠ Le cas qui compte depuis la reprise de l'offre vocale : un appel EAGLEYE
+   * sur Alpha Voice. Avant, c'est l'offre qui armait la garde — ce script-ci
+   * aurait donc été contraint de ne citer personne d'autre, sur notre propre
+   * appel, pour notre propre produit.
    */
   const nous = buildVoiceScript({
     onBehalfOf: "EAGLEYE CORP",
     agentName: "ALPHA",
     mode: "prospection-b2b",
-    offre: "visibilite-growth",
+    compteId: "eagleye",
+    offre: "alpha-voice",
   });
-  assert.equal(auditScript(nous, { mode: "prospection-b2b", offre: "visibilite-growth" }).ok, true);
+  assert.doesNotMatch(nous, /tu ne cites aucune autre société/i, "pas de garde de marque sur notre propre appel");
+  assert.equal(auditScript(nous, { mode: "prospection-b2b", compteId: "eagleye", offre: "alpha-voice" }).ok, true);
 });
 
 test("hors appel à froid, l'audit ne réclame que la divulgation", () => {
@@ -307,7 +338,7 @@ test("⚠ les outils nommés dans le script existent vraiment dans l'agent Pytho
     onBehalfOf: "ScintIA",
     agentName: "ALPHA",
     mode: "prospection-b2b",
-    offre: "callflow",
+    offre: "alpha-voice",
   });
 
   for (const outil of ["rendez_vous_obtenu", "refus_definitif"]) {

@@ -1,11 +1,11 @@
 /**
  * ─────────────────────────────────────────────────────────────────────
- * Prospects ICP Callflow — consolidés depuis les feuilles de prospection
+ * Prospects ICP Alpha Voice — consolidés depuis les feuilles de prospection
  * réelles de Zakaria (Google Sheets, juillet 2026) :
  *   · « Zak_Prospects_Callflow » (artisans Lyon 6 & 7, liste A/B)
  *   · « contacts-lyon6-enrichi et priorisé Callflow » (fit Fort → Faible)
  *
- * ICP = le cœur de cible Scintia Callflow : un métier où le TÉLÉPHONE est
+ * ICP = le cœur de cible d'Alpha Voice : un métier où le TÉLÉPHONE est
  * le premier point de contact et où personne n'est dédié à le prendre —
  * l'artisan sous un capot, le moniteur en leçon, la praticienne en cabine,
  * la régie qui croule sous les appels locataires. L'appel manqué y part
@@ -22,7 +22,7 @@
  * école, immobilier…) malgré le petit enum `Sector`. L'accroche terrain de
  * la feuille devient le premier `problems[]` — elle nourrit l'audit cadeau.
  *
- * Chargé depuis Réglages → « Prospects ICP (Callflow) ». Import fusionnant
+ * Chargé depuis Réglages → « Prospects ICP (Alpha Voice) ». Import fusionnant
  * (ajoute / met à jour), il n'efface rien.
  * ─────────────────────────────────────────────────────────────────────
  */

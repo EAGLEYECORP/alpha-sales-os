@@ -50,14 +50,14 @@ interface Seed {
 }
 
 /**
- * Tarifs publics Callflow, lus dans l'audit ***NOM-RETIRE***.
+ * Tarifs publics Alpha Voice, lus dans l'audit ***NOM-RETIRE***.
  *
  * ⚠ Ils sont DÉCLARÉS dans `lib/offres-publiques.ts` et réimportés ici. Ce
  * module porte de vraies fiches prospects : aucun composant client ne doit
  * l'atteindre, or le calculateur d'offres a besoin de ces prix. Ce qui est
  * public vit dans le module public — même arbitrage que pour le pack.
  */
-export { CALLFLOW_SETUP_HT as CALLFLOW_SETUP, CALLFLOW_PALIERS } from "./offres-publiques";
+export { ALPHA_VOICE_SETUP_HT as ALPHA_VOICE_SETUP, ALPHA_VOICE_PALIERS } from "./offres-publiques";
 
 const SEEDS: Seed[] = [
   {
@@ -409,7 +409,7 @@ export function pipelineJuillet(): { prospects: Prospect[]; meetings: Meeting[] 
       .map((e, i) => ({ id: `${s.id}-e${i}`, date: iso(e.date), kind: e.kind, summary: e.summary })),
     demoShownBeforePrice: s.events.some((e) => e.kind === "demo" || e.kind === "visite"),
     nextStep: s.nextStep ? { date: iso(s.nextStep.date), action: s.nextStep.action } : null,
-    tags: ["juillet-2026", "scintia"],
+    tags: ["juillet-2026", "terrain"],
     attachments: [],
     notes: s.notes,
     deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "" },

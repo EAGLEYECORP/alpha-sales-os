@@ -146,9 +146,6 @@ function computeLosses(p: Prospect): Losses {
 /** Le prix, selon le compte qui porte le deal. */
 function priceLine(accountId: string, p: Prospect): string {
   const a = getAccount(accountId);
-  if (a.id === "scintia") {
-    return "990 € HT d'installation, puis un abonnement selon votre volume d'appels (de 59 à 319 € HT/mois).";
-  }
   if (a.id === "nuwacom") {
     return "Chantier sur devis, établi APRÈS le cadrage — on chiffre ce dont vous avez besoin, pas un forfait.";
   }
@@ -202,7 +199,7 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     o.question ?? "Aujourd'hui, une nouvelle demande vous arrive comment — et il se passe quoi ensuite ?",
     // Le chiffre de la fiche prime sur la question générique : on ne redemande
     // pas ce qu'on a déjà noté, on le fait CONFIRMER et prolonger.
-    offre === "callflow" && a.missedCallsPerWeek !== undefined
+    offre === "alpha-voice" && a.missedCallsPerWeek !== undefined
       ? `Vous m'avez dit ${a.missedCallsPerWeek} appels manqués par semaine — sur ces appels, combien rappellent ?`
       : o.perte ?? "Sur dix demandes qui arrivent, combien aboutissent vraiment ?",
     a.avgTicket === undefined
@@ -242,7 +239,7 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
    * vente ni mesure, les produire revient à fabriquer de la preuve. Zéro client
    * sur ces deux offres aujourd'hui.
    *
-   * Le bloc est donc VIDE hors Callflow, et l'écran qui l'affiche le dit. Un
+   * Le bloc est donc VIDE hors Alpha Voice, et l'écran qui l'affiche le dit. Un
    * argumentaire sans « norme du marché » se tient parfaitement : les questions
    * font constater, les pertes sont chiffrées sur SES données. Ce qui ne se
    * tiendrait pas, c'est une norme inventée qu'un prospect vérifie.
@@ -266,7 +263,7 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
    * mieux vaut le savoir avant de le dire.
    */
   const marketStandard =
-    offre === "callflow"
+    offre === "alpha-voice"
       ? [
           "Aujourd'hui un client qui n'obtient pas de réponse appelle le suivant dans les 5 minutes — il n'attend plus.",
           "Appelez trois de vos concurrents un soir à 21h : c'est exactement le test que fait votre client, et vous aurez la réponse avant moi.",
@@ -320,7 +317,7 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
       // quand il peut. Seul l'exemple était verrouillé sur le téléphone.
       means: "Quelqu'un s'en occupe quand il peut — ce n'est pas un process, c'est de la bonne volonté.",
       answer:
-        offre === "callflow"
+        offre === "alpha-voice"
           ? "« Et quand cette personne est en congé, ou en intervention ? C'est là que ça se perd, et personne ne le voit passer. »"
           : "« Et quand cette personne est en congé, ou prise par autre chose ? C'est là que ça se perd, et personne ne le voit passer. »",
     },

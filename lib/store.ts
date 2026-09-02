@@ -41,7 +41,7 @@ import type { KnowledgeNote } from "./knowledge";
 import type { Lecon } from "./apprentissage";
 import { OFFRES_SYSTEME, idDepuisLabel, peutSupprimer, validerOffre, type ErreurOffre, type Offre } from "./offer-catalogue";
 import { elaguer } from "./apprentissage";
-import { applyAccount } from "./accounts";
+import { applyAccount, ACCOUNTS, masterAccount } from "./accounts";
 import { CLOSER_USINE } from "./signature";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
@@ -191,8 +191,21 @@ interface AlphaState {
   resetToSeed: () => void;
   /** Charge le pipeline réel de juillet 2026 (Scintia · Lyon) — remplace tout. */
   loadPipelineJuillet: () => Promise<void>;
-  /** Ajoute les prospects ICP Callflow (Sheets réels) — fusionne, n'efface rien. */
+  /** Ajoute les prospects ICP Alpha Voice (Sheets réels) — fusionne, n'efface rien. */
   loadProspectsICP: () => Promise<{ added: number; updated: number }>;
+}
+
+/**
+ * Un compte retiré du portefeuille ne doit pas survivre dans un navigateur.
+ *
+ * Rendu à part, et testé : la règle vaut pour tout compte qui disparaîtra
+ * ensuite, pas seulement pour celui dont le départ l'a révélée.
+ */
+export function normaliserCompte(settings: AppSettings): AppSettings {
+  const connu = ACCOUNTS.some((a) => a.id === settings.accountId);
+  if (connu) return settings;
+  const maitre = masterAccount();
+  return { ...settings, accountId: maitre.id, agencyName: maitre.name };
 }
 
 const defaultSettings: AppSettings = {
@@ -716,8 +729,8 @@ export const useAlpha = create<AlphaState>()(
             tags: note.tags ?? [],
             source: note.source ?? "manuel",
             // Portée : le compte fourni, sinon celui de la note existante,
-            // sinon le compte ACTIF. Une note créée depuis ScintIA reste à
-            // ScintIA — sans ça, tout retomberait dans le pot commun.
+            // sinon le compte ACTIF. Une note créée depuis un compte revendeur
+            // lui reste — sans ça, tout retomberait dans le pot commun.
             accountId: note.accountId ?? s.notes.find((n) => n.id === id)?.accountId ?? s.settings.accountId,
             createdAt: exists ? s.notes.find((n) => n.id === id)!.createdAt : now,
             updatedAt: now,
@@ -1151,11 +1164,27 @@ export const useAlpha = create<AlphaState>()(
            * spread de surface le remplacerait en bloc et rendrait `pinHash`
            * indéfini, c'est-à-dire une serrure sans verrou.
            */
-          settings: {
+          /**
+           * ⚠ ET LE COMPTE ACTIF EST RENORMALISÉ, parce qu'un compte peut
+           * DISPARAÎTRE du portefeuille (accord terminé). C'est arrivé le
+           * 02/09/2026.
+           *
+           * Le trou était silencieux et il coûtait cher : le navigateur d'un
+           * opérateur garde `accountId` et `agencyName` dans son stockage
+           * local. `getAccount()` d'un identifiant inconnu retombe sur le
+           * maître — donc `estPartenaire()` répondait **false** — pendant que
+           * `agencyName` continuait d'afficher et de SIGNER au nom de la
+           * marque disparue. Autrement dit : des emails partant sous une
+           * marque qui n'est plus la nôtre, sans aucune validation
+           * partenaire, et sans que rien ne l'indique.
+           *
+           * Un compte inconnu retombe donc sur le maître, identité comprise.
+           */
+          settings: normaliserCompte({
             ...defaultSettings,
             ...s.settings,
             security: { ...defaultSettings.security, ...s.settings?.security },
-          },
+          }),
         } as AlphaState;
       },
       migrate: (persisted) => {
@@ -1175,7 +1204,10 @@ export const useAlpha = create<AlphaState>()(
           offers: s.offers?.length ? s.offers : OFFRES_SYSTEME.map((o) => ({ ...o })),
           standardLog: s.standardLog ?? [],
           settledPayouts: s.settledPayouts ?? [],
-          settings: { ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } },
+          // Même socle ET même normalisation de compte que `merge` : deux
+          // replis différents, c'est un bug réservé à ceux qui ont sauté une
+          // mise à jour.
+          settings: normaliserCompte({ ...defaultSettings, ...s.settings, security: { ...defaultSettings.security, ...s.settings?.security } }),
         } as AlphaState;
       },
     }

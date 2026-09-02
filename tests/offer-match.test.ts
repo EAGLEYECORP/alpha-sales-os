@@ -4,9 +4,9 @@ import { matchOffer } from "../lib/offer-match";
 
 test("offer-match — appels manqués + métier téléphone → Callflow", () => {
   const m = matchOffer({ sector: "garage / carrosserie", missedCallsPerWeek: 8 });
-  assert.equal(m.primary, "callflow");
-  assert.ok(m.scores.callflow >= 5);
-  assert.ok(m.reasons.callflow.length >= 2);
+  assert.equal(m.primary, "alpha-voice");
+  assert.ok(m.scores["alpha-voice"] >= 5);
+  assert.ok(m.reasons["alpha-voice"].length >= 2);
 });
 
 test("offer-match — site absent + peu d'avis → Visibilité/Growth", () => {
@@ -24,7 +24,7 @@ test("offer-match — agence B2B avec deals → Alpha Sales OS", () => {
 test("offer-match — maître d'œuvre (permis Lyon) est routable", () => {
   // MOE avec appels manqués → Callflow ; sans, avec site faible → visibilité.
   const phone = matchOffer({ sector: "maître d'œuvre / construction", missedCallsPerWeek: 6 });
-  assert.equal(phone.primary, "callflow");
+  assert.equal(phone.primary, "alpha-voice");
   const invisible = matchOffer({ sector: "maître d'œuvre", websiteState: "obsolète (2014)", googleReviews: 2 });
   assert.equal(invisible.primary, "visibilite-growth");
 });
@@ -38,6 +38,6 @@ test("offer-match — aucun signal → défaut Alpha Sales OS, jamais vide", () 
 
 test("offer-match — expose toujours les 3 scores et une accroche", () => {
   const m = matchOffer({ sector: "auto-école", missedCallsPerWeek: 3 });
-  assert.ok("alpha-sales-os" in m.scores && "callflow" in m.scores && "visibilite-growth" in m.scores);
+  assert.ok("alpha-sales-os" in m.scores && "alpha-voice" in m.scores && "visibilite-growth" in m.scores);
   assert.ok(m.pitch.includes("«"));
 });

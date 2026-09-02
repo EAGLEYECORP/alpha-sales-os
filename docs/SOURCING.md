@@ -256,6 +256,6 @@ glissants. Il vise le B2C — mais un artisan en nom propre sur sa ligne
 personnelle est exactement la zone grise, et c'est nous qui portons le risque
 sur une liste mêlée.
 
-⚠ **À arbitrer avec ScintIA** : leur cadence Callflow exigée est de **cinq
+⚠ **À arbitrer — par toi seul désormais** : la cadence est de **cinq
 rappels sur deux jours**, soit six contacts. Sur une cible qui bascule en B2C,
 elle est hors des clous.

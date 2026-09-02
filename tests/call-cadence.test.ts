@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  cadenceFor, cibleDepuisProspect, plannedRecalls, plafondRappels, CALLFLOW_MAX_RECALLS, PLAFOND_SOLLICITATIONS_B2C,
+  cadenceFor, cibleDepuisProspect, plannedRecalls, plafondRappels, RAPPELS_MAX, PLAFOND_SOLLICITATIONS_B2C,
   type CallAttempt,
 } from "../lib/call-cadence";
 import { masterRappel } from "../lib/master-rappel";
@@ -16,7 +16,7 @@ test("cadence — aucun appel encore : on appelle maintenant", () => {
   const d = cadenceFor([], at(0));
   assert.equal(d.state, "a-appeler");
   assert.equal(d.callNow, true);
-  assert.equal(d.recallsLeft, CALLFLOW_MAX_RECALLS);
+  assert.equal(d.recallsLeft, RAPPELS_MAX);
 });
 
 test("cadence — 5 rappels étalés sur 2 jours après le 1er appel", () => {
@@ -112,7 +112,7 @@ test("cadence — 5 rappels consommés : épuisée, on repasse à l'humain sur u
   const d = cadenceFor(attempts, at(72));
   assert.equal(d.state, "epuisee");
   assert.equal(d.callNow, false);
-  assert.equal(d.recallsUsed, CALLFLOW_MAX_RECALLS);
+  assert.equal(d.recallsUsed, RAPPELS_MAX);
   assert.equal(d.recallsLeft, 0);
   assert.equal(d.handoffToHuman, true);
 });
@@ -156,7 +156,7 @@ test("cadence — un SIREN lève le plafond : la cadence ScintIA s'applique enti
    */
   const p = plafondRappels({ siren: "123456789", telephone: "0612345678" });
   assert.equal(p.plafonne, false);
-  assert.equal(p.max, CALLFLOW_MAX_RECALLS);
+  assert.equal(p.max, RAPPELS_MAX);
   assert.match(p.pourquoi, /inscrite au registre/);
 });
 

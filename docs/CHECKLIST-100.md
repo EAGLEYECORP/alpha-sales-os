@@ -109,7 +109,7 @@ Détail par workflow : `integrations/n8n/README.md`.
 
 - [ ] **eagleye.fr** : publier un enregistrement DMARC + activer DKIM (OVH).
   Détail : `docs/ENVOI.md`.
-- [ ] **scintia.ai** (pour ton partenaire) : le constat est prêt à envoyer —
+- [ ] ~~Constat de délivrabilité pour le partenaire~~ — **caduc** :
   `docs/SCINTIA-MESSAGE.md`.
 
 ---

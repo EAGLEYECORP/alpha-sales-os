@@ -123,18 +123,19 @@ test("master rappel — un prospect prêt déclenche le rituel de closing du com
   assert.match(eagleye.closing!.action, /DEVIS/i);
   assert.match(eagleye.headline, /PRÊT À SIGNER/);
 
-  const scintia = masterRappel(readyProspect(), { now: NOW, accountId: "scintia" });
-  assert.match(scintia.closing!.action, /PROPOSITION COMMERCIALE/i);
-
+  // Un troisième rituel existait (proposition commerciale via le panel d'un
+  // revendeur). Le compte est parti ; le rituel avec lui.
   const nuwacom = masterRappel(readyProspect(), { now: NOW, accountId: "nuwacom" });
+  assert.equal(nuwacom.closing?.accountId, "nuwacom");
   assert.match(nuwacom.closing!.action, /CADRAGE/i);
+  assert.doesNotMatch(nuwacom.closing!.action, /DEVIS EAGLEYE/i);
 });
 
 test("master rappel — l'acte de closing ne transporte AUCUNE coordonnée partenaire", () => {
   // Ce module est calculé côté client : tout ce qu'il produit part dans un
   // fichier JavaScript téléchargeable. L'email d'expédition, le panel de vente
   // et le nom du CEO à impliquer arrivent par /api/catalogue, pas par ici.
-  for (const id of ["eagleye", "scintia", "nuwacom"]) {
+  for (const id of ["eagleye", "nuwacom", "nuwacom"]) {
     const plan = masterRappel(readyProspect(), { now: NOW, accountId: id });
     assert.deepEqual(
       Object.keys(plan.closing!).sort(),

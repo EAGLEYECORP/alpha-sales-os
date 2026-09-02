@@ -9,7 +9,7 @@ import type { AccountCommercial } from "./accounts-commercial";
  *
  * ⚠ CE NOMBRE ÉTAIT ÉCRIT DANS `lib/accounts.ts`, DONC DANS UN CHUNK PUBLIC.
  *
- * `commissionPct: 30` à côté de « ScintIA » et `commissionPct: 15` à côté de
+ * `commissionPct: 30` à côté d'un partenaire et `commissionPct: 15` à côté de
  * « Nuwacom » se téléchargeaient depuis `_next/static/**`, chemin exclu du
  * middleware : vérifié sur serveur réel, 200 sans cookie, SITE_PASSWORD actif.
  *
@@ -26,7 +26,7 @@ import type { AccountCommercial } from "./accounts-commercial";
  *
  * ── ET POURQUOI `null` PLUTÔT QU'UN CHOIX MALIN ──
  *
- * Aujourd'hui ScintIA et Nuwacom n'ont qu'UNE offre chacun, et les cinq
+ * Aujourd'hui Nuwacom n'a qu'UNE offre, et les cinq
  * offres EAGLEYE sont toutes à 100 % : le taux du compte est sans ambiguïté.
  * Le jour où un compte portera deux taux différents, il n'y aura plus de
  * réponse automatique — prendre la première offre, ou la plus basse, serait

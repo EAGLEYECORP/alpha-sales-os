@@ -24,7 +24,7 @@ Le modèle de coût du dépôt ne trouve ce chiffre **dans aucune hypothèse** :
 depuis longtemps : `OUTBOUND_UNIT_HT = 364 €`. Tu as très probablement mémorisé
 ton tarif de vente et l'as repris comme un coût.
 
-**Pourquoi ça compte demain :** si tu présentes 360 € comme ton coût à ScintIA,
+**Pourquoi ça compte demain :** si tu présentes 360 € comme ton coût à un partenaire,
 tu justifies un prix de vente à ~1 440 € (ta règle ×4). S'ils vérifient, ou si
 tu te trompes dans l'autre sens, tu vends à marge nulle. **Tranche ça avant le
 rendez-vous.**
@@ -278,7 +278,7 @@ l'entrant. »
 
 > ⚠ Ce 0,43 €/min repose sur l'hypothèse de 30 % de décroché — **jamais
 > mesurée**. Si le décroché réel est de 50 %, on tombe à 0,26 €/min et l'écart
-> disparaît. C'est la première chose que l'essai ScintIA va te dire.
+> disparaît. C'est la première chose que la première série d'appels réels va te dire.
 
 ### Ce que je ferais, dans l'ordre
 
@@ -388,12 +388,12 @@ sans vendre une heure de plus.
 | **Le temps RÉEL d'une installation, chronométré** | Les 46 h du catalogue sont estimées. C'est ce qui décide si les frais de setup sont ×10 la main-d'œuvre ou ×3 — donc s'ils sont attaquables ou non. |
 | **L'export CDR Telnyx** (Reporting → Usage Reports) | Le solde du mois (2,05 $) est connu depuis le 27/08 — mais il ne donne pas un tarif à la minute. Il faut les minutes par appel. Dernière ligne du modèle encore supposée, et la plus lourde. |
 | **Le compteur Fish avant/après UN appel isolé** | Tranche le ×2,24. La piste « synthèse payée puis jetée » est écartée (`preemptive_tts: False` dans livekit-agents 1.7.1) ; reste le compteur cumulé, auquel cas le coût réel est plus BAS que ce que le modèle retient. |
-| **Le taux de décroché réel** | Toute la comparaison à la minute en dépend. L'essai ScintIA le donnera. |
+| **Le taux de décroché réel** | Toute la comparaison à la minute en dépend. Le palier 10 le donnera (`lib/paliers-campagne.ts`). |
 | **Les pages de tarifs officielles** | Le relevé est secondaire. Avant de citer un concurrent en rendez-vous, rouvre sa page. |
 
 ---
 
-## 6. Demain, avec ScintIA — les trois chiffres à avoir en tête
+## 6. Demain, sur Alpha Voice — les trois chiffres à avoir en tête
 
 ```
 1.  ESSAI ............ 290 € HT — mise en route + 100 appels réels
@@ -419,6 +419,8 @@ saute pas l'essai : c'est lui qui transforme un « intéressant » en client, et
 c'est lui qui te donne ton premier taux de décroché mesuré — celui qui remplace
 l'hypothèse à 20 % dans toute l'app (`tauxPourPlan`).
 
-> ⚠ Rappel doctrine : ScintIA prend **30 % + 10 % du mensuel** sur Callflow.
+> ⚠ **Ce paragraphe portait une commission de 30 % + 10 % reversée à un
+> revendeur. L'accord est mort (02/09/2026) : Alpha Voice est à nous, à
+> 100 %.** La grille de prix, elle, vient encore d'eux — provisoire.
 > Ces chiffres-là sont NOS prix Alpha Voice, un produit différent. Ne mélange
 > pas les deux grilles dans la même conversation.

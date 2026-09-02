@@ -81,10 +81,10 @@ export interface CallTask {
    * `deepDive` la calcule déjà, contrainte aux offres autorisées du compte, et
    * `briefForScript` l'écrit en toutes lettres dans le brief. Mais la tâche
    * d'appel ne transportait que le brief : le script vocal, lui, annonçait
-   * « un audit de leur accueil téléphonique » en dur, c'est-à-dire Callflow,
+   * « un audit de leur accueil téléphonique » en dur, c'est-à-dire l'angle voix,
    * quel que soit le routage.
    *
-   * Un prospect routé vers la visibilité partait donc avec un RÔLE Callflow et
+   * Un prospect routé vers la visibilité partait donc avec un RÔLE « voix » et
    * un DOSSIER visibilité dans le même prompt. Le champ existe pour que
    * l'offre arrive jusqu'à l'agent, et pas seulement jusqu'à la prose.
    */

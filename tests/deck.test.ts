@@ -108,13 +108,14 @@ test("chaque présentation se termine par une suite DATÉE", () => {
 });
 
 test("le rituel de closing du compte est celui de la dernière diapositive", () => {
-  // Se tromper de rituel perd le deal au dernier mètre : un deal ScintIA ne
-  // se close pas avec un devis EAGLEYE.
+  // Se tromper de rituel perd le deal au dernier mètre : un deal Nuwacom ne se
+  // close pas avec un devis EAGLEYE.
   const eagleye = JSON.stringify(buildDeck(prospect({ stage: "offre" }), "eagleye").slides.at(-1));
   assert.match(eagleye, /DEVIS EAGLEYE/i);
 
-  const scintia = JSON.stringify(buildDeck(prospect({ stage: "offre" }), "scintia").slides.at(-1));
-  assert.match(scintia, /PROPOSITION COMMERCIALE/i);
+  const nuwacom = JSON.stringify(buildDeck(prospect({ stage: "offre" }), "nuwacom").slides.at(-1));
+  assert.match(nuwacom, /CADRAGE/i);
+  assert.doesNotMatch(nuwacom, /DEVIS EAGLEYE/i, "le rituel du maître ne doit pas fuiter sur un revendeur");
 });
 
 test("l'opérateur est averti quand le prix part sur un dossier froid", () => {

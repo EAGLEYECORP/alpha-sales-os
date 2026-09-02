@@ -17,7 +17,7 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
-export type EagleyeOffer = "alpha-sales-os" | "callflow" | "visibilite-growth";
+export type EagleyeOffer = "alpha-sales-os" | "alpha-voice" | "visibilite-growth";
 
 export interface OfferSignals {
   sector?: string;
@@ -50,11 +50,11 @@ export interface OfferMatch {
  *
  * ⚠ LA RAISON D'ÊTRE DES DEUX DERNIERS CHAMPS. Le script d'appel sortant
  * annonçait « proposer un audit de leur accueil téléphonique » — l'angle
- * Callflow — QUEL QUE SOIT le routage. Un prospect routé vers la visibilité
+ * Alpha Voice — QUEL QUE SOIT le routage. Un prospect routé vers la visibilité
  * s'entendait donc proposer autre chose que ce qu'on avait décidé de lui
  * vendre. Pire : quand le brief du deep-dive accompagnait l'appel, il portait
  * « Offre pertinente : Visibilité / Growth » pendant que le rôle disait
- * Callflow. Deux offres contradictoires dans le même prompt.
+ * Alpha Voice. Deux offres contradictoires dans le même prompt.
  *
  * `benefice` est ce que l'agent annonce APRÈS la divulgation, et `question`
  * est la seule question — FERMÉE — qu'il pose avant de se taire. Elles sont
@@ -181,8 +181,8 @@ export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
     perte: "Sur dix personnes qui vous contactent, combien vont jusqu'au devis ?",
     consequence: "Et celles qui s'arrêtent en route — vous savez pourquoi, ou ça se perd sans qu'on le sache ?",
   },
-  callflow: {
-    label: "ScintIA Callflow — l'accueil & relance IA au téléphone",
+  "alpha-voice": {
+    label: "Alpha Voice — l'accueil & relance IA au téléphone",
     pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
     benefice:
       "votre agenda se remplit tout seul pendant que vous vous occupez de votre métier et de vos clients : " +
@@ -219,13 +219,13 @@ export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
  */
 export const OFFER_LABELS: Record<EagleyeOffer, string> = {
   "alpha-sales-os": OFFRES["alpha-sales-os"].label,
-  callflow: OFFRES.callflow.label,
+  "alpha-voice": OFFRES["alpha-voice"].label,
   "visibilite-growth": OFFRES["visibilite-growth"].label,
 };
 
 const OFFER_PITCH: Record<EagleyeOffer, string> = {
   "alpha-sales-os": OFFRES["alpha-sales-os"].pitch,
-  callflow: OFFRES.callflow.pitch,
+  "alpha-voice": OFFRES["alpha-voice"].pitch,
   "visibilite-growth": OFFRES["visibilite-growth"].pitch,
 };
 
@@ -253,19 +253,19 @@ function weakSocial(state?: string): boolean {
 
 /**
  * @param allowed  Offres autorisées pour le compte courant (lib/accounts.ts).
- *   Un compte mono-offre (ScintIA = callflow seul) ne doit JAMAIS se voir
+ *   Un compte mono-offre ne doit JAMAIS se voir
  *   proposer autre chose, même si l'audit pointe ailleurs. Absent/vide = les
  *   trois (compte maître). Un `allowed` d'une seule offre force cette offre.
  */
 export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMatch {
-  const scores: Record<EagleyeOffer, number> = { "alpha-sales-os": 0, callflow: 0, "visibilite-growth": 0 };
-  const reasons: Record<EagleyeOffer, string[]> = { "alpha-sales-os": [], callflow: [], "visibilite-growth": [] };
+  const scores: Record<EagleyeOffer, number> = { "alpha-sales-os": 0, "alpha-voice": 0, "visibilite-growth": 0 };
+  const reasons: Record<EagleyeOffer, string[]> = { "alpha-sales-os": [], "alpha-voice": [], "visibilite-growth": [] };
 
-  // ── Callflow : appels manqués + métier téléphone ──
+  // ── Alpha Voice : appels manqués + métier téléphone ──
   const missed = sig.missedCallsPerWeek ?? 0;
-  if (missed >= 5) { scores.callflow += 3; reasons.callflow.push(`${missed} appels manqués/semaine — autant de clients perdus`); }
-  else if (missed >= 2) { scores.callflow += 2; reasons.callflow.push(`${missed} appels manqués/semaine`); }
-  if (hit(sig.sector, PHONE_HEAVY)) { scores.callflow += 2; reasons.callflow.push("métier très dépendant du téléphone"); }
+  if (missed >= 5) { scores["alpha-voice"] += 3; reasons["alpha-voice"].push(`${missed} appels manqués/semaine — autant de clients perdus`); }
+  else if (missed >= 2) { scores["alpha-voice"] += 2; reasons["alpha-voice"].push(`${missed} appels manqués/semaine`); }
+  if (hit(sig.sector, PHONE_HEAVY)) { scores["alpha-voice"] += 2; reasons["alpha-voice"].push("métier très dépendant du téléphone"); }
 
   // ── Alpha Sales OS : fonction commerciale + deals à outiller ──
   if (hit(sig.sector, SALES_HEAVY)) { scores["alpha-sales-os"] += 2; reasons["alpha-sales-os"].push("cycle de vente / leads à structurer"); }
@@ -280,10 +280,10 @@ export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMa
   if (sig.googleReviews !== undefined && sig.googleReviews < 10) { scores["visibilite-growth"] += 1; reasons["visibilite-growth"].push("peu d'avis Google — faible preuve sociale"); }
   if (sig.socialState !== undefined && weakSocial(sig.socialState)) { scores["visibilite-growth"] += 1; reasons["visibilite-growth"].push("réseaux sociaux inexistants ou inactifs"); }
 
-  // Classement. Départage stable : callflow > visibilité > alpha (le plus
-  // « proximité » d'abord, cohérent avec le pipe Scintia), à score égal.
+  // Classement. Départage stable : alpha-voice > visibilité > alpha (le plus
+  // « proximité » d'abord, cohérent avec le pipe terrain), à score égal.
   // On ne classe QUE parmi les offres autorisées du compte.
-  const fullOrder: EagleyeOffer[] = ["callflow", "visibilite-growth", "alpha-sales-os"];
+  const fullOrder: EagleyeOffer[] = ["alpha-voice", "visibilite-growth", "alpha-sales-os"];
   const permitted = allowed && allowed.length ? allowed : fullOrder;
   const order = fullOrder.filter((o) => permitted.includes(o));
   // Repli défensif : un `allowed` vide après filtre → on garde tout.
@@ -295,7 +295,7 @@ export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMa
     if (scores[o] > best) { best = scores[o]; primary = o; }
   }
   // Aucun signal → défaut = 1re offre autorisée (Alpha Sales OS pour le maître,
-  // callflow pour un compte Callflow-seul : jamais une offre interdite).
+  // alpha-voice pour un compte mono-offre : jamais une offre interdite).
   if (best <= 0) primary = ranking.includes("alpha-sales-os") ? "alpha-sales-os" : ranking[0];
 
   return { primary, label: OFFER_LABELS[primary], scores, reasons, pitch: OFFER_PITCH[primary] };

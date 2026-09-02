@@ -98,7 +98,7 @@ export default function OutboxPage() {
         closerName: settings.closerName,
         agencyName: settings.agencyName,
         // Le compte actif décide des aimants disponibles, donc de ce que le
-        // message annonce. Sans lui, tout le monde recevait l'angle Callflow.
+        // message annonce. Sans lui, tout le monde recevait l'angle Alpha Voice.
         accountId: settings.accountId,
       }),
     [prospects, ramp.today, settings.bookingUrl, settings.closerName, settings.agencyName, settings.accountId]

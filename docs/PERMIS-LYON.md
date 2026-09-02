@@ -13,7 +13,7 @@ Chaque MOE audité tombe dans une offre — c'est `matchOffer()`
 
 | Signal dominant | Offre |
 |---|---|
-| Appels manqués, métier au téléphone (chantiers, urgences) | **ScintIA Callflow** — accueil & relance IA 24/7 |
+| Appels manqués, métier au téléphone (chantiers, urgences) | **Alpha Voice** — accueil & relance IA 24/7 |
 | Leads/deals à structurer, cycle de vente B2B, gros paniers | **Alpha Sales OS** — l'OS de vente intelligent |
 | Invisible en ligne (pas de site, peu d'avis, réseaux morts) | **Visibilité / Growth** — offre personnalisée |
 
@@ -55,15 +55,15 @@ Audit, ou audit en lot) → **routage d'offre** (`matchOffer`) → séquence.
 1. **n8n tire** les permis Lyon en cours → pousse les MOE dans l'app.
 2. **Audit** de chaque MOE (site, note Google, avis, présence — `site-fetch`
    marche sur les sites publics ; le reste se saisit).
-3. **Routage** : l'app propose l'offre (Callflow / Alpha Sales OS / Visibilité).
+3. **Routage** : l'app propose l'offre (Alpha Voice / Alpha Sales OS / Visibilité).
 4. **Séquence personnalisée** selon l'offre : l'accroche vient de
    `matchOffer().pitch`, l'audit-cadeau porte ta marque.
 5. **RDV → démo → close.** Setup **2 500 €** (Alpha Sales OS) ou **990 €**
-   (Callflow) selon l'offre retenue.
+   (Alpha Voice) selon l'offre retenue.
 
 ## Pourquoi ce play est fort
 
 - **Déclencheur public et daté** : le permis prouve l'activité — pas du cold à froid.
 - **Volume renouvelé** : de nouveaux permis chaque semaine à Lyon.
 - **Trois offres, un seul flux** : tu ne jettes aucun prospect — s'il n'est pas
-  Alpha Sales OS, il est Callflow ou Visibilité. Personne ne sort les mains vides.
+  Alpha Sales OS, il est Alpha Voice ou Visibilité. Personne ne sort les mains vides.

@@ -91,7 +91,7 @@ export function requeteVerticale(v: VerticalPlaybook | null, cibles: Prospect[] 
  * déguisé en contenu. Le panneau qui l'affiche s'occupe de dire pourquoi.
  *
  * ⚠ `notes` doit DÉJÀ être filtré par compte (`notesForAccount`). Une leçon
- * ScintIA remontée pendant un appel EAGLEYE n'est pas seulement hors sujet :
+ * partenaire remontée pendant un appel EAGLEYE n'est pas seulement hors sujet :
  * elle expose le portefeuille d'un compte à l'autre.
  */
 export function leconsPourAppels(

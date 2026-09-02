@@ -6,21 +6,21 @@ import { getAccount } from "./accounts";
  * QUELLE OFFRE UN APPEL REPRÉSENTE — et pourquoi on refuse de deviner.
  *
  * ⚠ AVANT, PERSONNE NE POSAIT LA QUESTION. Le script sortant annonçait
- * « proposer un audit de leur accueil téléphonique » — l'angle Callflow —
+ * « proposer un audit de leur accueil téléphonique » — l'angle Alpha Voice —
  * écrit en dur, sur TOUS les appels.
  *
  * Toute la chaîne était pourtant juste : `deepDive` calcule l'offre en la
  * contraignant aux offres autorisées du compte, `briefForScript` l'écrit
  * (« Offre pertinente : … »), et `CallTask` la laissait tomber en route. Sur
- * un prospect routé vers la visibilité, le RÔLE de l'agent disait Callflow
+ * un prospect routé vers la visibilité, le RÔLE de l'agent disait Alpha Voice
  * pendant que son DOSSIER disait visibilité — deux offres contradictoires
  * dans le même prompt, arbitrées en direct, devant le prospect.
  *
  * ── LES TROIS CAS, DANS CET ORDRE ──
  *
  * 1. L'appelant NOMME l'offre (l'autopilote la tient du deep-dive). On la
- *    vérifie quand même contre les offres autorisées du compte : ScintIA ne
- *    vend QUE Callflow, et un appel passé en son nom ne peut pas proposer
+ *    vérifie quand même contre les offres autorisées du compte : un compte
+ *    mono-offre ne vend QUE celle-là, et un appel passé en son nom ne peut pas proposer
  *    autre chose — même par erreur de l'appelant. La contrainte de compte est
  *    une règle commerciale négociée, pas une préférence d'affichage.
  * 2. Le compte n'en vend qu'UNE. Il n'y a rien à deviner.

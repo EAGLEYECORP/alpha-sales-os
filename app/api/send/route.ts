@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
    * Deux fautes dans cette ligne :
    *  · une ENV UNIQUE pour un produit MULTI-COMPTE : le même nom signe les
    *    envois de tous les comptes du portefeuille ;
-   *  · un repli sur NOTRE marque : un email envoyé au nom de ScintIA
+   *  · un repli sur NOTRE marque : un email envoyé au nom d'un partenaire
    *    partait signé « EAGLEYE », avec « EAGLEYE CORP — Lyon, France » en
    *    pied. C'est une identité d'expéditeur fausse dans un message
    *    commercial — et c'est précisément la réputation que la validation
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
       /**
        * Logo aigle hébergé (PNG public, non gaté par le middleware) — mais
        * SEULEMENT sur le compte maître (`habillageEnvoi`). Il partait sur
-       * tous les comptes : un email ScintIA s'ouvrait sur NOTRE aigle. Sans
+       * tous les comptes : un email partenaire s'ouvrait sur NOTRE aigle. Sans
        * logo, le rendu retombe sur le monogramme de l'expéditeur
        * (`lib/email-html.ts`). Le jour où un revendeur fournit le sien, ça
        * se passe dans `lib/expediteur.ts`, pour l'aperçu comme pour l'envoi.

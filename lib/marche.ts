@@ -152,7 +152,7 @@ export const MARCHE_FRANCE: RelevePrix[] = [
     source: "agaphone.com, locklead.fr, appels-manques.fr — 80–300 € affichés, 200–400 € en facture réelle",
     releveLe: RELEVE_LE,
     reserve:
-      "+30 à +50 % le soir et le week-end. C'est le concurrent RÉEL de la marche Callflow, " +
+      "+30 à +50 % le soir et le week-end. C'est le concurrent RÉEL de la marche Alpha Voice, " +
       "et c'est à lui qu'un artisan compare — pas à une plateforme américaine.",
   },
   {

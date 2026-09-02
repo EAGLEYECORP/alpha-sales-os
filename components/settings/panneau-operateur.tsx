@@ -13,7 +13,7 @@ import { useDroits } from "@/lib/use-droits";
  *
  *   · les réglages du CLIENT — son agence, sa doctrine, son ICP, ses
  *     notifications, son PIN, ses imports à lui ;
- *   · le panneau OPÉRATEUR — le portefeuille de comptes (EAGLEYE / ScintIA /
+ *   · le panneau OPÉRATEUR — le portefeuille de comptes (EAGLEYE /
  *     Nuwacom), notre grille tarifaire, les clés d'infrastructure, le
  *     gabarit d'environnement, le chargement de NOS fiches réelles.
  *

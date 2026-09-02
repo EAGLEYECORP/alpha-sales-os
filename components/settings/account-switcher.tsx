@@ -56,13 +56,13 @@ export function AccountSwitcher() {
                * ⚠ LA BASCULE ATTEND LE TAUX, ET C'EST VOULU.
                *
                * Le taux de chaque compte ne descend plus dans le bundle : il
-               * publiait notre part chez ScintIA et Nuwacom dans un chunk
+               * publiait notre part chez chaque partenaire dans un chunk
                * servi sans mot de passe. Il arrive donc du serveur.
                *
                * Conséquence : `applyAccount` ne l'écrit plus, c'est ici qu'il
                * s'écrit. Basculer avant de l'avoir reçu laisserait les
                * Réglages sur le taux du compte PRÉCÉDENT — et `/payouts`
-               * calculerait notre part d'un deal ScintIA à 100 % sans que
+               * calculerait notre part d'un deal partenaire à 100 % sans que
                * rien ne le signale. Un bouton qui attend une demi-seconde est
                * moins cher qu'un chiffre faux en silence.
                */

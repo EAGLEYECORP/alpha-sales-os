@@ -37,7 +37,7 @@ export default function LinkedinPage() {
 
   const queue = useMemo(
     // Le compte actif décide des aimants disponibles, donc de l'angle du
-    // message. Sans lui, chaque fiche recevait la proposition Callflow.
+    // message. Sans lui, chaque fiche recevait la proposition voix.
     () => buildLinkedinQueue(prospects, { city, bookingUrl: settings.bookingUrl, accountId: settings.accountId }),
     [prospects, city, settings.bookingUrl, settings.accountId]
   );

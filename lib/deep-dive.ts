@@ -94,7 +94,7 @@ export function deepDive(
     account.offers
   );
 
-  // ── 2. Qui encaisse ? (Callflow → ScintIA · > 40 k → Nuwacom · reste → nous) ──
+  // ── 2. Qui encaisse ? (> 40 k → Nuwacom · le reste → nous) ──
   const dealValue = (p.setupValue ?? 0) + (p.monthlyValue ?? 0) * 12;
   const route = routeAccount({ offer: m.primary, amountHT: dealValue });
 
@@ -133,7 +133,7 @@ export function deepDive(
    * d'aucune offre et restent demandés partout.
    */
   const trouOffre = OFFRES[m.primary];
-  if (m.primary === "callflow") {
+  if (m.primary === "alpha-voice") {
     if (a.missedCallsPerWeek === undefined) gaps.push("le volume d'appels manqués (le chiffre qui fait mal)");
     if (!filled(a.currentProcess)) gaps.push("comment ils gèrent les appels aujourd'hui");
   } else {

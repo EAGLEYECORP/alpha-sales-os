@@ -58,7 +58,7 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
   /**
    * ⚠ CES TROIS PHRASES ÉTAIENT ÉCRITES EN DUR, ET DUPLIQUÉES MOT POUR MOT
-   * DANS `mail-compose.ts`. Elles annonçaient toutes l'angle Callflow —
+   * DANS `mail-compose.ts`. Elles annonçaient toutes l'angle Alpha Voice —
    * « le téléphone est le premier point de contact », « un audit de son
    * accueil téléphonique » — quel que soit le routage de la fiche.
    *

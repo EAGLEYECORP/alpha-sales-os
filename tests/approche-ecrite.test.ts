@@ -145,19 +145,34 @@ test("⚠ l'email et le message LinkedIn ne peuvent plus se contredire", () => {
 
 test("⚠ un compte ne peut pas annoncer un audit qu'il ne sert pas", () => {
   /**
-   * ScintIA ne vend QUE Callflow. Une fiche « invisible en ligne » lue depuis
-   * ce compte ne doit pas se voir proposer un audit de visibilité : ce serait
-   * promettre un document que le compte n'a pas le droit de produire.
+   * Un compte revendeur est borné à SES offres. Une fiche qui crie « appels
+   * manqués » lue depuis Nuwacom ne doit pas se voir proposer l'audit
+   * téléphonique : ce serait promettre un document que le compte n'a pas le
+   * droit de produire, au nom d'une marque qui n'est pas la nôtre.
+   *
+   * ⚠ Le compte qui servait d'exemple ici (le revendeur de l'accueil
+   * téléphonique) a disparu, et son offre est revenue chez EAGLEYE. L'invariant
+   * n'a pas bougé d'un pouce : c'est le COMPTE qui borne, pas l'offre.
    */
-  const invisible = CAS[1].p;
-  const servi = pickMagnet(invisible, "scintia");
-  assert.ok(servi, "ScintIA doit tout de même avoir un aimant");
-  const corps = emailBody(invisible, { accountId: "scintia" });
-  assert.ok(
-    corps.includes(servi!.magnet.title.toLowerCase()),
-    "le message doit annoncer l'aimant réellement servi par le compte"
-  );
-  assert.equal(servi!.magnet.offer, "callflow", "et pour ScintIA, c'est Callflow");
+  const telephone = CAS[0].p;
+  const servi = pickMagnet(telephone, "nuwacom");
+  if (servi) {
+    assert.notEqual(
+      servi.magnet.offer,
+      "alpha-voice",
+      "Nuwacom ne vend pas notre agent vocal : il ne peut pas en promettre l'audit"
+    );
+    const corps = emailBody(telephone, { accountId: "nuwacom" });
+    assert.ok(
+      corps.includes(servi.magnet.title.toLowerCase()),
+      "le message doit annoncer l'aimant réellement servi par le compte"
+    );
+  }
+
+  // Et depuis EAGLEYE, qui porte l'offre, l'audit téléphonique est bien servi.
+  const chezNous = pickMagnet(telephone, "eagleye");
+  assert.ok(chezNous, "EAGLEYE doit avoir un aimant pour cette fiche");
+  assert.equal(chezNous!.magnet.offer, "alpha-voice");
 });
 
 test("sans aimant disponible, on n'annonce AUCUN audit", () => {
@@ -195,7 +210,7 @@ test("⚠ un message hors-Callflow ne reparle pas du téléphone", () => {
    */
   for (const { quoi, p } of CAS) {
     const offre = deepDive(p).offer;
-    if (offre === "callflow") continue;
+    if (offre === "alpha-voice") continue;
     for (const texte of [emailBody(p, { accountId: "eagleye" }), messageText(p, undefined, "eagleye")]) {
       const sansAudit = texte.replace(/Il m'arrive de préparer[\s\S]*/, "");
       assert.doesNotMatch(

@@ -34,7 +34,7 @@ const firstName = (p: Prospect): string => (p.name || "").trim().split(/\s+/)[0]
  * Objet court, sans promesse, sans majuscules criardes.
  *
  * ⚠ Il annonçait « une question sur vos appels » dès qu'une verticale était
- * connue — c'est-à-dire l'angle Callflow, sur toutes les fiches. À quelqu'un
+ * connue — c'est-à-dire l'angle Alpha Voice, sur toutes les fiches. À quelqu'un
  * de routé vers la visibilité, l'objet parlait déjà d'autre chose que le
  * corps du message et que la pièce jointe.
  */

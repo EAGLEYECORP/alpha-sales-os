@@ -7,7 +7,7 @@ import type { EagleyeOffer } from "./offer-match";
  * Portefeuille de comptes white-label — le compte MAÎTRE gère les autres.
  *
  * Le modèle métier de Zakaria : EAGLEYE est le compte maître, l'interface
- * qui pilote tout. Chaque marque revendue (ScintIA, Nuwacom, …) est un
+ * qui pilote tout. Chaque marque revendue (Nuwacom, …) est un
  * COMPTE : sa propre identité, ses offres autorisées, sa commission, son
  * ICP. Le maître bascule d'un compte à l'autre ; `applyAccount()` produit
  * le patch de Réglages correspondant (identité + offre + commission).
@@ -66,8 +66,9 @@ export interface Account {
   valueProp: string;
   /**
    * Offres AUTORISÉES pour ce compte. Contraint le routeur d'offre
-   * (matchOffer) : ScintIA ne propose QUE callflow, même si l'audit
-   * pointe ailleurs. Vide/absent = les trois (cas du maître).
+   * (matchOffer) : un compte mono-offre ne se voit jamais recommander autre
+   * chose, même si l'audit pointe ailleurs. Vide/absent = les trois (cas du
+   * maître).
    */
   offers: EagleyeOffer[];
   /**
@@ -76,7 +77,7 @@ export interface Account {
    * Ce champ portait 100 / 30 / 15. Ce module descend dans le navigateur, et
    * `_next/static/**` est exclu du middleware : le chunk qui le contient
    * répond 200 sans cookie, SITE_PASSWORD actif — vérifié sur serveur réel.
-   * Notre part chez ScintIA et chez Nuwacom était donc publique.
+   * Notre part chez chaque partenaire était donc publique.
    *
    * Le commentaire qui l'y laissait plaidait que « chaque partenaire connaît
    * déjà son propre taux ». La moitié tient. L'autre non : le chunk les
@@ -88,13 +89,13 @@ export interface Account {
    * (`tauxVitrinePct`, lib/client-catalogue.ts) et servi au compte MAÎTRE
    * seulement (`/api/catalogue`). La bascule de compte l'applique aux
    * Réglages ; tant qu'il n'est pas arrivé, elle est désactivée — un
-   * `/payouts` qui calculerait une part ScintIA à 100 % en silence serait
+   * `/payouts` qui calculerait une part partenaire à 100 % en silence serait
    * pire que la fuite qu'on vient de fermer.
    */
   /**
    * Comment on CLOSE sur ce compte. Chaque marque a son rituel de signature :
-   * un devis EAGLEYE, une proposition via le panel ScintIA, un cadrage avec le
-   * CEO de Nuwacom. Se tromper de rituel = perdre le deal au dernier mètre.
+   * un devis EAGLEYE, un cadrage avec le CEO de Nuwacom. Se tromper de rituel
+   * = perdre le deal au dernier mètre.
    *
    * Seul l'ACTE est ici. Les coordonnées qui vont avec (adresse d'expédition,
    * panel de vente, nom du CEO à impliquer, fuseau) sont dans
@@ -124,7 +125,7 @@ export const ACCOUNTS: Account[] = [
     valueProp:
       "On outille les forces de vente avec l'automatisation IA : zéro lead perdu, la machine tourne 24/7.",
     // Le maître voit et propose tout — c'est lui qui arbitre l'offre.
-    offers: ["alpha-sales-os", "callflow", "visibilite-growth"],
+    offers: ["alpha-sales-os", "alpha-voice", "visibilite-growth"],
     // Le taux d'EAGLEYE est à 100 % et ne se lit plus ici (voir `Account`) :
     // EAGLEYE CORP, c'est NOUS, il n'y a personne à qui reverser. Il vit avec
     // les autres dans `lib/accounts-commercial.ts`.
@@ -136,23 +137,6 @@ export const ACCOUNTS: Account[] = [
     // invisible.
     closing: {
       action: "Envoyer le DEVIS EAGLEYE CORP (chiffré, daté, avec la date de décision convenue).",
-    },
-  },
-  {
-    id: "scintia",
-    name: "ScintIA",
-    kind: "client",
-    tier: "vip",
-    city: "Lyon",
-    sites: ["https://scintia.ai/", "https://scintiacallflow.ai/"],
-    whatYouSell: "ScintIA Callflow — l'accueil & la relance au téléphone par IA",
-    valueProp:
-      "Chaque appel manqué est un client qui appelle le concurrent. ScintIA répond à votre place, 24/7, et prend le rendez-vous.",
-    // Callflow UNIQUEMENT — négocié : ScintIA se concentre sur Callflow comme
-    // PRODUIT. Le « ScintIA Lab » est repassé à EAGLEYE.
-    offers: ["callflow"],
-    closing: {
-      action: "Envoyer la PROPOSITION COMMERCIALE depuis le panel de vente ScintIA Callflow.",
     },
   },
   {
@@ -237,7 +221,7 @@ export function masterAccount(): Account {
  * Le taux arrive maintenant du serveur et c'est le SÉLECTEUR de comptes qui
  * l'écrit dans les Réglages, une fois qu'il l'a reçu. Tant qu'il ne l'a pas,
  * il n'y a pas de bascule : mieux vaut un bouton en attente qu'un `/payouts`
- * calculant notre part d'un deal ScintIA à 100 % sans que personne ne le
+ * calculant notre part d'un deal partenaire à 100 % sans que personne ne le
  * voie.
  */
 export function applyAccount(id: string): Partial<AppSettings> {
@@ -271,21 +255,34 @@ export interface AccountRoute {
 }
 
 /**
- * LA règle de routage (négociée, définitive) — qui encaisse quel deal :
+ * LA règle de routage — qui encaisse quel deal :
  *
- *   1. Callflow (accueil/relance téléphone) ................ → ScintIA
- *   2. Chantier > 40 k € HT (trop lourd pour nous) ......... → Nuwacom
- *   3. TOUT le reste, faisable par nous .................... → EAGLEYE
- *      (visibilité/sites/growth, digitalisation < 40 k, ex-« ScintIA Lab »)
+ *   1. Chantier > 40 k € HT (trop lourd pour nous) ......... → Nuwacom
+ *   2. TOUT le reste, faisable par nous .................... → EAGLEYE
+ *      (visibilité/sites/growth, digitalisation < 40 k, Alpha Voice,
+ *       Alpha Sales OS, OS personnalisé)
+ *
+ * ⚠ IL Y AVAIT UNE PREMIÈRE MARCHE : l'accueil téléphonique partait chez un
+ * revendeur. L'accord est mort et la marche a disparu — l'offre est revenue à
+ * EAGLEYE sous le nom d'Alpha Voice, qui est notre propre agent vocal. Un
+ * seul intermédiaire subsiste : Nuwacom, et seulement au-dessus de 40 k.
  *
  * Le défaut est EAGLEYE, volontairement : on garde tout ce qu'on sait faire —
  * c'est la marge la plus haute et le meilleur levier de négociation. On ne
  * sous-traite que ce qu'on ne peut pas porter.
  */
 export function routeAccount(deal: { offer?: EagleyeOffer; amountHT?: number }): AccountRoute {
-  if (deal.offer === "callflow") {
-    return { accountId: "scintia", accountName: "ScintIA", reason: "Callflow — produit ScintIA." };
-  }
+  /**
+   * ⚠ IL Y AVAIT ICI UNE PREMIÈRE MARCHE : l'accueil téléphonique partait chez
+   * un revendeur, à 30 % + 10 % du mensuel. L'accord est mort, la marche
+   * disparaît — mais PAS le besoin. Alpha Voice fait ce travail et il est à
+   * nous : le deal reste donc chez EAGLEYE, à 100 %, par le repli ci-dessous.
+   *
+   * On n'ajoute pas de cas particulier pour ça : « faisable par nous → on le
+   * garde » est déjà la règle par défaut, et c'est exactement ce qu'Alpha Voice
+   * est devenu. Un `if` qui renverrait EAGLEYE là où le repli renvoie déjà
+   * EAGLEYE serait une deuxième source pour la même réponse.
+   */
   const amt = deal.amountHT ?? 0;
   if (amt > NUWACOM_THRESHOLD_HT) {
     return {

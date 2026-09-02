@@ -64,8 +64,8 @@ export const LEAD_MAGNETS: LeadMagnet[] = [
       "Ce que font vos trois concurrents les plus proches quand on les appelle",
       "Les trois correctifs applicables sans nous",
     ],
-    offer: "callflow",
-    accountIds: ["eagleye", "scintia"],
+    offer: "alpha-voice",
+    accountIds: ["eagleye"],
     targets: "Métiers où le téléphone EST le canal d'entrée : garages, artisans, santé, auto-écoles, immobilier.",
     triggers: [
       "Appels manqués constatés ou déclarés",
@@ -173,7 +173,7 @@ export function pickMagnet(p: Prospect, accountId = "eagleye"): MagnetPick | nul
 
   // Le teaser n'existe QUE si on a de vrais chiffres. Pas d'accroche inventée.
   let teaser: string | undefined;
-  if (magnet.offer === "callflow" && missed !== undefined && ticket !== undefined) {
+  if (magnet.offer === "alpha-voice" && missed !== undefined && ticket !== undefined) {
     const r = recovery({ missedPerWeek: missed, avgTicket: ticket, conversionPct: a.conversionRate ?? 20 });
     if (r.perMonth > 0) {
       teaser = `≈ ${r.perMonth.toLocaleString("fr-FR")} € par mois qui partent chez le concurrent, sur vos propres chiffres.`;

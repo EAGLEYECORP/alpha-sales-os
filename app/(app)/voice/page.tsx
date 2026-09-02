@@ -93,7 +93,7 @@ export default function VoicePage() {
       accountId: settings.accountId,
       /**
        * ⚠ L'APPEL MANUEL NE DISAIT RIEN DE L'OFFRE, et le script sortant
-       * annonçait donc Callflow en dur — y compris pour une fiche routée
+       * annonçait donc l'angle voix en dur — y compris pour une fiche routée
        * vers la visibilité ou Alpha Sales OS.
        *
        * Sans fiche (numéro tapé à la main), on n'envoie rien : la route

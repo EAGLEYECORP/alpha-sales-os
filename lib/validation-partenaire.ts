@@ -7,12 +7,18 @@ import { cadresSortants, FORMAT_LABELS, STAGE_GROUPS } from "./templates";
  * ─────────────────────────────────────────────────────────────────────
  * CE QUI SORT AU NOM D'UN PARTENAIRE DOIT AVOIR ÉTÉ VALIDÉ PAR LUI.
  *
- * ── LE PROBLÈME, DIT PAR SCINTIA EUX-MÊMES ──
+ * ── LE PROBLÈME, DIT PAR UN PARTENAIRE LUI-MÊME ──
  *
- * Sur un appel Callflow, c'est LEUR marque qui parle. Ils ont peur pour leur
- * script, et ils ont raison : un prospect démarché n'entend pas « Alpha Sales
- * OS pour le compte de ScintIA », il entend ScintIA. Ce qui se dit là engage
- * une réputation qui n'est pas la nôtre.
+ * Sur un appel passé en son nom, c'est SA marque qui parle. Il a peur pour son
+ * script, et il a raison : un prospect démarché n'entend pas « Alpha Sales OS
+ * pour le compte d'Untel », il entend Untel. Ce qui se dit là engage une
+ * réputation qui n'est pas la nôtre.
+ *
+ * ⚠ Le partenaire qui avait posé cette exigence est parti, et son offre est
+ * revenue chez nous. Le module RESTE : Nuwacom est toujours un compte
+ * revendeur, et la règle ne dépendait pas de qui l'avait demandée. Ce qui a
+ * changé, c'est la GARDE DE MARQUE dans `auditScript` — elle s'armait sur
+ * l'OFFRE (l'accueil téléphonique), elle s'arme maintenant sur le COMPTE.
  *
  * Le dépôt savait déjà refuser un script non conforme (`auditScript`,
  * `EXIGENCE_MARQUE_PARTENAIRE`). Mais la conformité n'est pas l'accord : un
@@ -67,7 +73,7 @@ export interface Validation {
    * QUI a validé, chez eux. Un nom de personne, pas « le partenaire ».
    *
    * ⚠ Sans nom, une validation est une case qu'on coche soi-même. Le jour où
-   * un appel dérape, « ScintIA a validé » ne vaut rien ; « Untel a validé le
+   * un appel dérape, « la société a validé » ne vaut rien ; « Untel a validé le
    * 3 septembre en visio » se vérifie en un message.
    */
   par: string;

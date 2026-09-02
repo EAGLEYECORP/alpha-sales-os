@@ -1,8 +1,10 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { useAlpha } from "../lib/store";
+import { useAlpha, normaliserCompte } from "../lib/store";
 import { auditCompleteness } from "../lib/deep-dive";
 import type { Prospect } from "../lib/types";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * Le store est le cœur des données de l'app : tout ce qui s'y perd est perdu
@@ -140,16 +142,16 @@ test("store — basculer de compte change l'identité, PAS les données", () => 
   const { upsertProspect, switchAccount, patchSettings } = useAlpha.getState();
   upsertProspect(fixture({ id: "keep", company: "Ne doit pas bouger" }));
 
-  switchAccount("scintia");
+  switchAccount("nuwacom");
   let s = useAlpha.getState();
-  assert.equal(s.settings.accountId, "scintia");
-  assert.equal(s.settings.agencyName, "ScintIA");
+  assert.equal(s.settings.accountId, "nuwacom");
+  assert.equal(s.settings.agencyName, "Nuwacom");
   assert.equal(s.prospects.length, 1, "les prospects ne bougent pas en changeant de compte");
 
-  switchAccount("nuwacom");
+  switchAccount("eagleye");
   s = useAlpha.getState();
-  assert.equal(s.settings.agencyName, "Nuwacom");
-  assert.equal(s.prospects[0].company, "Ne doit pas bouger");
+  assert.equal(s.settings.agencyName, "EAGLEYE CORP");
+  assert.equal(s.prospects[0].company, "Ne doit pas bouger", "et le retour au maître non plus");
 
   switchAccount("eagleye");
 });
@@ -172,7 +174,7 @@ test("⚠ store — la bascule n'écrit PLUS le taux : c'est l'écran qui le pos
   const { switchAccount, patchSettings } = useAlpha.getState();
 
   patchSettings({ commissionPct: 100 });
-  switchAccount("scintia");
+  switchAccount("nuwacom");
   assert.equal(
     useAlpha.getState().settings.commissionPct,
     100,
@@ -189,15 +191,15 @@ test("⚠ store — la bascule n'écrit PLUS le taux : c'est l'écran qui le pos
 
 test("store — une note créée depuis un compte lui reste attachée", () => {
   const { switchAccount, upsertNote } = useAlpha.getState();
-  switchAccount("scintia");
+  switchAccount("nuwacom");
   const id = useAlpha.getState().upsertNote({ title: "Note ScintIA", body: "contenu" });
-  assert.equal(useAlpha.getState().notes.find((n) => n.id === id)!.accountId, "scintia");
+  assert.equal(useAlpha.getState().notes.find((n) => n.id === id)!.accountId, "nuwacom");
 
   // Rééditée depuis un AUTRE compte, elle ne change pas de propriétaire.
   useAlpha.getState().switchAccount("eagleye");
   useAlpha.getState().upsertNote({ id, title: "Note ScintIA", body: "contenu modifié" });
   const n = useAlpha.getState().notes.find((x) => x.id === id)!;
-  assert.equal(n.accountId, "scintia", "l'édition ne doit pas voler la note à son compte");
+  assert.equal(n.accountId, "nuwacom", "l'édition ne doit pas voler la note à son compte");
   assert.match(n.body, /modifié/);
 });
 
@@ -295,4 +297,55 @@ test("store — les tags s'AJOUTENT à la réimportation", () => {
   assert.ok(p.tags.includes("terrain"), "l'ancien tag survit");
   assert.ok(p.tags.includes("injoignable"), "le nouveau tag entre");
   assert.equal(new Set(p.tags).size, p.tags.length, "aucun doublon de tag");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ UN COMPTE RETIRÉ DU PORTEFEUILLE NE DOIT PAS SURVIVRE DANS UN NAVIGATEUR.
+ *
+ * Trouvé en retirant le compte du revendeur téléphonique (02/09/2026), et le
+ * trou était silencieux : le stockage local garde `accountId` et
+ * `agencyName`. `getAccount()` d'un identifiant inconnu retombe sur le maître
+ * — donc `estPartenaire()` répond **false** — pendant qu'`agencyName`
+ * continue de SIGNER au nom de la marque disparue.
+ *
+ * Résultat : des emails partant sous une marque qui n'est plus la nôtre, sans
+ * la moindre validation partenaire, et rien pour le signaler.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ store — un compte disparu du portefeuille retombe sur le maître", () => {
+  const src = readFileSync(join(process.cwd(), "lib/store.ts"), "utf8");
+
+  // La CONDITION : la normalisation interroge le REGISTRE, pas une liste de
+  // slugs morts — sinon le prochain compte retiré repassera au travers.
+  assert.match(src, /ACCOUNTS\.some\(\(a\) => a\.id === settings\.accountId\)/);
+  // Et elle répare l'identité, pas seulement l'identifiant : c'est
+  // `agencyName` qui signe les emails.
+  assert.match(src, /accountId: maitre\.id, agencyName: maitre\.name/);
+  // Elle doit être branchée sur la réhydratation, pas seulement définie.
+  assert.match(src, /settings: normaliserCompte\(\{/);
+
+  /**
+   * ⚠ Et le COMPORTEMENT, sur des réglages qui portent une marque morte.
+   *
+   * Une première version de ce test appelait `switchAccount("compte-mort")` —
+   * et passait au vert sans jamais toucher `normaliserCompte` : `applyAccount`
+   * retombait déjà sur le maître de son côté. Le cas réel n'est pas une
+   * bascule, c'est un stockage local écrit AVANT le retrait du compte. On
+   * l'exerce donc directement.
+   */
+  const mort = normaliserCompte({
+    ...useAlpha.getState().settings,
+    accountId: "un-compte-mort",
+    agencyName: "Marque Disparue",
+  });
+  assert.equal(mort.accountId, "eagleye");
+  assert.equal(mort.agencyName, "EAGLEYE CORP", "la signature ne doit plus porter la marque morte");
+
+  // Et un compte VIVANT n'est pas touché — sinon la normalisation ramènerait
+  // tout le monde au maître, ce qui casserait le white-label au lieu de le
+  // protéger.
+  const vivant = normaliserCompte({ ...useAlpha.getState().settings, accountId: "nuwacom", agencyName: "Nuwacom" });
+  assert.equal(vivant.accountId, "nuwacom");
+  assert.equal(vivant.agencyName, "Nuwacom");
 });

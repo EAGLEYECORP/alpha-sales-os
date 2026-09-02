@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Building2, Coins, FileQuestion, Layers } from "lucide-react";
 import {
-  CALLFLOW_PALIERS,
-  CALLFLOW_SETUP_HT,
+  ALPHA_VOICE_PALIERS,
+  ALPHA_VOICE_SETUP_HT,
   ESSAI_CALLS,
   ESSAI_HT,
   OUTBOUND_UNIT_CALLS,
@@ -34,7 +34,7 @@ import { cn, eur } from "@/lib/utils";
  * ── LES DEUX COLONNES, ET POURQUOI ELLES NE SE MÉLANGENT JAMAIS ──
  *
  * « Le client paie » et « Il nous revient » sont deux nombres différents, et
- * les confondre fausse toute prévision. Sur un Callflow à 990 €, le client
+ * les confondre fausse toute prévision. Sur un Alpha Voice à 990 €, le client
  * paie 990 et il nous revient 297. Sur un chantier Nuwacom à 60 000 €, le
  * client paie 60 000 et il nous revient 9 000 — plus 100 % de la maintenance
  * qui suit, qui est la vraie rente.
@@ -126,7 +126,7 @@ export function CalculateurComplet() {
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>
             <strong>Catalogue non chargé</strong> — {erreur}. Les briques à la carte sont indisponibles et « ce qui
-            nous revient » est calculé à 100 % partout : juste pour EAGLEYE, <strong>faux</strong> pour ScintIA et
+            nous revient » est calculé à 100 % partout : juste pour EAGLEYE, <strong>faux</strong> pour
             Nuwacom.
           </span>
         </p>
@@ -213,7 +213,7 @@ export function CalculateurComplet() {
               <p className="mt-1 text-[10.5px] leading-relaxed text-paper-faint">
                 ⚠ Ces {REV_SHARE_PCT} %-là sont un <strong className="text-paper-dim">PRIX facturé au client</strong>{" "}
                 sur SON chiffre d&apos;affaires. Ce n&apos;est pas une commission reversée — à ne jamais confondre avec
-                les {REV_SHARE_PCT} % de ScintIA, qui sont ce qui <em>nous</em> revient.
+                la commission d'un partenaire, qui est ce qui <em>nous</em> revient.
               </p>
             </Ligne>
 
@@ -244,28 +244,28 @@ export function CalculateurComplet() {
           </Bloc>
 
           <Bloc
-            titre="ScintIA — Callflow"
-            sousTitre={`Vendu comme un produit : ${eur(CALLFLOW_SETUP_HT)} d'installation + un palier de minutes.`}
+            titre="Alpha Voice"
+            sousTitre={`Vendu comme un produit : ${eur(ALPHA_VOICE_SETUP_HT)} d'installation + un palier de minutes.`}
           >
             <Ligne label="Palier de minutes">
               <div className="flex flex-wrap gap-1.5">
                 <button
-                  onClick={() => set({ callflowMinutes: undefined })}
+                  onClick={() => set({ alphaVoiceMinutes: undefined })}
                   className={cn(
                     "chip transition-colors",
-                    !sel.callflowMinutes ? "border-gold bg-gold font-semibold text-goldink" : "border-ink-600 text-paper-faint hover:text-paper"
+                    !sel.alphaVoiceMinutes ? "border-gold bg-gold font-semibold text-goldink" : "border-ink-600 text-paper-faint hover:text-paper"
                   )}
                 >
                   aucun
                 </button>
-                {CALLFLOW_PALIERS.map((p) => (
+                {ALPHA_VOICE_PALIERS.map((p) => (
                   <button
                     key={p.minutes}
-                    onClick={() => set({ callflowMinutes: p.minutes })}
+                    onClick={() => set({ alphaVoiceMinutes: p.minutes })}
                     title={`${p.appels} · ${eur(p.prixHT)}/mois`}
                     className={cn(
                       "chip transition-colors",
-                      sel.callflowMinutes === p.minutes
+                      sel.alphaVoiceMinutes === p.minutes
                         ? "border-gold bg-gold font-semibold text-goldink"
                         : "border-ink-600 text-paper-faint hover:text-paper"
                     )}

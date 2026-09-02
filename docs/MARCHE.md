@@ -65,7 +65,7 @@ outil qui ne rend rien en retour.
 ### 1.5 Les agents vocaux — LiveKit, Pipecat, Vocode, Bolna, TEN
 
 Voir la partie 4 (ALPHA VOICE). C'est l'étage qui bouge le plus vite, et celui
-où EAGLEYE a déjà un pied puisqu'on revend Scintia Callflow en entrant.
+où EAGLEYE a déjà un pied puisqu'on revend Alpha Voice en entrant.
 
 ---
 
@@ -211,7 +211,7 @@ information et droit d'opposition. C'est notre terrain — mais c'est aussi une
 raison de plus de ne pas s'approcher du B2C.
 
 **Mur 2 — le conflit avec Scintia.**
-EAGLEYE revend Scintia Callflow, une réceptionniste téléphonique IA
+EAGLEYE revend Alpha Voice, une réceptionniste téléphonique IA
 **entrante**. Construire un démarcheur IA **sortant** ne nous met pas en
 concurrence avec Scintia sur le produit, mais ça brouille le message :
 « nous vous vendons une IA qui répond bien à vos clients » perd de sa force si

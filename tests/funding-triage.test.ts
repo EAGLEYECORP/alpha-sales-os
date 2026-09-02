@@ -107,14 +107,16 @@ test("triage import — un gros fichier vide n'est pas une réussite, et on le d
 });
 
 test("triage import — le lot se répartit par compte selon l'escalier", () => {
-  const callflow = fixture({
+  const voix = fixture({
     id: "cf", setupValue: 990,
     deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: 9 },
   });
   const gros = fixture({ id: "gros", setupValue: 60000, deepAudit: { websiteState: "aucun", socialState: "", localCompetition: "", currentProcess: "" } });
-  const t = triageImport([callflow, gros]);
+  const t = triageImport([voix, gros]);
   const ids = t.accounts.map((a) => a.accountId).sort();
-  assert.deepEqual(ids, ["nuwacom", "scintia"]);
+  // La fiche « appels manqués » revient chez nous depuis qu'Alpha Voice est
+  // notre offre ; le gros chantier reste chez Nuwacom.
+  assert.deepEqual(ids, ["eagleye", "nuwacom"]);
   // La valeur estimée du lot Nuwacom porte bien le gros chantier.
   assert.ok(t.accounts.find((a) => a.accountId === "nuwacom")!.estimatedHT >= 60000);
 });

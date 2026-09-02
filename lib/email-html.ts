@@ -124,7 +124,7 @@ function button(label: string, url: string): string {
  *
  * Trois choses en dur, dans un produit WHITE-LABEL :
  *  · un bandeau « Eagleye Corp · Lyon », SOUS le pied expéditeur — donc à la
- *    place que l'œil lit comme « qui m'écrit ». Sur un envoi ScintIA, le
+ *    place que l'œil lit comme « qui m'écrit ». Sur un envoi partenaire, le
  *    prospect lisait deux sociétés, dont une qui n'était pas l'expéditeur ;
  *  · les replis `|| "EAGLEYE"` de la signature et de l'adresse légale ;
  *  · « nous accompagnons les professionnels de votre secteur à Lyon » — faux
@@ -174,11 +174,11 @@ export function renderEmail(opts: EmailOptions): string {
    * « Eagleye / Sales OS — Lyon » EN DUR, SUR TOUS LES COMPTES.
    *
    * C'est le papier à en-tête : la première chose lue, celle qui répond à
-   * « de qui vient ce message ». Un email envoyé au nom de ScintIA s'ouvrait
+   * « de qui vient ce message ». Un email envoyé au nom d'un partenaire s'ouvrait
    * donc sur NOTRE marque, au-dessus d'un corps signé d'une autre société.
    *
    * Il se déduit maintenant de l'adresse légale, qui est déjà l'identité de
-   * l'expéditeur : « ScintIA — Lyon, France » → « ScintIA » / « Lyon, France ».
+   * l'expéditeur : « Nuwacom — Luxembourg » → « Nuwacom » / « Luxembourg ».
    * Sans identité fournie, aucun en-tête n'est rendu : mieux vaut un email
    * sans papier à en-tête qu'un email au papier de quelqu'un d'autre.
    */

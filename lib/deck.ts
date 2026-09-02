@@ -69,7 +69,7 @@ const PRIX_AUTORISE: Stage[] = ["offre", "redzone", "signe"];
  * Construit la présentation.
  *
  * `accountId` détermine l'offre et le rituel de closing : une présentation
- * ScintIA ne parle pas d'Alpha Sales OS, elle parle de Callflow.
+ * Un compte mono-offre ne parle que de la sienne.
  *
  * `prix` : le chiffrage, calculé côté serveur. Absent = pas de diapositive de
  * prix, et l'omission est expliquée à l'opérateur. C'est volontairement le

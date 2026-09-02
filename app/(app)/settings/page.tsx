@@ -415,7 +415,7 @@ export default function SettingsPage() {
         {/* Dictionnaire CRM — toutes les variables suivies par Google Sheets */}
         <CrmDictionary />
 
-        {/* ── OPÉRATEUR. Le portefeuille : EAGLEYE, ScintIA, Nuwacom. Ce sont
+        {/* ── OPÉRATEUR. Le portefeuille : EAGLEYE, Nuwacom. Ce sont
             NOS identités commerciales et NOS taux de reversement. Un client
             n'a rien à basculer là-dedans — et n'a pas à savoir que ça existe. ── */}
         <PanneauOperateur titre="Portefeuille de comptes">
@@ -709,18 +709,18 @@ export default function SettingsPage() {
                 </button>
                 <button
                   className="btn-bronze px-2.5 py-1.5 text-[12px]"
-                  title="Ajoute 20 prospects ICP Callflow tirés de tes feuilles réelles (Lyon 6 & 7 : garages, artisans, immobilier, auto-école, spa…). Fusionne — n'efface rien."
+                  title="Ajoute 20 prospects ICP Alpha Voice tirés de tes feuilles réelles (Lyon 6 & 7 : garages, artisans, immobilier, auto-école, spa…). Fusionne — n'efface rien."
                   onClick={() => {
                     void loadProspectsICP()
                       .then(({ added, updated }) =>
                         setImportMsg(
-                          `✓ Prospects ICP Callflow chargés : ${added} nouveau(x), ${updated} mis à jour. Cible d'abord ceux avec un email (Boîte d'envoi) et appelle les autres.`
+                          `✓ Prospects ICP Alpha Voice chargés : ${added} nouveau(x), ${updated} mis à jour. Cible d'abord ceux avec un email (Boîte d'envoi) et appelle les autres.`
                         )
                       )
                       .catch((e: Error) => setImportMsg(`⚠ ${e.message}`));
                   }}
                 >
-                  <Download size={13} /> Prospects ICP (Callflow)
+                  <Download size={13} /> Prospects ICP (Alpha Voice)
                 </button>
                   </div>
                 </PanneauOperateur>

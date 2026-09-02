@@ -1,6 +1,6 @@
 import {
-  CALLFLOW_PALIERS,
-  CALLFLOW_SETUP_HT,
+  ALPHA_VOICE_PALIERS,
+  ALPHA_VOICE_SETUP_HT,
   ESSAI_CALLS,
   ESSAI_HT,
   OUTBOUND_UNIT_CALLS,
@@ -28,8 +28,8 @@ import {
  *     · OS personnalisé ............ devis au cadrage
  *     · Visibilité / Growth ........ devis
  *     · Digitalisation < 40 k ...... devis
- *   ScintIA
- *     · Callflow ................... 990 € + palier minutes → NOUS : 30 % + 10 %
+ *     · Alpha Voice ................ setup + palier minutes (grille héritée,
+ *                                    à décider — voir lib/offres-publiques.ts)
  *   Nuwacom
  *     · Chantier > 40 k ............ devis → NOUS : 15 % PLANCHER, puis 100 %
  *                                    de la maintenance mensuelle
@@ -40,7 +40,7 @@ import {
  * prévisions. CLAUDE.md les sépare ; ce module aussi, jusque dans les noms :
  *
  *   · `partNous`  — ce qui NOUS revient. 100 % chez EAGLEYE (personne à
- *     payer), 30 %+10 % chez ScintIA, 15 % chez Nuwacom. C'est une COMMISSION.
+ *     payer), 15 % chez Nuwacom. C'est une COMMISSION.
  *   · `revShare`  — les 30 % qu'on FACTURE au client sur le CA qu'on lui fait
  *     gagner. C'est un PRIX, pas une commission reversée.
  *
@@ -67,7 +67,7 @@ export type FamilleOffre =
   | "os-personnalise"
   | "visibilite"
   | "digitalisation"
-  | "callflow"
+  | "alpha-voice"
   | "nuwacom";
 
 /** Le barème d'un compte — ce qui NOUS revient. Vient de `/api/catalogue`. */
@@ -108,7 +108,7 @@ export const COMPTE_DE_LA_FAMILLE: Record<FamilleOffre, string> = {
   "os-personnalise": "eagleye",
   visibilite: "eagleye",
   digitalisation: "eagleye",
-  callflow: "scintia",
+  "alpha-voice": "eagleye",
   nuwacom: "nuwacom",
 };
 
@@ -131,7 +131,7 @@ export interface Selection {
   /**
    * Le prix mensuel de ces appels, calculé par `/api/catalogue`.
    *
-   * ⚠ Il n'est PAS recalculé ici : voir la note au-dessus de `palierCallflow`.
+   * ⚠ Il n'est PAS recalculé ici : voir la note au-dessus de `palierAlphaVoice`.
    * Absent alors que des appels sont demandés → la ligne reste non chiffrée et
    * une alerte le dit, plutôt qu'un montant approximatif.
    */
@@ -145,8 +145,8 @@ export interface Selection {
   caMensuelGenere?: number;
   /** Setup facturé dans le modèle rev-share (sur devis : saisi à la main). */
   setupRevShare?: number;
-  /** Callflow : minutes du palier visé. */
-  callflowMinutes?: number;
+  /** Alpha Voice : minutes du palier visé. */
+  alphaVoiceMinutes?: number;
   /** Chantier Nuwacom : montant du devis, en €. */
   chantierHT?: number;
   /** Maintenance mensuelle qui suit le chantier — 100 % pour nous. */
@@ -201,9 +201,9 @@ export const SEUIL_NUWACOM_HT = 40_000;
  */
 export const REV_SHARE_PCT = 30;
 
-/** Le palier Callflow correspondant à un volume de minutes. */
-export function palierCallflow(minutes: number) {
-  return CALLFLOW_PALIERS.find((p) => p.minutes >= minutes) ?? CALLFLOW_PALIERS[CALLFLOW_PALIERS.length - 1]!;
+/** Le palier Alpha Voice correspondant à un volume de minutes. */
+export function palierAlphaVoice(minutes: number) {
+  return ALPHA_VOICE_PALIERS.find((p) => p.minutes >= minutes) ?? ALPHA_VOICE_PALIERS[ALPHA_VOICE_PALIERS.length - 1]!;
 }
 
 /**
@@ -260,7 +260,7 @@ export function chiffrer(sel: Selection, options: OptionsChiffrage = {}): Chiffr
   if (baremes.length === 0) {
     alertes.push(
       "Barème des comptes non chargé : « ce qui nous revient » est calculé à 100 % partout. " +
-        "C'est juste pour EAGLEYE, faux pour ScintIA et Nuwacom."
+        "C'est juste pour EAGLEYE, faux pour Nuwacom."
     );
   }
 
@@ -401,16 +401,18 @@ export function chiffrer(sel: Selection, options: OptionsChiffrage = {}): Chiffr
     }
   }
 
-  // ── ScintIA — Callflow ──
-  if ((sel.callflowMinutes ?? 0) > 0) {
-    const p = palierCallflow(sel.callflowMinutes!);
-    const b = bareme("scintia");
+  // ── EAGLEYE — Alpha Voice ──
+  // ⚠ Cette ligne était rattachée à un compte revendeur, à 30 % + 10 %.
+  // L'accord est mort : l'offre est à nous, donc `bareme("eagleye")` et 100 %.
+  if ((sel.alphaVoiceMinutes ?? 0) > 0) {
+    const p = palierAlphaVoice(sel.alphaVoiceMinutes!);
+    const b = bareme("eagleye");
     ajouter(
-      "callflow",
-      `ScintIA Callflow — palier ${p.minutes} min`,
-      CALLFLOW_SETUP_HT,
+      "alpha-voice",
+      `Alpha Voice — palier ${p.minutes} min`,
+      ALPHA_VOICE_SETUP_HT,
       p.prixHT,
-      `${CALLFLOW_SETUP_HT} € d'installation + ${p.prixHT} €/mois (${p.appels}). ` +
+      `${ALPHA_VOICE_SETUP_HT} € d'installation + ${p.prixHT} €/mois (${p.appels}). ` +
         `Nous : ${b.setupPct} % du setup, ${b.mensuelPct} % du mensuel.`
     );
   }

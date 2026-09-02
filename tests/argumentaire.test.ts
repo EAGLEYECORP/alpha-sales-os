@@ -122,7 +122,8 @@ test("argumentaire — ses objections RÉELLES passent devant les génériques",
 });
 
 test("argumentaire — le prix suit le compte qui porte le deal", () => {
-  assert.match(buildArgumentaire(chiffree(), "scintia").offer.price, /990/);
+  // Une ligne de prix « 990 € + abonnement » existait pour le compte du
+  // revendeur téléphonique. Le compte est parti ; la ligne avec lui.
   assert.match(buildArgumentaire(chiffree(), "nuwacom").offer.price, /APRÈS le cadrage/i);
   // EAGLEYE sans montant sur la fiche → les deux formats officiels.
   assert.match(buildArgumentaire(chiffree(), "eagleye").offer.price, /10 000 €.*VIP|30 %/s);

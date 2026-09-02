@@ -54,28 +54,39 @@ export const PACK_SETUP_HT = 10_000;
 export const PACK_MONTHLY_HT = 1_000;
 
 /**
- * ── TARIFS PUBLICS CALLFLOW (ScintIA) ──
+ * ── TARIFS ALPHA VOICE — GRILLE HÉRITÉE, PROVISOIRE, ET ÇA SE DIT ──
  *
- * Ils vivaient dans `lib/pipeline-juillet.ts`, un module qui porte de VRAIES
- * fiches prospects (noms, téléphones, montants) et qu'aucun composant client
- * ne doit atteindre. Le calculateur d'offres en a besoin : les descendre ici
- * est le même geste que pour le pack — ce qui est PUBLIC vit dans le module
- * public, et l'autre le réimporte.
+ * ⚠ CES MONTANTS NE SONT PAS ENCORE LES NÔTRES.
  *
- * Ce sont les prix affichés par ScintIA à ses clients. Ce que NOUS touchons
- * dessus (30 % du setup, 10 % du mensuel) n'est pas ici : c'est dans
- * `lib/accounts-commercial.ts`, servi au seul compte maître.
+ * C'était la grille publique du partenaire qui portait l'accueil téléphonique.
+ * L'accord est mort, l'offre est revenue chez nous — mais un prix négocié par
+ * quelqu'un d'autre ne devient pas le nôtre parce qu'on a changé l'étiquette.
+ * Il est gardé pour que le calculateur continue de fonctionner, PAS parce
+ * qu'on l'a décidé.
+ *
+ * CE QUI EST VÉRIFIÉ, EN REVANCHE : la marge tient largement sur NOTRE coût
+ * de revient mesuré (0,0563 €/min de conversation, `lib/voice-costs.ts`) —
+ * 74 à 76 % de marge brute sur les cinq paliers. La grille est donc VIABLE
+ * pour nous ; elle reste à DÉCIDER.
+ *
+ * ⚠ Un bémol que la marge brute cache : le socle fixe est d'environ 57 €/mois
+ * (Telnyx et consorts). Le premier palier se vend 59 € — seul, il ne paie pas
+ * l'infrastructure. Il ne devient rentable qu'à plusieurs clients dessus.
+ *
+ * (Ces prix vivaient dans `lib/pipeline-juillet.ts`, un module qui porte de
+ * VRAIES fiches prospects et qu'aucun composant client ne doit atteindre. Ce
+ * qui est PUBLIC vit ici, et l'autre le réimporte.)
  */
-export const CALLFLOW_SETUP_HT = 990;
+export const ALPHA_VOICE_SETUP_HT = 990;
 
-export interface PalierCallflow {
+export interface PalierAlphaVoice {
   minutes: number;
   prixHT: number;
   /** Ordre de grandeur en appels — ce que le client comprend. */
   appels: string;
 }
 
-export const CALLFLOW_PALIERS: PalierCallflow[] = [
+export const ALPHA_VOICE_PALIERS: PalierAlphaVoice[] = [
   { minutes: 250, prixHT: 59, appels: "~100 appels courts" },
   { minutes: 500, prixHT: 115, appels: "~200 appels" },
   { minutes: 750, prixHT: 169, appels: "~300 appels" },

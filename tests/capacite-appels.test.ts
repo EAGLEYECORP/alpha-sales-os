@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { capaciteAppels, closersRequis, fichesNecessaires } from "../lib/capacite-appels";
 import { CALL_DAILY_SAFE } from "../lib/daily-plan";
-import { PLAFOND_SOLLICITATIONS_B2C, CALLFLOW_MAX_RECALLS } from "../lib/call-cadence";
+import { PLAFOND_SOLLICITATIONS_B2C, RAPPELS_MAX } from "../lib/call-cadence";
 import { RAMP_CEILING } from "../lib/email-ramp";
 import { LINKEDIN_DAILY_SAFE } from "../lib/linkedin";
 
@@ -110,9 +110,9 @@ test("500 touches/jour exigent des milliers de fiches distinctes", () => {
 
   // Avec SIREN, la cadence ScintIA complète autorise plus de touches par
   // prospect — donc moins de fiches pour le même volume.
-  const avecSiren = fichesNecessaires(500, 20, CALLFLOW_MAX_RECALLS + 1);
+  const avecSiren = fichesNecessaires(500, 20, RAPPELS_MAX + 1);
   assert.ok(avecSiren < sansSiren, "croiser le registre réduit le besoin en fiches");
-  assert.equal(avecSiren, Math.ceil(10_000 / (CALLFLOW_MAX_RECALLS + 1)));
+  assert.equal(avecSiren, Math.ceil(10_000 / (RAPPELS_MAX + 1)));
 
   // Et le contraste avec ce que l'app demande aujourd'hui au démarrage.
   assert.ok(sansSiren > 300, "le minimum de /demarrage (300) ne soutient pas 500/jour");

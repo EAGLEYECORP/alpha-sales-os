@@ -166,7 +166,7 @@ raison, et le défaut allait bien plus loin que l'appel.
 
 `deepDive` calcule l'offre correctement depuis toujours, en la contraignant aux
 offres autorisées du compte. `briefForScript` l'écrit noir sur blanc. Et six
-producteurs de texte l'ignoraient, chacun figé sur l'angle **Callflow** :
+producteurs de texte l'ignoraient, chacun figé sur l'angle **voix** :
 
 | # | Où | Ce que recevait une fiche routée « visibilité » |
 |---|---|---|
@@ -192,7 +192,7 @@ Les tests étaient verts dans les deux cas.
 
 - **L'observation de métier du playbook** était ajoutée après le bon critère et
   ramenait le téléphone. Les onze critères du playbook parlent tous du
-  téléphone : ils appartiennent à Callflow. C'est vérifiable, et un test le
+  téléphone : ils appartiennent à l'angle voix. C'est vérifiable, et un test le
   vérifie — le jour où ce n'est plus vrai, la règle se rediscute.
 - **Le brief d'appel emportait notre estimation du deal** : « Gros chantier
   (> 40 000 €) — volume du deal estimé 48 000 € — trop lourd pour nous », dans

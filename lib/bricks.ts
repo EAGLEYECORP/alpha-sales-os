@@ -4,7 +4,7 @@
  * PRIX À LA CARTE — chaque brique d'Alpha Sales OS a son prix.
  *
  * Deux raisons d'exister :
- *   1. Un client peut n'avoir besoin QUE d'une brique (ScintIA veut Alpha
+ *   1. Un client peut n'avoir besoin QUE d'une brique (un revendeur veut Alpha
  *      Voice, pas le CRM). Refuser de vendre à la carte, c'est refuser
  *      l'argent qui est sur la table aujourd'hui.
  *   2. L'ANCRAGE. La somme des briques dépasse largement le pack à

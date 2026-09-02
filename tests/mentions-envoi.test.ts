@@ -31,7 +31,7 @@ const sansCommentaires = (s: string) =>
  *    un produit multi-comptes, avec repli sur NOTRE marque.
  *
  * Conséquence concrète, celle qui coûte : un SMS de prospection partait sans
- * aucun moyen de refus, et un email envoyé au nom de ScintIA arrivait avec
+ * aucun moyen de refus, et un email envoyé au nom d'un partenaire arrivait avec
  * notre marque en papier à en-tête, notre raison sociale en pied et notre
  * aigle en logo.
  * ─────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ const sansCommentaires = (s: string) =>
 
 test("verifieMentions attrape ce qui manque vraiment dans un SMS", () => {
   const nu = "Bonjour, on peut vous faire gagner du temps. Rappelez-moi.";
-  const manques = verifieMentions(nu, "Camille", "ScintIA");
+  const manques = verifieMentions(nu, "Camille", "Vaubex");
   assert.ok(
     manques.some((m) => /refus/i.test(m)),
     "un SMS sans moyen de refus doit être signalé"
@@ -47,8 +47,8 @@ test("verifieMentions attrape ce qui manque vraiment dans un SMS", () => {
   assert.ok(manques.some((m) => /Nom de l'expéditeur/i.test(m)));
   assert.ok(manques.some((m) => /Société/i.test(m)));
 
-  const complet = "Camille de ScintIA : 2 min pour vos appels manqués ? Répondez STOP pour ne plus être contacté.";
-  assert.deepEqual(verifieMentions(complet, "Camille", "ScintIA"), []);
+  const complet = "Camille de Vaubex : 2 min pour vos appels manqués ? Répondez STOP pour ne plus être contacté.";
+  assert.deepEqual(verifieMentions(complet, "Camille", "Vaubex"), []);
 });
 
 /**
@@ -138,11 +138,11 @@ test("habillageEnvoi : la marque, l'adresse et le logo suivent le compte", () =>
   assert.equal(maitre.marque, "EAGLEYE CORP");
   assert.ok(maitre.logoUrl, "notre aigle sur notre compte");
 
-  const revendeur = habillageEnvoi({ accountId: "scintia", base: "https://x.fr" });
-  assert.equal(revendeur.marque, "ScintIA");
+  const revendeur = habillageEnvoi({ accountId: "nuwacom", base: "https://x.fr" });
+  assert.equal(revendeur.marque, "Nuwacom");
   assert.equal(revendeur.logoUrl, undefined, "notre aigle ne part pas sur un compte revendeur");
   assert.ok(!/EAGLEYE/i.test(revendeur.addressLine), "ni notre raison sociale au pied");
-  assert.match(revendeur.addressLine, /ScintIA/);
+  assert.match(revendeur.addressLine, /Nuwacom/);
 });
 
 test("⚠ /api/send refuse un message sans mentions obligatoires — email ET sms", () => {
@@ -217,8 +217,8 @@ test("⚠ les QUATRE appelants de /api/send annoncent leur identité d'envoi", (
 test("identiteEnvoi ne substitue rien — un réglage vide part vide", () => {
   assert.deepEqual(identiteEnvoi({}), { accountId: "eagleye", closerName: "", agencyName: "" });
   assert.deepEqual(
-    identiteEnvoi({ accountId: "scintia", closerName: "Camille", agencyName: "ScintIA" }),
-    { accountId: "scintia", closerName: "Camille", agencyName: "ScintIA" }
+    identiteEnvoi({ accountId: "nuwacom", closerName: "Camille", agencyName: "Vaubex" }),
+    { accountId: "nuwacom", closerName: "Camille", agencyName: "Vaubex" }
   );
 
   /**
@@ -227,7 +227,7 @@ test("identiteEnvoi ne substitue rien — un réglage vide part vide", () => {
    * une mauvaise raison — ou pas du tout.
    */
   assert.notEqual(identiteEnvoi({}).closerName, CLOSER_USINE);
-  assert.equal(signataire("", "ScintIA").nom, "ScintIA", "à défaut de nom, la société identifie");
+  assert.equal(signataire("", "Vaubex").nom, "Vaubex", "à défaut de nom, la société identifie");
   assert.equal(signataire("", "").usine, true, "à défaut de tout, le trou reste visible");
 });
 

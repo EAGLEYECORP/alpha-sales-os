@@ -13,8 +13,8 @@ import { DEFAULT_ACCOUNT_ID, getAccount } from "./accounts";
  * n'importe qui, mot de passe ou pas. C'est la même mécanique qui avait rendu
  * publique la grille de `lib/bricks.ts` (voir `app/api/catalogue/route.ts`).
  *
- * Mesuré sur le build : `z.tazi@scintia.ai`, `sales.scintiacallflow.ai`,
- * `Christophe`, `setupHT: 10000` et la note « PUIS 100 % de tous les services
+ * Mesuré sur le build : l'email d'expédition et le panel de vente d'un
+ * partenaire, `Christophe`, `setupHT: 10000` et la note « PUIS 100 % des services
  * de maintenance mensuels » étaient dans un chunk téléchargeable. Ce n'est pas
  * une grille de prix client, c'est mieux : c'est le contrat entre nous et nos
  * partenaires, en clair.
@@ -24,10 +24,10 @@ import { DEFAULT_ACCOUNT_ID, getAccount } from "./accounts";
  * Descend encore dans le navigateur (dans `lib/accounts.ts`) :
  *   · l'identité (nom, ville, ce qu'on vend, la proposition de valeur) ;
  *   · l'ICP et le routage (seuil 40 k) ;
- *   · le TAUX vitrine (30 / 30 / 15) et l'ACTE de closing.
+ *   · le TAUX vitrine et l'ACTE de closing.
  *
  * Ne descend plus (ici) :
- *   · les MONTANTS (setup 10 000 / 990, objectif par projet) ;
+ *   · les MONTANTS (setup, objectif par projet) ;
  *   · le détail des règles de commission par offre et leurs notes, qui
  *     expliquent l'économie du partenariat ligne à ligne ;
  *   · les COORDONNÉES partenaires (email d'expédition, panel de vente, nom du
@@ -54,7 +54,8 @@ import { DEFAULT_ACCOUNT_ID, getAccount } from "./accounts";
  *   • EAGLEYE           → 100 % sur tout. C'est notre société : visibilité,
  *                         Alpha Sales OS (VIP ou à la carte), OS personnalisé,
  *                         digitalisation jusqu'à 40 k € HT. Rien à reverser.
- *   • ScintIA Callflow  → 990 € HT de setup : 30 % + 10 % du mensuel récurrent.
+ *                         Alpha Voice y est revenu : l'offre se vendait sous
+ *                         la marque d'un revendeur, l'accord est mort.
  *   • Nuwacom           → 15 % au-delà de 40 000 € HT, PUIS 100 % de toute la
  *                         maintenance mensuelle.
  *
@@ -161,33 +162,37 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
         commissionPct: 100,
         recurringPct: 100,
         maxHT: 40000,
-        note: "Ex-« ScintIA Lab » : récupéré par EAGLEYE. Au-delà de 40 k → Nuwacom.",
+        note: "Récupéré par EAGLEYE. Au-delà de 40 k → Nuwacom.",
+      },
+      {
+        /**
+         * ⚠ CETTE OFFRE ÉTAIT CELLE D'UN PARTENAIRE, ELLE EST DEVENUE LA NÔTRE.
+         *
+         * Elle se vendait sous la marque d'un revendeur, à 30 % + 10 % du
+         * mensuel. L'accord est mort. Le BESOIN, lui, ne meurt pas : un
+         * commerce qui ne décroche pas perd le client, et Alpha Voice fait
+         * exactement ça — il est opérationnel (`voice/agent.py`, entrant
+         * vérifié). On le vend donc nous-mêmes, à 100 %.
+         *
+         * ⚠ LE MONTANT N'EST PAS ENCORE LE NÔTRE. `setupHT` est laissé à
+         * `undefined` volontairement : les 990 € et les paliers minutes
+         * étaient la grille NÉGOCIÉE PAR EUX. La recopier sous notre nom
+         * afficherait un prix que nous n'avons jamais fixé. Il se chiffre au
+         * cadrage tant que Zakaria n'a pas tranché — et le coût de revient
+         * mesuré est là pour l'étayer (`lib/voice-costs.ts`).
+         */
+        key: "alpha-voice",
+        label: "Alpha Voice — l'accueil & la relance au téléphone",
+        commissionPct: 100,
+        recurringPct: 100,
+        note: "Notre agent vocal. À chiffrer au cadrage — la grille de l'ancien partenaire ne nous engage pas.",
       },
     ],
     closing: { fromEmail: "contact@eagleyecorp.fr" },
     note:
       "Notre société. Toutes ses offres sont à 100 % : visibilité, Alpha Sales OS (VIP ou à la carte), " +
-      "OS personnalisé, digitalisation < 40 k. On ne reverse à personne — les taux partiels ne concernent " +
-      "que les comptes où nous sommes intermédiaires (ScintIA, Nuwacom).",
-  },
-  {
-    accountId: "scintia",
-    offerings: [
-      {
-        key: "callflow",
-        label: "ScintIA Callflow",
-        setupHT: 990,
-        commissionPct: 30,
-        recurringPct: 10,
-        note: "990 € HT de setup → 30 % ; + 10 % sur l'abonnement mensuel.",
-      },
-    ],
-    targetPerProject: 990, // setup Callflow public (lib/pipeline-juillet.ts)
-    closing: {
-      fromEmail: "z.tazi@scintia.ai",
-      panelUrl: "https://sales.scintiacallflow.ai/",
-    },
-    note: "Callflow SEUL, vendu comme un produit (990 € HT, 30 % + 10 % mensuel). Pipe juillet 2026 ici.",
+      "OS personnalisé, digitalisation < 40 k, Alpha Voice. On ne reverse à personne — le taux partiel ne " +
+      "concerne que le seul compte où nous sommes encore intermédiaires (Nuwacom).",
   },
   {
     accountId: "nuwacom",
@@ -271,10 +276,13 @@ export interface DealTerms {
 /**
  * La commission EXACTE d'une vente : on choisit l'offre du compte dont les
  * bornes (`minHT`/`maxHT`) contiennent le montant, puis on applique le bon
- * taux (récurrent vs setup). C'est ce qui distingue un Callflow ScintIA
- * (30 % du setup + 10 % du mensuel) d'une digitalisation EAGLEYE (30 %,
- * jusqu'à 40 k) ou d'un chantier Nuwacom (15 % au-delà de 40 k, puis 100 %
- * de la maintenance mensuelle).
+ * taux (récurrent vs setup). C'est ce qui distingue une digitalisation
+ * EAGLEYE (100 %, jusqu'à 40 k) d'un chantier Nuwacom (15 % au-delà de 40 k,
+ * puis 100 % de la maintenance mensuelle).
+ *
+ * ⚠ Cette mécanique reste NÉCESSAIRE avec un seul intermédiaire. Elle a servi
+ * à deux ; la réduire à Nuwacom aujourd'hui la rendrait à réécrire au premier
+ * partenaire suivant, et c'est un calcul d'argent.
  *
  * Repli : si aucune offre ne matche la taille (montant hors des bornes, ou
  * compte sans offerings), on retombe sur le taux vitrine du compte — jamais
@@ -290,10 +298,10 @@ export function commissionFor(
   const fits = (o: Offering) => (o.minHT == null || amt >= o.minHT) && (o.maxHT == null || amt <= o.maxHT);
 
   // 1. La vente NOMME son offre → autorité absolue (le montant seul est ambigu :
-  //    990 € peut être un setup Callflow OU un petit projet Lab).
+  //    un même montant peut correspondre à deux offres différentes).
   // 2. Sinon récurrent → l'offre à abonnement (celle qui a un recurringPct).
   // 3. Sinon setup exact → l'offre productisée dont le prix colle.
-  // 4. Sinon on route par la TAILLE (bornes min/max) — Lab < 6 k, Nuwacom ≥ 20 k.
+  // 4. Sinon on route par la TAILLE (bornes min/max) — Nuwacom ≥ 20 k.
   // 5. Repli : 1re offre, ou taux vitrine du compte. Jamais d'erreur muette.
   const picked =
     (opts.offeringKey && offerings.find((o) => o.key === opts.offeringKey)) ||

@@ -40,12 +40,12 @@ export const dynamic = "force-dynamic";
  * distinction pour la grille des briques, et c'est la MAUVAISE pour le volet
  * commercial : une session authentifiée n'est pas nous. Un locataire, c'est
  * un CLIENT de l'opérateur — et dans le portefeuille white-label, ça peut
- * être ScintIA ou Nuwacom eux-mêmes.
+ * être Nuwacom eux-mêmes.
  *
  * Mesuré sur serveur réel : avec un jeton d'un email non-maître, cette route
  * répondait 200 et rendait `commissionPct`, `recurringPct`, le seuil des
  * 40 k et les notes internes (« faisable par nous »). Autrement dit : les
- * 30 % + 10 % de ScintIA et les 15 % de Nuwacom, lisibles par ScintIA et
+ * les 15 % de Nuwacom, lisibles par
  * Nuwacom, avant le cadrage qui est justement notre levier.
  *
  * `tests/vitrine-fuite.test.ts` interdit déjà ces chiffres — sur une PAGE.

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { getAccount } from "../lib/accounts";
 import { deepDive, deepDiveBatch, briefForScript } from "../lib/deep-dive";
 import { buildVoiceScript, auditScript } from "../lib/voice-script";
 import { OFFRES, type EagleyeOffer } from "../lib/offer-match";
@@ -78,13 +79,16 @@ test("deep-dive — une fiche vide sort froide et liste ce qui manque", () => {
   assert.ok(d.gaps.some((g) => /contact direct/i.test(g)));
 });
 
-test("deep-dive — le routage suit la règle : Callflow → ScintIA", () => {
-  // Métier téléphone + appels manqués → callflow → ScintIA encaisse.
+test("deep-dive — métier téléphone → Alpha Voice, et EAGLEYE encaisse", () => {
+  /**
+   * ⚠ Ce deal partait chez un revendeur (30 % + 10 %). L'accord est mort :
+   * l'offre est à nous, donc c'est nous qui encaissons, à 100 %.
+   */
   const d = deepDive(
     fixture({ sector: "artisan", deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: 8 } })
   );
-  assert.equal(d.offer, "callflow");
-  assert.equal(d.accountId, "scintia");
+  assert.equal(d.offer, "alpha-voice");
+  assert.equal(d.accountId, "eagleye");
 });
 
 test("deep-dive — un gros chantier (> 40 k) part chez Nuwacom", () => {
@@ -98,9 +102,15 @@ test("deep-dive — un gros chantier (> 40 k) part chez Nuwacom", () => {
   assert.match(d.routingReason, /trop lourd/i);
 });
 
-test("deep-dive — depuis ScintIA, l'offre reste Callflow (compte mono-offre)", () => {
-  const d = deepDive(fixture({ deepAudit: { websiteState: "aucun", socialState: "aucun", localCompetition: "", currentProcess: "" } }), "scintia");
-  assert.equal(d.offer, "callflow");
+test("deep-dive — depuis un compte revendeur, l'offre reste dans SON périmètre", () => {
+  // Nuwacom ne vend pas notre agent vocal : même un audit qui l'appelle ne doit
+  // pas le lui faire proposer.
+  const d = deepDive(
+    fixture({ sector: "artisan", deepAudit: { websiteState: "aucun", socialState: "aucun", localCompetition: "", currentProcess: "", missedCallsPerWeek: 8 } }),
+    "nuwacom"
+  );
+  assert.notEqual(d.offer, "alpha-voice");
+  assert.ok(getAccount("nuwacom").offers.includes(d.offer));
 });
 
 test("deep-dive — le lot est trié du plus chaud au plus froid", () => {

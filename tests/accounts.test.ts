@@ -5,22 +5,39 @@ import { commercialFor, commissionFor } from "../lib/accounts-commercial";
 import { tauxVitrinePct } from "../lib/taux-vitrine";
 import { matchOffer } from "../lib/offer-match";
 
-test("accounts — le portefeuille contient EAGLEYE (maître), ScintIA, Nuwacom", () => {
+test("accounts — le portefeuille contient EAGLEYE (maître) et Nuwacom", () => {
   const ids = ACCOUNTS.map((a) => a.id);
   assert.ok(ids.includes("eagleye"));
-  assert.ok(ids.includes("scintia"));
   assert.ok(ids.includes("nuwacom"));
+  /**
+   * ⚠ UN TROISIÈME COMPTE A ÉTÉ RETIRÉ : le revendeur qui portait l'accueil
+   * téléphonique. L'accord est mort. Son offre n'a pas disparu avec lui — elle
+   * est revenue chez EAGLEYE sous le nom d'Alpha Voice, à 100 % au lieu de
+   * 30 % + 10 %.
+   */
+  assert.equal(ids.length, 2, "le portefeuille ne compte plus que deux comptes");
+  assert.ok(!ids.includes("scintia"), "le compte du revendeur ne doit plus exister");
   const masters = ACCOUNTS.filter((a) => a.kind === "master");
   assert.equal(masters.length, 1, "un seul compte maître");
   assert.equal(masterAccount().id, "eagleye");
 });
 
-test("accounts — ScintIA ne propose QUE callflow", () => {
-  const scintia = getAccount("scintia");
-  assert.deepEqual(scintia.offers, ["callflow"]);
-  // Même un audit qui hurle « visibilité » (site absent) reste sur callflow.
-  const m = matchOffer({ websiteState: "aucun", googleReviews: 0, sector: "assurance" }, scintia.offers);
-  assert.equal(m.primary, "callflow");
+test("⚠ un compte revendeur reste borné à SES offres, même contre l'audit", () => {
+  const nuwacom = getAccount("nuwacom");
+  assert.ok(!nuwacom.offers.includes("alpha-voice"), "Nuwacom ne vend pas notre agent vocal");
+
+  /**
+   * L'audit crie « accueil téléphonique » (beaucoup d'appels manqués, métier
+   * au téléphone) — et le routeur doit quand même rendre une offre que CE
+   * compte a le droit de vendre. C'est la garde qui empêche de proposer au
+   * nom d'un partenaire quelque chose qu'il ne porte pas.
+   */
+  const m = matchOffer({ missedCallsPerWeek: 12, sector: "garage" }, nuwacom.offers);
+  assert.notEqual(m.primary, "alpha-voice");
+  assert.ok(nuwacom.offers.includes(m.primary), "l'offre rendue doit être autorisée pour le compte");
+
+  // Et le compte maître, lui, y a droit.
+  assert.equal(matchOffer({ missedCallsPerWeek: 12, sector: "garage" }, getAccount("eagleye").offers).primary, "alpha-voice");
 });
 
 test("accounts — Nuwacom : commission 15 %, plancher 40 k, entrée FR", () => {
@@ -35,13 +52,21 @@ test("accounts — Nuwacom : commission 15 %, plancher 40 k, entrée FR", () => 
   assert.equal(transfo?.minHT, 40000);
 });
 
-test("accounts — ScintIA n'a QUE Callflow (le Lab est repassé à EAGLEYE)", () => {
-  const s = commercialFor("scintia");
-  assert.equal(s.offerings.length, 1);
-  assert.equal(s.offerings[0].key, "callflow");
-  assert.equal(s.offerings.some((o) => /lab/i.test(o.key)), false);
-  // Et EAGLEYE porte bien la digitalisation < 40 k (l'ex-Lab).
+test("⚠ Alpha Voice est chiffré chez EAGLEYE, à 100 %", () => {
   const e = commercialFor("eagleye");
+  const voix = e.offerings.find((o) => o.key === "alpha-voice");
+  assert.ok(voix, "l'offre vocale doit exister côté EAGLEYE");
+  assert.equal(voix!.commissionPct, 100, "c'est notre offre : rien à reverser");
+  assert.equal(voix!.recurringPct, 100);
+  /**
+   * ⚠ LE PRIX N'EST PAS ENCORE LE NÔTRE, et ça se vérifie ici plutôt que dans
+   * un commentaire : la grille (990 € + paliers) était celle de l'ancien
+   * partenaire. Tant que Zakaria n'a pas tranché, l'offre ne porte pas de
+   * `setupHT` — elle se chiffre au cadrage.
+   */
+  assert.equal(voix!.setupHT, undefined, "un prix négocié par un tiers ne devient pas le nôtre par défaut");
+
+  // La digitalisation < 40 k reste à EAGLEYE.
   const digi = e.offerings.find((o) => o.key === "digitalisation");
   assert.equal(digi?.maxHT, 40000);
   assert.ok(e.offerings.some((o) => o.key === "visibilite"), "la visibilité est à EAGLEYE");
@@ -72,10 +97,17 @@ test("accounts — le registre client ne porte ni montant ni coordonnée partena
   assert.doesNotMatch(brut, /\b(10000|990)\b/, "aucun prix de setup");
 });
 
-test("routage — Callflow → ScintIA · > 40 k → Nuwacom · le reste → EAGLEYE", () => {
-  assert.equal(routeAccount({ offer: "callflow", amountHT: 990 }).accountId, "scintia");
-  // Callflow reste à ScintIA même sur un gros montant : l'offre prime.
-  assert.equal(routeAccount({ offer: "callflow", amountHT: 90000 }).accountId, "scintia");
+test("routage — > 40 k → Nuwacom · tout le reste → EAGLEYE", () => {
+  /**
+   * ⚠ IL Y AVAIT UNE MARCHE AVANT CELLE-CI : l'accueil téléphonique partait
+   * chez un revendeur QUELLE QUE SOIT la taille du deal — l'offre primait sur
+   * le montant. Elle a disparu avec l'accord. Alpha Voice suit donc la règle
+   * générale : faisable par nous → on le garde.
+   */
+  assert.equal(routeAccount({ offer: "alpha-voice", amountHT: 990 }).accountId, "eagleye");
+  // Et il n'y a plus d'exception d'offre : au-delà du seuil, c'est la TAILLE
+  // qui décide, pour Alpha Voice comme pour le reste.
+  assert.equal(routeAccount({ offer: "alpha-voice", amountHT: 90000 }).accountId, "nuwacom");
   assert.equal(routeAccount({ offer: "visibilite-growth", amountHT: 60000 }).accountId, "nuwacom");
   // Pile au seuil : 40 k reste faisable par nous.
   assert.equal(routeAccount({ offer: "alpha-sales-os", amountHT: 40000 }).accountId, "eagleye");
@@ -84,14 +116,20 @@ test("routage — Callflow → ScintIA · > 40 k → Nuwacom · le reste → EAG
   assert.equal(routeAccount({}).accountId, "eagleye");
 });
 
-test("accounts — commission Callflow : 30 % du setup, 10 % du mensuel", () => {
-  const setup = commissionFor("scintia", { amountHT: 990 });
-  assert.equal(setup.offering.key, "callflow");
-  assert.equal(setup.pct, 30);
-  assert.equal(setup.amount, 297); // 30 % de 990
-  const monthly = commissionFor("scintia", { amountHT: 300, recurring: true });
-  assert.equal(monthly.pct, 10);
-  assert.equal(monthly.amount, 30);
+test("⚠ Alpha Voice ne reverse plus rien — ni sur le setup, ni sur le mensuel", () => {
+  /**
+   * Cette offre rapportait 30 % du setup et 10 % du mensuel : c'était la part
+   * qui nous revenait en tant qu'INTERMÉDIAIRE. Nous ne le sommes plus. Un
+   * taux partiel qui survivrait ici ferait disparaître du chiffre d'affaires
+   * des payouts, en silence — le mode d'échec exact que ce fichier surveille.
+   */
+  const setup = commissionFor("eagleye", { amountHT: 990, offeringKey: "alpha-voice" });
+  assert.equal(setup.offering.key, "alpha-voice");
+  assert.equal(setup.pct, 100);
+  assert.equal(setup.amount, 990);
+  const monthly = commissionFor("eagleye", { amountHT: 300, recurring: true, offeringKey: "alpha-voice" });
+  assert.equal(monthly.pct, 100);
+  assert.equal(monthly.amount, 300);
 });
 
 test("accounts — TOUTE offre EAGLEYE est à 100 % : c'est notre société", () => {
@@ -116,15 +154,21 @@ test("accounts — TOUTE offre EAGLEYE est à 100 % : c'est notre société", ()
 });
 
 test("accounts — les taux partiels ne concernent QUE les intermédiaires", () => {
-  // ScintIA et Nuwacom sont des tiers : là, on reverse. C'est la seule
-  // situation où le taux descend sous 100 %.
-  assert.equal(tauxVitrinePct(commercialFor("scintia")), 30);
+  // Nuwacom est un tiers : là, on reverse. C'est la seule situation où le taux
+  // descend sous 100 %. Il en restait deux ; il n'en reste qu'un.
   assert.equal(tauxVitrinePct(commercialFor("nuwacom")), 15);
-  for (const id of ["scintia", "nuwacom"]) {
-    assert.ok(
-      commercialFor(id).offerings.some((o) => o.commissionPct < 100),
-      `${id} : un compte intermédiaire doit porter un taux partiel`
-    );
+  assert.ok(
+    commercialFor("nuwacom").offerings.some((o) => o.commissionPct < 100),
+    "un compte intermédiaire doit porter un taux partiel"
+  );
+
+  /**
+   * ⚠ LE PENDANT, ET C'EST LUI QUI ATTRAPE LA RÉGRESSION : aucun compte
+   * NON-intermédiaire ne doit porter de taux partiel. Sans cette moitié, une
+   * offre laissée à 30 % après le départ d'un partenaire passerait inaperçue.
+   */
+  for (const o of commercialFor("eagleye").offerings) {
+    assert.equal(o.commissionPct, 100, `${o.key} : EAGLEYE ne reverse à personne`);
   }
 });
 
@@ -177,6 +221,6 @@ test("offer-match — sans contrainte, le maître garde les trois offres", () =>
   const m = matchOffer({ websiteState: "aucun", googleReviews: 0 });
   assert.equal(m.primary, "visibilite-growth");
   // allowed d'une seule offre force cette offre même sur signaux contraires.
-  const forced = matchOffer({ websiteState: "aucun", googleReviews: 0 }, ["callflow"]);
-  assert.equal(forced.primary, "callflow");
+  const forced = matchOffer({ websiteState: "aucun", googleReviews: 0 }, ["alpha-voice"]);
+  assert.equal(forced.primary, "alpha-voice");
 });

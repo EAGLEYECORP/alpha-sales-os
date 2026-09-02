@@ -106,13 +106,13 @@ test("⚠ la garde du bénéfice n'attaque JAMAIS la divulgation légale", () =>
    * Ce test fige la séparation : le script conforme contient bien le mot,
    * l'audit de conformité le trouve, et l'audit du bénéfice ne le voit jamais.
    */
-  const script = buildVoiceScript({ ...base, mode: "prospection-b2b", offre: "callflow" });
+  const script = buildVoiceScript({ ...base, mode: "prospection-b2b", offre: "alpha-voice" });
 
   assert.match(script, /intelligence artificielle/i, "la divulgation obligatoire doit être là");
-  assert.equal(auditScript(script, { mode: "prospection-b2b", offre: "callflow" }).ok, true);
+  assert.equal(auditScript(script, { mode: "prospection-b2b", offre: "alpha-voice" }).ok, true);
 
   // Et le mot interdit ne vient PAS des champs du catalogue.
-  assert.equal(auditBenefice(OFFRES.callflow.benefice).ok, true);
+  assert.equal(auditBenefice(OFFRES["alpha-voice"].benefice).ok, true);
 
   // Le script porte l'interdiction en clair pour l'agent — sinon il
   // reprendrait « intelligence artificielle » dans son argumentaire, puisque

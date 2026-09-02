@@ -451,7 +451,7 @@ export interface AppSettings {
    */
   prompts?: import("./prompts").PromptModifie[];
   /**
-   * Ce qu'un partenaire (ScintIA, Nuwacom) a relu et validé — par texte et
+   * Ce qu'un partenaire (Nuwacom) a relu et validé — par texte et
    * par compte (`lib/validation-partenaire.ts`).
    *
    * ⚠ On stocke l'EMPREINTE du texte validé, pas un simple « oui ». Une

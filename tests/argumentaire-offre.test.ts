@@ -112,7 +112,7 @@ test("⚠ un argumentaire hors-Callflow ne pose aucune question sur le télépho
    */
   for (const { quoi, p } of CAS) {
     const offre = deepDive(p).offer;
-    if (offre === "callflow") continue;
+    if (offre === "alpha-voice") continue;
     const a = buildArgumentaire(p);
     for (const bloc of [a.questions.join(" "), a.marketStandard.join(" ")]) {
       assert.doesNotMatch(
@@ -137,7 +137,7 @@ test("⚠ la NORME DU MARCHÉ n'est pas inventée pour une offre jamais vendue",
   for (const { quoi, p } of CAS) {
     const offre = deepDive(p).offer;
     const norme = buildArgumentaire(p).marketStandard;
-    if (offre === "callflow") {
+    if (offre === "alpha-voice") {
       assert.ok(norme.length >= 3, `${quoi} : Callflow garde ses lignes`);
     } else {
       assert.deepEqual(norme, [], `${quoi} (${offre}) : aucune norme de marché ne doit être affirmée`);
@@ -168,7 +168,7 @@ test("⚠ ce que l'agent doit APPRENDRE suit aussi l'offre", () => {
   for (const { quoi, p } of CAS) {
     const d = deepDive(p);
     const g = d.gaps.join(" | ");
-    if (d.offer === "callflow") {
+    if (d.offer === "alpha-voice") {
       assert.match(g, /appels/i, `${quoi} : Callflow garde ses trous téléphone`);
       continue;
     }

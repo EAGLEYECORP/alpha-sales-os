@@ -16,7 +16,7 @@ export default function CerveauPage() {
   const allNotes = useAlpha((s) => s.notes);
   const prospects = useAlpha((s) => s.prospects);
   const settings = useAlpha((s) => s.settings);
-  // Le Cerveau est cloisonné par compte : depuis ScintIA on ne voit que ses
+  // Le Cerveau est cloisonné par compte : depuis un compte revendeur on ne voit que ses
   // notes + les communes. Depuis le MAÎTRE, on voit tout le portefeuille.
   const account = getAccount(settings.accountId);
   const notes = useMemo(

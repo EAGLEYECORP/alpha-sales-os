@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { tokenize, extractLinks, backlinks, search, contextFromNotes, type KnowledgeNote } from "../lib/knowledge";
-import { seedKnowledge, seedScintia, SEED_NOTES } from "../lib/knowledge-seed";
+import { seedKnowledge, seedTerrain, SEED_NOTES } from "../lib/knowledge-seed";
 
 function note(id: string, title: string, body: string): KnowledgeNote {
   return { id, title, body, tags: [], createdAt: "2026-08-10T00:00:00Z", updatedAt: "2026-08-10T00:00:00Z", source: "manuel" };
@@ -44,11 +44,13 @@ test("knowledge — search classe la note pertinente en premier", () => {
 });
 
 test("knowledge — search : le titre pèse plus que le corps", () => {
+  // Terme neutre : ce test mesure le classement, pas le nom d'une offre —
+  // qu'il portait avant, et qui a bougé quand l'offre a changé de nom.
   const notes = [
-    note("t", "Callflow", "un mot"),
-    note("b", "Autre", "callflow callflow mentionné dans le corps"),
+    note("t", "Standard", "un mot"),
+    note("b", "Autre", "standard standard mentionné dans le corps"),
   ];
-  const hits = search("callflow", notes);
+  const hits = search("standard", notes);
   // Le titre exact doit sortir en tête malgré la fréquence plus faible.
   assert.equal(hits[0].note.id, "t");
 });
@@ -78,37 +80,47 @@ test("knowledge — le socle de départ est cohérent et relié", () => {
 
 test("cerveau — les notes sont cloisonnées par compte", async () => {
   const { notesForAccount } = await import("../lib/knowledge");
-  const all = SEED_NOTES;
+  /**
+   * ⚠ Le socle ne porte plus de note rattachée à un compte revendeur : le pipe
+   * de juillet appartenait au partenaire disparu et il est revenu chez EAGLEYE.
+   * Le CLOISONNEMENT, lui, doit continuer de marcher — c'est ce que ce test
+   * garde. On le vérifie donc sur une note construite ici, pas sur le hasard
+   * du contenu du socle : sinon le test deviendrait vert par vacuité.
+   */
+  const all = [
+    ...SEED_NOTES,
+    { ...note("x", "Note revendeur", "réservée à un compte tiers"), accountId: "nuwacom" },
+  ];
 
-  // Depuis ScintIA : ses notes + les communes, jamais celles d'un autre compte.
-  const vueScintia = notesForAccount(all, "scintia");
-  assert.ok(vueScintia.some((n) => n.accountId === "scintia"));
-  assert.ok(vueScintia.some((n) => !n.accountId), "les notes communes restent visibles");
+  // Depuis Nuwacom : ses notes + les communes, jamais celles d'un autre compte.
+  const vueNuwacom = notesForAccount(all, "nuwacom");
+  assert.ok(vueNuwacom.some((n) => n.accountId === "nuwacom"));
+  assert.ok(vueNuwacom.some((n) => !n.accountId), "les notes communes restent visibles");
   assert.equal(
-    vueScintia.some((n) => n.accountId && n.accountId !== "scintia"),
+    vueNuwacom.some((n) => n.accountId && n.accountId !== "nuwacom"),
     false,
     "aucune note d'un autre compte ne doit fuiter"
   );
 
-  // Depuis EAGLEYE (client, non maître) : pas les notes ScintIA.
+  // Depuis EAGLEYE (non maître) : pas les notes Nuwacom.
   const vueEagleye = notesForAccount(all, "eagleye");
-  assert.equal(vueEagleye.some((n) => n.accountId === "scintia"), false);
+  assert.equal(vueEagleye.some((n) => n.accountId === "nuwacom"), false);
 
   // Depuis le MAÎTRE : tout le portefeuille.
   assert.equal(notesForAccount(all, "eagleye", true).length, all.length);
 });
 
-test("cerveau — ScintIA est semé avec les chiffres RÉELS de juillet", async () => {
-  assert.ok(seedScintia.length >= 4);
-  assert.ok(seedScintia.every((n) => n.accountId === "scintia"));
+test("cerveau — le socle porte les chiffres RÉELS de juillet, rapatriés chez EAGLEYE", async () => {
+  assert.ok(seedTerrain.length >= 4);
+  assert.ok(seedTerrain.every((n) => n.accountId === "eagleye"));
 
   // La leçon de juillet est retrouvable — c'est elle qui pilote la doctrine.
-  const hits = search("audit taux plomberie appels", seedScintia, 3);
+  const hits = search("audit taux plomberie appels", seedTerrain, 3);
   assert.ok(hits.length > 0);
   assert.match(hits[0].note.body, /26/, "les 26 appels sans audit doivent être dans la note");
 
-  // La cadence exigée par ScintIA est présente et exacte.
-  const cadence = seedScintia.find((n) => /cadence/i.test(n.title))!;
+  // La cadence de rappel est présente et exacte.
+  const cadence = seedTerrain.find((n) => /cadence/i.test(n.title))!;
   assert.match(cadence.body, /5 rappels sur 2 jours/);
   assert.match(cadence.body, /ARRÊTE/);
 });

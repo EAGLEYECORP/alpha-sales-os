@@ -176,116 +176,27 @@ pour la lettre hebdomadaire.
 
 ---
 
-## 1 bis. Le cas transitoire : une adresse sur un domaine qui n'est pas le tien
+## 1 bis. ~~Le cas transitoire : une adresse sur un domaine qui n'est pas le tien~~
 
-Situation réelle d'août 2026 : `eagleye.fr` arrive lundi soir, et en attendant
-il y a `z.tazi@scintia.ai` — une vraie boîte sur un vrai domaine
-d'entreprise, mais **sans accès administrateur**.
-
-### Ce que dit le DNS de `scintia.ai`
-
-```
-MX     scintia-ai.mail.protection.outlook.com   → Microsoft 365
-SPF    v=spf1 include:spf.protection.outlook.com -all    ✓ strict
-DKIM   selector1 / selector2 → ...dkim.mail.microsoft     ✓ signé
-DMARC  SEPT enregistrements concurrents                   ✗ politique annulée
-```
-
-Techniquement, l'authentification est meilleure que celle d'`eagleye.fr`
-aujourd'hui : SPF en `-all` (rejet strict) et DKIM actif. **Sauf le DMARC**,
-et c'est un vrai problème — voir plus bas.
-
-### Trois raisons de ne PAS y faire passer la prospection
-
-**1. Le risque de réputation ne t'appartient pas.** Les plaintes pour spam et
-les rebonds d'une liste froide frappent la réputation de `scintia.ai` — le
-domaine dont dépendent les emails commerciaux et le support de Scintia. Tu
-n'as pas le droit de dépenser un actif qui n'est pas le tien. Cela demande un
-accord explicite et écrit de leur côté, pas une supposition parce que tu
-revends leur produit.
-
-**2. Sans accès admin, tu ne peux rien réparer.** Le DMARC de `scintia.ai` est
-cassé (voir ci-dessous) et tu ne peux pas le corriger. Si Microsoft restreint
-l'envoi sortant du tenant à cause du volume, tu ne peux pas le débloquer non
-plus.
-
-**3. Confusion sur le responsable de traitement.** Tes emails portent la marque
-EAGLEYE CORP, le pied RGPD et un lien de désinscription. Envoyés depuis
-`@scintia.ai`, ils désignent Scintia comme l'expéditeur responsable au sens du
-RGPD. C'est un mélange qu'on ne veut ni juridiquement, ni commercialement.
-
-### Le défaut trouvé sur scintia.ai — à leur remonter
-
-`_dmarc.scintia.ai` porte **sept enregistrements DMARC** :
-
-```
-v=DMARC1; p=none; rua=mailto:a.fekiri@scintia.ai
-v=DMARC1; p=none; rua=mailto:p.lebailly@scintia.ai
-v=DMARC1; p=none; rua=mailto:m.demir@scintia.ai
-v=DMARC1; p=none; rua=mailto:support@scintia.ai
-v=DMARC1; p=none
-v=DMARC1; p=none; rua=mailto:contact@scintia.ai
-v=DMARC1; p=none; rua=mailto:j.point@scintia.ai
-```
-
-Chacun est valide pris isolément. Ensemble, ils ne valent **rien** : la
-RFC 7489 §6.6.3 impose au serveur destinataire d'arrêter la découverte de
-politique dès qu'il trouve plus d'un enregistrement — il refuse de deviner
-lequel appliquer. Le domaine paraît protégé et ne l'est pas, exactement comme
-s'il n'avait aucun DMARC.
-
-Chacun a manifestement ajouté le sien pour recevoir les rapports. La
-correction tient en une ligne : **un seul enregistrement, plusieurs
-destinataires dedans**.
-
-```
-v=DMARC1; p=none; rua=mailto:contact@scintia.ai,mailto:support@scintia.ai
-```
-
-C'est une information gratuite et précise à apporter à Scintia. Elle vaut
-mieux qu'un argumentaire.
-
-### Ce qu'on fait, concrètement, jusqu'à lundi soir
-
-**Aucun email froid.** Ce n'est pas une privation : la montée en charge
-démarrerait à **5 envois/jour** de toute façon. Trois jours × 5 = 15 emails.
-Zéro gain, et un risque qui retombe sur un tiers.
-
-Les deux canaux qui ne dépendent d'aucun domaine restent ouverts :
-
-| Canal | Volume/jour | Dépend d'un domaine ? |
-|---|---|---|
-| Appels & visites | 30 | non |
-| LinkedIn | 25 | non |
-| **Total** | **55 touches/jour** | |
-
-Et le vrai travail du week-end : **charger les fiches**. C'est le goulot, et il
-ne dépend d'aucun DNS.
-
-`z.tazi@scintia.ai` reste parfaitement légitime pour ce à quoi il sert : la
-correspondance individuelle, les réponses, les rendez-vous. Un mail écrit à
-une personne qui t'a répondu n'est pas de la prospection en volume et ne pose
-aucun de ces trois problèmes.
-
-### Note technique, si tu tentes quand même la connexion SMTP
-
-`scintia.ai` est sur Microsoft 365. L'authentification SMTP classique y est
-encore possible aujourd'hui — Microsoft la désactive par défaut **fin décembre
-2026** et la supprime au second semestre 2027 — mais elle est souvent déjà
-coupée au niveau du tenant, ou par les « paramètres de sécurité par défaut ».
-Sans accès admin, tu ne peux pas la rouvrir.
-
-Les erreurs à reconnaître :
-
-| Erreur | Signification |
-|---|---|
-| `535 5.7.139 Authentication unsuccessful… basic authentication is disabled` | l'admin doit l'activer pour ta boîte |
-| `550 5.7.30 Basic authentication is not supported for Client Submission` | coupée au niveau du tenant |
-
-Dans les deux cas, la réponse n'est pas de contourner : c'est d'attendre
-`eagleye.fr`.
-
----
+> **SECTION RETIRÉE — 02/09/2026.** Elle décrivait comment envoyer depuis une
+> boîte hébergée sur le domaine d'un partenaire, en attendant `eagleye.fr`.
+> Ce partenariat est terminé : cette adresse n'est plus la nôtre à utiliser, et
+> l'audit DNS de leur domaine n'a plus à figurer dans notre dépôt.
+>
+> **Ce qu'il faut en retenir, et qui vaut pour n'importe quel domaine :**
+>
+> · **Un domaine dont tu n'es pas admin ne peut pas porter ta prospection.**
+>   Tu ne peux y publier ni SPF, ni DKIM, ni DMARC ; tu ne peux rien réparer ;
+>   et les rebonds d'une liste froide frappent la réputation de quelqu'un
+>   d'autre. Envoie depuis TON domaine.
+> · **Plusieurs enregistrements DMARC valent ZÉRO.** La norme impose au
+>   destinataire de tous les ignorer dès qu'il en trouve plus d'un : un domaine
+>   avec sept DMARC est traité exactement comme un domaine sans DMARC. Ce piège
+>   est vérifié en code par `lib/deliverability-dns.ts`, pas seulement écrit
+>   ici — c'est la seule forme qui survit.
+> · **Une adresse sur un domaine tiers reste légitime pour la correspondance
+>   individuelle** (réponses, rendez-vous). Ce n'est pas de la prospection en
+>   volume et ça ne pose aucun de ces problèmes.
 
 ## 2. À quel rythme ? Pas 120–150 sur une boîte.
 

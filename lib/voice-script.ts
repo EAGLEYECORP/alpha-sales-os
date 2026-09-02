@@ -3,6 +3,7 @@ import { VERTICALS, type VerticalPlaybook } from "./playbook";
 // L'offre représentée écrit le rôle de l'agent. Une seule saisie par offre :
 // le libellé, l'accroche écrite et ce qui se dit au téléphone vivent ensemble.
 import { OFFRES, type EagleyeOffer } from "./offer-match";
+import { estPartenaire } from "./validation-partenaire";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -143,12 +144,12 @@ export const COLD_CALLING_DISCIPLINE =
  *
  * PAS éditable, et substitué par le code :
  *   · {accroche} ......... la raison d'appel + LA question, tirées de l'offre
- *                          ROUTÉE. C'est ce qui empêche l'angle Callflow de
+ *                          ROUTÉE. C'est ce qui empêche l'angle Alpha Voice de
  *                          partir sur un prospect routé vers la visibilité —
  *                          le bug qui avait coûté six endroits en dur.
  *   · {offreLigne} ....... l'offre représentée, ou rien si non résolue.
  *   · {angleMetier} ...... la douleur structurelle de la verticale.
- *   · {marquePartenaire} . la garde ScintIA, seulement sur Callflow.
+ *   · {marquePartenaire} . la garde de marque, seulement sur un compte partenaire.
  *
  * Un opérateur qui réécrit la trame ne peut donc PAS se tromper d'offre : le
  * routage n'est pas dans le texte.
@@ -187,6 +188,11 @@ export interface VoiceConfig {
   agentName: string;
   /** Verticale du playbook, pour le vocabulaire métier. */
   verticalId?: string | null;
+  /**
+   * Le COMPTE au nom duquel on appelle. C'est lui — et non l'offre — qui
+   * décide si la garde de marque partenaire s'écrit dans le script.
+   */
+  compteId?: string;
   /** Nom de l'entreprise dont l'agent joue le standard (mode démo). */
   company?: string;
   mode: CallMode;
@@ -210,13 +216,13 @@ export interface VoiceConfig {
    *
    * ⚠ CE CHAMP N'EXISTAIT PAS, ET LE SCRIPT SORTANT PITCHAIT DONC TOUJOURS
    * LA MÊME CHOSE : « proposer un audit de leur accueil téléphonique », soit
-   * l'angle Callflow, écrit en dur, quel que soit le routage.
+   * l'angle Alpha Voice, écrit en dur, quel que soit le routage.
    *
    * Toute la chaîne était pourtant juste : `deepDive` calcule l'offre
    * (contrainte aux offres autorisées du compte), `briefForScript` l'écrit
    * — « Offre pertinente : … » —, et `CallTask` la laissait tomber en route.
    * Résultat, sur un prospect routé vers la visibilité : le RÔLE disait
-   * Callflow, le DOSSIER disait visibilité, dans le même prompt. L'agent
+   * l'accueil téléphonique, le DOSSIER disait visibilité, dans le même prompt. L'agent
    * arbitrait tout seul, en direct, devant le prospect.
    *
    * Absente, on ne devine PAS. Le script bascule en qualification pure et ne
@@ -277,7 +283,7 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
      * ⚠ L'ACCROCHE VIENT DE L'OFFRE ROUTÉE, PAS DE LA TRAME.
      *
      * Elle était écrite en dur (« proposer un audit de leur accueil
-     * téléphonique ») : l'angle Callflow partait sur TOUS les appels, y
+     * téléphonique ») : l'angle Alpha Voice partait sur TOUS les appels, y
      * compris ceux routés vers la visibilité. La garder hors du texte
      * éditable est ce qui empêche ce bug de revenir par l'édition.
      *
@@ -300,10 +306,20 @@ export function buildVoiceScript(cfg: VoiceConfig): string {
         accroche,
         offreLigne: o ? `Offre représentée sur cet appel : ${o.label}. Tu ne parles d'aucune autre.` : "",
         angleMetier: v ? `Angle métier : ${v.structuralPain}` : "",
-        // Le compte partenaire est nerveux sur SON produit, et il a raison :
-        // sur un appel à froid, c'est SA marque qui prend le risque.
+        /**
+         * Le compte partenaire est nerveux sur SON produit, et il a raison :
+         * sur un appel à froid, c'est SA marque qui prend le risque.
+         *
+         * ⚠ LA CONDITION ÉTAIT L'OFFRE, ELLE EST DEVENUE LE COMPTE — et les
+         * DEUX côtés devaient bouger ensemble. `auditScript` exige cette
+         * phrase sur un compte partenaire ; si le script ne l'écrivait que
+         * sur une offre, tout appel Nuwacom serait refusé par son propre
+         * audit, et un appel EAGLEYE porterait une contrainte qui n'a pas
+         * lieu d'être. Une garde et son contrôle doivent se déclencher sur la
+         * MÊME question, sinon l'un des deux ment.
+         */
         marquePartenaire:
-          cfg.offre === "callflow"
+          estPartenaire(cfg.compteId ?? "")
             ? `⚠ Tu parles au nom de ${cfg.onBehalfOf} et de RIEN d'autre : tu ne cites aucune autre société, aucune autre offre, aucun partenaire. Une seule question, un créneau, tu raccroches. Si on te pose une question à laquelle le script ne répond pas, tu dis que tu ne veux pas répondre de travers et que l'humain le fera au rendez-vous.`
             : "",
       })
@@ -411,32 +427,48 @@ export const EXIGENCES_APPEL_FROID = [
 
 /**
  * Exigence supplémentaire quand on parle au nom d'un PARTENAIRE : ne rien
- * ouvrir d'autre. C'est la demande explicite de ScintIA.
+ * ouvrir d'autre.
+ *
+ * ⚠ ELLE SE DÉCLENCHAIT SUR L'OFFRE, ET C'ÉTAIT UN ACCIDENT DE L'HISTOIRE.
+ *
+ * Elle avait été demandée par le partenaire qui portait l'accueil
+ * téléphonique, alors la garde s'armait sur cette OFFRE-là. Ça a marché tant
+ * que l'offre et le partenaire ne faisaient qu'un. Ils ne font plus qu'un :
+ * l'offre est revenue chez nous (Alpha Voice) et l'accord est mort.
+ *
+ * Laissée en l'état, la garde aurait fait les deux fautes à la fois :
+ *  · elle aurait interdit de citer EAGLEYE sur NOTRE propre appel ;
+ *  · et elle n'aurait rien gardé sur un appel Nuwacom, qui est pourtant le
+ *    seul cas de marque partenaire qui reste.
+ *
+ * La vraie condition n'a jamais été l'offre : c'est le COMPTE. On parle au nom
+ * de quelqu'un d'autre, ou on ne le fait pas.
  */
 export const EXIGENCE_MARQUE_PARTENAIRE = {
   label: "Aucune autre société, aucune autre offre",
   pattern: /tu ne cites aucune autre société/i,
   pourquoi:
-    "Sur leur appel, on ne vend que leur produit. Mentionner EAGLEYE ou une autre offre transforme leur " +
-    "prospection en la nôtre — c'est précisément ce qu'ils craignent.",
+    "Sur l'appel d'un partenaire, on ne vend que son produit. Mentionner EAGLEYE ou une autre offre " +
+    "transforme sa prospection en la nôtre.",
 } as const;
 
 /**
  * Audit du script.
  *
- * `mode` et `offre` sont optionnels pour ne pas casser les appelants qui ne
- * vérifient que la divulgation. Fournis, ils déclenchent les exigences de
- * l'appel à froid — et celles de la marque partenaire sur Callflow.
+ * `mode`, `offre` et `compteId` sont optionnels pour ne pas casser les
+ * appelants qui ne vérifient que la divulgation. Fournis, ils déclenchent les
+ * exigences de l'appel à froid — et celles de la marque partenaire, qui
+ * dépendent du COMPTE et non de l'offre (voir `EXIGENCE_MARQUE_PARTENAIRE`).
  */
 export function auditScript(
   script: string,
-  contexte: { mode?: CallMode; offre?: EagleyeOffer | null } = {}
+  contexte: { mode?: CallMode; offre?: EagleyeOffer | null; compteId?: string } = {}
 ): { ok: boolean; manquantes: string[] } {
   const manquantes = DISCLOSURE_REQUIREMENTS.filter((r) => !r.pattern.test(script)).map((r) => r.label);
 
   if (contexte.mode === "prospection-b2b") {
     for (const e of EXIGENCES_APPEL_FROID) if (!e.pattern.test(script)) manquantes.push(e.label);
-    if (contexte.offre === "callflow" && !EXIGENCE_MARQUE_PARTENAIRE.pattern.test(script))
+    if (estPartenaire(contexte.compteId ?? "") && !EXIGENCE_MARQUE_PARTENAIRE.pattern.test(script))
       manquantes.push(EXIGENCE_MARQUE_PARTENAIRE.label);
   }
 

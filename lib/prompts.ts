@@ -268,8 +268,8 @@ export const PROMPTS: PromptDef[] = [
     /**
      * ⚠ `{accroche}` et `{marquePartenaire}` sont substitués par le CODE, pas
      * par l'opérateur : l'accroche vient de l'offre ROUTÉE (c'est ce qui
-     * empêche l'angle Callflow de partir sur un prospect routé ailleurs), et
-     * la garde de marque partenaire ne s'ajoute que sur Callflow.
+     * empêche l'angle Alpha Voice de partir sur un prospect routé ailleurs), et
+     * la garde de marque partenaire ne s'ajoute que sur un compte partenaire.
      */
     invariants: [
       INVARIANTS.objectifUnique,

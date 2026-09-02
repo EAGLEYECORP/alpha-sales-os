@@ -8,13 +8,13 @@ import {
   REV_SHARE_PCT,
   SEUIL_NUWACOM_HT,
   chiffrer,
-  palierCallflow,
+  palierAlphaVoice,
   type BaremeCompte,
   type FamilleOffre,
 } from "../lib/calculateur-offres";
 import {
-  CALLFLOW_PALIERS,
-  CALLFLOW_SETUP_HT,
+  ALPHA_VOICE_PALIERS,
+  ALPHA_VOICE_SETUP_HT,
   ESSAI_HT,
   PACK_MONTHLY_HT,
   PACK_SETUP_HT,
@@ -75,18 +75,28 @@ test("⚠ le rev-share est un PRIX au client, pas une commission reversée", () 
   assert.match(l.detail, /PRIX facturé au client/, "le détail doit lever l'ambiguïté à l'écran");
 });
 
-test("le taux d'un compte s'applique à ce qui NOUS revient, pas au prix du client", () => {
-  // ScintIA : 990 € de setup → 30 % pour nous ; le mensuel → 10 %.
-  const r = chiffrer({ callflowMinutes: 1000 }, opts);
-  const l = r.lignes.find((x) => x.famille === "callflow")!;
-  const palier = CALLFLOW_PALIERS.find((p) => p.minutes === 1000)!;
+test("⚠ Alpha Voice : le client paie le prix public, et TOUT nous revient", () => {
+  /**
+   * Cette ligne rendait 30 % du setup et 10 % du mensuel — la part qui nous
+   * revenait comme INTERMÉDIAIRE. Nous ne le sommes plus : l'offre est à nous.
+   *
+   * Le test garde la même forme parce que c'est la même question qui doit
+   * rester posée : « ce que le client paie » et « ce qui nous revient » sont
+   * deux nombres distincts, et le module ne doit jamais les confondre. Ici ils
+   * se trouvent égaux — parce que le taux vaut 100, pas parce qu'on les a
+   * confondus. C'est ce que la dernière assertion vérifie.
+   */
+  const r = chiffrer({ alphaVoiceMinutes: 1000 }, opts);
+  const l = r.lignes.find((x) => x.famille === "alpha-voice")!;
+  const palier = ALPHA_VOICE_PALIERS.find((p) => p.minutes === 1000)!;
 
-  assert.equal(l.clientSetupHT, CALLFLOW_SETUP_HT, "le client paie le prix public ScintIA");
+  assert.equal(l.clientSetupHT, ALPHA_VOICE_SETUP_HT, "le client paie le prix public");
   assert.equal(l.clientMensuelHT, palier.prixHT);
-  assert.equal(l.nousSetupHT, Math.round((CALLFLOW_SETUP_HT * 30) / 100), "nous : 30 % du setup");
-  assert.equal(l.nousMensuelHT, Math.round((palier.prixHT * 10) / 100), "nous : 10 % du mensuel");
-  // Et surtout : les deux nombres sont DIFFÉRENTS.
-  assert.notEqual(l.clientSetupHT, l.nousSetupHT);
+  assert.equal(l.nousSetupHT, ALPHA_VOICE_SETUP_HT, "100 % : personne à qui reverser");
+  assert.equal(l.nousMensuelHT, palier.prixHT);
+
+  // Le compte qui porte la ligne est bien le nôtre — c'est ÇA qui a changé.
+  assert.equal(COMPTE_DE_LA_FAMILLE["alpha-voice"], "eagleye");
 });
 
 test("Nuwacom — 15 % sur le devis, mais 100 % de la maintenance", () => {
@@ -225,10 +235,19 @@ test("l'essai est un one-shot, pas un abonnement", () => {
   assert.equal(l.clientMensuelHT, 0, "un essai ne se renouvelle pas tous les mois");
 });
 
-test("la répartition par compte sépare les trois économies", () => {
-  const r = chiffrer({ vip: true, callflowMinutes: 500, chantierHT: 60_000 }, opts);
+test("la répartition par compte sépare les deux économies", () => {
+  /**
+   * ⚠ Elles étaient TROIS. Le devis mêlait notre chiffre d'affaires et deux
+   * commissions d'intermédiaire ; il n'en reste qu'une. La séparation, elle,
+   * reste la raison d'être du module : mélanger « ce que le client paie » et
+   * « ce qui nous revient » fausse toute prévision.
+   *
+   * Ce devis-ci porte du VIP et de l'Alpha Voice (les deux à nous, donc un
+   * seul bloc EAGLEYE) plus un chantier > 40 k (Nuwacom).
+   */
+  const r = chiffrer({ vip: true, alphaVoiceMinutes: 500, chantierHT: 60_000 }, opts);
   const ids = r.parCompte.map((c) => c.accountId).sort();
-  assert.deepEqual(ids, ["eagleye", "nuwacom", "scintia"]);
+  assert.deepEqual(ids, ["eagleye", "nuwacom"]);
 
   const eagleye = r.parCompte.find((c) => c.accountId === "eagleye")!;
   assert.equal(eagleye.nous.an1HT, eagleye.client.an1HT, "100 % : ce que le client paie nous revient");
@@ -243,23 +262,27 @@ test("la répartition par compte sépare les trois économies", () => {
  * EAGLEYE — et le DIT.
  */
 test("sans barème chargé, le module l'annonce au lieu de deviner", () => {
-  const r = chiffrer({ callflowMinutes: 500 }, { briques });
+  const r = chiffrer({ alphaVoiceMinutes: 500 }, { briques });
   assert.match(r.alertes.join(" "), /Barème des comptes non chargé/);
-  assert.match(r.alertes.join(" "), /faux pour ScintIA et Nuwacom/);
+  assert.match(r.alertes.join(" "), /faux pour Nuwacom/);
   assert.equal(BAREME_NEUTRE.setupPct, 100);
 });
 
-test("palierCallflow — on monte au palier qui COUVRE le besoin", () => {
-  assert.equal(palierCallflow(1).minutes, 250, "un petit volume prend le premier palier");
-  assert.equal(palierCallflow(250).minutes, 250);
-  assert.equal(palierCallflow(251).minutes, 500, "251 minutes ne tiennent pas dans 250");
-  assert.equal(palierCallflow(9999).minutes, 1500, "au-delà du dernier, on reste au dernier");
+test("palierAlphaVoice — on monte au palier qui COUVRE le besoin", () => {
+  assert.equal(palierAlphaVoice(1).minutes, 250, "un petit volume prend le premier palier");
+  assert.equal(palierAlphaVoice(250).minutes, 250);
+  assert.equal(palierAlphaVoice(251).minutes, 500, "251 minutes ne tiennent pas dans 250");
+  assert.equal(palierAlphaVoice(9999).minutes, 1500, "au-delà du dernier, on reste au dernier");
 });
 
 /**
  * Le routage de l'ESCALIER est une décision commerciale, pas un détail
- * d'implémentation : Callflow va chez ScintIA, le gros chantier chez Nuwacom,
- * tout le reste chez nous. Le changer doit demander de changer ce test.
+ * d'implémentation : le gros chantier va chez Nuwacom, tout le reste chez
+ * nous. Le changer doit demander de changer ce test.
+ *
+ * ⚠ `alpha-voice` était la SEULE famille rattachée à un autre compte que
+ * EAGLEYE ou Nuwacom. Le revendeur qui la portait est parti ; elle est revenue
+ * chez nous. Ce test est l'endroit où ce déplacement se voit en une ligne.
  */
 test("le routage par famille suit l'escalier", () => {
   const attendu: Record<FamilleOffre, string> = {
@@ -271,16 +294,18 @@ test("le routage par famille suit l'escalier", () => {
     "os-personnalise": "eagleye",
     visibilite: "eagleye",
     digitalisation: "eagleye",
-    callflow: "scintia",
+    "alpha-voice": "eagleye",
     nuwacom: "nuwacom",
   };
   assert.deepEqual(COMPTE_DE_LA_FAMILLE, attendu);
 });
 
 test("les barèmes dérivés correspondent au portefeuille réel", () => {
-  const scintia = BAREMES.find((b) => b.accountId === "scintia")!;
-  assert.equal(scintia.setupPct, 30, "ScintIA : 30 % du setup");
-  assert.equal(scintia.mensuelPct, 10, "et 10 % du mensuel");
+  // Il y avait un troisième barème (30 % du setup, 10 % du mensuel). Le compte
+  // a disparu : le barème doit avoir disparu avec lui, sinon un devis se
+  // chiffrerait encore sur un accord qui n'existe plus.
+  assert.equal(BAREMES.length, 2, "un barème par compte du portefeuille, pas un de plus");
+  assert.equal(BAREMES.some((b) => b.accountId === "scintia"), false);
 
   const nuwacom = BAREMES.find((b) => b.accountId === "nuwacom")!;
   assert.equal(nuwacom.setupPct, 15);

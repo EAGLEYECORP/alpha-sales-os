@@ -91,13 +91,13 @@ export const OFFRES_SYSTEME: Offre[] = [
     systeme: true,
   },
   {
-    id: "callflow",
+    id: "alpha-voice",
     label: "Accueil & relance téléphone",
     what: "L'agent qui décroche, qualifie et rappelle — 24/7, sans embauche.",
     pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place. »",
     setupHT: 0,
     monthlyHT: 0,
-    famille: "callflow",
+    famille: "alpha-voice",
     actif: true,
     systeme: true,
   },
@@ -122,9 +122,9 @@ export const FAMILLES: { id: EagleyeOffer; label: string; implique: string }[] =
     implique: "Aimant « audit de process ». Routée vers le compte maître.",
   },
   {
-    id: "callflow",
+    id: "alpha-voice",
     label: "Téléphone / accueil",
-    implique: "Aimant « audit téléphonique ». Déclenche la marche Callflow de l'escalier.",
+    implique: "Aimant « audit téléphonique ». Déclenche la marche Alpha Voice de l'escalier.",
   },
   {
     id: "visibilite-growth",

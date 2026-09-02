@@ -39,7 +39,7 @@ export interface KnowledgeNote {
    * Compte propriétaire de la note. ABSENT = note COMMUNE, visible depuis
    * tous les comptes (la doctrine, les chiffres maison, le routage).
    *
-   * Pourquoi cloisonner : le contexte d'un appel ScintIA ne doit pas être
+   * Pourquoi cloisonner : le contexte d'un appel partenaire ne doit pas être
    * pollué par les notes Nuwacom — sinon l'agent mélange deux marques dans
    * la même phrase. C'est une frontière d'IDENTITÉ COMMERCIALE, pas de
    * sécurité (le vrai cloisonnement des données reste la RLS + le JWT).

@@ -55,7 +55,7 @@ export interface ApprocheEcrite {
    *
    * Ce n'est pas un jugement de goût : les onze critères de `lib/playbook.ts`
    * parlent TOUS du téléphone (c'est vérifiable, et un test le vérifie). Ils
-   * appartiennent à l'angle Callflow et n'ont de sens que là.
+   * appartiennent à l'angle Alpha Voice et n'ont de sens que là.
    */
   critereMetier: string | null;
   /** La seule question posée. Verticale si elle colle à l'offre, sinon celle de l'offre. */
@@ -91,9 +91,9 @@ export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcri
 
   /**
    * Le playbook parle téléphone, du premier critère au dernier diagnostic.
-   * Il enrichit donc l'angle Callflow — et il contredit les deux autres.
+   * Il enrichit donc l'angle Alpha Voice — et il contredit les deux autres.
    */
-  const verticaleColle = offre === "callflow";
+  const verticaleColle = offre === "alpha-voice";
 
   return {
     critere: pick

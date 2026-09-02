@@ -14,7 +14,7 @@ import { metierDepuisNaf, nomenclaturePerimee } from "./registre-entreprises";
  * question est tout autre : **est-ce que le téléphone y sonne beaucoup, et
  * est-ce qu'il tombe dans le vide ?**
  *
- * C'est le déclencheur exact de la marche 2 de l'ESCALIER (Callflow). Une
+ * C'est le déclencheur exact de la marche 2 de l'ESCALIER (Alpha Voice). Une
  * entreprise sans demandes n'a pas ce problème, quel que soit son métier.
  *
  * ── LE SIGNAL QUI VAUT TOUS LES AUTRES ──
@@ -505,8 +505,8 @@ export function planifierAppels(
    * mais un artisan en nom propre sur sa ligne personnelle est exactement la
    * zone grise où ce plafond s'applique.
    *
-   * Or la cadence Callflow exigée par ScintIA est de CINQ rappels sur 2 jours
-   * (`CALLFLOW_RECALL_OFFSETS_H`), soit six contacts. Sur une cible qui bascule
+   * Or la cadence de rappel est de CINQ rappels sur 2 jours
+   * (`RAPPELS_OFFSETS_H`), soit six contacts. Sur une cible qui bascule
    * en B2C, c'est hors des clous — et c'est nous qui portons le risque.
    */
   if (tentativesMax > 4) {
@@ -575,5 +575,5 @@ export const SOURCES_TERRAIN: SourceTerrain[] = [
 export const ENTETE_TERRAIN =
   "entreprise;secteur;ville;telephone;siteWeb;avis;note;horaires;extraitsAvis;naf;siren";
 
-/** Rappel du seuil de l'escalier, pour l'écran : au-delà, Callflow se déclenche. */
+/** Rappel du seuil de l'escalier, pour l'écran : au-delà, Alpha Voice se déclenche. */
 export const SEUIL_DEMANDE_ESCALIER = HIGH_DEMAND_PER_WEEK;

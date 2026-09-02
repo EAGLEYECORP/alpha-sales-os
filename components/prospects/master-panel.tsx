@@ -207,7 +207,7 @@ export function MasterPanel({ p }: { p: Prospect }) {
               <ul className="space-y-0.5">{argu.questions.map((q) => <li key={q}>— {q}</li>)}</ul>
             </Block>
             {/**
-              * ⚠ Le bloc est VIDE hors Callflow, et c'est voulu : ces lignes
+              * ⚠ Le bloc est VIDE hors Alpha Voice, et c'est voulu : ces lignes
               * sont des affirmations sur le marché, et on n'en a écrit aucune
               * pour la visibilité ni pour Alpha Sales OS — zéro client sur ces
               * deux offres, donc rien de mesuré à annoncer.

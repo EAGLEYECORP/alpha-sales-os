@@ -81,7 +81,7 @@ export interface LeconInput {
   prospect: Prospect;
   /**
    * Compte propriétaire de la leçon. Absent = le store retombe sur le compte
-   * ACTIF — une leçon ScintIA ne doit pas polluer le contexte d'un appel
+   * ACTIF — une leçon d'un compte revendeur ne doit pas polluer le contexte d'un appel
    * Nuwacom, et vice versa.
    */
   accountId?: string;

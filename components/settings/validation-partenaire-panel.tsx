@@ -22,12 +22,12 @@ import { cn } from "@/lib/utils";
  * ─────────────────────────────────────────────────────────────────────
  * L'ÉCRAN QU'ON MET SOUS LE NEZ DU PARTENAIRE.
  *
- * Il sert à UN moment précis : on est en face de ScintIA, on leur fait lire
+ * Il sert à UN moment précis : on est en face du partenaire, on lui fait lire
  * ce qui sortira au nom de leur marque, et on note qui a dit oui.
  *
  * ⚠ CE QU'IL NE FAUT PAS EN FAIRE : une case à cocher. Le champ « qui » est
  * obligatoire, et c'est le seul détail qui rend la validation vérifiable trois
- * mois plus tard. « ScintIA a validé » ne vaut rien ; « Karim, le 3 septembre,
+ * mois plus tard. « la société a validé » ne vaut rien ; « Karim, le 3 septembre,
  * en visio » se vérifie en un message.
  *
  * Les TEXTES viennent de `/api/prompts` (route réservée au compte maître) :
@@ -69,14 +69,14 @@ export function ValidationPartenairePanel() {
    * ⚠ LE COMPTE VALIDÉ N'EST PAS LE COMPTE ACTIF, et c'est délibéré.
    *
    * Deux raisons. La première est métier : c'est TOI qui es en face de
-   * ScintIA, sur ton app, en compte maître — tu enregistres leur accord POUR
+   * le partenaire, sur ton app, en compte maître — tu enregistres son accord POUR
    * eux, ils n'ont pas d'accès. La seconde est technique : `/api/prompts` est
    * réservée au compte maître (les prompts récitent la grille tarifaire), donc
-   * un panneau qui ne marcherait qu'en étant BASCULÉ sur ScintIA se serait
+   * un panneau qui ne marcherait qu'en étant BASCULÉ sur le partenaire se serait
    * fait refuser les textes qu'il doit afficher.
    */
   const partenaires = ACCOUNTS.filter((a) => a.kind !== "master");
-  const [compte, setCompte] = useState(partenaires[0]?.id ?? "scintia");
+  const [compte, setCompte] = useState(partenaires[0]?.id ?? "nuwacom");
   const validations = settings.validationsPartenaire ?? [];
   const partenaire = estPartenaire(compte);
 

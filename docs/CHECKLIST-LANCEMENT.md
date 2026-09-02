@@ -116,7 +116,7 @@ le SQL Editor annonce quand même « Success ». Passe les migrations.
 
 Rien de technique ici, et c'est le bloc qui compte.
 
-- [ ] **Envoyer le devis ScintIA**. ⚠ À arbitrer avant d'envoyer : le devis
+- [ ] ~~**Envoyer le devis du revendeur**~~ — **caduc, accord terminé**. ⚠ Ce qui suit reste vrai pour tout devis : le devis
       historique est 3 500 € + 364 €/mois, mais la grille publique propose
       désormais un **essai terrain à 290 € HT** (mise en route + 100 appels
       réels, déduits du 1er mois). Le parcours recommandé dans

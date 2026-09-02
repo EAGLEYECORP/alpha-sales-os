@@ -724,14 +724,13 @@ function DoctrineTab({
 
 const OFFER_BAR: Record<EagleyeOffer, string> = {
   "alpha-sales-os": "bg-bronze-500",
-  callflow: "bg-signal-green",
+  "alpha-voice": "bg-signal-green",
   "visibilite-growth": "bg-signal-amber",
 };
 
 function OfferRecommendation({ p }: { p: Prospect }) {
   const a = p.deepAudit;
-  // Le compte actif contraint l'offre : un compte mono-offre (ScintIA =
-  // callflow seul) ne recommande jamais une offre qu'il ne vend pas.
+  // Le compte actif contraint l'offre : un compte mono-offre ne recommande jamais une offre qu'il ne vend pas.
   const accountId = useAlpha((s) => s.settings.accountId);
   const m = matchOffer(
     {
@@ -748,7 +747,7 @@ function OfferRecommendation({ p }: { p: Prospect }) {
   );
   const maxScore = Math.max(1, ...Object.values(m.scores));
   const noSignal = Math.max(...Object.values(m.scores)) <= 0;
-  const order: EagleyeOffer[] = ["alpha-sales-os", "callflow", "visibilite-growth"];
+  const order: EagleyeOffer[] = ["alpha-sales-os", "alpha-voice", "visibilite-growth"];
   const reasons = m.reasons[m.primary];
 
   return (
@@ -762,7 +761,7 @@ function OfferRecommendation({ p }: { p: Prospect }) {
 
       {noSignal ? (
         <p className="mt-2 text-[12px] text-paper-faint">
-          Renseigne l&apos;audit ci-dessus (appels ratés, site, avis, secteur) — l&apos;app route alors ce prospect vers Callflow, Alpha Sales OS ou une offre Visibilité/Growth.
+          Renseigne l&apos;audit ci-dessus (appels ratés, site, avis, secteur) — l&apos;app route alors ce prospect vers Alpha Voice, Alpha Sales OS ou une offre Visibilité/Growth.
         </p>
       ) : (
         <>
@@ -1128,7 +1127,7 @@ function QuoteBuilder({ p }: { p: Prospect }) {
           {/* Le rituel de closing dépend du compte : se tromper de rituel perd
               le deal au dernier mètre. Il est rappelé dans le panneau maître. */}
           <p className="mt-2 text-[11px] text-paper-faint">
-            Vérifie le rituel de closing du compte avant d&apos;envoyer — devis EAGLEYE, proposition ScintIA depuis le panel, ou RDV de cadrage Nuwacom.
+            Vérifie le rituel de closing du compte avant d&apos;envoyer — devis EAGLEYE, ou RDV de cadrage Nuwacom.
           </p>
         </>
       )}

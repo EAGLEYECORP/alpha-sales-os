@@ -139,7 +139,7 @@ test("deal — signer SOUS le plancher se voit", () => {
 
 test("deal — une offre sans plancher ne déclenche aucune alerte", () => {
   // Le bruit tue l'alerte : si tout alerte, plus rien n'alerte.
-  const q = commissionFor("scintia", { amountHT: 990 });
+  const q = commissionFor("eagleye", { amountHT: 990, offeringKey: "alpha-voice" });
   assert.equal(q.alerte, undefined);
   const e = commissionFor("eagleye", { amountHT: 12000, offeringKey: "digitalisation" });
   assert.equal(e.alerte, undefined);

@@ -256,7 +256,7 @@ test("import terrain — les signaux atterrissent dans deepAudit, pas dans les n
   assert.ok((p.deepAudit.missedCallsPerWeek ?? 0) > 0, "une plainte doit alimenter le déclencheur de l'escalier");
 
   const escalier = buildLadder(p);
-  assert.ok(escalier.rungs.some((x) => x.id === "callflow"), "l'escalier doit déclencher Callflow sur cette fiche");
+  assert.ok(escalier.rungs.some((x) => x.id === "alpha-voice"), "l'escalier doit déclencher Callflow sur cette fiche");
 });
 
 test("import terrain — sans plainte, AUCUN nombre d'appels manqués n'est inventé", () => {
@@ -731,15 +731,15 @@ test("flux — une fiche terrain arrive dans SA file d'appels, pas dans « gener
   }
 });
 
-test("flux — la fiche terrain déclenche bien la marche Callflow de l'ESCALIER", () => {
+test("flux — la fiche terrain déclenche bien la marche Alpha Voice de l'ESCALIER", () => {
   // Le tri, l'import et l'escalier doivent parler de la même chose : sans ça,
   // la fiche remonte en tête de file d'appels et l'escalier reste muet.
   const p = importerFiches(
     `${ENTETE_TERRAIN}\nToiture Roux;;Lyon 7e;0478000006;;140;4,6;;"impossible de les joindre";4391B;6`
   ).retenus[0].prospect;
   const escalier = buildLadder(p);
-  assert.ok(escalier.rungs.some((r) => r.id === "callflow"), "la marche Callflow doit se déclencher");
-  assert.equal(escalier.entry?.accountId, "scintia", "et elle revient à ScintIA");
+  assert.ok(escalier.rungs.some((r) => r.id === "alpha-voice"), "la marche Alpha Voice doit se déclencher");
+  assert.equal(escalier.entry?.accountId, "eagleye", "et elle revient à EAGLEYE : l'offre est à nous");
 });
 
 // ─────────── LE POIDS D'UNE FICHE, ET LE MUR DE STOCKAGE ───────────

@@ -36,12 +36,26 @@ test("aimant — chaque aimant est utile même sans achat, et ciblé", () => {
   }
 });
 
-test("aimant — ScintIA ne sert que l'audit téléphone (compte mono-offre)", () => {
-  const s = magnetsFor("scintia");
-  assert.equal(s.length, 1);
-  assert.equal(s[0].id, "audit-telephone");
-  // EAGLEYE, lui, sert les trois.
-  assert.equal(magnetsFor("eagleye").length, 3);
+test("⚠ aimant — un compte ne sert que les aimants de SES offres", () => {
+  /**
+   * Le compte mono-offre qui servait d'exemple ici (le revendeur téléphonique)
+   * a disparu, et l'audit téléphone est revenu chez EAGLEYE. L'invariant tient
+   * toujours : un compte ne peut pas promettre un document rattaché à une
+   * offre qu'il n'a pas le droit de vendre.
+   */
+  const nuwacom = magnetsFor("nuwacom");
+  assert.ok(!nuwacom.some((m) => m.id === "audit-telephone"), "Nuwacom ne vend pas notre agent vocal");
+  for (const m of nuwacom) {
+    assert.ok(
+      getAccount("nuwacom").offers.includes(m.offer),
+      `${m.id} : un aimant servi doit correspondre à une offre du compte`
+    );
+  }
+
+  // EAGLEYE, lui, porte les trois — dont l'audit téléphone, désormais à nous.
+  const eagleye = magnetsFor("eagleye");
+  assert.equal(eagleye.length, 3);
+  assert.ok(eagleye.some((m) => m.id === "audit-telephone"));
 });
 
 test("aimant — le choix suit le deep-dive, pas le hasard", () => {
@@ -49,7 +63,7 @@ test("aimant — le choix suit le deep-dive, pas le hasard", () => {
   const tel = pickMagnet(
     fixture({ deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: 9 } })
   )!;
-  assert.equal(tel.magnet.offer, "callflow");
+  assert.equal(tel.magnet.offer, "alpha-voice");
 
   // Invisible en ligne → audit visibilité.
   const vis = pickMagnet(
@@ -95,5 +109,5 @@ test("aimant — un compte sans offre correspondante ne sert rien plutôt qu'un 
   assert.equal(magnetById("inconnu"), undefined);
   // Nuwacom : visibilité + alpha-sales-os autorisés, donc pas d'audit téléphone.
   const n = magnetsFor("nuwacom");
-  assert.equal(n.some((m) => m.offer === "callflow"), false);
+  assert.equal(n.some((m) => m.offer === "alpha-voice"), false);
 });

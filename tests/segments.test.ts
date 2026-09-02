@@ -45,12 +45,23 @@ test("segments — une brique renvoie les segments qu'elle sert", () => {
   assert.ok(live.includes("equipe-terrain"), "Alpha Live sert d'abord les équipes terrain");
 });
 
-test("segments — un compte mono-offre ne voit que ses segments", () => {
-  const scintia = segmentsForAccount(getAccount("scintia").offers);
-  assert.ok(scintia.every((s) => s.offer === "callflow"));
-  assert.ok(scintia.some((s) => s.id === "centre-appels"));
-  // Le compte maître les voit tous ou presque.
-  assert.ok(segmentsForAccount(getAccount("eagleye").offers).length >= scintia.length);
+test("⚠ segments — un compte ne voit que les segments de SES offres", () => {
+  /**
+   * Le compte mono-offre qui servait d'exemple est parti avec son accord.
+   * L'invariant ne dépendait pas de lui : un compte revendeur reste borné à
+   * ses offres, et le segment « centre d'appels » (rattaché à notre agent
+   * vocal) ne doit pas lui apparaître.
+   */
+  const nuwacom = segmentsForAccount(getAccount("nuwacom").offers);
+  const permises = getAccount("nuwacom").offers;
+  assert.ok(nuwacom.length > 0, "un compte revendeur doit voir quelque chose");
+  assert.ok(nuwacom.every((s) => permises.includes(s.offer)));
+  assert.ok(!nuwacom.some((s) => s.offer === "alpha-voice"), "pas les segments d'une offre qu'il ne vend pas");
+
+  // Le compte maître les voit tous — dont ceux de l'agent vocal.
+  const eagleye = segmentsForAccount(getAccount("eagleye").offers);
+  assert.ok(eagleye.length > nuwacom.length);
+  assert.ok(eagleye.some((s) => s.id === "centre-appels"));
 });
 
 test("devine — le secteur oriente vers le bon segment", () => {

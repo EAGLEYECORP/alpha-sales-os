@@ -16,7 +16,7 @@ import {
  *
  * Les signaux de demande relevés (volume d'avis, plainte d'injoignabilité,
  * trou horaire) atterrissent dans `deepAudit` — pas dans les notes. C'est là
- * que `buildLadder` va les chercher pour décider si la marche Callflow se
+ * que `buildLadder` va les chercher pour décider si la marche Alpha Voice se
  * déclenche. Les ranger ailleurs reviendrait à faire le travail deux fois.
  * ─────────────────────────────────────────────────────────────────────
  */
@@ -90,7 +90,7 @@ function notesDepuisFiche(f: FicheTerrain, c: CiblageTerrain): string {
   /**
    * Le SIREN est écrit EN CLAIR dans les notes, et ce n'est pas cosmétique :
    * c'est lui que `campaign-runner` relit pour savoir si la cible est une
-   * entreprise inscrite au registre — donc si la cadence Callflow complète
+   * entreprise inscrite au registre — donc si la cadence complète
    * peut s'appliquer, ou si le plafond légal B2C s'impose.
    */
   if (f.siren) bouts.push(`SIREN : ${(f.siren ?? "").replace(/\D/g, "").slice(0, 9)}.`);

@@ -160,7 +160,7 @@ export function attemptsFromEvents(p: Prospect): CallAttempt[] {
 
 /**
  * Le plan complet d'un prospect.
- * `attempts` : historique d'appels (pour l'état de la cadence Callflow).
+ * `attempts` : historique d'appels (pour l'état de la cadence de rappel).
  * `accountId` : le compte qui porte le deal (détermine le rituel de closing).
  */
 export function masterRappel(
@@ -200,14 +200,14 @@ export function masterRappel(
     /**
      * ⚠ LA CONDITION `!humainDejaEnLigne` MANQUAIT, ET ÇA SE VOYAIT À L'ÉCRAN.
      *
-     * `/controle` proposait « Passer le rappel 1/3 (cadence Callflow) » sur
+     * `/controle` proposait « Passer le rappel 1/3 » sur
      * LES HUIT fiches, dont celle affichée deux blocs plus haut comme
      * « PRÊT À SIGNER — Envoyer le DEVIS ». La cause est dans
      * `attemptsFromEvents` : elle ne lit que `kind === "appel"`, donc une
      * fiche avancée par visites, rendez-vous et démo n'a aucune tentative
      * enregistrée et passe pour froide.
      *
-     * La règle ScintIA — « dès qu'il répond, Alpha Voice arrête et passe la
+     * La règle — « dès qu'il répond, Alpha Voice arrête et passe la
      * main au closer » — ne parle pas du téléphone, elle parle de la
      * conversation. On la lit donc sur toute la timeline.
      *
@@ -220,8 +220,8 @@ export function masterRappel(
       id: "cadence-appel",
       owner: "alpha",
       do: premier
-        ? "Passer le PREMIER appel (cadence Callflow ensuite)."
-        : `Passer le rappel ${cadence.recallsUsed + 1}/${plafond.max} (cadence Callflow).`,
+        ? "Passer le PREMIER appel (la cadence de rappel suit)."
+        : `Passer le rappel ${cadence.recallsUsed + 1}/${plafond.max}.`,
       channel: "appel",
       when: now.toISOString(),
       why: cadence.reason,

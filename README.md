@@ -22,7 +22,7 @@ chacune achète pour une raison différente. Catalogue complet dans
 | **Centre d'appels** — plateaux, qualification, relation client (5 à 200 postes) | Les équipes brûlent leur énergie sur des appels qui ne décrochent pas | **Alpha Voice** |
 | **Agence & services B2B** (1 à 30 personnes) | Le closing dépend du fondateur : le chiffre plafonne à ses heures | CRM + Campagnes + Cerveau |
 | **Réseau, franchise, groupement** (10 à 500 points de vente) | Le discours se dilue en s'éloignant du siège | CRM + Alpha Live + Pilotage |
-| **Commerce local** — garages, artisans, santé (1 à 10 personnes) | Chaque appel manqué part chez le concurrent, sans qu'on le sache | **Alpha Voice** (Callflow) |
+| **Commerce local** — garages, artisans, santé (1 à 10 personnes) | Chaque appel manqué part chez le concurrent, sans qu'on le sache | **Alpha Voice** |
 | **Assurance en transformation** (25 à 2 000 salariés) | Parcours fragmentés, frictions non chiffrables | CRM + Cerveau + Pilotage |
 
 Chaque segment porte ses **déclencheurs** (quand approcher), son **angle** (qui
