@@ -21,8 +21,33 @@ emails à n'importe qui.
 - **Connecte-toi AVANT de lancer le partage d'écran.** Une fois le cookie posé,
   plus personne ne voit le mot de passe.
 - **Le piège :** ouvrir une fenêtre de navigation privée, un autre navigateur
-  ou un autre appareil **en pleine démo** → l'écran `/gate` s'affiche devant
-  tout le monde. Reste dans la fenêtre déjà connectée.
+  ou un autre appareil **EN PLEINE DÉMO** → l'écran `/gate` s'affiche devant
+  tout le monde. Le problème n'est pas la fenêtre privée : c'est de l'ouvrir
+  une fois l'écran partagé.
+
+> ⚠ **LA NAVIGATION PRIVÉE EST RECOMMANDÉE — mais elle se prépare AVANT.**
+>
+> Le store garde les fiches PERSISTÉES (`merge` conserve `s.prospects`). Un
+> navigateur qui a déjà servi montre donc les ANCIENNES fiches de démo : sans
+> audit, donc routées « visibilité », **sans la garantie Alpha Voice**. Le code
+> est à jour, la donnée du navigateur ne l'est pas.
+>
+> Une fenêtre privée repart d'un store neuf et charge les fiches enrichies —
+> c'est le seul moyen de montrer le produit tel qu'il est aujourd'hui sans
+> écraser tes vraies données.
+>
+> **La séquence, dans cet ordre :**
+> 1. Ouvre la fenêtre privée **avant** l'appel ;
+> 2. entre le mot de passe (hors caméra) ;
+> 3. **ferme l'assistant de configuration** qui s'ouvre TOUT SEUL sur un store
+>    neuf (`doitSOuvrirSeul` : aucun réglage stocké = il s'affiche). Bouton
+>    « Explorer la démo » ou la croix. Sans ça, il recouvre l'écran au moment
+>    où tu partages ;
+> 4. vérifie qu'une fiche artisan affiche bien la garantie ;
+> 5. **puis seulement** lance le partage d'écran.
+>
+> ⚠ Et n'oublie pas : en navigation privée, **fermer la fenêtre efface tout**.
+> Ne saisis rien que tu veuilles garder.
 - Pour savoir ce que la prod expose réellement, ouvre `/api/health` **une fois
   connecté** : il rend le détail seulement si tu as le cookie (sinon `{ ok }`,
   et c'est délibéré — annoncer publiquement « ce déploiement tourne sans mot de
