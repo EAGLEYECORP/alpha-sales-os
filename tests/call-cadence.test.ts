@@ -6,6 +6,7 @@ import {
   cadenceFor, cibleDepuisProspect, plannedRecalls, plafondRappels, RAPPELS_MAX, PLAFOND_SOLLICITATIONS_B2C,
   type CallAttempt,
 } from "../lib/call-cadence";
+import { fenetreOuverte } from "../lib/conformite";
 import { masterRappel } from "../lib/master-rappel";
 import { prospect } from "./fixtures";
 
@@ -19,11 +20,22 @@ test("cadence — aucun appel encore : on appelle maintenant", () => {
   assert.equal(d.recallsLeft, RAPPELS_MAX);
 });
 
-test("cadence — 5 rappels étalés sur 2 jours après le 1er appel", () => {
+test("cadence — 5 rappels étalés sur ~2 jours OUVRÉS après le 1er appel", () => {
+  /**
+   * ⚠ Ce test exigeait exactement 48 h. Il mesurait l'arithmétique des offsets,
+   * pas la cadence : les rappels sont maintenant calés sur des fenêtres
+   * d'appel ouvertes, donc un rappel prévu à 48 h glisse s'il tombe au
+   * déjeuner, la nuit ou le week-end. Le figer à 48 h reviendrait à interdire
+   * la correction qui empêche d'appeler à minuit.
+   *
+   * L'intention reste : cinq rappels, jamais AVANT ce que les offsets
+   * prévoyaient, et bornés à quelques jours ouvrés — pas une traîne infinie.
+   */
   const planned = plannedRecalls(T0);
   assert.equal(planned.length, 5);
   const spanH = (new Date(planned[4]).getTime() - new Date(T0).getTime()) / 3600_000;
-  assert.equal(spanH, 48, "le dernier rappel tombe à 48 h — 2 jours pile");
+  assert.ok(spanH >= 48, `le dernier rappel ne doit jamais tomber avant 48 h (${spanH} h)`);
+  assert.ok(spanH <= 24 * 5, `ni partir en traîne : ${spanH} h`);
 });
 
 test("cadence — sans réponse, elle attend l'heure puis redevient due", () => {
@@ -227,4 +239,81 @@ test("cadence — le plan affiché à l'humain annonce le MÊME plafond que l'au
     `le plan ne doit plus annoncer un plafond de 5 sur une fiche sans SIREN : ${ligne}`
   );
   assert.match(ligne, new RegExp(`/${attendu.max}\\b`), `le plan doit annoncer /${attendu.max}`);
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ « TOUJOURS AU BON MOMENT » — LA CADENCE NE REGARDAIT PAS L'HEURE.
+ *
+ * `fenetreOuverte` sait depuis toujours quelles heures valent quelque chose
+ * (9h-12h, 14h-18h, jamais le week-end). `plannedRecalls` calculait des
+ * offsets en heures sèches depuis le premier appel. Les deux modules ne se
+ * parlaient pas — le défaut récurrent du dépôt, sur ce qui compose de vrais
+ * numéros.
+ *
+ * MESURÉ AVANT CORRECTION : premier appel lundi 9h30 → rappel n°1 à 12h30,
+ * l'heure que notre propre module appelle « taux de décroché au plancher ».
+ * Premier appel JEUDI 16h → 4 sur 5 hors fenêtre, dont un à MINUIT. Premier
+ * appel VENDREDI 10h → **5 sur 5 brûlés**, trois le week-end.
+ *
+ * Sur une cible sans SIREN, le plafond légal est de 4 sollicitations : en
+ * gaspiller une au déjeuner, c'est perdre un quart de tout ce à quoi on a
+ * droit sur ce prospect.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ cadence — AUCUN rappel ne tombe hors fenêtre, quel que soit le jour de départ", () => {
+  /**
+   * On balaie une semaine entière, heure par heure. Tester un seul jour de
+   * départ laisserait passer le cas vendredi — celui qui était totalement
+   * cassé, et le seul qu'un test « lundi 9h » n'aurait jamais montré.
+   */
+  const debut = new Date("2026-09-07T06:00:00Z"); // lundi
+  for (let h = 0; h < 24 * 7; h++) {
+    const premier = new Date(debut.getTime() + h * 3_600_000);
+    for (const iso of plannedRecalls(premier.toISOString())) {
+      const f = fenetreOuverte(new Date(iso));
+      assert.equal(
+        f.open,
+        true,
+        `départ ${premier.toISOString()} → rappel ${iso} tombe « ${f.label} »`
+      );
+    }
+  }
+});
+
+test("⚠ cadence — deux rappels ne s'entassent jamais dans la même heure", () => {
+  /**
+   * ⚠ CE TEST EXISTE PARCE QUE LA PREMIÈRE CORRECTION A CRÉÉ CE BUG-LÀ.
+   *
+   * En glissant chaque rappel « à la prochaine fenêtre ouverte », un départ le
+   * VENDREDI 17h renvoyait les cinq rappels au lundi matin : 9h00, 9h15, 9h30,
+   * 9h45, 10h00. Zéro tentative hors fenêtre au compteur — et cinq appels à la
+   * même personne en une heure. Corriger « au bon moment » avait cassé « de la
+   * bonne manière ».
+   */
+  const debut = new Date("2026-09-07T06:00:00Z");
+  for (let h = 0; h < 24 * 7; h++) {
+    const premier = new Date(debut.getTime() + h * 3_600_000);
+    const dates = plannedRecalls(premier.toISOString()).map((d) => new Date(d).getTime());
+    for (let i = 1; i < dates.length; i++) {
+      const ecartH = (dates[i] - dates[i - 1]) / 3_600_000;
+      assert.ok(
+        ecartH >= 3,
+        `départ ${premier.toISOString()} → seulement ${ecartH.toFixed(2)} h entre le rappel ${i} et le ${i + 1}`
+      );
+    }
+  }
+});
+
+test("⚠ cadence — l'écran et l'agent lisent la MÊME liste d'heures", () => {
+  /**
+   * `plannedRecalls` (prévisualisation) et `cadenceFor` (ce qui compose)
+   * calculaient l'offset chacun de leur côté. Deux sources pour la même
+   * question : l'écran annonce une heure, l'agent en compose une autre — et
+   * personne ne s'en aperçoit tant que les deux calculs coïncident par hasard.
+   */
+  const premier = "2026-09-11T15:00:00Z"; // vendredi 17h : le pire cas
+  const prevu = plannedRecalls(premier);
+  const etat = cadenceFor([{ at: premier, outcome: "sans-reponse" }], new Date(premier));
+  assert.equal(etat.nextCallAt, prevu[0], "le prochain appel doit être le premier du planning affiché");
 });

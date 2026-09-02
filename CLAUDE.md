@@ -184,6 +184,17 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
 - **Cadence de relance** : après le 1er appel sans réponse → **5 rappels sur
   2 jours**. Dès qu'il répond, la cadence **s'arrête** et le pipeline est mis à
   jour — mais l'humain n'est appelé que sur un OUI.
+  > ⚠ **Les rappels sont CALÉS sur des fenêtres d'appel ouvertes**
+  > (`prochaineFenetreOuverte`, `lib/call-cadence.ts`). Ils ne l'étaient pas :
+  > les offsets se calculaient en heures sèches sans jamais consulter
+  > `fenetreOuverte`, alors que ce module sait depuis toujours que 12h-14h est
+  > le plancher du décroché. MESURÉ : premier appel lundi 9h30 → rappel n°1 à
+  > 12h30 ; premier appel JEUDI 16h → 4 sur 5 hors fenêtre, dont un à MINUIT ;
+  > premier appel **VENDREDI → 5 sur 5 brûlés**, trois le week-end.
+  > ⚠⚠ Et un **espacement minimum de 3 h**, ajouté après coup parce que le
+  > calage seul créait pire : un vendredi 17h renvoyait les cinq rappels au
+  > lundi matin entre 9h et 10h. Corriger « au bon moment » avait cassé « de la
+  > bonne manière » — les deux règles sont distinctes et doivent coexister.
   > ⚠ **Ces 5 rappels étaient EXIGÉS par le revendeur disparu. Plus personne ne
   > les exige.** Ce n'est plus une contrainte subie, c'est un CHOIX, et il
   > t'appartient — il n'y a plus de raison commerciale de ne pas le baisser.
@@ -195,6 +206,29 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   > Le croisement au registre lève donc le plafond, et c'est le seul moyen.
   > Le code ne tranche pas le choix commercial, il empêche seulement la cadence
   > longue de partir en silence sur une cible à risque.
+
+## L'OFFRE ALPHA VOICE (`lib/offre-alpha-voice.ts` + `docs/OFFRE-ALPHA-VOICE.md`)
+Construite sur l'équation de valeur — **Résultat × Probabilité ÷ (Délai ×
+Effort)**. Le piège du pitch est de ne travailler que le numérateur : chez un
+artisan, ce qui bloque est au DÉNOMINATEUR (pas le temps, déjà déçu par un
+outil jamais installé).
+- **Zéro preuve sociale, et un test le refuse.** Zéro vente = pas de
+  témoignage disponible ; en fabriquer un est la seule façon de perdre un
+  client pour de bon. Ce qui remplace : **ses chiffres à lui**
+  (`computeLosses`), **une démo en direct** (on fait sonner l'agent pendant le
+  rendez-vous), **une garantie chiffrée**.
+- **La garantie est le levier qui remplace la preuve.** « Le setup ne se paie
+  qu'au premier RDV » — et elle nous coûte **quelques euros**
+  (`coutGarantiePremierRdv`, serveur uniquement). C'est le chiffre qui la rend
+  décidable, pas le courage. Chaque garantie porte sa **limite écrite** : une
+  garantie dont on découvre les bords sur la facture coûte plus cher que pas
+  de garantie.
+- **La rareté est un FAIT** (l'installation se fait à la main, par une seule
+  personne), jamais un compteur de places inventé — ça se vérifie au coup de
+  fil suivant.
+- **Aucun montant en dur dans le module**, et un test l'interdit : les prix
+  vivent dans `lib/offres-publiques.ts`, une seule source.
+- **Le prix arrive APRÈS la démonstration, et jamais sans la garantie.**
 
 ## Rituels de closing (par compte) — `Account.closing`
 Se tromper de rituel = perdre le deal au dernier mètre.

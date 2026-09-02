@@ -8,6 +8,7 @@ import { vitalSigns } from "./vital-signs";
 // serait une deuxième source, et elle divergerait.
 import { deepDive } from "./deep-dive";
 import { OFFRES } from "./offer-match";
+import { GARANTIES } from "./offre-alpha-voice";
 import { citer } from "./citation";
 
 /**
@@ -75,6 +76,19 @@ export interface Argumentaire {
   losses: Losses;
   /** 5. L'offre + le prix. */
   offer: { what: string; price: string; ladder: LadderResult };
+  /**
+   * 5bis. LA GARANTIE, quand l'offre routée est Alpha Voice.
+   *
+   * ⚠ Elle est ici, à CÔTÉ du prix, et pas dans une section « bonus » plus
+   * bas : à zéro vente, c'est la garantie qui remplace la preuve sociale, et
+   * un prix annoncé sans elle est un prix nu. La règle qui va avec est écrite
+   * dans `DEROULE` (lib/offre-alpha-voice.ts) : le prix ne se dit jamais sans
+   * la garantie qui l'accompagne.
+   *
+   * `null` quand l'offre routée n'est pas Alpha Voice — on n'invente pas une
+   * garantie pour une offre qui n'en a pas.
+   */
+  garantie: { nom: string; promesse: string; limite: string } | null;
   /** 6. Nos devoirs. */
   ourDuties: string[];
   /** 6bis. Ses droits. */
@@ -366,6 +380,15 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
     marketStandard,
     losses,
     offer: { what, price: priceLine(account.id, p), ladder },
+    /**
+     * ⚠ Câblée ICI, dans le seul constructeur d'argumentaire, et pas dans un
+     * écran : un export que rien ne consomme est mort, pas « prêt ». C'est le
+     * défaut le plus fréquent de ce dépôt.
+     */
+    garantie:
+      ladder.rungs.some((r) => r.id === "alpha-voice") || offre === "alpha-voice"
+        ? { nom: GARANTIES[0].nom, promesse: GARANTIES[0].promesse, limite: GARANTIES[0].limite }
+        : null,
     ourDuties,
     theirRights,
     objections,

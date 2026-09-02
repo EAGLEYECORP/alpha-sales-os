@@ -27,6 +27,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import { fenetreOuverte } from "./conformite";
+
 /** 5 rappels après le 1er appel, étalés sur 2 jours (heures depuis le 1er appel). */
 export const RAPPELS_OFFSETS_H = [3, 8, 24, 32, 48];
 export const RAPPELS_MAX = RAPPELS_OFFSETS_H.length;
@@ -297,7 +299,10 @@ export function cadenceFor(
     };
   }
 
-  const nextAt = new Date(t0 + RAPPELS_OFFSETS_H[recallsUsed] * H);
+  // ⚠ La MÊME liste que la prévisualisation, calée sur les fenêtres ouvertes.
+  // Recalculer l'offset ici ferait annoncer une heure à l'écran et en composer
+  // une autre — deux sources pour la même question.
+  const nextAt = rappelsCales(first.at)[recallsUsed];
   const due = nextAt.getTime() <= now.getTime();
   return {
     state: due ? "en-cadence" : "attente",
@@ -312,10 +317,106 @@ export function cadenceFor(
   };
 }
 
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LA CADENCE NE REGARDAIT PAS L'HEURE QU'ELLE PROPOSAIT.
+ *
+ * Les offsets [3, 8, 24, 32, 48] se calculent depuis le premier appel, en
+ * heures sèches. `fenetreOuverte` (lib/conformite.ts) sait depuis toujours
+ * quelles heures valent quelque chose — 9h-12h et 14h-18h, jamais le
+ * déjeuner, jamais le week-end. Les deux modules ne se parlaient pas.
+ *
+ * MESURÉ, pas supposé :
+ *  · premier appel lundi 9h30 → le rappel n°1 tombe à 12h30, l'heure que
+ *    notre propre module décrit comme « taux de décroché au plancher, et
+ *    l'agacement au plafond » ;
+ *  · premier appel JEUDI 16h → 4 rappels sur 5 hors fenêtre, dont un à
+ *    MINUIT ;
+ *  · premier appel VENDREDI 10h → **5 sur 5 brûlés**, trois le week-end.
+ *
+ * Ce n'est pas un détail d'affichage. Sur une cible sans SIREN le plafond
+ * légal est de 4 sollicitations : en gaspiller une au déjeuner, c'est perdre
+ * un quart de tout ce à quoi on a droit sur ce prospect. Et un lot sourcé un
+ * vendredi ne serait jamais rappelé du tout.
+ *
+ * ── LA RÈGLE, QUI EST CELLE DU MASTER RAPPEL ──
+ *
+ * « Toujours au bon moment » : l'offset dit QUAND ON VOUDRAIT rappeler, la
+ * fenêtre dit QUAND ÇA SERT. On garde l'intention et on la fait glisser
+ * jusqu'à la prochaine heure ouverte. Deux rappels ne peuvent pas tomber au
+ * même instant : le second glisse encore.
+ *
+ * On avance par pas de 15 minutes plutôt qu'en calculant des heures locales.
+ * C'est plus lent et c'est voulu : l'arithmétique de fuseau autour d'un
+ * changement d'heure est exactement le genre de calcul qui se trompe une fois
+ * par an, en silence, et ce module décide quand un vrai numéro sonne.
+ */
+const PAS_MS = 15 * 60_000;
+/** Sept jours de recherche : au-delà, il n'y a plus de cadence à sauver. */
+const RECHERCHE_MAX_MS = 7 * 24 * 3_600_000;
+
+/**
+ * ⚠ ESPACEMENT MINIMUM ENTRE DEUX RAPPELS — et il a été ajouté APRÈS COUP,
+ * parce que la première version du calage créait un défaut PIRE que celui
+ * qu'elle corrigeait.
+ *
+ * En glissant chaque rappel « à la prochaine fenêtre ouverte », un premier
+ * appel le VENDREDI 17h renvoyait les cinq rappels au lundi matin — 9h00,
+ * 9h15, 9h30, 9h45, 10h00. Cinq appels à la même personne en une heure. Zéro
+ * tentative « hors fenêtre » au compteur, et un harcèlement caractérisé.
+ *
+ * Le décalage de 15 minutes brisait les COLLISIONS ; il n'espaçait rien.
+ * L'espacement est une règle distincte, et c'est elle qui porte « de la bonne
+ * manière ». Trois heures = le plus petit offset d'origine : on ne resserre
+ * jamais en dessous de ce que la cadence prévoyait elle-même.
+ */
+const ESPACEMENT_MIN_MS = 3 * 3_600_000;
+
+export function prochaineFenetreOuverte(depuis: Date): Date {
+  let t = depuis.getTime();
+  const fin = t + RECHERCHE_MAX_MS;
+  while (t <= fin) {
+    const d = new Date(t);
+    if (fenetreOuverte(d).open) return d;
+    t += PAS_MS;
+  }
+  // Inatteignable en pratique (il y a forcément une fenêtre dans 7 jours).
+  // On rend la date d'origine plutôt que `null` : l'appelant a un plan, et
+  // `callAllowedNow` refusera de composer si l'heure ne va pas.
+  return depuis;
+}
+
+/**
+ * Les rappels, calés sur des heures qui servent.
+ *
+ * Rendu séparément de `plannedRecalls` pour que `cadenceFor` et la
+ * prévisualisation lisent EXACTEMENT la même liste. Deux calculs auraient
+ * divergé — l'écran annonçant une heure, l'agent en composant une autre.
+ */
+export function rappelsCales(premierAppelIso: string): Date[] {
+  const t0 = new Date(premierAppelIso).getTime();
+  const out: Date[] = [];
+  for (const h of RAPPELS_OFFSETS_H) {
+    // L'intention (l'offset) OU l'espacement minimum depuis le rappel
+    // précédent — le plus tard des deux gagne. Puis on cale sur une fenêtre.
+    const precedent = out[out.length - 1];
+    const voulu = Math.max(
+      t0 + h * H,
+      precedent ? precedent.getTime() + ESPACEMENT_MIN_MS : 0
+    );
+    out.push(prochaineFenetreOuverte(new Date(voulu)));
+  }
+  return out;
+}
+
 /** Le planning complet des rappels à partir d'un premier appel (prévisualisation). */
 export function plannedRecalls(firstCallAt: string): string[] {
-  const t0 = new Date(firstCallAt).getTime();
-  return RAPPELS_OFFSETS_H.map((h) => new Date(t0 + h * H).toISOString());
+  // ⚠ Passe par `rappelsCales` : la prévisualisation doit montrer les heures
+  // QUI SERONT COMPOSÉES. Recalculer les offsets bruts ici afficherait un
+  // planning que l'agent ne suivrait pas — et c'est exactement l'écart qui
+  // rendait le déjeuner et le week-end invisibles.
+  return rappelsCales(firstCallAt).map((d) => d.toISOString());
 }
 
 /**

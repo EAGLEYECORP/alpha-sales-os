@@ -230,6 +230,22 @@ export function MasterPanel({ p }: { p: Prospect }) {
             <Block title="5. Notre offre et son prix">
               <p>{argu.offer.what}</p>
               <p className="mt-0.5 text-bronze-400">{argu.offer.price}</p>
+              {/*
+                ⚠ LA GARANTIE EST COLLÉE AU PRIX, PAS RANGÉE PLUS BAS.
+                À zéro vente, c'est elle qui remplace la preuve sociale : un
+                prix annoncé sans elle est un prix nu. La limite est affichée
+                avec — une garantie dont on découvre les bords sur la facture
+                coûte plus cher que pas de garantie du tout.
+              */}
+              {argu.garantie && (
+                <div className="mt-2 rounded-md border border-signal-green/25 bg-signal-green/5 p-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-signal-green">
+                    Garantie — {argu.garantie.nom}
+                  </p>
+                  <p className="mt-1">{argu.garantie.promesse}</p>
+                  <p className="mt-1 text-bronze-400">⚠ {argu.garantie.limite}</p>
+                </div>
+              )}
             </Block>
             <div className="grid gap-3 sm:grid-cols-2">
               <Block title="6. Nos devoirs">
