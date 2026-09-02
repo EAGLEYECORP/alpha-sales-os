@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { computeCosts, defaultVolume, FIXED_COSTS, FREE_TIERS, FREE_VERDICT, type CallVolumeInput } from "@/lib/voice-costs";
 import { outboundPrice } from "@/lib/bricks";
 import { budgetPaliers } from "@/lib/paliers-campagne-cout";
+import { coutGarantiePremierRdv } from "@/lib/offre-alpha-voice-cout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,5 +77,18 @@ export async function POST(req: Request) {
      * tarifs unitaires qui le produisent restent côté serveur.
      */
     paliers: budgetPaliers(),
+    /**
+     * ⚠ CE QUE LA GARANTIE NOUS COÛTE — et il était calculé nulle part lu.
+     *
+     * `coutGarantiePremierRdv` chiffre « le setup ne se paie qu'au premier
+     * RDV », la garantie qu'on offre. Le module existait, testé, importé par
+     * AUCUN appelant : impossible de savoir ce qu'on promet sans relire le
+     * code. C'est le défaut récurrent du dépôt, sur la promesse commerciale
+     * la plus engageante qu'on fasse.
+     *
+     * Il voyage par ICI et pas dans un module client : il dérive de
+     * `lib/voice-costs`, donc de nos marges.
+     */
+    garantie: coutGarantiePremierRdv(),
   });
 }

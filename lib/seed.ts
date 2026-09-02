@@ -281,6 +281,34 @@ const baseProspects = [
     attachments: [{ id: "a1", name: "proposition-signee.pdf", kind: "proposition", size: 310000, addedAt: daysAgo(18) }],
     notes: "Cliente ambassadrice. Le fils (Thomas) gère le téléphone — le former sur l'overlay IA.",
     likeness: 94,
+    /**
+     * ⚠ L'AUDIT ÉTAIT VIDE SUR TOUTES LES FICHES DE DÉMONSTRATION.
+     *
+     * Une seule occurrence de `deepAudit` existait dans ce fichier : la valeur
+     * NEUTRE de `prospectDefaults`. Chaque fiche de démo retombait donc dessus,
+     * et le routeur d'offre, faute de signal, renvoyait « visibilité » sur les
+     * huit. Conséquence, constatée en lançant le calcul sur le jeu complet :
+     * **0/8 fiches routées Alpha Voice**. Le diagnostic central du produit, le
+     * chiffrage de la perte, la marche 2 de l'escalier et la garantie ne
+     * s'affichaient nulle part — sur le jeu de données prévu pour MONTRER le
+     * produit.
+     *
+     * Les chiffres ci-dessous ne sont pas inventés : la prose de cette fiche
+     * les affirmait déjà (`problems`, événement d'audit « 12 appels
+     * manqués/semaine pendant les chantiers »). Ils passent du texte libre au
+     * champ STRUCTURÉ, celui que le routeur lit réellement.
+     */
+    deepAudit: {
+      websiteState: "Site de 2014, jamais référencé — invisible sur les recherches locales",
+      socialState: "Aucune page active",
+      localCompetition: "Trois menuisiers mieux placés sur « menuisier Lyon 4 »",
+      currentProcess: "Le gérant décroche lui-même entre deux chantiers, ou pas du tout",
+      missedCallsPerWeek: 12,
+      avgTicket: 2400,
+      conversionRate: 25,
+      googleRating: 4.6,
+      googleReviews: 31,
+    },
     problems: ["12 appels manqués/semaine pendant les chantiers", "Ancien site 2014 jamais référencé — traumatisme « payé pour rien »"],
     solution: "Site premium + formulaire devis intelligent (budget, délai, photos) + notifications SMS instantanées.",
     personalizedOffer: "Setup 1 200 € + 190 €/mois, garantie résultat conditionnelle (résiliable si < 5 demandes qualifiées/mois après M2).",
@@ -420,6 +448,23 @@ const baseProspects = [
     attachments: [{ id: "a1", name: "proposition-fabre.pdf", kind: "proposition", size: 298000, addedAt: daysAgo(1) }],
     notes: "Referral chain : Charbonnier → Fabre. La preuve « pour lui » est déjà faite par Sylvie.",
     likeness: 82,
+    /**
+     * Même correction que sur la fiche Charbonnier, et mêmes sources : la
+     * prose de cette fiche affirmait déjà « 12 appels manqués/semaine sur
+     * chantier » et « interventions à 300 €+ ». On les met là où le routeur
+     * les lit.
+     */
+    deepAudit: {
+      websiteState: "Page Google Business seule, aucun site",
+      socialState: "Aucune",
+      localCompetition: "Deux plombiers en tête sur les urgences Lyon 7",
+      currentProcess: "Sous un évier ou en intervention : le téléphone sonne dans le vide",
+      missedCallsPerWeek: 12,
+      avgTicket: 300,
+      conversionRate: 35,
+      googleRating: 4.8,
+      googleReviews: 19,
+    },
     problems: ["12 appels manqués/semaine sur chantier", "Urgences plomberie perdues = interventions à 300 €+ chez le concurrent"],
     solution: "Site + capture d'urgence qualifiée en 40 s (adresse, photo, urgence) routée par SMS.",
     personalizedOffer: "Même formule que Charbonnier (preuve sociale directe) : 1 200 € + 190 €/mois.",

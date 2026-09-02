@@ -1,4 +1,5 @@
 import type { EagleyeOffer } from "./offer-match";
+import { ALPHA_VOICE_PALIERS, ALPHA_VOICE_SETUP_HT } from "./offres-publiques";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -140,6 +141,22 @@ export const SEGMENTS: Segment[] = [
       "Volume trop faible pour amortir l'installation (moins de ~500 appels/mois)",
       "Refus de principe de l'IA côté direction — le convaincre coûte plus que le deal",
     ],
+    /**
+     * ⚠ MONTANT RECOPIÉ, ET IL LE RESTE — la tentative de le dériver a été
+     * ANNULÉE, pour une raison qui doit être écrite.
+     *
+     * Il vient de `lib/bricks.ts` (setup 3 500 €, palier sortant 364 €). Mais
+     * `bricks` est un module SERVEUR : il porte tout notre catalogue et nos
+     * marges. Ce fichier-ci descend dans le navigateur — l'importer publierait
+     * la grille entière dans un chunk téléchargeable. `tests/vitrine-fuite`
+     * l'a refusé, et il a eu raison.
+     *
+     * La vraie correction est de faire remonter les prix PUBLICS du sortant
+     * dans `lib/offres-publiques.ts`, comme ça a été fait pour Alpha Voice,
+     * et que `bricks` les réimporte. Pas fait : c'est un déplacement qui
+     * touche beaucoup de lecteurs, et ce n'est pas la veille d'une démo qu'on
+     * le fait. En attendant, ces deux nombres SONT une deuxième source.
+     */
     dealRange: "3 500 € installation + 364 €/mois par tranche de 1 000 appels",
     buyer: "Directeur de production · responsable de plateau · DSI",
   },
@@ -214,7 +231,19 @@ export const SEGMENTS: Segment[] = [
       "Sur le départ ou en cessation",
       "Aucune marge : le prix sera toujours l'objection",
     ],
-    dealRange: "990 € HT installation + abonnement au volume",
+    /**
+     * ⚠ DÉRIVÉ, PAS RECOPIÉ. Ce champ portait « 990 € HT installation +
+     * abonnement au volume » en dur, et il s'affiche sur la fiche prospect
+     * (`app/(app)/prospects/[id]/page.tsx`). C'était une DEUXIÈME source de
+     * prix à côté de `lib/offres-publiques.ts` : elle est restée vraie par
+     * chance quand la grille est passée de cinq paliers à deux, mais elle
+     * aurait menti au premier changement de setup.
+     *
+     * Un prix ne s'écrit qu'à un endroit. Ailleurs, il se calcule.
+     */
+    dealRange: `${ALPHA_VOICE_SETUP_HT} € HT installation + ${ALPHA_VOICE_PALIERS[0].prixHT} à ${
+      ALPHA_VOICE_PALIERS[ALPHA_VOICE_PALIERS.length - 1].prixHT
+    } €/mois selon le volume`,
     buyer: "Gérant — il décide et il signe",
   },
   {

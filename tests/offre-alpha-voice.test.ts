@@ -232,6 +232,41 @@ test("⚠ la garantie est AFFICHÉE, collée au prix, pas seulement calculée", 
   assert.match(bloc, /garantie\.limite/, "et sa limite avec — une garantie sans bord se retourne au litige");
 });
 
+test("⚠ le coût de la garantie est SERVI et AFFICHÉ, pas seulement calculé", () => {
+  /**
+   * ⚠ TROUVÉ PAR L'AUDIT DES EXPORTS ORPHELINS, DANS MON PROPRE CODE, ET POUR
+   * LA TROISIÈME FOIS DE LA SESSION.
+   *
+   * `lib/offre-alpha-voice-cout.ts` était importé par ZÉRO fichier de
+   * production. On chiffrait ce que coûte la garantie la plus engageante
+   * qu'on fasse — et personne ne pouvait le lire sans rouvrir le code. Une
+   * promesse dont on ne voit pas le prix se donne trop facilement.
+   *
+   * Il transite par `/api/voice-costs` (réservée au compte maître : le calcul
+   * dérive de nos marges) et s'affiche dans le panneau de coût.
+   */
+  const route = sansCommentaires(lire("app/api/voice-costs/route.ts"));
+  assert.match(route, /coutGarantiePremierRdv\(\)/, "la route doit servir le coût de la garantie");
+  assert.match(route, /garantie: coutGarantiePremierRdv/, "et sous une clé que le panneau lit");
+
+  const panel = sansCommentaires(lire("components/voice/cost-panel.tsx"));
+  assert.match(panel, /data\.garantie\.basEur/, "le panneau doit AFFICHER la fourchette");
+  assert.match(panel, /data\.garantie\.hautEur/);
+  assert.match(panel, /data\.garantie\.reserve/, "et la réserve : une fourchette nue se lit comme une mesure");
+
+  /**
+   * ⚠ ET L'AVERTISSEMENT QUI VA AVEC. Afficher « 1,91 € – 8,45 € » tout seul
+   * rassure à tort : le vrai poste est la demi-journée d'installation. Le
+   * chiffre sans cette phrase pousse à offrir la garantie trop largement.
+   */
+  const i = panel.indexOf("data.garantie.basEur");
+  assert.match(
+    panel.slice(i, i + 700),
+    /installation/i,
+    "le vrai coût (le temps d'installation) doit être dit à côté du chiffre"
+  );
+});
+
 test("⚠ le coût de la garantie ne descend PAS dans le navigateur", () => {
   /**
    * `lib/voice-costs` porte nos marges. Le module de l'offre est atteint par
@@ -246,3 +281,140 @@ test("⚠ le coût de la garantie ne descend PAS dans le navigateur", () => {
   );
   assert.match(lire("lib/offre-alpha-voice-cout.ts"), /^import .*voice-costs/m, "le calcul vit côté serveur");
 });
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ UN PRIX NE S'ÉCRIT QU'À UN ENDROIT — ailleurs, il se CALCULE.
+ *
+ * Trouvé en regardant une fiche prospect au navigateur : `lib/segments.ts`
+ * affichait « 990 € HT installation + abonnement au volume » en dur, à côté
+ * de `lib/offres-publiques.ts`. Deuxième source. Elle est restée vraie par
+ * CHANCE quand la grille est passée de cinq paliers à deux — le setup n'avait
+ * pas bougé. Elle aurait menti au premier changement de setup, sur l'écran que
+ * l'opérateur montre au prospect.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ le prix affiché sur la fiche DÉRIVE de la grille, il ne la recopie pas", async () => {
+  const { SEGMENTS } = await import("../lib/segments");
+  const { ALPHA_VOICE_PALIERS, ALPHA_VOICE_SETUP_HT } = await import("../lib/offres-publiques");
+
+  /**
+   * ⚠ On cible le segment par son IDENTIFIANT, pas par le contenu de son
+   * prix : chercher « installation » attrapait le segment « centre d'appels »,
+   * qui vend le SORTANT au volume et porte donc un autre montant. Un test qui
+   * choisit sa cible par le texte qu'il vérifie ne vérifie rien.
+   */
+  const seg = SEGMENTS.find((s) => s.id === "commerce-local")!;
+  assert.ok(seg, "le segment du commerce local doit exister");
+  assert.equal(seg.offer, "alpha-voice");
+
+  // La CONDITION : les montants affichés sont ceux de la grille, pas des
+  // jumeaux qui lui ressemblent aujourd'hui.
+  assert.ok(seg.dealRange.includes(String(ALPHA_VOICE_SETUP_HT)), "le setup doit venir de la grille");
+  assert.ok(
+    seg.dealRange.includes(String(ALPHA_VOICE_PALIERS[0].prixHT)),
+    "le plancher aussi — c'est lui qui vient de changer"
+  );
+  assert.ok(
+    seg.dealRange.includes(String(ALPHA_VOICE_PALIERS[ALPHA_VOICE_PALIERS.length - 1].prixHT)),
+    "et le plafond"
+  );
+
+  /**
+   * ⚠ CE QUE CE TEST NE GARDE PAS, ET POURQUOI — dit ici plutôt que découvert.
+   *
+   * Les AUTRES `dealRange` du fichier portent encore des montants en dur
+   * (10 000 € VIP, 3 500 € + 364 €/mois du sortant). Ils viennent de
+   * `lib/bricks.ts`, un module SERVEUR : le faire lire par `segments`, qui
+   * descend dans le navigateur, publierait tout notre catalogue — la
+   * tentative a été faite et `tests/vitrine-fuite` l'a refusée, à raison.
+   *
+   * La correction propre est de remonter les prix PUBLICS du sortant dans
+   * `lib/offres-publiques.ts`, comme pour Alpha Voice. Tant que ce n'est pas
+   * fait, ce sont deux sources, et ce test le sait au lieu de l'ignorer.
+   *
+   * On garde donc UNIQUEMENT ce qui est dérivable aujourd'hui : la ligne du
+   * commerce local ne doit pas redevenir un littéral.
+   */
+  const src = sansCommentaires(lire("lib/segments.ts"));
+  const i = src.indexOf('id: "commerce-local"');
+  assert.ok(i > 0);
+  const bloc = src.slice(i, src.indexOf("},", src.indexOf("dealRange", i)));
+  assert.match(bloc, /dealRange:\s*`/, "la ligne du commerce local doit être un gabarit calculé, pas une chaîne figée");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE JEU DE DÉMONSTRATION DOIT POUVOIR MONTRER LE PRODUIT.
+ *
+ * Trouvé en vérifiant, la veille d'une démonstration client, ce qui
+ * s'afficherait vraiment : **0 des 8 fiches de démo routaient vers Alpha
+ * Voice**. Une seule occurrence de `deepAudit` existait dans `lib/seed.ts` —
+ * la valeur NEUTRE de `prospectDefaults`. Chaque fiche retombait dessus, donc
+ * le routeur n'avait aucun signal et renvoyait « visibilité » huit fois.
+ *
+ * Conséquence : le diagnostic central du produit, le chiffrage de la perte,
+ * la marche 2 de l'escalier et la garantie ne s'affichaient NULLE PART — sur
+ * le jeu de données dont le seul rôle est de montrer le produit. Le code
+ * était juste ; il n'avait simplement jamais de quoi s'exécuter.
+ *
+ * ⚠ Rien n'a été inventé pour corriger : la prose de ces deux fiches
+ * affirmait déjà « 12 appels manqués/semaine ». Les chiffres sont passés du
+ * texte libre au champ structuré, celui que le routeur lit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ le jeu de démo route au moins une fiche vers Alpha Voice, garantie comprise", async () => {
+  const { seedProspects } = await import("../lib/seed");
+  const { deepDive } = await import("../lib/deep-dive");
+
+  const voix = seedProspects.filter((p) => deepDive(p, "eagleye").offer === "alpha-voice");
+  assert.ok(
+    voix.length >= 2,
+    `seulement ${voix.length} fiche(s) vocale(s) : une démonstration ne tient pas sur un cas unique`
+  );
+
+  for (const p of voix) {
+    const a = buildArgumentaire(p, "eagleye");
+    assert.ok(a.garantie, `${p.company} : routée Alpha Voice mais sans garantie affichée`);
+
+    /**
+     * ⚠ ON EXIGE LE CHAMP STRUCTURÉ, PAS SEULEMENT « une perte chiffrée ».
+     *
+     * Une première version se contentait de `losses.measured`. Une mutation
+     * qui vidait `missedCallsPerWeek` des deux fiches passait au vert :
+     * `computeLosses` retombait sur `ignoranceTax`, déjà présent sur ces
+     * fiches pour d'autres raisons. Le test validait donc un chiffre qui ne
+     * venait PAS de l'audit — exactement le trou qu'il devait fermer.
+     *
+     * Et une seconde mutation survivait aussi : une fiche restait routée
+     * vocale par son seul secteur, ce qui suffisait à `voix.length >= 1`.
+     * D'où les deux durcissements : au moins DEUX fiches, et le champ que le
+     * routeur lit vraiment.
+     */
+    assert.ok(
+      typeof p.deepAudit?.missedCallsPerWeek === "number" && p.deepAudit.missedCallsPerWeek > 0,
+      `${p.company} : l'audit doit porter les appels manqués dans le champ STRUCTURÉ, pas seulement dans la prose`
+    );
+    assert.ok(
+      a.losses.measured,
+      `${p.company} : la perte doit être CHIFFRÉE sur ses données — c'est l'étape 2 du rendez-vous`
+    );
+  }
+});
+
+test("⚠ le jeu de démo garde aussi une fiche NON vocale", () => {
+  /**
+   * La moitié qui manque. Remplir l'audit de toutes les fiches avec des appels
+   * manqués ferait passer le test précédent au vert en supprimant la variété —
+   * et une démonstration où tout route vers la même offre ne montre pas le
+   * routage, elle le cache.
+   */
+  const offres = new Set(seedProspectsSync().map((p) => deepDiveSync(p).offer));
+  assert.ok(offres.size >= 2, `toutes les fiches routent vers la même offre (${[...offres].join(", ")})`);
+});
+
+// Imports synchrones pour le second test (le premier les charge à la demande).
+import { seedProspects as _seed } from "../lib/seed";
+import { deepDive as _dd } from "../lib/deep-dive";
+const seedProspectsSync = () => _seed;
+const deepDiveSync = (p: (typeof _seed)[number]) => _dd(p, "eagleye");

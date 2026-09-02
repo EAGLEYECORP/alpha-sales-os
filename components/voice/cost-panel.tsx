@@ -29,6 +29,8 @@ interface Reponse {
   fixed: { label: string; eur: number }[];
   freeTiers: { provider: string; limit: string; realWorld: string; commercialOk: boolean; warning?: string }[];
   freeVerdict: string;
+  /** Ce que coûte la garantie qu'on offre, si un client l'active. */
+  garantie: { basEur: number; hautEur: number; reserve: string };
 }
 
 /**
@@ -145,6 +147,26 @@ export function CostPanel() {
               ))}
             </tbody>
           </table>
+
+          {/*
+            ⚠ La garantie qu'on offre, chiffrée. Elle vivait dans un module que
+            personne n'importait : on promettait sans savoir ce qu'on promet.
+            Le vrai poste n'est PAS ces euros — c'est la demi-journée
+            d'installation. Affiché avec, sinon le chiffre rassure à tort.
+          */}
+          <h3 className="mt-5 font-display text-sm font-semibold text-paper">
+            La garantie « setup payé au 1<sup>er</sup> RDV »
+          </h3>
+          <div className="mt-1 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-[12px]">
+            <p className="font-mono text-sm text-paper">
+              {data.garantie.basEur.toFixed(2)} € – {data.garantie.hautEur.toFixed(2)} € de minutes brûlées
+            </p>
+            <p className="mt-1 text-signal-red">
+              ⚠ Ce n&apos;est PAS le vrai coût. Ce que tu risques, c&apos;est une demi-journée
+              d&apos;installation faite à la main. Elle est offrable parce que tu en offres PEU à la fois.
+            </p>
+            <p className="mt-1 text-paper-faint">{data.garantie.reserve}</p>
+          </div>
 
           <h3 className="mt-5 font-display text-sm font-semibold text-paper">Jusqu&apos;où va le gratuit</h3>
           <p className="mt-1 rounded-lg border border-signal-red/40 bg-signal-red/10 px-3 py-2 text-[12px] text-paper">{data.freeVerdict}</p>
