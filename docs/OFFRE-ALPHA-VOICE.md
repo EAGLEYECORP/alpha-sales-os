@@ -73,12 +73,18 @@ client passé. C'est exactement ce qu'il nous faut.
 
 > **Le setup ne se paie qu'au premier rendez-vous.**
 > On installe, l'agent tourne, et vous ne payez l'installation que le jour où
-> il vous a pris un premier rendez-vous. S'il n'en prend aucun, vous ne payez
-> pas l'installation.
+> il vous a pris un premier rendez-vous. Après **30 jours de ligne active**,
+> s'il n'en a pris aucun, vous ne payez pas l'installation.
 
-**Ce qu'elle nous coûte si le client l'active :** les minutes de conversation
-brûlées avant l'abandon. `coutGarantiePremierRdv()` les chiffre — **quelques
-euros**, pas des dizaines.
+**Ce qu'elle nous coûte si le client l'active :** les minutes brûlées —
+`coutGarantiePremierRdv()` les chiffre à **quelques euros** — **plus le temps
+d'installation, qui est le vrai poste.**
+
+> ⚠ **Ne te trompe pas de coût.** Les minutes sont négligeables. Ce qu'on
+> risque, c'est une **demi-journée d'installation faite à la main**. La
+> garantie est offrable parce qu'on en offre **peu à la fois** — c'est
+> exactement pourquoi elle va de pair avec la rareté du §5, et pas parce
+> qu'elle serait gratuite.
 
 > ⚠ **Fourchette, pas mesure.** Le nombre d'appels avant un rendez-vous repose
 > sur les taux hypothétiques (30 % de décroché, 20 % d'intérêt qualifié) que
@@ -86,19 +92,25 @@ euros**, pas des dizaines.
 > (0,0563 €/min, 27/08/2026). C'est pour ça que la fonction rend deux bornes
 > et une réserve, jamais un chiffre unique.
 
-**C'est ce chiffre qui rend la garantie décidable, pas le courage.** Une
+**C'est ce chiffrage qui rend la garantie décidable, pas le courage.** Une
 garantie qu'on n'a pas chiffrée est une bravade — et elle se paie au premier
 client qui l'active.
 
-### Les limites, dites AVANT
+### Les trois bords, dits À L'ORAL
 
-Chaque garantie porte sa limite écrite, et un test l'exige :
+Une garantie sans bord est infalsifiable : un client peut l'activer au bout de
+trois jours en ayant coupé la ligne. Un test exige les trois.
 
-- La garantie porte sur le **setup**, pas sur l'abonnement du mois écoulé :
-  les minutes consommées ont été payées à l'opérateur. **Se dit à l'oral, ne
-  se découvre pas sur la facture.**
-- Sans engagement : le mois entamé reste dû. C'est un abonnement, pas une
-  consigne.
+| Bord | Ce que ça dit | Pourquoi |
+|---|---|---|
+| **Durée** | 30 jours de **ligne active** | Sans ça, on ne saura jamais si l'agent a eu sa chance |
+| **Périmètre** | Le **setup**, pas l'abonnement consommé | Les minutes ont été payées à l'opérateur |
+| **Critère** | Un rendez-vous **pris**, pas honoré | Qui vient et qui signe ne dépend plus de nous — le promettre serait promettre son métier |
+
+**Ça se dit à l'oral, ça ne se découvre pas sur la facture.** Et les deux
+autres garanties restent des conditions normales : sans engagement (le mois
+entamé reste dû — c'est un abonnement, pas une consigne), et le relevé des
+appels manqués offert quoi qu'il arrive.
 
 ---
 
@@ -160,16 +172,83 @@ mots.
 
 ---
 
-## 8. Ce qui reste à décider — et c'est à toi
+## 8. Les prix, la garantie, la cadence — décidés le 02/09/2026
 
-- **Le prix.** La grille actuelle (990 € + paliers 59→319 €) est **héritée de
-  l'ancien revendeur**. Elle est viable (74–76 % de marge sur notre coût
-  mesuré), elle n'a **jamais été décidée par nous**. Bémol : le socle fixe est
-  ~57 €/mois, donc le premier palier à 59 € ne paie pas l'infrastructure seul.
-- **Laquelle des trois garanties tu offres.** La forte (setup au premier RDV)
-  est celle qui tue le risque, et elle coûte quelques euros. Les deux autres
-  ne coûtent rien.
-- **La cadence de rappel.** 5 rappels sur 2 jours étaient exigés par le
-  revendeur disparu. Personne ne l'exige plus. Ils sont maintenant **calés sur
-  des fenêtres d'appel ouvertes** (jamais le déjeuner, jamais la nuit, jamais
-  le week-end, 3 h minimum entre deux) — mais le NOMBRE reste ton choix.
+Tout ce qui suit était « à trancher ». C'est tranché. Le raisonnement compte
+plus que les nombres : c'est lui qui te permettra de les changer sans repartir
+de zéro.
+
+### Le prix — deux paliers, plancher à 149 €
+
+| | Minutes | Prix HT/mois | Ordre de grandeur | Marge sur coût mesuré |
+|---|---|---|---|---|
+| **Essentiel** | 500 | **149 €** | ~200 appels | ~81 % |
+| **Intensif** | 1 500 | **349 €** | ~600 appels | ~76 % |
+
+**Setup : 990 € HT** — et il n'est facturé qu'au premier rendez-vous (garantie).
+**Au-delà du forfait : 0,25 €/min.** Pas de coupure, pas de palier à revendre.
+
+**Ce qui a changé, et pourquoi :**
+
+- **Cinq paliers → deux.** Cinq options, c'est un menu : l'artisan compare les
+  paliers entre eux au lieu de comparer à ce qu'il perd. On doit lui faire
+  choisir entre « je récupère ces appels » et « je continue à les perdre ».
+- **Le plancher passe de 59 € à 149 €.** Trois raisons : (a) **59 € ne
+  couvrait pas le socle fixe de la plateforme (~57 €/mois)** — le palier
+  d'entrée était une perte déguisée en offre d'appel ; (b) un prix aussi bas
+  se lit comme un gadget par quelqu'un qui compare mentalement à une
+  secrétaire, et abîme donc la *probabilité perçue*, deuxième terme de
+  l'équation ; (c) la valeur récupérée se compte en milliers d'euros par mois
+  — à 149 €, on facture ~5 % de ce qu'on lui fait récupérer.
+
+> ⚠ **Le coût à la minute est MESURÉ (0,0563 €). Les prix sont des DÉCISIONS.**
+> Aucune vente ne les a validés. Le premier client qui refuse en disant
+> pourquoi vaudra plus que tout ce raisonnement.
+
+### La garantie — celle-ci, et pas les deux autres
+
+> **Le setup ne se paie qu'au premier rendez-vous.** Après 30 jours de ligne
+> active, s'il n'en a pris aucun, tu ne paies pas l'installation.
+
+Les deux autres (sans engagement, relevé offert) restent des conditions
+normales : elles ne coûtent rien et ne lèvent rien. Celle-ci répond à la
+question qu'il ne pose pas à voix haute — *« et si ça ne marche pas chez
+moi ? »* — celle qu'un témoignage aurait traitée, et qu'on ne peut pas traiter
+autrement à zéro vente.
+
+> ⚠ **Son vrai coût n'est pas les 8 € de minutes.** C'est le **temps
+> d'installation**, fait à la main : une garantie activée coûte une
+> demi-journée. Elle est offrable parce qu'on en offre **peu à la fois** —
+> c'est exactement pour ça qu'elle va de pair avec la rareté du §5.
+
+**Les trois bords, à dire à l'oral :** une **durée** (30 jours de ligne
+active — couper au bout de trois jours ne la déclenche pas), un **périmètre**
+(le setup, pas l'abonnement consommé : les minutes ont été payées à
+l'opérateur), un **critère** (un rendez-vous **pris**, pas honoré — qui vient
+et qui signe ne dépend plus de nous, et le promettre serait promettre son
+métier).
+
+### La cadence — 3 rappels, plus 5
+
+`[3, 24, 32]` heures : même jour plus tard · lendemain matin · lendemain
+après-midi. Trois **créneaux différents** — insister à 9h trois jours de suite
+ne mesure rien. Calés sur des fenêtres réellement ouvertes, 3 h minimum entre
+deux.
+
+**Pourquoi trois et pas cinq :**
+
+1. **Le régime à deux vitesses disparaît.** Le décret plafonne à 4
+   sollicitations, premier appel compris — donc 3 rappels. À cinq, une fiche
+   sans SIREN suivait une cadence tronquée et une fiche avec SIREN la cadence
+   entière : deux comportements, et le risque toujours de notre côté. À trois,
+   tout le monde suit la même et le plafond redevient **un filet qu'on ne
+   touche jamais**.
+2. **Les tentatives 4 et 5 ne sont pas mesurées.** Elles coûtent des minutes
+   et de la réputation réelles sur une intuition. C'est à ça que servent les
+   paliers, pas à la cadence.
+3. **Notre doctrine le disait déjà.** Master Rappel : « 3+ touches ignorées →
+   changer de canal ». Cinq appels sur une ligne muette contredisaient le
+   module qui pilote tout le reste.
+
+> ⚠ Remonter le tableau **réactive le plafond légal** sur les cibles sans
+> SIREN. Le filet ne s'enlève pas avec le chiffre, et c'est testé.

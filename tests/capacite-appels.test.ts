@@ -108,11 +108,26 @@ test("500 touches/jour exigent des milliers de fiches distinctes", () => {
   const sansSiren = fichesNecessaires(500, 20, PLAFOND_SOLLICITATIONS_B2C);
   assert.equal(sansSiren, 2500, "10 000 touches / 4 par prospect = 2 500 fiches");
 
-  // Avec SIREN, la cadence ScintIA complète autorise plus de touches par
-  // prospect — donc moins de fiches pour le même volume.
-  const avecSiren = fichesNecessaires(500, 20, RAPPELS_MAX + 1);
-  assert.ok(avecSiren < sansSiren, "croiser le registre réduit le besoin en fiches");
-  assert.equal(avecSiren, Math.ceil(10_000 / (RAPPELS_MAX + 1)));
+  /**
+   * ⚠ CE CONTRASTE A DISPARU LE 02/09/2026, ET C'EST VOULU.
+   *
+   * La cadence est passée de 5 rappels à 3, soit 4 sollicitations — exactement
+   * le plafond légal. Croiser le registre ne « débloque » donc plus rien au
+   * quotidien : tout le monde suit la même cadence, et le plafond redevient un
+   * filet qu'on ne touche pas. Le test garde la RELATION (plus de touches
+   * autorisées = moins de fiches nécessaires) sans dépendre de l'écart du
+   * jour, qui vaut zéro maintenant et redeviendrait positif si on remontait la
+   * cadence.
+   */
+  const touchesAutorisees = RAPPELS_MAX + 1;
+  const avecSiren = fichesNecessaires(500, 20, touchesAutorisees);
+  assert.ok(avecSiren <= sansSiren, "plus de touches par fiche ne peut pas EXIGER plus de fiches");
+  assert.equal(avecSiren, Math.ceil(10_000 / touchesAutorisees));
+  assert.equal(
+    touchesAutorisees,
+    PLAFOND_SOLLICITATIONS_B2C,
+    "la cadence est calée SUR le plafond légal : plus de régime à deux vitesses"
+  );
 
   // Et le contraste avec ce que l'app demande aujourd'hui au démarrage.
   assert.ok(sansSiren > 300, "le minimum de /demarrage (300) ne soutient pas 500/jour");

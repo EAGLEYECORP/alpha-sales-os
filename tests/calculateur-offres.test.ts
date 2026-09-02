@@ -88,7 +88,8 @@ test("⚠ Alpha Voice : le client paie le prix public, et TOUT nous revient", ()
    */
   const r = chiffrer({ alphaVoiceMinutes: 1000 }, opts);
   const l = r.lignes.find((x) => x.famille === "alpha-voice")!;
-  const palier = ALPHA_VOICE_PALIERS.find((p) => p.minutes === 1000)!;
+  // 1 000 minutes ne tiennent pas dans l'Essentiel (500) : on monte à Intensif.
+  const palier = ALPHA_VOICE_PALIERS.find((p) => p.minutes >= 1000)!;
 
   assert.equal(l.clientSetupHT, ALPHA_VOICE_SETUP_HT, "le client paie le prix public");
   assert.equal(l.clientMensuelHT, palier.prixHT);
@@ -269,10 +270,55 @@ test("sans barème chargé, le module l'annonce au lieu de deviner", () => {
 });
 
 test("palierAlphaVoice — on monte au palier qui COUVRE le besoin", () => {
-  assert.equal(palierAlphaVoice(1).minutes, 250, "un petit volume prend le premier palier");
-  assert.equal(palierAlphaVoice(250).minutes, 250);
-  assert.equal(palierAlphaVoice(251).minutes, 500, "251 minutes ne tiennent pas dans 250");
-  assert.equal(palierAlphaVoice(9999).minutes, 1500, "au-delà du dernier, on reste au dernier");
+  /**
+   * ⚠ La grille est passée de CINQ paliers à DEUX (02/09/2026). Cinq paliers
+   * font comparer les paliers entre eux au lieu de comparer à ce qu'il perd.
+   * La règle testée, elle, n'a pas bougé : on prend le palier qui COUVRE, on
+   * ne vend jamais un forfait trop court.
+   */
+  const [essentiel, intensif] = ALPHA_VOICE_PALIERS;
+  assert.equal(palierAlphaVoice(1).minutes, essentiel.minutes, "un petit volume prend le premier palier");
+  assert.equal(palierAlphaVoice(essentiel.minutes).minutes, essentiel.minutes);
+  assert.equal(
+    palierAlphaVoice(essentiel.minutes + 1).minutes,
+    intensif.minutes,
+    "une minute de trop ne tient pas dans le palier du dessous"
+  );
+  assert.equal(palierAlphaVoice(9999).minutes, intensif.minutes, "au-delà du dernier, on reste au dernier");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE PLANCHER DOIT COUVRIR LE SOCLE FIXE — c'était le défaut de l'ancienne
+ * grille, et il ne se voyait pas : le premier palier se vendait 59 €/mois
+ * pendant que la plateforme coûtait ~57 €/mois. Une offre d'appel qui ne
+ * couvre pas ses propres frais est une perte déguisée en acquisition.
+ *
+ * Le coût de revient vit côté SERVEUR (`lib/voice-costs.ts` porte nos
+ * marges) : on ne l'importe pas ici. On fige donc le plancher lui-même —
+ * si quelqu'un le rebaisse, ce test le dit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ le palier d'entrée couvre le socle fixe de la plateforme", () => {
+  const SOCLE_FIXE_MENSUEL = 57; // relevé, lib/voice-costs.ts
+  const entree = ALPHA_VOICE_PALIERS[0];
+  assert.ok(
+    entree.prixHT > SOCLE_FIXE_MENSUEL * 2,
+    `le palier d'entrée (${entree.prixHT} €) doit couvrir le socle (${SOCLE_FIXE_MENSUEL} €) avec de la marge, pas le frôler`
+  );
+});
+
+test("⚠ deux paliers, pas un menu", () => {
+  /**
+   * Le nombre est une DÉCISION commerciale, pas un détail : cinq options font
+   * choisir un forfait téléphonique quand on doit faire choisir entre
+   * récupérer ses appels et continuer à les perdre. Le changer doit demander
+   * de changer ce test.
+   */
+  assert.equal(ALPHA_VOICE_PALIERS.length, 2);
+  for (const p of ALPHA_VOICE_PALIERS) {
+    assert.ok(p.nom.length > 0, "un palier sans nom se dit « le petit » — et on vend le petit");
+  }
 });
 
 /**

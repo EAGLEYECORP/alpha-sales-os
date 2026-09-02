@@ -189,15 +189,34 @@ export interface Garantie {
 
 export const GARANTIES: Garantie[] = [
   {
+    /**
+     * ⚠ C'EST CELLE-CI QU'ON OFFRE — décidé le 02/09/2026, parmi les trois.
+     *
+     * Les deux autres ne coûtent rien et ne lèvent rien : « sans engagement »
+     * est une condition normale, le relevé offert est un aimant. Seule
+     * celle-ci répond à la question que le prospect ne pose pas à voix haute :
+     * « et si ça ne marche pas chez moi ? » — la question qu'un témoignage
+     * aurait traitée, et qu'on ne peut pas traiter autrement à zéro vente.
+     *
+     * ⚠⚠ ET SON VRAI COÛT N'EST PAS CELUI QU'ON CROIT. `coutGarantiePremierRdv`
+     * chiffre les MINUTES : quelques euros. Ce n'est pas le poste qui compte.
+     * Ce qu'on risque vraiment, c'est le temps d'installation — fait à la
+     * main, par une personne. Une garantie activée coûte une demi-journée, pas
+     * 8 €. C'est ce qui la borne : elle est offrable parce qu'on en offre PEU
+     * à la fois, pas parce qu'elle serait gratuite.
+     */
     nom: "Le setup ne se paie qu'au premier rendez-vous",
     promesse:
       "On installe, l'agent tourne, et vous ne payez l'installation que le jour où il vous a pris un premier " +
-      "rendez-vous. S'il n'en prend aucun, vous ne payez pas l'installation.",
+      "rendez-vous. Après 30 jours de ligne active, s'il n'en a pris aucun, vous ne payez pas l'installation.",
     coutSiActivee:
-      "Les minutes de conversation brûlées avant l'abandon — quelques euros. Voir `coutGarantiePremierRdv()`.",
+      "Les minutes brûlées (quelques euros, `coutGarantiePremierRdv`) PLUS le temps d'installation, qui est le " +
+      "vrai poste. C'est pourquoi elle va de pair avec la rareté : peu d'installations à la fois.",
     limite:
-      "Elle porte sur le SETUP, pas sur l'abonnement du mois écoulé : les minutes consommées ont été payées à " +
-      "l'opérateur téléphonique. Le dire à l'oral, pas le découvrir sur la facture.",
+      "Trois bords, dits à l'oral, jamais découverts sur la facture. (1) Elle porte sur le SETUP, pas sur " +
+      "l'abonnement du mois écoulé : les minutes ont été payées à l'opérateur. (2) Elle suppose 30 jours de " +
+      "LIGNE ACTIVE — couper au bout de trois jours ne la déclenche pas. (3) Elle porte sur un rendez-vous PRIS, " +
+      "pas sur un rendez-vous honoré : qui vient et qui signe, ça ne dépend plus de nous.",
   },
   {
     nom: "Sans engagement, coupure à tout moment",

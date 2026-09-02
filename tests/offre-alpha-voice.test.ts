@@ -113,6 +113,35 @@ test("chaque garantie dit sa LIMITE — jamais découverte sur la facture", () =
   }
 });
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LA GARANTIE OFFERTE DOIT ÊTRE BORNÉE — sinon elle est infalsifiable.
+ *
+ * « Vous ne payez pas si ça ne marche pas » sans bord, c'est une promesse
+ * qu'un client peut activer au bout de trois jours en ayant coupé la ligne.
+ * Trois bords, et ils se disent à l'oral :
+ *   · une DURÉE (30 jours de ligne active) — sinon on ne saura jamais si
+ *     l'agent a eu sa chance ;
+ *   · un PÉRIMÈTRE (le setup, pas l'abonnement consommé) ;
+ *   · un CRITÈRE (un rendez-vous PRIS, pas honoré) — qui vient et qui signe
+ *     ne dépend plus de nous, et le promettre serait promettre son métier.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ la garantie offerte porte ses trois bords : durée, périmètre, critère", () => {
+  const forte = GARANTIES[0];
+  assert.match(forte.limite, /30 jours/i, "sans durée, on ne sait jamais si l'agent a eu sa chance");
+  assert.match(forte.limite, /setup/i, "le périmètre : l'installation, pas l'abonnement consommé");
+  assert.match(forte.limite, /pris.*honor|honor.*pris/i, "un RDV pris n'est pas un RDV honoré");
+
+  /**
+   * ⚠ ET SON VRAI COÛT EST NOMMÉ. Les minutes ne sont pas le poste qui
+   * compte : c'est le temps d'installation, fait à la main. Une garantie
+   * dont on ne chiffre que la partie négligeable donne l'illusion qu'elle
+   * est gratuite — et on en offre alors trop à la fois.
+   */
+  assert.match(forte.coutSiActivee, /installation/i, "le vrai coût est le temps d'installation");
+});
+
 test("⚠ la rareté est un FAIT, pas un compteur inventé", () => {
   assert.match(RARETE.interdit, /jamais|inventé/i);
   // Aucun nombre de places : c'est précisément ce qui se vérifie au coup de

@@ -54,24 +54,50 @@ export const PACK_SETUP_HT = 10_000;
 export const PACK_MONTHLY_HT = 1_000;
 
 /**
- * ── TARIFS ALPHA VOICE — GRILLE HÉRITÉE, PROVISOIRE, ET ÇA SE DIT ──
+ * ── TARIFS ALPHA VOICE — DÉCIDÉS LE 02/09/2026 ──
  *
- * ⚠ CES MONTANTS NE SONT PAS ENCORE LES NÔTRES.
+ * La grille précédente (990 € + cinq paliers 59/115/169/219/319) était celle
+ * de l'ancien revendeur. Elle n'a jamais été la nôtre. Voici ce qui la
+ * remplace, et POURQUOI — parce qu'un prix sans raison se renégocie au
+ * premier client qui pousse.
  *
- * C'était la grille publique du partenaire qui portait l'accueil téléphonique.
- * L'accord est mort, l'offre est revenue chez nous — mais un prix négocié par
- * quelqu'un d'autre ne devient pas le nôtre parce qu'on a changé l'étiquette.
- * Il est gardé pour que le calculateur continue de fonctionner, PAS parce
- * qu'on l'a décidé.
+ * ── 1. DEUX PALIERS AU LIEU DE CINQ ──
  *
- * CE QUI EST VÉRIFIÉ, EN REVANCHE : la marge tient largement sur NOTRE coût
- * de revient mesuré (0,0563 €/min de conversation, `lib/voice-costs.ts`) —
- * 74 à 76 % de marge brute sur les cinq paliers. La grille est donc VIABLE
- * pour nous ; elle reste à DÉCIDER.
+ * Cinq paliers, c'est un MENU : l'artisan compare les paliers entre eux au
+ * lieu de comparer au chiffre qu'il perd. On lui fait choisir un forfait
+ * téléphonique alors qu'on doit lui faire choisir entre « je récupère ces
+ * appels » et « je continue à les perdre ».
  *
- * ⚠ Un bémol que la marge brute cache : le socle fixe est d'environ 57 €/mois
- * (Telnyx et consorts). Le premier palier se vend 59 € — seul, il ne paie pas
- * l'infrastructure. Il ne devient rentable qu'à plusieurs clients dessus.
+ * ── 2. LE PLANCHER MONTE DE 59 € À 149 € ──
+ *
+ * Trois raisons, dans cet ordre :
+ *  a) 59 €/mois NE COUVRAIT PAS le socle fixe (~57 €/mois de plateforme).
+ *     Le premier palier était une perte déguisée en offre d'appel.
+ *  b) Un prix aussi bas se lit comme un gadget par quelqu'un qui compare
+ *     mentalement à une secrétaire. Trop bas ABÎME la probabilité perçue —
+ *     c'est le deuxième terme de l'équation de valeur, pas un détail.
+ *  c) La valeur récupérée se compte en MILLIERS d'euros par mois chez une
+ *     cible type (8 appels manqués/semaine × 350 € de panier × 30 %). À
+ *     149 €, on facture environ 5 % de ce qu'on lui fait récupérer.
+ *
+ * ── 3. LA MARGE, SUR NOTRE COÛT MESURÉ (0,0563 €/min) ──
+ *
+ *   Essentiel  500 min → coût 28,15 €  · prix 149 € · marge ~81 %
+ *   Intensif  1500 min → coût 84,46 €  · prix 349 € · marge ~76 %
+ *
+ * UN client Essentiel couvre désormais le socle fixe à lui seul. C'était le
+ * défaut le plus concret de l'ancienne grille.
+ *
+ * ── 4. AU-DELÀ DU FORFAIT : 0,25 €/min ──
+ *
+ * Pas de palier suivant à vendre, pas de coupure de service. À 0,0563 € de
+ * coût, la minute supplémentaire reste rentable, et le client n'est jamais
+ * bloqué un mardi parce qu'il a eu une bonne semaine.
+ *
+ * ⚠ CE QUI EST MESURÉ ICI ET CE QUI NE L'EST PAS. Le coût à la minute est
+ * relevé (27/08/2026). Le SETUP à 990 € et les deux prix mensuels sont des
+ * DÉCISIONS — aucune vente ne les a encore validés. Le premier client qui
+ * refuse en disant pourquoi vaudra plus que ce raisonnement.
  *
  * (Ces prix vivaient dans `lib/pipeline-juillet.ts`, un module qui porte de
  * VRAIES fiches prospects et qu'aucun composant client ne doit atteindre. Ce
@@ -79,19 +105,21 @@ export const PACK_MONTHLY_HT = 1_000;
  */
 export const ALPHA_VOICE_SETUP_HT = 990;
 
+/** Le prix de la minute au-delà du forfait. Coût mesuré : 0,0563 €/min. */
+export const ALPHA_VOICE_MINUTE_SUP_HT = 0.25;
+
 export interface PalierAlphaVoice {
   minutes: number;
   prixHT: number;
   /** Ordre de grandeur en appels — ce que le client comprend. */
   appels: string;
+  /** Le nom qu'on prononce. Un palier sans nom se dit « le petit ». */
+  nom: string;
 }
 
 export const ALPHA_VOICE_PALIERS: PalierAlphaVoice[] = [
-  { minutes: 250, prixHT: 59, appels: "~100 appels courts" },
-  { minutes: 500, prixHT: 115, appels: "~200 appels" },
-  { minutes: 750, prixHT: 169, appels: "~300 appels" },
-  { minutes: 1000, prixHT: 219, appels: "~400 appels" },
-  { minutes: 1500, prixHT: 319, appels: "~600 appels" },
+  { nom: "Essentiel", minutes: 500, prixHT: 149, appels: "~200 appels" },
+  { nom: "Intensif", minutes: 1500, prixHT: 349, appels: "~600 appels" },
 ];
 
 /** Comment l'offre se paie. */

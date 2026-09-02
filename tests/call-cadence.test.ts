@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  cadenceFor, cibleDepuisProspect, plannedRecalls, plafondRappels, RAPPELS_MAX, PLAFOND_SOLLICITATIONS_B2C,
+  cadenceFor, cibleDepuisProspect, plannedRecalls, plafondRappels, RAPPELS_MAX, RAPPELS_OFFSETS_H,
+  PLAFOND_SOLLICITATIONS_B2C,
   type CallAttempt,
 } from "../lib/call-cadence";
 import { fenetreOuverte } from "../lib/conformite";
@@ -20,7 +21,7 @@ test("cadence — aucun appel encore : on appelle maintenant", () => {
   assert.equal(d.recallsLeft, RAPPELS_MAX);
 });
 
-test("cadence — 5 rappels étalés sur ~2 jours OUVRÉS après le 1er appel", () => {
+test("cadence — les rappels sont étalés sur ~2 jours OUVRÉS après le 1er appel", () => {
   /**
    * ⚠ Ce test exigeait exactement 48 h. Il mesurait l'arithmétique des offsets,
    * pas la cadence : les rappels sont maintenant calés sur des fenêtres
@@ -32,9 +33,16 @@ test("cadence — 5 rappels étalés sur ~2 jours OUVRÉS après le 1er appel", 
    * prévoyaient, et bornés à quelques jours ouvrés — pas une traîne infinie.
    */
   const planned = plannedRecalls(T0);
-  assert.equal(planned.length, 5);
-  const spanH = (new Date(planned[4]).getTime() - new Date(T0).getTime()) / 3600_000;
-  assert.ok(spanH >= 48, `le dernier rappel ne doit jamais tomber avant 48 h (${spanH} h)`);
+  assert.equal(planned.length, RAPPELS_MAX, "autant de rappels que d'intentions déclarées");
+  // On lit le DERNIER offset déclaré, jamais un nombre recopié : la cadence a
+  // déjà changé une fois (5 rappels → 3), et un 48 en dur aurait survécu au
+  // changement en testant une heure qui n'existe plus.
+  const dernierOffset = RAPPELS_OFFSETS_H[RAPPELS_OFFSETS_H.length - 1];
+  const spanH = (new Date(planned[planned.length - 1]).getTime() - new Date(T0).getTime()) / 3600_000;
+  assert.ok(
+    spanH >= dernierOffset,
+    `le dernier rappel ne doit jamais tomber AVANT son offset (${spanH} h < ${dernierOffset} h)`
+  );
   assert.ok(spanH <= 24 * 5, `ni partir en traîne : ${spanH} h`);
 });
 
@@ -116,12 +124,17 @@ test("cadence — l'opposition coupe tout, définitivement et immédiatement", (
   assert.equal(d.handoffToHuman, false, "une opposition ne se refile pas à un humain");
 });
 
-test("cadence — 5 rappels consommés : épuisée, on repasse à l'humain sur un autre canal", () => {
+test("cadence — tous les rappels consommés : épuisée, on repasse à l'humain sur un autre canal", () => {
+  // On construit depuis RAPPELS_MAX : figer la liste d'heures ferait passer ce
+  // test au vert avec un rappel de moins le jour où la cadence change.
   const attempts: CallAttempt[] = [
     { at: T0, outcome: "sans-reponse" },
-    ...[3, 8, 24, 32, 48].map((h) => ({ at: at(h).toISOString(), outcome: "sans-reponse" as const })),
+    ...Array.from({ length: RAPPELS_MAX }, (_, i) => ({
+      at: at(3 + i * 12).toISOString(),
+      outcome: "sans-reponse" as const,
+    })),
   ];
-  const d = cadenceFor(attempts, at(72));
+  const d = cadenceFor(attempts, at(96));
   assert.equal(d.state, "epuisee");
   assert.equal(d.callNow, false);
   assert.equal(d.recallsUsed, RAPPELS_MAX);
@@ -180,13 +193,32 @@ test("cadence — le plafond MORD réellement sur la décision, pas juste sur le
       outcome: "sans-reponse" as const,
     }));
 
-  const sansSiren = cadenceFor(tentatives(4), new Date(), { telephone: "0612345678" });
-  assert.equal(sansSiren.state, "epuisee", "4 sollicitations atteintes : on arrête");
+  const sansSiren = cadenceFor(tentatives(PLAFOND_SOLLICITATIONS_B2C), new Date(), { telephone: "0612345678" });
+  assert.equal(sansSiren.state, "epuisee", "plafond de sollicitations atteint : on arrête");
   assert.equal(sansSiren.callNow, false);
   assert.equal(sansSiren.handoffToHuman, true, "on repasse à l'humain, on n'abandonne pas la fiche");
 
-  const avecSiren = cadenceFor(tentatives(4), new Date(), { siren: "123456789" });
-  assert.notEqual(avecSiren.state, "epuisee", "une entreprise inscrite garde ses rappels");
+  /**
+   * ⚠ ET LE FILET DOIT SURVIVRE AU CHIFFRE DU JOUR.
+   *
+   * La cadence est descendue à 3 rappels le 02/09/2026, soit pile le plafond
+   * légal : les deux chemins donnent donc la même longueur aujourd'hui, et un
+   * test qui comparerait leurs ÉTATS ne prouverait plus rien.
+   *
+   * On teste donc la fonction qui plafonne, pas son effet du jour : sans
+   * SIREN, jamais plus que le décret n'autorise — quelle que soit la cadence
+   * qu'on remettra demain.
+   */
+  const sans = plafondRappels({ telephone: "0612345678" });
+  assert.equal(sans.plafonne, true);
+  assert.ok(
+    sans.max <= PLAFOND_SOLLICITATIONS_B2C - 1,
+    "le premier appel compte : 4 sollicitations = 3 rappels au maximum"
+  );
+
+  const avec = plafondRappels({ siren: "123456789", telephone: "0612345678" });
+  assert.equal(avec.plafonne, false, "un SIREN lève le plafond légal");
+  assert.equal(avec.max, RAPPELS_MAX, "et rend la cadence entière, quelle qu'elle soit");
 });
 
 test("cadence — le SIREN doit VOYAGER de l'import jusqu'au runner", () => {

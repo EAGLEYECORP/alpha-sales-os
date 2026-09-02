@@ -1,19 +1,12 @@
 /**
  * ─────────────────────────────────────────────────────────────────────
- * Cadence de rappel — 5 rappels sur 2 jours après le premier appel sans
+ * Cadence de rappel — 3 rappels sur 2 jours après le premier appel sans
  * réponse. Dès qu'il répond, Alpha Voice ARRÊTE d'appeler, met à jour le
  * pipeline, et passe la main à l'humain (closer).
  *
- * ⚠⚠ QUI DÉCIDE DE CE CHIFFRE — LA RÉPONSE A CHANGÉ, LIS-LA.
- *
- * Ces 5 rappels étaient EXIGÉS par un partenaire, pour son produit. L'accord
- * est mort. Personne ne les exige donc plus : ce n'est plus une contrainte
- * subie, c'est un CHOIX, et il t'appartient.
- *
- * Ça mérite d'être redit parce que le chiffre est agressif : 6 contacts en
- * 2 jours (voir le conflit avec le décret plus bas). On le tenait parce qu'il
- * fallait tenir un compte. Ce compte n'existe plus. Si tu le gardes, garde-le
- * en le sachant — et il n'y a plus de raison commerciale de ne pas le baisser.
+ * ⚠⚠ CE CHIFFRE A ÉTÉ TRANCHÉ. Il valait 5 — imposé par un revendeur, jamais
+ * mesuré. L'accord est mort, personne ne l'exige plus, et il est descendu à 3
+ * le 02/09/2026. Le raisonnement complet est au-dessus de `RAPPELS_OFFSETS_H`.
  *
  * Deux points non négociables, et c'est le cœur du module :
  *  1. Le compteur s'arrête à la RÉPONSE, pas au nombre d'essais. Un agent qui
@@ -29,8 +22,46 @@
 
 import { fenetreOuverte } from "./conformite";
 
-/** 5 rappels après le 1er appel, étalés sur 2 jours (heures depuis le 1er appel). */
-export const RAPPELS_OFFSETS_H = [3, 8, 24, 32, 48];
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * TROIS RAPPELS — DÉCIDÉ LE 02/09/2026. Il y en avait CINQ.
+ *
+ * Les cinq étaient EXIGÉS par un revendeur, pour son produit. L'accord est
+ * mort, et le chiffre n'a jamais été mesuré : il était subi. Voici pourquoi
+ * il descend à trois, et pas pourquoi il resterait à cinq.
+ *
+ *  1. LE PLAFOND LÉGAL DISPARAÎT COMME CONTRAINTE COURANTE. Le décret
+ *     n° 2022-1313 plafonne à 4 sollicitations sur 30 jours, premier appel
+ *     COMPRIS — donc 3 rappels. À cinq, une fiche sans SIREN suivait une
+ *     cadence tronquée et une fiche avec SIREN une cadence entière : deux
+ *     vitesses, deux comportements, et le risque toujours de notre côté. À
+ *     trois, tout le monde suit la même, et `plafondRappels` redevient ce
+ *     qu'un garde-fou doit être : un filet qu'on ne touche jamais.
+ *
+ *  2. LES TENTATIVES 4 ET 5 NE SONT PAS MESURÉES. Elles coûtent des minutes
+ *     réelles et de la réputation réelle sur une hypothèse. On ne dépense pas
+ *     du volume pour vérifier une intuition — c'est à ça que servent les
+ *     paliers (`lib/paliers-campagne.ts`).
+ *
+ *  3. NOTRE PROPRE DOCTRINE LE DISAIT DÉJÀ. Master Rappel : « 3+ touches
+ *     ignorées → changer de canal ». Cinq appels sur une ligne muette
+ *     contredisaient le module qui pilote tout le reste. À l'épuisement, la
+ *     fiche part vers l'écrit — c'est déjà ce que dit `cadenceFor`.
+ *
+ * ── LE CHOIX DES HEURES ──
+ *
+ * [3, 24, 32] = même jour plus tard · lendemain matin · lendemain
+ * après-midi. Trois CRÉNEAUX différents, jamais deux fois la même heure : si
+ * quelqu'un ne décroche jamais à 9h, l'insister à 9h trois jours de suite ne
+ * mesure rien. Les heures sont ensuite calées sur des fenêtres réellement
+ * ouvertes (voir `rappelsCales`).
+ *
+ * ⚠ Si tu remontes ce tableau à 5, `plafondRappels` REDEVIENT actif sur les
+ * cibles sans SIREN et la cadence redevient à deux vitesses. C'est voulu, et
+ * c'est testé : le filet ne s'enlève pas avec le chiffre.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const RAPPELS_OFFSETS_H = [3, 24, 32];
 export const RAPPELS_MAX = RAPPELS_OFFSETS_H.length;
 
 /**

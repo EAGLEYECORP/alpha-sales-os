@@ -91,9 +91,19 @@ n'en veulent pas → on passe par leur plateforme.
   Il ne voit QUE sa brique ; nous voyons tout.
 - **OS personnalisé** : un OS taillé sur le métier du client, pas une
   déclinaison du nôtre. Chiffré au cadrage.
-- **Alpha Voice** : **990 € HT** setup + paliers minutes (59/115/169/219/319).
-  ⚠ Grille **héritée** de l'ancien revendeur, donc **provisoire** : viable
-  (74–76 % de marge sur notre coût mesuré) mais jamais décidée par nous.
+- **Alpha Voice** — grille DÉCIDÉE le 02/09/2026 (`lib/offres-publiques.ts`) :
+  **990 € HT** de setup, puis **deux** paliers — **Essentiel 149 €/mois**
+  (500 min, ~200 appels) et **Intensif 349 €/mois** (1 500 min, ~600 appels).
+  Au-delà : **0,25 €/min**, pas de coupure, pas de palier à revendre.
+  > ⚠ Ce qui a changé, et pourquoi — c'est le raisonnement qui compte, pas les
+  > nombres : **cinq paliers font comparer les paliers entre eux** au lieu de
+  > comparer à ce qu'il perd. Et le plancher passe de 59 € à 149 € parce que
+  > **59 € ne couvrait pas le socle fixe (~57 €/mois)** : le palier d'entrée
+  > était une perte déguisée en offre d'appel. Marges sur coût mesuré :
+  > ~81 % et ~76 %. Un client Essentiel couvre désormais le socle à lui seul.
+  > **Le coût/minute est mesuré ; les prix sont des DÉCISIONS** — aucune vente
+  > ne les a validés. Le premier client qui refuse en disant pourquoi vaudra
+  > plus que ce raisonnement.
 
 ## Répartition du travail — ce qu'Alpha fait, ce que le client fait
 Doctrine de cadrage, à dire au client dès le premier rendez-vous : elle évite
@@ -181,8 +191,20 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   > Nuwacom. Elle suit maintenant le **COMPTE** — et **des deux côtés** : ce
   > que `buildVoiceScript` ÉCRIT et ce qu'`auditScript` EXIGE doivent poser la
   > même question, sinon l'un des deux ment.
-- **Cadence de relance** : après le 1er appel sans réponse → **5 rappels sur
-  2 jours**. Dès qu'il répond, la cadence **s'arrête** et le pipeline est mis à
+- **Cadence de relance** : après le 1er appel sans réponse → **3 rappels sur
+  2 jours** (`[3, 24, 32]` h : même jour plus tard · lendemain matin ·
+  lendemain après-midi — trois CRÉNEAUX différents, jamais deux fois la même
+  heure).
+  > ⚠ **Il y en avait CINQ, imposés par le revendeur disparu et jamais
+  > mesurés. Descendus à 3 le 02/09/2026.** Trois raisons : (1) 4 sollicitations
+  > = le plafond du décret, premier appel compris — à 3 rappels **le régime à
+  > deux vitesses SIREN/pas-SIREN disparaît** et `plafondRappels` redevient un
+  > filet qu'on ne touche jamais ; (2) les tentatives 4 et 5 ne sont pas
+  > mesurées et coûtent des minutes et de la réputation réelles ; (3) Master
+  > Rappel dit déjà « 3+ touches ignorées → changer de canal » — cinq appels
+  > sur une ligne muette contredisaient notre propre doctrine.
+  > **Remonter le tableau réactive le plafond sur les cibles sans SIREN**, et
+  > c'est testé : le filet ne s'enlève pas avec le chiffre. Dès qu'il répond, la cadence **s'arrête** et le pipeline est mis à
   jour — mais l'humain n'est appelé que sur un OUI.
   > ⚠ **Les rappels sont CALÉS sur des fenêtres d'appel ouvertes**
   > (`prochaineFenetreOuverte`, `lib/call-cadence.ts`). Ils ne l'étaient pas :
@@ -217,12 +239,18 @@ outil jamais installé).
   client pour de bon. Ce qui remplace : **ses chiffres à lui**
   (`computeLosses`), **une démo en direct** (on fait sonner l'agent pendant le
   rendez-vous), **une garantie chiffrée**.
-- **La garantie est le levier qui remplace la preuve.** « Le setup ne se paie
-  qu'au premier RDV » — et elle nous coûte **quelques euros**
-  (`coutGarantiePremierRdv`, serveur uniquement). C'est le chiffre qui la rend
-  décidable, pas le courage. Chaque garantie porte sa **limite écrite** : une
-  garantie dont on découvre les bords sur la facture coûte plus cher que pas
-  de garantie.
+- **La garantie est le levier qui remplace la preuve.** Celle qu'on offre
+  (décidé le 02/09/2026) : **« le setup ne se paie qu'au premier RDV »**. Les
+  deux autres ne coûtent rien et ne lèvent rien.
+  > ⚠ **Son vrai coût n'est PAS celui qu'on croit.** `coutGarantiePremierRdv`
+  > chiffre les MINUTES — quelques euros, poste négligeable. Ce qu'on risque,
+  > c'est le **temps d'installation**, fait à la main : une garantie activée
+  > coûte une demi-journée, pas 8 €. Elle est offrable parce qu'on en offre
+  > **peu à la fois** — c'est pour ça qu'elle va de pair avec la rareté.
+  > ⚠⚠ **Trois bords, dits à l'oral** : une DURÉE (30 j de ligne active), un
+  > PÉRIMÈTRE (le setup, pas l'abonnement consommé), un CRITÈRE (un RDV
+  > **pris**, pas honoré — qui vient et qui signe ne dépend plus de nous).
+  > Sans bords, elle s'active au bout de trois jours ligne coupée.
 - **La rareté est un FAIT** (l'installation se fait à la main, par une seule
   personne), jamais un compteur de places inventé — ça se vérifie au coup de
   fil suivant.
