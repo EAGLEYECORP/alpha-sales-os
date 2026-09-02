@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import { PLATFORMS, shareIntentUrl, splitThread, type Platform } from "@/lib/social";
 import { SEGMENTS } from "@/lib/segments";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Studio contenu — posts LinkedIn · X · Meta sur un sujet tech pour EAGLEYE.
@@ -125,18 +126,13 @@ export default function SocialPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 animate-fade-up">
-      <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-          Contenu · assisté, jamais automatisé
-        </p>
-        <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
-          <Megaphone size={22} className="text-bronze-400" /> Studio social
-        </h1>
-        <p className="mt-1 text-[13px] text-paper-faint">
-          Un sujet tech → un post calibré par plateforme. Tu relis, tu publies. Aucun auto-post.
-        </p>
-      </header>
+    <div className="page mx-auto max-w-3xl">
+      <PageHeader
+        eyebrow="Contenu · assisté, jamais automatisé"
+        icon={<Megaphone size={22} className="text-bronze-400" />}
+        title="Studio social"
+        subtitle="Un sujet tech → un post calibré par plateforme. Tu relis, tu publies. Aucun auto-post."
+      />
 
       <section className="card p-4">
         <label className="label">Sujet (tech, EAGLEYE)</label>

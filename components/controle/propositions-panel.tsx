@@ -91,7 +91,7 @@ export function PropositionsPanel() {
 
       <ul className="mt-3 space-y-2">
         {enAttente.map((p) => (
-          <li key={p.id} className="rounded-xl border border-ink-600 bg-ink-850 p-3">
+          <li key={p.id} className="panel p-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="chip border-bronze-700/50 text-bronze-400">{p.type}</span>
               <span className="text-[10.5px] text-paper-faint">

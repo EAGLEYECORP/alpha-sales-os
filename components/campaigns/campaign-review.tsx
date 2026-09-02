@@ -227,7 +227,12 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
   return (
     <Modal open onClose={onClose} title={`Relecture avant envoi — ${campaign.name}`} wide>
       {/* Barre d'état + garde-fou d'envoi */}
-      <div className="sticky top-0 z-10 -mx-1 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/95 px-3 py-2.5 backdrop-blur">
+      {/* ⚠ Cette barre portait son propre `backdrop-blur` À L'INTÉRIEUR d'une
+          modale déjà floutée : un flou qui échantillonne un rendu déjà flou ne
+          rend pas « plus de verre », il rend gris. Elle est OPAQUE, ce qu'une
+          barre collante doit être de toute façon — le texte qui défile dessous
+          ne doit pas transparaître à travers les compteurs. */}
+      <div className="sticky top-0 z-10 -mx-1 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-ink-700 bg-ink-900 px-3 py-2.5">
         <span className="chip border-bronze-700 text-bronze-400">{pending.length} à valider</span>
         <span className="chip border-signal-green/50 text-signal-green">{approved.length} approuvés</span>
         {skipped.length > 0 && <span className="chip border-ink-600 text-paper-faint">{skipped.length} ignorés</span>}

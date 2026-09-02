@@ -15,6 +15,7 @@ import { plafondPalierCampagne } from "@/lib/paliers-campagne";
 import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
 import { pipelineCoverage } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * SALLE DE CONTRÔLE — tout ce qui tourne, en un écran.
@@ -97,16 +98,20 @@ export default function ControlePage() {
   const mute = plans.filter((p) => p.checks.some((c) => c.id === "retour-donnee" && c.state === "absent")).slice(0, 10);
   const ready = plans.filter((p) => p.closing);
 
+  // ⚠ Le `p-4` qui était ici s'AJOUTAIT au padding de la coquille : cet écran
+  // avait un cadre plus épais que tous les autres, et personne ne l'avait
+  // décidé. Le padding appartient à la coquille, pas à la page.
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
-          <RadioTower size={20} className="text-bronze-400" /> Salle de contrôle
-        </h1>
-        <button onClick={load} className="btn-ghost flex items-center gap-1.5 text-[12px]">
-          <RefreshCw size={13} className={cn(loading && "animate-spin")} /> Rafraîchir
-        </button>
-      </div>
+    <div className="page">
+      <PageHeader
+        icon={<RadioTower size={20} className="text-bronze-400" />}
+        title="Salle de contrôle"
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-1.5 text-[12px]">
+            <RefreshCw size={13} className={cn(loading && "animate-spin")} /> Rafraîchir
+          </button>
+        }
+      />
 
       {/* Ce que l'orchestrateur propose — en haut : c'est la file qu'on
           tranche avant de chercher quoi faire soi-même. */}

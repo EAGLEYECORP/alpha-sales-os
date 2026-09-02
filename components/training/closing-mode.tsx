@@ -149,7 +149,7 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
               ))}
             </div>
             {openObj !== null && (
-              <div className="mt-3 rounded-xl border border-bronze-700/60 bg-ink-900 px-4 py-3 text-[15px] leading-relaxed text-paper animate-fade-up">
+              <div className="panel mt-3 border-bronze-700/60 px-4 py-3 text-[15px] leading-relaxed text-paper animate-fade-up">
                 <span className="text-bronze-400">→ </span>
                 {objections[openObj].a}
               </div>

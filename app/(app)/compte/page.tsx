@@ -9,6 +9,7 @@ import { BillingCard } from "@/components/billing/billing-card";
 import { MonOffre } from "@/components/billing/mon-offre";
 import { ChangePassword } from "@/components/security/change-password";
 import { ApresAchat } from "@/components/billing/apres-achat";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Compte — gestion de l'identité multi-locataire.
@@ -43,13 +44,8 @@ export default function ComptePage() {
   }, [available]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 animate-fade-up">
-      <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-          Identité · multi-locataire
-        </p>
-        <h1 className="font-display text-2xl font-bold text-paper">Compte</h1>
-      </header>
+    <div className="page mx-auto max-w-2xl">
+      <PageHeader eyebrow="Identité · multi-locataire" title="Compte" />
 
       {/* Le retour de Stripe. `useSearchParams` impose un Suspense côté Next :
           sans lui, le build échoue au prerender de la page. */}

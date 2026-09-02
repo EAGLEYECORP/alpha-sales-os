@@ -18,6 +18,7 @@ import { useCountUp } from "@/lib/use-count-up";
 import { FunnelChart, ForecastChart, SectorChart } from "@/components/charts";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { RoutinesPanel } from "@/components/routines-panel";
+import { PageHeader } from "@/components/ui/page-header";
 
 const SECTORS: Sector[] = ["restaurant", "pub", "ambulance", "artisan"];
 const SECTOR_LABELS: Record<string, string> = {
@@ -103,18 +104,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-paper">Dashboard</h1>
-          <p className="text-sm text-paper-faint">
-            Émotion d&apos;abord, logique ensuite. Chaque contact se termine par un next step daté.
-          </p>
-        </div>
-        <Link href="/pipeline" className="btn-bronze">
-          Pipeline <ArrowRight size={15} />
-        </Link>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Dashboard"
+        subtitle="Émotion d'abord, logique ensuite. Chaque contact se termine par un next step daté."
+        actions={
+          <Link href="/pipeline" className="btn-bronze">
+            Pipeline <ArrowRight size={15} />
+          </Link>
+        }
+      />
 
       {/* KPI tiles */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -29,6 +29,28 @@ html.dark {
   --card-bg: 21 17 13;
   --card-fg: 243 238 228;
   --glow: 0.05;
+  /* ── LE VERRE ─────────────────────────────────────────────────────
+     Une plaque translucide n'est pas « un fond + un flou ». Ce qui la fait
+     lire comme du verre, ce sont QUATRE choses simultanées, et retirer
+     n'importe laquelle la fait retomber à plat :
+       1. la transparence (on voit le fond bouger dessous) ;
+       2. le flou, qui empêche ce fond de rendre le texte illisible ;
+       3. la SATURATION — c'est elle qu'on oublie : du verre concentre la
+          couleur de ce qu'il couvre, un flou seul rend gris et sale ;
+       4. une ARÊTE HAUTE éclairée + une arête basse dans l'ombre, qui
+          donnent l'épaisseur. Sans elles la carte est un calque, pas une
+          plaque.
+     Ils vivent en jetons parce que le clair et le sombre n'ont pas les
+     mêmes valeurs : sur crème, la lumière se lit en BLANC franc sur
+     l'arête ; sur encre, en un souffle de papier à 7 %. */
+  --glass-alpha: 0.6;
+  --glass-blur: 22px;
+  --glass-sat: 1.7;
+  --glass-spec: 243 238 228; /* arête haute : la lumière frappe ici */
+  --glass-spec-a: 0.07;
+  --glass-base: 0 0 0; /* arête basse : l'ombre propre de la plaque */
+  --glass-base-a: 0.3;
+  --glass-cast-a: 0.55; /* ombre PORTÉE : la plaque flotte au-dessus du fond */
   color-scheme: dark;
 }
 
@@ -55,6 +77,18 @@ html.light {
   --card-bg: 251 247 240;
   --card-fg: 34 28 20;
   --glow: 0.07;
+  /* Verre sur parchemin : plus opaque (le texte sombre a besoin d'un fond
+     stable), moins saturé (la crème vire à l'orange si on pousse), et une
+     arête haute BLANCHE — sur un fond clair, la lumière ne se voit que si
+     elle est plus claire que la surface. */
+  --glass-alpha: 0.72;
+  --glass-blur: 20px;
+  --glass-sat: 1.3;
+  --glass-spec: 255 255 255;
+  --glass-spec-a: 0.9;
+  --glass-base: 60 45 20; /* ombre CHAUDE : le noir pur encrasse la crème */
+  --glass-base-a: 0.06;
+  --glass-cast-a: 0.22;
   color-scheme: light;
 }
 
@@ -75,13 +109,11 @@ html.light .btn-bronze {
 html.light .btn-bronze:hover {
   filter: brightness(1.06);
 }
-/* Cartes : ombre chaude et douce (le noir 85 % du sombre encrassait la crème). */
-html.light .card {
-  box-shadow:
-    0 1px 2px rgba(60, 45, 20, 0.05),
-    0 14px 34px -20px rgba(60, 45, 20, 0.22);
-  border-color: rgb(var(--card-fg) / 0.1);
-}
+/* ⚠ Il y avait ICI une seconde définition de `.card` (ombre + bordure) pour le
+   mode clair. Deux définitions du même matériau = deux vérités : celle du
+   sombre a gagné le flou et la saturation, celle du clair est restée sur
+   l'ancienne recette et ne les a jamais reçus. Le clair ne redéfinit plus
+   rien — il ne fait que reteinter les JETONS `--glass-*` plus haut. */
 /* Halos or : quasi invisibles sur crème → on les rend bronze et discrets. */
 html.light .shadow-gold,
 html.light .glow-gold {
@@ -143,19 +175,98 @@ html.light :focus-visible {
 }
 
 @layer components {
+  /* ── LE RYTHME D'UNE PAGE ──────────────────────────────────────────
+     Chaque écran ouvrait son contenu avec sa propre valeur : `space-y-4`
+     ici, `space-y-5` là, `space-y-6` ailleurs, et deux écrans ajoutaient
+     un `p-4` PAR-DESSUS le padding de la coquille — donc un double
+     encadrement visible à l'œil dès qu'on passait de l'un à l'autre.
+     Trois de ces écrans n'avaient même pas l'apparition en fondu, ce qui
+     les faisait « claquer » à l'arrivée quand les autres montaient.
+
+     Aucune de ces différences n'était une décision : c'est le résidu de
+     l'ordre dans lequel les pages ont été écrites. Un seul jeton, donc —
+     et le padding appartient à la coquille, jamais à la page.
+
+     ⚠ Les écrans qui NE portent pas cette classe sont des exceptions
+     explicites, listées et justifiées dans `tests/mise-en-page.test.ts`
+     (plein écran, centrage, superposition Electron). */
+  .page {
+    @apply animate-fade-up space-y-5;
+  }
+
+  /* ── LA PLAQUE DE VERRE — l'unique surface de premier plan ──────────
+     Tout ce qui « flotte au-dessus de la page » porte cette classe et
+     seulement elle. Les jetons `--glass-*` (haut du fichier) portent la
+     différence clair/sombre : ce bloc ne se duplique JAMAIS par thème.
+
+     ⚠ L'ombre est en INSET + PORTÉE, pas en pseudo-élément. Un `::before`
+     aurait exigé `position: relative` sur les cartes — or plusieurs
+     d'entre elles hébergent des enfants absolus ancrés à un parent PLUS
+     HAUT. Le liseré aurait été joli et aurait déplacé du contenu. */
   .card {
-    @apply rounded-2xl border shadow-card;
+    @apply rounded-2xl border;
     border-color: rgb(var(--card-fg) / 0.12);
-    background: rgb(var(--card-bg) / 0.72);
-    backdrop-filter: blur(14px);
+    background: rgb(var(--card-bg) / var(--glass-alpha));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    box-shadow:
+      inset 0 1px 0 rgb(var(--glass-spec) / var(--glass-spec-a)),
+      inset 0 -1px 0 rgb(var(--glass-base) / var(--glass-base-a)),
+      0 1px 2px rgb(var(--glass-base) / calc(var(--glass-cast-a) * 0.3)),
+      0 12px 28px -16px rgb(var(--glass-base) / var(--glass-cast-a)),
+      0 32px 64px -44px rgb(var(--glass-base) / calc(var(--glass-cast-a) * 1.3));
   }
+
+  /* ── PAS DE VERRE DANS LE VERRE ────────────────────────────────────
+     Un `backdrop-filter` imbriqué ne floute pas la page : il floute le
+     rendu DÉJÀ FLOUTÉ du parent. Le résultat n'est pas « plus de verre »,
+     c'est de la boue grise — et chaque niveau force une couche de
+     composition de plus. Une sous-surface se creuse dans la plaque, elle
+     ne s'empile pas dessus : c'est ce que fait `.panel`. */
+  .card .card,
+  .card .panel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* Sous-surface : un renfoncement DANS la plaque. Teintée avec la couleur
+     du TEXTE (`--card-fg`), pas avec une valeur d'encre en dur — c'est ce
+     qui la fait s'éclaircir sur fond sombre et s'assombrir sur crème sans
+     une seule règle par thème. */
+  .panel {
+    @apply rounded-xl border;
+    border-color: rgb(var(--card-fg) / 0.1);
+    background: rgb(var(--card-fg) / 0.04);
+  }
+
+  /* Le chrome de l'application (rail, en-tête mobile, barre du bas) : même
+     verre, mais teinté avec le FOND de page et non avec la carte — il
+     appartient à la fenêtre, pas au contenu. */
+  .glass-chrome {
+    background: rgb(var(--ink-950) / 0.72);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+
   .card-hover {
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  /* Au survol la plaque MONTE : elle s'éloigne du fond, donc son ombre
+     portée s'écarte et s'adoucit — l'arête haute, elle, s'allume. C'est ce
+     couple (ombre qui grandit / lumière qui augmente) qui se lit comme du
+     relief. Un simple `translateY` sans ombre glisse au lieu de lever. */
   .card-hover:hover {
-    @apply shadow-bronze;
     border-color: rgba(232, 201, 138, 0.35);
     transform: translateY(-3px);
+    box-shadow:
+      inset 0 1px 0 rgb(var(--glass-spec) / calc(var(--glass-spec-a) * 1.6)),
+      inset 0 -1px 0 rgb(var(--glass-base) / var(--glass-base-a)),
+      0 0 0 1px rgba(232, 201, 138, 0.18),
+      0 18px 40px -20px rgb(var(--glass-base) / var(--glass-cast-a)),
+      0 44px 80px -48px rgb(var(--glass-base) / calc(var(--glass-cast-a) * 1.3));
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all disabled:opacity-40 disabled:pointer-events-none;
@@ -219,4 +330,39 @@ html.light :focus-visible {
     @apply font-mono text-[0.92em] text-bronze-400 underline decoration-bronze-700 underline-offset-2 transition-colors;
   }
   .alpha-link:hover { @apply text-bronze-300 decoration-bronze-400; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   LES DEUX SORTIES DE SECOURS DU VERRE
+
+   Une carte translucide sans flou n'est pas « moins jolie » : elle est
+   ILLISIBLE. Le texte se pose alors directement sur le dégradé et le grain
+   de la page, à 60 % d'opacité. Il faut donc un fond OPAQUE dans les deux
+   cas où le flou n'existe pas — et ces deux cas sont réels, pas théoriques.
+
+   1. `@supports not` — le navigateur ne sait pas flouter (vieux Firefox,
+      certains WebView Android, navigateur avec l'accélération coupée).
+   2. `prefers-reduced-transparency` — l'utilisateur a DEMANDÉ moins de
+      transparence dans son système (iOS/macOS « Réduire la transparence »,
+      Windows « Effets de transparence »). C'est un réglage
+      d'accessibilité : le flou de fond déclenche des migraines et gêne la
+      lecture. On le respecte comme on respecte déjà `reduced-motion`.
+
+   Placés hors de `@layer components` et en fin de fichier : à spécificité
+   égale, c'est le dernier écrit qui gagne.
+   ───────────────────────────────────────────────────────────────────── */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .card,
+  .glass-chrome {
+    background: rgb(var(--card-bg));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .card,
+  .glass-chrome {
+    background: rgb(var(--card-bg));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

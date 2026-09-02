@@ -12,9 +12,10 @@ import {
 import { STEP_LABEL, buildLinkedinQueue, type LinkedinStep } from "@/lib/linkedin-sequence";
 import { LINKEDIN_WEEKLY_LIMIT, plafondSemaine, quotaDuJour } from "@/lib/linkedin-plan";
 import { SourcingPanel } from "@/components/linkedin/sourcing-panel";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
- * Machine LinkedIn — campagne ALPHA SALES TEST 1 (SCINTIA × EAGLEYE).
+ * Machine LinkedIn — le canal à quota.
  *
  * Assisté, jamais automatisé : l'app prépare le message calibré et
  * ouvre LinkedIn au bon endroit, l'humain colle et envoie. Chaque
@@ -74,39 +75,41 @@ export default function LinkedinPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            SCINTIA × EAGLEYE CORP · Alpha Sales Test 1
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">Machine LinkedIn</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Quota du jour</p>
-            <p className={cn("font-display text-lg font-extrabold", remaining === 0 ? "text-signal-red" : "text-paper")}>
-              {today}<span className="text-sm text-paper-faint">/{today + remaining}</span>
-            </p>
+    <div className="page">
+      {/* ⚠ Le sur-titre annonçait « SCINTIA × EAGLEYE CORP » à l'écran. L'accord
+          est mort (CLAUDE.md, 02/09/2026) et cette marque n'est pas la nôtre :
+          elle ne doit plus s'afficher nulle part. Ce qui reste vrai, et qui est
+          la seule chose utile ici, c'est la règle du canal. */}
+      <PageHeader
+        eyebrow="Un canal à quota · le volume s'y paie en compte fermé"
+        title="Machine LinkedIn"
+        actions={
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Quota du jour</p>
+              <p className={cn("font-display text-lg font-extrabold", remaining === 0 ? "text-signal-red" : "text-paper")}>
+                {today}<span className="text-sm text-paper-faint">/{today + remaining}</span>
+              </p>
+            </div>
+            {/* La semaine est l'unité que LinkedIn compte vraiment. */}
+            <div className="text-right">
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Cette semaine</p>
+              <p
+                className={cn(
+                  "font-display text-lg font-extrabold",
+                  cetteSemaine >= plafondSemaine(semaine) ? "text-signal-red" : "text-paper"
+                )}
+              >
+                {cetteSemaine}<span className="text-sm text-paper-faint">/{plafondSemaine(semaine)}</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Mûrs aujourd&apos;hui</p>
+              <p className="font-display text-lg font-extrabold text-bronze-400">{ready.length}</p>
+            </div>
           </div>
-          {/* La semaine est l'unité que LinkedIn compte vraiment. */}
-          <div className="text-right">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Cette semaine</p>
-            <p
-              className={cn(
-                "font-display text-lg font-extrabold",
-                cetteSemaine >= plafondSemaine(semaine) ? "text-signal-red" : "text-paper"
-              )}
-            >
-              {cetteSemaine}<span className="text-sm text-paper-faint">/{plafondSemaine(semaine)}</span>
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Mûrs aujourd&apos;hui</p>
-            <p className="font-display text-lg font-extrabold text-bronze-400">{ready.length}</p>
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Périmètre */}
       <div className="card flex flex-wrap items-center gap-3 p-3.5">
@@ -163,7 +166,7 @@ export default function LinkedinPage() {
 
             {step !== "termine" ? (
               <>
-                <pre className="mt-2.5 max-h-44 overflow-y-auto whitespace-pre-wrap rounded-xl border border-ink-700 bg-ink-900 p-3 font-body text-[12.5px] leading-relaxed text-paper-dim">
+                <pre className="panel mt-2.5 max-h-44 overflow-y-auto whitespace-pre-wrap p-3 font-body text-[12.5px] leading-relaxed text-paper-dim">
                   {text}
                 </pre>
                 {step === "invitation" && (

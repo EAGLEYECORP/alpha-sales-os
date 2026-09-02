@@ -15,6 +15,7 @@ import {
 } from "@/lib/prompts";
 import { n8nConnected, pousserPrompts } from "@/lib/n8n";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -121,17 +122,12 @@ export default function PromptsPage() {
   const enAttente = modifies.filter((m) => validerPrompt(m.id, m.texte).ok && aPousser(m)).length;
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-          Une seule source · validée avant de s&apos;appliquer
-        </p>
-        <h1 className="font-display text-2xl font-bold text-paper">Prompts</h1>
-        <p className="text-sm text-paper-faint">
-          Ce que l&apos;IA a le droit de dire, et ce qu&apos;elle ne peut pas oublier. Une modification s&apos;applique
-          aux écrans dès qu&apos;elle est enregistrée ; à n8n seulement quand tu la pousses.
-        </p>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="Une seule source · validée avant de s'appliquer"
+        title="Prompts"
+        subtitle="Ce que l'IA a le droit de dire, et ce qu'elle ne peut pas oublier. Une modification s'applique aux écrans dès qu'elle est enregistrée ; à n8n seulement quand tu la pousses."
+      />
 
       {erreurCharge && (
         <p className="flex items-start gap-2 rounded-xl border border-signal-red/50 bg-signal-red/5 px-3 py-2.5 text-[11.5px] leading-relaxed text-signal-red">

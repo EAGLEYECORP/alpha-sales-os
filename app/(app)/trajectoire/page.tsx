@@ -14,6 +14,7 @@ import { prioritized, urgency, daysLeft, type Opportunity } from "@/lib/opportun
 import { FrenchTechPanel } from "@/components/mission/french-tech-panel";
 import { cn } from "@/lib/utils";
 import { DailyBar } from "@/components/standard/daily-bar";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * TRAJECTOIRE — où on en est, ce qui bloque, et ce qu'on fait aujourd'hui.
@@ -60,13 +61,15 @@ export default function TrajectoirePage() {
   const toTen = daysToTarget(Math.max(cashed, 1000), 10_000_000, 1);
 
   return (
-    <div className="space-y-5 p-4">
+    // ⚠ `p-4` retiré : il doublait le padding de la coquille (cf. /controle).
+    <div className="page">
       {/* Le palier se calcule sur le cash encaissé : si ce cash est fictif, le
           palier l'est aussi, et cet écran sert à décider quoi faire ensuite. */}
       <ArgentDeDemo prospects={prospects} />
-      <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
-        <TrendingUp size={20} className="text-bronze-400" /> Trajectoire
-      </h1>
+      <PageHeader
+        icon={<TrendingUp size={20} className="text-bronze-400" />}
+        title="Trajectoire"
+      />
 
       {/* ── 1. LE PALIER ── */}
       <section className="card p-4">

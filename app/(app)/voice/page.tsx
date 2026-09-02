@@ -13,6 +13,7 @@ import { deepDive } from "@/lib/deep-dive";
 import { speak, stopSpeak, getTtsProvider, setTtsProvider, type TtsProvider } from "@/lib/browser-tts";
 import { cn } from "@/lib/utils";
 import { CostPanel } from "@/components/voice/cost-panel";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * ALPHA VOICE — l'écran de commande.
@@ -148,13 +149,11 @@ export default function VoicePage() {
   const win = result?.window as { allowed: boolean; why: string } | undefined;
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-          Faire ENTENDRE · l&apos;émotion avant le prix
-        </p>
-        <h1 className="font-display text-2xl font-bold text-paper">Alpha Voice</h1>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="Faire ENTENDRE · l'émotion avant le prix"
+        title="Alpha Voice"
+      />
 
       {/* La divulgation — en haut, parce que c'est ce qui structure tout */}
       <section className="card border-bronze-700 p-4">

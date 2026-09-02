@@ -7,6 +7,7 @@ import { calc, calcSaas, defaultPricing, defaultSaasInput, type CalcInput, type 
 import { calcTelephony, defaultTelephony, type TelephonyInput } from "@/lib/telephony";
 import { useAlpha } from "@/lib/store";
 import { CalculateurComplet } from "@/components/offre/calculateur-complet";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function OffrePage() {
   // Tarifs du compte (white-label) — défaut = modèle EAGLEYE.
@@ -36,39 +37,46 @@ export default function OffrePage() {
   const [mode, setMode] = useState<"toutes" | "client" | "saas">("toutes");
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-paper">Offre &amp; Tarifs</h1>
-          <p className="text-sm text-paper-faint">
-            {mode === "toutes"
-              ? "Les dix offres du portefeuille, sur les trois comptes. Ce que le client paie, et ce qui nous revient — jamais confondus."
-              : mode === "client"
-                ? "Outreach ultra-qualifié, exécuté pour vous. On ne remplit pas une base — on remplit un agenda."
-                : "L'économie de ton business : ce que rapporte de vendre Alpha Sales OS. CAC · LTV · break-even · cash-flow."}
-          </p>
-        </div>
-        <div className="flex rounded-lg border border-ink-700 bg-ink-900 p-0.5 text-[12px]">
-          <button
-            className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "toutes" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
-            onClick={() => setMode("toutes")}
-          >
-            <Layers size={13} /> Toutes les offres
-          </button>
-          <button
-            className={cn("rounded-md px-3 py-1.5 font-medium transition", mode === "client" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
-            onClick={() => setMode("client")}
-          >
-            ROI client
-          </button>
-          <button
-            className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "saas" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
-            onClick={() => setMode("saas")}
-          >
-            <Rocket size={13} /> Vendre Alpha Sales OS
-          </button>
-        </div>
-      </header>
+    <div className="page">
+      <PageHeader
+        title={<>Offre &amp; Tarifs</>}
+        subtitle={
+          /* ⚠ La phrase disait « les dix offres … sur les trois comptes ». Les
+             deux nombres étaient FAUX : le portefeuille n'a plus que deux
+             comptes depuis le 02/09/2026, et le catalogue se modifie dans
+             Réglages sans redéployer. Un compteur écrit à la main dans une
+             phrase périme au commit suivant — c'est la règle que
+             `tests/docs-chiffres.test.ts` applique déjà à la documentation.
+             On décrit, on ne compte pas. */
+          mode === "toutes"
+            ? "Tout le portefeuille, compte par compte. Ce que le client paie, et ce qui nous revient — jamais confondus."
+            : mode === "client"
+              ? "Outreach ultra-qualifié, exécuté pour vous. On ne remplit pas une base — on remplit un agenda."
+              : "L'économie de ton business : ce que rapporte de vendre Alpha Sales OS. CAC · LTV · break-even · cash-flow."
+        }
+        actions={
+          <div className="panel flex p-0.5 text-[12px]">
+            <button
+              className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "toutes" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
+              onClick={() => setMode("toutes")}
+            >
+              <Layers size={13} /> Toutes les offres
+            </button>
+            <button
+              className={cn("rounded-md px-3 py-1.5 font-medium transition", mode === "client" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
+              onClick={() => setMode("client")}
+            >
+              ROI client
+            </button>
+            <button
+              className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition", mode === "saas" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")}
+              onClick={() => setMode("saas")}
+            >
+              <Rocket size={13} /> Vendre Alpha Sales OS
+            </button>
+          </div>
+        }
+      />
 
       {mode === "toutes" && <CalculateurComplet />}
 
@@ -282,7 +290,7 @@ function SaasEconomics() {
               <Metric label="Cash mois 1" value={eur(Math.round(s.month1Cash))} accent />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+              <div className="panel p-4">
                 <p className="font-display text-sm font-semibold text-paper">Unit economics</p>
                 <table className="mt-2 w-full text-[13px]">
                   <tbody>
@@ -293,7 +301,7 @@ function SaasEconomics() {
                   </tbody>
                 </table>
               </div>
-              <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+              <div className="panel p-4">
                 <p className="font-display text-sm font-semibold text-paper">Seuils</p>
                 <table className="mt-2 w-full text-[13px]">
                   <tbody>
@@ -361,7 +369,7 @@ function TelephonyBasis({ monthlyPrice }: { monthlyPrice: number }) {
             <Metric label="Par jour" value={Math.round(r.attemptsPerDay).toLocaleString("fr-FR")} />
             <Metric label="Minutes" value={Math.round(r.totalMinutes).toLocaleString("fr-FR")} />
           </div>
-          <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+          <div className="panel p-4">
             <p className="font-display text-sm font-semibold text-paper">Coût direct de la campagne</p>
             <table className="mt-2 w-full text-[13px]">
               <tbody>

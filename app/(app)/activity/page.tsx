@@ -5,6 +5,7 @@ import { Activity as ActivityIcon, Bot, CalendarDays, Mail, PartyPopper, Skull, 
 import { useAlpha } from "@/lib/store";
 import type { Activity } from "@/lib/types";
 import { cn, dateTimeFr } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 const KIND_META: Record<Activity["kind"], { icon: React.ReactNode; tone: string }> = {
   prospect: { icon: <UserPlus size={14} />, tone: "text-bronze-400 border-bronze-700" },
@@ -21,11 +22,11 @@ export default function ActivityPage() {
   const { activities, auditLog, settings } = useAlpha();
 
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Fil d&apos;activité</h1>
-        <p className="text-sm text-paper-faint">Tout ce qui bouge dans l&apos;OS, en un seul flux.</p>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Fil d'activité"
+        subtitle="Tout ce qui bouge dans l'OS, en un seul flux."
+      />
 
       <section className="card p-4">
         <ol className="relative space-y-4 border-l border-ink-700 pl-6">

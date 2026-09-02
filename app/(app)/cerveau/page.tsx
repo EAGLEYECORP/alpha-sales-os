@@ -11,6 +11,7 @@ import { Synapse } from "@/components/cerveau/synapse";
 import { KnowledgeGraph } from "@/components/cerveau/graph";
 import { FileImport } from "@/components/cerveau/file-import";
 import { ReferencesPanel } from "@/components/cerveau/references-panel";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function CerveauPage() {
   const allNotes = useAlpha((s) => s.notes);
@@ -102,23 +103,31 @@ export default function CerveauPage() {
   };
 
   return (
-    <div className="animate-fade-up space-y-4">
-      <header className="relative flex flex-wrap items-end justify-between gap-3 overflow-hidden rounded-2xl border border-ink-700 bg-ink-900/60 p-5">
+    <div className="page">
+      {/* Le seul en-tête POSÉ SUR une plaque, parce qu'il héberge l'animation
+          Synapse : la carte est le cadre du décor, l'en-tête reste le même
+          composant que partout ailleurs. Il portait une surface bricolée
+          (`rounded-2xl border-ink-700 bg-ink-900/60`) qui ne recevait ni le
+          flou ni la saturation du verre — visible dès qu'on la mettait à
+          côté d'une vraie carte. */}
+      <div className="card relative overflow-hidden p-5">
         <Synapse />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950/70 via-ink-950/30 to-transparent" />
-        <div className="relative z-10">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">RAG · zéro dépendance · hors-ligne</p>
-          <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
-            <Brain size={22} className="animate-pulse text-bronze-400" style={{ filter: "drop-shadow(0 0 6px rgba(210,64,47,0.5))" }} /> Cerveau
-          </h1>
-          <p className="max-w-xl text-sm text-paper-faint">Toutes tes infos au même endroit — cherchées par pertinence, reliées en <code className="font-mono text-bronze-400">[[wikilinks]]</code>, interrogeables.</p>
-        </div>
-        <div className="relative z-10 flex flex-wrap gap-2">
-          <button className="btn-ghost" onClick={exportMd} title="Exporter en Markdown (Obsidian-compatible)"><FileDown size={14} /> Exporter</button>
-          <button className="btn-ghost" onClick={ingestProspects}><Download size={14} /> Aspirer mes prospects</button>
-          <button className="btn-bronze" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
-        </div>
-      </header>
+        <PageHeader
+          className="relative z-10"
+          eyebrow="RAG · zéro dépendance · hors-ligne"
+          icon={<Brain size={22} className="animate-pulse text-bronze-400" style={{ filter: "drop-shadow(0 0 6px rgba(210,64,47,0.5))" }} />}
+          title="Cerveau"
+          subtitle={<>Toutes tes infos au même endroit — cherchées par pertinence, reliées en <code className="font-mono text-bronze-400">[[wikilinks]]</code>, interrogeables.</>}
+          actions={
+            <>
+              <button className="btn-ghost" onClick={exportMd} title="Exporter en Markdown (Obsidian-compatible)"><FileDown size={14} /> Exporter</button>
+              <button className="btn-ghost" onClick={ingestProspects}><Download size={14} /> Aspirer mes prospects</button>
+              <button className="btn-bronze" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
+            </>
+          }
+        />
+      </div>
 
       <AskBrain notes={notes} settings={settings} onOpen={(id) => { setSelectedId(id); setView("liste"); }} />
 

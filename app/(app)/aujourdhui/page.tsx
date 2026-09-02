@@ -18,6 +18,7 @@ import { useAlpha } from "@/lib/store";
 import { construireJournee, parQuadrant, pourEcran, QUADRANT_META, type Quadrant, type Tache } from "@/lib/priorites";
 import { REGLES, regleFor } from "@/lib/conformite";
 import { cn, eur } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Aujourd'hui — le calculateur urgent / important.
@@ -80,40 +81,36 @@ export default function AujourdhuiPage() {
   const heure = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60 ? `${min % 60} min` : ""}`.trim() : `${min} min`);
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            Ce que tu fais aujourd&apos;hui · calculé, pas déclaré
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">
-            {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-          </h1>
-        </div>
-        <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <span className="text-paper-faint">
-            Critique <b className="ml-1 font-display text-base text-signal-red">{restant.length}</b>
-          </span>
-          <span className="text-paper-faint">
-            Temps <b className="ml-1 font-display text-base text-paper">{heure(minutesRestantes)}</b>
-          </span>
-          {j.valeurEnJeu > 0 && (
+    <div className="page">
+      <PageHeader
+        eyebrow="Ce que tu fais aujourd'hui · calculé, pas déclaré"
+        title={new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+        actions={
+          <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
             <span className="text-paper-faint">
-              En jeu <b className="ml-1 font-display text-base text-bronze-400">{eur(Math.round(j.valeurEnJeu))}</b>
+              Critique <b className="ml-1 font-display text-base text-signal-red">{restant.length}</b>
             </span>
-          )}
-          {digestReady && (
-            <button
-              className="btn-ghost px-2.5 py-1.5 text-[12px] normal-case tracking-normal"
-              onClick={() => void sendDigest()}
-              disabled={sending || restant.length === 0}
-              title={restant.length === 0 ? "Rien de critique à envoyer" : "M'envoyer les priorités du jour sur mon téléphone"}
-            >
-              <BellRing size={13} /> {sending ? "Envoi…" : "M'envoyer le récap"}
-            </button>
-          )}
-        </div>
-      </header>
+            <span className="text-paper-faint">
+              Temps <b className="ml-1 font-display text-base text-paper">{heure(minutesRestantes)}</b>
+            </span>
+            {j.valeurEnJeu > 0 && (
+              <span className="text-paper-faint">
+                En jeu <b className="ml-1 font-display text-base text-bronze-400">{eur(Math.round(j.valeurEnJeu))}</b>
+              </span>
+            )}
+            {digestReady && (
+              <button
+                className="btn-ghost px-2.5 py-1.5 text-[12px] normal-case tracking-normal"
+                onClick={() => void sendDigest()}
+                disabled={sending || restant.length === 0}
+                title={restant.length === 0 ? "Rien de critique à envoyer" : "M'envoyer les priorités du jour sur mon téléphone"}
+              >
+                <BellRing size={13} /> {sending ? "Envoi…" : "M'envoyer le récap"}
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {digestMsg && <p className="px-1 text-[12px] text-paper-dim">{digestMsg}</p>}
 

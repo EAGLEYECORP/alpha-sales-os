@@ -20,6 +20,7 @@ import {
 } from "@/lib/prescripteurs";
 import type { Partner, PartnerStatus } from "@/lib/types";
 import { cn, eur, uid } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Prescripteurs — le seul canal qui compose.
@@ -104,26 +105,24 @@ export default function PrescripteursPage() {
   }, [partners]);
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            Le seul canal qui compose
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">Prescripteurs</h1>
-        </div>
-        <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <span className="text-paper-faint">
-            Actifs <b className="ml-1 font-display text-base text-signal-green">{totals.actifs}</b>/{totals.partners}
-          </span>
-          <span className="text-paper-faint">
-            Mises en relation <b className="ml-1 font-display text-base text-paper">{totals.intros}</b>
-          </span>
-          <span className="text-paper-faint">
-            Encaissé <b className="ml-1 font-display text-base text-bronze-400">{eur(totals.revenue)}</b>
-          </span>
-        </div>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="Le seul canal qui compose"
+        title="Prescripteurs"
+        actions={
+          <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
+            <span className="text-paper-faint">
+              Actifs <b className="ml-1 font-display text-base text-signal-green">{totals.actifs}</b>/{totals.partners}
+            </span>
+            <span className="text-paper-faint">
+              Mises en relation <b className="ml-1 font-display text-base text-paper">{totals.intros}</b>
+            </span>
+            <span className="text-paper-faint">
+              Encaissé <b className="ml-1 font-display text-base text-bronze-400">{eur(totals.revenue)}</b>
+            </span>
+          </div>
+        }
+      />
 
       <section className="card p-4">
         <p className="text-[13px] text-paper">

@@ -313,14 +313,14 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                 </h2>
                 <p className="mt-2 text-sm text-paper-dim">Voici comment tout s&apos;emboîte — pas besoin d&apos;être technique.</p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-ink-700 bg-ink-850 p-4">
+                  <div className="panel p-4">
                     <Sheet size={20} className="text-bronze-400" />
                     <p className="mt-2 font-display text-sm font-bold text-paper">Google Sheets = la mémoire</p>
                     <p className="mt-1 text-[12px] text-paper-faint">
                       Le CRM que vous (et vos employés) voyez : prospects, historique, étapes.
                     </p>
                   </div>
-                  <div className="rounded-xl border border-ink-700 bg-ink-850 p-4">
+                  <div className="panel p-4">
                     <Cpu size={20} className="text-bronze-400" />
                     <p className="mt-2 font-display text-sm font-bold text-paper">n8n = le cerveau</p>
                     <p className="mt-1 text-[12px] text-paper-faint">
@@ -334,7 +334,7 @@ export function SetupWizard({ onClose }: { onClose: () => void }) {
                       Elle affiche vos métriques, fait relire chaque message avant envoi, et envoie les emails trackés.
                     </p>
                   </div>
-                  <div className="rounded-xl border border-ink-700 bg-ink-850 p-4">
+                  <div className="panel p-4">
                     <Database size={20} className="text-bronze-400" />
                     <p className="mt-2 font-display text-sm font-bold text-paper">Supabase = la mémoire durable</p>
                     <p className="mt-1 text-[12px] text-paper-faint">

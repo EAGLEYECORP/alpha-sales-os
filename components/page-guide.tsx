@@ -65,7 +65,7 @@ export function PageGuide() {
         onClick={() => setOpen(true)}
         aria-label={`Guide de la page : ${guide.title}`}
         title="Guide de cette page"
-        className="fixed bottom-20 right-4 z-[45] grid h-10 w-10 place-items-center rounded-full border border-ink-600 bg-ink-900/90 text-paper-faint shadow-card backdrop-blur transition-colors hover:border-bronze-700 hover:text-bronze-300 md:bottom-6 md:right-6"
+        className="glass-chrome fixed bottom-20 right-4 z-[45] grid h-10 w-10 place-items-center rounded-full border border-ink-600 text-paper-faint transition-colors hover:border-bronze-700 hover:text-bronze-300 md:bottom-6 md:right-6"
       >
         <CircleHelp size={18} />
       </button>

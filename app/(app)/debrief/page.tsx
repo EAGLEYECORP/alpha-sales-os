@@ -22,6 +22,7 @@ import { extractDebrief, type DebriefDraft } from "@/lib/debrief";
 import { leconDeDebrief } from "@/lib/apprentissage";
 import { stageById } from "@/lib/hormozi";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Débriefing vocal post-terrain.
@@ -183,13 +184,11 @@ export default function DebriefPage() {
   const patchDraft = (over: Partial<DebriefDraft>) => setDraft((d) => (d ? { ...d, ...over } : d));
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-          40 secondes de voix · au lieu de 10 minutes de saisie
-        </p>
-        <h1 className="font-display text-2xl font-bold text-paper">Débrief terrain</h1>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="40 secondes de voix · au lieu de 10 minutes de saisie"
+        title="Débrief terrain"
+      />
 
       {/* ── 1. LA FICHE ── */}
       <section className="card p-4">

@@ -20,6 +20,7 @@ import { CATEGORY_META, computeRoutines, type Routine } from "@/lib/routines";
 import { n8nConnected } from "@/lib/n8n";
 import { DEFAULT_DAILY_TARGET, buildDailyPlan } from "@/lib/daily-plan";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 const TARGET_KEY = "alpha_daily_target";
 
@@ -181,16 +182,16 @@ export default function PilotePage() {
   const allGreen = running === organs.length;
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">La machine prépare · tu tranches</p>
-          <h1 className="font-display text-2xl font-bold text-paper">Pilote automatique</h1>
-        </div>
-        <button className="btn-ghost px-3 py-1.5 text-[12px]" onClick={load} disabled={loading}>
-          {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Actualiser
-        </button>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="La machine prépare · tu tranches"
+        title="Pilote automatique"
+        actions={
+          <button className="btn-ghost px-3 py-1.5 text-[12px]" onClick={load} disabled={loading}>
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Actualiser
+          </button>
+        }
+      />
 
       {/* Le verdict */}
       <section
@@ -269,7 +270,7 @@ export default function PilotePage() {
             <Link
               key={c.id}
               href={c.href}
-              className="rounded-xl border border-ink-700 p-3.5 transition-colors hover:border-bronze-700 hover:bg-ink-800"
+              className="panel p-3.5 transition-colors hover:border-bronze-700"
             >
               <p className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-paper-faint">
                 {c.label}
@@ -322,7 +323,7 @@ export default function PilotePage() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 rounded-xl border border-ink-600 bg-ink-900 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-paper-faint">
+          <p className="panel mt-3 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-paper-faint">
             <strong className="text-paper-dim">Condition matérielle :</strong> l&apos;app et n8n tournent sur ta machine.
             Portable fermé = tout s&apos;arrête, sauf le tracking (hébergé) qui continue de compter. Voir{" "}
             <code className="code">docs/AUTOPILOTE.md</code> pour le laisser tourner en continu.
@@ -350,7 +351,7 @@ export default function PilotePage() {
                   <li key={r.id}>
                     <Link
                       href={r.href}
-                      className="flex items-center gap-2.5 rounded-xl border border-ink-700 px-3 py-2.5 transition-colors hover:border-bronze-700 hover:bg-ink-800"
+                      className="panel flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:border-bronze-700"
                     >
                       <span
                         className={cn(

@@ -123,7 +123,7 @@ export function ReferencesPanel() {
           const aArbitrer = r.lecons.filter((l) => l.statut === "conflit-doctrine" || l.statut === "bloque");
 
           return (
-            <li key={r.id} className="rounded-xl border border-ink-600 bg-ink-850 p-3">
+            <li key={r.id} className="panel p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-display text-[14px] font-bold text-paper">{r.titre}</p>

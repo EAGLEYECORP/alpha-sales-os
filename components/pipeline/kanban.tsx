@@ -83,8 +83,11 @@ export function KanbanBoard({ prospects, onVoirListe }: { prospects: Prospect[];
               onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
               onDrop={() => drop(stage.id)}
               className={cn(
-                "flex w-64 shrink-0 flex-col rounded-xl border bg-ink-900/50 transition-colors",
-                overStage === stage.id ? "border-bronze-500 bg-bronze-900/20" : "border-ink-700",
+                // Une colonne est une sous-surface : `panel`, pas une plaque de
+                // verre. Empiler dix colonnes floutées côte à côte coûterait dix
+                // couches de composition pour un effet qu'on ne verrait pas.
+                "panel flex w-64 shrink-0 flex-col transition-colors",
+                overStage === stage.id && "border-bronze-500 bg-bronze-900/20",
                 stage.id === "redzone" && "border-signal-red/30",
                 stage.id === "signe" && "border-signal-green/30"
               )}

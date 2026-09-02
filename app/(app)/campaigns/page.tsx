@@ -11,6 +11,7 @@ import { InboundInbox } from "@/components/campaigns/inbox";
 import { ChiffresDeCampagneDemo } from "@/components/donnees-de-demo";
 import { IndustryTrackingStats } from "@/components/tracking/tracking-stats";
 import { CampaignReview } from "@/components/campaigns/campaign-review";
+import { PageHeader } from "@/components/ui/page-header";
 
 const KIND_ICON: Record<CampaignStepKind, React.ReactNode> = {
   email: <Mail size={13} />,
@@ -75,21 +76,21 @@ export default function CampaignsPage() {
     });
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-paper">Campagnes</h1>
-          <p className="text-sm text-paper-faint">Séquences email / WhatsApp / appel. Objectif unique : un audit terrain daté.</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="btn-ghost" onClick={() => setMagnetOpen(true)}>
-            <Wand2 size={14} /> Lead magnet
-          </button>
-          <button className="btn-bronze" onClick={newCampaign}>
-            <Plus size={15} /> Campagne
-          </button>
-        </div>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Campagnes"
+        subtitle="Séquences email / WhatsApp / appel. Objectif unique : un audit terrain daté."
+        actions={
+          <>
+            <button className="btn-ghost" onClick={() => setMagnetOpen(true)}>
+              <Wand2 size={14} /> Lead magnet
+            </button>
+            <button className="btn-bronze" onClick={newCampaign}>
+              <Plus size={15} /> Campagne
+            </button>
+          </>
+        }
+      />
 
       <InboundInbox />
 

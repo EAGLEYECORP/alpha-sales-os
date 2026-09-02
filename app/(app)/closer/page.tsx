@@ -38,6 +38,7 @@ import { ClosingMode } from "@/components/training/closing-mode";
 import { Sparring } from "@/components/training/sparring";
 import { LiveAssist } from "@/components/voice/live-assist";
 import { verticalForProspect } from "@/lib/playbook";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * ALPHA CLOSER OS — le compagnon de tournée. Pensé pour le téléphone,
@@ -145,36 +146,32 @@ export default function CloserPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
+    <div className="page">
       {/* En-tête — l'essentiel de la journée, lisible d'un coup d'œil dans la rue */}
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            Terrain · {now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">
-            ALPHA <span className="text-bronze-400">CLOSER OS</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-5">
-          <div>
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Prochain RDV</p>
-            <p className="font-display text-sm font-bold text-paper">
-              {nextStop
-                ? `${new Date(nextStop.meeting.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${nextStop.prospect.company}`
-                : "—"}
-            </p>
+      <PageHeader
+        eyebrow={`Terrain · ${now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`}
+        title={<>ALPHA <span className="text-bronze-400">CLOSER OS</span></>}
+        actions={
+          <div className="flex items-center gap-5">
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Prochain RDV</p>
+              <p className="font-display text-sm font-bold text-paper">
+                {nextStop
+                  ? `${new Date(nextStop.meeting.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · ${nextStop.prospect.company}`
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Potentiel du jour</p>
+              <p className="font-display text-sm font-extrabold text-bronze-400">
+                <Flame size={13} className="mr-1 inline -translate-y-px" />
+                {eur(Math.round(potentialAnim))}
+              </p>
+            </div>
+            <AlphaLiveButton prospect={nextStop?.prospect} />
           </div>
-          <div>
-            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">Potentiel du jour</p>
-            <p className="font-display text-sm font-extrabold text-bronze-400">
-              <Flame size={13} className="mr-1 inline -translate-y-px" />
-              {eur(Math.round(potentialAnim))}
-            </p>
-          </div>
-          <AlphaLiveButton prospect={nextStop?.prospect} />
-        </div>
-      </header>
+        }
+      />
 
       {/* Onglets */}
       <div className="flex gap-1.5">

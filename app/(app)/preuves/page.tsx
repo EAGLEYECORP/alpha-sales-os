@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import { eur } from "@/lib/utils";
 import { proofStats, renderProofCard } from "@/lib/proof";
 import { useCountUp } from "@/lib/use-count-up";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Salle des Preuves — la valeur créée par l'OS, démontrée par ses
@@ -41,18 +42,16 @@ export default function ProofPage() {
   const maxTouches = Math.max(1, ...CHANNELS.map((c) => s.touches[c.key]));
 
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-paper">Salle des Preuves</h1>
-          <p className="text-sm text-paper-faint">
-            La valeur créée, en euros, extraite du CRM. Zéro chiffre inventé — le CRM fait foi.
-          </p>
-        </div>
-        <button className="btn-bronze" onClick={openCard} title="Document anonymisé (aucun nom de client), prêt à capturer pour LinkedIn/X ou à joindre à un email">
-          <Download size={15} /> Carte de preuve publique
-        </button>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Salle des Preuves"
+        subtitle="La valeur créée, en euros, extraite du CRM. Zéro chiffre inventé — le CRM fait foi."
+        actions={
+          <button className="btn-bronze" onClick={openCard} title="Document anonymisé (aucun nom de client), prêt à capturer pour LinkedIn/X ou à joindre à un email">
+            <Download size={15} /> Carte de preuve publique
+          </button>
+        }
+      />
 
       {/* Les 4 vitaux de la preuve */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">

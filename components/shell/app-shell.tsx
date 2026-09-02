@@ -291,7 +291,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar — desktop (repliable : ⌘B ou le bouton) */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-ink-700 bg-ink-900/60 backdrop-blur-xl sticky top-0 h-screen transition-[width] duration-200 ease-out",
+          // ⚠ Les trois surfaces de chrome (ce rail, l'en-tête mobile, la barre
+          // du bas) portaient CHACUNE leur propre recette de verre : trois
+          // opacités (60 / 90 / 95 %) et deux flous différents. Elles encadrent
+          // pourtant le même contenu et doivent lire comme une seule fenêtre.
+          // `glass-chrome` est cette recette, une fois.
+          "glass-chrome hidden md:flex flex-col border-r border-ink-700 sticky top-0 h-screen transition-[width] duration-200 ease-out",
           collapsed ? "w-16" : "w-60"
         )}
       >
@@ -422,7 +427,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main */}
       <main className="flex-1 min-w-0 pb-20 md:pb-0">
         {/* Header mobile — logo + recherche */}
-        <div className="sticky top-0 z-40 flex items-center justify-between border-b border-ink-700 bg-ink-950/90 px-4 py-2.5 backdrop-blur-xl md:hidden">
+        <div className="glass-chrome sticky top-0 z-40 flex items-center justify-between border-b border-ink-700 px-4 py-2.5 md:hidden">
           <Link href="/" className="flex items-center gap-2">
             <span className="text-bronze-400"><Eagle size={26} glow /></span>
             <span className="font-display text-[13px] font-extrabold tracking-[0.04em] text-paper">
@@ -456,7 +461,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* Bottom nav — mobile (safe-area : barre gestuelle Android/iOS en PWA) */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 bg-ink-900/95 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]">
+      <nav className="glass-chrome fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 md:hidden pb-[env(safe-area-inset-bottom)]">
         {MOBILE_NAV.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}

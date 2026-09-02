@@ -20,6 +20,7 @@ import { buildPath, type PathStep } from "@/lib/onboarding-path";
 import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
 import { SurfacePreuve } from "@/components/demarrage/surface-preuve";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 const MANUAL_KEY = "alpha_path_manual";
 
@@ -103,18 +104,16 @@ export default function DemarragePage() {
   }, [open, path.next]);
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            Une étape à la fois · dans l&apos;ordre
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">Prise en main</h1>
-        </div>
-        <button className="btn-ghost px-3 py-1.5 text-[12px]" onClick={load} disabled={loading}>
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Réévaluer
-        </button>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="Une étape à la fois · dans l'ordre"
+        title="Prise en main"
+        actions={
+          <button className="btn-ghost px-3 py-1.5 text-[12px]" onClick={load} disabled={loading}>
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Réévaluer
+          </button>
+        }
+      />
 
       {/* ── LA PROCHAINE ACTION ── */}
       {path.next ? (

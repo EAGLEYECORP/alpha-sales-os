@@ -7,6 +7,7 @@ import { useAlpha } from "@/lib/store";
 import { computeCampaignFunnel, type CampaignFunnel, type FunnelRecord } from "@/lib/campaign-funnel";
 import { auditDepth, computeCycle, computeMilestones, conversationEfficiency } from "@/lib/milestones";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Jalons — 10 → 100 → 1 000 → 10 000 → 100 000.
@@ -69,13 +70,11 @@ export default function MilestonesPage() {
   const progressToNext = Math.min(100, Math.round((engaged / current.n) * 100));
 
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Jalons — le cycle infini</h1>
-        <p className="text-sm text-paper-faint">
-          On ne monte pas en volume, on monte en niveau : la conversation d&apos;abord, l&apos;échelle ensuite.
-        </p>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Jalons — le cycle infini"
+        subtitle="On ne monte pas en volume, on monte en niveau : la conversation d'abord, l'échelle ensuite."
+      />
 
       {/* Où j'en suis */}
       <section className="card border-bronze-700/60 p-5">
@@ -94,15 +93,15 @@ export default function MilestonesPage() {
         </div>
         <div className="mt-3"><Bar value={progressToNext} target={100} /></div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+          <div className="panel rounded-lg p-3">
             <p className="text-[11px] text-paper-faint">Efficacité de conversation (vs ligne dorée)</p>
-            <p className="mt-1 font-display text-2xl font-bold text-paper">{eff === null ? "—" : `${eff} %`}</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-paper">{eff === null ? "—" : `${eff} %`}</p>
             <div className="mt-2"><Bar value={eff} target={100} /></div>
             <p className="mt-1.5 text-[10.5px] text-paper-faint">
               Moyenne des étapes mesurées du cycle, chacune rapportée à sa cible. 100 % = chaque conversation au niveau des meilleurs.
             </p>
           </div>
-          <div className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+          <div className="panel rounded-lg p-3">
             <p className="flex items-center gap-1.5 text-[11px] text-paper-faint"><InfinityIcon size={12} /> Le pipeline ne rétrécit jamais</p>
             <p className="mt-1 text-[13px] text-paper-dim">
               <strong className="text-paper">{stops}</strong> perdu(s)/STOP — chacun se remplace par une cible de

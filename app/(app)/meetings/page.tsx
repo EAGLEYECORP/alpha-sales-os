@@ -9,6 +9,7 @@ import { cn, dateTimeFr, daysAhead, isOverdue, relativeFr, uid } from "@/lib/uti
 import { Modal } from "@/components/ui/modal";
 import { CalendarSync } from "@/components/meetings/calendar-sync";
 import { AlphaLiveButton } from "@/components/live/alpha-live";
+import { PageHeader } from "@/components/ui/page-header";
 
 const KIND_LABEL: Record<MeetingKind, string> = {
   audit: "Audit terrain",
@@ -31,21 +32,19 @@ export default function MeetingsPage() {
   const done = meetings.filter((m) => m.done).sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-paper">Rendez-vous</h1>
-          <p className="text-sm text-paper-faint">
-            La démo mobile AVANT le prix — chaque RDV a un objectif d&apos;étape unique.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <AlphaLiveButton />
-          <button className="btn-bronze" onClick={() => setAdding(true)}>
-            <Plus size={15} /> RDV
-          </button>
-        </div>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Rendez-vous"
+        subtitle="La démo mobile AVANT le prix — chaque RDV a un objectif d'étape unique."
+        actions={
+          <>
+            <AlphaLiveButton />
+            <button className="btn-bronze" onClick={() => setAdding(true)}>
+              <Plus size={15} /> RDV
+            </button>
+          </>
+        }
+      />
 
       <CalendarSync meetings={meetings} />
 

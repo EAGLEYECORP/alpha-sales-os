@@ -12,6 +12,7 @@ import { proofStats } from "@/lib/proof";
 import { verticalForProspect } from "@/lib/playbook";
 import { isOverdue } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
+import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 
 interface ChatMessage {
@@ -167,14 +168,16 @@ export default function AgentPage() {
 
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col animate-fade-up md:h-[calc(100vh-4rem)]">
-      <header className="mb-4">
-        <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-paper">
-          <Bot size={24} className="text-bronze-400" /> Agent ALPHA
-        </h1>
-        <p className="text-sm text-paper-faint">
-          Copilote conversationnel branché sur tout l&apos;OS : pipeline, audits, campagnes, doctrine.
-        </p>
-      </header>
+      {/* ⚠ Pas de `.page` ici : cet écran est une conversation à hauteur
+          fixe. `space-y-*` sur un parent `flex-col` ajouterait une marge
+          entre l'en-tête et la zone `flex-1`, qui recalcule alors sa
+          hauteur — la zone de saisie sortirait du cadre. */}
+      <PageHeader
+        className="mb-4"
+        icon={<Bot size={24} className="text-bronze-400" />}
+        title="Agent ALPHA"
+        subtitle="Copilote conversationnel branché sur tout l'OS : pipeline, audits, campagnes, doctrine."
+      />
 
       <div ref={scrollRef} className="card flex-1 space-y-4 overflow-y-auto p-4">
         {messages.length === 0 && (

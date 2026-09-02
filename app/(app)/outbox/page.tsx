@@ -31,6 +31,7 @@ import type { DraftContent } from "@/lib/gmail-draft";
 import { stageById } from "@/lib/hormozi";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 const SENDER_KEY = "alpha_manual_sender";
 const TEST_KEY = "alpha_manual_test_to";
@@ -294,23 +295,21 @@ export default function OutboxPage() {
   const sendableCount = list.filter((t) => !t.demo).length;
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            ALPHA rédige · tu envoies de ta main
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">Boîte d&apos;envoi</h1>
-        </div>
-        <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <span className="text-paper-faint">
-            Envoyés <b className="ml-1 font-display text-base text-signal-green">{doneToday}</b>
-          </span>
-          <span className="text-paper-faint">
-            Palier du jour <b className="ml-1 font-display text-base text-paper">{ramp.today}</b>
-          </span>
-        </div>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="ALPHA rédige · tu envoies de ta main"
+        title="Boîte d'envoi"
+        actions={
+          <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
+            <span className="text-paper-faint">
+              Envoyés <b className="ml-1 font-display text-base text-signal-green">{doneToday}</b>
+            </span>
+            <span className="text-paper-faint">
+              Palier du jour <b className="ml-1 font-display text-base text-paper">{ramp.today}</b>
+            </span>
+          </div>
+        }
+      />
 
       {/* Le compte expéditeur — sinon Gmail rédige depuis le dernier compte utilisé */}
       <section className="card p-4">

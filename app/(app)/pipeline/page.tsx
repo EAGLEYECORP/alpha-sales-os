@@ -19,6 +19,7 @@ import { cn, dateFr, eur } from "@/lib/utils";
 import { KanbanBoard } from "@/components/pipeline/kanban";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
 import { StageBadge } from "@/components/ui/stage-badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 /** Lignes par page. Au-delà, le rendu se sent au defilement. */
 const TAILLE_PAGE = 50;
@@ -136,36 +137,38 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-paper">Pipeline</h1>
-          <p className="text-sm text-paper-faint">
+    <div className="page">
+      <PageHeader
+        title="Pipeline"
+        subtitle={
+          <>
             {filtered.length} prospect(s) · pipe pondéré <span className="font-mono text-bronze-400">{eur(totalPipe)}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-ink-600 p-0.5">
-            <button
-              onClick={() => setView("kanban")}
-              className={cn("rounded-md px-2.5 py-1.5", view === "kanban" ? "bg-bronze-900/80 text-bronze-300" : "text-paper-faint")}
-              title="Vue Kanban"
-            >
-              <Kanban size={16} />
+          </>
+        }
+        actions={
+          <>
+            <div className="panel flex p-0.5">
+              <button
+                onClick={() => setView("kanban")}
+                className={cn("rounded-md px-2.5 py-1.5", view === "kanban" ? "bg-bronze-900/80 text-bronze-300" : "text-paper-faint")}
+                title="Vue Kanban"
+              >
+                <Kanban size={16} />
+              </button>
+              <button
+                onClick={() => setView("list")}
+                className={cn("rounded-md px-2.5 py-1.5", view === "list" ? "bg-bronze-900/80 text-bronze-300" : "text-paper-faint")}
+                title="Vue liste"
+              >
+                <List size={16} />
+              </button>
+            </div>
+            <button className="btn-bronze" onClick={() => setAdding(true)}>
+              <Plus size={15} /> Prospect
             </button>
-            <button
-              onClick={() => setView("list")}
-              className={cn("rounded-md px-2.5 py-1.5", view === "list" ? "bg-bronze-900/80 text-bronze-300" : "text-paper-faint")}
-              title="Vue liste"
-            >
-              <List size={16} />
-            </button>
-          </div>
-          <button className="btn-bronze" onClick={() => setAdding(true)}>
-            <Plus size={15} /> Prospect
-          </button>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">

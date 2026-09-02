@@ -10,6 +10,7 @@ import { stageById } from "@/lib/hormozi";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BulkSiteAudit } from "@/components/audits/bulk-site-audit";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -81,18 +82,16 @@ export default function AuditsPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">Le cadeau qui ouvre la porte</p>
-          <h1 className="font-display text-2xl font-bold text-paper">Audits</h1>
-        </div>
-        <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <span className="text-paper-faint">
+    <div className="page">
+      <PageHeader
+        eyebrow="Le cadeau qui ouvre la porte"
+        title="Audits"
+        actions={
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper-faint">
             Sélection <b className="ml-1 font-display text-base text-paper">{chosen.length}</b>
           </span>
-        </div>
-      </header>
+        }
+      />
 
       {/* Audit auto en lot — remplit les données de fiche depuis les sites */}
       <BulkSiteAudit />

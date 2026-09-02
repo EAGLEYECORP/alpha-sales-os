@@ -3,6 +3,7 @@
 import { Mail, MessageSquare, Phone, Sprout } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 const CHANNEL_ICON = {
   email: <Mail size={13} />,
@@ -16,13 +17,11 @@ export default function NurturePage() {
   const signed = prospects.filter((p) => p.stage === "signe");
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Relances long terme</h1>
-        <p className="text-sm text-paper-faint">
-          Deux automatismes : recontacter les « non » au bon moment (90 jours), et transformer chaque client signé en source de recommandations.
-        </p>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Relances long terme"
+        subtitle="Deux automatismes : recontacter les « non » au bon moment (90 jours), et transformer chaque client signé en source de recommandations."
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="card p-4">

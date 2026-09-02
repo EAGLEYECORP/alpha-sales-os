@@ -77,6 +77,7 @@ import { RecoveryProjection } from "@/components/prospects/recovery-projection";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
 import { BlocagesSignature } from "@/components/blocages-signature";
+import { PageHeader } from "@/components/ui/page-header";
 
 type Tab = "doctrine" | "audit" | "timeline" | "commercial" | "coach" | "templates" | "tracking" | "fichiers";
 
@@ -144,7 +145,7 @@ export default function ProspectDetailPage() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-up">
+    <div className="page">
       <div className="flex items-center justify-between gap-2 text-sm text-paper-faint">
         <div className="flex items-center gap-2">
           <Link href="/pipeline" className="flex items-center gap-1 hover:text-paper">
@@ -158,35 +159,36 @@ export default function ProspectDetailPage() {
 
       {/* Header card */}
       <header className="card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-display text-2xl font-bold text-paper">{p.company}</h1>
-              <StageBadge stage={p.stage} />
-            </div>
-            <p className="mt-1 text-sm text-paper-dim">
+        <PageHeader
+          className="items-start"
+          title={p.company}
+          badge={<StageBadge stage={p.stage} />}
+          subtitle={
+            <>
               {p.name} · <span className="capitalize">{p.sector}</span> · {p.city}
               {p.phone && <> · <a href={`tel:${p.phone}`} className="text-bronze-400 hover:underline">{p.phone}</a></>}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-4 font-mono text-sm">
-              <span className="text-paper">
-                {eur(p.setupValue)} <span className="text-paper-faint">setup</span> + {eur(p.monthlyValue)}
-                <span className="text-paper-faint">/mois</span>
+              <span className="mt-3 flex flex-wrap gap-4 font-mono text-sm">
+                <span className="text-paper">
+                  {eur(p.setupValue)} <span className="text-paper-faint">setup</span> + {eur(p.monthlyValue)}
+                  <span className="text-paper-faint">/mois</span>
+                </span>
+                <span className="text-bronze-400">{eur(weightedValue(p))} <span className="text-paper-faint">pondéré</span></span>
+                <span className="text-signal-red">
+                  −{eur(ignoranceTaxTotal(p))} <span className="text-paper-faint">taxe d&apos;ignorance cumulée</span>
+                </span>
               </span>
-              <span className="text-bronze-400">{eur(weightedValue(p))} <span className="text-paper-faint">pondéré</span></span>
-              <span className="text-signal-red">
-                −{eur(ignoranceTaxTotal(p))} <span className="text-paper-faint">taxe d&apos;ignorance cumulée</span>
-              </span>
+            </>
+          }
+          actions={
+            <div className="flex flex-wrap gap-3">
+              <ProgressRing value={p.trust} size={52} label="confiance" />
+              <ProgressRing value={p.likeness} size={52} label="affinité" tone="dim" />
+              <ProgressRing value={p.auditScore} size={52} label="audit" tone="dim" />
+              <ProgressRing value={p.probability} size={52} label="close %" tone="heat" />
+              <ProgressRing value={p.conviction} max={10} size={52} label="conviction" tone={p.conviction >= 10 ? "green" : "red"} />
             </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <ProgressRing value={p.trust} size={52} label="confiance" />
-            <ProgressRing value={p.likeness} size={52} label="affinité" tone="dim" />
-            <ProgressRing value={p.auditScore} size={52} label="audit" tone="dim" />
-            <ProgressRing value={p.probability} size={52} label="close %" tone="heat" />
-            <ProgressRing value={p.conviction} max={10} size={52} label="conviction" tone={p.conviction >= 10 ? "green" : "red"} />
-          </div>
-        </div>
+          }
+        />
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-700 pt-4">
           {p.stage !== "signe" && p.stage !== "perdu" && (
@@ -258,7 +260,7 @@ export default function ProspectDetailPage() {
 
         {/* Current next step + quick log */}
         {p.nextStep && !["signe", "perdu"].includes(p.stage) && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink-700 bg-ink-900 px-3.5 py-2.5">
+          <div className="panel mt-3 flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
             <p className="text-sm text-paper-dim">
               <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-paper-faint">Next step · </span>
               {p.nextStep.action}{" "}
@@ -300,7 +302,7 @@ export default function ProspectDetailPage() {
       </header>
 
       {/* Tabs */}
-      <nav className="flex gap-1 overflow-x-auto rounded-xl border border-ink-700 bg-ink-900/60 p-1">
+      <nav className="panel flex gap-1 overflow-x-auto p-1">
         {(
           [
             ["doctrine", "Doctrine", <Layers key="i" size={14} />],
@@ -1675,7 +1677,7 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
 
   return (
     <div className="space-y-4">
-    <div className="flex items-center justify-between rounded-xl border border-ink-700 bg-ink-900 px-4 py-2.5">
+    <div className="panel flex items-center justify-between px-4 py-2.5">
       <p className="text-[12px] text-paper-faint">4 messages prêts pour <strong className="text-paper">{p.company}</strong> (email, WhatsApp, LinkedIn) — besoin d&apos;un autre moment ou format ?</p>
       <Link href="/templates" className="btn-ghost px-3 py-1.5 text-[12px]">Toute la bibliothèque →</Link>
     </div>

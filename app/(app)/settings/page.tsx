@@ -35,6 +35,7 @@ import { PanneauOperateur } from "@/components/settings/panneau-operateur";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function SettingsPage() {
   const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, loadPipelineJuillet, loadProspectsICP, prospects } = useAlpha();
@@ -328,11 +329,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Réglages</h1>
-        <p className="text-sm text-paper-faint">Règles business, clés API, données, rôles.</p>
-      </header>
+    <div className="page">
+      <PageHeader title="Réglages" subtitle="Règles business, clés API, données, rôles." />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── OPÉRATEUR. Le gabarit d'environnement et l'état de NOTRE
@@ -803,7 +801,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Compte multi-locataire (SaaS) — exiger une connexion Supabase */}
-          <div className="mt-4 rounded-xl border border-ink-700 bg-ink-900/40 p-3.5">
+          <div className="panel mt-4 p-3.5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="flex items-center gap-2 text-sm font-medium text-paper">

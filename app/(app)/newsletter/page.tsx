@@ -7,6 +7,7 @@ import { identiteEnvoi } from "@/lib/expediteur";
 import type { Prospect, Sector } from "@/lib/types";
 import { isDemoProspect } from "@/lib/seed";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Newsletter — le moteur du « tout le temps ».
@@ -203,14 +204,12 @@ export default function NewsletterPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header>
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">Le moteur du « tout le temps »</p>
-        <h1 className="font-display text-2xl font-bold text-paper">Newsletter</h1>
-        <p className="text-sm text-paper-faint">
-          Une observation de terrain, aucune vente. Le seul appel à l&apos;action : « voulez-vous l&apos;audit ? »
-        </p>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="Le moteur du « tout le temps »"
+        title="Newsletter"
+        subtitle="Une observation de terrain, aucune vente. Le seul appel à l'action : « voulez-vous l'audit ? »"
+      />
 
       {/* Audience */}
       <section className="card space-y-3 p-4">

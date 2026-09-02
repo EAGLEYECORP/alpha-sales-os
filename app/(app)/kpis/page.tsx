@@ -7,6 +7,7 @@ import { STAGES } from "@/lib/hormozi";
 import { CampaignRatesChart, SectorChart } from "@/components/charts";
 import { KpisRollup } from "@/components/kpis/rollup";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function KpisPage() {
   const { prospects, campaigns } = useAlpha();
@@ -49,13 +50,11 @@ export default function KpisPage() {
   const whyNo = prospects.filter((p) => p.lostReason).map((p) => ({ company: p.company, reason: p.lostReason!, id: p.id }));
 
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">KPIs</h1>
-        <p className="text-sm text-paper-faint">
-          Est-ce qu&apos;on t&apos;ouvre, est-ce qu&apos;on te répond, est-ce qu&apos;on te fait confiance — et surtout : pourquoi OUI, pourquoi NON.
-        </p>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="KPIs"
+        subtitle="Est-ce qu'on t'ouvre, est-ce qu'on te répond, est-ce qu'on te fait confiance — et surtout : pourquoi OUI, pourquoi NON."
+      />
 
       {/* Rollup — funnel global, ligne dorée, économie, comparatif campagnes */}
       <KpisRollup />

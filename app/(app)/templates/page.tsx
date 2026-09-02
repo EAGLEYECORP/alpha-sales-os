@@ -18,6 +18,7 @@ import {
   type TemplateFormat,
 } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function TemplatesPage() {
   const { prospects, settings } = useAlpha();
@@ -74,13 +75,11 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-up">
-      <header>
-        <h1 className="font-display text-2xl font-bold text-paper">Templates</h1>
-        <p className="text-sm text-paper-faint">
-          Le bon message, au bon moment, dans le bon format. Choisis l&apos;industrie, le moment du pipeline, le canal — copie, envoie.
-        </p>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Templates"
+        subtitle="Le bon message, au bon moment, dans le bon format. Choisis l'industrie, le moment du pipeline, le canal — copie, envoie."
+      />
 
       {/* Filtres */}
       <div className="card space-y-4 p-4">
@@ -185,7 +184,7 @@ export default function TemplatesPage() {
                 <p className="font-display text-sm font-bold text-paper">{t.title}</p>
                 <span className="chip shrink-0 border-bronze-700 text-bronze-400">{FORMAT_LABELS[t.format]}</span>
               </div>
-              <pre className="mt-3 flex-1 whitespace-pre-wrap rounded-xl border border-ink-700 bg-ink-900 p-3.5 font-body text-[12.5px] leading-relaxed text-paper-dim">
+              <pre className="panel mt-3 flex-1 whitespace-pre-wrap p-3.5 font-body text-[12.5px] leading-relaxed text-paper-dim">
                 {text}
               </pre>
               <p className="mt-2.5 flex gap-1.5 text-[11.5px] text-bronze-400">

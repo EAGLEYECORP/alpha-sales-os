@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import type { Competitor, Sector } from "@/lib/types";
 import { dateFr, uid } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function IntelPage() {
   const { competitors, upsertCompetitor, deleteCompetitor } = useAlpha();
@@ -23,18 +24,16 @@ export default function IntelPage() {
   });
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-paper">Intel Concurrents</h1>
-          <p className="text-sm text-paper-faint">
-            Ne jamais se battre sur le prix — se battre sur la preuve. Fiche à jour = objection concurrent morte.
-          </p>
-        </div>
-        <button className="btn-bronze" onClick={() => setEditing(newCompetitor())}>
-          <Plus size={15} /> Concurrent
-        </button>
-      </header>
+    <div className="page">
+      <PageHeader
+        title="Intel Concurrents"
+        subtitle="Ne jamais se battre sur le prix — se battre sur la preuve. Fiche à jour = objection concurrent morte."
+        actions={
+          <button className="btn-bronze" onClick={() => setEditing(newCompetitor())}>
+            <Plus size={15} /> Concurrent
+          </button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {competitors.map((c) => (

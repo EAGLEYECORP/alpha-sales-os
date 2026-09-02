@@ -8,6 +8,7 @@ import { buildPayoutLedger } from "@/lib/payouts";
 import { ArgentDeDemo } from "@/components/donnees-de-demo";
 import { eur } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Payouts — ta part, prélevée sur chaque vente, cumulée depuis la première.
@@ -29,28 +30,26 @@ export default function PayoutsPage() {
     iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" }) : "—";
 
   return (
-    <div className="space-y-4 animate-fade-up">
+    <div className="page">
       {/* L'argent de démonstration se nomme : c'est l'écran qu'on ouvre pour
           prouver que l'OS marche. */}
       <ArgentDeDemo prospects={prospects} />
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">
-            Ta part · prélevée sur chaque vente
-          </p>
-          <h1 className="font-display text-2xl font-bold text-paper">Payouts</h1>
-        </div>
-        <div className="text-right">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper-faint">Ta part cumulée</p>
-          <p className="font-display text-3xl font-bold text-bronze-400">{eur(summary.cutTotal)}</p>
-          <p className="text-[11px] text-paper-faint">
-            {/* Le taux EFFECTIF, pas le barème : dès qu'une fiche porte des
-                termes négociés, les lignes n'ont plus toutes le même taux et
-                afficher le barème donnerait une moyenne fausse. */}
-            {summary.tauxEffectifPct}% effectif · depuis {fdate(summary.firstSaleDate)}
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Ta part · prélevée sur chaque vente"
+        title="Payouts"
+        actions={
+          <div className="text-right">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-paper-faint">Ta part cumulée</p>
+            <p className="font-display text-3xl font-bold text-bronze-400">{eur(summary.cutTotal)}</p>
+            <p className="text-[11px] text-paper-faint">
+              {/* Le taux EFFECTIF, pas le barème : dès qu'une fiche porte des
+                  termes négociés, les lignes n'ont plus toutes le même taux et
+                  afficher le barème donnerait une moyenne fausse. */}
+              {summary.tauxEffectifPct}% effectif · depuis {fdate(summary.firstSaleDate)}
+            </p>
+          </div>
+        }
+      />
 
       {/* Les compteurs */}
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">

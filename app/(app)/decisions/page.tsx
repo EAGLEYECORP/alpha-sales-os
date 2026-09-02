@@ -18,6 +18,7 @@ import { stageById } from "@/lib/hormozi";
 import { daysAhead } from "@/lib/utils";
 import type { Prospect, Stage } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -104,16 +105,16 @@ export default function DecisionsPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">La boucle humaine · tu tranches</p>
-          <h1 className="font-display text-2xl font-bold text-paper">À décider</h1>
-        </div>
-        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper-faint">
-          En attente <b className={cn("ml-1 font-display text-base", total ? "text-signal-red" : "text-signal-green")}>{total}</b>
-        </span>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="La boucle humaine · tu tranches"
+        title="À décider"
+        actions={
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper-faint">
+            En attente <b className={cn("ml-1 font-display text-base", total ? "text-signal-red" : "text-signal-green")}>{total}</b>
+          </span>
+        }
+      />
 
       {total === 0 && (
         <section className="card px-4 py-10 text-center">

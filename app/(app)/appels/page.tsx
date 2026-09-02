@@ -26,6 +26,7 @@ import { CalibrationPanel } from "@/components/appels/calibration-panel";
 import { LeconsVerticale } from "@/components/appels/lecons-verticale";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Session d'appels — la « liste du matin ». Une verticale, son script
@@ -122,11 +123,16 @@ export default function AppelsPage() {
 
   if (verticals.length === 0) {
     return (
-      <div className="space-y-4 animate-fade-up">
-        <header>
-          <h1 className="font-display text-2xl font-bold text-paper">Session d&apos;appels</h1>
-          <p className="text-sm text-paper-faint">La liste du matin : une verticale, son script, l&apos;angle de chaque prospect.</p>
-        </header>
+      <div className="page">
+        {/* ⚠ Même en-tête que la branche pleine, au sur-titre près : c'est le
+            MÊME écran. Les deux branches avaient dérivé — celle-ci n'avait pas
+            de sur-titre, l'autre si — et on croyait avoir changé de page en
+            vidant sa file. */}
+        <PageHeader
+          eyebrow="Terrain · une verticale à la fois"
+          title="Session d'appels"
+          subtitle="La liste du matin : une verticale, son script, l'angle de chaque prospect."
+        />
         {/* La file vide n'est pas une erreur, c'est l'étape d'avant : on
             source. Renvoyer vers le pipeline laissait l'opérateur chercher
             tout seul par où commencer. */}
@@ -143,24 +149,24 @@ export default function AppelsPage() {
   }
 
   return (
-    <div className="space-y-4 animate-fade-up">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-bronze-400">Terrain · une verticale à la fois</p>
-          <h1 className="font-display text-2xl font-bold text-paper">Session d&apos;appels</h1>
-        </div>
-        <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
-          <span className="text-paper-faint">
-            Restants <b className="ml-1 font-display text-base text-paper">{counts.restants}</b>
-          </span>
-          <span className="text-paper-faint">
-            RDV <b className="ml-1 font-display text-base text-signal-green">{counts.rdv}</b>
-          </span>
-          <span className="text-paper-faint">
-            Rappels <b className="ml-1 font-display text-base text-signal-amber">{counts.rappeler}</b>
-          </span>
-        </div>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="Terrain · une verticale à la fois"
+        title="Session d'appels"
+        actions={
+          <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em]">
+            <span className="text-paper-faint">
+              Restants <b className="ml-1 font-display text-base text-paper">{counts.restants}</b>
+            </span>
+            <span className="text-paper-faint">
+              RDV <b className="ml-1 font-display text-base text-signal-green">{counts.rdv}</b>
+            </span>
+            <span className="text-paper-faint">
+              Rappels <b className="ml-1 font-display text-base text-signal-amber">{counts.rappeler}</b>
+            </span>
+          </div>
+        }
+      />
 
       {/* Alimenter la file. Replié : quand il y a du monde à appeler, on
           appelle — le sourcing est le geste d'AVANT, pas celui du matin. */}

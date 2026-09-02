@@ -441,6 +441,48 @@ lui qui fait dire « un closer suffit pour 500/jour »), tarif Telnyx à la minu
 > même paragraphe, 47 % du poids — pendant que la phrase du client, elle, était
 > jetée. On garde ce qui ne se recalcule pas ; le reste vit dans le code.
 
+## LE MATÉRIAU ET LE RYTHME (`app/globals.css` + `components/ui/page-header.tsx`)
+Gardés par `tests/mise-en-page.test.ts`. Trois classes, et **une seule
+définition de chacune** — c'est tout le sujet.
+- **`.page`** = le rythme d'un écran (`animate-fade-up space-y-5`). Le padding
+  appartient à la **coquille**, jamais à la page : deux écrans ajoutaient `p-4`
+  par-dessus et avaient un cadre plus épais que tous les autres. Les exceptions
+  (`/agent` pleine hauteur, `/login` centré, `/overlay` fenêtre Electron) sont
+  **listées avec leur motif** dans le test, et le test refuse une exception qui
+  survit à sa page.
+- **`.card`** = la plaque de verre de premier plan. Une plaque translucide, ce
+  sont **quatre** choses ensemble : transparence · flou · **saturation** ·
+  arête haute éclairée + arête basse dans l'ombre. Retirer la saturation
+  suffit à la faire rendre **gris et sale** — c'est celle qu'on oublie.
+- **`.panel`** = la sous-surface CREUSÉE dans une plaque. Teintée avec
+  `--card-fg` (la couleur du TEXTE) : elle s'éclaircit sur fond sombre et
+  s'assombrit sur crème sans une seule règle par thème.
+- **`.glass-chrome`** = le rail, l'en-tête mobile, la barre du bas. Ils
+  encadrent le même contenu et portaient **trois opacités différentes**.
+
+> ⚠ **Pas de verre dans le verre.** Un `backdrop-filter` imbriqué ne floute pas
+> la page : il floute le rendu **déjà flouté** de son parent. Ce n'est pas
+> « plus de verre », c'est de la boue grise, et chaque niveau coûte une couche
+> de composition. `.card .card` et `.card .panel` perdent leur flou d'office.
+
+> ⚠ **Le clair ne redéfinit PAS le matériau, il reteinte les jetons
+> `--glass-*`.** `html.light .card` existait et redéclarait ombre + bordure :
+> le sombre a reçu le flou et la saturation, le clair **ne les a jamais eus**.
+> Deux définitions du même matériau = deux vérités, et les deux « marchaient ».
+
+> ⚠ **Une carte sans flou doit devenir OPAQUE, sinon elle est illisible** — le
+> texte se pose sur le dégradé et le grain de la page. Deux cas réels : le
+> navigateur qui ne sait pas flouter (`@supports not`), et l'utilisateur qui a
+> demandé moins de transparence dans son système
+> (`prefers-reduced-transparency`, réglage d'**accessibilité** — même statut
+> que `reduced-motion`, qu'on respecte déjà).
+
+- **`PageHeader`** est le seul endroit où s'écrit un titre d'écran (la chaîne
+  `font-display text-2xl font-bold text-paper` était recopiée dans 35
+  fichiers). Ordre imposé : sur-titre → `<h1>` → phrase → actions. La
+  **pastille d'état a sa propre entrée** et se rend HORS du `<h1>` : dedans, un
+  lecteur d'écran annonce « titre : Machin Négociation » d'un bloc.
+
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
   Elles sont à **rotate**. Ne JAMAIS écrire une clé collée dans un fichier, un
