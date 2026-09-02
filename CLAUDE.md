@@ -478,6 +478,16 @@ titulaire change lui-même) est le compte Supabase, et l'écran existe déjà :
   misconfiguration n'ouvre jamais.
 - **Après bascule, le mot de passe reste** sur `ADMIN_PREFIXES` (`/payouts`,
   `/offre`, `/api/sync`) : notre économie, jamais celle du client.
+- **La pré-vérification existe déjà** : `GET /api/health`, une fois connecté,
+  rend `auth.serverEnv` · `auth.serverEnforced` · `auth.misconfigured` ·
+  `auth.verrou` · `proprietaire.coherent` (les deux listes `OWNER_EMAILS`
+  concordent-elles). C'est ce qu'il faut lire AVANT et APRÈS avoir posé
+  `REQUIRE_AUTH`.
+  > ⚠ Elle **lit** ces états, elle ne les recalcule pas. Elle les redéduisait
+  > avec sa propre expression régulière sur `REQUIRE_AUTH` — une seconde
+  > définition, dans l'outil même qui sert à vérifier la bascule. Une
+  > divergence n'aurait pas planté : elle aurait MENTI. Un test refuse toute
+  > relecture locale de `REQUIRE_AUTH` dans ce fichier.
   > ⚠ **Le défaut corrigé, et il ne se voyait pas** : l'écran de connexion ne
   > se fermait que sur `settings.security.requireAuth` — un réglage du
   > NAVIGATEUR. Un navigateur neuf (client, navigation privée, autre appareil)

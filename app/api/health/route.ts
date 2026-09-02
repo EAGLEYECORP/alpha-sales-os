@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 import { verifierProprietaire } from "@/lib/proprietaire-coherence";
+import { serverAuthEnforced, serverAuthMisconfigured } from "@/lib/supabase-jwt";
+import { verrouDeComptesActif } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,12 +84,28 @@ export async function GET(req: NextRequest) {
       },
       // Auth multi-locataire : possible dès que Supabase (public) est là —
       // soit via env, soit lié au runtime (invisible ici, d'où le "ou").
+      /**
+       * ⚠ CES TROIS-LÀ SE LISENT, ELLES NE SE RECALCULENT PLUS.
+       *
+       * `serverEnforced` et `misconfigured` refaisaient ici le test de
+       * `REQUIRE_AUTH` avec leur propre expression régulière — une SECONDE
+       * définition de « le serveur exige-t-il un compte ? », à côté de
+       * `lib/supabase-jwt.ts` que le middleware, lui, utilise vraiment.
+       *
+       * C'est précisément la sonde sur laquelle on s'appuie pour vérifier une
+       * bascule vers le login. Une divergence entre les deux ne planterait
+       * pas : elle MENTIRAIT — la sonde annonçant « protégé » pendant que le
+       * middleware pense l'inverse, ou l'inverse. Le pire cas possible pour un
+       * outil de diagnostic.
+       *
+       * `verrou` est ajouté parce que c'est LA question qui décide si le mot
+       * de passe garde encore toute l'app : les deux moitiés vraies, ou rien.
+       */
       auth: {
         serverEnv: supabasePublic,
-        // Enforcement serveur du JWT par compte (REQUIRE_AUTH + secret présent).
-        serverEnforced: has("SUPABASE_JWT_SECRET") && /^(1|true|yes)$/i.test(String(env.REQUIRE_AUTH ?? "")),
-        // REQUIRE_AUTH demandé mais secret absent → misconfiguration (fail-closed).
-        misconfigured: !has("SUPABASE_JWT_SECRET") && /^(1|true|yes)$/i.test(String(env.REQUIRE_AUTH ?? "")),
+        serverEnforced: serverAuthEnforced(),
+        misconfigured: serverAuthMisconfigured(),
+        verrou: verrouDeComptesActif(),
       },
       /**
        * ⚠ LES DEUX LISTES DE PROPRIÉTAIRES — aucun test ne peut les vérifier.

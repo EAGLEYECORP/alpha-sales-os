@@ -113,3 +113,49 @@ test("le mot de passe garde encore l'ADMINISTRATION après la bascule", () => {
   const iGarde = bloc.indexOf("verrouDeComptesActif");
   assert.ok(iAdmin < iGarde, "l'admin doit être tranché AVANT la garde, sinon la bascule l'ouvre");
 });
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LA SONDE QUI SERT À VÉRIFIER LA BASCULE NE DOIT PAS LA RECALCULER.
+ *
+ * `/api/health` refaisait le test de `REQUIRE_AUTH` avec sa propre expression
+ * régulière — une seconde définition de « le serveur exige-t-il un compte ? »,
+ * à côté de celle que le middleware utilise vraiment.
+ *
+ * C'est l'outil sur lequel on s'appuie pour VÉRIFIER qu'une bascule s'est bien
+ * passée. Une divergence entre les deux ne planterait pas : elle mentirait —
+ * la sonde annonçant « protégé » pendant que le middleware pense l'inverse.
+ * Le pire mode de défaillance possible pour un diagnostic.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ /api/health LIT l'état d'authentification, il ne le redéduit pas", () => {
+  const h = sansCommentaires(lire("app/api/health/route.ts"));
+
+  assert.match(h, /serverEnforced: serverAuthEnforced\(\)/, "l'enforcement doit venir de sa source");
+  assert.match(h, /misconfigured: serverAuthMisconfigured\(\)/, "la misconfiguration aussi");
+  assert.match(h, /verrou: verrouDeComptesActif\(\)/, "et LA question qui décide de tout");
+
+  /**
+   * La CONDITION, pas la présence : aucune relecture maison de `REQUIRE_AUTH`
+   * ne doit subsister dans ce fichier. C'est elle qui constituait la seconde
+   * définition — la trouver, c'est trouver la divergence future.
+   */
+  assert.ok(
+    !/REQUIRE_AUTH/.test(h),
+    "aucune relecture locale de REQUIRE_AUTH : la question se pose à un seul endroit"
+  );
+});
+
+test("la sonde de santé garde son détail derrière le mot de passe", () => {
+  /**
+   * Elle publie maintenant `verrou` — donc « ce déploiement est-il protégé ».
+   * Sur une route publique, ce serait une invitation, pas un diagnostic. Le
+   * détail n'est rendu qu'avec le cookie ; sans lui, `{ ok, checkedAt }`.
+   */
+  const h = sansCommentaires(lire("app/api/health/route.ts"));
+  // ⚠ On vise le POINT D'APPEL, pas la définition : viser `detailAutorise`
+  // tout court attrapait la fonction et prouvait seulement qu'elle existe.
+  const i = h.indexOf("if (!detailAutorise(");
+  assert.ok(i > 0, "le détail doit rester conditionné à l'entrée de la route");
+  assert.match(h.slice(i, i + 250), /return NextResponse\.json\(\{ ok: true, checkedAt/);
+});
