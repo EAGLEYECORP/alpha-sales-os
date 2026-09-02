@@ -31,7 +31,7 @@ import {
  * Trois choses protégées :
  *  · le NUMÉRO (une fiche sans numéro composable n'a rien à faire dans une
  *    liste d'appels) ;
- *  · le SIGNAL DE DEMANDE (c'est le déclencheur Callflow, pas le métier) ;
+ *  · le SIGNAL DE DEMANDE (c'est le déclencheur Alpha Voice, pas le métier) ;
  *  · le PLAFOND LÉGAL de sollicitations.
  * ─────────────────────────────────────────────────────────────────────
  */
@@ -130,7 +130,7 @@ test("terrain — le mécontentement GÉNÉRAL n'est pas une plainte d'injoignab
 
 test("terrain — le VOLUME de demande compte, pas la qualité du métier", () => {
   // Une entreprise sans demandes n'a pas notre douleur, quel que soit son
-  // métier. C'est le déclencheur de la marche Callflow, pas le secteur.
+  // métier. C'est le déclencheur de la marche Alpha Voice, pas le secteur.
   const grosse = qualifierTerrain(fiche({ avis: String(AVIS_DEMANDE_ELEVEE + 20), extraitsAvis: "" }));
   const petite = qualifierTerrain(fiche({ avis: "3", extraitsAvis: "" }));
   assert.ok(grosse.score > petite.score);
@@ -256,7 +256,7 @@ test("import terrain — les signaux atterrissent dans deepAudit, pas dans les n
   assert.ok((p.deepAudit.missedCallsPerWeek ?? 0) > 0, "une plainte doit alimenter le déclencheur de l'escalier");
 
   const escalier = buildLadder(p);
-  assert.ok(escalier.rungs.some((x) => x.id === "alpha-voice"), "l'escalier doit déclencher Callflow sur cette fiche");
+  assert.ok(escalier.rungs.some((x) => x.id === "alpha-voice"), "l'escalier doit déclencher Alpha Voice sur cette fiche");
 });
 
 test("import terrain — sans plainte, AUCUN nombre d'appels manqués n'est inventé", () => {
@@ -304,8 +304,10 @@ test("plan d'appels — au-delà de 4 sollicitations, l'alerte juridique tombe",
    * nom propre sur sa ligne perso est exactement la zone grise, et c'est nous
    * qui portons le risque sur une liste mêlée.
    *
-   * ⚠ La cadence Callflow exigée par ScintIA est de CINQ rappels sur deux
-   * jours. Sur une cible qui bascule en B2C, elle est hors des clous.
+   * ⚠ La cadence imposée par le revendeur disparu était de CINQ rappels sur
+   * deux jours — hors des clous dès qu'une cible bascule en B2C. Descendue à
+   * 3 le 02/09/2026, elle tient désormais dans les quatre. Ce test garde le
+   * SEUIL, pas la cadence : il doit continuer d'alerter à 5.
    */
   assert.ok(planifierAppels(1000, 5).alertes.some((a) => /4 sollicitations/.test(a)));
   assert.deepEqual(planifierAppels(1000, 4).alertes, [], "4 tentatives ne déclenche aucune alerte");

@@ -263,7 +263,7 @@ test("⚠ on valide le CADRE, jamais ses déclinaisons sectorielles", () => {
    * porte la promesse ; le remplissage sectoriel change le vocabulaire.
    */
   const cadres = cadresSortants();
-  const complet = buildTemplates({ agency: "ScintIA" });
+  const complet = buildTemplates({ agency: "Partenaire Démo" });
 
   assert.ok(cadres.length > 0);
   assert.ok(

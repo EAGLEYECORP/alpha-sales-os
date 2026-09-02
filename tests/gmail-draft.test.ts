@@ -55,9 +55,9 @@ test("draftContentFor — rend un HTML « calme » et un texte, vers la bonne ad
 test("⚠ le brouillon porte l'agence de l'OPÉRATEUR, pas la nôtre", () => {
   const c = draftContentFor(fiche({ email: "m@x.fr" }), {
     closerName: "Camille",
-    agencyName: "ScintIA",
+    agencyName: "Partenaire Démo",
   });
-  assert.match(c.html, /ScintIA/, "l'en-tête doit porter l'agence qui envoie");
+  assert.match(c.html, /Partenaire Démo/, "l'en-tête doit porter l'agence qui envoie");
   const sansPlateforme = c.html.replace(/Envoy[ée] avec[\s\S]{0,200}?Alpha Sales OS[\s\S]{0,80}/gi, "");
   assert.ok(
     !/Eagleye/i.test(sansPlateforme),

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { matchOffer } from "../lib/offer-match";
 
-test("offer-match — appels manqués + métier téléphone → Callflow", () => {
+test("offer-match — appels manqués + métier téléphone → Alpha Voice", () => {
   const m = matchOffer({ sector: "garage / carrosserie", missedCallsPerWeek: 8 });
   assert.equal(m.primary, "alpha-voice");
   assert.ok(m.scores["alpha-voice"] >= 5);
@@ -22,7 +22,7 @@ test("offer-match — agence B2B avec deals → Alpha Sales OS", () => {
 });
 
 test("offer-match — maître d'œuvre (permis Lyon) est routable", () => {
-  // MOE avec appels manqués → Callflow ; sans, avec site faible → visibilité.
+  // MOE avec appels manqués → Alpha Voice ; sans, avec site faible → visibilité.
   const phone = matchOffer({ sector: "maître d'œuvre / construction", missedCallsPerWeek: 6 });
   assert.equal(phone.primary, "alpha-voice");
   const invisible = matchOffer({ sector: "maître d'œuvre", websiteState: "obsolète (2014)", googleReviews: 2 });

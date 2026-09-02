@@ -314,8 +314,8 @@ Ordre de lecture, du plus fiable au moins fiable :
 
 ## Récapitulatif — ce qu'il te reste à faire
 
-**Ce week-end, sans domaine :** appels (30/j) + LinkedIn (25/j) + charger les
-fiches. Aucun email froid. Et remonter à Scintia le défaut des sept DMARC.
+**Sans domaine :** appels (30/j) + LinkedIn (25/j) + charger les fiches.
+Aucun email froid.
 
 **Lundi soir, quand `eagleye.fr` arrive :**
 

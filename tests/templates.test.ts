@@ -30,7 +30,7 @@ test("scripts — une VRAIE référence, quand elle existe, remplace le mécanis
 test("scripts — le nom de l'agence vient des réglages, jamais en dur", () => {
   const all = bodies();
   assert.doesNotMatch(all, /EAGLEYE/, "un revendeur ne doit pas envoyer un email signé du compte maître");
-  assert.ok(bodies({ agency: "ScintIA" }).includes("ScintIA"));
+  assert.ok(bodies({ agency: "Partenaire Démo" }).includes("Partenaire Démo"));
   // Sans réglage, un repli neutre plutôt qu'un nom emprunté.
   assert.ok(all.includes("l'agence"));
 });

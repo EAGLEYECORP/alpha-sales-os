@@ -102,9 +102,9 @@ test("linkedin — la cadence bloque une fiche touchée trop récemment", () => 
 });
 
 test("email — les mentions RGPD et le STOP sont toujours présents", () => {
-  const opts = { subject: "Test", body: "Bonjour,\n\nUn mot.", addressLine: "ScintIA — Lyon, France" };
+  const opts = { subject: "Test", body: "Bonjour,\n\nUn mot.", addressLine: "Partenaire Démo — Lyon, France" };
   const html = renderEmail(opts);
-  for (const attendu of ["STOP", "RGPD", "sources publiques", "ScintIA — Lyon, France"]) {
+  for (const attendu of ["STOP", "RGPD", "sources publiques", "Partenaire Démo — Lyon, France"]) {
     assert.ok(html.includes(attendu), `mention absente du HTML : ${attendu}`);
   }
   const txt = plainText(opts);
@@ -117,7 +117,7 @@ test("email — les mentions RGPD et le STOP sont toujours présents", () => {
  * ⚠ CE TEST EXIGEAIT « EAGLEYE CORP » DANS CHAQUE EMAIL. IL GRAVAIT LE BUG.
  *
  * Le produit est white-label : le pied doit porter l'expéditeur, pas nous.
- * L'ancienne version faisait passer au vert un email ScintIA signé de notre
+ * L'ancienne version faisait passer au vert un email partenaire signé de notre
  * raison sociale — c'est-à-dire une identité d'expéditeur fausse dans un
  * message commercial. L'invariant n'est pas « notre marque est là », c'est
  * « SEUL l'expéditeur est là ».
@@ -131,12 +131,12 @@ test("⚠ email — le pied porte l'EXPÉDITEUR, jamais notre marque à sa place
     subject: "Test",
     body: "Bonjour,\n\nUn mot.",
     closerName: "Camille",
-    addressLine: "ScintIA — Lyon, France",
+    addressLine: "Partenaire Démo — Lyon, France",
   };
   const html = renderEmail(opts);
   const txt = plainText(opts);
 
-  assert.ok(html.includes("ScintIA — Lyon, France"), "l'adresse légale de l'expéditeur doit être au pied");
+  assert.ok(html.includes("Partenaire Démo — Lyon, France"), "l'adresse légale de l'expéditeur doit être au pied");
   assert.ok(html.includes("Camille"), "la signature doit être celle de l'expéditeur");
 
   /**

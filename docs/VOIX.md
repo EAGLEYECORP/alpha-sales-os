@@ -187,27 +187,46 @@ l'article 50, l'agent refuse de démarrer — vérifié des deux côtés, app et
 service.
 
 Trois modes exposés : démo entrante, démo sortante sur rendez-vous, rappel
-d'un contact entrant. **Le démarchage à froid n'en fait pas partie** : voir
-juste en dessous.
+d'un contact entrant — **et le démarchage à froid**, voir juste en dessous.
 
 ---
 
-## Ce qui n'a PAS été construit, et pourquoi
+## L'APPEL À FROID — la décision a été renversée le 28/08/2026
 
-**Pas de démarcheur téléphonique IA sortant.** Techniquement faisable en
-quelques jours sur LiveKit Agents (SIP natif) ou Pipecat. Trois raisons de ne
-pas le faire, développées dans `docs/MARCHE.md` §4.2 :
+> ⚠ **Cette section disait « pas de démarcheur téléphonique IA sortant » et
+> elle a continué de le dire pendant que le code faisait l'inverse.** C'est le
+> défaut le plus coûteux qu'un document puisse porter : il ne périme pas en
+> silence, il **argumente contre l'état réel** auprès de quiconque le lit de
+> bonne foi.
 
-1. L'article 50 impose qu'un agent qui appelle se déclare artificiel et dise
-   pour le compte de qui il agit. Le taux de raccrochage derrière cette phrase
-   n'a été honnêtement mesuré par personne.
-2. Conflit de posture : on vend une IA qui répond bien aux clients de nos
-   prospects. Notre propre premier contact ne peut pas être une IA qui
-   démarche.
-3. Ce n'est pas le goulot. Le goulot est le nombre de fiches en base.
+Alpha Voice **démarche à froid** et mène l'appel entier : il qualifie et
+conclut lui-même. La règle est dans le code — `COLD_CALLING_DISCIPLINE`
+(`lib/voice-script.ts`).
 
-La pile reste en veille technique : si un client Scintia demande du sortant un
-jour, c'est une affaire de jours d'intégration.
+**Les trois raisons de ne pas le faire, et ce qu'elles sont devenues**
+(développé dans `docs/MARCHE.md` §4.2) :
+
+1. **L'article 50** impose qu'un agent qui appelle se déclare artificiel et
+   dise pour le compte de qui il agit. → **Toujours vrai, et maintenant
+   appliqué par le code** : la phrase est prononcée par `first_sentence`, pas
+   par le modèle, et `audit_script` refuse un script non conforme. Le taux de
+   raccrochage derrière cette phrase **reste non mesuré** — c'est ce que le
+   palier 10 achète.
+2. **Le conflit de posture** — « notre premier contact ne peut pas être une IA
+   qui démarche » parce qu'on revendait le produit d'un tiers. → **Tombé** :
+   l'accord revendeur est mort le 02/09/2026 et Alpha Voice est à nous.
+   L'entrant et le sortant sont le même produit, avec la même divulgation.
+3. **Ce n'est pas le goulot** — le goulot est le nombre de fiches en base.
+   → **Toujours vrai, mais ce n'est pas un veto** : c'est la raison d'être des
+   paliers 10 · 100 · 1 000, qui n'autorisent le volume qu'après la mesure.
+
+**Ce qui reste de l'ancien refus, et qui compte :** une IA qui démarche n'a
+droit à **aucune improvisation**. Objectif unique (le RDV), aucun prix, le NON
+qui raccroche, le OUI qui passe la main. `auditScript` refuse un script qui
+s'en écarte.
+
+La pile n'est plus en veille : l'entrant tourne en production
+(`voice/INBOUND.md`), le sortant est cadencé par `lib/call-cadence.ts`.
 
 ---
 

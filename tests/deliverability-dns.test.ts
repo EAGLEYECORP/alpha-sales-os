@@ -120,16 +120,27 @@ test("dns — sans MX, les réponses n'arrivent nulle part", () => {
   assert.equal(check(r, "mx").level, "manquant");
 });
 
-test("dns — le cas réel scintia.ai : SPF et DKIM bons, DMARC annulé par ses doublons", () => {
+/**
+ * Un cas RELEVÉ sur un domaine réel (Microsoft 365) : SPF et DKIM impeccables,
+ * et trois enregistrements DMARC concurrents qui s'annulent — le domaine passe
+ * donc pour protégé alors qu'il ne l'est pas. C'est le piège que ce module
+ * existe pour attraper, et il ne s'invente pas.
+ *
+ * ⚠ Le domaine mesuré était celui d'un tiers, nommé ici en clair. Ce qui fait
+ * la valeur du cas, c'est la FORME du relevé (trois DMARC, deux sélecteurs
+ * DKIM Microsoft), pas l'identité de qui l'a subi — et un tiers n'a pas à voir
+ * son défaut de configuration archivé dans notre suite de tests.
+ */
+test("dns — cas relevé : SPF et DKIM bons, DMARC annulé par ses doublons", () => {
   const r = buildDnsReport(
     facts({
-      domain: "scintia.ai",
+      domain: "exemple-releve.test",
       root: { ok: true, records: ["v=spf1 include:spf.protection.outlook.com -all"] },
       dmarc: {
         ok: true,
         records: [
-          "v=DMARC1; p=none; rua=mailto:a@scintia.ai",
-          "v=DMARC1; p=none; rua=mailto:b@scintia.ai",
+          "v=DMARC1; p=none; rua=mailto:a@exemple-releve.test",
+          "v=DMARC1; p=none; rua=mailto:b@exemple-releve.test",
           "v=DMARC1; p=none",
         ],
       },
@@ -137,7 +148,7 @@ test("dns — le cas réel scintia.ai : SPF et DKIM bons, DMARC annulé par ses 
         { selector: "selector1", provider: "Microsoft 365" },
         { selector: "selector2", provider: "Microsoft 365" },
       ],
-      mx: { ok: true, records: [{ exchange: "scintia-ai.mail.protection.outlook.com" }] },
+      mx: { ok: true, records: [{ exchange: "exemple-releve.mail.protection.outlook.com" }] },
     })
   );
   assert.equal(check(r, "spf").level, "ok");

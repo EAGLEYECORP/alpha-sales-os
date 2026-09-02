@@ -84,14 +84,14 @@ test("escalier — marche 2 : un volume de demandes élevé déclenche Alpha Voi
   assert.equal(recurrent.pct, 100, "ni sur le mensuel");
 });
 
-test("escalier — sous le seuil, Callflow ne se déclenche pas", () => {
+test("escalier — sous le seuil, Alpha Voice ne se déclenche pas", () => {
   const l = buildLadder(
     fixture({ deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: HIGH_DEMAND_PER_WEEK - 1 } })
   );
   assert.equal(l.rungs.some((r) => r.id === "alpha-voice"), false);
 });
 
-test("escalier — marche 3 : l'automatisation après Callflow porte l'argument « moins de setup »", () => {
+test("escalier — marche 3 : l'automatisation après Alpha Voice porte l'argument « moins de setup »", () => {
   const p = fixture({
     deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "", missedCallsPerWeek: 9 },
   });
@@ -101,7 +101,7 @@ test("escalier — marche 3 : l'automatisation après Callflow porte l'argument 
   assert.match(auto!.pitch, /point d'entrée/i);
   assert.match(auto!.pitch, /MOINS de setup/i);
 
-  // Sans Callflow en amont, l'argument change (on ne promet pas une remise
+  // Sans Alpha Voice en amont, l'argument change (on ne promet pas une remise
   // qu'on ne peut pas justifier).
   const seul = buildLadder(fixture(), { automationWanted: true });
   const autoSeul = seul.rungs.find((r) => r.id === "automatisation");

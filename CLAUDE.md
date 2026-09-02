@@ -36,16 +36,26 @@ change l'identité + l'offre + la commission, **pas** les données.
 > de l'accord, et **Alpha Voice fait ce travail et il est à nous**. Elle est
 > donc revenue chez EAGLEYE sous ce nom, à **100 %** au lieu de 30 % + 10 %.
 > · Le nom « Callflow » ne doit plus apparaître nulle part : c'était **leur**
->   marque, pas la nôtre.
-> · Les tarifs (990 € + paliers 59/115/169/219/319) étaient **leur grille**.
->   Ils restent en place pour que le calculateur fonctionne, marqués
->   **provisoires** — la marge tient (74–76 % sur notre coût mesuré de
->   0,0563 €/min), mais **le prix n'a pas encore été décidé par nous**.
->   ⚠ Le socle fixe est ~57 €/mois : le premier palier à 59 € ne paie pas
->   l'infrastructure à lui seul.
-> · La **cadence de 5 rappels sur 2 jours** était EXIGÉE par eux. Personne ne
->   l'exige plus : c'est devenu un **choix**, et il est agressif. Le plafond
->   légal sans SIREN (4/30 j) continue de s'appliquer tout seul.
+>   marque, pas la nôtre. **`tests/marque-morte.test.ts` l'applique** — la
+>   règle est restée écrite et non branchée pendant des semaines, et il en
+>   restait dix-sept traces dont quatre visibles à l'écran. Ce que le test
+>   interdit : la marque dans une **chaîne** (ce qui s'affiche, s'envoie ou se
+>   stocke) et dans un **identifiant de doctrine**. Ce qu'il autorise : un
+>   **commentaire** qui explique pourquoi une garde ou un repli existe —
+>   effacer ces noms-là laisserait des décisions sans leur raison.
+> · Leur grille tarifaire (990 € + paliers 59/115/169/219/319) **a été
+>   remplacée le même jour** par la nôtre : 990 € + **149 / 349**. Voir la
+>   section « Tarifs Alpha Sales OS » plus bas, qui fait foi.
+> · Leur **cadence de 5 rappels sur 2 jours** a été **descendue à 3** le même
+>   jour. Voir « Cadence de relance » plus bas, qui fait foi.
+>
+> ⚠⚠ Les deux lignes ci-dessus disaient encore « leur grille reste en place,
+> provisoire » et « 5 rappels, c'est devenu un choix » — **alors que les deux
+> décisions avaient été prises le jour même, plus bas dans ce même fichier**.
+> Une doctrine qui se contredit d'un paragraphe à l'autre ne se lit pas en
+> entier : la session suivante attrape le premier des deux et applique le
+> périmé. Quand une décision tombe, elle se corrige PARTOUT, à commencer par
+> le récit de ce qu'elle remplace.
 
 > ⚠ **Deux « 30 % » différents, ne jamais les confondre.**
 > · Le taux d'un compte = ce qui NOUS revient. Sur EAGLEYE c'est **100 %** :
@@ -223,17 +233,20 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   > calage seul créait pire : un vendredi 17h renvoyait les cinq rappels au
   > lundi matin entre 9h et 10h. Corriger « au bon moment » avait cassé « de la
   > bonne manière » — les deux règles sont distinctes et doivent coexister.
-  > ⚠ **Ces 5 rappels étaient EXIGÉS par le revendeur disparu. Plus personne ne
-  > les exige.** Ce n'est plus une contrainte subie, c'est un CHOIX, et il
-  > t'appartient — il n'y a plus de raison commerciale de ne pas le baisser.
-  > ⚠ **Cette cadence fait 6 contacts en 2 jours. Le décret n° 2022-1313
-  > plafonne le démarchage à 4 sollicitations par consommateur sur 30 jours
-  > glissants.** Il vise le B2C, mais une liste terrain est MÊLÉE et c'est nous
-  > qui portons le risque. `plafondRappels` (`lib/call-cadence.ts`) arbitre :
-  > **SIREN connu → cadence entière ; pas de SIREN → plafond à 4**.
-  > Le croisement au registre lève donc le plafond, et c'est le seul moyen.
-  > Le code ne tranche pas le choix commercial, il empêche seulement la cadence
-  > longue de partir en silence sur une cible à risque.
+  > ⚠ **Le décret n° 2022-1313 plafonne le démarchage à 4 sollicitations par
+  > consommateur sur 30 jours glissants.** Il vise le B2C, mais une liste
+  > terrain est MÊLÉE et c'est nous qui portons le risque. La cadence actuelle
+  > fait **4 contacts** (le premier appel + 3 rappels) : elle est exactement au
+  > plafond, jamais au-dessus. `plafondRappels` (`lib/call-cadence.ts`) reste
+  > armé et arbitre **SIREN connu → cadence entière ; pas de SIREN → 4** —
+  > c'est un filet qui ne mord plus, et c'est l'état qu'on veut.
+  > ⚠⚠ **Ce paragraphe décrivait encore les 5 rappels** (« 6 contacts en
+  > 2 jours », « il n'y a plus de raison de ne pas le baisser ») alors que la
+  > baisse à 3 était décidée douze lignes plus haut, le même jour. Remonter le
+  > tableau à 5 fait repasser le total à 6 et **réarme le régime à deux
+  > vitesses** : le filet se remet à mordre sur les cibles sans SIREN, et c'est
+  > testé. Le code ne tranche pas le choix commercial ; il empêche seulement
+  > une cadence longue de partir en silence sur une cible à risque.
 
 ## L'OFFRE ALPHA VOICE (`lib/offre-alpha-voice.ts` + `docs/OFFRE-ALPHA-VOICE.md`)
 Construite sur l'équation de valeur — **Résultat × Probabilité ÷ (Délai ×

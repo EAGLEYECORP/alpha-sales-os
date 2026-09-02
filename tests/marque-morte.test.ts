@@ -114,6 +114,75 @@ test("⚠ ni dans la doctrine, qui est ce que la session suivante recopiera", ()
   );
 });
 
+/**
+ * Les fichiers qui ont le DROIT de nommer la marque morte, avec leur motif.
+ *
+ * ⚠ Sans cette liste, le contrôle serait ingérable et finirait désactivé. Avec
+ * une liste sans motifs, il deviendrait une décharge où l'on ajoute un chemin
+ * plutôt que de corriger. Chaque entrée dit pourquoi, et le test refuse une
+ * entrée dont le fichier n'existe plus.
+ *
+ * ⚠⚠ ET LE TROU QUE ÇA LAISSE, MESURÉ PAR MUTATION : un fichier autorisé est
+ * autorisé ENTIÈREMENT. Rajouter « Campagne Scintia » en titre de
+ * `docs/APPROCHE-PULL.md` ne fait tomber aucun test — vérifié. Ce n'est pas un
+ * oubli, c'est le prix d'une liste d'exceptions, et il faut le savoir plutôt
+ * que de croire le contrôle total. La seule contrepartie qui tienne : la liste
+ * reste COURTE. Sept entrées aujourd'hui ; si elle double, c'est que la règle
+ * est en train d'être contournée plutôt qu'appliquée.
+ */
+const PEUVENT_LA_NOMMER: Record<string, string> = {
+  "CLAUDE.md": "la doctrine RACONTE la mort de l'accord — c'est le seul endroit où ça doit être écrit",
+  "docs/COMPTE-PARTENAIRE.md": "le document qui explique précisément que l'accord est mort",
+  "docs/ANGLES-MORTS.md": "journal daté : il archive un moment, il ne décrit pas l'état courant",
+  "docs/APPROCHE-PULL.md": "dit quel fichier il remplace et ce qui est parti avec",
+  "tests/accounts.test.ts": "asserte l'ABSENCE du compte : il doit pouvoir le nommer pour le refuser",
+  "tests/calculateur-offres.test.ts": "asserte l'absence du barème du revendeur",
+  "tests/vitrine-fuite.test.ts":
+    "liste de refus : il doit nommer le domaine de vente du revendeur pour vérifier qu'il ne fuit PAS dans le bundle public",
+  "tests/marque-morte.test.ts": "c'est ce fichier",
+};
+
+test("⚠ ni dans les documents et les tests, hors des cas justifiés", () => {
+  /**
+   * Le premier jet de ce test ne regardait que `lib/`, `app/` et `components/`.
+   * Il laissait donc passer ce qui a coûté le plus cher : des tests dont le NOM
+   * appelait notre propre offre « Callflow » (elle s'appelle Alpha Voice, et
+   * l'assertion juste en dessous vérifiait `alpha-voice`), et des documents
+   * stratégiques qui argumentaient contre l'état réel du code.
+   */
+  const fichiers: string[] = [];
+  for (const d of ["docs", "tests"]) {
+    const marche = (dir: string) => {
+      for (const e of readdirSync(dir)) {
+        const p = join(dir, e);
+        if (statSync(p).isDirectory()) marche(p);
+        else if (/\.(md|ts|tsx)$/.test(e)) fichiers.push(p.slice(R.length + 1));
+      }
+    };
+    if (existsSync(join(R, d))) marche(join(R, d));
+  }
+  fichiers.push("CLAUDE.md", "README.md");
+
+  const fautes: string[] = [];
+  for (const f of fichiers) {
+    if (PEUVENT_LA_NOMMER[f]) continue;
+    const src = readFileSync(join(R, f), "utf8");
+    // Dans un .md tout est du texte lu par un humain : pas de commentaires à
+    // retirer. Dans un .ts, les commentaires gardent le POURQUOI et restent
+    // permis — c'est la même règle que pour le code livré.
+    const corps = f.endsWith(".md") ? src : sansCommentaires(src);
+    corps.split("\n").forEach((ligne, i) => {
+      if (MORTES.test(ligne)) fautes.push(`${f}:${i + 1} → ${ligne.trim().slice(0, 90)}`);
+    });
+  }
+  assert.deepEqual(fautes, [], "la marque morte survit ici :\n  " + fautes.join("\n  "));
+});
+
+test("aucune autorisation ne survit au fichier qu'elle couvrait", () => {
+  const morts = Object.keys(PEUVENT_LA_NOMMER).filter((f) => !existsSync(join(R, f)));
+  assert.deepEqual(morts, [], `autorisations orphelines : ${morts.join(", ")}`);
+});
+
 test("le compte du revendeur n'existe plus dans le portefeuille", () => {
   /**
    * Le doublon volontaire de `tests/accounts.test.ts` : ici on vérifie la

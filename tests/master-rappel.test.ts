@@ -280,7 +280,7 @@ test("humainDejaEnLigne — l'échange à deux sens compte, la touche sortante n
   assert.equal(humainDejaEnLigne({ events: [{ kind: "appel", summary: "a décroché, échange court" }] }), true);
 });
 
-test("une fiche vue en rendez-vous ne reçoit plus de cadence Callflow", () => {
+test("une fiche vue en rendez-vous ne reçoit plus de cadence Alpha Voice", () => {
   const vu = fixture({
     stage: "offre",
     events: [

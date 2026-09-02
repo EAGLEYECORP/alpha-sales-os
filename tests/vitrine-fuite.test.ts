@@ -403,7 +403,7 @@ test("bundle app — aucun composant client n'atteint un module serveur", () => 
  * ⚠ MESURÉ SUR LE BUILD, PAS SUPPOSÉ. `lib/ladder.ts` n'est dans aucune liste
  * et descend dans le navigateur (via `argumentaire` →
  * `components/prospects/master-panel`). Il portait `commissionPct: 30` +
- * `recurringPct: 10` à côté de « ScintIA », et `commissionPct: 15` à côté de
+ * `recurringPct: 10` à côté du revendeur, et `commissionPct: 15` à côté de
  * « Nuwacom ». `_next/static/**` est exclu du middleware : ces chunks
  * répondent 200 sans cookie et sans mot de passe. Notre part chez chaque
  * partenaire, téléchargeable par ce partenaire — alors que le taux Nuwacom
@@ -443,7 +443,7 @@ function tauxDePartenariat(src: string): number[] {
  * c'était délibéré (« chaque partenaire connaît déjà son propre taux »), et le
  * sortir n'était pas gratuit — `applyAccount` écrivait `settings.commissionPct`
  * à chaque bascule, donc l'enlever sans plus faisait calculer à `/payouts` la
- * part d'un deal ScintIA à 100 %. Un chiffre FAUX en silence est pire qu'un
+ * part d'un deal revendeur à 100 %. Un chiffre FAUX en silence est pire qu'un
  * chiffre exposé.
  *
  * La sortie était ailleurs : le taux vient du serveur (`tauxVitrinePct` dérivé

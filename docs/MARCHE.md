@@ -188,9 +188,22 @@ il rejoint la room, puis on compose via `CreateSIPParticipant`. Ce n'est pas de
 la recherche — c'est de l'intégration. **Un prototype fonctionnel est une
 affaire de jours, pas de mois.**
 
-### 4.2 Les trois murs
+### 4.2 Les trois murs — et lesquels tiennent encore
 
-**Mur 1 — la loi, en vigueur aujourd'hui.**
+> ⚠ **CETTE SECTION CONCLUAIT « NE PAS CONSTRUIRE ». LA DÉCISION A ÉTÉ
+> RENVERSÉE LE 28/08/2026, ET LE CODE L'A SUIVIE AVANT CE DOCUMENT.**
+>
+> Aujourd'hui `lib/voice-script.ts` exporte `COLD_CALLING_DISCIPLINE` —
+> « Alpha Voice démarche à froid » — et tout le dimensionnement des paliers
+> 10 · 100 · 1 000 (`lib/paliers-campagne.ts`) est bâti là-dessus. Un document
+> qui décrit l'état courant et affirme le contraire du code ne se contente pas
+> d'être périmé : **il fait revenir la décision en arrière** à la session
+> suivante, qui le lira de bonne foi.
+>
+> Les trois murs sont conservés tels qu'ils ont été écrits, parce que deux
+> d'entre eux tiennent encore. Chacun porte maintenant son état réel.
+
+**Mur 1 — la loi, en vigueur aujourd'hui.** · **TIENT — et il est dans le code.**
 L'**article 50 du règlement européen sur l'IA est applicable depuis le
 2 août 2026** — c'est-à-dire aujourd'hui. Un système qui interagit directement
 avec une personne physique doit faire comprendre à un interlocuteur
@@ -210,20 +223,40 @@ lignes professionnelles reste licite au titre de l'intérêt légitime, avec
 information et droit d'opposition. C'est notre terrain — mais c'est aussi une
 raison de plus de ne pas s'approcher du B2C.
 
-**Mur 2 — le conflit avec Scintia.**
-EAGLEYE revend Alpha Voice, une réceptionniste téléphonique IA
-**entrante**. Construire un démarcheur IA **sortant** ne nous met pas en
-concurrence avec Scintia sur le produit, mais ça brouille le message :
-« nous vous vendons une IA qui répond bien à vos clients » perd de sa force si
-notre propre premier contact est une IA qui démarche. La cohérence de posture
-est un actif commercial ; ne pas la dépenser pour un gain incertain.
+> **Ce qu'il en reste, et où.** Ce mur n'a pas été franchi, il a été
+> **construit dans le produit** : la première phrase (IA + pas une personne +
+> pour le compte de qui) est prononcée par le CODE et non par le modèle
+> (`first_sentence`, `allow_interruptions=False`), et `audit_script` refuse de
+> démarrer un script non conforme — des deux côtés, app et service.
+> Le taux de raccrochage derrière cette phrase **n'est toujours mesuré par
+> personne**. C'est précisément ce que le palier 10 existe pour découvrir :
+> ce n'était pas un motif de ne rien faire, c'était un motif de commencer
+> petit.
 
-**Mur 3 — l'économie.**
+**Mur 2 — le conflit avec le revendeur.** · **TOMBÉ le 02/09/2026.**
+Il disait : EAGLEYE revend une réceptionniste IA **entrante** pour le compte
+d'un tiers, donc construire un démarcheur **sortant** brouille le message —
+« nous vous vendons une IA qui répond bien à vos clients » perd de sa force si
+notre propre premier contact est une IA qui démarche.
+
+Deux choses l'ont dissous. **L'accord revendeur est mort** : il n'y a plus de
+marque tierce dont il faudrait protéger la cohérence. Et **Alpha Voice est à
+nous** : l'entrant et le sortant sont le même produit, sous le même nom, avec
+la même divulgation obligatoire au début de l'appel. Un agent qui se déclare
+artificiel dans sa première phrase, dans les deux sens, ne brouille rien — il
+fait la démonstration de ce qu'on vend.
+
+**Mur 3 — l'économie.** · **TIENT, mais ce n'est pas un veto : c'est un ORDRE.**
 Notre goulot n'est pas le nombre d'appels sortants qu'on peut passer. C'est le
-nombre de fiches en base (25) et le nombre de conversations qui vont au bout.
-Un composeur automatique met de la pression sur le canal le moins saturé de la
-pile. Construire ALPHA VOICE aujourd'hui, ce serait optimiser ce qui ne
-bloque pas.
+nombre de fiches en base et le nombre de conversations qui vont au bout.
+
+Ça reste vrai. Ce qui a changé, c'est la conclusion qu'on en tire : lancer
+1 000 appels avant d'avoir mesuré, c'est effectivement optimiser ce qui ne
+bloque pas — **lancer les 10 premiers, c'est acheter les trois chiffres qui
+manquent** (décroché, intérêt qualifié parmi les décrochés, tarif réel à la
+minute). Les paliers 10 · 100 · 1 000 sont la forme exacte de ce mur : ils
+n'autorisent le volume qu'une fois la mesure faite, et aucun ne se valide tout
+seul.
 
 ### 4.3 Ce qu'il faut construire à la place — ALPHA VOICE, version utile
 
@@ -248,17 +281,40 @@ l'objection prononcée et affiche la réponse du playbook à l'écran. L'humain
 parle, l'IA souffle. Zéro obligation de divulgation, valeur immédiate pour un
 closer débutant.
 
-**c) Qualification entrante — et là, on vend Scintia**
+**c) Qualification entrante — et là, on vend Alpha Voice**
 Si le besoin est « quelqu'un doit répondre au téléphone », le produit existe
-déjà, il est vendu par EAGLEYE, et il est *entrant* : cadre juridique plus
-simple (l'appelant a initié le contact), cohérence de message parfaite.
+déjà, il est à nous, et il est *entrant* : cadre juridique plus simple
+(l'appelant a initié le contact), cohérence de message parfaite.
 
-### 4.4 Verdict
+### 4.4 Verdict — RENVERSÉ le 28/08/2026
 
-**Ne pas construire de démarcheur téléphonique IA sortant.** Construire le
-débriefing vocal (a), puis l'assistant en direct (b). Garder LiveKit Agents en
-veille technique : si un client Scintia demande un jour du sortant, la pile
-existe, elle est mûre, et l'intégration est une affaire de jours.
+**Le verdict d'origine était : ne pas construire de démarcheur téléphonique IA
+sortant.** Il a été renversé, et il faut dire pourquoi plutôt que de réécrire
+l'histoire.
+
+Ce qui l'a renversé :
+
+1. **La constante qui l'appliquait décrivait un état FAUX.** `COLD_CALLING_REFUSED`
+   interdisait le démarchage pendant que l'offre `prospection-b2b` était déjà
+   `allowed: true` dans le même dépôt. Le refus était une phrase, pas un
+   mécanisme — c'est le pire des deux mondes : ni la garde, ni la liberté.
+2. **Le mur 2 est tombé** avec l'accord revendeur (voir §4.2).
+3. **Le mur 1 s'est déplacé du papier vers le code** : la divulgation article 50
+   est prononcée par le code et vérifiée par `audit_script`.
+4. **Le mur 3 s'est transformé en séquence** : paliers 10 · 100 · 1 000.
+
+Ce qui n'a PAS changé : l'argument de fond du mur 1 reste vrai et devient une
+**contrainte de script** — `COLD_CALLING_DISCIPLINE` : « une IA qui démarche
+n'a droit à AUCUNE improvisation ». Un objectif unique, aucun prix, le NON qui
+raccroche, le OUI qui passe la main.
+
+Et (a) et (b) restent construits et utiles — ce n'est plus « à la place de »,
+c'est « en plus ». LiveKit Agents n'est plus en veille : l'entrant tourne
+(`voice/INBOUND.md`).
+
+> ⚠ **Aucun de ces quatre points n'est une mesure.** Zéro vente, zéro taux de
+> décroché relevé. Ce renversement est un raisonnement, pas un résultat — le
+> premier palier de 10 appels vaudra plus que toute cette section.
 
 ### 4.5 État : (a) et (b) sont construits
 

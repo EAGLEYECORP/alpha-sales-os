@@ -308,7 +308,7 @@ Mise en marche continue : `AUTOPILOTE.md`.
 | Lancer et laisser tourner | `AUTOPILOTE.md` |
 | Capacités et modèle de conversion | `CHIFFRES.md` |
 | Enrichir la méthode terrain | `TERRAIN.md` |
-| La campagne en cours | `CAMPAGNE-ALPHA-TEST-1.md` |
+| Ouvrir sans mendier (LinkedIn + lettre + audit) | `APPROCHE-PULL.md` |
 | Quotas par canal, anti-spam | `MULTICANAL.md` |
 | Contrat, grille tarifaire | `CONTRAT-PRESTATION.md` |
 | Architecture, prompts n8n | `HANDOFF.md`, `integrations/n8n/PROMPTS.md` |

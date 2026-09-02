@@ -109,8 +109,9 @@ Détail par workflow : `integrations/n8n/README.md`.
 
 - [ ] **eagleye.fr** : publier un enregistrement DMARC + activer DKIM (OVH).
   Détail : `docs/ENVOI.md`.
-- [ ] ~~Constat de délivrabilité pour le partenaire~~ — **caduc** :
-  `docs/SCINTIA-MESSAGE.md`.
+- [ ] ~~Constat de délivrabilité pour le partenaire~~ — **caduc** : l'accord
+  revendeur est mort le 02/09/2026, et le document qui portait ce constat a
+  été supprimé avec lui. Rien à faire, la ligne reste pour dire pourquoi.
 
 ---
 

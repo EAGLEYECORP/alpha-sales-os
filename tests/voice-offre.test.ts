@@ -61,7 +61,7 @@ test("⚠ le script sortant dit le bénéfice DE SON OFFRE, et d'aucune autre", 
   }
 });
 
-test("sans offre résolue, l'agent ne présente RIEN — il ne se rabat pas sur Callflow", () => {
+test("sans offre résolue, l'agent ne présente RIEN — il ne se rabat pas sur Alpha Voice", () => {
   /**
    * Le repli sur Callflow, c'est exactement ce qui existait. Proposer la
    * MAUVAISE offre coûte plus cher que de n'en proposer aucune : le prospect
@@ -153,7 +153,7 @@ test("resoudreOffre — un compte multi-offres sans consigne ne devine pas", () 
 test("resoudreOffre — une valeur inconnue ne devient pas une offre", () => {
   // Le corps de requête vient de l'extérieur : une chaîne arbitraire ne doit
   // pas se retrouver indexée dans le catalogue.
-  for (const nawak of ["", "  ", "callflow-bis", "__proto__", "toString", "constructor"]) {
+  for (const nawak of ["", "  ", "alpha-voice-bis", "__proto__", "toString", "constructor"]) {
     const r = resoudreOffre(nawak, "eagleye");
     assert.equal(r.offre, null, `« ${nawak} » ne doit pas passer pour une offre`);
   }
@@ -186,7 +186,7 @@ test("⚠ plus aucun angle d'offre n'est écrit en dur dans le constructeur de s
    */
   const src = readFileSync(join(process.cwd(), "lib/voice-script.ts"), "utf8");
   const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  assert.doesNotMatch(code, /audit de leur accueil/i, "l'angle Callflow ne doit plus être en dur");
+  assert.doesNotMatch(code, /audit de leur accueil/i, "l'angle Alpha Voice ne doit plus être en dur");
   assert.match(code, /OFFRES\[cfg\.offre\]/, "l'angle doit venir du catalogue d'offres");
 });
 
@@ -205,7 +205,7 @@ test("⚠ plus aucun angle d'offre n'est écrit en dur dans le constructeur de s
  */
 test("appel à froid — le script porte un objectif unique et aucun prix", () => {
   const script = buildVoiceScript({
-    onBehalfOf: "ScintIA",
+    onBehalfOf: "Partenaire Démo",
     agentName: "ALPHA",
     mode: "prospection-b2b",
     company: "Carrosserie Test",
@@ -219,7 +219,7 @@ test("appel à froid — le script porte un objectif unique et aucun prix", () =
 
 test("appel à froid — le NON se raccroche, le OUI seul réveille un humain", () => {
   const script = buildVoiceScript({
-    onBehalfOf: "ScintIA",
+    onBehalfOf: "Partenaire Démo",
     agentName: "ALPHA",
     mode: "prospection-b2b",
     offre: "alpha-voice",
@@ -335,7 +335,7 @@ test("les deux points d'audit de /api/voice/call jugent la même chose", () => {
 test("⚠ les outils nommés dans le script existent vraiment dans l'agent Python", () => {
   const py = readFileSync(join(process.cwd(), "voice/agent.py"), "utf8");
   const script = buildVoiceScript({
-    onBehalfOf: "ScintIA",
+    onBehalfOf: "Partenaire Démo",
     agentName: "ALPHA",
     mode: "prospection-b2b",
     offre: "alpha-voice",

@@ -61,9 +61,9 @@ test("PDF — le texte d'un flux compressé est extrait", async () => {
 });
 
 test("PDF — un flux non compressé marche aussi", async () => {
-  const r = await extractPdf(makePdf(["Proposition commerciale ScintIA"], false));
+  const r = await extractPdf(makePdf(["Proposition commerciale Partenaire Démo"], false));
   assert.equal(r.ok, true);
-  assert.match(r.text, /Proposition commerciale ScintIA/);
+  assert.match(r.text, /Proposition commerciale Partenaire Démo/);
 });
 
 test("PDF — un scan sans texte est SIGNALÉ, pas rendu vide en silence", async () => {
@@ -133,7 +133,7 @@ test("point d'entrée — chaque format passe par extractFile", async () => {
 });
 
 test("titre — proposé depuis la première ligne utile, sinon le nom du fichier", () => {
-  assert.equal(suggestTitle("audit.pdf", "Audit ***NOM-RETIRE*** × Scintia\nsuite du texte"), "Audit ***NOM-RETIRE*** × Scintia");
+  assert.equal(suggestTitle("audit.pdf", "Audit ***NOM-RETIRE*** × Partenaire\nsuite du texte"), "Audit ***NOM-RETIRE*** × Partenaire");
   // Lignes trop courtes → repli sur le nom, sans extension.
   assert.equal(suggestTitle("mon-audit.pdf", "a\nb\nc"), "mon-audit");
 });

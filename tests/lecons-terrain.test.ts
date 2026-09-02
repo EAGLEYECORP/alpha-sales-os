@@ -124,7 +124,7 @@ test("la session d'appels lit vraiment le Cerveau — le maillon qu'on protège"
   const panel = readFileSync(join(process.cwd(), "components/appels/lecons-verticale.tsx"), "utf8");
   assert.ok(
     panel.includes("notesForAccount"),
-    "les leçons doivent être filtrées par compte — une leçon ScintIA n'a rien à faire dans un appel EAGLEYE"
+    "les leçons doivent être filtrées par compte — une leçon partenaire n'a rien à faire dans un appel EAGLEYE"
   );
 });
 

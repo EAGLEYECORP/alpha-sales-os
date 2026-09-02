@@ -154,9 +154,15 @@ test("cadence — sans SIREN, le plafond légal B2C s'impose", () => {
   /**
    * ⚠ LE CONFLIT QUE CE CODE ARBITRE.
    *
-   * La cadence exigée par ScintIA fait SIX contacts en deux jours (le premier
-   * appel plus cinq rappels). Le décret n° 2022-1313 plafonne le démarchage à
-   * QUATRE sollicitations par consommateur sur 30 jours glissants.
+   * La cadence imposée par le revendeur disparu faisait SIX contacts en deux
+   * jours (le premier appel plus cinq rappels). Le décret n° 2022-1313
+   * plafonne le démarchage à QUATRE sollicitations par consommateur sur
+   * 30 jours glissants.
+   *
+   * ⚠ Depuis le 02/09/2026 la cadence est de 3 rappels — donc QUATRE contacts,
+   * exactement au plafond. Ce plafond ne mord donc plus, et c'est l'état
+   * voulu : il reste armé parce que remonter le tableau à 5 le réarme aussitôt.
+   * Le filet ne s'enlève pas avec le chiffre.
    *
    * Il vise le B2C — mais une liste terrain est MÊLÉE, et un artisan en nom
    * propre sur son mobile est exactement la zone grise. C'est nous qui portons
@@ -172,11 +178,11 @@ test("cadence — sans SIREN, le plafond légal B2C s'impose", () => {
   assert.match(p.pourquoi, /croise la fiche avec le registre/, "il faut dire comment lever le plafond");
 });
 
-test("cadence — un SIREN lève le plafond : la cadence ScintIA s'applique entière", () => {
+test("cadence — un SIREN lève le plafond : la cadence complète s'applique", () => {
   /**
    * Le code ne tranche PAS l'accord commercial. Sur une cible clairement
    * professionnelle — inscrite au registre des entreprises — la cadence
-   * Callflow complète s'applique. Il empêche seulement la cadence longue de
+   * complète s'applique. Il empêche seulement la cadence longue de
    * partir en silence sur une cible à risque.
    */
   const p = plafondRappels({ siren: "123456789", telephone: "0612345678" });

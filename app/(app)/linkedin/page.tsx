@@ -66,10 +66,18 @@ export default function LinkedinPage() {
     setCopied(p.id);
     setTimeout(() => setCopied((c) => (c === p.id ? null : c)), 2000);
     window.open(linkedinUrl(p), "_blank", "noopener");
+    /**
+     * ⚠ Le résumé écrit dans la timeline portait « (ALPHA SALES TEST 1) », le
+     * nom d'une campagne d'une semaine précise. Ce n'était pas seulement
+     * périmé : c'est de la DONNÉE ÉCRITE dans la fiche, donc un nom mort qui
+     * continuait de s'imprimer à chaque touche, indéfiniment. L'étape suffit
+     * à dire ce qui s'est passé ; la campagne, si elle doit être suivie un
+     * jour, sera un champ, pas une chaîne collée au résumé.
+     */
     addEvent(p.id, {
       date: new Date().toISOString(),
       kind: "linkedin",
-      summary: `LinkedIn — ${STEP_LABEL[step]} (ALPHA SALES TEST 1)`,
+      summary: `LinkedIn — ${STEP_LABEL[step]}`,
     });
     logActivity({ kind: "campagne", message: `LinkedIn ${STEP_LABEL[step]} — ${p.company}`, prospectId: p.id });
   };

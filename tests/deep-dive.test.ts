@@ -134,7 +134,7 @@ test("deep-dive — le brief entre dans le script SANS casser la divulgation art
   assert.match(brief, /Objectif de CET appel/);
 
   const script = buildVoiceScript({
-    onBehalfOf: "ScintIA",
+    onBehalfOf: "Partenaire Démo",
     agentName: "Alpha",
     mode: "prospection-b2b",
     company: p.company,

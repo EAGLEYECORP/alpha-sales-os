@@ -12,7 +12,7 @@ test("icp — offre logiciel de vente → ICP force de vente (famille 1)", () =>
 });
 
 test("icp — offre proximité → ICP commerce local (famille 2)", () => {
-  const icp = deriveICP({ agencyName: "Callflow", whatYouSell: "remplir l'agenda des commerces de proximité", city: "Lyon" });
+  const icp = deriveICP({ agencyName: "Partenaire Démo", whatYouSell: "remplir l'agenda des commerces de proximité", city: "Lyon" });
   assert.match(icp.sector.toLowerCase(), /commerce|garage|artisan|proximité/);
   assert.match(icp.buyer.toLowerCase(), /gérant|patron/);
 });

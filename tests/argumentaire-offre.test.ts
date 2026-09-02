@@ -104,7 +104,7 @@ test("⚠ les questions de l'argumentaire suivent l'offre routée", () => {
   }
 });
 
-test("⚠ un argumentaire hors-Callflow ne pose aucune question sur le téléphone", () => {
+test("⚠ un argumentaire hors-Alpha Voice ne pose aucune question sur le téléphone", () => {
   /**
    * C'est la formulation exacte du défaut : « Quand vous êtes en intervention
    * et que le téléphone sonne… » posée à quelqu'un à qui on vend de la
@@ -138,7 +138,7 @@ test("⚠ la NORME DU MARCHÉ n'est pas inventée pour une offre jamais vendue",
     const offre = deepDive(p).offer;
     const norme = buildArgumentaire(p).marketStandard;
     if (offre === "alpha-voice") {
-      assert.ok(norme.length >= 3, `${quoi} : Callflow garde ses lignes`);
+      assert.ok(norme.length >= 3, `${quoi} : Alpha Voice garde ses lignes`);
     } else {
       assert.deepEqual(norme, [], `${quoi} (${offre}) : aucune norme de marché ne doit être affirmée`);
     }
@@ -169,7 +169,7 @@ test("⚠ ce que l'agent doit APPRENDRE suit aussi l'offre", () => {
     const d = deepDive(p);
     const g = d.gaps.join(" | ");
     if (d.offer === "alpha-voice") {
-      assert.match(g, /appels/i, `${quoi} : Callflow garde ses trous téléphone`);
+      assert.match(g, /appels/i, `${quoi} : Alpha Voice garde ses trous téléphone`);
       continue;
     }
     assert.doesNotMatch(
@@ -200,7 +200,7 @@ test("⚠ plus aucune question n'est écrite en dur dans l'argumentaire", () => 
   assert.doesNotMatch(
     code,
     /Quand vous êtes en intervention et que le téléphone sonne/,
-    "l'ouverture Callflow ne doit plus être en dur"
+    "l'ouverture Alpha Voice ne doit plus être en dur"
   );
   assert.match(code, /OFFRES\[offre\]/, "les questions doivent venir du catalogue d'offres");
   assert.match(code, /deepDive\(p, accountId\)\.offer/, "et l'offre du même calcul que partout ailleurs");

@@ -161,7 +161,7 @@ test("⚠ aucune surface ne parle d'une offre qu'on ne vend pas à CE prospect",
   );
 });
 
-test("⚠ hors Callflow, aucune surface ne ramène le vocabulaire du téléphone", () => {
+test("⚠ hors Alpha Voice, aucune surface ne ramène le vocabulaire du téléphone", () => {
   /**
    * C'est la forme qu'a prise le défaut à chaque couche : pas le libellé d'une
    * autre offre, mais son VOCABULAIRE — « appels manqués », « quand ça sonne »,
@@ -183,10 +183,10 @@ test("⚠ hors Callflow, aucune surface ne ramène le vocabulaire du téléphone
     }
   }
 
-  assert.deepEqual(fautes, [], "vocabulaire téléphone hors Callflow :\n  " + fautes.join("\n  "));
+  assert.deepEqual(fautes, [], "vocabulaire téléphone hors Alpha Voice :\n  " + fautes.join("\n  "));
 });
 
-test("la surface Callflow, elle, PARLE bien du téléphone", () => {
+test("la surface Alpha Voice, elle, PARLE bien du téléphone", () => {
   /**
    * Garde symétrique : à force de retirer le téléphone partout, on finit par
    * le retirer là où il est le sujet. Une offre d'accueil téléphonique qui
@@ -196,7 +196,7 @@ test("la surface Callflow, elle, PARLE bien du téléphone", () => {
   const tout = surfaces(cf.p)
     .map((s) => s.texte)
     .join("\n");
-  assert.match(tout, /téléphone|appels/i, "Callflow doit continuer de parler de son sujet");
+  assert.match(tout, /téléphone|appels/i, "Alpha Voice doit continuer de parler de son sujet");
 });
 
 test("un compte revendeur ne laisse passer aucune autre offre, sur aucune surface", () => {

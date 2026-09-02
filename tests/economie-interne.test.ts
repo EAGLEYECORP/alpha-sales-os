@@ -13,8 +13,8 @@ import { ACCOUNTS_COMMERCIAL } from "../lib/accounts-commercial";
  * Avec les comptes actifs et un jeton d'un email NON-maître, `/api/catalogue`
  * répondait 200 et rendait `ACCOUNTS_COMMERCIAL` en entier :
  * `commissionPct`, `recurringPct`, le seuil des 40 k, et les notes internes
- * du portefeuille. C'est-à-dire les 30 % + 10 % de ScintIA et les 15 % de
- * Nuwacom — lisibles par ScintIA et Nuwacom si l'un d'eux est locataire,
+ * du portefeuille. C'est-à-dire les 30 % + 10 % du revendeur et les 15 % de
+ * Nuwacom — lisibles par le revendeur et Nuwacom si l'un d'eux est locataire,
  * avant le cadrage qui est précisément notre levier de négociation.
  *
  * ── POURQUOI RIEN NE L'A VU ──

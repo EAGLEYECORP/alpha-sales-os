@@ -100,7 +100,7 @@ test("aucun closer = aucun appel, et la raison est commerciale", () => {
  *
  * Un volume quotidien ne se tient pas avec une petite liste. La fréquence PAR
  * PROSPECT est plafonnée — 4 sollicitations sur 30 jours glissants sans SIREN
- * (décret n° 2022-1313), la cadence ScintIA complète avec.
+ * (décret n° 2022-1313), la cadence complète avec.
  * ─────────────────────────────────────────────────────────────────────
  */
 test("500 touches/jour exigent des milliers de fiches distinctes", () => {

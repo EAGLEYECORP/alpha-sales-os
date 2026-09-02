@@ -161,13 +161,13 @@ test("⚠ store — la bascule n'écrit PLUS le taux : c'est l'écran qui le pos
    * ⚠ CE TEST VÉRIFIAIT `settings.commissionPct === 30` APRÈS LA BASCULE.
    *
    * Le taux ne descend plus dans le navigateur : il publiait notre part chez
-   * ScintIA et Nuwacom dans un chunk servi sans mot de passe. `switchAccount`
+   * le revendeur et Nuwacom dans un chunk servi sans mot de passe. `switchAccount`
    * ne change donc plus que l'identité, et le sélecteur écrit le taux une
    * fois qu'il l'a reçu du serveur (bouton désactivé tant qu'il ne l'a pas).
    *
    * Le danger de ce découpage, et ce que ce test surveille : si personne ne
    * pose le taux ensuite, les Réglages gardent celui du compte PRÉCÉDENT et
-   * `/payouts` calcule notre part d'un deal ScintIA à 100 % sans rien dire.
+   * `/payouts` calcule notre part d'un deal revendeur à 100 % sans rien dire.
    * On vérifie donc les deux moitiés — que la bascule ne touche pas au taux,
    * ET que le patch qui suit le fait réellement bouger.
    */
@@ -192,12 +192,12 @@ test("⚠ store — la bascule n'écrit PLUS le taux : c'est l'écran qui le pos
 test("store — une note créée depuis un compte lui reste attachée", () => {
   const { switchAccount, upsertNote } = useAlpha.getState();
   switchAccount("nuwacom");
-  const id = useAlpha.getState().upsertNote({ title: "Note ScintIA", body: "contenu" });
+  const id = useAlpha.getState().upsertNote({ title: "Note partenaire", body: "contenu" });
   assert.equal(useAlpha.getState().notes.find((n) => n.id === id)!.accountId, "nuwacom");
 
   // Rééditée depuis un AUTRE compte, elle ne change pas de propriétaire.
   useAlpha.getState().switchAccount("eagleye");
-  useAlpha.getState().upsertNote({ id, title: "Note ScintIA", body: "contenu modifié" });
+  useAlpha.getState().upsertNote({ id, title: "Note partenaire", body: "contenu modifié" });
   const n = useAlpha.getState().notes.find((x) => x.id === id)!;
   assert.equal(n.accountId, "nuwacom", "l'édition ne doit pas voler la note à son compte");
   assert.match(n.body, /modifié/);

@@ -321,9 +321,17 @@ test("⚠ le routage de l'offre n'est PAS dans le texte éditable", () => {
   const t = TEXTES_LIVRES["voix-froid"]!;
   assert.match(t, /\{accroche\}/, "l'accroche doit rester un emplacement, jamais un texte");
   assert.match(t, /\{offreLigne\}/);
-  assert.match(t, /\{marquePartenaire\}/, "la garde ScintIA s'ajoute par le code, sur Callflow seulement");
-  // Et aucune offre n'est nommée en dur dans la trame.
-  for (const mot of ["Callflow", "accueil téléphonique", "visibilité", "Alpha Sales OS"]) {
+  assert.match(t, /\{marquePartenaire\}/, "la garde partenaire s'ajoute par le code, sur le compte revendeur seulement");
+  /**
+   * Et aucune offre n'est nommée en dur dans la trame.
+   *
+   * ⚠ Cette liste commençait par « Callflow » — le nom d'un revendeur mort,
+   * que la trame n'a jamais eu la moindre raison de contenir. La garde
+   * passait donc gratuitement sur son entrée la plus importante, pendant que
+   * le VRAI nom de l'offre (« Alpha Voice ») n'était vérifié par personne.
+   * Un contrôle qui interdit un mot impossible ne contrôle rien.
+   */
+  for (const mot of ["Alpha Voice", "accueil téléphonique", "visibilité", "Alpha Sales OS"]) {
     assert.ok(!t.includes(mot), `« ${mot} » est écrit en dur dans la trame : l'angle repartirait sur tous les appels`);
   }
 });

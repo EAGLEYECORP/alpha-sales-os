@@ -7,13 +7,17 @@ import { approcheEcrite } from "./approche-ecrite";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * Séquence LinkedIn — campagne « ALPHA SALES TEST 1 »
- * SCINTIA × EAGLEYE CORP · Lyon 6e
+ * Séquence LinkedIn — l'approche « pull » (`docs/APPROCHE-PULL.md`).
  *
- * Positionnement : c'est EAGLEYE (Zakaria) qui parle et qui offre
- * l'audit ; SCINTIA est la solution qu'on installe ensuite. L'audit
- * n'est jamais envoyé d'office — il est PROPOSÉ, et n'arrive qu'après
- * un oui. C'est ce qui distingue une newsletter d'un spam.
+ * Positionnement : c'est l'OPÉRATEUR qui parle et qui offre l'audit ; la
+ * solution vient après, quand la perte a été reconnue et chiffrée par le
+ * prospect lui-même. L'audit n'est jamais envoyé d'office — il est PROPOSÉ,
+ * et n'arrive qu'après un oui. C'est ce qui distingue une newsletter d'un spam.
+ *
+ * ⚠ Cet en-tête nommait une campagne datée (« ALPHA SALES TEST 1 ») et le
+ * revendeur avec qui l'accord est mort le 02/09/2026. Le partage de rôles
+ * qu'il décrivait — nous la voix, eux la solution — n'existe plus : Alpha
+ * Voice est à nous. La séquence, elle, n'a jamais dépendu de ça.
  *
  * Cadence volontairement lente (invitation → J+2 message → J+4 relance)
  * et plafonnée par LINKEDIN_DAILY_SAFE : le profil est un actif, on ne

@@ -192,7 +192,7 @@ test("sans aimant disponible, on n'annonce AUCUN audit", () => {
   }
 });
 
-test("⚠ un message hors-Callflow ne reparle pas du téléphone", () => {
+test("⚠ un message hors-Alpha Voice ne reparle pas du téléphone", () => {
   /**
    * ⚠ CE DÉFAUT A SURVÉCU À LA PREMIÈRE CORRECTION, et il n'a été vu qu'en
    * LISANT le message rendu — les tests passaient.
@@ -224,7 +224,7 @@ test("⚠ un message hors-Callflow ne reparle pas du téléphone", () => {
 
 test("le playbook parle bien de téléphone partout — c'est ce qui justifie la règle", () => {
   /**
-   * La règle « la verticale n'enrichit que Callflow » repose sur un FAIT
+   * La règle « la verticale n'enrichit que Alpha Voice » repose sur un FAIT
    * vérifiable, pas sur un avis : les critères du playbook sont tous écrits
    * autour du téléphone. Le jour où quelqu'un en ajoute un qui ne l'est pas,
    * ce test échoue et la règle se rediscute — au lieu de rester appliquée
@@ -237,7 +237,7 @@ test("le playbook parle bien de téléphone partout — c'est ce qui justifie la
   assert.deepEqual(
     horsSujet,
     [],
-    "ces critères ne parlent plus du téléphone — la règle « la verticale n'enrichit que Callflow » " +
+    "ces critères ne parlent plus du téléphone — la règle « la verticale n'enrichit que Alpha Voice » " +
       "doit être rediscutée :\n  " + horsSujet.join("\n  ")
   );
 });
@@ -267,11 +267,11 @@ test("⚠ plus aucun angle d'offre n'est écrit en dur dans les deux rédacteurs
     const code = readFileSync(join(process.cwd(), f), "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "");
-    assert.doesNotMatch(code, /audit de son accueil téléphonique/i, `${f} : l'angle Callflow ne doit plus être en dur`);
+    assert.doesNotMatch(code, /audit de son accueil téléphonique/i, `${f} : l'angle Alpha Voice ne doit plus être en dur`);
     assert.doesNotMatch(
       code,
       /le téléphone est le premier point de contact/i,
-      `${f} : le critère Callflow ne doit plus être en dur`
+      `${f} : le critère Alpha Voice ne doit plus être en dur`
     );
     assert.match(code, /approcheEcrite\(/, `${f} doit tirer son angle de l'aimant routé`);
   }
