@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { ACCES_PAR_CHEMIN, CHEMINS_COMMUNS, briquesPourChemin, normaliser, peutOuvrir } from "../lib/bricks-access";
 import { CHEMIN_PAR_API } from "../lib/api-access";
 import {
-  autorise, BRIQUES_GRATUITES, DROIT_REFUSE, DROIT_SOLO, droitGratuit, estMaitre,
+  autorise, BRIQUES_GRATUITES, deploiementSansSerrure, DROIT_REFUSE, DROIT_SOLO, droitGratuit, estMaitre,
   normaliserBriques, statutEffectif,
   type Entitlement,
 } from "../lib/entitlements";
@@ -331,4 +331,121 @@ test("freemium — la liste des API coûteuses ne survit pas à leur suppression
   // qui surveille une porte murée, pendant qu'une autre s'ouvre ailleurs.
   const inconnues = Object.keys(API_QUI_DEPENSENT).filter((a) => !CHEMIN_PAR_API[a]);
   assert.deepEqual(inconnues, [], `entrées orphelines : ${inconnues.join(", ")}`);
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   UN DÉPLOIEMENT PUBLIC SANS SERRURE NE REND PLUS PERSONNE MAÎTRE
+   ═══════════════════════════════════════════════════════════════════ */
+
+/** Pose un environnement, exécute, puis remet exactement ce qui était là. */
+function avecEnv(vars: Record<string, string | undefined>, fn: () => void): void {
+  const avant: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(vars)) {
+    avant[k] = process.env[k];
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+  try {
+    fn();
+  } finally {
+    for (const [k, v] of Object.entries(avant)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
+test("⚠ production + aucune serrure = plus personne n'est maître", () => {
+  /**
+   * ⚠ LE DÉFAUT RÉEL, ET IL A ÉTÉ EN LIGNE.
+   *
+   * `resoudreDroits` rendait `DROIT_SOLO` — donc `maitre: true`, donc TOUT
+   * ouvert — dès que les comptes n'étaient pas configurés. C'était juste pour
+   * un outil local. Sur une production joignable, ça voulait dire : quiconque
+   * connaît l'URL ouvre `/payouts`, `/offre`, notre portefeuille, envoie de
+   * vrais emails depuis notre domaine et compose de vrais numéros sur nos
+   * minutes.
+   *
+   * Rien ne l'annonçait : l'application avait exactement le même air.
+   */
+  avecEnv(
+    {
+      NODE_ENV: "production",
+      SITE_PASSWORD: undefined,
+      SUPABASE_JWT_SECRET: undefined,
+      NEXT_PUBLIC_SUPABASE_URL: undefined,
+    },
+    () => {
+      assert.equal(deploiementSansSerrure(), true, "production nue = sans serrure");
+    }
+  );
+});
+
+test("les trois échappatoires, chacune pour une raison différente", () => {
+  const nu = { SITE_PASSWORD: undefined, SUPABASE_JWT_SECRET: undefined, NEXT_PUBLIC_SUPABASE_URL: undefined };
+
+  // 1. En développement : c'est l'outil local, et le mode solo est fait pour ça.
+  avecEnv({ ...nu, NODE_ENV: "development" }, () => {
+    assert.equal(deploiementSansSerrure(), false, "npm run dev ne doit rien changer à l'usage local");
+  });
+
+  // 2. Un mot de passe de site EST une serrure : le middleware mure déjà tout,
+  //    et le mode solo derrière ce mur est l'outil interne voulu.
+  avecEnv({ ...nu, NODE_ENV: "production", SITE_PASSWORD: "quelque-chose" }, () => {
+    assert.equal(deploiementSansSerrure(), false, "le mot de passe compte comme serrure");
+  });
+
+  // 3. Des comptes configurés : on ne passe plus par le mode solo du tout.
+  avecEnv(
+    { ...nu, NODE_ENV: "production", SUPABASE_JWT_SECRET: "s", NEXT_PUBLIC_SUPABASE_URL: "https://x.supabase.co" },
+    () => {
+      assert.equal(deploiementSansSerrure(), false, "les comptes sont la vraie serrure");
+    }
+  );
+
+  // ⚠ Un mot de passe VIDE n'est pas un mot de passe. Sans ce `.trim()`, une
+  // variable posée à "" sur Vercel — ce qui arrive quand on la crée sans la
+  // remplir — passerait pour une serrure et rouvrirait le trou en silence.
+  avecEnv({ ...nu, NODE_ENV: "production", SITE_PASSWORD: "   " }, () => {
+    assert.equal(deploiementSansSerrure(), true, "une variable vide n'est pas une serrure");
+  });
+});
+
+test("sans serrure, on retombe au GRATUIT — pas sur une page blanche", () => {
+  /**
+   * On ne coupe pas un site en ligne pour corriger une faille : une panne
+   * blanche est une panne. Le socle gratuit garde l'application utilisable et
+   * la démonstration possible, tout en fermant ce qui dépense et ce qui parle
+   * de notre économie.
+   */
+  const gratuit = droitGratuit("anonyme");
+  assert.equal(autorise(gratuit, "/pipeline"), true, "l'app reste utilisable");
+  assert.equal(autorise(gratuit, "/payouts"), false, "notre économie se referme");
+  assert.equal(autorise(gratuit, "/offre"), false);
+  assert.equal(autorise(gratuit, "/campaigns"), false, "plus d'envoi depuis notre domaine");
+  assert.equal(autorise(gratuit, "/voice"), false, "plus d'appels sur nos minutes");
+});
+
+test("⚠ le contrôle passe AVANT le mode solo, sinon il ne sert à rien", () => {
+  /**
+   * C'est la ligne `return DROIT_SOLO` qui rendait tout le monde maître : un
+   * contrôle placé après elle ne serait jamais atteint. On vérifie l'ORDRE
+   * dans la source, parce que c'est lui qui porte la correction — pas la
+   * présence de la fonction.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/entitlements.ts"), "utf8")
+    // ⚠ On retire les commentaires AVANT de chercher. Le commentaire qui
+    // explique la correction cite `return DROIT_SOLO` en prose, et il est
+    // placé au-dessus du code : sans ce nettoyage, l'index trouvé est celui
+    // de l'explication, pas celui de l'instruction. Le test échouait en
+    // accusant un ordre correct — deuxième fois dans ce dépôt qu'une
+    // recherche de source se fait piéger par sa propre documentation.
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+  const corps = src.slice(src.indexOf("export async function resoudreDroits"));
+  const iGarde = corps.indexOf("deploiementSansSerrure()");
+  const iSolo = corps.indexOf("return DROIT_SOLO");
+  assert.ok(iGarde > 0, "la garde doit être appelée dans resoudreDroits");
+  assert.ok(iSolo > 0);
+  assert.ok(iGarde < iSolo, "la garde doit précéder le repli solo, sinon elle est morte");
 });

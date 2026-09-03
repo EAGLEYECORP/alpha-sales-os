@@ -549,6 +549,23 @@ démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiant
 > même jour. `tests/entitlements.test.ts` (`API_QUI_DEPENSENT`) les tient
 > maintenant, et refuse une entrée orpheline.
 
+> ⚠⚠ **LE MODE SOLO ÉTAIT LA DERNIÈRE PORTE QUI ÉCHAPPAIT À L'INVARIANT.**
+> `resoudreDroits` rendait `DROIT_SOLO` (donc **maître**, donc TOUT ouvert) dès
+> que les comptes n'étaient pas configurés. Juste pour un outil local ; sur une
+> production joignable, ça voulait dire **quiconque connaît l'URL est maître** —
+> `/payouts`, `/offre`, le portefeuille, `/api/send` depuis notre domaine,
+> `/api/voice/call` sur nos minutes. Rien ne l'annonçait : l'app avait le même
+> air. Ce n'était pas une config manquante, c'était un défaut de conception —
+> il n'existait aucun endroit qui distinguait « sur ma machine » de « en ligne ».
+> · `deploiementSansSerrure()` = **production ET aucun compte ET aucun
+>   `SITE_PASSWORD`**. Les trois ensemble, jamais moins. Un mot de passe EST une
+>   serrure (le middleware mure déjà tout) ; en dev, le solo reste intact.
+> · On ne coupe PAS le site : on retombe au **socle gratuit**. Une page blanche
+>   sur une prod en ligne est une panne, et on n'en crée pas une pour corriger
+>   une faille. L'app reste utilisable, plus personne n'est maître.
+> · `SITE_PASSWORD=""` (variable créée mais pas remplie, ça arrive) n'est PAS
+>   une serrure — d'où le `.trim()`, et un test qui le vérifie.
+
 **L'INVARIANT** : *on ne descend jamais sous le gratuit, on ne monte jamais
 au-dessus sans une ligne prouvée en base.*
 - Pas de ligne, base injoignable, service role absent → **gratuit**. Une panne

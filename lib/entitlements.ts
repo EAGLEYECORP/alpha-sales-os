@@ -143,6 +143,59 @@ export function droitGratuit(tenantId: string): Entitlement {
   return { ...DROIT_GRATUIT, bricks: [...BRIQUES_GRATUITES], tenantId };
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * UN DÉPLOIEMENT PUBLIC SANS AUCUNE SERRURE — le trou qui ne se voyait pas.
+ *
+ * ⚠ CE N'ÉTAIT PAS UNE CONFIG MANQUANTE, C'ÉTAIT UN DÉFAUT DE CONCEPTION.
+ *
+ * `resoudreDroits` rendait `DROIT_SOLO` dès que les comptes n'étaient pas
+ * configurés. `DROIT_SOLO` est `maitre: true` et `autorise()` lui répond `true`
+ * sur TOUT. C'était le bon choix quand Alpha Sales OS était un outil local
+ * pour une personne : refuser aurait transformé un outil qui marche en écran
+ * de connexion vide.
+ *
+ * Mais la même ligne, sur un déploiement joignable depuis internet, veut dire :
+ * **quiconque connaît l'URL est maître.** `/payouts`, `/offre`, notre
+ * portefeuille, `/api/send` qui envoie de vrais emails depuis notre domaine,
+ * `/api/voice/call` qui compose de vrais numéros sur nos minutes. Et rien ne
+ * l'annonce — l'app a exactement le même air.
+ *
+ * Le mode solo n'a jamais été pensé pour être exposé. Il n'y avait simplement
+ * aucun endroit dans le code qui faisait la différence entre « ça tourne sur
+ * ma machine » et « c'est en ligne ».
+ *
+ * ── LA DISTINCTION, ET POURQUOI CELLE-LÀ ──
+ *
+ * Trois conditions ensemble, et seulement les trois ensemble :
+ *   · on est en PRODUCTION (donc pas `npm run dev`) ;
+ *   · aucun compte n'est configuré ;
+ *   · aucun mot de passe de site n'est posé.
+ *
+ * `SITE_PASSWORD` compte comme une serrure : s'il est là, le middleware mure
+ * déjà l'application entière, et le mode solo derrière ce mur est l'usage
+ * voulu — l'outil interne. Ce n'est que lorsqu'il n'y a RIEN que le problème
+ * existe.
+ *
+ * ── CE QU'ON FAIT ALORS, ET CE QU'ON NE FAIT PAS ──
+ *
+ * On ne coupe PAS le site : une page blanche sur une production en ligne est
+ * une panne, et on n'en crée pas une pour corriger une faille. On retombe sur
+ * le SOCLE GRATUIT — l'application reste utilisable, la démonstration reste
+ * possible, mais plus personne n'est maître par défaut et rien de ce qui
+ * dépense chez nous n'est atteignable.
+ *
+ * C'est le même invariant que partout ailleurs ici : **on ne monte jamais
+ * au-dessus du gratuit sans preuve.** Le mode solo était la dernière porte qui
+ * y échappait.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function deploiementSansSerrure(): boolean {
+  const enProduction = process.env.NODE_ENV === "production";
+  const motDePasse = Boolean((process.env.SITE_PASSWORD ?? "").trim());
+  return enProduction && !comptesActifs() && !motDePasse;
+}
+
 /** Le système de comptes est-il actif sur ce déploiement ? */
 export function comptesActifs(): boolean {
   return Boolean(process.env.SUPABASE_JWT_SECRET && process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -264,6 +317,12 @@ export function normaliserBriques(brut: unknown): BrickId[] {
  *  4. sinon → lecture des droits ; toute erreur = REFUS.
  */
 export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
+  /**
+   * ⚠ L'ORDRE COMPTE : ce contrôle passe AVANT le mode solo, sinon il ne sert
+   * à rien. C'est précisément le `return DROIT_SOLO` de la ligne suivante qui
+   * rendait tout le monde maître sur une production sans serrure.
+   */
+  if (deploiementSansSerrure()) return { ...DROIT_GRATUIT, bricks: [...BRIQUES_GRATUITES] };
   if (!comptesActifs()) return DROIT_SOLO;
 
   const tenant = await getTenant(req);
