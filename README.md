@@ -142,7 +142,11 @@ alpha-sales-os/
 │       ├── voice/{call,session} # Dispatch + journal de sessions/transcriptions
 │       └── track/ · webhooks/   # Ouvertures, clics, réponses entrantes
 ├── lib/                         # Modules PURS et testés
+│   ├── entitlements             # ⭐ LA serrure : qui a droit à quoi, côté serveur
+│   ├── bricks-access · api-access # Quelle brique ouvre quelle page / quelle API
+│   ├── offres-publiques         # ⭐ Les prix PUBLICS — la source unique
 │   ├── accounts · ladder        # Portefeuille white-label + l'ESCALIER de routage
+│   ├── accounts-commercial      # 🔒 SERVEUR : identités partenaires + commissions
 │   ├── segments · icp           # ⭐ À qui on vend, et pourquoi
 │   ├── deep-dive · import-triage# Audit à l'import, verdict d'un lot
 │   ├── vital-signs · master-rappel · checkpoints
@@ -153,7 +157,9 @@ alpha-sales-os/
 │   ├── webpush · push-digest · ics · notion  # ⭐ notifications, agenda, CRM
 │   ├── deck · client-onboarding             # ⭐ présentation par étape, mise en route
 │   ├── token-budget · mission-french-tech   # ⭐ coût des prompts, dossier FT2030
+│   ├── wizard-progress          # L'assistant ET la visite : une seule règle d'ouverture
 │   └── knowledge · store · types
+├── components/ui/page-header    # Le SEUL endroit où s'écrit un titre d'écran
 ├── voice/                       # Agent Python (LiveKit) + guides SIP
 ├── tests/                       # node:test — `npm test` pour le compte
 └── docs/                        # Déploiement, API v1, autopilote, roadmap
@@ -192,6 +198,37 @@ fait l'addition seul et choisit la brique la moins chère. `publicBricks()`
 dérive la vue publique du catalogue pour que les deux ne divergent jamais, et
 `tests/vitrine-fuite.test.ts` verrouille ce qui ne doit pas sortir.
 
+### Qui entre, et ce qu'il obtient — le socle gratuit
+
+**L'inscription est libre.** N'importe qui crée son compte quand il veut, et
+démarre à zéro + le jeu de démonstration, avec ses propres identifiants.
+
+| | |
+|---|---|
+| **GRATUIT**, sans limite de durée | CRM & pipeline · Closer OS & débrief · le Cerveau · KPIs et pilotage — **tes données, ton organisation** |
+| **PAYANT** | Campagnes · Alpha Voice · Agent ALPHA · Audits · Tracking · Alpha Live — **la machine agit à ta place** |
+
+> ⚠ **Cette ligne n'est pas un arbitrage commercial : elle est imposée par un
+> fait technique.** `/api/send` lit `SMTP_*` dans l'environnement du serveur,
+> `/api/voice/call` lit `LIVEKIT_*`, `/api/ai` brûle les jetons du déploiement.
+> Il n'existe aujourd'hui **aucun chemin d'identifiants par locataire**. Ouvrir
+> une de ces briques au gratuit revient à donner sa carte de crédit et son nom
+> de domaine à des inconnus — et ça ne se voit que sur la facture, un mois plus
+> tard. Le jour où les identifiants deviennent par locataire, la ligne se
+> rediscute.
+
+L'invariant, dans `lib/entitlements.ts` : **on ne descend jamais sous le
+gratuit, on ne monte jamais au-dessus sans une ligne prouvée en base.** Pas de
+ligne, base injoignable, service role absent → gratuit. Une panne dégrade donc
+un payant en gratuit — visible ; l'inverse serait invisible et cher. Un impayé
+retombe au gratuit, pas au néant : ses données lui appartiennent, et le mettre
+dehors ne récupère aucun impayé.
+
+`tests/entitlements.test.ts` liste les routes qui dépensent, avec pour chacune
+l'identifiant qu'elle consomme, et vérifie qu'aucune n'est atteignable par le
+gratuit. Trois y échappaient en écrivant la garde — `/api/ai`, `/api/sparring`
+et `/api/digest` pointaient vers des chemins devenus gratuits le même jour.
+
 ### Mettre un client en route
 
 `lib/client-onboarding.ts` — dix étapes datées depuis la signature, chacune
@@ -206,6 +243,10 @@ semaines suivantes.
 
 Un client d'essai suit le même parcours. Ce n'est pas un client au rabais,
 c'est un client qui n'a pas encore payé.
+
+Un compte **gratuit**, lui, ne suit pas ce parcours du tout : il s'installe
+seul, sans nous. Ce parcours-ci commence à la signature — c'est-à-dire au
+moment où quelqu'un a payé pour que nous fassions le travail à sa place.
 
 ### Ce que le système REFUSE de faire
 
@@ -262,9 +303,16 @@ l'effort, trié par LTV).
 
 ## Offre & Tarifs
 
-Les prix vivent dans `lib/bricks.ts` — **une seule source**. La vitrine, le
-devis et le catalogue lisent le même fichier : impossible qu'ils divergent.
-Voir la grille des briques plus haut.
+Les prix PUBLICS vivent dans **`lib/offres-publiques.ts`** — une seule source.
+`lib/bricks.ts` les réimporte, la vitrine et le devis les lisent : ils ne
+peuvent pas diverger. Voir la grille des briques plus haut.
+
+> ⚠ Cette section disait « les prix vivent dans `lib/bricks.ts` ». C'était vrai
+> avant que `bricks` devienne un module SERVEUR — il porte le catalogue complet
+> et nos marges, et `tests/vitrine-fuite.test.ts` lui interdit de descendre
+> dans le navigateur. Un fichier que la moitié du produit ne peut plus importer
+> n'est pas une source unique : les prix publics ont donc remonté d'un cran, et
+> `bricks` est devenu un consommateur comme les autres.
 
 **Le coût usine est chiffré** (`lib/voice-costs.ts`), tarifs fournisseurs
 relevés en août 2026, chaque ligne portant sa source. À 1 000 appels/mois :
@@ -277,12 +325,45 @@ client porte tout, le dixième est quasi gratuit.
 > LLM payant — c'est le seul chiffrage honnête. Migrer coûte moins de 3 € pour
 > 1 000 appels.
 
-## Thème clair / sombre
+## Le matériau et le rythme
+
+Trois classes, **une seule définition de chacune**, gardées par
+`tests/mise-en-page.test.ts` :
+
+- **`.page`** — le rythme d'un écran. Le padding appartient à la coquille,
+  jamais à la page : deux écrans l'ajoutaient par-dessus et avaient un cadre
+  plus épais que tous les autres. Les exceptions (plein écran, centrage,
+  fenêtre Electron) sont listées **avec leur motif** dans le test.
+- **`.card`** — la plaque de verre. Une plaque translucide, ce sont quatre
+  choses ensemble : transparence, flou, **saturation**, et une arête haute
+  éclairée + une arête basse dans l'ombre. Retirer la saturation suffit à la
+  faire rendre grise et sale — c'est celle qu'on oublie.
+- **`.panel`** — la sous-surface creusée dans une plaque, teintée avec la
+  couleur du TEXTE : elle s'éclaircit sur fond sombre et s'assombrit sur crème
+  sans une seule règle par thème.
+
+**Pas de verre dans le verre** : un `backdrop-filter` imbriqué ne floute pas la
+page, il floute le rendu **déjà flouté** de son parent — de la boue grise, et
+une couche de composition par niveau.
+
+Une carte sans flou doit devenir **opaque**, sinon son texte se pose sur le
+dégradé de la page. Deux cas réels et gérés : le navigateur qui ne sait pas
+flouter, et l'utilisateur qui a demandé moins de transparence dans son système
+(`prefers-reduced-transparency` — un réglage d'accessibilité, au même titre que
+`reduced-motion`).
+
+`PageHeader` est le seul endroit où s'écrit un titre d'écran ; la chaîne était
+recopiée à la main dans la quasi-totalité des pages.
+
+### Thème clair / sombre
 
 Bascule clair/sombre (icône soleil/lune dans la sidebar et le header mobile),
 persistée, appliquée avant le premier paint (aucun flash). Sombre = défaut
-marque. Détails d'implémentation : jetons CSS dans `tailwind.config` +
-`globals.css`, `lib/theme.ts`.
+marque. **Le clair ne redéfinit pas le matériau, il reteinte les jetons
+`--glass-*`** : il a existé une seconde définition de `.card` par thème, et le
+sombre avait reçu le flou et la saturation que le clair n'a jamais eus. Deux
+définitions du même matériau = deux vérités, et les deux « marchaient ».
+Implémentation : `app/globals.css`, `tailwind.config`, `lib/theme.ts`.
 
 ## Sécurité
 
@@ -290,6 +371,21 @@ Posture complète dans [`SECURITY.md`](./SECURITY.md) : middleware anti-CSRF
 (même origine sur les endpoints internes) + rate-limit, en-têtes durcis (HSTS,
 COOP/CORP, CSP…), lint anti-spam, désinscription STOP, RLS Supabase, checklist
 opérateur (HTTPS, SPF/DKIM/DMARC, secrets).
+
+**Deux serrures, à ne pas confondre.** Le cloisonnement des DONNÉES est la RLS
++ le JWT (`lib/tenant.ts`). Un « compte » du portefeuille white-label est une
+frontière d'**identité commerciale** — au nom de qui on parle, quoi on vend —
+jamais une frontière de sécurité.
+
+**Ce qui descend dans le navigateur descend pour tout le monde.**
+`_next/static/**` est exclu du middleware : n'importe qui télécharge ces
+fichiers, avec ou sans compte. `tests/vitrine-fuite.test.ts` tient donc une
+liste de modules SERVEUR qu'aucun composant client ne peut importer — le
+catalogue et ses marges, le modèle de coût, le socle du Cerveau, le volet
+commercial du portefeuille. La règle a été payée plusieurs fois : la grille
+tarifaire complète, puis les taux de commission par compte, puis le dossier de
+ciblage d'un partenaire (ses domaines et son ICP complet) se sont retrouvés
+publics — à chaque fois mesuré sur le build, jamais deviné.
 
 ## Mode test / manuel (sans n8n)
 
@@ -428,6 +524,8 @@ Enrichir la méthode terrain : [`docs/TERRAIN.md`](./docs/TERRAIN.md).
 Montée en volume : [`docs/RUNBOOK.md`](./docs/RUNBOOK.md).
 Prospection multi-plateformes (email + LinkedIn + WhatsApp + SMS, quotas
 anti-spam par canal) : [`docs/MULTICANAL.md`](./docs/MULTICANAL.md).
+Ouvrir une conversation sans mendier (LinkedIn + lettre + audit à la demande,
+les seuils et les garde-fous) : [`docs/APPROCHE-PULL.md`](./docs/APPROCHE-PULL.md).
 Contrat-type (setup + 30 % à vie, clauses anti-contournement & audit) :
 [`docs/CONTRAT-PRESTATION.md`](./docs/CONTRAT-PRESTATION.md) — à faire valider
 par un avocat.
@@ -493,12 +591,47 @@ Dans Vercel → Project → Settings → Environment Variables :
 
 Puis `vercel --prod`. Le manifest PWA est servi ; l'app s'installe sur mobile (bottom nav dédiée).
 
+### Ouvrir les comptes — l'ordre compte
+
+Tant que ces variables ne sont pas posées, l'app tourne en mode **solo** :
+une seule identité, tout ouvert, données dans le navigateur. C'est l'usage
+d'un opérateur seul, et il ne change pas.
+
+Pour accueillir d'autres comptes, dans **cet ordre** :
+
+| # | Variable | Ce que ça fait |
+|---|---|---|
+| 1 | `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_JWT_SECRET` | l'app sait VÉRIFIER un jeton |
+| 2 | `SUPABASE_SERVICE_ROLE_KEY` | l'app sait LIRE les droits payants (sans elle : tout le monde est gratuit, jamais plus) |
+| 3 | `OWNER_EMAILS` + `NEXT_PUBLIC_OWNER_EMAILS` (**même liste**) | ton compte maître |
+| 4 | `REQUIRE_AUTH=1` | **EN DERNIER** — c'est lui qui ferme la porte |
+
+> ⚠ Les trois premières ne changent RIEN tant que la quatrième n'est pas là :
+> vérifié sur serveur réel. Et la misconfiguration n'ouvre jamais —
+> `REQUIRE_AUTH=1` sans `SUPABASE_JWT_SECRET` fait répondre **503** aux API de
+> données plutôt que de laisser passer.
+
+**Avant et après**, lis `GET /api/health` **une fois connecté** : il rend
+`auth.serverEnv`, `auth.serverEnforced`, `auth.misconfigured`, `auth.verrou` et
+`proprietaire.coherent` (les deux listes `OWNER_EMAILS` concordent-elles). Il
+LIT ces états, il ne les recalcule pas — il les a redéduits avec sa propre
+expression régulière, et une divergence n'aurait pas planté : elle aurait
+menti, dans l'outil même qui sert à vérifier la bascule.
+
+`SITE_PASSWORD` ne garde ensuite plus que `/payouts`, `/offre` et `/api/sync` —
+ce qui parle de NOTRE économie, jamais de celle du client.
+
 ## Vérifications
 
 ```bash
+npm test            # la suite complète (node:test) — le compte exact s'affiche
 npm run typecheck   # TypeScript strict
 npm run build       # build production Next.js
 ```
+
+Les trois doivent être verts avant de pousser. `npm test` couvre aussi ce qui
+ne se voit pas à l'écran : les fuites de bundle, la frontière gratuit/payant,
+les sources uniques de prix, et la mise en page.
 
 ## Données
 

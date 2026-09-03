@@ -19,12 +19,27 @@ démo live, **puis** le prix.
 |---|---|
 | **Il fait** | La démonstration. Le prospect entend son propre accueil téléphonique. |
 | **Il fait** | Rappeler quelqu'un qui a laissé ses coordonnées. |
-| **Il ne fait pas** | Du démarchage à froid vers des inconnus. |
+| **Il fait** | **Le démarchage à froid** — et il mène l'appel entier : il qualifie et il conclut. |
+| **Il ne fait pas** | Improviser. Aucune modalité, aucun prix, aucun écart de trame. |
 
-Le mode démarchage serait techniquement identique à la démo sortante. **Il
-n'est pas exposé, et c'est une décision, pas une limite.** On vend une IA qui
-répond bien aux clients de nos prospects : notre propre premier contact ne peut
-pas être une IA qui démarche. Voir `docs/MARCHE.md` §4.2.
+> ⚠ **CE TABLEAU DISAIT L'INVERSE, ET LE CODE FAISAIT DÉJÀ AUTREMENT.**
+>
+> Il annonçait « il ne fait pas de démarchage à froid… ce n'est pas une limite,
+> c'est une décision ». Or `prospection-b2b` figure dans `CALL_MODES`
+> (`lib/voice-script.ts`) et l'autopilote l'utilise par défaut
+> (`lib/campaign-runner.ts`). Les paliers 10 · 100 · 1 000 sont entièrement
+> bâtis sur lui.
+>
+> Un document périmé se tait ; celui-ci **plaidait** contre l'état réel, avec
+> un argument convaincant, auprès de quiconque le lisait de bonne foi. La
+> décision a été renversée le 28/08/2026 — le raisonnement complet est dans
+> `docs/MARCHE.md` §4.2-4.4 et `docs/VOIX.md`.
+
+Ce qui reste de l'ancien refus, et qui compte : **une IA qui démarche n'a droit
+à aucune improvisation.** C'est `COLD_CALLING_DISCIPLINE` — objectif unique (le
+rendez-vous), aucun prix, le NON qui raccroche, le OUI qui passe la main.
+`auditScript` refuse un script qui s'en écarte, des deux côtés : l'app et le
+service.
 
 ---
 
@@ -127,7 +142,7 @@ séparément ; aucun des deux ne fait confiance à l'autre.
 
 | Situation | Ce qui se passe |
 |---|---|
-| Mode « prospection froide » demandé | `Mode non autorisé. Modes disponibles : demo-entrante, demo-sortante, rappel-entrant.` |
+| Mode inconnu demandé | `Mode non autorisé` — la liste réelle est `CALL_MODES` (`lib/voice-script.ts`), qui inclut `prospection-b2b` |
 | Numéro incomplet (`06 12`) | `Numéro inexploitable. Attendu un numéro français.` |
 | Appel un dimanche | `Hors fenêtre d'appel` — forçable explicitement, jamais par défaut |
 | Script sans divulgation | `422` côté app, `APPEL REFUSÉ` côté agent |
