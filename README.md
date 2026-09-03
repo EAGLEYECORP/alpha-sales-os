@@ -4,8 +4,9 @@
 
 Alpha Sales OS trouve les prospects, les audite, les appelle, les relance, tient
 l'historique de chaque conversation et dit à l'humain quoi faire — pour lui,
-maintenant. Next.js 15 · React 19 · TypeScript strict · **zéro dépendance
-runtime** (crypto, CSV, PDF, RAG : tout est fait main).
+maintenant. Next.js 15 · React 19 · TypeScript strict. **Les briques qui
+capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — sont
+écrites à la main et ne sortent rien.**
 
 > La décision EST le produit. Émotion d'abord (démo avant le prix), logique ensuite.
 
@@ -47,6 +48,12 @@ Ce n'est pas un CRM avec des citations Hormozi — les règles sont **exécutée
 
 ### ⏱ French Tech 2030 — dépôt avant le **4 septembre 2026, 23h59** (heure de Paris)
 
+> Dossier rédigé : [`docs/DOSSIER-FRENCH-TECH-2030.md`](./docs/DOSSIER-FRENCH-TECH-2030.md).
+> Les lots techniques (souveraineté, différenciation, marché, résumé exécutif)
+> sont écrits à partir de faits vérifiables dans le dépôt. Quatre sections
+> restent marquées **[À REMPLIR]** : éligibilité, traction, équipe, pièces —
+> elles demandent des chiffres d'entreprise ou une décision.
+
 3e promotion. Accompagnement 12 mois : optimisation du financement, mise en
 relation stratégique, simplification administrative. Résultats annoncés en
 octobre 2026. Domaines prioritaires : **IA**, quantique, cybersécurité, spatial,
@@ -69,8 +76,8 @@ robotique, électronique, infrastructures numériques, santé, énergie.
 ```
 
 **Adéquation : plausible, pas gagnée d'avance.** L'IA est bien un domaine
-prioritaire et l'argument de souveraineté est réel (zéro dépendance runtime,
-données hébergeables en France, pile vocale auto-hébergeable). Mais le programme
+prioritaire et l'argument de souveraineté est réel (cascade IA locale d'abord,
+données hébergeables en France, pile vocale déplaçable). Mais le programme
 vise plutôt la deep-tech de souveraineté que le logiciel de vente : le dossier
 se défend sur *« l'automatisation commerciale ne doit pas dépendre d'acteurs
 américains »*, **pas** sur la liste des fonctionnalités.
@@ -115,6 +122,7 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 | Framework | Next.js 15 (App Router) + React 19 + TypeScript strict |
 | UI | Tailwind CSS, composants maison style shadcn, lucide-react, Bricolage Grotesque / Inter / JetBrains Mono |
 | État | Zustand + persistance localStorage (local-first, zéro backend requis) |
+| Souveraineté | Cascade IA **Ollama (local) → NVIDIA → Anthropic**, puis moteur de gabarits fait main : le produit tourne sans aucun appel sortant (`lib/ai-engine.ts`) |
 | Data | TanStack Table (vue liste), Recharts (funnel, forecast MRR, secteurs) |
 | IA (texte) | Endpoint compatible OpenAI (NVIDIA NIM / Groq / Ollama) avec **fallback moteur de templates hors-ligne** |
 | **Alpha Voice** | LiveKit Agents (Python) · Deepgram STT · LLM compatible OpenAI · Fish Audio TTS · Silero VAD · SIP Telnyx |

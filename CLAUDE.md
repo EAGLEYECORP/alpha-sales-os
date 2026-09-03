@@ -9,9 +9,15 @@
 - **Propriétaire** : Zakaria Tazi — EAGLEYE CORP, Lyon. Français par défaut dans
   tout ce qui est produit (code en anglais, UI + docs + prompts en français).
 - **Produit** : Alpha Sales OS — OS de vente white-label. Next.js 15 / React 19 /
-  TS strict, Zustand persist (`alpha-sales-os-v2`), **zéro dépendance runtime**
-  (crypto, CSV, RAG, PDF : tout est fait main). Ne JAMAIS ajouter une dépendance
-  npm sans raison impérieuse.
+  TS strict, Zustand persist (`alpha-sales-os-v2`). **Les briques qui
+  capteraient de la donnée métier — crypto, CSV, RAG, PDF — sont faites à la
+  main.** Ne JAMAIS ajouter une dépendance npm sans raison impérieuse.
+  > ⚠ Ne pas dire « **zéro** dépendance runtime » : `package.json` en déclare
+  > quatorze (Next, React, client Supabase, nodemailer, recharts, SDK IA…).
+  > La formule courte est fausse et se vérifie en trente secondes — elle
+  > décrédibiliserait tout ce qui l'entoure, à commencer par un dossier de
+  > candidature. Ce qui est vrai, c'est que rien de ce qui touche la donnée
+  > MÉTIER ne passe par un tiers.
 - **Branche de travail** : `claude/crm-n8n-email-tracking-4qxtwr`. Commit + push
   systématiques. Tests : `npm test` (node:test). Types : `npx tsc --noEmit`.
   Les deux doivent être verts avant push.

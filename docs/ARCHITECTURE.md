@@ -2,7 +2,9 @@
 
 > Carte technique lue dans le code source (l'équivalent versionné de l'artifact
 > « Carte technique »). Next.js 15 · React 19 · TypeScript strict ·
-> **zéro dépendance runtime tierce**.
+> **aucune dépendance tierce sur les briques qui touchent la donnée métier**
+> (RAG, extraction, CSV, crypto : faits main). Le framework et les clients de
+> service, eux, sont des dépendances normales — `package.json` fait foi.
 >
 > ⚠ Les compteurs (pages, routes, modules) ne sont plus recopiés ici : ils
 > périmaient au commit suivant sans que personne les rouvre. `find app -name

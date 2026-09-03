@@ -183,7 +183,8 @@ Pour mémoire, parce que la liste ci-dessus donne une impression sombre :
   peut pas produire un prix avant l'étape offre ;
 - l'article 50 prononcé par le code, et `audit_script` qui refuse un script
   non conforme ;
-- zéro dépendance runtime — rien à auditer que notre propre code ;
+- aucune dépendance tierce sur les briques qui touchent la donnée métier —
+  ce qui reste à auditer, c'est notre propre code ;
 - la grille tarifaire, les données de prospects réels et l'économie du
   portefeuille **hors** des bundles navigateur (mesuré sur le build) — ET
   hors de portée d'un client connecté depuis le 27/08 : `/api/pipeline`,
