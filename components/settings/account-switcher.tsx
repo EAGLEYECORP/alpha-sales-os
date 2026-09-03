@@ -25,8 +25,24 @@ export function AccountSwitcher() {
   const portefeuille = useAccountsCommercial();
   const activeId = settings.accountId ?? "eagleye";
   const active = getAccount(activeId);
-  const icp = accountICP(activeId);
   const commercial = useAccountCommercial(activeId);
+  /**
+   * ⚠ L'ICP CURÉ D'UN PARTENAIRE NE DESCEND PLUS DANS LE NAVIGATEUR.
+   *
+   * `accountICP` lisait le registre client, qui portait donc — pour tout
+   * visiteur du site, compte ou pas — notre dossier de ciblage complet sur le
+   * partenaire : acheteur, douleurs, déclencheurs, canaux, disqualifiants.
+   * Il vit maintenant côté serveur et arrive par `/api/catalogue`, réservé au
+   * compte MAÎTRE.
+   *
+   * Le repli sur `accountICP` n'est pas un pis-aller : c'est la déduction
+   * déterministe de `lib/icp.ts`, qui donne toujours un client parfait
+   * cohérent. Tant que le portefeuille n'est pas chargé, on montre celui-là
+   * plutôt qu'un écran vide — et il se précise dès que le serveur répond.
+   */
+  const icpServeur = commercial?.identite?.icp;
+  const base = accountICP(activeId);
+  const icp = icpServeur ? { ...base, ...icpServeur } : base;
 
   return (
     <section className="card space-y-3 p-4">

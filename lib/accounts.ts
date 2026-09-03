@@ -145,7 +145,6 @@ export const ACCOUNTS: Account[] = [
     kind: "client",
     tier: "vip",
     city: "Lyon",
-    sites: ["https://nuwacom.fr/", "https://nuwacom.com/en"],
     whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",
     valueProp:
       "On transforme un process assurance manuel et lent en parcours digital mesurable : moins de friction, plus de contrats traités.",
@@ -158,39 +157,6 @@ export const ACCOUNTS: Account[] = [
       action:
         "Caler le RDV de CADRAGE avec le CEO de Nuwacom. Le contrat se dresse APRÈS ce cadrage — " +
         "c'est là qu'est le levier de négociation.",
-    },
-    icp: {
-      label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
-      buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
-      sector: "Assurance — compagnies, courtiers grossistes, mutuelles, bancassurance",
-      companySize: "25 à 2 000 salariés (cœur de cible ~1 500)",
-      geo: "Lyon puis national",
-      pains: [
-        "Process encore manuels (souscription, sinistres, relances) — lents et coûteux",
-        "Systèmes hérités qui ne parlent pas entre eux",
-        "Parcours client fragmenté, sans mesure de bout en bout",
-        "Pression réglementaire et concurrence des assurtechs",
-      ],
-      triggers: [
-        "Nomination d'un directeur transformation / innovation",
-        "Programme de digitalisation annoncé ou budget voté",
-        "Fusion / rapprochement (mutuelles) → besoin d'unifier les outils",
-        "Publie qu'il recrute sur la data / le digital",
-      ],
-      channels: [
-        "LinkedIn (comité de direction, transformation)",
-        "Introduction par prescripteur (cabinet, éditeur)",
-        "Email cadre + audit de parcours",
-        "Événements assurance / assurtech",
-      ],
-      disqualifiers: [
-        "Budget projet < 40 000 € HT → faisable par nous, ça reste chez EAGLEYE",
-        "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
-        "Aucun sponsor au comité de direction",
-        "Chantier gelé / DSI en refonte de core system bloquante",
-      ],
-      angle:
-        "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
     },
   },
 ];

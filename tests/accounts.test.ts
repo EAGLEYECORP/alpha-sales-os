@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, routeAccount } from "../lib/accounts";
-import { commercialFor, commissionFor } from "../lib/accounts-commercial";
+import { ACCOUNTS_COMMERCIAL, commercialFor, commissionFor } from "../lib/accounts-commercial";
 import { tauxVitrinePct } from "../lib/taux-vitrine";
 import { matchOffer } from "../lib/offer-match";
 
@@ -179,13 +181,44 @@ test("accounts — Nuwacom : 15 % au-delà de 40 k", () => {
   assert.equal(deal.amount, 9000);
 });
 
-test("accounts — l'ICP Nuwacom cible l'assurance 25-2000 en transformation digitale", () => {
-  const icp = accountICP("nuwacom");
-  assert.match(icp.sector.toLowerCase(), /assur/);
-  assert.match(icp.companySize, /25/);
-  assert.match(icp.companySize, /2\s?000|2000/);
+test("accounts — l'ICP d'un partenaire a quitté le NAVIGATEUR, pas le produit", () => {
+  /**
+   * ⚠ CE TEST LISAIT `accountICP("nuwacom")`, DONC LE REGISTRE CLIENT.
+   *
+   * Il vérifiait le bon contenu au mauvais endroit : cet ICP — acheteur cible,
+   * douleurs, déclencheurs, canaux, disqualifiants, angle — est notre travail
+   * de ciblage SUR un partenaire, et il partait dans un chunk
+   * `_next/static/**` téléchargeable sans compte. Depuis que l'inscription est
+   * libre, n'importe qui lisait le dossier.
+   *
+   * Il vit maintenant dans `lib/accounts-commercial.ts`, servi par
+   * `/api/catalogue` au compte MAÎTRE seulement. Le test suit la donnée.
+   */
+  const nuwa = ACCOUNTS_COMMERCIAL.find((c) => c.accountId === "nuwacom");
+  assert.ok(nuwa?.identite?.icp, "l'identité partenaire doit vivre côté serveur");
+  const icp = nuwa.identite.icp;
+  assert.match((icp.sector ?? "").toLowerCase(), /assur/);
+  assert.match(icp.companySize ?? "", /25/);
+  assert.match(icp.companySize ?? "", /2\s?000|2000/);
   assert.match(`${icp.label} ${icp.angle}`.toLowerCase(), /transformation|digital|parcours/);
-  assert.equal(icp.refined, true, "ICP curé = affiné");
+});
+
+test("⚠ accounts — le registre CLIENT ne porte plus le dossier d'un partenaire", () => {
+  /**
+   * La contrepartie du test précédent, et c'est elle qui garde la fuite
+   * fermée. On vérifie la CONDITION sur le fichier qui descend réellement
+   * dans le navigateur, pas sur une intention.
+   *
+   * Ce qui RESTE volontairement : l'id et les familles d'offres. Elles
+   * ROUTENT (qui a le droit de porter quelle offre) et 14 tests le prouvent —
+   * les retirer casse le périmètre d'offre, les rituels de closing, le
+   * deep-dive et les segments. Sans nom en face, « ce compte peut porter
+   * visibilite-growth » ne dit rien à personne.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/accounts.ts"), "utf8");
+  for (const secret of ["nuwacom.fr", "nuwacom.com", "Assureur en transformation", "Directeur transformation"]) {
+    assert.ok(!src.includes(secret), `« ${secret} » ne doit plus descendre dans le navigateur`);
+  }
 });
 
 test("accounts — applyAccount produit un patch d'identité restreint (pas de fuite EAGLEYE)", () => {

@@ -1,4 +1,6 @@
 import { DEFAULT_ACCOUNT_ID, getAccount } from "./accounts";
+import type { ICP } from "./icp";
+import type { EagleyeOffer } from "./offer-match";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -108,9 +110,55 @@ export interface ClosingDetails {
   timezone?: string;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'IDENTITÉ D'UN COMPTE PARTENAIRE — elle a déménagé ICI, et voici pourquoi.
+ *
+ * ⚠ MESURÉ SUR LE BUILD, PAS SUPPOSÉ. `lib/accounts.ts` descend dans le
+ * navigateur (il est importé par le store et par cinq composants client).
+ * L'entrée Nuwacom y portait : le nom, les deux domaines, ce qu'ils vendent,
+ * leur proposition de valeur, les familles d'offres autorisées, l'acte de
+ * closing — et un ICP COMPLET : acheteur cible, douleurs, déclencheurs,
+ * canaux, disqualifiants, angle d'attaque.
+ *
+ * Autrement dit : tout notre playbook commercial sur ce partenaire, dans un
+ * fichier `_next/static/**` que n'importe qui télécharge sans compte. Relevé
+ * avant correction : « Nuwacom » dans 3 chunks, « nuwacom.fr » dans 1.
+ *
+ * Ce n'était pas grave tant que l'app était notre outil interne. Depuis que
+ * l'inscription est LIBRE (cf. freemium, `lib/entitlements.ts`), ça l'est :
+ * n'importe quel inconnu inscrit en trente secondes lisait le dossier.
+ *
+ * Ce module-ci est servi par `/api/catalogue`, qui ne rend le portefeuille
+ * qu'au compte MAÎTRE. C'est le même trajet que les taux de commission, qui
+ * avaient fait le déménagement avant lui — le raisonnement s'était arrêté à
+ * l'argent et n'était pas allé jusqu'à l'identité.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface IdentiteCompte {
+  name: string;
+  city?: string;
+  sites?: string[];
+  whatYouSell: string;
+  valueProp: string;
+  /** Les familles d'offres que ce compte a le droit de porter. */
+  offers: EagleyeOffer[];
+  /** L'acte de closing propre au compte (le rituel à ne pas rater). */
+  closingAction?: string;
+  /** Le client parfait de CE compte — notre travail de ciblage, pas le sien. */
+  icp?: Partial<ICP>;
+}
+
 /** Le volet commercial d'UN compte du portefeuille. */
 export interface AccountCommercial {
   accountId: string;
+  /**
+   * Présente pour les comptes PARTENAIRES uniquement. Le compte maître
+   * (EAGLEYE) garde la sienne côté client : c'est notre propre marque, elle
+   * est déjà sur chaque écran et sur la vitrine publique — la cacher ne
+   * protégerait rien et casserait l'app hors ligne.
+   */
+  identite?: IdentiteCompte;
   /** Les offres commerciales du compte + leurs règles de commission. */
   offerings: Offering[];
   /** Objectif minimal de valeur par projet (€), s'il existe. */
@@ -196,6 +244,53 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
   },
   {
     accountId: "nuwacom",
+    identite: {
+      name: "Nuwacom",
+      city: "Lyon",
+      sites: ["https://nuwacom.fr/", "https://nuwacom.com/en"],
+      whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",
+      valueProp:
+        "On transforme un process assurance manuel et lent en parcours digital mesurable : moins de friction, plus de contrats traités.",
+      // GROS chantiers seulement (> 40 k) : en dessous, c'est faisable par nous
+      // et ça reste chez EAGLEYE. Au-dessus, c'est trop lourd pour nous.
+      offers: ["visibilite-growth", "alpha-sales-os"],
+      closingAction:
+        "Caler le RDV de CADRAGE avec le CEO de Nuwacom. Le contrat se dresse APRÈS ce cadrage — " +
+        "c'est là qu'est le levier de négociation.",
+      icp: {
+        label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
+        buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
+        sector: "Assurance — compagnies, courtiers grossistes, mutuelles, bancassurance",
+        companySize: "25 à 2 000 salariés (cœur de cible ~1 500)",
+        geo: "Lyon puis national",
+        pains: [
+          "Process encore manuels (souscription, sinistres, relances) — lents et coûteux",
+          "Systèmes hérités qui ne parlent pas entre eux",
+          "Parcours client fragmenté, sans mesure de bout en bout",
+          "Pression réglementaire et concurrence des assurtechs",
+        ],
+        triggers: [
+          "Nomination d'un directeur transformation / innovation",
+          "Programme de digitalisation annoncé ou budget voté",
+          "Fusion / rapprochement (mutuelles) → besoin d'unifier les outils",
+          "Publie qu'il recrute sur la data / le digital",
+        ],
+        channels: [
+          "LinkedIn (comité de direction, transformation)",
+          "Introduction par prescripteur (cabinet, éditeur)",
+          "Email cadre + audit de parcours",
+          "Événements assurance / assurtech",
+        ],
+        disqualifiers: [
+          "Budget projet < 40 000 € HT → faisable par nous, ça reste chez EAGLEYE",
+          "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
+          "Aucun sponsor au comité de direction",
+          "Chantier gelé / DSI en refonte de core system bloquante",
+        ],
+        angle:
+          "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
+      },
+    },
     offerings: [
       {
         key: "transformation",

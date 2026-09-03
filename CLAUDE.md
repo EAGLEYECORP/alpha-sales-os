@@ -65,6 +65,23 @@ change l'identité + l'offre + la commission, **pas** les données.
 >   client** sur le CA qu'on lui fait gagner (`lib/pricing` → `REV_SHARE`).
 >   C'est un PRIX, pas une commission reversée.
 
+> ⚠ **LE DOSSIER D'UN PARTENAIRE NE DESCEND PAS DANS LE NAVIGATEUR.**
+> `lib/accounts.ts` est importé par le store et cinq composants client : tout
+> ce qu'on y écrit part dans un chunk `_next/static/**` que n'importe qui
+> télécharge **sans compte**. L'entrée Nuwacom y portait ses deux domaines et
+> un ICP COMPLET (acheteur, douleurs, déclencheurs, canaux, disqualifiants,
+> angle) — notre travail de ciblage, public. Mesuré, pas supposé.
+> · Ce qui vit désormais dans `lib/accounts-commercial.ts` (serveur, servi par
+>   `/api/catalogue` au **maître seul**) : nom d'usage, domaines, proposition
+>   de valeur, ICP, acte de closing — le champ `identite`.
+> · Ce qui RESTE côté client : l'**id** et les **familles d'offres**. Elles
+>   ROUTENT : les vider casse le périmètre d'offre, les rituels de closing,
+>   le deep-dive et les segments — mesuré en les retirant, pas supposé. Sans
+>   nom en face, « ce compte peut porter telle famille » ne dit rien.
+> · Le **nom** reste aussi, faute de mieux : il est porteur dans une dizaine
+>   de modules de routage. L'en sortir est un vrai refactor (l'identité
+>   viendrait des Réglages, hydratés du serveur), pas une ligne.
+
 **Règle de routage** : faisable par nous → EAGLEYE · > 40 k → Nuwacom.
 Il n'y a plus d'exception par OFFRE : c'est la TAILLE qui sous-traite.
 
