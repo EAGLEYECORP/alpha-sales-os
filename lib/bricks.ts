@@ -53,7 +53,7 @@ export interface Brick {
 // que le navigateur a le droit d'atteindre, donc c'est lui qui les porte.
 // Les réimporter garantit qu'il n'existe qu'un seul nombre.
 export { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
-import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
+import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
 
 export interface OutboundTier {
   calls: number;
@@ -64,13 +64,17 @@ export interface OutboundTier {
 }
 
 export const OUTBOUND_TIERS: OutboundTier[] = [
-  { calls: 1000, monthlyHT: 364, perThousandHT: 364, note: "Le palier d'entrée : on prouve que ça convertit." },
-  { calls: 2000, monthlyHT: 728, perThousandHT: 364 },
-  { calls: 3000, monthlyHT: 1092, perThousandHT: 364 },
+  { calls: OUTBOUND_UNIT_CALLS, monthlyHT: OUTBOUND_UNIT_HT, perThousandHT: OUTBOUND_UNIT_HT, note: "Le palier d'entrée : on prouve que ça convertit." },
+  { calls: 2 * OUTBOUND_UNIT_CALLS, monthlyHT: 2 * OUTBOUND_UNIT_HT, perThousandHT: OUTBOUND_UNIT_HT },
+  { calls: 3 * OUTBOUND_UNIT_CALLS, monthlyHT: 3 * OUTBOUND_UNIT_HT, perThousandHT: OUTBOUND_UNIT_HT },
   {
-    calls: 4000,
-    monthlyHT: 1092,
-    perThousandHT: 273,
+    calls: 4 * OUTBOUND_UNIT_CALLS,
+    // « Le 4e millier est offert » n'est pas une remise ronde qu'on choisit :
+    // c'est le prix de TROIS milliers. L'écrire ainsi rend la promesse
+    // vérifiable d'un coup d'œil, et empêche 1 092 € de survivre au jour où
+    // l'unité change.
+    monthlyHT: 3 * OUTBOUND_UNIT_HT,
+    perThousandHT: Math.round((3 * OUTBOUND_UNIT_HT) / 4),
     note: "Palier de montée en charge : le 4e millier est offert. À ouvrir SEULEMENT une fois le ciblage et la conversation réglés.",
   },
 ];
@@ -200,7 +204,7 @@ export const BRICKS: Brick[] = [
     id: "alpha-voice",
     label: "Alpha Voice",
     what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant et sortant, 24/7.",
-    setupHT: 3500,
+    setupHT: OUTBOUND_SETUP_HT,
     // Palier d'entrée du sortant : 1 000 appels/mois. Au-delà, voir
     // OUTBOUND_TIERS — le prix suit le volume, sans engagement.
     monthlyHT: OUTBOUND_UNIT_HT,

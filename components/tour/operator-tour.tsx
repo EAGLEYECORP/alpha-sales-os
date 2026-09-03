@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
+import { visiteDoitSOuvrir } from "@/lib/wizard-progress";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -141,18 +142,27 @@ export function OperatorTour() {
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
 
-  // Ouverture auto, UNE fois : après l'assistant (onboarded), jamais pendant.
+  /**
+   * Ouverture auto. La RÈGLE vit dans `visiteDoitSOuvrir`
+   * (`lib/wizard-progress.ts`), à côté de celle de l'assistant : les deux
+   * répondent à la même question et ne doivent jamais diverger. Ici on ne
+   * fait que lui donner l'état du navigateur.
+   */
   useEffect(() => {
-    if (!settings.onboarded) return;
+    let dejaFaite: boolean;
     try {
-      if (!window.localStorage.getItem(DONE_KEY)) {
-        const t = setTimeout(() => setOpen(true), 800);
-        return () => clearTimeout(t);
-      }
+      dejaFaite = Boolean(window.localStorage.getItem(DONE_KEY));
     } catch {
-      /* stockage indisponible → pas d'auto-ouverture */
+      // Stockage indisponible : on ne peut pas savoir si elle a déjà été
+      // faite. On ne l'ouvre donc PAS — la rouvrir à chaque navigation
+      // serait pire que de ne pas la proposer.
+      return;
     }
-  }, [settings.onboarded]);
+    if (!visiteDoitSOuvrir({ onboarded: settings.onboarded, dejaFaite, chemin: pathname, premiereEtape: STOPS[0].href }))
+      return;
+    const t = setTimeout(() => setOpen(true), 800);
+    return () => clearTimeout(t);
+  }, [settings.onboarded, pathname]);
 
   // Relance manuelle (Réglages).
   useEffect(() => {

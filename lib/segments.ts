@@ -1,5 +1,22 @@
 import type { EagleyeOffer } from "./offer-match";
-import { ALPHA_VOICE_PALIERS, ALPHA_VOICE_SETUP_HT } from "./offres-publiques";
+import {
+  ALPHA_VOICE_PALIERS,
+  ALPHA_VOICE_SETUP_HT,
+  OUTBOUND_SETUP_HT,
+  OUTBOUND_UNIT_CALLS,
+  OUTBOUND_UNIT_HT,
+} from "./offres-publiques";
+
+/**
+ * Séparateur de milliers, à la main et sans dépendre d'ICU.
+ *
+ * ⚠ Pas `toLocaleString("fr-FR")` ici : selon la version d'ICU, il rend une
+ * espace fine insécable (U+202F) ou une espace normale. Ces chaînes partent
+ * dans des documents commerciaux et sont comparées par des tests — un
+ * caractère invisible qui change avec la version de Node est exactement le
+ * genre de différence qu'on met une heure à voir.
+ */
+const milliers = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -142,22 +159,20 @@ export const SEGMENTS: Segment[] = [
       "Refus de principe de l'IA côté direction — le convaincre coûte plus que le deal",
     ],
     /**
-     * ⚠ MONTANT RECOPIÉ, ET IL LE RESTE — la tentative de le dériver a été
-     * ANNULÉE, pour une raison qui doit être écrite.
+     * ⚠ CES DEUX NOMBRES ÉTAIENT RECOPIÉS À LA MAIN, dans une phrase que lit
+     * un PROSPECT. C'était la dernière deuxième-source de prix du dépôt.
      *
-     * Il vient de `lib/bricks.ts` (setup 3 500 €, palier sortant 364 €). Mais
-     * `bricks` est un module SERVEUR : il porte tout notre catalogue et nos
-     * marges. Ce fichier-ci descend dans le navigateur — l'importer publierait
-     * la grille entière dans un chunk téléchargeable. `tests/vitrine-fuite`
-     * l'a refusé, et il a eu raison.
+     * Le commentaire qui était ici disait « la vraie correction est de faire
+     * remonter les prix publics du sortant dans `offres-publiques`, comme
+     * pour Alpha Voice — pas fait ». C'est fait maintenant. Il n'y avait
+     * d'ailleurs qu'un seul nombre à déplacer : `OUTBOUND_UNIT_HT` était déjà
+     * là, seul son setup manquait.
      *
-     * La vraie correction est de faire remonter les prix PUBLICS du sortant
-     * dans `lib/offres-publiques.ts`, comme ça a été fait pour Alpha Voice,
-     * et que `bricks` les réimporte. Pas fait : c'est un déplacement qui
-     * touche beaucoup de lecteurs, et ce n'est pas la veille d'une démo qu'on
-     * le fait. En attendant, ces deux nombres SONT une deuxième source.
+     * Pourquoi on ne pouvait pas simplement importer `bricks` : il est
+     * SERVEUR (catalogue + marges), ce fichier-ci descend dans le navigateur,
+     * et `tests/vitrine-fuite` refuse le mélange. Il avait raison.
      */
-    dealRange: "3 500 € installation + 364 €/mois par tranche de 1 000 appels",
+    dealRange: `${milliers(OUTBOUND_SETUP_HT)} € installation + ${OUTBOUND_UNIT_HT} €/mois par tranche de ${milliers(OUTBOUND_UNIT_CALLS)} appels`,
     buyer: "Directeur de production · responsable de plateau · DSI",
   },
   {

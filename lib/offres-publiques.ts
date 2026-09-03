@@ -50,6 +50,22 @@ export const ESSAI_CALLS = 100;
 export const ESSAI_HT = 290;
 export const OUTBOUND_UNIT_CALLS = 1000;
 export const OUTBOUND_UNIT_HT = 364;
+/**
+ * Le setup du sortant.
+ *
+ * ⚠ Il manquait ici, et c'est ce qui a laissé une DEUXIÈME SOURCE vivre trois
+ * mois. `OUTBOUND_UNIT_HT` était bien remonté, mais pas son setup : `bricks`
+ * l'écrivait en dur, et `segments` le recopiait à la main dans une phrase de
+ * vente (« 3 500 € installation + 364 €/mois »). Le premier des deux nombres
+ * changeait, le second restait — et c'est celui qu'un prospect lit.
+ *
+ * Le module ne pouvait pas être dérivé de `bricks` : `bricks` est SERVEUR, il
+ * porte tout le catalogue et nos marges, et `tests/vitrine-fuite` refuse
+ * qu'il descende dans le navigateur. La correction n'était donc pas
+ * « importer bricks » mais « faire remonter le prix PUBLIC ici », exactement
+ * comme pour Alpha Voice. C'est fait.
+ */
+export const OUTBOUND_SETUP_HT = 3500;
 export const PACK_SETUP_HT = 10_000;
 export const PACK_MONTHLY_HT = 1_000;
 

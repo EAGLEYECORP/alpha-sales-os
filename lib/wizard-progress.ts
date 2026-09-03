@@ -70,6 +70,48 @@ export function doitSOuvrirSeul(onboarded: boolean, p: Progress): boolean {
   return !onboarded && !p.differe;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA MÊME QUESTION POUR LA VISITE GUIDÉE — et elle a une condition de plus.
+ *
+ * ⚠ CE QUI ÉTAIT CASSÉ, VU SUR UNE VRAIE PRODUCTION.
+ *
+ * `OperatorTour` est monté dans la COQUILLE, donc sur les 38 écrans. Sa
+ * condition d'ouverture ne regardait que « l'assistant est fini » et « la
+ * visite n'a pas déjà été faite ». Elle s'ouvrait donc 800 ms après l'arrivée
+ * sur N'IMPORTE QUELLE page.
+ *
+ * Et elle ne se contentait pas de recouvrir : l'effet d'alignement du
+ * composant fait un `router.push()` vers la première étape dès que le chemin
+ * courant en diffère. Constaté : on ouvre `/settings`, on commence à lire, et
+ * l'app nous EMMÈNE ailleurs. Ce n'est pas un carrousel mal placé, c'est une
+ * navigation qu'on n'a pas demandée.
+ *
+ * D'où la 3ᵉ condition : on ne s'ouvre seul que si l'opérateur se trouve DÉJÀ
+ * là où la visite commence. Il n'y a alors plus rien à déplacer.
+ *
+ * ── CE QUE ÇA COÛTE, ET POURQUOI C'EST LE BON CÔTÉ DE L'ERREUR ──
+ *
+ * Quelqu'un qui n'ouvre jamais le tableau de bord ne verra jamais la visite
+ * s'ouvrir seule. C'est assumé : elle reste à un clic dans Réglages, et la
+ * relance MANUELLE garde le droit de naviguer — là, c'est demandé. Entre ne
+ * pas proposer une visite et déplacer quelqu'un qui lisait autre chose, le
+ * choix n'est pas difficile.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function visiteDoitSOuvrir(opts: {
+  /** L'assistant de configuration est terminé. */
+  onboarded: boolean;
+  /** La visite a déjà été faite (drapeau `alpha_tour_done`). */
+  dejaFaite: boolean;
+  /** Le chemin affiché en ce moment. */
+  chemin: string;
+  /** Le chemin de la 1re étape de la visite. */
+  premiereEtape: string;
+}): boolean {
+  return opts.onboarded && !opts.dejaFaite && opts.chemin === opts.premiereEtape;
+}
+
 /** Lecture navigateur. Un stockage bloqué rend la valeur neutre, pas une erreur. */
 export function chargerProgression(): Progress {
   if (typeof window === "undefined") return { ...VIDE };

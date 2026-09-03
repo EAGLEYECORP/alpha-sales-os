@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { doitSOuvrirSeul, lireProgression, PROGRESS_KEY } from "../lib/wizard-progress";
+import { doitSOuvrirSeul, lireProgression, visiteDoitSOuvrir, PROGRESS_KEY } from "../lib/wizard-progress";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -90,4 +90,78 @@ test("une progression d'AVANT le report se relit sans faire revenir le panneau �
   assert.equal(p.sheetsReady, true);
   assert.equal(p.differe, false);
   assert.equal(doitSOuvrirSeul(false, p), true);
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   LA VISITE GUIDÉE — la même question, une condition de plus
+   ═══════════════════════════════════════════════════════════════════ */
+
+test("visite — elle s'ouvre seule sur la 1re étape, et là seulement", () => {
+  const base = { onboarded: true, dejaFaite: false, premiereEtape: "/" };
+  assert.equal(visiteDoitSOuvrir({ ...base, chemin: "/" }), true, "sur le tableau de bord : elle s'ouvre");
+
+  /**
+   * ⚠ LE DÉFAUT RÉEL, CONSTATÉ SUR UNE PRODUCTION.
+   *
+   * `OperatorTour` est monté dans la coquille, donc sur les 38 écrans. Sans
+   * cette condition, il s'ouvrait 800 ms après l'arrivée sur n'importe quelle
+   * page — et comme l'effet d'alignement du composant pousse vers la 1re
+   * étape, il DÉPLAÇAIT l'opérateur. On ouvrait `/settings`, on commençait à
+   * lire, et l'app partait sur `/`.
+   *
+   * On mute la CONDITION (le chemin), pas la présence de l'appel : c'est le
+   * piège que ce dépôt a payé quatre fois.
+   */
+  for (const ailleurs of ["/settings", "/pipeline", "/aujourdhui", "/prospects/abc", "/voice"]) {
+    assert.equal(
+      visiteDoitSOuvrir({ ...base, chemin: ailleurs }),
+      false,
+      `${ailleurs} : s'ouvrir ici revient à emmener l'opérateur ailleurs`
+    );
+  }
+});
+
+test("visite — les deux autres verrous tiennent toujours", () => {
+  const surLEtape = { chemin: "/", premiereEtape: "/" };
+  // Pendant l'assistant : jamais. On ne superpose pas deux onboardings.
+  assert.equal(visiteDoitSOuvrir({ ...surLEtape, onboarded: false, dejaFaite: false }), false);
+  // Déjà faite : jamais. « Une fois » veut dire une fois.
+  assert.equal(visiteDoitSOuvrir({ ...surLEtape, onboarded: true, dejaFaite: true }), false);
+});
+
+test("visite — le composant délègue la règle, il ne la réécrit pas", () => {
+  /**
+   * Le pendant du contrôle qui existe déjà pour l'assistant. Deux définitions
+   * de « faut-il ouvrir ? » finiraient par diverger, et c'est celle du
+   * composant qui gagnerait — sans test.
+   */
+  const src = readFileSync(join(process.cwd(), "components/tour/operator-tour.tsx"), "utf8");
+
+  /**
+   * ⚠ La 1re version cherchait `visiteDoitSOuvrir({` n'importe où. Une
+   * mutation l'a démontée : `if (false && !visiteDoitSOuvrir({…` contient
+   * toujours la chaîne, le test restait vert, et la visite se rouvrait
+   * partout. On exige donc que l'appel SOIT la garde — rien entre le `if (`
+   * et la négation.
+   */
+  assert.match(
+    src,
+    /if \(!visiteDoitSOuvrir\(\{/,
+    "l'appel doit être la condition elle-même, pas une expression noyée dans un `&&`"
+  );
+
+  /**
+   * Et il doit lui passer le VRAI chemin. Une règle juste nourrie d'une
+   * constante rend toujours la même réponse : `chemin: "/"` en dur ferait
+   * repasser la visite sur les 38 écrans, avec la règle intacte et le test
+   * vert. C'est le défaut récurrent de ce dépôt — le mécanisme correct,
+   * branché sur rien.
+   */
+  assert.match(src, /chemin: pathname\b/, "le chemin passé doit être celui affiché, pas une constante");
+  assert.match(src, /premiereEtape: STOPS\[0\]\.href/, "la 1re étape se lit dans STOPS, elle ne se recopie pas");
+  assert.doesNotMatch(
+    src.replace(/\/\*[\s\S]*?\*\//g, ""),
+    /if\s*\(\s*!settings\.onboarded\s*\)\s*return/,
+    "plus de condition d'ouverture recopiée dans le composant"
+  );
 });

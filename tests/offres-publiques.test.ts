@@ -14,7 +14,9 @@ import {
 } from "../lib/offres-publiques";
 import { margeOffre } from "../lib/offres-marge";
 import { PLANS } from "../lib/stripe";
-import { ESSAI_HT, OUTBOUND_UNIT_HT } from "../lib/bricks";
+import { BRICKS, ESSAI_HT, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "../lib/bricks";
+import { OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS } from "../lib/offres-publiques";
+import { SEGMENTS } from "../lib/segments";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -359,4 +361,93 @@ test("la route de paiement accepte toutes les offres payables, et refuse le devi
     /abonnement: offre\.cadence === "mensuel"/,
     "le mode Stripe doit se DÉDUIRE de la cadence : l'essai est un paiement unique"
   );
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   LE PRIX DU SORTANT NE SE RECOPIE PLUS DANS UNE PHRASE DE VENTE
+   ═══════════════════════════════════════════════════════════════════ */
+
+test("segments — la fourchette du centre d'appels est CALCULÉE, pas écrite", () => {
+  /**
+   * ⚠ CE QUI ÉTAIT CASSÉ.
+   *
+   * `lib/segments.ts` portait la chaîne « 3 500 € installation + 364 €/mois par
+   * tranche de 1 000 appels », tapée à la main. C'est une phrase que lit un
+   * PROSPECT, et c'était la dernière deuxième-source de prix du dépôt : le jour
+   * où le setup bouge, `bricks` suit et cette phrase continue d'annoncer
+   * l'ancien montant, sans un seul échec de test.
+   *
+   * On vérifie la CONDITION — la chaîne se déforme quand la constante bouge —
+   * et pas la présence d'un `import`, qu'un littéral laissé à côté rendrait
+   * muet.
+   */
+  const seg = SEGMENTS.find((s) => s.id === "centre-appels");
+  assert.ok(seg, "le segment centre d'appels doit exister");
+  assert.ok(
+    seg.dealRange.includes(String(OUTBOUND_UNIT_HT)),
+    `le palier (${OUTBOUND_UNIT_HT}) doit venir de la grille : « ${seg.dealRange} »`
+  );
+  // 3500 s'affiche « 3 500 » : on cherche le nombre séparateur compris.
+  const setupAffiche = String(OUTBOUND_SETUP_HT).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  assert.ok(
+    seg.dealRange.includes(setupAffiche),
+    `le setup (${setupAffiche}) doit venir de la grille : « ${seg.dealRange} »`
+  );
+  assert.ok(
+    seg.dealRange.includes(String(OUTBOUND_UNIT_CALLS).replace(/\B(?=(\d{3})+(?!\d))/g, " ")),
+    "la taille de la tranche aussi"
+  );
+});
+
+test("segments — et le montant ne réapparaît pas en clair à côté", () => {
+  /**
+   * Le pendant du test précédent, et il est nécessaire : `dealRange` peut être
+   * calculé correctement pendant qu'une AUTRE phrase du même fichier réécrit
+   * le montant à la main. C'est exactement ainsi que le doublon est né.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/segments.ts"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+  const setupAffiche = String(OUTBOUND_SETUP_HT).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  for (const interdit of [`${setupAffiche} €`, `${OUTBOUND_UNIT_HT} €`]) {
+    assert.ok(
+      !src.includes(interdit),
+      `« ${interdit} » est écrit en clair dans lib/segments.ts — il doit venir de lib/offres-publiques.ts`
+    );
+  }
+});
+
+test("bricks — le setup du sortant est TIRÉ de la grille, pas retapé", () => {
+  /**
+   * ⚠ Une mutation a montré le trou : remettre `setupHT: 3500` en dur dans
+   * `bricks` ne faisait tomber aucun test. L'égalité de VALEUR ne suffit pas —
+   * tant que le nombre en dur vaut le même, elle passe. Il faut donc les deux :
+   * la valeur (qui attrape un déplacement de la grille) ET le câblage (qui
+   * attrape la resaisie).
+   */
+  const alphaVoice = BRICKS.find((b) => b.id === "alpha-voice");
+  assert.ok(alphaVoice, "la brique Alpha Voice doit exister");
+  assert.equal(alphaVoice.setupHT, OUTBOUND_SETUP_HT, "le setup doit valoir celui de la grille publique");
+
+  const src = readFileSync(join(process.cwd(), "lib/bricks.ts"), "utf8");
+  assert.match(
+    src,
+    /setupHT: OUTBOUND_SETUP_HT,/,
+    "le setup doit être IMPORTÉ de lib/offres-publiques.ts, pas écrit en chiffres"
+  );
+
+  /**
+   * Les paliers de volume sont des MULTIPLES de l'unité, pas des nombres
+   * choisis. « Le 4e millier est offert » veut dire : le prix de trois. Écrit
+   * en clair (1 092 €), la promesse devient invérifiable et survit au jour où
+   * l'unité change.
+   */
+  for (const [i, t] of OUTBOUND_TIERS.slice(0, 3).entries()) {
+    assert.equal(t.calls, (i + 1) * OUTBOUND_UNIT_CALLS);
+    assert.equal(t.monthlyHT, (i + 1) * OUTBOUND_UNIT_HT, "les trois premiers paliers sont linéaires");
+    assert.equal(t.perThousandHT, OUTBOUND_UNIT_HT);
+  }
+  const quatre = OUTBOUND_TIERS.find((t) => t.calls === 4 * OUTBOUND_UNIT_CALLS);
+  assert.ok(quatre, "le palier de montée en charge doit exister");
+  assert.equal(quatre.monthlyHT, 3 * OUTBOUND_UNIT_HT, "le 4e millier est offert = on paie trois milliers");
 });
