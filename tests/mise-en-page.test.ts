@@ -137,6 +137,124 @@ test("⚠ aucun écran ne redéfinit son espacement ni son padding racine", () =
   assert.deepEqual(fautes, [], fautes.join("\n  "));
 });
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * UN `col-span` SANS GRILLE NE FAIT RIEN, ET NE SE VOIT PAS.
+ *
+ * ⚠ CONSTATÉ. `/settings` était une grille `lg:grid-cols-2` dont certaines
+ * cartes s'échappaient en `lg:col-span-2`. Sur les six, DEUX étaient posés sur
+ * une `<section>` enfermée dans un `<PanneauOperateur>` — donc jamais enfant
+ * direct de la grille. Ils n'ont jamais élargi quoi que ce soit.
+ *
+ * C'est la forme visuelle du défaut récurrent du dépôt : un mécanisme correct,
+ * écrit, et branché nulle part. Rien n'échoue — une carte plus étroite que
+ * prévu ne ressemble pas à un bug, elle ressemble à une carte.
+ *
+ * ── CE QUE CE TEST NE PEUT PAS FAIRE, ET POURQUOI JE LE DIS ──
+ *
+ * J'ai d'abord écrit la règle générale : « un composant exporté dont la racine
+ * porte un col-span doit être rendu par un appelant qui déclare une grille ».
+ * Elle a l'air juste. Elle ne mord pas, et la mutation l'a prouvé — remettre
+ * un col-span orphelin sur `pricing-editor` ne faisait tomber aucun test,
+ * parce que `/settings` contient encore six `md:grid-cols-2` INTERNES, dans
+ * ses cartes. Le fichier « a une grille » ; ce n'est simplement pas celle qui
+ * rend ce composant. Répondre juste demanderait de remonter l'arbre JSX
+ * jusqu'au parent réel — ce qu'une lecture de source ne fait pas honnêtement.
+ *
+ * Il reste donc ici la moitié DÉCIDABLE : un col-span sur un composant que
+ * plus personne ne rend. Et le cas d'aujourd'hui est couvert par le test
+ * suivant, qui est spécifique et, lui, mesuré : `/settings` n'a plus de
+ * grille de sections, donc aucun de ses panneaux ne porte de col-span.
+ *
+ * Une règle étroite qui tombe vaut mieux qu'une règle large qui passe.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("aucun col-span ne pend dans le vide", () => {
+  const fichiers = sourcesTsx();
+  const contenus = new Map(fichiers.map((f) => [f, readFileSync(join(R, f), "utf8")]));
+
+  const fautes: string[] = [];
+  for (const [f, src] of contenus) {
+    /**
+     * ⚠ On ne regarde QUE le `col-span` posé sur l'élément RACINE d'un
+     * `return (` — c'est le seul qui s'adresse à la grille de l'appelant.
+     *
+     * La première version se contentait de « ce fichier a-t-il une
+     * `grid-cols-` quelque part ? » et passait son chemin si oui. Une
+     * mutation l'a démontée : remettre un `lg:col-span-2` orphelin sur
+     * `pricing-editor.tsx` ne faisait tomber aucun test, parce que ce
+     * fichier a une grille INTERNE — pour ses propres enfants, qui n'a
+     * rien à voir avec le span de sa racine.
+     */
+    const corps = sansCommentaires(src);
+
+    /**
+     * On découpe par composant EXPORTÉ. Un composant local à un fichier qui
+     * pose lui-même sa grille n'est pas concerné : sa racine et sa grille
+     * vivent ensemble et se lisent d'un coup d'œil (c'est le cas des dix
+     * panneaux de la fiche prospect). Ce qui se perd de vue, et qui a
+     * effectivement été perdu de vue ici, c'est le span d'un composant
+     * exporté qui dépend d'une grille écrite dans un AUTRE fichier.
+     */
+    const exports = [...corps.matchAll(/export function (\w+)/g)];
+    for (let i = 0; i < exports.length; i++) {
+      const nom = exports[i][1];
+      const bloc = corps.slice(exports[i].index!, exports[i + 1]?.index ?? corps.length);
+      const racine = /return \(\s*\n\s*<\w+[^>]*?className="([^"]*)"/.exec(bloc)?.[1] ?? "";
+      if (!/\bcol-span-/.test(racine)) continue;
+
+      const appelants = [...contenus].filter(([g, s]) => g !== f && s.includes(`<${nom}`));
+      if (!appelants.length) {
+        fautes.push(`${f} → <${nom}> n'est rendu nulle part : son col-span est mort avec lui`);
+      }
+    }
+  }
+  assert.deepEqual(fautes, [], fautes.join("\n  "));
+});
+
+test("l'écran de réglages se lit en UNE colonne, pleine largeur", () => {
+  /**
+   * Deux colonnes sur un écran de réglages, c'était trois défauts à la fois :
+   * des hauteurs qui ne s'accordaient jamais (une carte de deux lignes à côté
+   * d'une carte de trente, et le trou blanc entre les deux), des champs déjà
+   * en `md:grid-cols-2` DANS les cartes qui tombaient donc à la moitié d'une
+   * moitié (les URL n8n et Supabase se lisaient sur quinze caractères), et
+   * les deux `col-span` inertes ci-dessus.
+   *
+   * On vérifie la CONDITION — pas de grille multi-colonnes sur le conteneur
+   * de sections — et pas la présence d'un `space-y-*`, qu'un `grid-cols-2`
+   * ajouté à côté laisserait passer.
+   */
+  const src = readFileSync(join(R, "app/(app)/settings/page.tsx"), "utf8");
+  const corps = sansCommentaires(src);
+  // `sansCommentaires` laisse un `{}` là où était chaque commentaire JSX :
+  // le conteneur et le premier panneau ne sont donc pas collés.
+  const conteneur = /<div className="([^"]*)">\s*(?:\{\}\s*)*<PanneauOperateur titre="Infrastructure"/.exec(corps);
+  assert.ok(conteneur, "le conteneur de sections de /settings doit être identifiable");
+  assert.doesNotMatch(
+    conteneur[1],
+    /grid-cols-/,
+    `le conteneur est « ${conteneur[1]} » : les cartes doivent occuper toute la largeur`
+  );
+
+  /**
+   * Et le corollaire, sans lequel le premier point ne suffit pas : les
+   * panneaux de `/settings` sont rendus PAR cet écran et par personne d'autre
+   * (vérifié : `<PricingEditor`, `<SystemStatus`, `<Deliverability`… n'ont
+   * qu'un seul appelant). Un `col-span` sur l'un d'eux ne peut donc plus
+   * s'adresser à aucune grille — c'est exactement la classe morte qu'on vient
+   * de retirer de cinq d'entre eux.
+   */
+  const fautes: string[] = [];
+  for (const f of sourcesTsx().filter((x) => x.startsWith("components/settings/"))) {
+    const corpsPanneau = sansCommentaires(readFileSync(join(R, f), "utf8"));
+    for (const m of corpsPanneau.matchAll(/className="([^"]*\bcol-span-[^"]*)"/g)) {
+      fautes.push(`${f} → « ${m[1]} » : /settings n'a plus de grille de sections`);
+    }
+  }
+  assert.deepEqual(fautes, [], fautes.join("\n  "));
+});
+
 /* ═══════════════════════════════════════════════════════════════════
    2. UN SEUL EN-TÊTE
    ═══════════════════════════════════════════════════════════════════ */

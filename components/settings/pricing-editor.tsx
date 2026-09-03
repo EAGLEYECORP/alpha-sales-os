@@ -27,7 +27,7 @@ export function PricingEditor() {
   const setTier = (i: number, patch: Partial<Tier>) => edit((p) => Object.assign(p.tiers[i], patch));
 
   return (
-    <section className="card p-4 lg:col-span-2">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
           <BadgeEuro size={15} className="text-bronze-400" /> Tarifs — mon offre (white-label)

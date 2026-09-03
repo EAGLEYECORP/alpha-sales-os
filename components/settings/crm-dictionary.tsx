@@ -41,7 +41,7 @@ export function CrmDictionary() {
   const total = headers.length;
 
   return (
-    <section className="card p-4 lg:col-span-2">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button className="flex items-center gap-2 font-display text-sm font-semibold text-paper" onClick={() => setOpen((v) => !v)}>
           <BookText size={15} className="text-bronze-400" /> Dictionnaire CRM

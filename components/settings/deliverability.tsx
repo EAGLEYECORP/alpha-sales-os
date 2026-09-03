@@ -101,7 +101,7 @@ export function Deliverability() {
           : "border-signal-red/50 text-signal-red";
 
   return (
-    <section className="card p-4 lg:col-span-2">
+    <section className="card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
           <MailWarning size={15} className="text-bronze-400" /> Délivrabilité du domaine

@@ -332,7 +332,31 @@ export default function SettingsPage() {
     <div className="page">
       <PageHeader title="Réglages" subtitle="Règles business, clés API, données, rôles." />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/*
+        ── UNE SEULE COLONNE, PLEINE LARGEUR ──────────────────────────────
+
+        C'était une grille `lg:grid-cols-2` dont certaines cartes seulement
+        s'échappaient en `lg:col-span-2`. Trois défauts, tous visibles :
+
+        1. Les hauteurs ne s'accordaient jamais. Une carte de deux lignes
+           (« Verrouillage ») se retrouvait à côté d'une carte de trente
+           (« Données »), et la grille laissait un trou blanc de la hauteur
+           de la plus haute. Le regard sautait de colonne à chaque bloc.
+        2. Le contenu, lui, est déjà en colonnes DANS les cartes
+           (`md:grid-cols-2` un peu partout). Une grille dans une grille
+           réduisait chaque champ à la moitié d'une moitié : les URL n8n et
+           Supabase se lisaient sur quinze caractères.
+        3. ⚠ Deux des six `lg:col-span-2` ne servaient à RIEN — ils étaient
+           posés sur une `<section>` enfermée dans un `<PanneauOperateur>`,
+           donc jamais enfant direct de la grille. Ils n'ont jamais élargi
+           quoi que ce soit et personne ne l'a vu, parce qu'une carte plus
+           étroite que prévu ne ressemble pas à un bug.
+
+        Une colonne unique règle les trois d'un coup, et c'est de toute
+        façon la forme d'un écran de réglages : on le parcourt de haut en
+        bas, on ne le compare pas de gauche à droite.
+      */}
+      <div className="space-y-4">
         {/* ── OPÉRATEUR. Le gabarit d'environnement et l'état de NOTRE
             infrastructure : noms de variables, secrets attendus, sondes.
             Rien là-dedans n'appartient au client. ── */}
@@ -347,7 +371,7 @@ export default function SettingsPage() {
             notre orchestrateur. Le client ne branche pas notre cerveau. ── */}
         <PanneauOperateur titre="Orchestrateur n8n">
         {/* n8n — the app is a dashboard onto the n8n memory */}
-        <section className="card p-4 lg:col-span-2">
+        <section className="card p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
               <Cable size={15} className="text-bronze-400" /> Connexion n8n
@@ -577,7 +601,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Business rules */}
-        <section className="card p-4 lg:col-span-2">
+        <section className="card p-4">
           <h2 className="font-display text-sm font-semibold text-paper">Règles business (injectées dans l&apos;IA)</h2>
           <p className="mt-1 text-[11px] text-paper-faint">
             Chaque génération de script, recadrage d&apos;objection et résumé lit ces règles. C&apos;est ta doctrine, mot pour mot.
@@ -590,7 +614,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Data — real data first */}
-        <section className="card p-4 lg:col-span-2">
+        <section className="card p-4">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
             <Table2 size={15} className="text-bronze-400" /> Données réelles — import & export
           </h2>
@@ -737,7 +761,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Security */}
-        <section className="card p-4 lg:col-span-2">
+        <section className="card p-4">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
             <ShieldCheck size={15} className="text-bronze-400" /> Sécurité
           </h2>
@@ -845,16 +869,19 @@ export default function SettingsPage() {
 
         {/* La synchro du pipe — juste au-dessus de la config Supabase dont
             elle dépend, pour qu'on ne cherche pas l'interrupteur ailleurs. */}
-        <div className="lg:col-span-2">
-          <SyncProspects />
-          {/* Ce qui sort au nom d'un partenaire passe devant lui d'abord. */}
-          <ValidationPartenairePanel />
-        </div>
+        {/* ⚠ Ces deux-là étaient enveloppés dans un `<div lg:col-span-2>` qui
+            n'existait que pour forcer la pleine largeur dans la grille. Le
+            wrapper les collait aussi l'un à l'autre, sans l'espacement que
+            toutes les autres cartes ont. Sans grille, il ne sert plus à rien :
+            remis au même niveau que le reste, ils reçoivent le rythme commun. */}
+        <SyncProspects />
+        {/* Ce qui sort au nom d'un partenaire passe devant lui d'abord. */}
+        <ValidationPartenairePanel />
 
         {/* Supabase — linkable from the UI */}
         {/* ── OPÉRATEUR. Clés d'infrastructure Supabase. ── */}
         <PanneauOperateur titre="Supabase">
-        <section className="card p-4 lg:col-span-2">
+        <section className="card p-4">
           <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
             {sbSource ? <Cloud size={15} className="text-signal-green" /> : <CloudOff size={15} className="text-paper-faint" />}
             Supabase
