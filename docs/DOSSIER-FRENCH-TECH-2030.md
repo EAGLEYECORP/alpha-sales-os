@@ -26,32 +26,66 @@ Pas la liste des fonctionnalités. Un dossier qui déroule les écrans sera clas
 « SaaS B2B » et écarté ; un dossier qui démontre une architecture réellement
 dé-américanisable a une chance.
 
-**Et il y a un trou : zéro client payant, zéro euro encaissé au 3 septembre
-2026.** Ce n'est pas un détail de présentation, c'est la première question d'un
-évaluateur. Deux options honnêtes, à trancher (§4) :
+**⚠⚠ MISE À JOUR DU 3 SEPTEMBRE 2026 — LA QUESTION EST TRANCHÉE, ET PAS PAR
+NOUS : LE SEUIL D'ÉLIGIBILITÉ EST DE 3 M€ CUMULÉS DEPUIS 2024. Voir §1.**
 
-- déposer en assumant le stade « pré-revenu » et jouer la technologie ;
-- ne pas déposer cette année et candidater avec dix clients.
+Le reste de ce document garde sa valeur : les arguments de souveraineté, de
+conformité et de différenciation sont écrits, sourcés et réutilisables — pour
+la promotion suivante, pour un dossier Bpifrance, ou pour une page de vente.
+Ils ne périment pas avec la date.
 
-Je ne peux pas trancher à ta place. Ce que je peux dire : **inventer une
-traction est la seule option qui te ferait perdre plus que le refus.**
+Ce qui suit a donc été rédigé AVANT la vérification d'éligibilité. Le lire
+comme un matériau, pas comme un dossier à déposer.
 
 ---
 
-## 1. Éligibilité — **[À REMPLIR — ZAKARIA]**
+## 1. Éligibilité — **VÉRIFIÉE LE 3 SEPTEMBRE 2026 : NON RECEVABLE**
 
-À confirmer sur le guichet le jour même :
+> ⚠⚠ **NE PAS DÉPOSER CETTE ANNÉE.** Le critère qui tranche est un seuil
+> financier, et EAGLEYE CORP ne l'atteint pas. Vérifié sur deux recherches
+> indépendantes le 3 septembre 2026 ; **à reconfirmer sur le guichet officiel**
+> avant toute décision définitive.
 
-- [ ] Le dépôt est-il encore ouvert (date, heure, format) ?
-- [ ] EAGLEYE CORP est-elle recevable (forme juridique, ancienneté, effectif,
-      situation fiscale et sociale) ?
-- [ ] Sur quel **domaine prioritaire** candidate-t-on ? → **IA** est le seul
-      défendable ici.
-- [ ] Y a-t-il un seuil de chiffre d'affaires ou de levée exigé ? **C'est LA
-      question à vérifier en premier** : si un seuil existe, tout le reste du
-      dossier est sans objet cette année.
+**Critères de la 3e promotion (candidatures 2026)**
 
-> Piège : découvrir le seuil après avoir rédigé quarante pages.
+| Critère | Exigence | EAGLEYE CORP |
+|---|---|---|
+| **Financements et/ou CA cumulés depuis le 1er janvier 2024** | **≥ 3 000 000 €** | **0 €** ❌ |
+| Maturité technologique | **TRL 6 minimum** (prototype pleinement fonctionnel validé en environnement opérationnel) | plausible, à argumenter |
+| Création de la société | après le 1er janvier 2013 | ✅ |
+| Capitaux propres | positifs | à vérifier |
+| Obligations fiscales et sociales | à jour | à vérifier |
+| Domaine | IA · quantique · cybersécurité · spatial · robotique · électronique · infrastructures numériques · santé · énergie/décarbonation | **IA** ✅ |
+| Équipe | au moins un fondateur au profil technique ou scientifique lié à la technologie | ✅ |
+| Date limite | **4 septembre 2026, 23h59** (Paris) · résultats en octobre | — |
+
+**Le seuil de 3 M€ est éliminatoire et il n'est pas discutable.** Il se compte
+en **financements obtenus OU chiffre d'affaires généré**, cumulés depuis le
+1er janvier 2024. Une levée compte, une subvention compte, du CA compte. Zéro
+des trois ne se rattrape pas la veille.
+
+**Ce que ça change concrètement :** les huit heures de travail prévues pour ce
+dossier n'ont pas d'objet cette année. Le temps est mieux placé ailleurs.
+
+### Ce qu'il faudrait pour candidater à la promotion suivante
+
+Une seule ligne à faire bouger : **3 M€ cumulés**. Deux chemins, pas trois.
+
+- **Par le chiffre d'affaires** — au pack complet (10 000 € installation), c'est
+  l'ordre de grandeur de **300 clients**. Hors de portée à l'horizon d'un an.
+- **Par le financement** — subventions, prêts d'honneur, BPI, levée. C'est le
+  chemin réaliste, et il se prépare sur douze mois.
+
+> ⚠ Corollaire à ne pas manquer : **le programme n'est pas fait pour le stade
+> où tu es.** Il accompagne des sociétés déjà financées ou déjà en revenus. Un
+> dossier déposé maintenant ne serait pas « refusé de peu », il serait écarté à
+> la première ligne du filtre automatique. Ce n'est pas un échec, c'est une
+> erreur de porte.
+>
+> Les dispositifs faits pour le stade pré-revenu existent — bourse French Tech
+> (Bpifrance), prêts d'honneur des réseaux d'accompagnement, aides régionales à
+> l'innovation. Aucun n'a été instruit ici : c'est un travail à part, et il n'a
+> pas de date limite demain.
 
 ---
 

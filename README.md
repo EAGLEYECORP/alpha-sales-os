@@ -48,11 +48,17 @@ Ce n'est pas un CRM avec des citations Hormozi — les règles sont **exécutée
 
 ### ⏱ French Tech 2030 — dépôt avant le **4 septembre 2026, 23h59** (heure de Paris)
 
-> Dossier rédigé : [`docs/DOSSIER-FRENCH-TECH-2030.md`](./docs/DOSSIER-FRENCH-TECH-2030.md).
-> Les lots techniques (souveraineté, différenciation, marché, résumé exécutif)
-> sont écrits à partir de faits vérifiables dans le dépôt. Quatre sections
-> restent marquées **[À REMPLIR]** : éligibilité, traction, équipe, pièces —
-> elles demandent des chiffres d'entreprise ou une décision.
+> ⚠⚠ **NON ÉLIGIBLE À CETTE PROMOTION — vérifié le 3 septembre 2026.**
+> Le critère d'entrée est **3 M€ de financements et/ou de CA cumulés depuis le
+> 1er janvier 2024** (plus TRL 6 minimum). EAGLEYE CORP est à 0 €. Le seuil est
+> éliminatoire et ne se rattrape pas la veille.
+>
+> Détail des critères, et les deux chemins pour la promotion suivante :
+> [`docs/DOSSIER-FRENCH-TECH-2030.md`](./docs/DOSSIER-FRENCH-TECH-2030.md) §1.
+> Le reste du dossier — souveraineté, conformité, différenciation — est écrit
+> et sourcé : il resservira pour un dossier Bpifrance ou une page de vente.
+>
+> Le rétroplanning ci-dessous est conservé comme trace de la démarche.
 
 3e promotion. Accompagnement 12 mois : optimisation du financement, mise en
 relation stratégique, simplification administrative. Résultats annoncés en
