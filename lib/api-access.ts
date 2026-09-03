@@ -39,7 +39,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   "/api/crm": "/pipeline",
   "/api/import": "/pipeline",
   "/api/pipeline": "/pipeline",
-  "/api/digest": "/aujourdhui",
+  /**
+   * ⚠ `/api/digest` ÉTAIT RATTACHÉE À `/aujourdhui`, DONC AU CRM GRATUIT.
+   *
+   * Elle ENVOIE : un SMS via `TEXTBELT_KEY` et un email via `SMTP_*` — nos
+   * crédits, notre serveur. Le bouton « M'envoyer le récap » de /aujourdhui
+   * était donc, pour un compte gratuit, un bouton qui dépense chez nous.
+   * Elle suit l'envoi, comme tout ce qui sort de la machine.
+   */
+  "/api/digest": "/campaigns",
   "/api/calendar": "/meetings",
   "/api/notion": "/pipeline",
 
@@ -76,12 +84,35 @@ export const CHEMIN_PAR_API: Record<string, string> = {
 
   // ── Closer OS & débrief ──
   "/api/debrief": "/debrief",
-  "/api/sparring": "/closer",
+  /**
+   * ⚠ Même défaut : le sparring appelle un LLM (NVIDIA ou Anthropic, NOTRE
+   * clé) et `/closer` fait partie du socle gratuit. « Le prospect est joué par
+   * l'IA », c'est exactement « la machine travaille à ta place » — donc la
+   * brique payante. Le Closer OS lui-même (la tournée, le débrief, les
+   * priorités) reste gratuit : il ne dépense rien.
+   */
+  "/api/sparring": "/agent",
 
   // ── Agent ALPHA ──
   "/api/agent": "/agent",
-  // L'IA générique sert le script, l'audit, l'objection : c'est le socle CRM.
-  "/api/ai": "/pipeline",
+  /**
+   * ⚠ `/api/ai` ÉTAIT RATTACHÉE À `/pipeline`, DONC AU SOCLE CRM — ET LE CRM
+   * EST DEVENU GRATUIT.
+   *
+   * Elle sert le script, l'audit, l'objection : ça ressemble à du CRM, et
+   * c'était le bon rattachement tant que tous les comptes étaient payants.
+   * Depuis l'ouverture des inscriptions, ça veut dire que n'importe quel
+   * inconnu brûle nos jetons LLM en boucle depuis une fiche prospect, sans
+   * jamais rien payer. Le compteur ne se voit que sur la facture du
+   * fournisseur, un mois plus tard.
+   *
+   * Elle suit donc la brique « agent-alpha », qui est payante — la même
+   * frontière que le reste : **ce qui dépense chez nous se paie**. Le gratuit
+   * garde le CRM entier ; ce qu'il perd, c'est que la machine écrive à sa
+   * place. C'est aussi une bien meilleure ligne de vente que « 50 fiches
+   * maximum ».
+   */
+  "/api/ai": "/agent",
 
   // ── Notifications : transversales, liées au compte lui-même ──
   "/api/push": "/compte",

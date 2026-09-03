@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { ACCES_PAR_CHEMIN, CHEMINS_COMMUNS, briquesPourChemin, normaliser, peutOuvrir } from "../lib/bricks-access";
 import { CHEMIN_PAR_API } from "../lib/api-access";
 import {
-  autorise, DROIT_REFUSE, DROIT_SOLO, estMaitre, normaliserBriques, statutEffectif,
+  autorise, BRIQUES_GRATUITES, DROIT_REFUSE, DROIT_SOLO, droitGratuit, estMaitre,
+  normaliserBriques, statutEffectif,
   type Entitlement,
 } from "../lib/entitlements";
 import { BRICKS } from "../lib/bricks";
@@ -98,13 +99,57 @@ test("droits — SOLO ouvre tout : l'usage d'aujourd'hui reste intact", () => {
   }
 });
 
-test("droits — REFUS ne laisse passer que les chemins communs", () => {
-  // Un compte qu'on ne peut pas prouver doit pouvoir se connecter et voir
-  // pourquoi il est bloqué. L'enfermer dehors ne récupère aucun impayé.
+test("droits — REFUS (aucune session) ne laisse passer que les chemins communs", () => {
+  // `DROIT_REFUSE` ne sert plus qu'à UN cas : il n'y a pas de session du tout.
+  // Un compte connecté, lui, a au minimum le socle gratuit.
   assert.equal(autorise(DROIT_REFUSE, "/login"), true);
   assert.equal(autorise(DROIT_REFUSE, "/compte"), true);
   assert.equal(autorise(DROIT_REFUSE, "/pipeline"), false);
   assert.equal(autorise(DROIT_REFUSE, "/cerveau"), false);
+});
+
+/* ── LE SOCLE GRATUIT ─────────────────────────────────────────────────── */
+
+test("gratuit — un compte créé librement a un vrai produit, tout de suite", () => {
+  /**
+   * Le gratuit doit être UTILISABLE, pas une vitrine. S'il ne sert à rien, il
+   * ne convertit personne — il fabrique juste des comptes morts.
+   */
+  const g = droitGratuit("t-neuf");
+  for (const ouvert of ["/pipeline", "/aujourdhui", "/prospects", "/meetings", "/closer", "/debrief", "/cerveau", "/kpis", "/preuves"]) {
+    assert.equal(autorise(g, ouvert), true, `${ouvert} doit être ouvert au gratuit`);
+  }
+});
+
+test("⚠ gratuit — RIEN de ce qui dépense chez nous n'y est inclus", () => {
+  /**
+   * ⚠ C'EST L'ASSERTION QUI TIENT LA FACTURE, ET ELLE N'EST PAS COSMÉTIQUE.
+   *
+   * `/api/send` lit `SMTP_*` dans l'environnement du SERVEUR, `/api/voice/call`
+   * lit `LIVEKIT_*`, `/api/ai` brûle nos jetons. Il n'existe aucun chemin
+   * d'identifiants par locataire. Ouvrir l'une de ces briques au gratuit, c'est
+   * donner notre carte de crédit et notre nom de domaine à des inconnus — et
+   * ça ne se voit que sur la facture du fournisseur, un mois plus tard.
+   *
+   * Le jour où les identifiants deviennent par locataire, cette liste pourra
+   * se rediscuter. Pas avant, et pas sans changer ce test.
+   */
+  const g = droitGratuit("t-neuf");
+  for (const ferme of ["/campaigns", "/outbox", "/newsletter", "/linkedin", "/social", "/voice", "/appels", "/agent", "/audits", "/activity", "/overlay"]) {
+    assert.equal(autorise(g, ferme), false, `${ferme} dépense chez nous : il ne peut pas être gratuit`);
+  }
+  // Et notre économie reste hors d'atteinte, gratuit ou payant.
+  assert.equal(autorise(g, "/payouts"), false);
+  assert.equal(autorise(g, "/offre"), false);
+});
+
+test("gratuit — il ne contient que des briques connues, et jamais les payantes", () => {
+  // Une faute de frappe dans la liste n'accorderait rien (normaliserBriques
+  // filtre), mais elle RETIRERAIT un droit sans que rien ne le dise.
+  assert.deepEqual(normaliserBriques([...BRIQUES_GRATUITES]), [...BRIQUES_GRATUITES]);
+  for (const payante of ["campagnes", "alpha-voice", "agent-alpha", "audits", "tracking", "alpha-live"]) {
+    assert.ok(!BRIQUES_GRATUITES.includes(payante as never), `${payante} ne doit jamais être gratuite`);
+  }
 });
 
 // ── LE CŒUR : un client ne voit QUE sa brique ──────────────────────────
@@ -159,9 +204,29 @@ test("statut — un essai expiré vaut suspension, sans qu'on ait à le réécri
   assert.equal(statutEffectif(ent, new Date("2026-08-10T00:00:00Z")), "suspendu");
 
   assert.equal(autorise(ent, "/pipeline", new Date("2026-07-30T00:00:00Z")), true);
-  assert.equal(autorise(ent, "/pipeline", new Date("2026-08-10T00:00:00Z")), false);
   // Mais il peut toujours venir payer.
   assert.equal(autorise(ent, "/compte", new Date("2026-08-10T00:00:00Z")), true);
+});
+
+test("suspendu — on retombe au GRATUIT, pas au néant", () => {
+  /**
+   * ⚠ CHANGEMENT DÉLIBÉRÉ. Avant, un impayé ne gardait que les chemins
+   * communs : plus de pipeline, plus de fiches, plus rien. Ses données sont
+   * pourtant toujours là et lui appartiennent. Le mettre dehors ne récupère
+   * aucun impayé — ça fabrique un ancien client qui ne peut même pas exporter
+   * son CRM, et qui le racontera.
+   *
+   * Il perd exactement ce qui COÛTE, il garde ce qui ne coûte rien.
+   */
+  const apres = new Date("2026-08-10T00:00:00Z");
+  const lache = compte({ statut: "essai", essaiJusquA: "2026-08-01T00:00:00Z", bricks: ["crm", "campagnes", "alpha-voice"] });
+  assert.equal(statutEffectif(lache, apres), "suspendu");
+
+  assert.equal(autorise(lache, "/pipeline", apres), true, "il garde SES données");
+  assert.equal(autorise(lache, "/cerveau", apres), true);
+  assert.equal(autorise(lache, "/campaigns", apres), false, "il perd l'envoi, qui coûte");
+  assert.equal(autorise(lache, "/voice", apres), false, "et les appels, qui coûtent");
+  assert.equal(autorise(lache, "/compte", apres), true, "et il peut venir payer");
 });
 
 test("droits — une brique inconnue venue de la base n'accorde rien", () => {
@@ -209,4 +274,61 @@ test("barrière — la route qui expose les droits ne décide de rien", () => {
   // trou qu'on vient de fermer.
   const src = readFileSync(join(process.cwd(), "app/api/compte/droits/route.ts"), "utf8");
   assert.match(src, /ne décide de RIEN/i);
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ AUCUNE API QUI DÉPENSE CHEZ NOUS N'EST ATTEIGNABLE PAR LE GRATUIT.
+ *
+ * C'est LA garde du modèle freemium, et elle ne protège pas une règle
+ * commerciale : elle protège une facture et un nom de domaine.
+ *
+ * Toutes ces routes lisent des identifiants dans l'ENVIRONNEMENT DU SERVEUR —
+ * les nôtres. Il n'existe aujourd'hui aucun chemin d'identifiants par
+ * locataire. Une seule d'entre elles rattachée par erreur à une brique
+ * gratuite, et n'importe quel inconnu inscrit en trente secondes envoie des
+ * emails depuis notre domaine, compose des numéros sur nos minutes ou brûle
+ * nos jetons — en boucle, et sans que rien ne le signale avant la facture du
+ * fournisseur.
+ *
+ * TROIS ONT ÉTÉ TROUVÉES EN ÉCRIVANT CE TEST, et aucune ne se voyait :
+ *   · `/api/ai`      → `/pipeline` (CRM) — rédaction de script, audit, objection ;
+ *   · `/api/sparring`→ `/closer`         — le prospect joué par l'IA ;
+ *   · `/api/digest`  → `/aujourdhui`     — SMS Textbelt + email SMTP.
+ * Les trois pointaient vers des chemins devenus gratuits le même jour.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const API_QUI_DEPENSENT: Record<string, string> = {
+  "/api/send": "SMTP_HOST/USER/PASS — notre serveur, notre réputation de domaine",
+  "/api/voice": "LIVEKIT_URL/API_KEY/API_SECRET — nos minutes de téléphonie",
+  "/api/transcribe": "DEEPGRAM_API_KEY / WHISPER_API_KEY — facturé à la minute",
+  "/api/ai": "jetons LLM (NVIDIA ou Anthropic) sur notre clé",
+  "/api/agent": "jetons LLM sur notre clé",
+  "/api/sparring": "jetons LLM sur notre clé",
+  "/api/icp": "jetons LLM sur notre clé",
+  "/api/social": "jetons LLM sur notre clé",
+  "/api/video": "rendu vidéo — calcul et stockage",
+  "/api/audit": "récupération de sites tiers depuis notre serveur (egress + abus)",
+  "/api/digest": "SMS Textbelt + email SMTP — nos crédits",
+  "/api/email": "SMTP — notre serveur",
+  "/api/gmail": "SMTP / API Google — notre compte",
+  "/api/track": "notre infrastructure de tracking et sa persistance",
+};
+
+test("⚠ freemium — aucune API qui dépense chez nous n'est ouverte au gratuit", () => {
+  const gratuit = droitGratuit("t-neuf");
+  const fautes: string[] = [];
+  for (const [api, cout] of Object.entries(API_QUI_DEPENSENT)) {
+    const chemin = CHEMIN_PAR_API[api];
+    assert.ok(chemin, `${api} doit être classée dans CHEMIN_PAR_API`);
+    if (autorise(gratuit, chemin)) fautes.push(`${api} → ${chemin} est OUVERT au gratuit · coût : ${cout}`);
+  }
+  assert.deepEqual(fautes, [], "ces routes dépensent NOS identifiants :\n  " + fautes.join("\n  "));
+});
+
+test("freemium — la liste des API coûteuses ne survit pas à leur suppression", () => {
+  // Une entrée qui ne correspond plus à aucune route classée est une garde
+  // qui surveille une porte murée, pendant qu'une autre s'ouvre ailleurs.
+  const inconnues = Object.keys(API_QUI_DEPENSENT).filter((a) => !CHEMIN_PAR_API[a]);
+  assert.deepEqual(inconnues, [], `entrées orphelines : ${inconnues.join(", ")}`);
 });

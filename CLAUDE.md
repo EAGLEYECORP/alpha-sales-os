@@ -502,6 +502,51 @@ définition de chacune** — c'est tout le sujet.
   **pastille d'état a sa propre entrée** et se rend HORS du `<h1>` : dedans, un
   lecteur d'écran annonce « titre : Machin Négociation » d'un bloc.
 
+## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
+**L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il
+démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiants**.
+
+| | Ce qu'on ouvre |
+|---|---|
+| **GRATUIT**, sans limite de durée (`BRIQUES_GRATUITES`) | `crm` · `closer` · `cerveau` · `pilotage` — **tes données, ton organisation** |
+| **PAYANT** | `campagnes` · `alpha-voice` · `agent-alpha` · `audits` · `tracking` · `alpha-live` — **la machine agit à ta place** |
+| **MAÎTRE seul** | `/payouts`, `/offre`, `MAITRE_SEULEMENT` — notre économie |
+
+> ⚠ **Cette ligne n'est PAS un arbitrage commercial, elle est imposée par un
+> fait technique.** `/api/send` lit `SMTP_*` dans l'environnement du SERVEUR,
+> `/api/voice/call` lit `LIVEKIT_*`, `/api/ai` brûle nos jetons. **Il n'existe
+> aucun chemin d'identifiants par locataire.** Ouvrir une de ces briques au
+> gratuit revient à donner notre carte de crédit et notre nom de domaine à des
+> inconnus — et ça ne se voit que sur la facture, un mois plus tard. Le jour où
+> les identifiants deviennent par locataire, la ligne se rediscute. Pas avant.
+
+> ⚠⚠ **TROIS FUITES TROUVÉES EN ÉCRIVANT LA GARDE, aucune ne se voyait** :
+> `/api/ai` → `/pipeline`, `/api/sparring` → `/closer`, `/api/digest` →
+> `/aujourdhui`. Les trois pointaient vers des chemins devenus gratuits le
+> même jour. `tests/entitlements.test.ts` (`API_QUI_DEPENSENT`) les tient
+> maintenant, et refuse une entrée orpheline.
+
+**L'INVARIANT** : *on ne descend jamais sous le gratuit, on ne monte jamais
+au-dessus sans une ligne prouvée en base.*
+- Pas de ligne, base injoignable, service role absent → **gratuit**. Une panne
+  dégrade un payant en gratuit (visible) ; l'inverse serait invisible et cher.
+- **Impayé → gratuit, pas le néant.** Ses données lui appartiennent ; le mettre
+  dehors ne récupère aucun impayé, ça fabrique un ancien client qui ne peut
+  même pas exporter son CRM.
+- **Pas de `tenantId` = pas de session = pas de plancher.** `DROIT_REFUSE`
+  porte aussi `statut: "suspendu"` : sans ce discriminant, une requête sans
+  aucune session héritait du socle. Trouvé par une assertion.
+
+**Notre compte** : `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste) =
+`contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com`. `estMaitre()` lit l'email du
+JETON, jamais un paramètre client, et court-circuite la base — si elle tombe,
+on doit encore pouvoir entrer chez nous.
+
+> ⚠ `/controle` est ouvert au gratuit (il agrège CRM + pilotage) et affiche
+> donc le lanceur de campagnes. Le bouton existe, **le serveur refuse** (403
+> `brique_absente`). Délibéré : voir la porte fermée vaut mieux que ne pas
+> savoir qu'elle existe, et la sécurité ne dépend jamais de l'écran.
+
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
   Elles sont à **rotate**. Ne JAMAIS écrire une clé collée dans un fichier, un
