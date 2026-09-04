@@ -1,8 +1,27 @@
-# eagleyecorp.fr — site vitrine ALPHA SALES OS®
+# eagleyecorp.fr — le site de la SOCIÉTÉ
 
 Page unique, statique, dans la charte EAGLEYE (Bricolage Grotesque / Inter
-Tight / JetBrains Mono, papier & encre, accent vermillon). Vend **ALPHA SALES
-OS®** — le système d'exploitation de la vente terrain.
+Tight / JetBrains Mono, papier & encre, accent vermillon).
+
+## ⚠ CE QUE CETTE PAGE VEND, ET CE QU'ELLE NE VEND PAS
+
+Elle présente **EAGLEYE CORP** : ce que la société fait, comment elle
+travaille, et ce qu'elle refuse. **Elle ne porte aucun prix produit.**
+
+C'était une deuxième page de vente d'Alpha Sales OS, avec sa propre grille
+tarifaire. Deux surfaces qui portent les mêmes prix : l'une des deux finit
+périmée, et c'est toujours celle qu'on oublie de rouvrir. Ça a dérivé deux
+fois — « Solo 79 €/mois » facturait ce qui était devenu gratuit, et le palier
+voix annonçait son abonnement sans ses 990 € d'installation.
+
+| Surface | Son travail |
+|---|---|
+| **eagleyecorp.fr** (ce dossier) | La société. Cinq chantiers, la méthode, les refus. Aucun prix. |
+| **alphasalesos.eagleyecorp.fr** (l'app Next) | Le produit : `/vitrine` présente et chiffre, `/souscrire` encaisse, `/` est le tableau de bord derrière la connexion. |
+
+`tests/offres-publiques.test.ts` refuse tout montant en euros dans
+`index.html`, et exige qu'il renvoie vers le produit — retirer les prix sans
+donner de porte échangerait une dérive contre une impasse.
 
 Fichiers :
 
@@ -30,15 +49,13 @@ Fichiers :
    `site`.
 3. Chaque push redéploie.
 
+
 ## Ce qu'il reste à faire à la main
 
-- Brancher le domaine `eagleyecorp.fr` (DNS).
-- Le bouton « Réserver une démo » ouvre un email vers `contact@eagleyecorp.fr`.
-  Remplace-le par ton lien Cal.com quand il est prêt.
-- **Abonnements (paiement)** : les boutons « Commencer » / « S'abonner » de la
-  section Tarifs pointent vers `https://buy.stripe.com/REMPLACE_SOLO` et
-  `…REMPLACE_PRO`. Crée un **Stripe Payment Link** par offre
-  (dashboard.stripe.com → Paiements → Liens de paiement, en mode abonnement),
-  puis colle chaque URL à la place. Les tarifs (79 € / 149 € / sur devis) sont
-  des **propositions à valider** — édite-les dans `index.html` (section
-  `#tarifs`) selon ton offre.
+- Brancher le domaine `eagleyecorp.fr` (DNS) sur Netlify.
+- Le bouton « Demander un cadrage » ouvre un email pré-rempli vers
+  `contact@eagleyecorp.fr`. Remplace-le par ton lien Cal.com quand il existe —
+  la page n'a aucune autre dépendance.
+- **Aucun paiement ne se fait ici, et c'est voulu.** Les boutons d'achat vivent
+  sur `alphasalesos.eagleyecorp.fr/souscrire`, où se trouvent aussi les prix
+  Stripe. Remettre un bouton de paiement ici recréerait la deuxième source.

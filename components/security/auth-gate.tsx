@@ -241,6 +241,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
+        {/*
+          ⚠ IL N'Y AVAIT AUCUNE SORTIE VERS LA PRÉSENTATION DU PRODUIT.
+          Quelqu'un qui arrive sur alphasalesos.eagleyecorp.fr voit une boîte
+          de connexion et deux champs — sans une ligne pour dire ce que c'est,
+          ni où l'apprendre. Sur un produit dont l'inscription est ouverte,
+          c'est la porte d'entrée qui manquait : il faut déjà savoir ce qu'on
+          vient chercher pour avoir envie de créer un compte.
+        */}
+        <p className="mt-4 text-[12px] text-paper-faint">
+          Vous découvrez ?{" "}
+          <a href="/vitrine" className="text-bronze-400 hover:underline">
+            Voir ce que fait Alpha Sales OS
+          </a>
+        </p>
         <p className="mt-4 border-t border-ink-700 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-paper-faint">
           Eagleye Corp — Lyon · données isolées par compte
         </p>

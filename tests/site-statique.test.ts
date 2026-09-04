@@ -228,3 +228,58 @@ test("site — robots.txt et sitemap.xml pointent le bon domaine", () => {
     if (f) assert.ok(PAGES.includes(f), `sitemap : ${f} n'existe pas dans site/`);
   }
 });
+
+/* ────────────────────────────────────────────────────────────────────
+   LE DÉCOUPAGE DES DEUX SITES.
+
+   eagleyecorp.fr ............. la SOCIÉTÉ. Ce qu'elle fait, comment elle
+                                travaille, ce qu'elle refuse. Aucun prix.
+   alphasalesos.eagleyecorp.fr  le PRODUIT. Offres, prix, inscription,
+                                tableau de bord.
+
+   Ce n'était pas le cas : les deux vendaient Alpha Sales OS, chacun avec sa
+   grille. Ça a dérivé deux fois — « Solo 79 € » facturait ce qui était
+   devenu gratuit, et le palier voix annonçait son abonnement sans son
+   installation. Le défaut n'est pas que les prix soient faux, c'est qu'il y
+   en ait deux jeux. Supprimer la copie rend la dérive impossible plutôt que
+   détectable.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("site société — il parle de la SOCIÉTÉ, pas seulement du produit", () => {
+  const html = sansCommentaires(lire("index.html"));
+
+  // Les offres qui n'existaient nulle part ailleurs : sans elles, la société
+  // n'a pas de page, et cinq chantiers sur six sont invisibles.
+  for (const sujet of [/visibilit[ée]/i, /sur mesure/i, /digitalisation/i, /accompagnement/i]) {
+    assert.match(html, sujet, `le site société doit nommer ce chantier : ${sujet}`);
+  }
+
+  // ⚠ Ce que la société REFUSE. C'est la partie la plus utile de la page —
+  // et la seule qu'un concurrent ne recopiera pas.
+  assert.match(html, /ne livre pas/i, "« on ne livre pas votre prestation » doit être écrit");
+  assert.match(html, /poign[ée]e de main|personne qui rassure/i, "…et ce qui reste humain aussi");
+});
+
+test("⚠ site société — le cadrage obligatoire est annoncé AVANT le devis", () => {
+  /**
+   * C'est la doctrine maison, et elle protège les deux côtés : personne ne
+   * chiffre à l'aveugle, et le prospect sait qu'il aura une réponse franche —
+   * y compris non. L'omettre de la page publique la rendrait invisible au seul
+   * moment où elle sert.
+   */
+  const html = sansCommentaires(lire("index.html"));
+  assert.match(html, /cadrage/i);
+  assert.match(html, /y compris quand|quand ça ne l'est pas|on le dit aussi/i, "le « non » doit être annoncé");
+});
+
+test("site société — aucune preuve inventée, aucun chiffre de performance", () => {
+  /**
+   * Cette page a déjà porté un chiffre de performance sur un produit sans un
+   * seul client signé. Zéro vente = zéro preuve sociale disponible ; en
+   * fabriquer une est la seule façon de perdre un client pour de bon.
+   */
+  const html = sansCommentaires(lire("index.html"));
+  assert.doesNotMatch(html, /\d+\s*%\s*(de\s*)?(ventes|conversion|rendez-vous|clients)/i);
+  assert.doesNotMatch(html, /\d+\s*(clients|entreprises)\s+(nous font confiance|accompagn|satisfait)/i);
+  assert.doesNotMatch(html, /leader|n°\s*1|num[ée]ro un|meilleurs? du march[ée]/i);
+});

@@ -105,91 +105,61 @@ test("une offre sans appels n'invente pas de coût marginal", () => {
 
 // ─────────── 2. LA VITRINE NE PEUT PLUS DIVERGER ───────────
 
-/** Les prix en euros réellement écrits dans un bloc de tarif du site. */
-function prixAffiches(html: string): number[] {
-  const bloc = html.slice(html.indexOf('<div class="pricing">'), html.indexOf("</section>", html.indexOf('<div class="pricing">')));
-  return [...bloc.matchAll(/<div class="price">\s*([\d\s]+)\s*€/g)].map((m) => Number(m[1].replace(/\s/g, "")));
-}
-
-test("tout prix affiché sur la vitrine existe dans la grille publique", () => {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE SITE SOCIÉTÉ NE PORTE PLUS AUCUN PRIX — ET C'EST L'INVARIANT.
+ *
+ * Ces trois tests vérifiaient que les prix de `site/index.html` étaient les
+ * bons. Ils ont fait leur travail deux fois : ils ont attrapé « Solo 79 € »
+ * qui vendait ce qui était devenu gratuit, puis un palier voix annoncé sans
+ * son installation. Mais ils gardaient le mauvais invariant.
+ *
+ * Le défaut n'était pas que les prix soient faux : c'est que DEUX surfaces
+ * portaient les mêmes prix. Tant que c'est le cas, l'une des deux finit
+ * périmée, et c'est toujours celle qu'on oublie de rouvrir. Un test qui
+ * compare deux copies rend la dérive détectable ; supprimer la copie la rend
+ * IMPOSSIBLE.
+ *
+ * Le découpage est donc : eagleyecorp.fr = la société (aucun prix produit),
+ * alphasalesos.eagleyecorp.fr = le produit (les offres, les prix, la
+ * souscription). Ce qui suit garde ce découpage.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("le site société n'affiche AUCUN prix produit", () => {
   /**
-   * ⚠ CE TEST EXIGEAIT AU MOINS DEUX PRIX CHIFFRÉS, et il a échoué le jour où
-   * le palier « Solo 79 € » est devenu GRATUIT — c'est-à-dire le jour où le
-   * site a cessé de facturer ce que le produit donne. Le garde-fou visait
-   * « la regex ne trouve rien » ; il interdisait au passage d'avoir un palier
-   * sans prix, ce qui n'a jamais été l'invariant.
-   *
-   * On garde donc la vraie question — tout prix AFFICHÉ existe-t-il dans la
-   * grille ? — et on remplace le compte par la vérification qui la rend
-   * concluante : le bloc de tarifs doit bien avoir été trouvé et lu.
+   * Les commentaires sont retirés d'abord : celui qui explique pourquoi les
+   * prix ont disparu cite les anciens montants, et sans ce nettoyage il
+   * déclencherait le test qu'il documente. La correction naturelle serait
+   * alors d'effacer l'explication — l'inverse du but.
    */
-  const bloc = SITE.slice(SITE.indexOf('<div class="pricing">'));
-  assert.ok(bloc.includes('<div class="price">'), "bloc de tarifs introuvable : le test ne lit rien");
-  assert.match(bloc, /Gratuit/, "le socle gratuit doit apparaître dans les tarifs — sinon le site vend ce qui est donné");
-
-  const affiches = prixAffiches(SITE);
-  assert.ok(affiches.length >= 1, "aucun prix chiffré lu : la regex a cessé de mordre");
-  for (const p of affiches) {
-    assert.ok(
-      PRIX_PUBLICS.includes(p),
-      `${p} € est affiché sur le site mais n'existe dans aucune offre (grille : ${PRIX_PUBLICS.join(", ")} €)`
-    );
-  }
+  const html = SITE.replace(/<!--[\s\S]*?-->/g, "");
+  const montants = [...html.matchAll(/(\d[\d\s  ]*)\s*€/g)].map((m) => m[1].replace(/[\s ]/g, ""));
+  assert.deepEqual(
+    montants,
+    [],
+    `le site société porte à nouveau des prix (${montants.join(", ")} €) : c'est la deuxième source qui a déjà dérivé deux fois. Les prix vivent sur le site produit.`
+  );
 });
 
-test("la vitrine n'annonce jamais la voix sans son plafond", () => {
+test("…et il RENVOIE vers le produit, sinon il ne vend plus rien", () => {
   /**
-   * LE TEST QUI COMPTE. « Alpha Voice inclus » sans nombre d'appels est une
-   * promesse illimitée, et elle passe en perte dès 2 200 appels.
+   * L'autre bord du même fossé. Retirer les prix sans donner de porte
+   * transformerait la page en plaquette : le visiteur qui veut acheter n'a
+   * plus où aller, et on aurait échangé une dérive contre une impasse.
    */
-  const bloc = SITE.slice(SITE.indexOf('<div class="pricing">'));
-  const fin = bloc.indexOf("</section>");
-  const tarifs = bloc.slice(0, fin);
-
-  if (/Alpha Voice/i.test(tarifs)) {
-    assert.match(
-      tarifs,
-      /\d+\s*appels?\s*(\/|par )mois/i,
-      "un bloc de tarif qui cite Alpha Voice doit annoncer le nombre d'appels inclus"
-    );
-    assert.match(
-      tarifs,
-      /au-del[àa]/i,
-      "…et ce qui se passe au-delà du plafond, sinon le client découvre la limite quand elle le bloque"
-    );
-  }
+  const html = SITE.replace(/<!--[\s\S]*?-->/g, "");
+  assert.match(html, /alphasalesos\.eagleyecorp\.fr/, "le site société doit mener au produit");
+  assert.match(html, /alphasalesos\.eagleyecorp\.fr\/souscrire/, "…y compris directement à l'inscription");
 });
 
-test("le plafond affiché sur la vitrine est CELUI de la grille, pas un autre nombre", () => {
-  const tarifs = SITE.slice(SITE.indexOf('<div class="pricing">'));
-  assert.ok(
-    tarifs.includes(`${PRO_APPELS_INCLUS} appels`),
-    `la vitrine doit afficher ${PRO_APPELS_INCLUS} appels — le chiffre vient de lib/offres-publiques.ts`
-  );
+test("le site société ne cite plus le produit comme son sujet principal", () => {
   /**
-   * ⚠ Cette assertion exigeait le prix du millier d'appels SORTANTS (364 €)
-   * dans un bloc qui vend désormais l'accueil téléphonique — deux offres
-   * différentes que la même carte mélangeait. L'invariant n'a jamais été ce
-   * nombre-là : c'est « on n'annonce pas la voix sans dire ce qui se passe
-   * au-delà du plafond ». On vérifie donc le dépassement RÉELLEMENT applicable
-   * à cette offre, et toujours depuis la grille.
+   * Le titre et la description annonçaient ALPHA SALES OS : deux pages de
+   * vente pour un seul produit, c'est ce découpage-là qu'on corrige. La page
+   * peut parler du produit — elle DOIT même — mais elle n'est plus sa page.
    */
-  /**
-   * ⚠ La comparaison se fait sur le prix FORMATÉ, pas sur le nombre brut.
-   * `String(0.2)` rend « 0,2 » ; un prix s'écrit « 0,20 € ». Comparer les deux
-   * faisait échouer le test au moment exact où le prix a changé — un faux
-   * positif qui aurait poussé à écrire « 0,2 € » sur le site pour faire taire
-   * le test, c'est-à-dire à dégrader la page pour satisfaire l'outil.
-   */
-  const minute = ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",");
-  assert.ok(
-    tarifs.includes(`${minute} €`),
-    `le prix de la minute au-delà (${minute} €) doit venir de lib/offres-publiques.ts`
-  );
-  assert.ok(
-    tarifs.includes(`${ALPHA_VOICE_SETUP_HT} € HT`),
-    `l'installation (${ALPHA_VOICE_SETUP_HT} € HT) doit être annoncée : l'omettre reproduit le palier d'entrée à perte`
-  );
+  const titre = SITE.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
+  assert.match(titre, /EAGLEYE/i, "le titre doit annoncer la société");
 });
 
 test("⚠ une offre PAYANTE ne peut pas être faite uniquement de briques gratuites", async () => {
