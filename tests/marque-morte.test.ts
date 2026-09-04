@@ -194,3 +194,55 @@ test("le compte du revendeur n'existe plus dans le portefeuille", () => {
   assert.ok(ids.length >= 2, "le portefeuille doit contenir au moins deux comptes");
   assert.deepEqual(ids.filter((i) => MORTES.test(i)), []);
 });
+
+/* ────────────────────────────────────────────────────────────────────
+   LA DESCRIPTION DU DÉPÔT — elle avait dérivé deux fois, en silence.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("⚠ la description du paquet dit CE QU'EST le produit, pas sa charte ni un auteur", () => {
+  /**
+   * Elle disait : « Hormozi-native sales operating system. Monochrome bronze,
+   * ink & paper. » Deux dérives, et aucune ne se voyait — personne ne relit un
+   * `package.json` :
+   *
+   *  · « Hormozi-native » installe un auteur EXTERNE comme identité du
+   *    produit. La doctrine du dépôt classe les sources extérieures en
+   *    `praticien` — utile, cité, jamais au même rang qu'un fait mesuré chez
+   *    nous. Une description qui s'en réclame fait exactement l'inverse.
+   *  · « Monochrome bronze, ink & paper » décrivait la charte graphique. Or la
+   *    vitrine est passée au crème et au serif : la description était fausse
+   *    le jour où le design a bougé. Décrire ce qui change garantit de périmer.
+   *
+   * Ce test ne juge pas le style : il refuse ces deux formes-là.
+   */
+  const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as {
+    description?: string;
+    homepage?: string;
+  };
+  const d = pkg.description ?? "";
+
+  assert.ok(d.length > 40, "une description d'une ligne ne dit rien de ce que fait le produit");
+  assert.match(d, /Alpha Sales OS/i, "le produit doit être nommé");
+  assert.match(d, /EAGLEYE/i, "l'éditeur aussi — c'est un produit white-label, la marque doit être claire");
+
+  // La charte graphique n'a rien à faire ici : elle change, la description non.
+  assert.doesNotMatch(
+    d,
+    /monochrome|bronze|ink & paper|palette|serif|cr[èe]me/i,
+    "la description décrit le produit, pas son apparence — l'apparence bouge et la description périme"
+  );
+
+  // Aucun auteur externe comme identité. On cite les sources dans le Cerveau,
+  // avec leur niveau de preuve ; on ne s'en réclame pas dans l'identité.
+  assert.doesNotMatch(
+    d,
+    /hormozi|cialdini|belfort|native\b/i,
+    "un praticien externe n'est pas l'identité du produit — voir lib/references.ts"
+  );
+
+  assert.equal(
+    pkg.homepage,
+    "https://alphasalesos.eagleyecorp.fr",
+    "le dépôt doit pointer vers le PRODUIT (alphasalesos), pas vers le site de la société"
+  );
+});
