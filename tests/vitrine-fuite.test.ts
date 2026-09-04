@@ -698,3 +698,89 @@ test("routes — celle qui sert un module serveur est forcément INTERNE", () =>
   }
   assert.deepEqual(fautes, [], fautes.join("\n"));
 });
+
+/* ────────────────────────────────────────────────────────────────────
+   LE SOCLE GRATUIT, RECOPIÉ À LA MAIN — DONC VÉRIFIÉ.
+   `lib/public-catalogue.ts` ne peut importer ni `lib/bricks` (les prix) ni
+   `lib/entitlements` (l'environnement serveur) : tout ce qu'une page
+   publique importe part dans le navigateur. La copie est sûre parce qu'un
+   test la compare, pas parce qu'on fait attention.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("vitrine — le socle annoncé gratuit EST le socle gratuit du serveur", async () => {
+  const { SOCLE_GRATUIT, FRONTIERE_PAYANT } = await import("../lib/public-catalogue");
+  const { BRIQUES_GRATUITES } = await import("../lib/entitlements");
+
+  assert.deepEqual(
+    SOCLE_GRATUIT.map((b) => b.id).sort(),
+    [...BRIQUES_GRATUITES].sort(),
+    "la page publique promet un socle différent de celui que le serveur ouvre — c'est la promesse qui sera opposée"
+  );
+  assert.ok(FRONTIERE_PAYANT.length > 40, "la frontière payant/gratuit doit être dite, pas sous-entendue");
+});
+
+test("vitrine — la page PARLE du gratuit : le socle existait sans être annoncé nulle part", () => {
+  /**
+   * ⚠ Le défaut trouvé : les inscriptions sont ouvertes, le serveur applique
+   * le socle, des tests le gardent — et la vitrine ne proposait qu'une seule
+   * porte, « demander un cadrage ». C'est-à-dire un rendez-vous avec un
+   * inconnu, à quelqu'un qui n'a encore rien vu du produit.
+   *
+   * On teste la CONDITION (la section existe et mène quelque part), pas la
+   * présence d'un mot : une page qui dirait « gratuit » sans porte ne vaudrait
+   * rien de plus qu'avant.
+   */
+  assert.match(publique, /gratuit/i, "le socle gratuit doit être annoncé");
+  assert.match(vitrine, /SOCLE_GRATUIT/, "la liste vient du catalogue public, pas d'un texte recopié à l'écran");
+  assert.match(vitrine, /href="\/souscrire"/, "annoncer le gratuit sans porte pour y entrer ne sert à rien");
+});
+
+test("vitrine — les prix Alpha Voice affichés sont ceux qui sont décidés", async () => {
+  const { ALPHA_VOICE_PUBLIC } = await import("../lib/public-catalogue");
+  const { ALPHA_VOICE_SETUP_HT, ALPHA_VOICE_MINUTE_SUP_HT, ALPHA_VOICE_PALIERS } = await import(
+    "../lib/offres-publiques"
+  );
+
+  assert.equal(ALPHA_VOICE_PUBLIC.setupHT, ALPHA_VOICE_SETUP_HT, "le setup public a divergé de la grille décidée");
+  assert.equal(ALPHA_VOICE_PUBLIC.minuteSupHT, ALPHA_VOICE_MINUTE_SUP_HT, "le prix à la minute a divergé");
+  assert.deepEqual(
+    ALPHA_VOICE_PUBLIC.paliers.map((t) => [t.nom, t.prixHT]),
+    ALPHA_VOICE_PALIERS.map((t) => [t.nom, t.prixHT]),
+    "les paliers publics ont divergé de la grille — c'est le prix affiché qui engage"
+  );
+});
+
+test("vitrine — la garantie porte ses TROIS bords, sinon elle s'active toute seule", async () => {
+  const { GARANTIE } = await import("../lib/public-catalogue");
+  /**
+   * Une durée, un périmètre, un critère. Sans eux, « le setup ne se paie qu'au
+   * premier RDV » s'active au bout de trois jours de ligne coupée, et la
+   * discussion se tient après coup — c'est-à-dire trop tard.
+   */
+  assert.ok(GARANTIE.bords.length >= 3, "les trois bords font partie de la garantie, pas des petits caractères");
+  const texte = GARANTIE.bords.join(" ");
+  assert.match(texte, /30 jours/i, "la DURÉE doit être écrite");
+  assert.match(texte, /installation|setup/i, "le PÉRIMÈTRE doit être écrit");
+  assert.match(texte, /PRIS/, "le CRITÈRE doit être écrit : un rendez-vous pris, pas honoré");
+  /**
+   * ⚠ Première version de cette assertion : chercher la PHRASE dans la source
+   * de la page. Elle échouait — et elle avait tort. La page rend
+   * `{GARANTIE.promesse}`, donc la phrase littérale n'y est pas, et c'est
+   * exactement le comportement voulu : une source unique, pas une copie.
+   * On vérifie donc le RENDU de la constante, ce qui est plus fort.
+   */
+  assert.match(vitrine, /GARANTIE\.promesse/, "la garantie doit être rendue depuis le catalogue public");
+  assert.match(vitrine, /GARANTIE\.bords/, "les bords se rendent aussi : une promesse sans ses bords est un litige");
+});
+
+test("vitrine — l'article 50 est servi comme argument, et sans nommer la pile", () => {
+  /**
+   * C'est le seul fait de cette page qui ne demande aucune confiance : la
+   * divulgation est prononcée par le code, pas par le modèle. Le taire pour
+   * « ne pas faire peur » revient à laisser un concurrent en faire un reproche.
+   */
+  assert.match(publique, /article 50/i, "la divulgation IA doit être annoncée");
+  assert.match(publique, /intelligence artificielle/i);
+  // Et le test de pile technique plus haut continue de s'appliquer : on dit
+  // CE QU'ON FAIT, jamais avec quel fournisseur on le fait.
+});

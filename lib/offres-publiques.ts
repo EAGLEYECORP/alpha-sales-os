@@ -229,12 +229,32 @@ export const OFFRES: OffrePublique[] = [
     nom: "Solo",
     cadence: "mensuel",
     prixHT: 79,
-    sousTitre: "Un closer. Tout le cœur du système, sans la voix.",
+    /**
+     * ⚠ CE SOUS-TITRE DISAIT « TOUT LE CŒUR DU SYSTÈME », ET LE CŒUR EST
+     * DEVENU GRATUIT LE 02/09/2026.
+     *
+     * Trois des quatre capacités de cette offre — `crm`, `closer`, `pilotage` —
+     * sont depuis ce jour-là ouvertes à n'importe quel compte, sans limite de
+     * durée. L'offre continuait de les vendre 79 €/mois, et le premier acheteur
+     * l'aurait découvert en créant un deuxième compte : il découvre qu'il paie
+     * ce qu'on donne. C'est la façon la plus rapide de perdre un client, et
+     * elle ne se voit dans aucune relecture d'écran.
+     *
+     * Ce qui reste réellement payant ici : les AUDITS automatiques et la boîte
+     * d'envoi. Le texte le dit maintenant, et il dit aussi que le reste est
+     * gratuit — le taire serait la même faute avec un autre mot.
+     *
+     * ⚠⚠ La question COMMERCIALE reste ouverte et n'est pas tranchée ici :
+     * cette offre a-t-elle encore un sens à 79 € face à un socle gratuit ?
+     * C'est un arbitrage, pas une correction de bug. Un test refuse désormais
+     * le seul cas indéfendable — une offre payante qui n'ouvrirait QUE des
+     * briques gratuites.
+     */
+    sousTitre: "Les audits automatiques et la boîte d'envoi. Le CRM, lui, est gratuit.",
     inclus: [
-      "Pipeline, Aujourd'hui, À décider",
-      "Débrief terrain à la voix (dictée)",
-      "Audits cadeaux illimités",
+      "Audits cadeaux automatiques",
       "Boîte d'envoi + brouillons Gmail",
+      "Inclus gratuitement de toute façon : pipeline, Aujourd'hui, À décider, débrief à la voix",
     ],
     // ⚠ La dictée du débrief n'est PAS Alpha Voice : elle transcrit ce que TU
     // dis après un rendez-vous. Aucun appel n'est composé, donc aucun plafond.

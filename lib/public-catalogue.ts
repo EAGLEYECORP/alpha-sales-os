@@ -61,6 +61,79 @@ export const PRIX_PUBLICS = {
 };
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE SOCLE GRATUIT — et pourquoi il n'était NULLE PART sur la vitrine.
+ *
+ * Les inscriptions sont ouvertes depuis le 02/09/2026 : n'importe qui crée
+ * son compte et démarre avec `crm · closer · cerveau · pilotage`, sans limite
+ * de durée. C'est écrit dans `lib/entitlements.ts`, appliqué par le serveur,
+ * gardé par des tests.
+ *
+ * ⚠ Et la page publique n'en disait pas un mot. Elle ne proposait qu'une
+ * seule porte — « demander un cadrage » — c'est-à-dire un rendez-vous avec un
+ * inconnu, à quelqu'un qui n'a encore rien vu du produit. La porte la moins
+ * coûteuse pour lui, celle qui ne demande que dix secondes et une adresse
+ * email, existait dans le code et pas sur la page.
+ *
+ * Recopié à la main comme le reste de ce fichier : ce module ne doit importer
+ * NI `lib/bricks` NI `lib/entitlements` — l'un porte les prix, l'autre lit
+ * l'environnement serveur, et tout ce qu'une page publique importe part dans
+ * le navigateur. Un test compare cette liste à `BRIQUES_GRATUITES` : la copie
+ * est sûre parce qu'elle est vérifiée, pas parce qu'on fait attention.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const SOCLE_GRATUIT: { id: string; label: string; what: string }[] = [
+  { id: "crm", label: "Le CRM", what: "Vos fiches, votre pipeline, votre journée. Vos données restent les vôtres." },
+  { id: "closer", label: "Le Closer OS", what: "La tournée du jour, le débrief à la voix, les priorités de closing." },
+  { id: "cerveau", label: "Le Cerveau", what: "Votre doctrine, vos scripts, vos objections — cherchables en une phrase." },
+  { id: "pilotage", label: "Le pilotage", what: "Ce qui tourne, ce qui bloque, et les chiffres qui le disent." },
+];
+
+/**
+ * La frontière, dite en une phrase parce qu'elle se conteste sinon.
+ *
+ * Ce n'est pas un arbitrage commercial mais une contrainte technique : envoyer
+ * un email, passer un appel ou faire écrire un modèle consomme NOS identifiants
+ * et NOS crédits, et il n'existe aucun chemin d'identifiants par locataire.
+ * Le dire franchement vaut mieux qu'un « premium » sans justification.
+ */
+export const FRONTIERE_PAYANT =
+  "Tout ce qui AGIT à votre place se paie : l'envoi des campagnes, les appels, l'agent qui écrit, les audits automatiques. Ce qui vous ORGANISE est gratuit.";
+
+/**
+ * La grille Alpha Voice, décidée le 02/09/2026.
+ *
+ * ⚠ Publier des prix nets est une DÉCISION, pas une évidence : ça qualifie les
+ * demandes entrantes et ça évite les rendez-vous hors budget. Les paliers
+ * supérieurs du sortant, eux, restent au cadrage — voir `OUTBOUND_TIERS`,
+ * qu'un test interdit d'afficher ici.
+ */
+export const ALPHA_VOICE_PUBLIC = {
+  setupHT: 990,
+  paliers: [
+    { nom: "Essentiel", prixHT: 149, ce: "500 minutes, environ 200 appels par mois" },
+    { nom: "Intensif", prixHT: 349, ce: "1 500 minutes, environ 600 appels par mois" },
+  ],
+  minuteSupHT: 0.25,
+};
+
+/**
+ * La garantie, avec ses trois bords.
+ *
+ * Sans bords écrits, elle s'active au bout de trois jours de ligne coupée. La
+ * durée, le périmètre et le critère font partie de la garantie — les taire
+ * n'est pas une simplification, c'est un litige à retardement.
+ */
+export const GARANTIE = {
+  promesse: "L'installation ne se paie qu'au premier rendez-vous obtenu.",
+  bords: [
+    "Sur 30 jours de ligne active.",
+    "Elle porte sur l'installation, pas sur l'abonnement déjà consommé.",
+    "Un rendez-vous PRIS — qui vient et qui signe ne dépend plus de nous.",
+  ],
+};
+
+/**
  * Les capacités, telles qu'un prospect les lit.
  *
  * Recopiées à la main DÉLIBÉRÉMENT — c'est le prix à payer pour que le

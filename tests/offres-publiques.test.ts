@@ -15,7 +15,9 @@ import {
 import { margeOffre } from "../lib/offres-marge";
 import { PLANS } from "../lib/stripe";
 import { BRICKS, ESSAI_HT, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "../lib/bricks";
-import { OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS } from "../lib/offres-publiques";
+import {
+  ALPHA_VOICE_MINUTE_SUP_HT, ALPHA_VOICE_SETUP_HT, OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS,
+} from "../lib/offres-publiques";
 import { SEGMENTS } from "../lib/segments";
 
 /**
@@ -110,8 +112,23 @@ function prixAffiches(html: string): number[] {
 }
 
 test("tout prix affiché sur la vitrine existe dans la grille publique", () => {
+  /**
+   * ⚠ CE TEST EXIGEAIT AU MOINS DEUX PRIX CHIFFRÉS, et il a échoué le jour où
+   * le palier « Solo 79 € » est devenu GRATUIT — c'est-à-dire le jour où le
+   * site a cessé de facturer ce que le produit donne. Le garde-fou visait
+   * « la regex ne trouve rien » ; il interdisait au passage d'avoir un palier
+   * sans prix, ce qui n'a jamais été l'invariant.
+   *
+   * On garde donc la vraie question — tout prix AFFICHÉ existe-t-il dans la
+   * grille ? — et on remplace le compte par la vérification qui la rend
+   * concluante : le bloc de tarifs doit bien avoir été trouvé et lu.
+   */
+  const bloc = SITE.slice(SITE.indexOf('<div class="pricing">'));
+  assert.ok(bloc.includes('<div class="price">'), "bloc de tarifs introuvable : le test ne lit rien");
+  assert.match(bloc, /Gratuit/, "le socle gratuit doit apparaître dans les tarifs — sinon le site vend ce qui est donné");
+
   const affiches = prixAffiches(SITE);
-  assert.ok(affiches.length >= 2, "le test ne prouve rien s'il ne trouve aucun prix");
+  assert.ok(affiches.length >= 1, "aucun prix chiffré lu : la regex a cessé de mordre");
   for (const p of affiches) {
     assert.ok(
       PRIX_PUBLICS.includes(p),
@@ -149,10 +166,48 @@ test("le plafond affiché sur la vitrine est CELUI de la grille, pas un autre no
     tarifs.includes(`${PRO_APPELS_INCLUS} appels`),
     `la vitrine doit afficher ${PRO_APPELS_INCLUS} appels — le chiffre vient de lib/offres-publiques.ts`
   );
+  /**
+   * ⚠ Cette assertion exigeait le prix du millier d'appels SORTANTS (364 €)
+   * dans un bloc qui vend désormais l'accueil téléphonique — deux offres
+   * différentes que la même carte mélangeait. L'invariant n'a jamais été ce
+   * nombre-là : c'est « on n'annonce pas la voix sans dire ce qui se passe
+   * au-delà du plafond ». On vérifie donc le dépassement RÉELLEMENT applicable
+   * à cette offre, et toujours depuis la grille.
+   */
+  const minute = String(ALPHA_VOICE_MINUTE_SUP_HT).replace(".", ",");
   assert.ok(
-    tarifs.includes(`${OUTBOUND_UNIT_HT} €`),
-    `le prix du millier supplémentaire (${OUTBOUND_UNIT_HT} €) doit venir de la même source`
+    tarifs.includes(`${minute} €`),
+    `le prix de la minute au-delà (${minute} €) doit venir de lib/offres-publiques.ts`
   );
+  assert.ok(
+    tarifs.includes(`${ALPHA_VOICE_SETUP_HT} € HT`),
+    `l'installation (${ALPHA_VOICE_SETUP_HT} € HT) doit être annoncée : l'omettre reproduit le palier d'entrée à perte`
+  );
+});
+
+test("⚠ une offre PAYANTE ne peut pas être faite uniquement de briques gratuites", async () => {
+  /**
+   * Le socle est devenu gratuit le 02/09/2026. Trois des quatre capacités de
+   * l'offre « Solo » (crm, closer, pilotage) sont depuis ce jour-là ouvertes à
+   * tout compte — et l'offre continuait de les vendre 79 €/mois sous le titre
+   * « tout le cœur du système ».
+   *
+   * Ce test ne tranche PAS le sujet commercial : il refuse seulement le cas
+   * indéfendable — facturer un abonnement qui n'ouvre rien de plus que la
+   * gratuité. C'est le genre de divergence qu'aucune relecture ne voit et que
+   * le premier client découvre en s'inscrivant.
+   */
+  const { BRIQUES_GRATUITES } = await import("../lib/entitlements");
+  const gratuites = new Set<string>(BRIQUES_GRATUITES);
+  for (const o of OFFRES) {
+    if (o.prixHT === null || o.prixHT === 0) continue;
+    if (!o.capacites?.length) continue;
+    const payantes = o.capacites.filter((c) => !gratuites.has(c));
+    assert.ok(
+      payantes.length > 0,
+      `« ${o.nom} » se facture ${o.prixHT} € et n'ouvre que des briques gratuites (${o.capacites.join(", ")})`
+    );
+  }
 });
 
 // ─────────── 3. STRIPE SUIT LA GRILLE, PAS L'INVERSE ───────────

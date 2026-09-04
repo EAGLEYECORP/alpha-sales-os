@@ -5,7 +5,15 @@ import { useState } from "react";
 // complet avec ses prix, et tout ce qu'une page publique importe part dans le
 // navigateur — visible en trois secondes de devtools, même si rien ne
 // l'affiche. Voir lib/public-catalogue.ts.
-import { CAPACITES, PALIERS_LABELS, PRIX_PUBLICS } from "@/lib/public-catalogue";
+import {
+  ALPHA_VOICE_PUBLIC,
+  CAPACITES,
+  FRONTIERE_PAYANT,
+  GARANTIE,
+  PALIERS_LABELS,
+  PRIX_PUBLICS,
+  SOCLE_GRATUIT,
+} from "@/lib/public-catalogue";
 import { HeroVideo } from "@/components/vitrine/hero-video";
 import { MissionSection } from "@/components/vitrine/mission-section";
 
@@ -60,6 +68,7 @@ export default function VitrinePage() {
         <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <span className="text-[15px] font-semibold tracking-tight">EAGLEYE CORP</span>
           <div className="flex items-center gap-7 text-[14px]" style={{ color: MUTED }}>
+            <a href="#gratuit" className="hidden hover:text-[#191919] sm:inline">Gratuit</a>
             <a href="#produit" className="hidden hover:text-[#191919] sm:inline">Produit</a>
             <a href="#tarifs" className="hidden hover:text-[#191919] sm:inline">Tarifs</a>
             <a href="/souscrire" className="hidden hover:text-[#191919] sm:inline">Souscrire</a>
@@ -122,6 +131,57 @@ export default function VitrinePage() {
             line="10 secondes — ce que l'OS fait pendant que vous êtes ailleurs."
             muted="Lecture automatique désactivée (mouvement réduit). Le film dure 10 secondes."
           />
+        </section>
+
+        <Rule />
+
+        {/*
+          ── LA PORTE GRATUITE ──
+
+          ⚠ Elle n'existait NULLE PART sur cette page. Le socle est ouvert
+          depuis le 02/09/2026 — le serveur l'applique, des tests le gardent —
+          et la vitrine ne proposait qu'une seule porte : « demander un
+          cadrage », c'est-à-dire un rendez-vous avec un inconnu, à quelqu'un
+          qui n'a encore rien vu. La porte qui ne coûte que dix secondes
+          existait dans le code et pas sur la page.
+        */}
+        <section id="gratuit" className="py-20">
+          <SectionLabel>Commencer</SectionLabel>
+          <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
+            Le socle est gratuit.
+            <br />
+            <span style={{ color: MUTED }}>Sans durée, sans carte bancaire.</span>
+          </h2>
+          <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
+            Vous créez votre compte, vous entrez. Ce n&apos;est pas une version d&apos;essai qui
+            s&apos;éteint dans quinze jours : c&apos;est le socle, et il reste ouvert.
+          </p>
+
+          <ul className="mt-10 grid gap-8 sm:grid-cols-2">
+            {SOCLE_GRATUIT.map((b) => (
+              <li key={b.id}>
+                <p className="text-[15px] font-semibold">{b.label}</p>
+                <p className="mt-2 text-[16px] leading-[1.6]" style={{ color: MUTED }}>{b.what}</p>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-10 max-w-2xl text-[17px] leading-[1.65]">
+            <strong>{FRONTIERE_PAYANT}</strong>
+          </p>
+          <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+            Ce n&apos;est pas une astuce commerciale : un appel passé, un email envoyé ou un texte
+            écrit par un modèle consomme une ligne, un serveur et des crédits. Ce qui vous organise
+            ne consomme rien — alors on ne le facture pas.
+          </p>
+
+          <a
+            href="/souscrire"
+            className="mt-10 inline-block rounded-full px-7 py-3.5 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+            style={{ background: INK }}
+          >
+            Créer mon compte
+          </a>
         </section>
 
         <Rule />
@@ -247,6 +307,77 @@ export default function VitrinePage() {
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                 Vous n&apos;avez besoin que d&apos;une partie ? On installe cette partie-là, et rien
                 d&apos;autre. Beaucoup commencent comme ça.
+              </p>
+            </div>
+          </div>
+
+          {/*
+            ── ALPHA VOICE, ACCUEIL TÉLÉPHONIQUE ──
+
+            ⚠ La page n'affichait QUE le palier d'entrée du SORTANT (364 € le
+            millier d'appels). La grille de l'accueil — celle qui est décidée,
+            documentée et que nous annonçons par ailleurs — n'était nulle part.
+            Un prospect lisait donc « 364 € » et repartait avec un ordre de
+            grandeur qui n'est pas celui de l'offre qu'on lui vendra.
+
+            Publier ces prix nets est une décision : ça qualifie les demandes
+            et ça évite les rendez-vous hors budget.
+          */}
+          <div className="mt-16">
+            <h3 className="font-serif text-[26px] tracking-[-0.01em]">
+              Alpha Voice — l&apos;accueil qui décroche à votre place
+            </h3>
+            <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+              <strong style={{ color: INK }}>{ALPHA_VOICE_PUBLIC.setupHT} € HT d&apos;installation</strong>, puis
+              un abonnement au volume :
+            </p>
+            <ul className="mt-5 grid gap-6 sm:grid-cols-2">
+              {ALPHA_VOICE_PUBLIC.paliers.map((t) => (
+                <li key={t.nom} className="rounded-xl p-5" style={{ border: `1px solid ${LINE}` }}>
+                  <p className="text-[13px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>{t.nom}</p>
+                  <p className="mt-2 font-serif text-[34px] leading-none tracking-[-0.02em]">
+                    {t.prixHT} € <span className="text-[16px]" style={{ color: MUTED }}>HT / mois</span>
+                  </p>
+                  <p className="mt-3 text-[15px] leading-[1.55]" style={{ color: MUTED }}>{t.ce}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 max-w-2xl text-[15px] leading-[1.6]" style={{ color: MUTED }}>
+              Au-delà : {String(ALPHA_VOICE_PUBLIC.minuteSupHT).replace(".", ",")} € HT la minute. Pas de coupure,
+              pas de palier caché.
+            </p>
+
+            {/*
+              LA GARANTIE, AVEC SES BORDS. Les taire n'est pas une
+              simplification : c'est un litige à retardement. Une garantie sans
+              durée s'active au bout de trois jours de ligne coupée.
+            */}
+            <div className="mt-8 rounded-xl p-6" style={{ background: "#FFFFFF", border: `1px solid ${ACCENT}` }}>
+              <p className="font-serif text-[24px] leading-[1.25] tracking-[-0.01em]">{GARANTIE.promesse}</p>
+              <ul className="mt-4 space-y-1.5">
+                {GARANTIE.bords.map((b) => (
+                  <li key={b} className="text-[15px] leading-[1.55]" style={{ color: MUTED }}>— {b}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/*
+              ── L'ARTICLE 50, SERVI COMME ARGUMENT ──
+
+              La divulgation est prononcée par le CODE, hors du modèle, avant
+              qu'il ait la parole, et sans interruption possible. C'est un fait
+              vérifiable et daté — le seul de cette page qui ne demande aucune
+              confiance. Le taire pour « ne pas faire peur » reviendrait à
+              laisser un concurrent en faire un reproche.
+            */}
+            <div className="mt-10">
+              <h4 className="text-[15px] font-semibold">L&apos;agent annonce qu&apos;il est une IA. Toujours.</h4>
+              <p className="mt-2 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+                Première phrase de chaque appel : il dit qu&apos;il est une intelligence artificielle, pas
+                une personne, et pour le compte de qui il appelle. Ce n&apos;est pas une consigne donnée au
+                modèle — c&apos;est le code qui la prononce, avant que le modèle ait la parole, et elle ne
+                peut pas être interrompue. Si le script ne la porte pas, l&apos;agent refuse de démarrer.
+                L&apos;article 50 du règlement européen sur l&apos;IA s&apos;applique depuis le 2 août 2026.
               </p>
             </div>
           </div>

@@ -400,19 +400,33 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">Tarifs</span>
-      <h2>Un abonnement, pas un engagement.</h2>
-      <p>Sans engagement de durée, résiliable à tout moment. L&apos;audit de ta vente est offert avant de démarrer — tu ne paies que si la machine te sert.</p>
+      <h2>Le socle est gratuit. Ce qui agit à ta place se paie.</h2>
+      <!-- ⚠ « L'audit de ta vente est offert » promettait une brique PAYANTE
+           (les audits automatiques). La frontière réelle n'est pas un cadeau
+           d'appel : c'est une contrainte technique — envoyer, appeler et
+           faire écrire un modèle consomme nos identifiants et nos crédits,
+           et il n'existe aucun chemin d'identifiants par locataire. -->
+      <p>Ce qui t&apos;organise ne consomme rien : c&apos;est gratuit, sans limite de durée. Ce qui AGIT à ta place — les appels, les envois, l&apos;agent qui écrit — se paie. Sans engagement de durée.</p>
     </div>
     <div class="pricing">
+      <!-- ⚠ CE PALIER SE VENDAIT 79 €/MOIS, ET IL EST DEVENU GRATUIT.
+           Les inscriptions sont ouvertes depuis le 02/09/2026 : le CRM, le
+           Closer OS, le Cerveau et le pilotage sont ouverts à tout compte,
+           sans limite de durée (lib/entitlements.ts, BRIQUES_GRATUITES).
+           Cette page continuait donc de facturer ce que le produit donne —
+           c'est la pire divergence possible entre un site et son logiciel :
+           celui qui paie découvre à l'inscription qu'il n'avait pas à payer.
+           « Audits cadeaux illimités » est retiré du même geste : les audits
+           sont une brique PAYANTE, ils ne sont ni gratuits ni illimités. -->
       <div class="tier reveal">
-        <h3>Solo</h3>
-        <div class="price">79 €<span> / mois</span></div>
-        <p class="psub">Un closer. Tout le cœur du système, sans les appels sortants.</p>
+        <h3>Socle</h3>
+        <div class="price">Gratuit</div>
+        <p class="psub">Sans limite de durée, sans carte bancaire. Vos données, votre organisation.</p>
         <ul>
           <li>Pipeline, Aujourd&apos;hui, À décider</li>
-          <li>Débrief terrain à la voix</li>
-          <li>Audits cadeaux illimités</li>
-          <li>Boîte d&apos;envoi + brouillons Gmail</li>
+          <li>Closer OS + débrief terrain à la voix</li>
+          <li>Le Cerveau : votre doctrine, vos scripts, vos objections</li>
+          <li>Pilotage : ce qui tourne et ce qui bloque</li>
         </ul>
         <!-- ⚠ Les deux liens de paiement Stripe pointaient vers des URL de
              gabarit : un visiteur qui cliquait tombait sur une page
@@ -421,13 +435,19 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
              la doctrine maison (« cadrage obligatoire avant devis »). Pour
              revenir au paiement direct : href="https://buy.stripe.com/<lien>".
              -->
-        <a class="btn ghost" href="mailto:contact@eagleyecorp.fr?subject=D%C3%A9mo%20ALPHA%20SALES%20OS">Réserver le cadrage</a>
+        <a class="btn ghost" href="https://alphasalesos.eagleyecorp.fr/souscrire">Créer mon compte</a>
       </div>
       <div class="tier feat reveal">
         <span class="badge">Le plus choisi</span>
-        <h3>Pro</h3>
-        <div class="price">149 €<span> / mois</span></div>
-        <p class="psub">La machine complète — la voix incluse, 200 appels par mois.</p>
+        <h3>Alpha Voice — Essentiel</h3>
+        <div class="price">149 €<span> HT / mois</span></div>
+        <!-- ⚠ LES 990 € D'INSTALLATION MANQUAIENT, et c'est le montant qui
+             paie la demi-journée de mise en service faite à la main. Annoncer
+             149 € tout seul, c'est reproduire exactement le défaut que la
+             grille du 02/09/2026 a corrigé : un palier d'entrée qui ressemble
+             à une offre d'appel et qui est une perte. Source de vérité :
+             lib/offres-publiques.ts. -->
+        <p class="psub"><b>990 € HT d&apos;installation</b>, puis 149 € HT/mois — 500 minutes, environ 200 appels.</p>
         <ul>
           <li>Tout <b>Solo</b>, plus :</li>
           <!-- ⚠ LE PLAFOND N'EST PAS DÉCORATIF. Cette ligne annonçait
@@ -440,7 +460,8 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
           <li>Récap urgent par SMS</li>
           <li>Pilote automatique (n8n)</li>
         </ul>
-        <p class="psub" style="font-size:.82rem;opacity:.8">Au-delà : 364 € HT par millier d&apos;appels supplémentaire, sans engagement.</p>
+        <p class="psub" style="font-size:.82rem;opacity:.8">Palier <b>Intensif</b> : 349 € HT/mois — 1 500 minutes, environ 600 appels. Au-delà : 0,25 € HT la minute, sans coupure.</p>
+        <p class="psub" style="font-size:.82rem;opacity:.8"><b>L&apos;installation ne se paie qu&apos;au premier rendez-vous obtenu</b> — sur 30 jours de ligne active, sur l&apos;installation seule, pour un rendez-vous pris.</p>
         <a class="btn accent" href="mailto:contact@eagleyecorp.fr?subject=D%C3%A9mo%20ALPHA%20SALES%20OS">Réserver le cadrage</a>
       </div>
       <div class="tier reveal">
