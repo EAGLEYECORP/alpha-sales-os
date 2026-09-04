@@ -1,4 +1,5 @@
 import type { Meeting, Prospect } from "./types";
+import { peutOuvrir } from "./bricks-access";
 import type { EtatDns } from "./deliverability-dns";
 
 /**
@@ -78,6 +79,24 @@ export interface StepDef {
    * On le dit à l'écran : une case manuelle vaut ce que vaut ta rigueur.
    */
   auto: boolean;
+  /**
+   * Le CHEMIN MÉTIER que cette étape sert, quand elle en sert un.
+   *
+   * ⚠ CE CHAMP EXISTE PARCE QUE LE PARCOURS NE REGARDAIT PAS LES DROITS.
+   *
+   * Depuis l'ouverture des inscriptions, un compte gratuit ne possède que
+   * `crm · closer · cerveau · pilotage`. Or `/demarrage` lui déroulait les
+   * seize étapes, en commençant par SMTP, DNS, n8n et le webhook entrant :
+   * des variables d'environnement SERVEUR qu'il ne peut pas poser, pour des
+   * briques qu'il n'a pas achetées. La première chose qu'un inscrit voyait
+   * était donc une liste de portes fermées, présentée comme sa liste de
+   * courses.
+   *
+   * On réutilise la carte unique de `lib/bricks-access.ts` — pas une
+   * deuxième table qui finirait par diverger. Absent = étape de socle,
+   * montrée à tout le monde.
+   */
+  chemin?: string;
 }
 
 export const STEPS: StepDef[] = [
@@ -96,6 +115,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir Réglages",
     minutes: 15,
     auto: true,
+    chemin: "/campaigns",
   },
   {
     id: "dns",
@@ -111,6 +131,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Voir la délivrabilité",
     minutes: 20,
     auto: true,
+    chemin: "/campaigns",
   },
   {
     id: "ia",
@@ -126,6 +147,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Tester l'Agent",
     minutes: 20,
     auto: true,
+    chemin: "/agent",
   },
   {
     id: "n8n",
@@ -141,6 +163,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Connecter n8n",
     minutes: 30,
     auto: true,
+    chemin: "/activity",
   },
   {
     id: "inbound",
@@ -156,6 +179,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Voir le webhook",
     minutes: 15,
     auto: true,
+    chemin: "/activity",
   },
   {
     id: "booking",
@@ -171,6 +195,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Coller le lien",
     minutes: 15,
     auto: true,
+    chemin: "/meetings",
   },
   {
     id: "offre",
@@ -201,6 +226,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Lancer la recette",
     minutes: 30,
     auto: false,
+    chemin: "/recette",
   },
 
   // ── 2. CHARGER ───────────────────────────────────────────────────
@@ -218,6 +244,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Importer des fiches",
     minutes: 180,
     auto: true,
+    chemin: "/pipeline",
   },
   {
     id: "qualite",
@@ -233,6 +260,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le pipeline",
     minutes: 45,
     auto: false,
+    chemin: "/pipeline",
   },
 
   // ── 3. LANCER ────────────────────────────────────────────────────
@@ -250,6 +278,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir la Newsletter",
     minutes: 30,
     auto: true,
+    chemin: "/campaigns",
   },
   {
     id: "first-call",
@@ -265,6 +294,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir les Appels",
     minutes: 45,
     auto: true,
+    chemin: "/voice",
   },
   {
     id: "linkedin-sourcing",
@@ -281,6 +311,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le sourcing",
     minutes: 25,
     auto: true,
+    chemin: "/linkedin",
   },
   {
     id: "first-linkedin",
@@ -297,6 +328,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir LinkedIn",
     minutes: 30,
     auto: true,
+    chemin: "/linkedin",
   },
   {
     id: "first-meeting",
@@ -312,6 +344,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le Closer OS",
     minutes: 60,
     auto: true,
+    chemin: "/meetings",
   },
 
   // ── 4. TENIR ─────────────────────────────────────────────────────
@@ -329,6 +362,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le Pilote",
     minutes: 90,
     auto: true,
+    chemin: "/aujourdhui",
   },
   {
     id: "premier-signe",
@@ -398,6 +432,18 @@ export interface PathContext {
   n8n: boolean;
   /** Étapes cochées à la main (celles qu'aucune donnée n'atteste). */
   manual: string[];
+  /**
+   * Les briques réellement possédées par ce compte.
+   *
+   * `null` (ou absent) = on ne sait pas encore. On ne filtre alors RIEN :
+   * même doctrine optimiste que `useDroits` — un parcours qui se vide une
+   * seconde au chargement fait croire à une panne, et le serveur refusera de
+   * toute façon les portes fermées. Ici on ne protège rien, on évite juste de
+   * promener quelqu'un dans des culs-de-sac.
+   */
+  bricks?: string[] | null;
+  /** Le compte maître voit tout : c'est notre propre installation. */
+  maitre?: boolean;
   now?: Date;
 }
 
@@ -431,6 +477,16 @@ export interface Path {
   nextIndex: number;
   /** Minutes restantes sur les étapes non faites. */
   minutesLeft: number;
+  /**
+   * Étapes RETIRÉES parce que le compte ne possède pas la brique.
+   *
+   * ⚠ On les compte au lieu de les faire disparaître en silence. C'est la
+   * même doctrine que `/controle`, qui montre le lanceur de campagnes à un
+   * compte gratuit : voir la porte fermée vaut mieux que ne pas savoir
+   * qu'elle existe. Un parcours de cinq étapes sans explication donnerait
+   * l'impression d'un produit minuscule.
+   */
+  verrouillees: number;
 }
 
 /**
@@ -528,7 +584,29 @@ export function buildPath(ctx: PathContext): Path {
     }
   };
 
-  const steps: PathStep[] = STEPS.map((s) => ({ ...s, ...evaluate(s) }));
+  /**
+   * ── LE FILTRE PAR DROITS ──
+   *
+   * Une étape rattachée à un chemin que ce compte ne peut pas ouvrir n'est pas
+   * une étape « en retard » : c'est une étape qui ne le concerne pas. La
+   * laisser dans le parcours fait commencer un inscrit gratuit par « brancher
+   * le SMTP » — une variable d'environnement du SERVEUR, qu'il n'a aucun moyen
+   * de poser, pour une brique qu'il n'a pas achetée.
+   *
+   * On interroge `peutOuvrir`, la même fonction que le middleware : deux
+   * définitions de « ce compte a-t-il le droit » finiraient par diverger, et
+   * c'est l'écran qui mentirait.
+   */
+  const accessible = (s: StepDef): boolean => {
+    if (!s.chemin) return true;
+    if (ctx.maitre) return true;
+    if (!ctx.bricks) return true; // pas encore chargé : on ne cache rien
+    return peutOuvrir(s.chemin, ctx.bricks, false);
+  };
+
+  const visibles = STEPS.filter(accessible);
+  const verrouillees = STEPS.length - visibles.length;
+  const steps: PathStep[] = visibles.map((s) => ({ ...s, ...evaluate(s) }));
 
   const phases: PathPhase[] = PHASES.map((ph) => {
     const own = steps.filter((s) => s.phase === ph.id);
@@ -545,5 +623,6 @@ export function buildPath(ctx: PathContext): Path {
     next,
     nextIndex: next ? steps.findIndex((s) => s.id === next.id) + 1 : steps.length,
     minutesLeft: pending.reduce((sum, s) => sum + s.minutes, 0),
+    verrouillees,
   };
 }

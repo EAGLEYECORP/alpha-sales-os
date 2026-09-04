@@ -34,10 +34,37 @@ interface AuthResult {
   needsConfirm?: boolean;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ L'INSCRIPTION NE DISAIT PAS OÙ REVENIR — ET LA RÉINITIALISATION, SI.
+ *
+ * `resetPassword`, quinze lignes plus bas, passe un `redirectTo` construit sur
+ * `window.location.origin`. `signUp` ne passait RIEN. Le lien du mail de
+ * confirmation retombait donc sur la **Site URL** configurée dans le tableau
+ * de bord Supabase — dont la valeur d'usine est `http://localhost:3000`.
+ *
+ * Conséquence, invisible depuis chez nous : l'inscrit reçoit bien un mail, le
+ * clique, et atterrit sur une adresse qui n'existe pas sur SA machine. Il ne
+ * peut pas confirmer, donc pas se connecter, et il n'a aucun moyen de
+ * comprendre pourquoi. Nous, on voit un compte créé et jamais confirmé.
+ *
+ * L'origine du navigateur est la bonne source : elle est juste en production,
+ * en préproduction et en local, sans qu'aucune variable ne soit à tenir à jour.
+ *
+ * ⚠⚠ Ça ne dispense PAS de la configuration Supabase : l'URL de redirection
+ * doit être dans la liste blanche (Authentication → URL Configuration), sinon
+ * Supabase l'ignore et retombe sur la Site URL. Voir docs/INSCRIPTION.md.
+ * ─────────────────────────────────────────────────────────────────────
+ */
 export async function signUp(email: string, password: string): Promise<AuthResult> {
   const sb = getSupabase();
   if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
-  const { data, error } = await sb.auth.signUp({ email: email.trim(), password });
+  const emailRedirectTo = typeof window !== "undefined" ? `${window.location.origin}/compte` : undefined;
+  const { data, error } = await sb.auth.signUp({
+    email: email.trim(),
+    password,
+    options: { emailRedirectTo },
+  });
   if (error) return { ok: false, error: error.message };
   return { ok: true, needsConfirm: !data.session };
 }

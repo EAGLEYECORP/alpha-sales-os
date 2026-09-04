@@ -142,7 +142,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       return;
     }
     if (res.needsConfirm) {
-      setInfo("Compte créé — confirme l'email reçu, puis connecte-toi.");
+      /**
+       * ⚠ « Compte créé » ÉTAIT UN MENSONGE UNE FOIS SUR DEUX.
+       *
+       * Quand la confirmation d'email est active, Supabase répond à une
+       * inscription sur une adresse DÉJÀ enregistrée exactement comme à une
+       * inscription neuve : un utilisateur, pas de session, pas d'erreur.
+       * C'est volontaire de leur part — ça empêche de deviner qui a un compte
+       * chez nous en essayant des adresses. Mais aucun mail n'est envoyé.
+       *
+       * L'ancien texte affirmait donc « compte créé » à quelqu'un qui en avait
+       * déjà un, et le laissait attendre un mail qui n'arriverait jamais. La
+       * formulation conditionnelle est vraie dans les deux cas, et elle ne
+       * révèle toujours pas si l'adresse existe.
+       */
+      setInfo(
+        "Si cette adresse n'a pas déjà un compte, un email de confirmation vient de partir. Clique le lien, puis connecte-toi."
+      );
       setMode("in");
       setPassword("");
     }

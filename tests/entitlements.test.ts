@@ -449,3 +449,77 @@ test("⚠ le contrôle passe AVANT le mode solo, sinon il ne sert à rien", () =
   assert.ok(iSolo > 0);
   assert.ok(iGarde < iSolo, "la garde doit précéder le repli solo, sinon elle est morte");
 });
+
+/* ────────────────────────────────────────────────────────────────────
+   CE QU'UN INSCRIT GRATUIT VOIT EN PREMIER.
+   Le parcours de démarrage déroulait seize étapes à tout le monde, en
+   commençant par des variables d'environnement du SERVEUR.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("⚠ le parcours de démarrage RETIRE les étapes que le compte ne peut pas faire", async () => {
+  const { buildPath, STEPS } = await import("../lib/onboarding-path");
+  const { BRIQUES_GRATUITES } = await import("../lib/entitlements");
+
+  const base = {
+    prospects: [],
+    meetings: [],
+    health: null,
+    dns: null,
+    n8n: false,
+    manual: [] as string[],
+  };
+
+  const gratuit = buildPath({ ...base, bricks: [...BRIQUES_GRATUITES], maitre: false });
+  const maitre = buildPath({ ...base, bricks: [...BRIQUES_GRATUITES], maitre: true });
+
+  assert.ok(gratuit.total < maitre.total, "un compte gratuit doit voir moins d'étapes que le maître");
+  assert.equal(gratuit.verrouillees, STEPS.length - gratuit.total, "ce qui est retiré doit être COMPTÉ, pas escamoté");
+  assert.equal(maitre.verrouillees, 0, "le maître ne perd aucune étape : c'est notre propre installation");
+
+  // Les étapes nommément impossibles pour un gratuit ne doivent plus apparaître.
+  const vues = gratuit.phases.flatMap((p) => p.steps.map((s) => s.id));
+  for (const id of ["smtp", "dns", "ia", "first-email", "first-call"]) {
+    assert.ok(!vues.includes(id), `« ${id} » ne doit pas être proposée à un compte gratuit`);
+  }
+  // Et la contrepartie : il lui reste de quoi travailler, sinon on l'a vidé.
+  assert.ok(vues.includes("fuel"), "charger des prospects reste faisable au gratuit — c'est le socle CRM");
+  assert.ok(gratuit.total >= 3, `parcours vidé : ${gratuit.total} étape(s)`);
+});
+
+test("droits pas encore chargés : on ne cache RIEN", () => {
+  /**
+   * Même optimisme que `useDroits`. Un parcours qui se vide une seconde au
+   * chargement ressemble à une panne — et comme le serveur refuse de toute
+   * façon les portes fermées, l'optimisme ne coûte aucune sécurité.
+   *
+   * ⚠ On mute la condition : avec des briques FOURNIES, le même appel doit
+   * filtrer. Sans cette moitié, un `buildPath` qui ne filtrerait jamais
+   * passerait le test.
+   */
+  return import("../lib/onboarding-path").then(({ buildPath, STEPS }) => {
+    const base = { prospects: [], meetings: [], health: null, dns: null, n8n: false, manual: [] as string[] };
+    const inconnu = buildPath({ ...base, bricks: null, maitre: false });
+    assert.equal(inconnu.total, STEPS.length, "droits inconnus : toutes les étapes restent visibles");
+    assert.equal(inconnu.verrouillees, 0);
+
+    const connu = buildPath({ ...base, bricks: ["crm"], maitre: false });
+    assert.ok(connu.total < STEPS.length, "avec des briques connues, le filtre doit mordre");
+  });
+});
+
+test("⚠ l'inscription dit où revenir — sinon le lien de confirmation pointe vers localhost", () => {
+  /**
+   * `resetPassword` passait un `redirectTo`, `signUp` ne passait rien : le
+   * lien du mail de confirmation retombait sur la Site URL du tableau de bord
+   * Supabase, dont la valeur d'usine est `http://localhost:3000`. L'inscrit
+   * cliquait sur un lien mort et n'avait aucun moyen de comprendre.
+   *
+   * On lit la source : sans projet Supabase joignable depuis ce bac à sable,
+   * c'est la seule vérification possible — et elle vaut mieux que rien, parce
+   * que le défaut était précisément une ligne absente.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/auth.ts"), "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+  const signUpBody = src.slice(src.indexOf("export async function signUp"), src.indexOf("export async function signIn"));
+  assert.match(signUpBody, /emailRedirectTo/, "signUp doit fournir une URL de retour");
+  assert.match(signUpBody, /window\.location\.origin/, "l'origine du navigateur est la seule source juste en prod comme en local");
+});

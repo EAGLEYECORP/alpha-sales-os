@@ -15,6 +15,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { useDroits } from "@/lib/use-droits";
 import { n8nConnected } from "@/lib/n8n";
 import { buildPath, type PathStep } from "@/lib/onboarding-path";
 import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
@@ -80,6 +81,8 @@ export default function DemarragePage() {
     });
   };
 
+  const droits = useDroits();
+
   const path = useMemo(
     () =>
       buildPath({
@@ -90,8 +93,18 @@ export default function DemarragePage() {
         dns,
         n8n,
         manual,
+        /**
+         * ⚠ Le parcours déroulait les seize étapes à tout le monde. Un compte
+         * gratuit (`crm · closer · cerveau · pilotage`) commençait donc par
+         * « brancher le SMTP », « publier SPF/DKIM », « connecter n8n » — des
+         * variables d'environnement du SERVEUR qu'il ne peut pas poser, pour
+         * des briques qu'il n'a pas. Sa première impression du produit était
+         * une liste de portes fermées.
+         */
+        bricks: droits.bricks,
+        maitre: droits.maitre,
       }),
-    [prospects, meetings, settings.bookingUrl, health, dns, n8n, manual]
+    [prospects, meetings, settings.bookingUrl, health, dns, n8n, manual, droits.bricks, droits.maitre]
   );
 
   const pct = Math.round((path.done / path.total) * 100);
@@ -178,6 +191,21 @@ export default function DemarragePage() {
             style={{ width: `${pct}%` }}
           />
         </div>
+        {/*
+          On COMPTE ce qui est masqué au lieu de le faire disparaître : un
+          parcours raccourci sans explication donne l'impression d'un produit
+          minuscule, et personne ne sait qu'il existe une suite. Même doctrine
+          que /controle, qui montre la porte fermée.
+        */}
+        {path.verrouillees > 0 && (
+          <p className="mt-2 text-[11.5px] leading-relaxed text-paper-faint">
+            {path.verrouillees} étape(s) d&apos;installation ne sont pas affichées : elles servent des briques que ce
+            compte n&apos;a pas encore (envoi de campagnes, agent vocal, tracking).{" "}
+            <Link href="/compte" className="text-bronze-400 hover:underline">
+              Voir ce qui est ouvert
+            </Link>
+          </p>
+        )}
       </section>
 
       {/* ── LES PHASES ── */}
