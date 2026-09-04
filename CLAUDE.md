@@ -127,7 +127,8 @@ n'en veulent pas → on passe par leur plateforme.
 - **Alpha Voice** — grille DÉCIDÉE le 02/09/2026 (`lib/offres-publiques.ts`) :
   **990 € HT** de setup, puis **deux** paliers — **Essentiel 149 €/mois**
   (500 min, ~200 appels) et **Intensif 349 €/mois** (1 500 min, ~600 appels).
-  Au-delà : **0,25 €/min**, pas de coupure, pas de palier à revendre.
+  Au-delà : **0,20 €/min** (descendu de 0,25 le 04/09/2026), pas de
+  coupure, pas de palier à revendre.
   > ⚠ Ce qui a changé, et pourquoi — c'est le raisonnement qui compte, pas les
   > nombres : **cinq paliers font comparer les paliers entre eux** au lieu de
   > comparer à ce qu'il perd. Et le plancher passe de 59 € à 149 € parce que

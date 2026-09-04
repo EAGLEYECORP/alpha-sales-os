@@ -104,11 +104,36 @@ export const PACK_MONTHLY_HT = 1_000;
  * UN client Essentiel couvre désormais le socle fixe à lui seul. C'était le
  * défaut le plus concret de l'ancienne grille.
  *
- * ── 4. AU-DELÀ DU FORFAIT : 0,25 €/min ──
+ * ── 4. AU-DELÀ DU FORFAIT : 0,20 €/min ──
  *
  * Pas de palier suivant à vendre, pas de coupure de service. À 0,0563 € de
- * coût, la minute supplémentaire reste rentable, et le client n'est jamais
- * bloqué un mardi parce qu'il a eu une bonne semaine.
+ * coût, la minute supplémentaire reste rentable (marge ~72 %), et le client
+ * n'est jamais bloqué un mardi parce qu'il a eu une bonne semaine.
+ *
+ * ⚠ DESCENDU DE 0,25 À 0,20 LE 04/09/2026. DÉCISION commerciale, pas un
+ * recalcul : aucun client n'a jamais payé une minute de dépassement, donc rien
+ * ne dit que 0,25 freinait quoi que ce soit. La marge passe de 77,5 % à 71,9 %.
+ *
+ * ⚠⚠ CE QUE CE CHANGEMENT FAIT VRAIMENT, ET QUI NE SAUTE PAS AUX YEUX : il
+ * supprime la dernière raison de monter en palier. Comparé au prix moyen d'une
+ * minute INCLUSE dans chaque forfait :
+ *
+ *                       minute incluse    à 0,25 €     à 0,20 €
+ *   Essentiel  149/500     0,298 €         −16 %        −33 %
+ *   Intensif   349/1500    0,233 €         **+7 %**     −14 %
+ *
+ * À 0,25 €, dépasser coûtait 7 % de PLUS que la minute d'Intensif : un client
+ * d'Essentiel qui débordait avait un intérêt arithmétique à passer au palier
+ * supérieur, et ça se démontrait en une ligne. À 0,20 €, dépasser est moins
+ * cher que les DEUX forfaits au prorata — il n'existe plus aucun argument
+ * chiffré pour faire monter qui que ce soit. On vend alors un abonnement bas
+ * avec un dépassement confortable, ce qui est un modèle défendable, mais ce
+ * n'est plus le même : la croissance ne vient plus des paliers.
+ *
+ * C'est cohérent avec « pas de palier à revendre, pas de coupure », et ça
+ * retire l'argument « vous m'avez laissé déborder ». Mais si un client dépasse
+ * SYSTÉMATIQUEMENT, ce n'est plus la minute qu'il faut regarder, c'est le
+ * forfait — et cette conversation-là n'a plus de levier chiffré.
  *
  * ⚠ CE QUI EST MESURÉ ICI ET CE QUI NE L'EST PAS. Le coût à la minute est
  * relevé (27/08/2026). Le SETUP à 990 € et les deux prix mensuels sont des
@@ -122,7 +147,7 @@ export const PACK_MONTHLY_HT = 1_000;
 export const ALPHA_VOICE_SETUP_HT = 990;
 
 /** Le prix de la minute au-delà du forfait. Coût mesuré : 0,0563 €/min. */
-export const ALPHA_VOICE_MINUTE_SUP_HT = 0.25;
+export const ALPHA_VOICE_MINUTE_SUP_HT = 0.2;
 
 export interface PalierAlphaVoice {
   minutes: number;

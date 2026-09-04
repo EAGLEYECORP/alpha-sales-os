@@ -174,7 +174,14 @@ test("le plafond affiché sur la vitrine est CELUI de la grille, pas un autre no
    * au-delà du plafond ». On vérifie donc le dépassement RÉELLEMENT applicable
    * à cette offre, et toujours depuis la grille.
    */
-  const minute = String(ALPHA_VOICE_MINUTE_SUP_HT).replace(".", ",");
+  /**
+   * ⚠ La comparaison se fait sur le prix FORMATÉ, pas sur le nombre brut.
+   * `String(0.2)` rend « 0,2 » ; un prix s'écrit « 0,20 € ». Comparer les deux
+   * faisait échouer le test au moment exact où le prix a changé — un faux
+   * positif qui aurait poussé à écrire « 0,2 € » sur le site pour faire taire
+   * le test, c'est-à-dire à dégrader la page pour satisfaire l'outil.
+   */
+  const minute = ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",");
   assert.ok(
     tarifs.includes(`${minute} €`),
     `le prix de la minute au-delà (${minute} €) doit venir de lib/offres-publiques.ts`

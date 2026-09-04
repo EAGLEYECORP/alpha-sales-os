@@ -164,7 +164,7 @@ de la preuve inventée.
 | Avant | Après |
 |---|---|
 | Le socle gratuit n'apparaissait **nulle part** | Section « Commencer », les quatre briques, et une porte vers `/souscrire` |
-| Seule grille voix affichée : 364 € le millier d'appels **sortants** | La grille de l'accueil, décidée le 02/09 : **990 € HT + 149 / 349 €/mois**, 0,25 €/min au-delà |
+| Seule grille voix affichée : 364 € le millier d'appels **sortants** | La grille de l'accueil, décidée le 02/09 : **990 € HT + 149 / 349 €/mois**, 0,20 €/min au-delà |
 | La garantie n'était pas dite | « L'installation ne se paie qu'au premier rendez-vous », **avec ses trois bords** (30 jours, périmètre, RDV pris) |
 | L'article 50 n'était pas dit | La divulgation IA servie **comme argument** — c'est le seul fait de la page qui ne demande aucune confiance |
 

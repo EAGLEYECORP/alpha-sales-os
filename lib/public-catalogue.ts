@@ -114,7 +114,7 @@ export const ALPHA_VOICE_PUBLIC = {
     { nom: "Essentiel", prixHT: 149, ce: "500 minutes, environ 200 appels par mois" },
     { nom: "Intensif", prixHT: 349, ce: "1 500 minutes, environ 600 appels par mois" },
   ],
-  minuteSupHT: 0.25,
+  minuteSupHT: 0.2,
 };
 
 /**

@@ -186,7 +186,7 @@ de zéro.
 | **Intensif** | 1 500 | **349 €** | ~600 appels | ~76 % |
 
 **Setup : 990 € HT** — et il n'est facturé qu'au premier rendez-vous (garantie).
-**Au-delà du forfait : 0,25 €/min.** Pas de coupure, pas de palier à revendre.
+**Au-delà du forfait : 0,20 €/min.** Pas de coupure, pas de palier à revendre.
 
 **Ce qui a changé, et pourquoi :**
 

@@ -343,7 +343,7 @@ export default function VitrinePage() {
               ))}
             </ul>
             <p className="mt-4 max-w-2xl text-[15px] leading-[1.6]" style={{ color: MUTED }}>
-              Au-delà : {String(ALPHA_VOICE_PUBLIC.minuteSupHT).replace(".", ",")} € HT la minute. Pas de coupure,
+              Au-delà : {ALPHA_VOICE_PUBLIC.minuteSupHT.toFixed(2).replace(".", ",")} € HT la minute. Pas de coupure,
               pas de palier caché.
             </p>
 
