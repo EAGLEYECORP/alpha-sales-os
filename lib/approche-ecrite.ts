@@ -90,10 +90,27 @@ export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcri
   const offre = pick?.magnet.offer ?? null;
 
   /**
-   * Le playbook parle téléphone, du premier critère au dernier diagnostic.
-   * Il enrichit donc l'angle Alpha Voice — et il contredit les deux autres.
+   * La verticale n'enrichit le message que si elle sert la MÊME offre que
+   * l'aimant routé.
+   *
+   * ⚠ CETTE LIGNE TESTAIT `offre === "alpha-voice"`, ET C'ÉTAIT JUSTE — tant
+   * que les neuf verticales du playbook parlaient toutes du téléphone qui
+   * tombe dans le vide. « Le playbook parle téléphone » n'était pas une règle,
+   * c'était un CONSTAT, et il servait de raccourci à la vraie question.
+   *
+   * La maîtrise d'ouvrage l'a rendu faux : elle sert l'OS de vente. Avec
+   * l'ancien test, son critère (« le rythme des réservations conditionne le
+   * lancement de l'opération ») aurait été jeté sur un routage alpha-sales-os
+   * — où il est pourtant exactement à sa place — et servi sur un routage
+   * alpha-voice, où il n'a rien à faire. Les deux erreurs en une ligne.
+   *
+   * On compare donc les offres, et l'ancien constat devient un DÉFAUT
+   * documenté : une verticale sans `offre` sert Alpha Voice. Un test refuse
+   * une verticale sans `offre` dont le critère ne parle pas du téléphone —
+   * c'est ce qui empêche le défaut de mentir la prochaine fois.
    */
-  const verticaleColle = offre === "alpha-voice";
+  const offreVerticale = v?.offre ?? "alpha-voice";
+  const verticaleColle = offre !== null && offre === offreVerticale;
 
   return {
     critere: pick

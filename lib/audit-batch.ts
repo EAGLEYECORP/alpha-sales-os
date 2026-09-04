@@ -28,7 +28,17 @@ const WEEKS_PER_MONTH = 4.33;
  */
 export function withMetierBenchmark(p: Prospect): Prospect {
   const v = verticalForProspect(p);
-  if (!v) return p;
+  /**
+   * ⚠ Une verticale SANS chiffrage de fuite ne complète rien.
+   *
+   * Ces trois valeurs (appels manqués, ticket moyen, taux de conversion) sont
+   * des repères d'ACCUEIL TÉLÉPHONIQUE. Sur une verticale qui ne perd pas
+   * d'appels — la maîtrise d'ouvrage — les recopier reviendrait à inscrire sur
+   * la fiche un ticket moyen et un taux qui ne viennent de nulle part, puis à
+   * calculer une Taxe d'Ignorance dessus. La fiche garde donc son angle mort :
+   * c'est visible, alors qu'un faux repère ne l'est pas.
+   */
+  if (!v?.leak) return p;
   const d = p.deepAudit;
   const missedCallsPerWeek = d.missedCallsPerWeek ?? Math.round((v.leak.callsPerMonth * v.leak.missRate) / WEEKS_PER_MONTH);
   const avgTicket = d.avgTicket ?? v.leak.avgTicket;

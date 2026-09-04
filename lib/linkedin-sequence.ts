@@ -1,6 +1,8 @@
 import type { Prospect } from "./types";
 import { LINKEDIN_INVITE_LIMIT } from "./linkedin";
 import { verticalForProspect } from "./playbook";
+// Une seule source pour « ce métier est-il réellement sur LinkedIn ? ».
+import { PRESENCE_LINKEDIN } from "./linkedin-ciblage";
 // Le critère, la question et le signal d'audit viennent de l'aimant routé —
 // la même source que l'email, pour que les deux canaux ne se contredisent pas.
 import { approcheEcrite } from "./approche-ecrite";
@@ -42,16 +44,44 @@ const firstName = (p: Prospect) => (p.name || "").trim().split(/\s+/)[0] || "";
 /**
  * L'invitation : ≤ 300 caractères, un critère, zéro pitch, zéro chiffre.
  * On ne vend rien ici — on demande la connexion, c'est tout.
+ *
+ * ⚠ ELLE ANNONÇAIT ALPHA VOICE EN DUR — « les appels qui arrivent quand
+ * personne ne peut les prendre » — QUEL QUE SOIT LE ROUTAGE DE LA FICHE.
+ *
+ * C'est le défaut qui avait déjà été corrigé dans `messageText`, une fonction
+ * plus bas, avec le commentaire qui l'explique : le message servait un audit
+ * téléphonique à un prospect routé « visibilité ». La correction n'était pas
+ * remontée jusqu'ici. Or l'invitation est la touche la PLUS CHÈRE du canal :
+ * elle est plafonnée à cent par semaine glissante, et une invitation dépensée
+ * sur le mauvais sujet ne se rejoue pas avant trois semaines.
+ *
+ * Sur un maître d'ouvrage, la version en dur promettait de parler d'appels
+ * manqués à quelqu'un qui n'en rate pas — c'est-à-dire se disqualifiait avant
+ * même d'être accepté.
+ *
+ * ⚠⚠ La forme, elle, suit la règle des affirmations : le corps de
+ * l'invitation est désormais UNE QUESTION. On ne lui donne rien à contester.
  */
-export function inviteText(p: Prospect): string {
-  const v = verticalForProspect(p);
+export function inviteText(p: Prospect, accountId?: string): string {
+  const a = approcheEcrite(p, accountId);
   const who = firstName(p) ? `Bonjour ${firstName(p)}, ` : "Bonjour, ";
-  const metier = v ? v.label.toLowerCase().split("—")[0].trim() : "votre métier";
   // Le secteur géographique vient de la FICHE, jamais d'un arrondissement
   // codé en dur : un message qui se trompe de quartier se grille seul.
   const zone = p.city?.trim() ? ` à ${p.city.trim()}` : " à Lyon";
-  const t = `${who}je suis Zakaria, d'EAGLEYE CORP. Je travaille avec les ${metier}${zone} sur un sujet précis : les appels qui arrivent quand personne ne peut les prendre. Je publie mes observations terrain — content d'échanger si le sujet vous parle.`;
-  return t.length <= LINKEDIN_INVITE_LIMIT ? t : t.slice(0, LINKEDIN_INVITE_LIMIT - 1) + "…";
+
+  /**
+   * La troncature dégrade dans un ORDRE choisi, elle ne coupe pas au hasard.
+   * Un `slice` sec sur la chaîne entière tranchait la question en plein
+   * milieu — c'est-à-dire supprimait la seule partie qui fait répondre. On
+   * sacrifie donc la formule de politesse d'abord, la question en dernier.
+   */
+  const base = `${who}je suis Zakaria, d'EAGLEYE CORP. Je travaille avec ${a.critere}${zone}.`;
+  const question = ` La question qui m'intéresse : ${a.question}`;
+  const fin = " Content d'échanger si le sujet vous parle.";
+
+  if ((base + question + fin).length <= LINKEDIN_INVITE_LIMIT) return base + question + fin;
+  if ((base + question).length <= LINKEDIN_INVITE_LIMIT) return base + question;
+  return (base + question).slice(0, LINKEDIN_INVITE_LIMIT - 1) + "…";
 }
 
 /**
@@ -96,10 +126,28 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
  */
 export function relanceText(p: Prospect): string {
   const hi = firstName(p) ? `${firstName(p)},` : "Bonjour,";
+  /**
+   * ⚠ « Vous êtes sur le terrain, pas sur LinkedIn » était écrit en dur.
+   *
+   * C'est le coup du méta, et il est excellent — sur un couvreur. Servi à un
+   * directeur de programmes, qui vit sur ce réseau, il est simplement FAUX, et
+   * un peu condescendant : on lui explique son propre métier de travers au
+   * moment exact où on lui dit au revoir.
+   *
+   * La réponse existait déjà et dormait dans un autre fichier :
+   * `PRESENCE_LINKEDIN` sait, verticale par verticale, si ces gens-là sont
+   * réellement ici. Une seule source pour « ce métier est-il sur LinkedIn ? » —
+   * en réécrire une deuxième ici garantissait qu'elles divergent.
+   */
+  const v = verticalForProspect(p);
+  const bienIci = v ? PRESENCE_LINKEDIN[v.id] === "forte" : false;
+  const meta = bienIci
+    ? `Pas de réponse, et c'est normal : ce genre de message tombe rarement au bon moment.`
+    : `Pas de réponse et c'est très bien — vous êtes sur le terrain, pas sur LinkedIn. C'est exactement le problème dont je parlais.`;
   return [
     `${hi}`,
     ``,
-    `Pas de réponse et c'est très bien — vous êtes sur le terrain, pas sur LinkedIn. C'est exactement le problème dont je parlais.`,
+    meta,
     ``,
     `Je ne relancerai pas : vous savez où me trouver si le sujet revient un jour. Bonne continuation à ${p.company}.`,
     ``,
@@ -107,9 +155,23 @@ export function relanceText(p: Prospect): string {
   ].join("\n");
 }
 
+/**
+ * ⚠ `accountId` ÉTAIT REÇU ICI ET JETÉ À LA LIGNE SUIVANTE.
+ *
+ * `buildLinkedinQueue` le lit dans son filtre, le passe à `textForStep`… qui
+ * appelait `messageText(p, bookingUrl)` sans le transmettre. Le paramètre
+ * traversait donc toute la chaîne pour mourir au dernier saut, et
+ * `approcheEcrite` retombait sur « eagleye » par défaut — pour TOUS les
+ * messages construits par la file, c'est-à-dire tous.
+ *
+ * Rien ne le signalait : sur le compte maître, le défaut EST le bon compte.
+ * Le jour où un partenaire utilise la file, ses messages annoncent nos aimants
+ * sous sa marque — exactement ce que la validation partenaire existe pour
+ * empêcher.
+ */
 export function textForStep(p: Prospect, step: LinkedinStep, bookingUrl?: string, accountId?: string): string {
-  if (step === "invitation") return inviteText(p);
-  if (step === "message") return messageText(p, bookingUrl);
+  if (step === "invitation") return inviteText(p, accountId);
+  if (step === "message") return messageText(p, bookingUrl, accountId);
   if (step === "relance") return relanceText(p);
   return "";
 }

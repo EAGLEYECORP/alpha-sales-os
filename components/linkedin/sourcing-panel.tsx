@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, CalendarClock, Check, ClipboardPaste, Info, UserPlus, X } from "lucide-react";
 import { ENTETE_MODELE, importerProfils } from "@/lib/linkedin-import";
+import { importerPermis, ressembleAuPermis } from "@/lib/permis-construire";
 import { planifierCampagne } from "@/lib/linkedin-plan";
 import { projeterImport, readStorageHealth } from "@/lib/storage-health";
 import { useAlpha } from "@/lib/store";
@@ -31,7 +32,25 @@ export function SourcingPanel() {
   const [texte, setTexte] = useState("");
   const [fait, setFait] = useState<string | null>(null);
 
-  const resultat = useMemo(() => (texte.trim() ? importerProfils(texte) : null), [texte]);
+  /**
+   * ── DEUX FORMATS, UNE SEULE ZONE DE COLLAGE ──
+   *
+   * Le format se DÉTECTE, il ne se choisit pas dans un menu — même doctrine
+   * que le sourcing terrain : une case à cocher au moment exact où on colle
+   * 400 lignes est une case qu'on oublie.
+   *
+   * ⚠ Et c'est bien ICI que l'export de permis doit atterrir, pas dans le
+   * panneau de sourcing terrain. Un fichier de permis ne porte AUCUN numéro de
+   * téléphone : envoyé vers la file d'appels, il produirait un plan d'appels
+   * pour des fiches qu'on ne peut pas composer. Ici, il produit des
+   * invitations — et `planifierCampagne` ci-dessous les étale sur le plafond
+   * hebdomadaire réel, ce qui est exactement le service rendu.
+   */
+  const estPermis = useMemo(() => ressembleAuPermis(texte), [texte]);
+  const resultat = useMemo(
+    () => (texte.trim() ? (estPermis ? importerPermis(texte) : importerProfils(texte)) : null),
+    [texte, estPermis]
+  );
   const plan = useMemo(
     () => (resultat?.retenus.length ? planifierCampagne(resultat.retenus.length) : null),
     [resultat]
@@ -75,7 +94,7 @@ export function SourcingPanel() {
     setFait(`${added} fiche(s) créée(s), ${updated} mise(s) à jour.`);
     logActivity({
       kind: "campagne",
-      message: `Sourcing LinkedIn — ${added} entrée(s), ${updated} fusion(s), ${resultat.ecartes.length} écarté(s)`,
+      message: `${estPermis ? "Sourcing permis de construire" : "Sourcing LinkedIn"} — ${added} entrée(s), ${updated} fusion(s), ${resultat.ecartes.length} écarté(s)`,
     });
     setTexte("");
   };
@@ -86,11 +105,13 @@ export function SourcingPanel() {
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
           <ClipboardPaste size={15} className="text-bronze-400" /> Sourcer des profils
         </h2>
-        <span className="text-[11px] text-paper-faint">CSV, TSV, JSON ou JSONL</span>
+        <span className="text-[11px] text-paper-faint">profils LinkedIn ou permis de construire</span>
       </div>
       <p className="mt-0.5 text-[11.5px] leading-relaxed text-paper-faint">
         Colle ce que tu as relevé dehors. Alpha ne va rien chercher : il ne détient aucun identifiant LinkedIn et
-        n&apos;ouvre aucun navigateur — c&apos;est ce qui garantit que ton profil ne se fait pas restreindre.
+        n&apos;ouvre aucun navigateur — c&apos;est ce qui garantit que ton profil ne se fait pas restreindre. Un export
+        de permis de construire (open data) est reconnu tout seul et trié autrement : le maître d&apos;ouvrage qui
+        n&apos;a rien à vendre en sort.
       </p>
 
       <textarea
@@ -111,6 +132,13 @@ export function SourcingPanel() {
 
       {resultat && (
         <>
+          {/* Le format détecté se DIT : sinon un tri inattendu passe pour un bug. */}
+          {estPermis && (
+            <p className="mt-3 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2 text-[11.5px] leading-relaxed text-bronze-300">
+              Export de permis de construire détecté — tri « maîtrise d&apos;ouvrage ». Les fiches entreront sans
+              téléphone : le canal est LinkedIn, pas l&apos;appel.
+            </p>
+          )}
           {/* Le verdict sur le lot, à lire AVANT de cliquer. */}
           <ul className="mt-3 space-y-1">
             {resultat.resume.map((l) => (
@@ -220,18 +248,32 @@ export function SourcingPanel() {
                 Écartés ({resultat.ecartes.length}) — et pourquoi
               </summary>
               <ul className="mt-1.5 space-y-1">
-                {resultat.ecartes.slice(0, 30).map(({ profil, ciblage }, i) => (
-                  <li key={`${profil.url ?? profil.nom ?? i}`} className="flex items-start gap-1.5 text-[11.5px]">
-                    <X size={12} className="mt-0.5 shrink-0 text-signal-red" />
-                    <span className="text-paper-dim">
-                      {profil.entreprise || profil.nom || "sans nom"}
-                      <span className="text-paper-faint">
-                        {" — "}
-                        {[...ciblage.risques, ...ciblage.manque][0] ?? `score ${ciblage.score}/100 insuffisant`}
+                {resultat.ecartes.slice(0, 30).map((e, i) => {
+                  /**
+                   * Les deux flux n'ont pas la même ligne source — un profil
+                   * LinkedIn d'un côté, un arrêté de l'autre. On les réduit
+                   * ici à ce que l'écran a besoin de savoir : un nom. Le reste
+                   * (le score, la raison du refus) porte déjà le même nom dans
+                   * les deux, et c'est pour ça que l'affichage tient.
+                   */
+                  const nom =
+                    "profil" in e
+                      ? e.profil.entreprise || e.profil.nom || "sans nom"
+                      : e.permis.demandeur || e.permis.numero || "sans nom";
+                  const { ciblage } = e;
+                  return (
+                    <li key={`${nom}-${i}`} className="flex items-start gap-1.5 text-[11.5px]">
+                      <X size={12} className="mt-0.5 shrink-0 text-signal-red" />
+                      <span className="text-paper-dim">
+                        {nom}
+                        <span className="text-paper-faint">
+                          {" — "}
+                          {[...ciblage.risques, ...ciblage.manque][0] ?? `score ${ciblage.score}/100 insuffisant`}
+                        </span>
                       </span>
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </details>
           )}

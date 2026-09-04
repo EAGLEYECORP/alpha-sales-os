@@ -17,20 +17,46 @@ import { prospect, daysAgo, todayAt } from "./fixtures";
 test("estimateLeak — le calcul de la fuite est celui annoncé au prospect", () => {
   const carrosserie = VERTICALS.find((v) => v.id === "garage-carrosserie")!;
   const l = estimateLeak(carrosserie);
+  assert.ok(l, "la carrosserie porte bien un chiffrage de fuite");
   // 160 appels × 25 % manqués = 40 ; 40 × 700 € × 18 % = 5 040 €/mois.
   // Chiffre repris tel quel du deep-dive terrain d'origine.
-  assert.equal(l.missedPerMonth, 40);
-  assert.equal(l.monthly, 5040);
-  assert.match(l.basis, /160 appels\/mois/);
+  assert.equal(l!.missedPerMonth, 40);
+  assert.equal(l!.monthly, 5040);
+  assert.match(l!.basis, /160 appels\/mois/);
 });
 
-test("estimateLeak — cohérent sur toutes les verticales, jamais négatif", () => {
+test("estimateLeak — cohérent quand il chiffre, NUL quand il ne sait pas", () => {
+  /**
+   * ⚠ Ce test exigeait une fuite positive sur TOUTES les verticales. C'était
+   * juste tant qu'elles vendaient toutes Alpha Voice. La maîtrise d'ouvrage ne
+   * perd pas d'appels entrants : lui imposer un chiffre positif aurait obligé
+   * à INVENTER quatre hypothèses d'accueil téléphonique pour un métier qui n'a
+   * pas de standard — exactement ce que la règle « zéro donnée → zéro chiffre »
+   * interdit.
+   *
+   * L'invariant devient donc double, et il est plus dur que l'ancien.
+   */
+  let sansChiffrage = 0;
   for (const v of VERTICALS) {
     const l = estimateLeak(v);
-    assert.ok(l.monthly > 0, `${v.id} : fuite nulle ou négative`);
-    assert.ok(l.missedPerMonth > 0, `${v.id} : appels manqués nuls`);
-    assert.equal(l.missedPerMonth, Math.round(v.leak.callsPerMonth * v.leak.missRate));
+    if (!v.leak) {
+      sansChiffrage++;
+      assert.equal(l, null, `${v.id} : sans paramètres de fuite, le chiffrage doit rendre null, pas 0`);
+      // Et le vrai garde-fou : une verticale sans fuite ne peut pas servir
+      // l'offre dont TOUT l'argumentaire est la fuite d'appels.
+      assert.notEqual(
+        v.offre ?? "alpha-voice",
+        "alpha-voice",
+        `${v.id} : une verticale Alpha Voice DOIT pouvoir chiffrer sa fuite d'appels — c'est l'argument`
+      );
+      continue;
+    }
+    assert.ok(l, `${v.id} : avec des paramètres de fuite, le chiffrage doit exister`);
+    assert.ok(l!.monthly > 0, `${v.id} : fuite nulle ou négative`);
+    assert.ok(l!.missedPerMonth > 0, `${v.id} : appels manqués nuls`);
+    assert.equal(l!.missedPerMonth, Math.round(v.leak.callsPerMonth * v.leak.missRate));
   }
+  assert.ok(sansChiffrage >= 1, "aucune verticale sans chiffrage : la branche null de ce test ne garde plus rien");
 });
 
 test("playbook — chaque secteur de l'app tombe dans une verticale", () => {

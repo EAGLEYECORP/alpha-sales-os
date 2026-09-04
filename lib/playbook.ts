@@ -1,5 +1,6 @@
 import type { Prospect, Sector } from "./types";
 import { citer } from "./citation";
+import type { EagleyeOffer } from "./offer-match";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -45,6 +46,14 @@ export const DOCTRINE_TERRAIN: { rule: string; why: string }[] = [
   {
     rule: "Poser deux questions de diagnostic, puis SE TAIRE.",
     why: "Le silence fait le travail. C'est lui qui fait apparaître le problème dans la bouche du prospect.",
+  },
+  {
+    rule: "Compter ses AFFIRMATIONS et les réduire au minimum humainement possible. Tout le reste est question.",
+    why: "Un prospect ne croit presque rien de ce que TU dis, et presque tout de ce que LUI dit. Une affirmation offre une prise : elle se conteste. Une question n'en offre aucune — au pire il en refuse la prémisse. Ce n'est donc pas une question de politesse ni de rythme : chaque affirmation supprimée est une objection qui ne naîtra pas. [SOURCE EXTERNE — praticien, non vérifiée chez nous : A. Hormozi]",
+  },
+  {
+    rule: "Hors questions, il ne reste que trois choses permises : féliciter le prospect de la conclusion qu'il vient de tirer, répondre à une question logistique, ou servir UNE affirmation suivie d'une ANALOGIE.",
+    why: "Décrire ce qu'on fait se retourne systématiquement : soit ça sonne comme du travail qu'on fait pour lui — auquel cas il s'en fiche des détails, il veut juste que ce soit réglé — soit ça sonne comme du travail qu'il devra faire, et il n'en veut pas. L'analogie saute par-dessus : elle est plus courte à dire, plus facile à comprendre, et elle le laisse conclure lui-même. C'est pour ça qu'une liste de fonctionnalités convainc moins qu'une image. [SOURCE EXTERNE — praticien, non vérifiée chez nous : A. Hormozi]",
   },
   {
     rule: "Le miroir : montrer le client qui part chez le concurrent, pas le produit.",
@@ -93,6 +102,46 @@ export interface OpenerStep {
 export interface VerticalPlaybook {
   id: string;
   label: string;
+  /**
+   * D'où vient ce playbook.
+   *
+   * ⚠ L'en-tête de ce fichier promet « pas de la théorie : extrait des
+   * documents réels produits sur le terrain ». Ajouter une verticale écrite au
+   * bureau sans le dire transformerait cette promesse en mensonge, et la
+   * session suivante servirait un script inventé en croyant rejouer une
+   * méthode éprouvée. C'est exactement la distinction que `lib/references.ts`
+   * impose déjà aux sources extérieures : le niveau de preuve voyage avec le
+   * contenu, il ne se déduit pas.
+   *
+   * `"doctrine"` = écrit à partir des invariants, ZÉRO appel derrière. Lu par
+   * le ciblage LinkedIn, qui en fait un risque affiché.
+   *
+   * Absent = non déclaré. Les verticales historiques ne portent rien : je ne
+   * peux pas certifier a posteriori lesquelles ont vraiment été jouées au
+   * téléphone, et les marquer « terrain » en bloc serait inventer la preuve
+   * que ce champ existe pour protéger.
+   */
+  preuve?: "terrain" | "doctrine";
+  /**
+   * Quelle OFFRE cette verticale sert.
+   *
+   * ⚠ Ce champ existe parce qu'une hypothèse tacite vient de devenir fausse.
+   * `approcheEcrite` décidait d'enrichir le message avec l'observation de
+   * métier du playbook sur le seul test `offre === "alpha-voice"` — et c'était
+   * juste tant que les neuf verticales parlaient toutes du téléphone qui tombe
+   * dans le vide. Un test le vérifiait d'ailleurs explicitement.
+   *
+   * La maîtrise d'ouvrage casse ça : elle sert l'OS de vente, pas Alpha Voice.
+   * Laissée sans ce champ, son critère (« le rythme des réservations
+   * conditionne le lancement de l'opération ») aurait été servi comme
+   * observation dans un message d'audit téléphonique — soit exactement le
+   * défaut que `approcheEcrite` a déjà été écrit pour corriger une fois.
+   *
+   * Absent = `alpha-voice`, l'hypothèse historique. Elle n'est pas laissée à
+   * la confiance : un test refuse une verticale sans `offre` dont le critère
+   * ne parle pas du téléphone.
+   */
+  offre?: EagleyeOffer;
   /** Secteurs de l'app couverts par cette verticale. */
   sectors: Sector[];
   /** Le critère de ciblage — ce qui fait qu'on l'appelle LUI. */
@@ -106,8 +155,18 @@ export interface VerticalPlaybook {
   /** Ce qu'on ne dit pas à froid, en plus des interdits généraux. */
   forbidden: string[];
   objections: { q: string; a: string }[];
-  /** Paramètres de chiffrage de la fuite (ordre de grandeur, à valider). */
-  leak: { callsPerMonth: number; missRate: number; avgTicket: number; convertRate: number };
+  /**
+   * Paramètres de chiffrage de la fuite (ordre de grandeur, à valider).
+   *
+   * ⚠ OPTIONNEL, et ce n'est pas une commodité. Ces quatre nombres décrivent
+   * une fuite d'APPELS ENTRANTS : ils n'ont aucun sens pour une verticale qui
+   * ne perd pas d'appels. La première version de la maîtrise d'ouvrage les
+   * mettait à zéro « pour ne rien inventer » — et le prompt système annonçait
+   * alors à l'IA « ordre de grandeur de la fuite : ≈ 0 €/mois », c'est-à-dire
+   * un chiffre FAUX au lieu d'un blanc. Zéro donnée doit rendre zéro chiffre,
+   * pas le chiffre zéro : l'angle mort se dit, il ne se remplit pas.
+   */
+  leak?: { callsPerMonth: number; missRate: number; avgTicket: number; convertRate: number };
 }
 
 export const VERTICALS: VerticalPlaybook[] = [
@@ -150,6 +209,103 @@ export const VERTICALS: VerticalPlaybook[] = [
       { q: "Ça coûte combien ?", a: "Des frais d'installation, puis un abonnement dimensionné à votre volume d'appels. C'est exactement ce qu'on cale en 15 minutes — je préfère un chiffre juste qu'un chiffre au hasard." },
     ],
     leak: { callsPerMonth: 220, missRate: 0.25, avgTicket: 4500, convertRate: 0.08 },
+  },
+  {
+    /**
+     * ── MAÎTRISE D'OUVRAGE — la cible de l'offre VIP, et la seule verticale
+     * de ce fichier qui ne parle PAS d'appels manqués. ──
+     *
+     * Trois défauts mesurés avant d'écrire cette entrée, tous sur cette cible :
+     *  · « Permis de construire accordé — 48 logements » tombait sur la
+     *    verticale AUTO-ÉCOLE, par le mot « permis » ;
+     *  · « Promoteur immobilier » tombait sur « Immobilier — transaction &
+     *    gestion », donc on lui servait « ne plus perdre de mandats le
+     *    week-end » — un promoteur ne prend pas de mandat ;
+     *  · « Maître d'ouvrage » et « aménageur » ne tombaient nulle part : −30
+     *    au score de ciblage LinkedIn et message générique.
+     *
+     * ⚠ Et surtout : ce n'est pas le même PRODUIT. Toutes les verticales
+     * au-dessus vendent Alpha Voice — le téléphone qui tombe dans le vide.
+     * Ici on vend l'OS de vente à un maître d'ouvrage qui a des lots à écouler
+     * et un cycle de 12 à 24 mois. Servir « vous ratez des appels » à un
+     * directeur de programmes, c'est se disqualifier en une phrase, exactement
+     * comme pour les équipes terrain.
+     */
+    id: "maitrise-ouvrage",
+    label: "Maîtrise d'ouvrage — promotion & aménagement",
+    preuve: "doctrine",
+    offre: "alpha-sales-os",
+    sectors: [],
+    criterion:
+      "Les maîtres d'ouvrage qui construisent pour VENDRE — promoteurs, aménageurs, constructeurs. Chez eux, le rythme des réservations conditionne le lancement de l'opération.",
+    structuralPain:
+      "Un programme se commercialise sur douze à vingt-quatre mois, avec des centaines de contacts acquéreurs, une ou deux personnes dédiées et parfois plusieurs agences en co-exclusivité. Le suivi vit dans des tableurs qui ne se parlent pas : personne ne peut dire, un mardi matin, quels contacts intéressés n'ont pas été rappelés depuis trois semaines. Ce ne sont pas des appels manqués, ce sont des acquéreurs déjà chauds qu'on laisse refroidir.",
+    opener: [
+      {
+        label: "Barrage",
+        line: "Bonjour, je cherche la personne qui suit la commercialisation des programmes. C'est au sujet des contacts acquéreurs qui restent sans relance entre deux points hebdo.",
+        note: "On nomme SA perte, pas notre outil. Ne JAMAIS la rejouer au décideur.",
+      },
+      { label: "Permission", line: "Je vous appelle à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche. Ça marche ?" },
+      {
+        label: "Ciblage",
+        line: "Je n'appelle pas au hasard : je travaille avec les maîtres d'ouvrage qui ont un programme en cours de commercialisation. Vous en avez un en ce moment, c'est bien ça ?",
+        note: "L'observation en question, jamais en affirmation — même quand le permis est public.",
+      },
+      {
+        /**
+         * ⚠ Cette ligne énumérait trois capacités (« sa date, son niveau
+         * d'intérêt, sa prochaine relance ») — c'est-à-dire un descriptif de
+         * fonctionnalités, exactement ce que la règle de l'analogie interdit.
+         * Réécrite en UNE affirmation + UNE analogie prise dans SON métier.
+         */
+        label: "Bascule",
+        line: "On installe le système qui tient la liste des acquéreurs à votre place. C'est le même principe qu'un planning de chantier : on ne le regarde pas pour savoir ce qui est fait, on le regarde pour voir ce qui a pris du retard.",
+        note: "Une affirmation, une analogie, zéro fonctionnalité. Le détail se montre en visio.",
+      },
+      { label: "CTA", line: "Quinze minutes pour vous montrer sur votre programme en cours — plutôt fin de semaine ou début de la prochaine ?" },
+    ],
+    diagnostic: [
+      "Un acquéreur qui a visité il y a trois semaines et qui n'a pas été rappelé — comment vous le sauriez, aujourd'hui ?",
+      "Le suivi des contacts sur le programme, il vit où exactement ?",
+      "Entre vous et les agences qui commercialisent, qui a la liste à jour ?",
+    ],
+    mirror:
+      "Ce ne sont pas les acquéreurs que vous n'avez jamais rencontrés qui vous coûtent le plus cher. Ce sont ceux qui sont venus, qui étaient intéressés, et que personne n'a rappelés — ils achètent le programme d'en face, et vous ne saurez jamais que vous les aviez eus.",
+    forbidden: [
+      "« Vous ratez des appels » : faux ici, et ça prouve qu'on n'a pas compris le métier.",
+      "Citer son permis, son adresse ou son nombre de lots à froid : la donnée est publique, mais l'annoncer sonne fliqué. Elle sert à CHOISIR qui on appelle, pas à ouvrir l'appel.",
+      "Tout chiffre de taux de réservation : on ne connaît pas ses seuils bancaires, et se tromper devant lui coûte l'appel.",
+    ],
+    objections: [
+      {
+        q: "La commercialisation, c'est l'agence qui la fait.",
+        a: "Justement : c'est elle qui a la liste, et vous qui portez le risque de l'opération. La question n'est pas qui appelle, c'est qui voit l'état réel du fichier le matin. Aujourd'hui, vous le voyez quand ?",
+      },
+      {
+        q: "On a déjà un CRM / un tableur qui marche très bien.",
+        a: "S'il marche, on n'y touche pas. Ce que je regarde, c'est ce qui n'y est PAS : les intéressés sans prochaine date. Quinze minutes pour vous montrer où ils sont, et si le tableur les a déjà, vous m'aurez fait perdre mon temps et pas le vôtre.",
+      },
+      {
+        q: "On est en fin de programme, il reste trois lots.",
+        a: "Ce sont les trois plus longs à écouler, et les plus chers à porter. C'est exactement le moment où une relance oubliée se voit sur la trésorerie.",
+      },
+      { q: "Ça coûte combien ?", a: "Il y a une offre à 10 000 € et une formule au résultat. Laquelle est la bonne dépend de votre volume de programmes — c'est ce qu'on cale en quinze minutes, je préfère un chiffre juste qu'un chiffre au hasard." },
+    ],
+    /**
+     * ⚠ PAS DE BLOC `leak`, ET C'EST LE POINT.
+     *
+     * Le chiffrage de fuite du playbook compte des APPELS MANQUÉS. Un maître
+     * d'ouvrage n'en perd pas : ce qu'il perd, ce sont des acquéreurs déjà
+     * rencontrés que personne n'a rappelés. Le convertir en euros demanderait
+     * son prix moyen au lot et son taux de transformation — deux chiffres
+     * qu'on n'a pas, et qui varient d'un programme à l'autre.
+     *
+     * Alors on ne chiffre pas. C'est la règle « zéro donnée → zéro chiffre » :
+     * un montant inventé à partir d'hypothèses d'accueil téléphonique se
+     * ferait démonter au premier rendez-vous, et par quelqu'un dont c'est le
+     * métier de faire des plans de financement.
+     */
   },
   {
     id: "auto-ecole",
@@ -523,12 +679,20 @@ export function verticalForSector(sector: Sector): VerticalPlaybook | null {
   return VERTICALS.find((v) => v.sectors.includes(sector)) ?? null;
 }
 
-/** Chiffrage de la fuite d'un prospect — le calcul terrain, honnête. */
+/**
+ * Chiffrage de la fuite d'un prospect — le calcul terrain, honnête.
+ *
+ * Rend `null` quand la verticale n'a pas de fuite d'appels à chiffrer. Le
+ * `null` est le message : il oblige chaque appelant à décider quoi afficher
+ * en l'absence de chiffre, au lieu de laisser passer un « 0 € » qui se lit
+ * comme un résultat mesuré.
+ */
 export function estimateLeak(v: VerticalPlaybook): {
   missedPerMonth: number;
   monthly: number;
   basis: string;
-} {
+} | null {
+  if (!v.leak) return null;
   const missed = Math.round(v.leak.callsPerMonth * v.leak.missRate);
   const monthly = Math.round(missed * v.leak.avgTicket * v.leak.convertRate);
   return {
@@ -563,7 +727,12 @@ export function playbookPrompt(sector?: Sector, verticalId?: string): string {
       `- Miroir : ${v.mirror}`,
       `- Ne pas dire à froid : ${v.forbidden.join(" ; ")}`,
       `- Objections travaillées : ${v.objections.map((o) => `${citer(o.q)} → ${o.a}`).join(" | ")}`,
-      `- Ordre de grandeur de la fuite : ≈ ${leak.monthly.toLocaleString("fr-FR")} €/mois (${leak.basis}) — TOUJOURS présenté comme une estimation à valider.`
+      // ⚠ Sans fuite chiffrable, on ÉCRIT l'angle mort au lieu de le combler :
+      // une IA à qui on ne dit rien invente un montant, une IA à qui on dit
+      // « ce chiffre n'existe pas » pose la question au prospect.
+      leak
+        ? `- Ordre de grandeur de la fuite : ≈ ${leak.monthly.toLocaleString("fr-FR")} €/mois (${leak.basis}) — TOUJOURS présenté comme une estimation à valider.`
+        : "- Aucun chiffrage de fuite pour cette verticale : elle ne perd pas d'appels entrants. NE JAMAIS avancer de montant — le faire dire au prospect par une question."
     );
   }
   return lines.join("\n");
@@ -583,11 +752,33 @@ export function playbookPrompt(sector?: Sector, verticalId?: string): string {
 const VERTICAL_KEYWORDS: { id: string; re: RegExp }[] = [
   { id: "centre-appels", re: /centre d'?appel|call ?center|plateau|téléopé|teleope|relation client|hotline|téléconseill|teleconseill/ },
   { id: "equipe-terrain", re: /porte-?à-?porte|porte-?a-?porte|force de vente|équipe commerciale|equipe commerciale|commerciaux|poseur|photovolta|isolation|pompe à chaleur|pompe a chaleur/ },
+  /**
+   * ⚠ AVANT `immobilier`, ET C'EST TOUT L'INTÉRÊT.
+   *
+   * `.find()` rend la PREMIÈRE règle qui matche. Placée après, cette verticale
+   * ne serait jamais atteinte : « promoteur immobilier » et « directeur de
+   * programmes immobiliers » contiennent tous les deux « immobil » et
+   * tombaient donc sur le playbook transaction & gestion — celui qui parle de
+   * mandats perdus le week-end, à quelqu'un qui ne prend pas de mandats.
+   * Mesuré avant d'écrire cette ligne, pas supposé.
+   */
+  {
+    id: "maitrise-ouvrage",
+    re: /ma[îi]tr(e|ise) d'?ouvrage|\bmoa\b|promot(eur|ion) immobili|\bsccv\b|\bvefa\b|am[ée]nageur|programme immobilier|(directeur|responsable|charg[ée]) de programme|permis de construire/,
+  },
   // ⚠ « agence » seul a été retiré : il attrapait les agences web, d'intérim
   // et de voyage, et les classait en immobilier. « agence immobilière » passe
   // toujours, par « immobil ».
   { id: "immobilier", re: /immobil|mandat|syndic|régie|regie/ },
-  { id: "auto-ecole", re: /auto-?école|auto-?ecole|permis|conduite|moniteur/ },
+  /**
+   * ⚠ `permis` était NU, et attrapait « permis de construire » : un export de
+   * permis entier se classait en auto-école. La négation vaut mieux que le
+   * retrait pur et simple — « il passe son permis », « école de permis »
+   * restent des auto-écoles, et les trois autorisations d'urbanisme sont
+   * nommées pour que la prochaine (« permis d'aménager ») ne se rajoute pas
+   * en silence.
+   */
+  { id: "auto-ecole", re: /auto-?école|auto-?ecole|permis(?! d[e'] ?(construire|am[ée]nager|d[ée]molir))|conduite|moniteur/ },
   { id: "garage-carrosserie", re: /garage|carross|mécanic|mecanic|peinture auto/ },
   // « couvreu » ne suffisait pas : une entreprise de toiture s'appelle
   // « Couverture Roux », pas « Roux couvreur ». Idem pour la charpente, le

@@ -7,6 +7,7 @@ import { emailSubject, emailBody } from "../lib/mail-compose";
 import { messageText } from "../lib/linkedin-sequence";
 import { pickMagnet, LEAD_MAGNETS } from "../lib/lead-magnet";
 import { deepDive } from "../lib/deep-dive";
+import { VERTICALS } from "../lib/playbook";
 import type { Prospect } from "../lib/types";
 
 /**
@@ -222,23 +223,43 @@ test("⚠ un message hors-Alpha Voice ne reparle pas du téléphone", () => {
   }
 });
 
-test("le playbook parle bien de téléphone partout — c'est ce qui justifie la règle", () => {
+test("une verticale SANS offre déclarée doit parler de téléphone — c'est le défaut", () => {
   /**
-   * La règle « la verticale n'enrichit que Alpha Voice » repose sur un FAIT
-   * vérifiable, pas sur un avis : les critères du playbook sont tous écrits
-   * autour du téléphone. Le jour où quelqu'un en ajoute un qui ne l'est pas,
-   * ce test échoue et la règle se rediscute — au lieu de rester appliquée
-   * pour une raison devenue fausse.
+   * ⚠ CE TEST GARDAIT UNE RÈGLE QUI A CHANGÉ, ET IL A FAIT SON TRAVAIL.
+   *
+   * Il vérifiait que TOUS les critères du playbook parlent du téléphone, parce
+   * que `approcheEcrite` en déduisait « la verticale n'enrichit que Alpha
+   * Voice ». La verticale maîtrise d'ouvrage l'a fait tomber : elle sert l'OS
+   * de vente, et son critère parle de réservations, pas de standard.
+   *
+   * La règle a donc été remplacée par la vraie question — la verticale et
+   * l'aimant servent-ils la même offre ? — et ce test garde maintenant le
+   * DÉFAUT de cette question : `offre` absente veut dire `alpha-voice`. Une
+   * verticale qui ne déclare rien et ne parle pas du téléphone hériterait
+   * silencieusement du mauvais angle.
+   *
+   * ⚠ Il lit `VERTICALS` et non plus le texte du fichier : il faut apparier
+   * chaque critère avec l'offre de SA verticale, ce qu'une expression
+   * régulière sur la source ne sait pas faire sans se tromper.
    */
-  const src = readFileSync(join(process.cwd(), "lib/playbook.ts"), "utf8");
-  const criteres = [...src.matchAll(/criterion:\s*\n?\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(criteres.length >= 8, `lecture du playbook cassée : ${criteres.length} critères`);
-  const horsSujet = criteres.filter((c) => !/téléphone|décroch|standard|sonne|appel/i.test(c));
+  assert.ok(VERTICALS.length >= 8, `lecture du playbook cassée : ${VERTICALS.length} verticales`);
+
+  const horsSujet = VERTICALS.filter(
+    (v) => !v.offre && !/téléphone|décroch|standard|sonne|appel/i.test(v.criterion)
+  ).map((v) => `${v.id} — ${v.criterion}`);
+
   assert.deepEqual(
     horsSujet,
     [],
-    "ces critères ne parlent plus du téléphone — la règle « la verticale n'enrichit que Alpha Voice » " +
-      "doit être rediscutée :\n  " + horsSujet.join("\n  ")
+    "ces verticales ne déclarent aucune offre et ne parlent pas du téléphone : elles vont hériter " +
+      "d'alpha-voice par défaut, donc du mauvais angle. Déclarer `offre` :\n  " + horsSujet.join("\n  ")
+  );
+
+  // Et le pendant : celle qui déclare une autre offre doit vraiment exister,
+  // sinon le test ci-dessus ne garde plus rien (il passerait sur zéro cas).
+  assert.ok(
+    VERTICALS.some((v) => v.offre && v.offre !== "alpha-voice"),
+    "aucune verticale ne sert une autre offre : la règle des offres n'est plus exercée par ce test"
   );
 });
 

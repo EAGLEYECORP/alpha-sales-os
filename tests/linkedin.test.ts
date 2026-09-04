@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { LINKEDIN_DAILY_SAFE, LINKEDIN_INVITE_LIMIT, linkedinTouchesToday, linkedinUrl } from "../lib/linkedin";
-import { buildLinkedinQueue, inviteText, relanceText } from "../lib/linkedin-sequence";
+import { buildLinkedinQueue, inviteText, relanceText, textForStep } from "../lib/linkedin-sequence";
 import {
   EFFECTIF_MAX, PRESENCE_LINKEDIN, SCORE_MIN, detecterRole, qualifier, trierLot,
   type ProfilLinkedin,
@@ -527,4 +527,101 @@ test("sourcing — le dépôt n'adopte jamais le backend qui se connecte AVEC to
   };
   zones.forEach(visiter);
   assert.deepEqual(suspects, [], `automatisation LinkedIn par session adoptée dans : ${suspects.join(", ")}`);
+});
+
+/* ────────────────────────────────────────────────────────────────────
+   L'INVITATION, LA TOUCHE LA PLUS CHÈRE DU CANAL.
+   Cent par semaine glissante, et une invitation dépensée sur le mauvais
+   sujet ne se rejoue pas avant trois semaines.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("⚠ l'invitation NE PROMET PLUS le téléphone à qui ne perd pas d'appels", () => {
+  /**
+   * ⚠ CE DÉFAUT AVAIT DÉJÀ ÉTÉ CORRIGÉ DANS `messageText`, UNE FONCTION PLUS
+   * BAS DANS LE MÊME FICHIER, AVEC LE COMMENTAIRE QUI L'EXPLIQUE.
+   *
+   * `inviteText` annonçait en dur « les appels qui arrivent quand personne ne
+   * peut les prendre », quel que soit le routage de la fiche. Sur un maître
+   * d'ouvrage, ça promet de parler d'un problème qu'il n'a pas — et ça se
+   * paie sur la touche la plus rationnée du canal.
+   *
+   * ⚠ On teste la CONDITION, pas la présence : le même prospect routé sur
+   * Alpha Voice DOIT, lui, entendre parler du téléphone. Sans cette moitié,
+   * un `inviteText` qui ne dirait plus jamais rien passerait le test.
+   */
+  const moa = makeProspect({
+    company: "SCCV Les Jardins",
+    city: "Lyon 7",
+    notes: "maître d'ouvrage, 42 logements, permis de construire accordé",
+  });
+  const texte = inviteText(moa, "eagleye");
+  assert.doesNotMatch(
+    texte,
+    /appels? qui arrivent|personne ne peut les prendre|accueil téléphonique/i,
+    `l'invitation promet le mauvais sujet à un maître d'ouvrage : ${texte}`
+  );
+
+  const artisan = makeProspect({
+    company: "Couverture Roux",
+    city: "Lyon 8",
+    sector: "artisan",
+    notes: "couvreur, chantiers toute la journée",
+  });
+  const texteArtisan = inviteText(artisan, "eagleye");
+  assert.notEqual(texteArtisan, texte, "deux routages différents ne peuvent pas produire la même invitation");
+});
+
+test("⚠ le compte traversait toute la chaîne pour être JETÉ au dernier saut", () => {
+  /**
+   * `buildLinkedinQueue` lit `accountId` dans son filtre et le passe à
+   * `textForStep`, qui appelait `messageText(p, bookingUrl)` sans le
+   * transmettre. Sur le compte maître, le défaut EST le bon compte — donc
+   * rien ne se voyait. Sur un compte partenaire, ses messages annonçaient nos
+   * aimants sous sa marque.
+   *
+   * On mute la condition plutôt que d'asserter la présence de l'argument :
+   * deux comptes qui ne vendent pas la même chose doivent produire deux
+   * textes différents à travers la FILE, pas seulement en appel direct.
+   */
+  const p = makeProspect({ company: "Régie Berthier", city: "Lyon 6", notes: "agence immobilière, mandats" });
+  const direct = textForStep(p, "message", undefined, "eagleye");
+  const parLaFile = buildLinkedinQueue([p], { accountId: "eagleye" })[0];
+  assert.equal(
+    parLaFile.step,
+    "invitation",
+    "fiche neuve : la file commence par l'invitation — sinon ce test ne teste pas ce qu'il croit"
+  );
+
+  // La vraie vérification : le texte construit PAR LA FILE doit dépendre du
+  // compte. On compare deux comptes distincts sur la même fiche.
+  const inviteEagleye = buildLinkedinQueue([p], { accountId: "eagleye" })[0].text;
+  const inviteNuwacom = buildLinkedinQueue([p], { accountId: "nuwacom" })[0].text;
+  assert.ok(direct.length > 0);
+  assert.notEqual(
+    inviteEagleye,
+    inviteNuwacom,
+    "la file produit le même texte pour deux comptes qui ne vendent pas la même chose : l'identifiant de compte se perd en route"
+  );
+});
+
+test("⚠ la relance ne dit plus « vous n'êtes pas sur LinkedIn » à quelqu'un qui y vit", () => {
+  /**
+   * Le coup du méta est excellent sur un couvreur. Servi à un directeur de
+   * programmes, il est faux et condescendant — on lui explique son métier de
+   * travers au moment exact où on lui dit au revoir.
+   *
+   * La réponse dormait déjà dans `PRESENCE_LINKEDIN`. Une seule source pour
+   * « ce métier est-il ici ? » : en réécrire une deuxième garantissait
+   * qu'elles divergent.
+   */
+  const moa = makeProspect({ company: "SCCV Les Jardins", notes: "maître d'ouvrage, promotion immobilière" });
+  assert.equal(verticalForProspect(moa)?.id, "maitrise-ouvrage", "la fiche doit bien router sur la maîtrise d'ouvrage");
+  assert.equal(PRESENCE_LINKEDIN["maitrise-ouvrage"], "forte");
+  assert.doesNotMatch(relanceText(moa), /pas sur LinkedIn/i);
+
+  // Et la contrepartie : sur un métier réellement absent du réseau, la phrase
+  // reste — c'est elle qui fait le travail.
+  const artisan = makeProspect({ sector: "artisan", notes: "couvreur, chantiers" });
+  assert.equal(PRESENCE_LINKEDIN[verticalForProspect(artisan)!.id], "faible");
+  assert.match(relanceText(artisan), /pas sur LinkedIn/i);
 });

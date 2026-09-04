@@ -123,6 +123,15 @@ export const EFFECTIF_MAX = 250;
  */
 export const PRESENCE_LINKEDIN: Record<string, "forte" | "moyenne" | "faible"> = {
   immobilier: "forte",
+  /**
+   * La seule verticale du playbook dont la présence LinkedIn n'est pas une
+   * concession mais la raison d'être : un directeur de programmes, un
+   * responsable de commercialisation ou un dirigeant de société de promotion
+   * vit sur ce réseau — c'est là qu'il recrute, qu'il annonce ses lancements
+   * et qu'il suit ses confrères. C'est exactement le profil que le paragraphe
+   * ci-dessus décrivait sans pouvoir le nommer.
+   */
+  "maitrise-ouvrage": "forte",
   "sante-cabinet": "moyenne",
   "auto-ecole": "faible",
   "garage-carrosserie": "faible",
@@ -217,6 +226,18 @@ export function qualifier(profil: ProfilLinkedin): Ciblage {
     if (PRESENCE_LINKEDIN[verticale.id] === "faible") {
       risques.push(
         `${verticale.label} : métier peu présent sur LinkedIn — le canal téléphone ou terrain porte mieux`
+      );
+    }
+    /**
+     * ⚠ Le niveau de preuve du playbook remonte JUSQU'ICI, sinon il ne sert à
+     * rien : un champ que personne ne lit est mort, pas « documenté ». Une
+     * verticale écrite au bureau produit un score identique à une verticale
+     * jouée cent fois au téléphone — la seule différence honnête, c'est de
+     * dire laquelle des deux on est en train d'utiliser.
+     */
+    if (verticale.preuve === "doctrine") {
+      risques.push(
+        `${verticale.label} : playbook écrit à partir de la doctrine, zéro appel derrière — le script est une hypothèse, pas une méthode éprouvée`
       );
     }
   } else {

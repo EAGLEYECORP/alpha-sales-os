@@ -56,8 +56,25 @@ test("verticales — chacune reste dicible et chiffrable", () => {
     assert.ok(v.mirror.length > 40, `${v.id} : le miroir doit être une phrase, pas un slogan`);
 
     const leak = estimateLeak(v);
-    assert.ok(leak.monthly > 0, `${v.id} : la fuite doit être chiffrable`);
-    assert.ok(leak.basis.includes("×"), `${v.id} : le calcul doit être montrable, jamais un chiffre nu`);
+    if (leak) {
+      assert.ok(leak.monthly > 0, `${v.id} : la fuite doit être chiffrable`);
+      assert.ok(leak.basis.includes("×"), `${v.id} : le calcul doit être montrable, jamais un chiffre nu`);
+    } else {
+      /**
+       * Une verticale sans fuite chiffrable reste dicible : elle doit
+       * simplement remplacer le montant par l'interdiction d'en avancer un.
+       * Sans cette branche, le prompt pourrait se taire complètement et l'IA
+       * inventerait le chiffre manquant — c'est le comportement par défaut
+       * d'un modèle à qui on ne dit rien.
+       */
+      const prompt = playbookPrompt(undefined, v.id);
+      assert.match(
+        prompt,
+        /NE JAMAIS avancer de montant/,
+        `${v.id} : sans chiffrage, le prompt doit INTERDIRE le montant, pas l'omettre`
+      );
+      assert.doesNotMatch(prompt, /Ordre de grandeur de la fuite/, `${v.id} : aucun ordre de grandeur ne doit être annoncé`);
+    }
   }
 });
 

@@ -185,6 +185,19 @@ export function DeepdiveTools({ p, patch }: { p: Prospect; patch: (id: string, p
       setMsg("Aucune verticale rattachée à cette fiche.");
       return;
     }
+    /**
+     * ⚠ Une verticale sans chiffrage de fuite ne pré-remplit rien, et on le
+     * DIT. Les repères du playbook comptent des appels manqués ; sur la
+     * maîtrise d'ouvrage, qui n'en perd pas, les appliquer inscrirait un
+     * ticket moyen inventé sur la fiche — puis une Taxe d'Ignorance calculée
+     * dessus, qui a l'air d'une mesure.
+     */
+    if (!v.leak) {
+      setMsg(
+        `${v.label} : pas de repère de fuite d'appels pour cette verticale. Les chiffres se prennent au rendez-vous, ils ne se pré-remplissent pas.`
+      );
+      return;
+    }
     const d = p.deepAudit;
     const deepAudit: Prospect["deepAudit"] = {
       ...d,

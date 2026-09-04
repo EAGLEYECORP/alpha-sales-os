@@ -1,0 +1,276 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  LOGEMENTS_MIN,
+  SCORE_MIN_PERMIS,
+  VALIDITE_MOIS,
+  importerPermis,
+  lirePermis,
+  peremptionMois,
+  phaseDuPermis,
+  ressembleAuPermis,
+  trierPermis,
+  typeDeMaitreOuvrage,
+  type PermisConstruire,
+} from "../lib/permis-construire";
+import { verticalForText } from "../lib/playbook";
+import { qualifier } from "../lib/linkedin-ciblage";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'AVATAR « MAÎTRE D'OUVRAGE AVEC PERMIS ACTIF », DE BOUT EN BOUT.
+ *
+ * Le fil que suit ce fichier est celui d'un vrai lot : un export d'open data
+ * arrive, la plupart des lignes ne valent rien, quelques-unes valent un
+ * message écrit à la main. Ce qui compte n'est pas que le score soit joli —
+ * c'est que ce qu'on ÉCARTE soit écarté pour la bonne raison, et que la
+ * verticale servie derrière soit la bonne.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+const MAINTENANT = new Date("2026-09-04T10:00:00Z");
+/** Un arrêté vieux de `n` mois par rapport à MAINTENANT. */
+const ilYA = (mois: number) => {
+  const d = new Date(MAINTENANT);
+  d.setMonth(d.getMonth() - mois);
+  return d.toISOString().slice(0, 10);
+};
+
+const promoteur = (over: Partial<PermisConstruire> = {}): PermisConstruire => ({
+  numero: "PC 069 383 25 A0123",
+  demandeur: "SCCV LES JARDINS DE GERLAND",
+  dateDecision: ilYA(5),
+  logements: 42,
+  commune: "Lyon 7e",
+  ...over,
+});
+
+// ── LA QUESTION QUI COMMANDE TOUT : a-t-il quelque chose à vendre ? ──
+
+test("permis — le tri sépare ceux qui vendent de ceux qui n'ont rien à vendre", () => {
+  assert.equal(typeDeMaitreOuvrage("SCCV LES JARDINS DE GERLAND"), "promoteur");
+  assert.equal(typeDeMaitreOuvrage("NEXITY PROMOTION IMMOBILIERE"), "promoteur");
+  assert.equal(typeDeMaitreOuvrage("MAISONS D'EN FRANCE RHONE"), "constructeur-maisons");
+  assert.equal(typeDeMaitreOuvrage("OPAC DU RHONE"), "bailleur-social");
+  assert.equal(typeDeMaitreOuvrage("VILLE DE LYON"), "public");
+  assert.equal(typeDeMaitreOuvrage("M. et Mme DUPONT"), "particulier");
+  assert.equal(typeDeMaitreOuvrage("BOULANGERIE MARTIN SARL"), "entreprise");
+  assert.equal(typeDeMaitreOuvrage(""), "inconnu");
+});
+
+test("⚠ un bailleur social, une commune et un particulier sortent par EXCLUSION, pas par score", () => {
+  /**
+   * C'est le cœur du module. Un bailleur social de 80 logements coche TOUT le
+   * reste : phase parfaite, grosse opération, commune renseignée. S'il sortait
+   * par le score, il rentrerait — et on écrirait à un office HLM pour lui
+   * vendre un OS de vente.
+   *
+   * ⚠ Le piège de test du dépôt : asserter que le refus EST LÀ au lieu
+   * d'asserter la CONDITION qui y mène. On vérifie donc qu'un permis
+   * IDENTIQUE, au seul demandeur près, passe — sinon le refus pourrait venir
+   * de n'importe quoi d'autre.
+   */
+  const base = { dateDecision: ilYA(5), logements: 80, commune: "Villeurbanne" };
+
+  const bailleur = lirePermis({ ...base, demandeur: "OPAC DU RHONE" }, MAINTENANT);
+  assert.equal(bailleur.retenu, false);
+  assert.equal(bailleur.problemeDeVente, false);
+  assert.ok(
+    bailleur.score >= SCORE_MIN_PERMIS,
+    `le score seul suffirait à le retenir (${bailleur.score}) : c'est bien l'exclusion qui l'écarte, pas le barème`
+  );
+
+  const memeChoseMaisPromoteur = lirePermis({ ...base, demandeur: "SCCV DU PARC" }, MAINTENANT);
+  assert.equal(memeChoseMaisPromoteur.retenu, true, "à demandeur près, la même ligne doit passer");
+});
+
+test("une société sans marqueur de promotion passe, mais avec le doute ÉCRIT", () => {
+  /**
+   * Une SAS qui dépose un permis pour 30 logements est un promoteur qui ne
+   * s'est pas nommé comme tel. Répondre non par prudence supprimerait la
+   * moitié des vraies cibles ; répondre oui en silence ferait écrire à
+   * n'importe qui. On répond oui ET on nomme le doute.
+   */
+  const l = lirePermis(promoteur({ demandeur: "ALPHA INVEST SAS" }), MAINTENANT);
+  assert.equal(l.typeMoa, "entreprise");
+  assert.equal(l.retenu, true);
+  assert.ok(
+    l.manque.some((m) => /vérifier qu'elle construit bien pour vendre/i.test(m)),
+    "le doute doit être écrit sur la fiche, pas gardé pour soi"
+  );
+});
+
+// ── LA PHASE : le permis dit OÙ EN EST l'affaire ──
+
+test("phases — l'arrêté, le recours, le chantier et l'achèvement se distinguent", () => {
+  assert.equal(phaseDuPermis({ dateDecision: ilYA(1) }, MAINTENANT), "recours");
+  assert.equal(phaseDuPermis({ dateDecision: ilYA(5) }, MAINTENANT), "commercialisation");
+  assert.equal(phaseDuPermis({ dateDecision: ilYA(20) }, MAINTENANT), "lancement-bloque");
+  assert.equal(phaseDuPermis({ dateDecision: ilYA(40) }, MAINTENANT), "perime");
+  assert.equal(phaseDuPermis({}, MAINTENANT), "inconnue");
+
+  // Le chantier ouvert prime sur la péremption : les trois ans ne courent plus
+  // une fois les travaux commencés.
+  assert.equal(
+    phaseDuPermis({ dateDecision: ilYA(40), dateOuvertureChantier: ilYA(30) }, MAINTENANT),
+    "chantier",
+    "un permis de plus de trois ans dont le chantier est ouvert n'est PAS périmé"
+  );
+  // Et l'achèvement prime sur tout, y compris sur un chantier encore déclaré.
+  assert.equal(
+    phaseDuPermis({ dateDecision: ilYA(30), dateOuvertureChantier: ilYA(20), dateAchevement: ilYA(1) }, MAINTENANT),
+    "acheve"
+  );
+});
+
+test("la prorogation décale la péremption, et se plafonne à deux", () => {
+  assert.equal(peremptionMois(0), VALIDITE_MOIS);
+  assert.equal(peremptionMois(1), VALIDITE_MOIS + 12);
+  assert.equal(peremptionMois(2), VALIDITE_MOIS + 24);
+  // Le code de l'urbanisme n'en accorde que deux : une donnée fausse en entrée
+  // ne doit pas rallonger la validité indéfiniment.
+  assert.equal(peremptionMois(9), VALIDITE_MOIS + 24, "au-delà de deux prorogations, on plafonne");
+
+  const sans = lirePermis(promoteur({ dateDecision: ilYA(40) }), MAINTENANT);
+  assert.equal(sans.phase, "perime");
+  const avec = lirePermis(promoteur({ dateDecision: ilYA(40), prorogations: 1 }), MAINTENANT);
+  assert.notEqual(avec.phase, "perime", "une prorogation doit ressusciter le permis");
+});
+
+test("le permis d'un an sans chantier est le signal le plus fort ET le plus ambigu", () => {
+  const l = lirePermis(promoteur({ dateDecision: ilYA(20) }), MAINTENANT);
+  assert.equal(l.phase, "lancement-bloque");
+  assert.equal(l.retenu, true);
+  assert.ok(
+    l.risques.some((r) => /abandonn/i.test(r)),
+    "l'ambiguïté doit être écrite : sans elle, on écrit à une opération morte en croyant tenir un signal"
+  );
+});
+
+// ── LA TAILLE : l'offre VIP doit être proportionnée ──
+
+test("une opération minuscule n'est pas exclue, elle est dite disproportionnée", () => {
+  const petit = lirePermis(promoteur({ logements: LOGEMENTS_MIN - 3 }), MAINTENANT);
+  assert.ok(
+    petit.risques.some((r) => new RegExp(`sous ${LOGEMENTS_MIN}`).test(r)),
+    "la disproportion doit être nommée"
+  );
+  const grand = lirePermis(promoteur({ logements: 60 }), MAINTENANT);
+  assert.ok(grand.score > petit.score, "la taille doit peser dans l'ordre de la file");
+});
+
+// ── LE LOT, ET CE QU'IL VAUT ──
+
+test("le résumé d'un lot dit ce qu'on a jeté et pourquoi — pas seulement ce qu'on garde", () => {
+  const lot = trierPermis(
+    [
+      promoteur(),
+      promoteur({ numero: "PC-2", demandeur: "GRAND LYON HABITAT", logements: 60 }),
+      promoteur({ numero: "PC-3", demandeur: "M. et Mme BERNARD", logements: 1 }),
+      promoteur({ numero: "PC-4", demandeur: "VILLE DE LYON", logements: 0 }),
+    ],
+    MAINTENANT
+  );
+  assert.equal(lot.retenus.length, 1);
+  assert.ok(
+    lot.resume.some((r) => /n'a rien à vendre/i.test(r) && /3 écarté/.test(r)),
+    `le résumé doit compter les maîtres d'ouvrage sans problème de vente : ${lot.resume.join(" | ")}`
+  );
+});
+
+test("import — un export tabulaire devient des fiches contactables sur LinkedIn", () => {
+  const texte = [
+    "numero;demandeur;datedecision;nblogements;commune;adresse",
+    `PC 069 383 25 A0123;SCCV LES JARDINS DE GERLAND;${ilYA(5)};42;Lyon 7e;12 rue Pré-Gaudry`,
+    `PC 069 266 25 A0044;OPAC DU RHONE;${ilYA(4)};60;Villeurbanne;3 avenue Roosevelt`,
+  ].join("\n");
+
+  const res = importerPermis(texte, MAINTENANT);
+  assert.equal(res.retenus.length, 1);
+  const p = res.retenus[0].prospect;
+  assert.equal(p.stage, "prospect", "une ligne d'open data n'a rien demandé");
+  assert.equal(
+    p.preferredChannel,
+    "linkedin",
+    "un export de permis ne porte aucun téléphone : router ces fiches vers la file d'appels les y ferait pourrir"
+  );
+  assert.ok(!p.phone, "aucun numéro ne doit être inventé");
+  assert.ok(p.tags.includes("maitrise-ouvrage"), "le tag porte la verticale, c'est lui qui route les leçons terrain");
+  assert.match(p.notes, /Arrêté :/, "la note garde les faits datés");
+  assert.doesNotMatch(
+    p.notes,
+    /pré-commercialisation est la fenêtre/i,
+    "la note ne recopie pas la doctrine : mille fiches, mille copies du même paragraphe"
+  );
+});
+
+test("détection de format — deux marqueurs, jamais un seul", () => {
+  assert.equal(ressembleAuPermis("numero;demandeur;datedecision;nblogements"), true);
+  // « commune » et « adresse » se trouvent dans n'importe quel export
+  // d'entreprises : router un relevé terrain vers le tri permis écarterait
+  // toutes les fiches, c'est-à-dire l'inverse du service rendu.
+  assert.equal(ressembleAuPermis("entreprise;commune;adresse;telephone"), false);
+  assert.equal(ressembleAuPermis('{"places":[]}'), false);
+  assert.equal(ressembleAuPermis(""), false);
+});
+
+// ── LE RACCORDEMENT AU RESTE DE L'OS ──
+
+test("⚠ « permis de construire » ne tombe PLUS sur la verticale auto-école", () => {
+  /**
+   * Mesuré avant correction, pas supposé : `VERTICAL_KEYWORDS` testait
+   * `permis` nu, et `.find()` rend la première règle qui matche. Un export de
+   * permis entier se classait donc en auto-école — avec le script du plateau
+   * et des leçons de conduite servi à un promoteur.
+   */
+  assert.equal(verticalForText("Permis de construire accordé - 48 logements")?.id, "maitrise-ouvrage");
+  assert.equal(verticalForText("Promoteur immobilier, permis actif Lyon 3e")?.id, "maitrise-ouvrage");
+  assert.equal(verticalForText("Maître d'ouvrage - opération de 30 logements")?.id, "maitrise-ouvrage");
+  assert.equal(verticalForText("Directeur de programmes immobiliers")?.id, "maitrise-ouvrage");
+  assert.equal(verticalForText("SCCV Les Jardins")?.id, "maitrise-ouvrage");
+
+  // Et la contrepartie : l'auto-école n'a pas été cassée en corrigeant.
+  assert.equal(verticalForText("auto-école, permis B, conduite accompagnée")?.id, "auto-ecole");
+  assert.equal(verticalForText("il passe son permis en janvier")?.id, "auto-ecole");
+  // L'agence de transaction reste chez elle.
+  assert.equal(verticalForText("agence immobilière, mandats de vente")?.id, "immobilier");
+});
+
+test("un directeur de programmes est retenu par le ciblage LinkedIn, avec le doute sur le playbook", () => {
+  const c = qualifier({
+    nom: "Claire Berthier",
+    titre: "Directrice de programmes immobiliers",
+    entreprise: "SCCV Les Jardins",
+    ville: "Lyon 7e",
+    url: "linkedin.com/in/claire",
+    taille: "11-50",
+  });
+  assert.equal(c.retenu, true);
+  assert.equal(c.verticaleId, "maitrise-ouvrage");
+  /**
+   * Le niveau de preuve doit REMONTER jusqu'ici : sinon le champ `preuve` du
+   * playbook est un commentaire déguisé en donnée. Une verticale écrite au
+   * bureau ne doit pas ressembler à une méthode jouée cent fois.
+   */
+  assert.ok(
+    c.risques.some((r) => /zéro appel derrière|hypothèse/i.test(r)),
+    `le playbook non éprouvé doit être signalé : ${c.risques.join(" | ")}`
+  );
+});
+
+test("⚠ le module est BRANCHÉ : un export lib que rien n'importe est mort, pas prêt", () => {
+  /**
+   * Le défaut le plus fréquent de ce dépôt : un mécanisme juste, testé, et
+   * branché nulle part. Ce test ne vérifie pas que le code est beau — il
+   * vérifie qu'un écran l'appelle réellement.
+   */
+  const panneau = readFileSync(join(process.cwd(), "components/linkedin/sourcing-panel.tsx"), "utf8");
+  assert.match(panneau, /importerPermis/, "le panneau de sourcing doit appeler l'import des permis");
+  assert.match(
+    panneau,
+    /estPermis \? importerPermis\(texte\)/,
+    "la détection doit ROUTER l'import, pas seulement exister à côté de lui"
+  );
+});
