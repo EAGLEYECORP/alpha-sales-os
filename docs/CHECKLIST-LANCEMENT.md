@@ -112,6 +112,46 @@ le SQL Editor annonce quand même « Success ». Passe les migrations.
 
 ---
 
+## BLOC 3 bis — OUVRIR LES INSCRIPTIONS (avant tout post public)
+
+Le socle est gratuit et l'inscription est libre. Mais **tant que ce bloc n'est
+pas fait, un inconnu qui s'inscrit ne reçoit RIEN** — le service d'email intégré
+de Supabase est plafonné à **2 messages/heure** et ne délivre **qu'aux adresses
+membres du projet**. Ce n'est pas un mail en retard : c'est aucun mail, et rien
+ne le signale ni de son côté ni du nôtre.
+
+Un lancement ne se fait qu'une fois. Vingt inscrits qui ne peuvent pas
+confirmer, ce sont vingt contacts brûlés et un post qu'on ne rejoue pas.
+
+- [ ] Supabase → **Authentication → Providers → Email** : « Confirm email »
+      **activé**. Sans ça, n'importe quelle adresse ouvre un compte.
+- [ ] Supabase → **URL Configuration → Site URL** = l'URL de production. C'est
+      le repli quand aucune redirection n'est fournie ou autorisée.
+- [ ] Supabase → **URL Configuration → Redirect URLs** : ajouter
+      `https://alphasalesos.eagleyecorp.fr/**`. ⚠ **Une URL absente de cette
+      liste est IGNORÉE** et Supabase retombe sur la Site URL — le lien de
+      confirmation part alors vers `localhost`, et l'inscrit clique dans le
+      vide sans aucun moyen de comprendre.
+- [ ] Supabase → **SMTP Settings** : poser NOTRE SMTP (les mêmes `SMTP_*` que
+      `/api/send`). ⚠ Utiliser une adresse **distincte** de celle des campagnes
+      (`compte@` plutôt que `contact@`) : sinon une campagne mal ciblée fait
+      tomber les mails de confirmation avec elle.
+- [ ] **Redéployer SANS cache.** Les `NEXT_PUBLIC_*` sont figées au moment du
+      build : les poser ne suffit pas, il faut reconstruire.
+- [ ] **LE TEST QUI FAIT FOI** : s'inscrire avec une adresse jetable, en
+      navigation privée, sur l'URL de production, et aller jusqu'à voir
+      `/demarrage`. Tant que ce test n'est pas passé, le reste est une
+      hypothèse. Détail complet : [`INSCRIPTION.md`](./INSCRIPTION.md).
+
+### Où envoyer le trafic
+
+- [ ] **`https://alphasalesos.eagleyecorp.fr/vitrine`** — et pas la racine.
+      ⚠ La racine `/` est l'APPLICATION : elle est dans `CHEMINS_COMMUNS`, le
+      middleware la laisse passer, et `AuthGate` la referme côté navigateur. Un
+      visiteur qui arrive par le domaine nu tombe donc sur **une boîte de
+      connexion**, sans une ligne expliquant ce qu'est le produit. `/vitrine`
+      porte la carte d'essai dans son premier écran et mène à l'inscription.
+
 ## BLOC 4 — La première vente
 
 Rien de technique ici, et c'est le bloc qui compte.
@@ -123,7 +163,15 @@ Rien de technique ici, et c'est le bloc qui compte.
       `docs/PRICING.md` est démo gratuite → essai payant → mensualité — c'est
       l'essai qui donne le premier taux de décroché mesuré, celui qui remplace
       l'hypothèse à 20 % dans toute l'app. Décide lequel part, mais décide.
-- [ ] **Dépôt French Tech** — échéance **2026-09-04 23:59**.
+- [x] ~~**Dépôt French Tech** — échéance 2026-09-04 23:59~~ — **NON RECEVABLE**,
+      vérifié le 03/09/2026 par deux recherches indépendantes : le seuil
+      d'éligibilité est de **3 000 000 €** de financements et/ou de chiffre
+      d'affaires cumulés depuis le 1er janvier 2024, plus TRL 6 minimum. Nous
+      sommes à 0 €. Ce n'est pas « refusé de peu », c'est écarté à la première
+      ligne du filtre. Les huit heures prévues n'ont pas d'objet — le
+      raisonnement complet et les guichets réellement ouverts sont dans
+      [`DOSSIER-FRENCH-TECH-2030.md`](./DOSSIER-FRENCH-TECH-2030.md) et
+      [`FINANCEMENTS.md`](./FINANCEMENTS.md).
 - [ ] Choisir **un** prospect du pipe de juillet et le closer. Un seul.
 
 **Zéro vente à ce jour.** Une suite de tests complète, et aucun euro. Tout ce qui est construit
