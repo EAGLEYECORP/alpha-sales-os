@@ -116,6 +116,22 @@ export default function VitrinePage() {
             <a href="#tarifs" className="hidden hover:text-[#191919] sm:inline">Tarifs</a>
             <a href="/souscrire" className="hidden hover:text-[#191919] sm:inline">Souscrire</a>
             <a href="#mission" className="hidden hover:text-[#191919] sm:inline">Mission</a>
+            {/*
+              ⚠ LE RETOUR VERS LA SOCIÉTÉ ÉTAIT UNIQUEMENT EN PIED DE PAGE.
+              C'est-à-dire à trois écrans de défilement de l'endroit où la
+              question se pose : « qui me demande mon adresse email ? ». Depuis
+              que la société et le produit ont chacun leur site, la liaison doit
+              être atteignable d'en haut, pas seulement d'en bas.
+
+              La flèche dit que ça sort du site — sans elle, on croit rester.
+            */}
+            <a
+              href="https://eagleyecorp.fr"
+              className="hidden hover:text-[#191919] sm:inline"
+              title="Le site d'EAGLEYE CORP — la société qui édite Alpha Sales OS"
+            >
+              eagleyecorp.fr&nbsp;↗
+            </a>
             <a
               href="#cadrage"
               className="rounded-full px-4 py-2 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
@@ -238,9 +254,18 @@ export default function VitrinePage() {
 
           {/* La vidéo est le SEUL objet sombre de la page : sur un fond crème,
               le contraste fait le cadrage tout seul, sans décoration. */}
+          {/*
+            ⚠ La destination est décidée ICI, pas dans le composant vidéo.
+            Elle mène aux ÉCRANS, pas à l'inscription : quelqu'un qui vient de
+            regarder dix secondes de film veut voir à quoi ça ressemble
+            vraiment, pas qu'on lui demande son email deux fois dans le même
+            écran — la carte est juste au-dessus.
+          */}
           <HeroVideo
             line="10 secondes — ce que l'OS fait pendant que vous êtes ailleurs."
             muted="Lecture automatique désactivée (mouvement réduit). Le film dure 10 secondes."
+            href="#ecrans"
+            cta="Voir les écrans"
           />
         </section>
 

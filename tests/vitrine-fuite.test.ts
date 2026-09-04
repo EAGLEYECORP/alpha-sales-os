@@ -941,3 +941,49 @@ test("vitrine — la carte dit ce qu'elle fait de l'adresse, sous le champ", () 
   assert.match(publique, /ne part nulle part|Aucune\s+liste/i, "ce qu'on fait de l'adresse doit être écrit");
   assert.doesNotMatch(vitrine, /fetch\((["'`])\/api\//, "la carte d'essai ne doit appeler AUCUNE API : elle ne collecte pas");
 });
+
+test("⚠ le bloc vidéo MÈNE quelque part — et sans trahir le clic", () => {
+  /**
+   * Le bloc se terminait sur la carte de marque et s'arrêtait là : un
+   * cul-de-sac au moment exact où la personne vient de regarder dix secondes
+   * de produit et n'a plus rien à faire de cet écran.
+   *
+   * ⚠ Et ce qu'on n'a PAS fait, délibérément : rendre la surface vidéo
+   * cliquable vers une page. On clique une vidéo pour la lire ou la mettre en
+   * pause ; une surface qui quitte la page à la place fait exactement ce que
+   * l'utilisateur n'a pas demandé. Le lien vit à côté de la légende et sur le
+   * voile de fin, jamais sur la vidéo elle-même.
+   */
+  const video = readFileSync(join(process.cwd(), "components/vitrine/hero-video.tsx"), "utf8");
+
+  assert.match(video, /href: string;/, "la destination doit être un paramètre");
+  assert.match(vitrine, /<HeroVideo[\s\S]{0,400}href="#/, "…et la PAGE doit la fournir, pas le composant la décider");
+
+  // La balise <video> ne porte aucun gestionnaire de navigation.
+  const balise = video.slice(video.indexOf("<video"), video.indexOf("</video>"));
+  assert.doesNotMatch(balise, /href|location\.|onClick=\{\(\) => \{?\s*(window|router)/, "la vidéo ne doit pas naviguer au clic");
+
+  /**
+   * Et la sortie doit exister AUSSI en mouvement réduit : là, la vidéo ne se
+   * lance pas, donc le voile de fin n'apparaît jamais. Sans le lien de
+   * légende, ces personnes-là n'auraient aucune issue depuis ce bloc — c'est
+   * un réglage d'accessibilité, pas une préférence de confort.
+   */
+  const legende = video.slice(video.indexOf("<figcaption"), video.indexOf("</figcaption>"));
+  assert.match(legende, /href=\{href\}/, "la légende doit porter le lien : c'est la seule sortie en mouvement réduit");
+});
+
+test("vitrine — on peut revenir à la société depuis le HAUT de page, pas seulement du pied", () => {
+  /**
+   * Le lien n'existait qu'en pied de page : à trois écrans de défilement de
+   * l'endroit où la question se pose vraiment — « qui me demande mon adresse
+   * email ? ». Depuis que la société et le produit ont chacun leur site, la
+   * liaison doit être atteignable d'en haut.
+   */
+  const nav = vitrine.slice(vitrine.indexOf("<nav"), vitrine.indexOf("</nav>"));
+  assert.match(nav, /https:\/\/eagleyecorp\.fr/, "la navigation doit porter le retour vers la société");
+
+  // Et il reste en pied de page : sur mobile, la navigation est masquée.
+  const pied = vitrine.slice(vitrine.indexOf("<footer"));
+  assert.match(pied, /https:\/\/eagleyecorp\.fr/, "…et le pied de page le garde pour le mobile");
+});
