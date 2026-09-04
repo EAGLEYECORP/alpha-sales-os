@@ -63,6 +63,37 @@ export default function VitrinePage() {
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * LA CARTE D'ESSAI — et ce qu'elle NE fait pas.
+   *
+   * ⚠ ELLE N'ENREGISTRE RIEN CHEZ NOUS. L'adresse saisie n'est ni stockée, ni
+   * envoyée à une API, ni ajoutée à une liste : elle est passée au formulaire
+   * d'inscription, qui est le SEUL endroit où un compte se crée.
+   *
+   * C'est un choix, pas une simplification. Une adresse captée sur une page
+   * publique est une collecte de données personnelles avec sa propre finalité,
+   * sa base légale, sa durée de conservation et son droit d'effacement — pour
+   * une liste que personne n'exploiterait avant des semaines. On ne crée pas
+   * une obligation RGPD pour un champ de commodité.
+   *
+   * Ce qu'elle règle, en revanche, est réel : sans elle, la personne clique
+   * « Commencer seul », arrive sur un formulaire vide, et RETAPE son adresse.
+   * C'est le moment exact où l'on abandonne.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const [email, setEmail] = useState("");
+  const emailValide = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email.trim());
+  /**
+   * ⚠ `encodeURIComponent`, pas une concaténation. Une adresse contient des
+   * caractères qui ont un sens dans une URL (`+` dans `nom+alpha@…` devient
+   * une espace côté serveur) : sans encodage, l'adresse arrive déformée au
+   * formulaire, et la personne ne comprend pas pourquoi son compte ne marche
+   * pas. Vers `/` — l'application elle-même : c'est là que la porte de
+   * connexion s'ouvre, et c'est ce qui a été demandé (« direct sur Alpha »).
+   */
+  const lienEssai = emailValide ? `/?email=${encodeURIComponent(email.trim())}` : "/";
+
   return (
     <div id="top" style={{ background: CREAM, color: INK }} className="min-h-screen antialiased">
       {/* ── Navigation ── */}
@@ -113,29 +144,97 @@ export default function VitrinePage() {
             train de dormir. Vous ne récupérez pas du temps : vous récupérez le choix de ce que vous
             en faites.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <a
-              href="#cadrage"
-              className="rounded-full px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
-              style={{ background: INK }}
-            >
+
+          {/*
+            ── LA PORTE LA MOINS CHÈRE, EN HAUT DE PAGE ──
+
+            Elle était en bas, dans une section « Commencer ». En haut, la page
+            n'offrait que « Demander un cadrage » : un rendez-vous avec un
+            inconnu, proposé à quelqu'un qui vient d'arriver. Entre les deux il
+            y a un ordre de grandeur d'engagement, et c'est le moins engageant
+            qui doit être le plus visible.
+          */}
+          <form
+            className="mt-10 max-w-xl rounded-2xl p-6"
+            style={{ background: "#FFFFFF", border: `1px solid ${LINE}` }}
+            onSubmit={(e) => {
+              // La navigation se fait par le lien : le formulaire n'existe que
+              // pour que « Entrée » fonctionne au clavier, ce qui est la moitié
+              // des saisies sur un champ email.
+              e.preventDefault();
+              if (emailValide) window.location.href = lienEssai;
+            }}
+          >
+            <p className="font-serif text-[24px] leading-[1.25] tracking-[-0.01em]">
+              Essayez-le maintenant, gratuitement.
+            </p>
+            <p className="mt-2 text-[15px] leading-[1.6]" style={{ color: MUTED }}>
+              Votre email, un mot de passe, et vous êtes dans l&apos;outil. Le socle reste gratuit,
+              sans limite de durée et sans carte bancaire.
+            </p>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="vous@votre-entreprise.fr"
+                aria-label="Votre adresse email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="min-w-0 flex-1 rounded-full px-5 py-3 text-[15px] outline-none"
+                style={{ border: `1px solid ${LINE}`, background: CREAM, color: INK }}
+              />
+              <a
+                href={lienEssai}
+                aria-disabled={!emailValide}
+                onClick={(e) => {
+                  // Sans adresse valide, on n'envoie pas vers un formulaire
+                  // qu'on ne peut pas pré-remplir : on ramène le curseur ici.
+                  if (!emailValide) {
+                    e.preventDefault();
+                    (e.currentTarget.parentElement?.querySelector("input") as HTMLInputElement)?.focus();
+                  }
+                }}
+                className="shrink-0 rounded-full px-6 py-3 text-center text-[15px] font-medium text-white transition-opacity"
+                style={{ background: INK, opacity: emailValide ? 1 : 0.45 }}
+              >
+                Essayer maintenant
+              </a>
+            </div>
+
+            {/*
+              ⚠ Ce qu'on fait de l'adresse est dit SOUS le champ, pas dans une
+              politique qu'il faut aller chercher. C'est la question qu'on se
+              pose au moment exact où l'on tape.
+            */}
+            <p className="mt-3 text-[13px] leading-[1.5]" style={{ color: MUTED }}>
+              Cette adresse ne part nulle part : elle sert à pré-remplir votre inscription. Aucune
+              liste, aucun email de notre part tant que vous n&apos;avez pas de compte.
+            </p>
+          </form>
+
+          {/*
+            ⚠ CES DEUX LIENS ÉTAIENT AU-DESSUS DE LA CARTE, EN GROS BOUTONS.
+            La page présentait donc trois appels à l'action d'affilée, et le
+            MOINS engageant — le champ email — arrivait en dernier. Un
+            rendez-vous avec un inconnu et une adresse email ne sont pas au même
+            niveau d'engagement : c'est le moins cher qui doit être le plus
+            visible, et le reste passe en second rôle.
+
+            « Commencer seul » a disparu : il menait à /souscrire, que la carte
+            fait mieux et plus tôt. Deux portes vers la même chose, dont une
+            plus fade, ne doublent pas les entrées — elles font hésiter.
+          */}
+          <p className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px]" style={{ color: MUTED }}>
+            <span>Vous préférez en parler d&apos;abord ?</span>
+            <a href="#cadrage" className="underline underline-offset-4" style={{ color: INK }}>
               Demander un cadrage
             </a>
-            {/* La deuxième porte. Tout le monde ne veut pas d'un rendez-vous
-                avant d'avoir essayé — et jusqu'ici, celui-là n'avait nulle
-                part où aller : les offres payables n'étaient affichées sur
-                aucune page publique. */}
-            <a
-              href="/souscrire"
-              className="rounded-full px-6 py-3 text-[15px] font-medium"
-              style={{ border: `1px solid ${INK}`, color: INK }}
-            >
-              Commencer seul
-            </a>
-            <a href="#tarifs" className="text-[15px] underline underline-offset-4" style={{ color: MUTED }}>
+            <a href="#tarifs" className="underline underline-offset-4">
               Voir les tarifs
             </a>
-          </div>
+          </p>
 
           {/* La vidéo est le SEUL objet sombre de la page : sur un fond crème,
               le contraste fait le cadrage tout seul, sans décoration. */}

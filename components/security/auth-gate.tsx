@@ -53,6 +53,33 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  /**
+   * ⚠ L'ADRESSE VENUE DE LA VITRINE — sans ça, la carte d'essai ne sert à rien.
+   *
+   * La page publique demande l'email, puis envoie ici. Si ce formulaire
+   * s'ouvrait vide et en mode « se connecter », la personne devrait RETAPER
+   * son adresse et comprendre toute seule qu'elle doit d'abord créer un
+   * compte. C'est exactement le moment où l'on abandonne — et le champ de la
+   * vitrine n'aurait été qu'une décoration.
+   *
+   * On lit l'URL une fois, au montage. On pré-remplit et on bascule en
+   * création de compte : quelqu'un qui arrive par ce chemin n'en a pas.
+   *
+   * ⚠⚠ On ne SOUMET rien automatiquement. Un paramètre d'URL est fourni par
+   * l'extérieur — n'importe qui peut forger un lien. Il pré-remplit un champ
+   * que l'utilisateur voit et peut corriger ; il ne déclenche aucune action.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const venu = new URLSearchParams(window.location.search).get("email");
+    if (!venu) return;
+    // Une adresse plausible seulement : on ne recopie pas n'importe quelle
+    // chaîne dans un champ que l'utilisateur croira validée.
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(venu.trim())) return;
+    setEmail(venu.trim());
+    setMode("up");
+  }, []);
+
   // Le serveur, une fois. Une panne réseau laisse `serveur` à null : on
   // retombe alors sur le réglage local, jamais sur « ouvert ».
   useEffect(() => {
@@ -194,7 +221,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
         <input
           type="email"
-          autoFocus
+          // Le curseur va au champ VIDE : sur une arrivée depuis la vitrine,
+          // l'email est déjà là et c'est le mot de passe qu'on attend.
+          autoFocus={!email}
           placeholder="Email"
           autoComplete="email"
           className="input mt-4 text-center"
@@ -205,6 +234,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           type="password"
           placeholder="Mot de passe"
           autoComplete={mode === "in" ? "current-password" : "new-password"}
+          autoFocus={Boolean(email)}
           className="input mt-2 text-center"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

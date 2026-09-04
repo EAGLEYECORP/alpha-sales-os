@@ -879,3 +879,65 @@ test("vitrine — le nom de la société ramène en haut, et une sortie mène à
   );
   assert.match(vitrine, /https:\/\/eagleyecorp\.fr/, "une sortie doit mener au site de la société");
 });
+
+/* ────────────────────────────────────────────────────────────────────
+   LA CARTE D'ESSAI — la porte la moins chère, en haut de page.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("vitrine — la carte d'essai est AVANT le premier séparateur de section", () => {
+  /**
+   * « En haut » n'est pas un détail de goût. La page n'offrait, dans son
+   * premier écran, que « Demander un cadrage » : un rendez-vous avec un
+   * inconnu, proposé à quelqu'un qui vient d'arriver. Entre un rendez-vous et
+   * un champ email il y a un ordre de grandeur d'engagement, et c'est le moins
+   * engageant qui doit être le plus visible.
+   *
+   * On mesure la POSITION, pas la présence : une carte d'essai reléguée en bas
+   * de page passerait un test qui se contente de la trouver.
+   */
+  const carte = vitrine.indexOf("Essayer maintenant");
+  assert.ok(carte > 0, "le bouton d'essai doit exister");
+  const premierRule = vitrine.indexOf("<Rule />");
+  assert.ok(premierRule > 0, "lecture de la page cassée : aucun séparateur trouvé");
+  assert.ok(
+    carte < premierRule,
+    "la carte d'essai est passée sous la première section : ce n'est plus la première porte"
+  );
+});
+
+test("⚠ l'email saisi VOYAGE jusqu'au formulaire — sinon le champ est décoratif", () => {
+  /**
+   * Le défaut que ce test empêche : la vitrine demande l'adresse, puis envoie
+   * vers un formulaire VIDE. La personne la retape, et comprend toute seule
+   * qu'elle doit d'abord créer un compte. C'est exactement le moment où l'on
+   * abandonne — le champ n'aurait servi qu'à faire joli.
+   *
+   * On vérifie les DEUX bouts : la vitrine émet, l'écran de connexion lit.
+   */
+  assert.match(vitrine, /encodeURIComponent\(email/, "l'adresse doit être encodée, pas concaténée");
+  assert.match(vitrine, /\/\?email=/, "…et passée à l'application");
+
+  const gate = readFileSync(join(process.cwd(), "components/security/auth-gate.tsx"), "utf8");
+  assert.match(gate, /URLSearchParams\(window\.location\.search\)\.get\("email"\)/, "l'écran doit LIRE le paramètre");
+  assert.match(gate, /setMode\("up"\)/, "…et basculer en création de compte : qui arrive par là n'en a pas");
+  /**
+   * ⚠ Et il ne SOUMET rien. Un paramètre d'URL vient de l'extérieur : il
+   * pré-remplit un champ visible et corrigible, il ne déclenche aucune action.
+   */
+  const effet = gate.slice(gate.indexOf('get("email")'), gate.indexOf('fetch("/api/gate")'));
+  assert.doesNotMatch(effet, /submit\(\)|signUp\(/, "un lien forgé ne doit jamais déclencher une inscription");
+});
+
+test("vitrine — la carte dit ce qu'elle fait de l'adresse, sous le champ", () => {
+  /**
+   * Elle n'enregistre rien : l'adresse sert à pré-remplir l'inscription, et
+   * c'est tout. Le dire SOUS le champ, pas dans une politique qu'il faut aller
+   * chercher — c'est la question qu'on se pose au moment exact où l'on tape.
+   *
+   * ⚠ Ce test garde aussi la promesse elle-même : le jour où quelqu'un branche
+   * une vraie collecte derrière ce champ, cette phrase devient un mensonge et
+   * il faudra la retirer — donc le voir.
+   */
+  assert.match(publique, /ne part nulle part|Aucune\s+liste/i, "ce qu'on fait de l'adresse doit être écrit");
+  assert.doesNotMatch(vitrine, /fetch\((["'`])\/api\//, "la carte d'essai ne doit appeler AUCUNE API : elle ne collecte pas");
+});
