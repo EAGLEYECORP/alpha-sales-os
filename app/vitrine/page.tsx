@@ -64,14 +64,24 @@ export default function VitrinePage() {
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   return (
-    <div style={{ background: CREAM, color: INK }} className="min-h-screen antialiased">
+    <div id="top" style={{ background: CREAM, color: INK }} className="min-h-screen antialiased">
       {/* ── Navigation ── */}
       <header className="sticky top-0 z-10 border-b backdrop-blur-md" style={{ borderColor: LINE, background: `${CREAM}E6` }}>
-        <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <span className="text-[15px] font-semibold tracking-tight">EAGLEYE CORP</span>
-          <div className="flex items-center gap-7 text-[14px]" style={{ color: MUTED }}>
+        <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 sm:px-6 sm:py-4">
+          {/*
+            ⚠ « EAGLEYE CORP » ÉTAIT UN <span>, DONC MORT.
+            C'est le seul élément qu'on clique par réflexe sur n'importe quel
+            site — il ramène en haut. Un titre de marque inerte donne
+            l'impression d'une page figée, et sur mobile, où la navigation est
+            masquée, c'était le SEUL retour possible : il n'y en avait aucun.
+          */}
+          <a href="#top" className="text-[15px] font-semibold tracking-tight transition-opacity hover:opacity-70">
+            EAGLEYE CORP
+          </a>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[14px] sm:gap-x-7" style={{ color: MUTED }}>
             <a href="#gratuit" className="hidden hover:text-[#191919] sm:inline">Gratuit</a>
             <a href="#produit" className="hidden hover:text-[#191919] sm:inline">Produit</a>
+            <a href="#ecrans" className="hidden hover:text-[#191919] sm:inline">Écrans</a>
             <a href="#tarifs" className="hidden hover:text-[#191919] sm:inline">Tarifs</a>
             <a href="/souscrire" className="hidden hover:text-[#191919] sm:inline">Souscrire</a>
             <a href="#mission" className="hidden hover:text-[#191919] sm:inline">Mission</a>
@@ -270,6 +280,76 @@ export default function VitrinePage() {
         </section>
 
         <Rule />
+
+        {/*
+          ── DES CAPTURES DU VRAI PRODUIT ──
+
+          La page décrivait le produit sans jamais le MONTRER. Sur un logiciel,
+          c'est la première question qu'on se pose et la dernière à laquelle un
+          paragraphe répond.
+
+          ⚠ Ce sont des captures RÉELLES, prises sur l'application, aux quatre
+          écrans du socle GRATUIT — pas des maquettes, et pas un écran payant :
+          montrer ici ce qui n'est pas donné ferait promettre autre chose que
+          ce qu'on ouvre.
+
+          ⚠⚠ Le bandeau « Données de démo actives » reste VISIBLE sur les
+          captures, volontairement. Le masquer donnerait à croire à un pipe
+          réel ; le laisser dit exactement ce que c'est. C'est la même règle
+          que partout ailleurs : on ne fabrique pas de preuve.
+        */}
+        <section id="ecrans" className="py-20">
+          <SectionLabel>Les écrans</SectionLabel>
+          <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
+            Voilà à quoi ça ressemble.
+          </h2>
+          <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
+            Les quatre écrans du socle gratuit, tels quels. Le jeu de démonstration est affiché —
+            c&apos;est ce que vous verrez en créant votre compte, avant d&apos;y mettre vos propres
+            fiches.
+          </p>
+
+          <div className="mt-10 grid gap-8 sm:grid-cols-2">
+            {[
+              ["/produit/tableau-de-bord.jpg", "Le tableau de bord", "Ce qui bouge, en un écran : les routines du matin, le pipe pondéré, le prochain rendez-vous."],
+              ["/produit/pipeline.jpg", "Le pipeline", "Chaque fiche avec son étape et sa prochaine action datée. Une fiche sans date est une décision qu'on n'a pas prise."],
+              ["/produit/closer.jpg", "Le Closer OS", "La tournée du jour, priorisée — et le débrief à la voix en sortant de rendez-vous."],
+              ["/produit/cerveau.jpg", "Le Cerveau", "Votre doctrine, vos scripts, vos objections. Cherchables en une phrase, pas rangés dans un dossier."],
+            ].map(([src, titre, texte]) => (
+              <figure key={src}>
+                <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                  {/*
+                    Pas de <Image> de Next ici : cette page est statique et sans
+                    domaine d'images configuré. Un <img> natif avec ses
+                    dimensions réelles réserve la place et évite le saut de
+                    mise en page au chargement — c'est tout ce qu'on demande.
+                  */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={`Alpha Sales OS — ${titre}`}
+                    width={2040}
+                    height={1275}
+                    loading="lazy"
+                    className="block h-auto w-full"
+                  />
+                </div>
+                <figcaption className="mt-3">
+                  <p className="text-[15px] font-semibold">{titre}</p>
+                  <p className="mt-1 text-[15px] leading-[1.6]" style={{ color: MUTED }}>{texte}</p>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+
+          <a
+            href="/souscrire"
+            className="mt-10 inline-block rounded-full px-7 py-3.5 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+            style={{ background: INK }}
+          >
+            Créer mon compte et regarder
+          </a>
+        </section>
 
         {/* ── 4. LES TARIFS ── */}
         <section id="tarifs" className="py-20">
@@ -563,6 +643,25 @@ export default function VitrinePage() {
           </p>
           <p className="mt-4 text-[14px]" style={{ color: MUTED }}>
             contact@eagleyecorp.fr
+          </p>
+          {/*
+            ⚠ LA SORTIE VERS LA SOCIÉTÉ N'EXISTAIT NULLE PART.
+            Depuis que eagleyecorp.fr présente EAGLEYE CORP et que cette page
+            présente le produit, le lien devait exister DANS LES DEUX SENS. Il
+            n'allait que dans un : quelqu'un qui arrive ici par le post
+            LinkedIn ne pouvait pas savoir qui est derrière, ni le vérifier.
+            Sur une page qui demande une adresse email, c'est exactement la
+            question qu'on se pose avant de la donner.
+          */}
+          <p className="mt-6 border-t pt-6 text-[14px]" style={{ borderColor: LINE, color: MUTED }}>
+            Alpha Sales OS est édité par EAGLEYE CORP —{" "}
+            <a
+              href="https://eagleyecorp.fr"
+              className="underline underline-offset-4 hover:opacity-70"
+              style={{ color: INK }}
+            >
+              voir la société et ses autres chantiers
+            </a>
           </p>
         </div>
       </footer>

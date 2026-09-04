@@ -830,3 +830,52 @@ test("vitrine — l'étalement est sous le prix, pas en note de bas de page", ()
   assert.match(vitrine, /BUSINESS_PUBLIC\.mensualiteHT/);
   assert.match(publique, /Ou étalé/i);
 });
+
+test("vitrine — elle MONTRE le produit, et seulement les écrans gratuits", () => {
+  /**
+   * La page décrivait un logiciel sans jamais l'afficher. Sur un produit,
+   * c'est la première question qu'on se pose et la dernière à laquelle un
+   * paragraphe répond.
+   *
+   * ⚠ Ce test garde surtout la CONTRAINTE : on ne montre que les écrans du
+   * socle gratuit. Afficher une capture d'un écran payant sur la page qui
+   * annonce le gratuit promettrait autre chose que ce qu'on ouvre — et
+   * personne ne s'en apercevrait avant l'inscription.
+   */
+  assert.match(vitrine, /\/produit\/[a-z-]+\.jpg/, "la vitrine doit afficher des captures");
+
+  const captures = [...vitrine.matchAll(/\/produit\/([a-z-]+)\.jpg/g)].map((m) => m[1]);
+  assert.ok(captures.length >= 3, `trop peu de captures : ${captures.length}`);
+
+  // Les écrans payants, nommés par leur chemin métier — aucun ne doit
+  // apparaître dans la galerie.
+  for (const payant of ["campaigns", "outbox", "voice", "agent", "audits", "activity", "overlay"]) {
+    assert.ok(
+      !captures.includes(payant),
+      `« ${payant} » est une brique PAYANTE : sa capture n'a rien à faire dans la galerie du socle gratuit`
+    );
+  }
+});
+
+test("vitrine — le nom de la société ramène en haut, et une sortie mène à eagleyecorp.fr", () => {
+  /**
+   * ⚠ « EAGLEYE CORP » était un <span>, donc inerte. C'est l'élément qu'on
+   * clique par réflexe sur n'importe quel site, et sur mobile — où toute la
+   * navigation est masquée — c'était le SEUL retour possible : il n'y en avait
+   * aucun.
+   *
+   * ⚠⚠ Et le lien vers la société n'existait pas non plus. Depuis que
+   * eagleyecorp.fr présente EAGLEYE CORP et que cette page présente le
+   * produit, la liaison devait aller dans les DEUX sens : quelqu'un qui arrive
+   * ici par un post ne pouvait pas savoir qui est derrière. Sur une page qui
+   * demande une adresse email, c'est exactement la question qu'on se pose
+   * avant de la donner.
+   */
+  assert.match(vitrine, /id="top"/, "il faut une ancre de tête pour revenir en haut");
+  assert.match(
+    vitrine,
+    /href="#top"[\s\S]{0,200}EAGLEYE CORP/,
+    "le nom de la société doit être un lien vers le haut de page"
+  );
+  assert.match(vitrine, /https:\/\/eagleyecorp\.fr/, "une sortie doit mener au site de la société");
+});

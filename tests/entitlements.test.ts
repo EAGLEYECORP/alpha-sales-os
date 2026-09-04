@@ -566,3 +566,37 @@ test("⚠ NOS 78 FICHES RÉELLES ne sont ouvertes qu'au compte MAÎTRE", async (
   // la route vers un chemin ouvert, cette assertion tombe.
   assert.notEqual(chemin, "/pipeline", "la route ne doit plus suivre la brique CRM, qui est gratuite");
 });
+
+test("⚠ l'assistant de configuration ne s'ouvre PAS tout seul chez un inscrit", async () => {
+  /**
+   * MESURÉ SUR UNE CAPTURE, pas déduit : la toute première chose qu'un inscrit
+   * voyait était un panneau PLEIN ÉCRAN qui lui expliquait « Google Sheets =
+   * la mémoire, n8n = le cerveau, Supabase = la mémoire durable ».
+   *
+   * C'est la pile de l'OPÉRATEUR : des variables d'environnement du serveur et
+   * des services tiers qu'un locataire ne possède pas et ne peut pas poser. Le
+   * même défaut que `/demarrage`, en pire — celui-ci est MODAL : il ne se
+   * contente pas d'être hors sujet, il barre l'écran jusqu'à ce qu'on trouve
+   * la croix.
+   */
+  const src = readFileSync(join(process.cwd(), "components/onboarding.tsx"), "utf8");
+
+  assert.match(src, /chargerDroits\(\)/, "l'ouverture doit dépendre des droits réels");
+  assert.match(
+    src,
+    /if \(!\(d\.maitre \|\| d\.solo\)\) return;/,
+    "seul l'opérateur (maître ou solo) doit voir s'ouvrir un assistant qui configure NOTRE installation"
+  );
+
+  /**
+   * ⚠⚠ ET IL DOIT ATTENDRE LA RÉPONSE, pas lire la valeur optimiste.
+   * `useDroits` rend `maitre: true` tant que le serveur n'a pas répondu — bon
+   * pour un menu qui ne doit pas clignoter, faux pour un panneau qui barre
+   * l'écran et ne se referme pas seul : il se serait ouvert pendant le
+   * chargement, et serait resté.
+   */
+  assert.doesNotMatch(src, /useDroits\(\)/, "useDroits est optimiste : il ne peut pas décider d'ouvrir un modal");
+
+  const { chargerDroits } = await import("../lib/use-droits");
+  assert.equal(typeof chargerDroits, "function", "la promesse partagée doit être exportée, pas réécrite sur place");
+});

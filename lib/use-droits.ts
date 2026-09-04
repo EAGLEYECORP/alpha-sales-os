@@ -34,6 +34,32 @@ export interface Droits {
 const OPTIMISTE: Droits = { bricks: [], statut: "actif", maitre: true, solo: true };
 
 let cache: Droits | null = null;
+let enCours: Promise<Droits> | null = null;
+
+/**
+ * La requête, partagée — une seule par page, quel que soit le nombre
+ * d'appelants. Extraite du hook parce qu'un appelant a besoin de SAVOIR quand
+ * la réponse est arrivée, et pas seulement de la valeur optimiste.
+ */
+export function chargerDroits(): Promise<Droits> {
+  if (cache) return Promise.resolve(cache);
+  if (!enCours) {
+    enCours = fetch("/api/compte/droits")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((j: Droits) => {
+        cache = j;
+        return j;
+      })
+      .catch(() => {
+        // On reste optimiste : le serveur tranchera de toute façon. Mais on
+        // ne met PAS l'optimisme en cache — une panne réseau passagère ne doit
+        // pas graver « maître » pour toute la session.
+        enCours = null;
+        return OPTIMISTE;
+      });
+  }
+  return enCours;
+}
 
 export function useDroits(): Droits {
   const [d, setD] = useState<Droits>(cache ?? OPTIMISTE);
@@ -41,15 +67,7 @@ export function useDroits(): Droits {
   useEffect(() => {
     if (cache) return;
     let vivant = true;
-    fetch("/api/compte/droits")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((j: Droits) => {
-        cache = j;
-        if (vivant) setD(j);
-      })
-      .catch(() => {
-        /* on reste optimiste : le serveur tranchera de toute façon */
-      });
+    void chargerDroits().then((j) => vivant && setD(j));
     return () => {
       vivant = false;
     };
