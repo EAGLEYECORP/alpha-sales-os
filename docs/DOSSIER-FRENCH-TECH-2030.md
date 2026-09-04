@@ -84,8 +84,15 @@ Une seule ligne à faire bouger : **3 M€ cumulés**. Deux chemins, pas trois.
 >
 > Les dispositifs faits pour le stade pré-revenu existent — bourse French Tech
 > (Bpifrance), prêts d'honneur des réseaux d'accompagnement, aides régionales à
-> l'innovation. Aucun n'a été instruit ici : c'est un travail à part, et il n'a
-> pas de date limite demain.
+> l'innovation.
+>
+> **Ils ont été instruits depuis, le 4 septembre 2026 :
+> [`docs/FINANCEMENTS.md`](./FINANCEMENTS.md).** Résultat court : presque tout
+> se ferme sur l'ÂGE de la société ou sur l'absence de dépense comptabilisée,
+> il reste deux pistes plausibles (prêt d'honneur « développement », CII à
+> câbler avant de dépenser), et **la piste qui rapporte le plus n'est pas une
+> subvention à nous** — c'est le dispositif régional qui peut financer la
+> moitié de l'achat DU CLIENT.
 
 ---
 
