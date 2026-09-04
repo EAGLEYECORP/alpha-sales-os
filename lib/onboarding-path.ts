@@ -1,5 +1,6 @@
 import type { Meeting, Prospect } from "./types";
 import { peutOuvrir } from "./bricks-access";
+import { ACCOUNTS } from "./accounts";
 import type { EtatDns } from "./deliverability-dns";
 
 /**
@@ -101,6 +102,31 @@ export interface StepDef {
 
 export const STEPS: StepDef[] = [
   // ── 1. BRANCHER ──────────────────────────────────────────────────
+  {
+    /**
+     * ⚠ LA PREMIÈRE ÉTAPE DU PRODUIT N'EXISTAIT PAS.
+     *
+     * `DEFAULT_SETTINGS` pose `agencyName: "EAGLEYE CORP"` pour TOUS les
+     * comptes. Un opérateur qui s'inscrit et n'ouvre jamais les Réglages
+     * envoie donc ses messages sous notre raison sociale — et le parcours de
+     * démarrage, qui lui déroulait seize étapes, ne le lui disait nulle part.
+     *
+     * Elle n'a pas de `chemin` : tout le monde la voit, gratuit compris. Il
+     * n'y a rien de plus universel que « comment vous appelez-vous ».
+     */
+    id: "identite",
+    phase: "brancher",
+    title: "Mettre TON nom sur l'outil",
+    why: "Par défaut, l'app signe « EAGLEYE CORP » — l'éditeur, pas toi. Tant que tu n'as pas changé ça, chaque email, chaque devis et chaque en-tête partent sous une autre raison sociale que la tienne. C'est la première chose qu'un prospect lit.",
+    how: [
+      "Réglages → Agence → mets ta raison sociale exacte, celle de tes factures.",
+      "Renseigne aussi le nom du signataire : sans lui, l'app ne devine pas qui écrit et affiche un libellé d'usine.",
+    ],
+    href: "/settings",
+    hrefLabel: "Ouvrir Réglages",
+    minutes: 3,
+    auto: true,
+  },
   {
     id: "smtp",
     phase: "brancher",
@@ -444,6 +470,15 @@ export interface PathContext {
   bricks?: string[] | null;
   /** Le compte maître voit tout : c'est notre propre installation. */
   maitre?: boolean;
+  /**
+   * Le nom d'agence enregistré dans les réglages.
+   *
+   * ⚠ Il vaut « EAGLEYE CORP » PAR DÉFAUT, pour tout le monde. Le produit est
+   * white-label : un opérateur qui n'y touche pas signe ses messages, ses
+   * devis et ses en-têtes avec NOTRE raison sociale. C'est la première étape
+   * de tout le parcours, et elle n'existait pas.
+   */
+  agencyName?: string;
   now?: Date;
 }
 
@@ -500,8 +535,26 @@ export function buildPath(ctx: PathContext): Path {
   const fuel = prospects.length;
   const rhythm = rhythmDays(prospects, ctx.now);
 
+  /**
+   * Le nom du compte maître, lu depuis le portefeuille — pas recopié ici.
+   * C'est LA valeur par défaut : la voir encore en place veut dire que
+   * personne n'a touché aux réglages.
+   */
+  const nomUsine = ACCOUNTS.find((a) => a.kind === "master")?.name ?? "";
+
   const evaluate = (s: StepDef): { done: boolean; detail: string; progress?: number } => {
     switch (s.id) {
+      case "identite": {
+        const nom = (ctx.agencyName ?? "").trim();
+        if (!nom) return { done: false, detail: "aucune raison sociale — l'app affichera un libellé d'usine" };
+        // Le maître, lui, EST EAGLEYE : pour lui la valeur par défaut est la
+        // bonne réponse. Confondre les deux cas lui afficherait une étape
+        // éternellement rouge sur sa propre installation.
+        if (!ctx.maitre && nomUsine && nom.toLowerCase() === nomUsine.toLowerCase()) {
+          return { done: false, detail: `encore « ${nomUsine} » : tes messages partent sous la raison sociale de l'éditeur` };
+        }
+        return { done: true, detail: `signé « ${nom} »` };
+      }
       case "smtp":
         if (!health) return { done: false, detail: "état du serveur non chargé" };
         return health.email?.configured

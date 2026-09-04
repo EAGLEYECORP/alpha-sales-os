@@ -131,6 +131,33 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
   // partenaires. Aucune brique ne les ouvre : seul le compte MAÎTRE y accède.
   "/payouts": [],
   "/offre": [],
+
+  /**
+   * NOS JEUX DE DONNÉES RÉELS — protégés par le middleware, et désormais
+   * classés ici de façon COHÉRENTE avec lui.
+   *
+   * `/api/pipeline` sert `lib/pipeline-juillet` (78 prospects réellement
+   * démarchés : raison sociale, adresse, numéro de téléphone, étape de vente,
+   * montant) et `lib/prospects-icp`. Ce ne sont pas des fiches de démo — le
+   * module le dit en tête.
+   *
+   * ⚠ CE N'EST PAS UN TROU QU'ON BOUCHE : `MAITRE_SEULEMENT` (middleware.ts)
+   * liste déjà `/api/pipeline` et refuse 403 à tout compte non maître, AVANT
+   * le contrôle par brique. La route a toujours été fermée.
+   *
+   * Ce qui était faux, c'est la CLASSIFICATION : `CHEMIN_PAR_API` rattachait
+   * cette route à `/pipeline`, donc à la brique `crm` — devenue gratuite le
+   * 02/09/2026. Les deux couches répondaient donc l'inverse l'une de l'autre à
+   * la même question, et seule la plus haute disait vrai. Le jour où quelqu'un
+   * allège `MAITRE_SEULEMENT` — ce qui est un geste anodin, la liste ressemble
+   * à une optimisation — la couche restante ouvrait la route à tous les
+   * inscrits. Une défense qui ne tient que parce qu'une AUTRE tient n'est pas
+   * une défense en profondeur, c'est un point unique déguisé en deux.
+   *
+   * Aucune brique n'ouvre ce chemin : les deux couches disent maintenant la
+   * même chose.
+   */
+  "/jeux-internes": [],
 };
 
 /**

@@ -38,7 +38,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // ── CRM & Pipeline ──
   "/api/crm": "/pipeline",
   "/api/import": "/pipeline",
-  "/api/pipeline": "/pipeline",
+  /**
+   * ⚠ PAS `/pipeline` — voir `/jeux-internes` dans `lib/bricks-access.ts`.
+   *
+   * Cette route ne sert pas le pipe DU CLIENT : elle sert NOS 78 fiches
+   * réelles. Le middleware la protège déjà (`MAITRE_SEULEMENT`) ; c'est cette
+   * table qui la classait sous la brique `crm`, devenue gratuite — deux
+   * réponses opposées à la même question, dont une seule tenait.
+   */
+  "/api/pipeline": "/jeux-internes",
   /**
    * ⚠ `/api/digest` ÉTAIT RATTACHÉE À `/aujourdhui`, DONC AU CRM GRATUIT.
    *

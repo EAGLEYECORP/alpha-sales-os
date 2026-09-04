@@ -523,3 +523,46 @@ test("⚠ l'inscription dit où revenir — sinon le lien de confirmation pointe
   assert.match(signUpBody, /emailRedirectTo/, "signUp doit fournir une URL de retour");
   assert.match(signUpBody, /window\.location\.origin/, "l'origine du navigateur est la seule source juste en prod comme en local");
 });
+
+test("⚠ NOS 78 FICHES RÉELLES ne sont ouvertes qu'au compte MAÎTRE", async () => {
+  /**
+   * `/api/pipeline` sert `lib/pipeline-juillet` — 78 entreprises réellement
+   * démarchées, avec raison sociale, adresse, NUMÉRO DE TÉLÉPHONE, étape de
+   * vente et montant. Le module le dit en tête : « Ce n'est PAS de la donnée
+   * de démonstration. »
+   *
+   * ⚠ LA ROUTE N'A JAMAIS FUITÉ : `MAITRE_SEULEMENT` (middleware.ts) la liste
+   * et refuse 403 à tout compte non maître, avant même le contrôle par brique.
+   * Ce test ne colmate rien.
+   *
+   * Ce qu'il verrouille, c'est la SECONDE couche, qui disait l'inverse :
+   * `CHEMIN_PAR_API` rattachait cette route à `/pipeline`, donc à la brique
+   * `crm`, devenue gratuite le 02/09/2026. Alléger `MAITRE_SEULEMENT` — un
+   * geste qui ressemble à du rangement — aurait alors suffi à ouvrir nos
+   * fiches à tous les inscrits, sans que rien ne le signale. Deux couches qui
+   * répondent l'inverse à la même question ne font pas une défense en
+   * profondeur : elles font un point unique déguisé en deux.
+   */
+  const { BRIQUES_GRATUITES } = await import("../lib/entitlements");
+
+  const chemin = CHEMIN_PAR_API["/api/pipeline"];
+  assert.ok(chemin, "/api/pipeline doit rester classée : une route non classée est refusée, mais par accident");
+
+  // La CONDITION, pas la présence : aucune brique, gratuite ou payante,
+  // n'ouvre ce chemin. Seul `maitre` passe.
+  assert.equal(
+    peutOuvrir(chemin, [...BRIQUES_GRATUITES], false),
+    false,
+    "un compte gratuit ne doit PAS pouvoir lire notre dossier commercial"
+  );
+  assert.equal(
+    peutOuvrir(chemin, [...ACCES_PAR_CHEMIN["/pipeline"]], false),
+    false,
+    "posséder le CRM ne doit rien y donner : ce ne sont pas les fiches DU CLIENT"
+  );
+  assert.equal(peutOuvrir(chemin, [], true), true, "le compte maître y accède : c'est notre dossier");
+
+  // Et le garde-fou qui rend le test concluant : si demain quelqu'un remappe
+  // la route vers un chemin ouvert, cette assertion tombe.
+  assert.notEqual(chemin, "/pipeline", "la route ne doit plus suivre la brique CRM, qui est gratuite");
+});

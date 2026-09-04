@@ -103,8 +103,10 @@ export default function DemarragePage() {
          */
         bricks: droits.bricks,
         maitre: droits.maitre,
+        // Sans lui, la toute première étape ne peut pas se vérifier.
+        agencyName: settings.agencyName,
       }),
-    [prospects, meetings, settings.bookingUrl, health, dns, n8n, manual, droits.bricks, droits.maitre]
+    [prospects, meetings, settings.bookingUrl, settings.agencyName, health, dns, n8n, manual, droits.bricks, droits.maitre]
   );
 
   const pct = Math.round((path.done / path.total) * 100);

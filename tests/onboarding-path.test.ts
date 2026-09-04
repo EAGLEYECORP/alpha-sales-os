@@ -42,13 +42,46 @@ const ALL_ON = {
   dns: { etat: "mesure" as const, domain: "eagleyecorp.fr", verdict: "bon", manquants: 0, inconnus: 0 },
   n8n: true,
   bookingUrl: "https://cal.com/x",
+  // Une raison sociale À SOI : sur un compte non maître, laisser celle de
+  // l'éditeur n'est pas « installé », c'est « pas encore commencé ».
+  agencyName: "Agence Test",
 };
 
 test("chemin — sans aucune donnée, rien n'est déclaré fait", () => {
   const p = buildPath(ctx());
   assert.equal(p.done, 0);
   assert.equal(p.total, STEPS.length);
-  assert.equal(p.next?.id, "smtp");
+  /**
+   * ⚠ La première étape n'est plus « brancher le SMTP » mais « mettre TON nom
+   * sur l'outil ». `DEFAULT_SETTINGS` pose « EAGLEYE CORP » pour tout le
+   * monde : un opérateur qui n'ouvre jamais les Réglages signe ses messages
+   * sous la raison sociale de l'éditeur, et rien ne le lui disait. Aucune
+   * plomberie ne passe avant ça — c'est la première chose qu'un prospect lit.
+   */
+  assert.equal(p.next?.id, "identite");
+});
+
+test("⚠ l'identité de l'ÉDITEUR ne vaut pas une identité — sauf pour le maître", () => {
+  const etape = (over: Record<string, unknown>) =>
+    buildPath(ctx(over)).phases[0].steps.find((s) => s.id === "identite")!;
+
+  assert.equal(etape({}).done, false, "aucune raison sociale : rien n'est fait");
+  assert.equal(
+    etape({ agencyName: "EAGLEYE CORP" }).done,
+    false,
+    "la valeur d'usine laissée en place n'est pas un réglage : c'est l'absence de réglage"
+  );
+  assert.equal(etape({ agencyName: "Carrosserie Roux" }).done, true);
+  /**
+   * Le pendant, et il compte autant : le maître EST EAGLEYE. Lui afficher une
+   * étape éternellement rouge sur sa propre installation serait absurde — et
+   * c'est le genre de faux positif qui fait ignorer tout le parcours.
+   */
+  assert.equal(
+    etape({ agencyName: "EAGLEYE CORP", maitre: true }).done,
+    true,
+    "sur le compte maître, la valeur d'usine EST la bonne réponse"
+  );
 });
 
 test("chemin — l'état serveur non chargé ne vaut PAS une étape faite", () => {
@@ -183,7 +216,8 @@ test("chemin — la position annoncée est celle de l'étape, pas le nombre de f
   // Un appel consigné coche une étape TARDIVE : on reste bloqué à la
   // première. Annoncer « étape 2 » serait un mensonge d'affichage.
   const p = buildPath(ctx({ prospects: [prospect({ events: [evt("appel")] })] }));
-  assert.equal(p.next?.id, "smtp");
+  // « identite » est passée en tête du parcours : c'est elle, la première.
+  assert.equal(p.next?.id, "identite");
   assert.equal(p.nextIndex, 1);
   assert.ok(p.done > 0, "une étape tardive est bien cochée");
 });
