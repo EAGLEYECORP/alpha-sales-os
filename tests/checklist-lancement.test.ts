@@ -85,7 +85,32 @@ test("la checklist réclame les QUATRE prix Stripe, et dit lequel est unique", (
       `${o.priceEnv} (offre « ${o.nom} ») absent de la checklist`
     );
   }
-  assert.match(doc, /paiement \*\*UNIQUE\*\*/, "l'essai récurrent prélèverait 290 € par mois");
+  /**
+   * ⚠ L'assertion cherchait littéralement « paiement **UNIQUE** », au
+   * singulier. Elle a échoué le jour où il y en a eu DEUX (l'essai et le
+   * lifetime) et où la phrase est passée au pluriel — c'est-à-dire au moment
+   * exact où l'avertissement devenait plus important, pas moins.
+   *
+   * Ce qu'elle doit vraiment garder : chaque offre à paiement unique est
+   * signalée comme telle, et le nombre annoncé de prix Stripe correspond au
+   * nombre réel. Créer un paiement unique en récurrent prélève tous les mois
+   * quelqu'un qui croyait payer une fois — c'est la faute la plus chère de
+   * cette liste, et elle est silencieuse de notre côté.
+   */
+  assert.match(doc, /paiements? \*\*UNIQUES?\*\*/, "les paiements uniques doivent être signalés comme tels");
+  for (const o of payables.filter((x) => x.cadence === "unique")) {
+    const nom = o.priceEnv!.replace("STRIPE_PRICE_", "");
+    assert.ok(
+      doc.includes(o.priceEnv!) || doc.includes(`_${nom}`),
+      `« ${o.nom} » est un paiement unique et n'est pas nommé dans la checklist`
+    );
+  }
+  const MOTS = ["deux", "trois", "quatre", "cinq", "six", "sept", "huit"];
+  const attendu = MOTS[payables.length - 2];
+  assert.ok(
+    attendu && new RegExp(`\\*\\*${attendu}\\*\\* prix Stripe`, "i").test(doc),
+    `la checklist doit annoncer ${payables.length} prix Stripe (« **${attendu}** prix Stripe »), pas un autre nombre`
+  );
 });
 
 test("ce qui est FAIT est marqué fait — sinon on refait le travail", () => {

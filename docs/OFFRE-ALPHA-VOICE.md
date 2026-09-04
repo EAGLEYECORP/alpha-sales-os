@@ -252,3 +252,78 @@ deux.
 
 > ⚠ Remonter le tableau **réactive le plafond légal** sur les cibles sans
 > SIREN. Le filet ne s'enlève pas avec le chiffre, et c'est testé.
+
+
+---
+
+## L'ÉCHELLE COMPLÈTE — décidée le 04/09/2026
+
+| | Prix | Ce que ça règle |
+|---|---|---|
+| **Socle** | gratuit, sans durée | Il faut pouvoir entrer sans parler à personne |
+| **Essentiel** | 990 € HT + 149 €/mois | L'accueil qui décroche, volume normal |
+| **Intensif** | 990 € HT + 349 €/mois | Le même, gros volume |
+| **Business** | 10 000 € HT **étalés** : 2 500 € à la signature + 10 × 800 €, puis 1 000 € HT/mois | « 10 000 € d'un coup, c'est trop » |
+| **Lifetime** | à partir de 1 900 € HT, 60 places | « Je ne veux pas d'un abonnement de plus » |
+
+### Business — ce que l'étalement coûte vraiment
+
+Le montant ne change pas, le MOMENT change. 2 500 + 10 × 800 = **10 500 €**,
+soit 5 % de plus que le comptant — et ces 500 € se disent : c'est le prix du
+risque d'impayé que nous portons pendant dix mois.
+
+> ⚠ **L'acompte n'est pas une marque de sérieux, c'est une couverture.**
+> L'installation est livrée EN ENTIER, à la main, avant la première mensualité.
+> Un client qui s'arrête au quatrième mois laisse une demi-journée de travail
+> et un paramétrage en production contre une fraction du prix. Descendre
+> l'acompte, c'est augmenter cette exposition — et c'est la première chose
+> qu'on essaiera de négocier.
+
+> ⚠⚠ **Côté Stripe, ça demande DEUX prix, pas un.** L'étalement est un
+> abonnement à 800 € qui doit **s'arrêter après dix prélèvements** ;
+> l'abonnement à 1 000 € prend le relais ensuite. Sans date de fin, les 800 €
+> continuent **en plus** du relais : le client paie 1 800 €/mois et rien ne le
+> signale de notre côté.
+
+### Lifetime — l'arbitrage, dit en une phrase
+
+**On échange tout le revenu futur d'un client contre de l'argent maintenant.**
+À zéro chiffre d'affaires, c'est défendable : la trésorerie d'aujourd'hui vaut
+plus que l'abonnement de 2029. Mais c'est un arbitrage, pas une promotion.
+
+Ce qu'il couvre, et pourquoi pas plus :
+
+| | À vie ? | Pourquoi |
+|---|---|---|
+| Le logiciel (les dix briques) | **oui** | Coût marginal nul, hébergement mutualisé |
+| La consommation (appels, envois, jetons) | **non** | 0,0563 € la minute, pour toujours |
+
+Un lifetime « tout compris » à 2 000 € avec 500 minutes par mois s'équilibre
+vers **six ans** et devient une perte ensuite — sans plafond, et sans retour en
+arrière possible. D'où le crédit borné : **1 200 appels inclus, puis 0,20 €/min**.
+C'est la règle que `validerOffres` impose déjà à toute offre qui inclut la voix.
+
+**Les paliers, et pourquoi il y a un total :**
+
+| Palier | Prix | Places |
+|---|---|---|
+| 1 | 1 900 € HT | 10 |
+| 2 | 2 900 € HT | 20 |
+| 3 | 3 900 € HT | 30 |
+
+> ⚠ **« Basé sur la demande » veut dire que les paliers montent quand ils se
+> remplissent RÉELLEMENT.** La rareté est un fait ici — l'installation se fait
+> à la main, par une seule personne — jamais un compteur inventé. Un palier qui
+> n'avance pas quand il devrait se vérifie au coup de fil suivant, et le prix
+> entier perd sa crédibilité avec lui.
+
+> ⚠⚠ **Le total de 60 places n'est pas de la rareté, c'est une limite de
+> revenu.** Chaque lifetime vendu est un client qui ne paiera plus jamais
+> d'abonnement : à 1 900 €, Essentiel rapporte la même somme en **treize mois**.
+> En vendre sans plafond revient à plafonner son propre récurrent,
+> définitivement. `palierLifetime` rend `null` quand tout est vendu — et ce
+> `null` est le message : il n'y a plus de lifetime, il reste l'abonnement.
+
+**Tous ces nombres sont des DÉCISIONS.** Zéro client a signé l'un ou l'autre de
+ces deux plans. Le premier qui refuse en disant pourquoi vaudra plus que ce
+raisonnement.

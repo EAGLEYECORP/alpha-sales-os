@@ -118,6 +118,33 @@ export const ALPHA_VOICE_PUBLIC = {
 };
 
 /**
+ * ── BUSINESS ET LIFETIME, CÔTÉ PUBLIC ──
+ *
+ * Recopiés à la main comme le reste de ce fichier ; un test les compare à
+ * `lib/offres-publiques.ts`, qui fait foi. Les afficher est une décision : une
+ * offre que personne ne peut voir n'existe pas, et les deux répondent à des
+ * objections précises — « 10 000 € d'un coup, c'est trop » et « je ne veux pas
+ * d'un abonnement de plus ».
+ */
+export const BUSINESS_PUBLIC = {
+  prixHT: 10_000,
+  acompteHT: 2_500,
+  mensualites: 10,
+  mensualiteHT: 800,
+  abonnementHT: 1_000,
+};
+
+export const LIFETIME_PUBLIC = {
+  paliers: [
+    { rang: 1, prixHT: 1_900, places: 10 },
+    { rang: 2, prixHT: 2_900, places: 20 },
+    { rang: 3, prixHT: 3_900, places: 30 },
+  ],
+  placesTotal: 60,
+  appelsInclus: 1_200,
+};
+
+/**
  * La garantie, avec ses trois bords.
  *
  * Sans bords écrits, elle s'active au bout de trois jours de ligne coupée. La

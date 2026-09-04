@@ -513,3 +513,129 @@ test("bricks — le setup du sortant est TIRÉ de la grille, pas retapé", () =>
   assert.ok(quatre, "le palier de montée en charge doit exister");
   assert.equal(quatre.monthlyHT, 3 * OUTBOUND_UNIT_HT, "le 4e millier est offert = on paie trois milliers");
 });
+
+/* ────────────────────────────────────────────────────────────────────
+   BUSINESS ET LIFETIME — les deux modèles qui n'existaient pas.
+   L'un étale une installation livrée d'avance ; l'autre échange tout le
+   revenu futur d'un client contre de l'argent maintenant. Les deux se
+   trompent en silence si personne ne compte.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("business — le plan encaisse au MOINS le prix affiché", async () => {
+  const { PACK_ACOMPTE_HT, PACK_MENSUALITES, PACK_MENSUALITE_HT, PACK_SETUP_HT } = await import(
+    "../lib/offres-publiques"
+  );
+  const o = offreParId("business")!;
+  assert.ok(o, "l'offre Business doit exister");
+  assert.equal(o.cadence, "echelonne");
+  assert.ok(o.plan, "une cadence échelonnée sans plan est un prix sans échéancier");
+
+  const total = o.plan!.acompteHT + o.plan!.mensualites * o.plan!.mensualiteHT;
+  assert.ok(
+    total >= o.prixHT!,
+    `le plan encaisse ${total} € pour un prix affiché de ${o.prixHT} € — c'est une remise déguisée en étalement`
+  );
+  assert.equal(o.prixHT, PACK_SETUP_HT, "le prix AFFICHÉ reste l'installation, pas la mensualité");
+  assert.equal(o.plan!.acompteHT, PACK_ACOMPTE_HT);
+  assert.equal(o.plan!.mensualites, PACK_MENSUALITES);
+  assert.equal(o.plan!.mensualiteHT, PACK_MENSUALITE_HT);
+  assert.ok(o.plan!.abonnementHT > 0, "l'abonnement doit prendre le relais, sinon l'an 2 rapporte zéro");
+});
+
+test("⚠ un acompte nul est REFUSÉ : l'installation est livrée avant d'être payée", () => {
+  /**
+   * On mute la condition au lieu d'asserter la présence du refus. L'exposition
+   * est réelle : le paramétrage part en production à la signature, et un
+   * client qui s'arrête au quatrième mois laisse une demi-journée de travail
+   * contre une fraction du prix.
+   */
+  const base = offreParId("business")!;
+  const sansAcompte = { ...base, plan: { ...base.plan!, acompteHT: 0 } };
+  const erreurs = validerOffres([sansAcompte]);
+  assert.ok(
+    erreurs.some((e) => e.champ === "plan" && /acompte/i.test(e.probleme)),
+    "un acompte nul doit être refusé"
+  );
+
+  // Et le pendant : l'offre réelle passe. Sans ça, le test dirait juste que
+  // « validerOffres refuse quelque chose ».
+  assert.deepEqual(validerOffres([base]), [], "l'offre Business telle qu'elle est écrite doit être valide");
+});
+
+test("⚠ un plan qui encaisse moins que le prix est REFUSÉ", () => {
+  const base = offreParId("business")!;
+  const remise = { ...base, plan: { ...base.plan!, mensualites: 2 } };
+  const erreurs = validerOffres([remise]);
+  assert.ok(
+    erreurs.some((e) => e.champ === "plan" && /remise/i.test(e.probleme)),
+    "2 500 + 2 × 800 = 4 100 € pour un prix de 10 000 € : ce n'est pas un étalement"
+  );
+});
+
+test("lifetime — le crédit d'appels est BORNÉ, sinon c'est une dette à vie", async () => {
+  const { LIFETIME_APPELS_INCLUS, ALPHA_VOICE_MINUTE_SUP_HT } = await import("../lib/offres-publiques");
+  const o = offreParId("lifetime")!;
+  assert.equal(o.cadence, "unique", "« payé une fois » doit être un paiement unique, pas un abonnement");
+  assert.equal(o.voixIncluse, true);
+  assert.equal(o.appelsInclus, LIFETIME_APPELS_INCLUS);
+  assert.ok((o.appelsInclus ?? 0) > 0, "un lifetime sans plafond d'appels est une dette ouverte sans terme");
+  assert.ok(o.auDela?.includes(ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")), "le dépassement suit la grille");
+  /**
+   * Le logiciel est à vie parce que son coût marginal est nul ; la
+   * consommation ne l'est pas. Si l'un des deux disparaît de la phrase, le
+   * client entend « tout est à vie ».
+   */
+  assert.match(o.auDela!, /à vie/i, "il faut dire ce qui reste à vie ET ce qui ne l'est pas");
+});
+
+test("lifetime — les paliers montent, et l'offre FERME", async () => {
+  const { LIFETIME_PALIERS, LIFETIME_PLACES_TOTAL, palierLifetime } = await import("../lib/offres-publiques");
+
+  // Les prix montent strictement : un palier qui ne monte pas n'est pas un
+  // palier, c'est une remise permanente.
+  for (let i = 1; i < LIFETIME_PALIERS.length; i++) {
+    assert.ok(
+      LIFETIME_PALIERS[i].prixHT > LIFETIME_PALIERS[i - 1].prixHT,
+      `palier ${i + 1} : le prix doit monter avec la demande`
+    );
+  }
+
+  assert.equal(palierLifetime(0)!.prixHT, LIFETIME_PALIERS[0].prixHT, "aucune vente : premier palier");
+  assert.equal(palierLifetime(9)!.rang, 1, "la dernière place du palier 1 est encore au palier 1");
+  assert.equal(palierLifetime(10)!.rang, 2, "la place suivante bascule");
+  assert.equal(
+    palierLifetime(LIFETIME_PLACES_TOTAL),
+    null,
+    "tout vendu : il n'y a PLUS de lifetime. Rendre le dernier palier « pour dépanner » ferait mentir la rareté annoncée"
+  );
+
+  /**
+   * ⚠ Le nombre total existe pour une raison qui n'est pas la rareté :
+   * chaque lifetime vendu est un client qui ne paiera plus jamais
+   * d'abonnement. Sans plafond, « basé sur la demande » veut dire « jusqu'à
+   * ce qu'il n'y ait plus de revenu récurrent à faire ».
+   */
+  assert.ok(LIFETIME_PLACES_TOTAL > 0 && LIFETIME_PLACES_TOTAL <= 200, "le total doit être borné et réaliste");
+});
+
+test("⚠ le lifetime coûte moins cher qu'un an et demi d'abonnement — et ça se sait", async () => {
+  /**
+   * Ce test ne juge pas le prix : il refuse qu'on OUBLIE l'arbitrage. Un
+   * lifetime au premier palier doit rester inférieur à ce que le même client
+   * paierait en abonnement sur une durée raisonnable — sinon ce n'est pas une
+   * offre de lancement, c'est un abonnement payé d'avance, et personne ne le
+   * prendra. À l'inverse, s'il descend trop bas, on brade le revenu de
+   * plusieurs années.
+   */
+  const { LIFETIME_PALIERS, ALPHA_VOICE_PALIERS } = await import("../lib/offres-publiques");
+  const mensuel = ALPHA_VOICE_PALIERS[0].prixHT;
+  const moisEquivalents = LIFETIME_PALIERS[0].prixHT / mensuel;
+  assert.ok(
+    moisEquivalents >= 6,
+    `premier palier à ${LIFETIME_PALIERS[0].prixHT} € = ${moisEquivalents.toFixed(1)} mois d'abonnement : on brade`
+  );
+  assert.ok(
+    moisEquivalents <= 24,
+    `premier palier = ${moisEquivalents.toFixed(1)} mois d'abonnement : ce n'est plus une offre de lancement`
+  );
+});

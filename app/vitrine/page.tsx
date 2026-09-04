@@ -7,10 +7,12 @@ import { useState } from "react";
 // l'affiche. Voir lib/public-catalogue.ts.
 import {
   ALPHA_VOICE_PUBLIC,
+  BUSINESS_PUBLIC,
   CAPACITES,
   FRONTIERE_PAYANT,
   GARANTIE,
   PALIERS_LABELS,
+  LIFETIME_PUBLIC,
   PRIX_PUBLICS,
   SOCLE_GRATUIT,
 } from "@/lib/public-catalogue";
@@ -294,6 +296,17 @@ export default function VitrinePage() {
                 Tout est posé, paramétré sur votre métier, vos équipes formées. C&apos;est l&apos;offre où
                 l&apos;on prend tout en charge — et celle qui va le plus loin.
               </p>
+              {/*
+                ⚠ L'ÉTALEMENT SE DIT ICI, sous le prix, pas dans une note de bas
+                de page. Le blocage n'a jamais été le montant : c'est de le
+                signer d'un trait. Le cacher jusqu'au devis fait perdre la
+                conversation avant qu'elle commence.
+              */}
+              <p className="mt-5 rounded-xl px-4 py-3 text-[15px] leading-[1.55]" style={{ background: CREAM, color: INK }}>
+                <strong>Ou étalé :</strong> {BUSINESS_PUBLIC.acompteHT.toLocaleString("fr-FR")} € HT à la signature,
+                puis {BUSINESS_PUBLIC.mensualites} × {BUSINESS_PUBLIC.mensualiteHT} € HT. L&apos;abonnement de{" "}
+                {BUSINESS_PUBLIC.abonnementHT.toLocaleString("fr-FR")} € HT/mois ne démarre qu&apos;après.
+              </p>
             </div>
 
             <div className="rounded-2xl p-8" style={{ border: `1px solid ${LINE}` }}>
@@ -309,6 +322,47 @@ export default function VitrinePage() {
                 d&apos;autre. Beaucoup commencent comme ça.
               </p>
             </div>
+          </div>
+
+          {/*
+            ── LIFETIME ──
+
+            Ce qu'un lifetime est vraiment : on échange tout le revenu futur
+            d'un client contre de l'argent maintenant. La page ne le dit pas au
+            prospect — ce n'est pas son sujet — mais elle dit les deux choses
+            qui l'engagent, LUI : ce qui est à vie (le logiciel) et ce qui ne
+            l'est pas (la consommation). Une offre « à vie » dont le périmètre
+            n'est pas écrit se discute au premier dépassement.
+          */}
+          <div className="mt-16 rounded-2xl p-8" style={{ border: `1px solid ${ACCENT}` }}>
+            <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>
+              Lifetime — {LIFETIME_PUBLIC.placesTotal} places, puis l&apos;offre ferme
+            </p>
+            <p className="mt-4 font-serif text-[46px] leading-none tracking-[-0.02em]">
+              {LIFETIME_PUBLIC.paliers[0].prixHT.toLocaleString("fr-FR")}{" "}
+              <span className="text-[22px]" style={{ color: MUTED }}>€ HT</span>
+            </p>
+            <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
+              pour les {LIFETIME_PUBLIC.paliers[0].places} premiers — le prix monte ensuite
+            </p>
+            <p className="mt-5 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+              Le <strong style={{ color: INK }}>logiciel à vie</strong>, payé une fois, mises à jour
+              comprises, avec {LIFETIME_PUBLIC.appelsInclus.toLocaleString("fr-FR")} appels inclus.
+              Ce qui se consomme ensuite — les appels, les envois — reste facturé à l&apos;usage :
+              une minute coûte quelque chose à quelqu&apos;un, tous les mois, et prétendre le
+              contraire finirait par se voir.
+            </p>
+            <ul className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-[15px]" style={{ color: MUTED }}>
+              {LIFETIME_PUBLIC.paliers.map((t) => (
+                <li key={t.rang}>
+                  <span style={{ color: INK }}>{t.prixHT.toLocaleString("fr-FR")} € HT</span> — {t.places} places
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-[15px] leading-[1.55]" style={{ color: MUTED }}>
+              Le nombre de places n&apos;est pas un argument : l&apos;installation se fait à la main,
+              par une seule personne.
+            </p>
           </div>
 
           {/*

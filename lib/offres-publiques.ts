@@ -70,6 +70,100 @@ export const PACK_SETUP_HT = 10_000;
 export const PACK_MONTHLY_HT = 1_000;
 
 /**
+ * ── L'OFFRE BUSINESS — 10 000 € ÉTALÉS, PUIS L'ABONNEMENT ──
+ *
+ * Le pack existait déjà au même prix, payable d'un coup. Ce qui change n'est
+ * pas le montant, c'est le MOMENT : 10 000 € à signer d'un trait est le
+ * blocage qui fait dire « on en reparle au prochain trimestre ».
+ *
+ * ⚠ L'ACOMPTE COUVRE LE TRAVAIL DÉJÀ FAIT, ce n'est pas une marque de sérieux.
+ * L'installation est livrée EN ENTIER, à la main, avant la première
+ * mensualité. Un client qui s'arrête au quatrième mois laisse une demi-journée
+ * de travail et un paramétrage en production contre une fraction du prix.
+ * Descendre l'acompte, c'est augmenter cette exposition — et c'est la première
+ * chose qu'on essaiera de négocier.
+ *
+ * ⚠ LES 500 € D'ÉCART SONT DITS, PAS CACHÉS. 2 500 + 10 × 800 = 10 500 €,
+ * soit 5 % de plus que le paiement comptant. C'est le prix du risque
+ * d'impayé que NOUS portons pendant dix mois, et il se dit comme ça. Un écart
+ * qu'on découvre sur la facture coûte plus cher que l'écart lui-même.
+ *
+ * ⚠⚠ Ce sont des DÉCISIONS, pas des mesures : zéro client a signé ce plan.
+ */
+export const PACK_ACOMPTE_HT = 2_500;
+export const PACK_MENSUALITES = 10;
+export const PACK_MENSUALITE_HT = 800;
+
+/**
+ * ── LES LIFETIME DEALS ──
+ *
+ * Ce qu'un lifetime EST vraiment : on échange tout le revenu futur d'un client
+ * contre de l'argent maintenant. À 0 € de chiffre d'affaires, c'est un
+ * arbitrage défendable — la trésorerie d'aujourd'hui vaut plus que
+ * l'abonnement de 2029. Mais c'est un arbitrage, pas une promotion.
+ *
+ * ⚠ CE QU'IL COUVRE, ET POURQUOI PAS PLUS. Le LOGICIEL est à vie : son coût
+ * marginal est nul, l'hébergement est mutualisé (`margeOffre` le dit déjà pour
+ * les offres sans appels). La CONSOMMATION ne l'est pas : chaque minute coûte
+ * 0,0563 €, pour toujours. Un lifetime « tout compris » à 2 000 € avec 500
+ * minutes par mois s'équilibre vers six ans et devient une perte ensuite —
+ * sans plafond, et sans possibilité de revenir en arrière. D'où le crédit
+ * BORNÉ : c'est exactement la règle que `validerOffres` impose déjà à toute
+ * offre qui inclut la voix.
+ *
+ * ⚠ « BASÉ SUR LA DEMANDE » = LES PALIERS MONTENT QUAND ILS SE REMPLISSENT
+ * RÉELLEMENT. La rareté est un FAIT ici — l'installation se fait à la main,
+ * par une seule personne — jamais un compteur inventé. Un palier qui n'avance
+ * pas quand il devrait se vérifie au coup de fil suivant, et le prix entier
+ * perd sa crédibilité avec lui.
+ *
+ * ⚠⚠ LE PLAFOND À NE PAS OUBLIER : chaque lifetime vendu est un client qui ne
+ * paiera plus jamais d'abonnement. À 1 900 €, l'abonnement Essentiel rapporte
+ * la même somme en treize mois. En vendre beaucoup revient à plafonner son
+ * propre revenu récurrent, définitivement. C'est pour ça qu'il y a un nombre
+ * total, et pas seulement des paliers de prix.
+ */
+export interface PalierLifetime {
+  /** Rang du palier, pour l'afficher (« les 10 premiers »). */
+  rang: number;
+  prixHT: number;
+  /** Nombre de places à ce prix. */
+  places: number;
+}
+
+export const LIFETIME_PALIERS: PalierLifetime[] = [
+  { rang: 1, prixHT: 1_900, places: 10 },
+  { rang: 2, prixHT: 2_900, places: 20 },
+  { rang: 3, prixHT: 3_900, places: 30 },
+];
+
+/**
+ * Le total, toutes places confondues. Au-delà, on ne vend plus de lifetime :
+ * on vend de l'abonnement. Sans ce nombre, « basé sur la demande » veut dire
+ * « jusqu'à ce qu'il n'y ait plus rien à vendre ».
+ */
+export const LIFETIME_PLACES_TOTAL = LIFETIME_PALIERS.reduce((n, p) => n + p.places, 0);
+
+/** Le crédit d'appels compris dans un lifetime. Borné, comme toute offre voix. */
+export const LIFETIME_APPELS_INCLUS = 1_200;
+
+/**
+ * Le palier en cours, d'après le nombre de lifetimes DÉJÀ VENDUS.
+ *
+ * ⚠ Rend `null` quand tout est vendu — et ce `null` est le message : il n'y a
+ * plus de lifetime, il reste l'abonnement. Rendre le dernier palier « pour
+ * dépanner » ferait mentir la rareté qu'on annonce.
+ */
+export function palierLifetime(vendus: number): PalierLifetime | null {
+  let reste = Math.max(0, Math.floor(vendus));
+  for (const p of LIFETIME_PALIERS) {
+    if (reste < p.places) return p;
+    reste -= p.places;
+  }
+  return null;
+}
+
+/**
  * ── TARIFS ALPHA VOICE — DÉCIDÉS LE 02/09/2026 ──
  *
  * La grille précédente (990 € + cinq paliers 59/115/169/219/319) était celle
@@ -170,7 +264,40 @@ export type CadenceOffre =
   /** Abonnement mensuel. */
   | "mensuel"
   /** Pas de prix affiché : cadrage puis devis. */
-  | "devis";
+  | "devis"
+  /**
+   * Une installation ÉTALÉE, puis un abonnement qui prend le relais.
+   *
+   * ⚠ Cette cadence a été ajoutée parce que les trois autres mentaient sur
+   * l'offre Business. « mensuel » aurait affiché la mensualité comme si
+   * c'était le prix (800 € au lieu de 10 000 €) ; « unique » aurait annoncé
+   * 10 000 € payables d'un coup, ce qui est précisément le blocage qu'on
+   * cherche à retirer ; « devis » aurait caché un prix qu'on a décidé
+   * d'afficher. Un modèle de paiement qui n'entre dans aucune case existante
+   * doit avoir sa case, sinon c'est l'affichage qui s'arrange.
+   */
+  | "echelonne";
+
+/**
+ * Le plan de paiement d'une offre échelonnée.
+ *
+ * ⚠ L'ACOMPTE N'EST PAS UNE FORMALITÉ, ET IL N'EST PAS NÉGOCIABLE À LA BAISSE.
+ *
+ * L'installation est livrée EN ENTIER, à la main, avant la première
+ * mensualité. Un client qui s'arrête au quatrième mois laisse une demi-journée
+ * de travail déjà faite et un paramétrage déjà en production, contre une
+ * fraction du prix. L'acompte est ce qui couvre ce travail au moment où il est
+ * fait — pas une marque de sérieux, une couverture de risque.
+ */
+export interface PlanPaiement {
+  /** Encaissé à la signature, AVANT que l'installation commence. */
+  acompteHT: number;
+  /** Nombre de mensualités qui suivent l'acompte. */
+  mensualites: number;
+  mensualiteHT: number;
+  /** L'abonnement qui prend le relais après la dernière mensualité. */
+  abonnementHT: number;
+}
 
 export interface OffrePublique {
   id: string;
@@ -196,6 +323,8 @@ export interface OffrePublique {
   priceEnv: string | null;
   /** L'action, telle qu'elle s'affiche sur le site. */
   cta: { label: string; href: string };
+  /** Le plan de paiement. OBLIGATOIRE sur la cadence « echelonne ». */
+  plan?: PlanPaiement;
   /**
    * Les capacités (`lib/public-catalogue.ts`) que l'achat débloque.
    *
@@ -349,6 +478,68 @@ export const OFFRES: OffrePublique[] = [
     // Tout : c'est la définition du pack complet.
     capacites: ["alpha-voice", "campagnes", "cerveau", "crm", "audits", "tracking", "alpha-live", "closer", "agent-alpha", "pilotage"],
   },
+  {
+    id: "business",
+    nom: "Business",
+    cadence: "echelonne",
+    /**
+     * Le prix AFFICHÉ reste 10 000 € : c'est ce que vaut l'installation, et
+     * c'est ce qui ancre. Le plan dit comment il se paie — l'inverse
+     * (afficher 800 €/mois) ferait croire à un abonnement à 800 €, puis
+     * découvrir 10 000 € au contrat. C'est le genre d'écart qui tue une
+     * signature au dernier mètre.
+     */
+    prixHT: PACK_SETUP_HT,
+    sousTitre: "L'installation complète, étalée. Puis l'abonnement prend le relais.",
+    inclus: [
+      "Les dix briques installées et paramétrées, à ton nom",
+      `${PACK_ACOMPTE_HT} € HT à la signature, puis ${PACK_MENSUALITES} × ${PACK_MENSUALITE_HT} € HT`,
+      `Puis ${PACK_MONTHLY_HT} € HT/mois d'abonnement, à partir du mois ${PACK_MENSUALITES + 1}`,
+      "Marque blanche, multi-utilisateurs, formation terrain",
+    ],
+    voixIncluse: true,
+    appelsInclus: OUTBOUND_UNIT_CALLS,
+    auDela: `Au-delà, ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} € HT la minute — sans coupure.`,
+    priceEnv: "STRIPE_PRICE_BUSINESS",
+    cta: { label: "Parler du Business", href: "/souscrire?offre=business" },
+    capacites: ["alpha-voice", "campagnes", "cerveau", "crm", "audits", "tracking", "alpha-live", "closer", "agent-alpha", "pilotage"],
+    plan: {
+      acompteHT: PACK_ACOMPTE_HT,
+      mensualites: PACK_MENSUALITES,
+      mensualiteHT: PACK_MENSUALITE_HT,
+      abonnementHT: PACK_MONTHLY_HT,
+    },
+  },
+  {
+    id: "lifetime",
+    nom: "Lifetime",
+    cadence: "unique",
+    /**
+     * Le prix du PREMIER palier. Il monte quand les places se remplissent —
+     * réellement, pas au compteur (voir `palierLifetime`). Afficher ici le
+     * palier courant demanderait de connaître le nombre de ventes, que ce
+     * module public n'a pas le droit de lire ; c'est l'écran qui le fait.
+     */
+    prixHT: LIFETIME_PALIERS[0].prixHT,
+    sousTitre: "Le logiciel à vie, payé une fois. La consommation reste à l'usage.",
+    inclus: [
+      "Les dix briques, à vie, sans abonnement",
+      `${LIFETIME_APPELS_INCLUS} appels compris, une fois pour toutes`,
+      "Toutes les mises à jour",
+      `${LIFETIME_PLACES_TOTAL} places au total, puis l'offre ferme`,
+    ],
+    voixIncluse: true,
+    appelsInclus: LIFETIME_APPELS_INCLUS,
+    /**
+     * ⚠ CE PLAFOND EST CE QUI REND LE LIFETIME VIABLE. Le logiciel ne coûte
+     * rien à servir ; les minutes coûtent 0,0563 € chacune, pour toujours.
+     * « À vie » sur la consommation serait une dette ouverte sans terme.
+     */
+    auDela: `Au-delà des appels compris, ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} € HT la minute. Le logiciel, lui, reste à vie.`,
+    priceEnv: "STRIPE_PRICE_LIFETIME",
+    cta: { label: "Prendre une place", href: "/souscrire?offre=lifetime" },
+    capacites: ["alpha-voice", "campagnes", "cerveau", "crm", "audits", "tracking", "alpha-live", "closer", "agent-alpha", "pilotage"],
+  },
 ];
 
 /**
@@ -409,6 +600,37 @@ export function validerOffres(offres: OffrePublique[] = OFFRES): ErreurOffre[] {
     }
     if (o.cadence !== "devis" && (o.prixHT === null || o.prixHT <= 0)) {
       erreurs.push({ offreId: o.id, champ: "prixHT", probleme: "prix manquant sur une offre qui n'est pas sur devis" });
+    }
+    /**
+     * ⚠ UNE CADENCE ÉCHELONNÉE SANS PLAN EST UN PRIX SANS ÉCHÉANCIER — donc
+     * une conversation qui se termine par « on vous enverra le détail ». Et
+     * un plan qui encaisse MOINS que le prix affiché n'est pas un étalement,
+     * c'est une remise déguisée : on la fait exprès ou on ne la fait pas.
+     */
+    if (o.cadence === "echelonne") {
+      if (!o.plan) {
+        erreurs.push({
+          offreId: o.id,
+          champ: "plan",
+          probleme: "cadence « echelonne » sans plan de paiement : le prix est affiché sans dire comment il se paie.",
+        });
+      } else {
+        const total = o.plan.acompteHT + o.plan.mensualites * o.plan.mensualiteHT;
+        if (o.prixHT !== null && total < o.prixHT) {
+          erreurs.push({
+            offreId: o.id,
+            champ: "plan",
+            probleme: `le plan encaisse ${total} € pour un prix affiché de ${o.prixHT} € : c'est une remise, pas un étalement.`,
+          });
+        }
+        if (o.plan.acompteHT <= 0) {
+          erreurs.push({
+            offreId: o.id,
+            champ: "plan",
+            probleme: "acompte nul : l'installation est livrée en entier avant la première mensualité, rien ne couvre ce travail.",
+          });
+        }
+      }
     }
     if (o.cadence !== "devis" && !o.priceEnv) {
       erreurs.push({

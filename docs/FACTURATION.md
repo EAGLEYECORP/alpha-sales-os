@@ -51,6 +51,18 @@ signature des webhooks à la main** (HMAC-SHA256). Pas de SDK.
 | Solo | abonnement mensuel | 79 € HT | `STRIPE_PRICE_SOLO` |
 | Pro | abonnement mensuel | 149 € HT | `STRIPE_PRICE_PRO` |
 | Alpha Voice — 1 000 appels | abonnement mensuel | 364 € HT | `STRIPE_PRICE_VOIX_1000` |
+| Business | installation **étalée** puis abonnement | 2 500 € + 10 × 800 €, puis 1 000 € HT/mois | `STRIPE_PRICE_BUSINESS` |
+| Lifetime | **paiement unique** | à partir de 1 900 € HT | `STRIPE_PRICE_LIFETIME` |
+
+> ⚠ **Business demande DEUX prix Stripe, pas un.** L'étalement est un
+> abonnement à 800 € qui doit s'**arrêter après 10 prélèvements** ; l'abonnement
+> à 1 000 €/mois prend le relais ensuite. Un abonnement Stripe sans date de fin
+> continuerait à prélever les 800 € indéfiniment, **en plus** du relais : le
+> client paierait 1 800 €/mois sans que rien ne le signale de notre côté.
+>
+> ⚠ **Lifetime est un paiement UNIQUE.** Le créer en récurrent facturerait tous
+> les mois quelqu'un à qui on vient de promettre « payé une fois » — la faute
+> la plus coûteuse en réputation de toute cette table.
 
 ⚠ **L'essai est un paiement UNIQUE.** Le créer en récurrent prélèverait 290 €
 tous les mois à quelqu'un qui croyait payer une mise en route. Le code déduit
@@ -68,6 +80,8 @@ STRIPE_PRICE_ESSAI=price_…             # paiement UNIQUE, 290 €
 STRIPE_PRICE_SOLO=price_…              # abonnement, 79 €
 STRIPE_PRICE_PRO=price_…               # abonnement, 149 €
 STRIPE_PRICE_VOIX_1000=price_…         # abonnement, 364 €
+STRIPE_PRICE_BUSINESS=price_…          # abonnement 800 €, À ARRÊTER après 10 prélèvements
+STRIPE_PRICE_LIFETIME=price_…          # paiement UNIQUE, à partir de 1 900 €
 STRIPE_WEBHOOK_SECRET=whsec_…          # étape 3
 OWNER_EMAILS=contact@eagleyecorp.fr        # ton accès permanent (serveur)
 NEXT_PUBLIC_OWNER_EMAILS=contact@eagleyecorp.fr  # LA MÊME VALEUR (navigateur)

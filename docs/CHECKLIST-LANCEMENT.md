@@ -144,10 +144,13 @@ le facteur limitant.
       seulement à l'encaissement), et les REFERME à la résiliation. Reste à
       le prouver sur un vrai compte Stripe : `docs/FACTURATION.md`, étape 4,
       qui vérifie LES DEUX tables et la résiliation.
-- [ ] Créer les **quatre** prix Stripe (`STRIPE_PRICE_ESSAI`, `_SOLO`, `_PRO`,
-      `_VOIX_1000`). ⚠ L'essai est un paiement **UNIQUE** : le créer en
-      récurrent prélèverait 290 € tous les mois à quelqu'un qui croyait payer
-      une mise en route.
+- [ ] Créer les **six** prix Stripe (`STRIPE_PRICE_ESSAI`, `_SOLO`, `_PRO`,
+      `_VOIX_1000`, `_BUSINESS`, `_LIFETIME`). ⚠ Deux d'entre eux sont des
+      paiements **UNIQUES** — `_ESSAI` et `_LIFETIME` : les créer en récurrent
+      prélèverait tous les mois quelqu'un qui croyait payer une seule fois.
+      ⚠⚠ `_BUSINESS` est l'inverse : c'est un abonnement d'étalement qui doit
+      **s'arrêter après 10 prélèvements**, sinon les 800 € continuent en plus
+      de l'abonnement de 1 000 € qui prend le relais.
 - [ ] **Ce qu'on peut vendre** : « accès limité à ce que tu as payé ».
       **Ce qu'on ne peut pas encore promettre** : « le code des autres briques
       t'est invisible ». Le JavaScript reste téléchargeable — le serveur

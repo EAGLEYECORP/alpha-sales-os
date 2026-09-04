@@ -784,3 +784,49 @@ test("vitrine — l'article 50 est servi comme argument, et sans nommer la pile"
   // Et le test de pile technique plus haut continue de s'appliquer : on dit
   // CE QU'ON FAIT, jamais avec quel fournisseur on le fait.
 });
+
+test("vitrine — Business et Lifetime affichés = ceux qui sont décidés", async () => {
+  /**
+   * Recopiés à la main dans `public-catalogue` (ce module ne doit importer ni
+   * `bricks` ni `offres-publiques`, qui portent nos coûts). La copie est sûre
+   * parce qu'elle est comparée, pas parce qu'on fait attention.
+   */
+  const { BUSINESS_PUBLIC, LIFETIME_PUBLIC } = await import("../lib/public-catalogue");
+  const {
+    PACK_SETUP_HT, PACK_ACOMPTE_HT, PACK_MENSUALITES, PACK_MENSUALITE_HT, PACK_MONTHLY_HT,
+    LIFETIME_PALIERS, LIFETIME_PLACES_TOTAL, LIFETIME_APPELS_INCLUS,
+  } = await import("../lib/offres-publiques");
+
+  assert.equal(BUSINESS_PUBLIC.prixHT, PACK_SETUP_HT);
+  assert.equal(BUSINESS_PUBLIC.acompteHT, PACK_ACOMPTE_HT);
+  assert.equal(BUSINESS_PUBLIC.mensualites, PACK_MENSUALITES);
+  assert.equal(BUSINESS_PUBLIC.mensualiteHT, PACK_MENSUALITE_HT);
+  assert.equal(BUSINESS_PUBLIC.abonnementHT, PACK_MONTHLY_HT);
+
+  assert.deepEqual(
+    LIFETIME_PUBLIC.paliers.map((t) => [t.rang, t.prixHT, t.places]),
+    LIFETIME_PALIERS.map((t) => [t.rang, t.prixHT, t.places]),
+    "les paliers publics ont divergé — c'est le prix affiché qui engage"
+  );
+  assert.equal(LIFETIME_PUBLIC.placesTotal, LIFETIME_PLACES_TOTAL);
+  assert.equal(LIFETIME_PUBLIC.appelsInclus, LIFETIME_APPELS_INCLUS);
+});
+
+test("vitrine — « à vie » dit AUSSI ce qui ne l'est pas", () => {
+  /**
+   * Une offre « à vie » dont le périmètre n'est pas écrit se discute au
+   * premier dépassement — et on a alors tort, quel que soit le contrat, parce
+   * que c'est nous qui avons employé le mot.
+   */
+  assert.match(publique, /logiciel à vie/i, "ce qui est à vie doit être nommé");
+  assert.match(publique, /reste factur[ée]/i, "…et ce qui reste facturé aussi");
+  assert.match(vitrine, /LIFETIME_PUBLIC\.appelsInclus/, "le crédit d'appels vient du catalogue, pas d'un nombre retapé");
+});
+
+test("vitrine — l'étalement est sous le prix, pas en note de bas de page", () => {
+  // Le blocage n'a jamais été le montant, c'est de le signer d'un trait. Le
+  // cacher jusqu'au devis fait perdre la conversation avant qu'elle commence.
+  assert.match(vitrine, /BUSINESS_PUBLIC\.acompteHT/);
+  assert.match(vitrine, /BUSINESS_PUBLIC\.mensualiteHT/);
+  assert.match(publique, /Ou étalé/i);
+});
