@@ -657,7 +657,51 @@ export const seedActivities: Activity[] = [
 // inventée.
 export const DEMO_PROSPECT_IDS: ReadonlySet<string> = new Set(SEED_PROSPECT_IDS);
 
-export const isDemoProspect = (id: string): boolean => DEMO_PROSPECT_IDS.has(id);
+/**
+ * ── LE PRÉFIXE DES FICHES DE DÉMO ENGENDRÉES ──
+ *
+ * ⚠ CE VERROU ÉTAIT UNE LISTE, ET UNE LISTE NE PEUT PAS COUVRIR CE QU'ON
+ * FABRIQUE À L'EXÉCUTION.
+ *
+ * `isDemoProspect` répondait par appartenance à un ensemble figé de huit
+ * identifiants. Tant que le jeu de démonstration était écrit à la main, ça
+ * suffisait. Dès qu'il se GÉNÈRE — depuis l'ICP de l'inscrit — les fiches
+ * produites n'y sont plus, donc `isDemoProspect` rend `false`, donc
+ * `/api/send` les considère comme de VRAIS prospects et accepte de leur
+ * écrire. Le garde-fou ne casse pas : il s'ouvre, en silence, sur exactement
+ * ce qu'il existe pour empêcher.
+ *
+ * La question « est-ce une fiche de démo ? » doit donc se répondre sur la
+ * STRUCTURE de l'identifiant, pas sur une liste que quelqu'un doit penser à
+ * tenir à jour. Toute fiche engendrée porte ce préfixe, et il est réservé :
+ * aucun import ne le produit (les fiches terrain sont préfixées par leur
+ * source, les fiches manuelles par un identifiant aléatoire).
+ */
+export const PREFIXE_DEMO = "demo-";
+
+export const isDemoProspect = (id: string): boolean =>
+  DEMO_PROSPECT_IDS.has(id) || id.startsWith(PREFIXE_DEMO);
+
+/**
+ * Les domaines qu'aucune adresse réelle ne peut porter.
+ *
+ * ⚠ Deuxième clé du même verrou, et elle est STRUCTURELLE elle aussi.
+ * `EMAILS_DE_DEMO` est une liste dérivée du jeu écrit à la main : elle ne
+ * connaît pas les adresses engendrées. Or ces adresses sont posées sur des
+ * domaines réservés par la RFC 2606 — `example.com`, `.invalid`, `.test` —
+ * dont l'IETF garantit qu'ils ne seront JAMAIS attribués. Un domaine réservé
+ * est une preuve, pas une convention : il ne peut pas devenir vrai un jour.
+ *
+ * C'est ce qui protège le cas où l'identifiant n'arrive pas jusqu'au serveur.
+ */
+const DOMAINES_RESERVES = ["example.com", "example.org", "example.net", ".invalid", ".test", ".example"];
+
+export function estAdresseDeDemo(email: string): boolean {
+  const a = email.trim().toLowerCase();
+  if (!a) return false;
+  if (EMAILS_DE_DEMO.has(a)) return true;
+  return DOMAINES_RESERVES.some((d) => a.endsWith(d));
+}
 
 /**
  * Même mécanique pour les CAMPAGNES, et pour la même raison.

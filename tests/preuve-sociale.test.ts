@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { seedMeetings, seedProspects, seedCampaigns, isDemoCampaign, isDemoProspect, EMAILS_DE_DEMO } from "../lib/seed";
+import { seedMeetings, seedProspects, seedCampaigns, isDemoCampaign, isDemoProspect, EMAILS_DE_DEMO, estAdresseDeDemo } from "../lib/seed";
+import { demoDepuisProfil } from "../lib/demo-icp";
 import { buildTemplates } from "../lib/templates";
 import { useAlpha } from "../lib/store";
 
@@ -382,7 +383,7 @@ test("⚠ aucun écran n'affirme un « standard du marché » qu'on n'a pas mesu
 test("⚠ /api/send refuse les fiches de démonstration, par id ET par adresse", () => {
   const src = sansCommentaires(readFileSync(join(RACINE, "app/api/send/route.ts"), "utf8"));
   assert.match(src, /isDemoProspect\(body\.prospectId\)/, "la route doit refuser par identifiant");
-  assert.match(src, /EMAILS_DE_DEMO\.has/, "et par adresse, pour l'appelant qui n'envoie pas d'identifiant");
+  assert.match(src, /estAdresseDeDemo\(body\.to\)/, "et par adresse, pour l'appelant qui n'envoie pas d'identifiant");
   assert.match(src, /status:\s*409/, "la requête est correcte : c'est la cible qui est refusée, pas la forme");
 
   // Les deux clés sont dérivées du seed — pas de liste tenue à la main.
@@ -395,6 +396,86 @@ test("⚠ /api/send refuse les fiches de démonstration, par id ET par adresse",
     }
   }
   assert.equal(EMAILS_DE_DEMO.has("contact@une-vraie-boite.fr"), false);
+  assert.equal(estAdresseDeDemo("contact@une-vraie-boite.fr"), false, "une vraie adresse ne doit jamais être prise pour une démo");
+});
+
+test("⚠ LE VERROU TIENT SUR LES FICHES ENGENDRÉES — celles qu'aucune liste ne connaît", () => {
+  /**
+   * ⚠ LE MOMENT OÙ CE VERROU SE SERAIT OUVERT TOUT SEUL.
+   *
+   * `isDemoProspect` et `EMAILS_DE_DEMO` répondaient par appartenance à deux
+   * ensembles dérivés des huit fiches écrites à la main. Tant que le jeu de
+   * démonstration était figé, ça suffisait. Depuis qu'il se GÉNÈRE à partir
+   * de l'ICP de l'inscrit (`lib/demo-icp.ts`), les fiches produites n'y sont
+   * plus : les deux clés auraient rendu `false`, `/api/send` les aurait
+   * traitées comme de vrais prospects, et l'agent vocal aurait composé leurs
+   * numéros. Rien n'aurait cassé, rien n'aurait alerté.
+   *
+   * Les deux clés sont donc STRUCTURELLES : un préfixe réservé, un domaine
+   * réservé. On le vérifie sur la vraie sortie du générateur, pas sur une
+   * fiche fabriquée pour le test — sinon on ne mesure que sa propre fixture.
+   */
+  const fiches = demoDepuisProfil({
+    poste: "solo",
+    metier: "logiciel RH",
+    cibleSecteur: "logistique",
+    cibleRole: "directeur des opérations",
+    cibleZone: "Rhône",
+  })!;
+  assert.ok(fiches.length > 0, "le générateur doit produire quelque chose sur un profil exploitable");
+
+  for (const f of fiches) {
+    assert.ok(isDemoProspect(f.id), `${f.id} : fiche engendrée non reconnue comme démo — /api/send l'accepterait`);
+    assert.ok(estAdresseDeDemo(f.email ?? ""), `${f.email} : adresse engendrée non reconnue comme démo`);
+    /**
+     * Le numéro doit être dans la tranche ARCEP réservée à la fiction
+     * (décision 2018-0881) : ni appelable, ni attribuable. Un numéro
+     * « plausible » inventé à la main appartient à quelqu'un.
+     */
+    assert.match(f.phone ?? "", /^06 39 98 /, `${f.phone} : hors de la tranche réservée à la fiction`);
+    // Et un humain doit pouvoir le voir sans lire le code.
+    assert.match(f.company, /\(démo\)/, `${f.company} : rien ne signale à l'écran que la fiche est inventée`);
+    /**
+     * ⚠ AUCUNE VALEUR MONÉTAIRE. Une fiche inventée qui porte un montant
+     * entre dans le pipe pondéré et dans les prévisions : le tableau de bord
+     * annoncerait un chiffre d'affaires imaginaire tous les matins.
+     */
+    assert.equal(f.monthlyValue, 0, `${f.company} : une fiche de démo ne doit peser aucun euro`);
+    assert.equal(f.setupValue, 0);
+    assert.equal(f.probability, 0);
+  }
+});
+
+test("⚠ le même profil rend TOUJOURS les mêmes fiches", () => {
+  /**
+   * Une démonstration qui change à chaque rendu ne se lit pas comme « c'est
+   * un exemple » : elle se lit comme une perte de données. C'est le même
+   * défaut que l'écran qui se vide une seconde au chargement — il ressemble
+   * trait pour trait à une panne.
+   */
+  const profil = {
+    poste: "solo" as const,
+    metier: "conseil",
+    cibleSecteur: "industrie",
+    cibleRole: "DAF",
+    cibleZone: "",
+  };
+  assert.deepEqual(demoDepuisProfil(profil), demoDepuisProfil(profil));
+
+  // Et deux profils différents ne donnent pas le même jeu, sinon la
+  // personnalisation est décorative.
+  const autre = demoDepuisProfil({ ...profil, cibleSecteur: "santé" })!;
+  assert.notDeepEqual(demoDepuisProfil(profil)!.map((f) => f.company), autre.map((f) => f.company));
+});
+
+test("un profil sans cible ne fabrique RIEN — il retombe sur le jeu écrit à la main", () => {
+  /**
+   * Inventer des fiches à partir de rien produirait un décor générique de
+   * plus, sans le mérite d'être cohérent. Le `null` est le message : il dit
+   * à l'appelant de garder le jeu existant.
+   */
+  assert.equal(demoDepuisProfil({ poste: "solo", metier: "", cibleSecteur: "", cibleRole: "", cibleZone: "" }), null);
+  assert.equal(demoDepuisProfil({ poste: "solo", metier: "x", cibleSecteur: "  ", cibleRole: "y", cibleZone: "z" }), null);
 });
 
 test("aucune surface d'envoi ne compose une liste envoyable de fiches de démo", () => {

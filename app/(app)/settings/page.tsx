@@ -7,6 +7,7 @@ import { useAlpha } from "@/lib/store";
 import { SyncProspects } from "@/components/sync-prospects";
 import { ValidationPartenairePanel } from "@/components/settings/validation-partenaire-panel";
 import { importerFiches, ressembleAuTerrain } from "@/lib/sourcing-terrain-import";
+import { ProfilIcp } from "@/components/profil-icp";
 import {
   pushSnapshot,
   pullSnapshot,
@@ -465,20 +466,15 @@ export default function SettingsPage() {
               <input type="number" className="input" value={settings.commissionPct} onChange={(e) => patchSettings({ commissionPct: +e.target.value })} />
             </div>
           </div>
-          <div>
-            <label className="label">Lien de réservation (Cal.com, Calendly…)</label>
-            <input
-              className="input"
-              placeholder="https://cal.com/eagleye/audit-15min"
-              value={settings.bookingUrl ?? ""}
-              onChange={(e) => patchSettings({ bookingUrl: e.target.value.trim() })}
-            />
-            <p className="mt-1 text-[11.5px] text-paper-faint">
-              C&apos;est la pièce qui te donne des <strong className="text-paper-dim">RDV en autonomie</strong> : elle
-              ajoute un bouton « Réserver un créneau » dans tes emails, tes messages LinkedIn et l&apos;audit cadeau.
-              Le prospect pose le rendez-vous lui-même, pendant que tu es sur le terrain.
-            </p>
-          </div>
+          {/*
+            ⚠ LE LIEN DE RENDEZ-VOUS ET L'ICP SE SAISISSENT AU MÊME ENDROIT,
+            et c'est `ProfilIcp` qui porte les deux. Le lien vivait ici tout
+            seul, sur une page que personne n'ouvre le premier jour — alors
+            que c'est la pièce qui produit des rendez-vous sans nous. Le
+            dupliquer en deux formulaires aurait créé deux vérités : celui
+            qui remplit l'un ne comprend pas pourquoi l'autre est vide.
+          */}
+          <ProfilIcp compact />
 
           {/* Mon offre — white-label : ce que CE compte vend (docs + branding) */}
           <div className="rounded-xl border border-bronze-700/40 bg-bronze-900/10 p-3">

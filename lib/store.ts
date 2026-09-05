@@ -20,6 +20,7 @@ import type {
   TimelineEvent,
   Partner,
   PartnerIntro,
+  ProfilOperateur,
 } from "./types";
 import { fillTemplate } from "./templates";
 import {
@@ -32,6 +33,8 @@ import {
   prospectDefaults,
   isDemoProspect,
 } from "./seed";
+import { demoDepuisProfil } from "./demo-icp";
+import { nettoyerProfil } from "./profil-operateur";
 import { stageById, signingBlockers } from "./hormozi";
 // ⚠ Le SOCLE de notes n'est plus importé ici. Il portait le playbook en clair
 // (adresses partenaires, prix de setup, taux par offre) et le store est importé
@@ -187,6 +190,8 @@ interface AlphaState {
   importProspects: (list: Prospect[]) => { added: number; updated: number };
   /** Wipe ALL business data (prospects, campaigns, meetings, activities, intel) — start real. */
   clearAllData: () => void;
+  /** Enregistre le profil ICP et refabrique la démonstration avec (voir l'implémentation). */
+  appliquerProfil: (profil: Partial<ProfilOperateur>) => void;
   exportData: () => string;
   resetToSeed: () => void;
   /** Charge le pipeline réel de juillet 2026 (Lyon) — remplace tout. */
@@ -1067,6 +1072,52 @@ export const useAlpha = create<AlphaState>()(
         // Fusionne (ajoute / met à jour) — n'efface pas le pipeline existant.
         return get().importProspects(prospects);
       },
+
+      /**
+       * ─────────────────────────────────────────────────────────────────
+       * ENREGISTRE LE PROFIL, ET REFABRIQUE LA DÉMONSTRATION AVEC.
+       *
+       * ⚠ ON NE REMPLACE QUE LES FICHES DE DÉMO, ET C'EST LA GARDE ENTIÈRE.
+       *
+       * Un inscrit peut très bien importer ses vraies fiches PUIS revenir
+       * corriger son ICP dans les réglages — c'est même l'ordre naturel : on
+       * découvre qu'on s'est mal décrit après avoir vu le produit tourner.
+       * Un `set({ prospects: … })` effacerait alors son fichier réel, et sur
+       * une app local-first le localStorage est la SEULE copie. Il n'y aurait
+       * rien à restaurer.
+       *
+       * `isDemoProspect` répond sur la STRUCTURE de l'identifiant (préfixe
+       * réservé ou appartenance au jeu écrit à la main), donc aucune fiche
+       * importée ne peut être prise pour une fiche de démo.
+       *
+       * ⚠⚠ ET UN PROFIL NON EXPLOITABLE NE TOUCHE À RIEN. `demoDepuisProfil`
+       * rend `null` — on garde alors le jeu existant plutôt que de vider les
+       * écrans. Quelqu'un qui efface son secteur par accident ne doit pas
+       * découvrir un pipeline vide.
+       * ─────────────────────────────────────────────────────────────────
+       */
+      appliquerProfil: (brut) =>
+        set((s) => {
+          const profil = nettoyerProfil(brut);
+          const settings = { ...s.settings, profil };
+          const fabriquees = demoDepuisProfil(profil);
+          if (!fabriquees) return { settings };
+
+          const reelles = s.prospects.filter((p) => !isDemoProspect(p.id));
+          return {
+            settings,
+            prospects: [...fabriquees, ...reelles],
+            // Le plafond des journaux vit à UN seul endroit — un `...s.activities`
+            // nu est la signature exacte de l'empilement sans borne, et les
+            // journaux partagent le quota localStorage avec le CRM lui-même.
+            activities: pousserActivite(s.activities, {
+              id: uid(),
+              date: new Date().toISOString(),
+              kind: "systeme" as const,
+              message: `Démonstration refaite sur ta cible — ${fabriquees.length} fiches d'exemple, ${reelles.length} fiche(s) réelle(s) conservée(s)`,
+            }),
+          };
+        }),
 
       resetToSeed: () =>
         set({

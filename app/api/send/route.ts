@@ -5,7 +5,7 @@ import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliv
 import { getTenant } from "@/lib/tenant";
 import { accountTier } from "@/lib/stripe";
 import { FREE_TIER, startOfMonthMs } from "@/lib/plans";
-import { isDemoProspect, EMAILS_DE_DEMO } from "@/lib/seed";
+import { isDemoProspect, estAdresseDeDemo } from "@/lib/seed";
 import { estPartenaire } from "@/lib/validation-partenaire";
 import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
@@ -150,9 +150,19 @@ export async function POST(request: NextRequest) {
    * c'est la CIBLE qui ne doit pas être écrite.
    * ─────────────────────────────────────────────────────────────────────
    */
+  /**
+   * ⚠ LES DEUX CLÉS SONT DEVENUES STRUCTURELLES, ET C'EST CE QUI LES REND
+   * SÛRES MAINTENANT QUE LE JEU DE DÉMO SE GÉNÈRE.
+   *
+   * Elles interrogeaient deux LISTES dérivées des huit fiches écrites à la
+   * main. Depuis que la démo se fabrique à partir de l'ICP de l'inscrit, ces
+   * listes ne connaissent plus les fiches produites : le verrou se serait
+   * ouvert tout seul, sans rien casser ni rien dire. `isDemoProspect` lit
+   * désormais un préfixe réservé, `estAdresseDeDemo` un domaine réservé par
+   * la RFC 2606 — deux propriétés qu'aucune fiche réelle ne peut porter.
+   */
   const cibleDemo =
-    (body.prospectId ? isDemoProspect(body.prospectId) : false) ||
-    EMAILS_DE_DEMO.has(body.to.trim().toLowerCase());
+    (body.prospectId ? isDemoProspect(body.prospectId) : false) || estAdresseDeDemo(body.to);
   if (cibleDemo) {
     return NextResponse.json(
       {

@@ -2,6 +2,9 @@
 // ALPHA SALES OS® — Domain model
 // Hormozi-native: the decision IS the product. Emotion first, logic second.
 // ─────────────────────────────────────────────────────────────────────
+import type { ProfilOperateur } from "./profil-operateur";
+
+export type { ProfilOperateur };
 
 export type Sector = "restaurant" | "pub" | "ambulance" | "artisan" | "autre";
 
@@ -408,6 +411,15 @@ export interface AppSettings {
    * rendez-vous pendant que tu es sur le terrain. Vide = pas de bouton.
    */
   bookingUrl?: string;
+  /**
+   * Qui est l'inscrit, et à qui il vend (`lib/profil-operateur.ts`).
+   *
+   * ⚠ OPTIONNEL, ET ÇA DOIT LE RESTER. Absent = l'inscrit n'a pas répondu, ou
+   * son store date d'avant ce champ. Les deux cas retombent sur le jeu de
+   * démonstration écrit à la main, qui est cohérent. Rendre ce champ
+   * obligatoire casserait chaque store déjà en circulation.
+   */
+  profil?: ProfilOperateur;
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
   /**
