@@ -519,9 +519,23 @@ test("⚠ l'inscription dit où revenir — sinon le lien de confirmation pointe
    * que le défaut était précisément une ligne absente.
    */
   const src = readFileSync(join(process.cwd(), "lib/auth.ts"), "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
-  const signUpBody = src.slice(src.indexOf("export async function signUp"), src.indexOf("export async function signIn"));
+  const signUpBody = src.slice(src.indexOf("export async function signUp"), src.indexOf("\nexport async function signIn"));
   assert.match(signUpBody, /emailRedirectTo/, "signUp doit fournir une URL de retour");
-  assert.match(signUpBody, /window\.location\.origin/, "l'origine du navigateur est la seule source juste en prod comme en local");
+  /**
+   * ⚠ CETTE ASSERTION EXIGEAIT `window.location.origin` DANS LE CORPS DE
+   * `signUp`, et elle est entrée en conflit avec la règle qui compte
+   * davantage : l'origine ne se lit QU'UNE FOIS dans tout le fichier
+   * (`tests/lien-confirmation.test.ts`). Deux constructions de la même URL
+   * divergent, et il faudrait alors deux entrées dans la liste blanche
+   * Supabase — dont l'oubli ne se découvre qu'au premier inscrit.
+   *
+   * On vérifie donc la DÉLÉGATION, et l'autre test vérifie que la fonction
+   * déléguée lit bien l'origine du navigateur. Les deux moitiés de la
+   * garantie sont couvertes, sans qu'aucune n'autorise un second calcul.
+   */
+  assert.match(signUpBody, /urlRetourAuth\(/, "signUp doit passer par l'unique constructeur d'URL de retour");
+  const helper = src.slice(src.indexOf("export function urlRetourAuth"), src.indexOf("export async function signUp"));
+  assert.match(helper, /window\.location\.origin/, "l'origine du navigateur est la seule source juste en prod comme en local");
 });
 
 test("⚠ NOS 78 FICHES RÉELLES ne sont ouvertes qu'au compte MAÎTRE", async () => {

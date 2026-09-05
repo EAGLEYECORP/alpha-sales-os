@@ -56,17 +56,68 @@ interface AuthResult {
  * Supabase l'ignore et retombe sur la Site URL. Voir docs/INSCRIPTION.md.
  * ─────────────────────────────────────────────────────────────────────
  */
+/**
+ * ── OÙ REVIENT-ON APRÈS AVOIR CLIQUÉ LE LIEN ? ──
+ *
+ * ⚠ UNE SEULE DÉFINITION, ET C'EST TOUT LE SUJET. `signUp` et `resetPassword`
+ * construisaient chacun la leur. Deux expressions du même choix finissent par
+ * diverger, et il faudrait alors deux entrées dans la liste blanche Supabase —
+ * dont on découvrirait l'oubli au premier inscrit, jamais avant.
+ *
+ * ⚠⚠ ELLE POINTAIT SUR `/compte`, ET C'ÉTAIT LE MAUVAIS ENDROIT.
+ * `/compte` est un écran de DIAGNOSTIC : état Supabase, identifiant de
+ * locataire, mot de passe, facturation. Quelqu'un qui vient de confirmer son
+ * adresse n'a rien demandé de tout ça — il veut voir le produit qu'il vient
+ * d'ouvrir. On le pose donc à l'accueil, qui s'adapte déjà à ce qu'il possède.
+ * Le marqueur `?bienvenue=1` permet à l'accueil de le savoir sans deviner.
+ *
+ * ⚠ La redirection doit être dans la liste blanche Supabase (Authentication →
+ * URL Configuration → Redirect URLs, `https://<prod>/**`). Une URL absente est
+ * IGNORÉE en silence et Supabase retombe sur la Site URL — dont la valeur
+ * d'usine est `http://localhost:3000`. Voir `docs/INSCRIPTION.md`.
+ */
+export function urlRetourAuth(suffixe: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/${suffixe}`;
+}
+
 export async function signUp(email: string, password: string): Promise<AuthResult> {
   const sb = getSupabase();
   if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
-  const emailRedirectTo = typeof window !== "undefined" ? `${window.location.origin}/compte` : undefined;
   const { data, error } = await sb.auth.signUp({
     email: email.trim(),
     password,
-    options: { emailRedirectTo },
+    options: { emailRedirectTo: urlRetourAuth("?bienvenue=1") },
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true, needsConfirm: !data.session };
+}
+
+/**
+ * Renvoyer l'email de confirmation.
+ *
+ * ⚠ IL N'EXISTAIT AUCUN MOYEN D'EN REDEMANDER UN, et c'est le défaut le plus
+ * cher du tunnel : le SMTP par défaut de Supabase ne délivre qu'aux membres du
+ * projet, à deux messages par heure (voir `docs/INSCRIPTION.md` §2.3). Un
+ * inscrit dont le mail n'arrive pas — parce qu'il est tombé dans les
+ * indésirables, parce que le quota était atteint, parce que le SMTP n'était
+ * pas encore branché — se retrouvait avec un compte créé, non confirmé, et
+ * strictement aucune action possible. Il ne peut même pas recommencer :
+ * l'adresse est déjà prise.
+ *
+ * ⚠⚠ ON NE DIT PAS SI L'ADRESSE EXISTE. Supabase répond pareil dans les deux
+ * cas, et c'est voulu : une réponse qui différencie « compte inconnu » de
+ * « email renvoyé » transforme ce bouton en énumérateur d'adresses inscrites.
+ */
+export async function resendConfirmation(email: string): Promise<AuthResult> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
+  const { error } = await sb.auth.resend({
+    type: "signup",
+    email: email.trim(),
+    options: { emailRedirectTo: urlRetourAuth("?bienvenue=1") },
+  });
+  return error ? { ok: false, error: error.message } : { ok: true };
 }
 
 export async function signIn(email: string, password: string): Promise<AuthResult> {
@@ -85,8 +136,14 @@ export async function signOut(): Promise<void> {
 export async function resetPassword(email: string): Promise<AuthResult> {
   const sb = getSupabase();
   if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
-  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/compte` : undefined;
-  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+  /**
+   * ⚠ CELLE-CI GARDE `/compte`, ET LA DIFFÉRENCE EST INTENTIONNELLE.
+   * Après un lien de RÉCUPÉRATION, la seule chose à faire est de poser un
+   * nouveau mot de passe — et le formulaire qui le fait vit sur `/compte`.
+   * Envoyer cette personne à l'accueil la laisserait connectée avec un mot de
+   * passe qu'elle ne connaît toujours pas.
+   */
+  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: urlRetourAuth("compte") });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 

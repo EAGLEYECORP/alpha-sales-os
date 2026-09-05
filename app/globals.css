@@ -222,11 +222,39 @@ html.light :focus-visible {
      rendu DÉJÀ FLOUTÉ du parent. Le résultat n'est pas « plus de verre »,
      c'est de la boue grise — et chaque niveau force une couche de
      composition de plus. Une sous-surface se creuse dans la plaque, elle
-     ne s'empile pas dessus : c'est ce que fait `.panel`. */
+     ne s'empile pas dessus : c'est ce que fait `.panel`.
+
+     ⚠ LA RÈGLE OUBLIAIT LE CHROME, ET C'EST UN PARENT FLOUTANT COMME UN
+     AUTRE. Elle ne nommait que `.card` en parent — or le rail, l'en-tête
+     mobile et la barre du bas portent le MÊME `backdrop-filter`. Tout
+     panneau ouvert depuis le chrome (un menu de compte, une liste
+     déroulante) empilait donc un second flou sur un rendu déjà flouté.
+     Trouvé en posant le menu de session dans le rail : la plaque rendait
+     gris sale, exactement le symptôme décrit trois lignes plus haut. Ce
+     n'était pas un cas particulier — c'était la moitié manquante de la
+     règle. */
   .card .card,
-  .card .panel {
+  .card .panel,
+  .glass-chrome .card,
+  .glass-chrome .panel {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  /* ⚠ ET CELLE-CI EST LA MOITIÉ QU'ON OUBLIE : sans flou, une surface à 60 %
+     doit devenir OPAQUE, sinon son texte se pose sur ce qu'il y a derrière.
+     C'est la leçon déjà écrite pour `@supports not` et
+     `prefers-reduced-transparency`, et elle vaut ici pour la même raison
+     mécanique : on vient de retirer le flou.
+
+     Elle ne s'applique QU'AU CHROME, et la distinction compte. Une `.panel`
+     dans une `.card` est une sous-surface CREUSÉE — elle repose sur la plaque
+     de sa parente, qui est déjà opaque-ish, et sa translucidité EST le
+     dessin. Un menu ouvert depuis le rail, lui, FLOTTE au-dessus du contenu
+     de la page : rien ne le porte. */
+  .glass-chrome .card,
+  .glass-chrome .panel {
+    background: rgb(var(--card-bg));
   }
 
   /* Sous-surface : un renfoncement DANS la plaque. Teintée avec la couleur

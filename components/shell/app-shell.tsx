@@ -52,6 +52,8 @@ import { weightedValue } from "@/lib/hormozi";
 import { LockGate } from "@/components/security/lock-gate";
 import { AuthGate } from "@/components/security/auth-gate";
 import { AuthSync } from "@/components/security/auth-sync";
+import { SessionCompte } from "@/components/security/session-compte";
+import { RetourLien } from "@/components/security/retour-lien";
 import { Onboarding } from "@/components/onboarding";
 import { OperatorTour } from "@/components/tour/operator-tour";
 import { PageGuide } from "@/components/page-guide";
@@ -408,6 +410,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Thème + repli */}
         <div className={cn("space-y-1 border-t border-ink-700", collapsed ? "px-2 py-2" : "px-3 py-2")}>
+          {/* Sous quel compte on travaille, et par où on sort. En rail replié,
+              l'initiale suffit — l'adresse reste dans le libellé accessible. */}
+          <SessionCompte variant={collapsed ? "icon" : "rail"} className={collapsed ? "mx-auto" : ""} />
           <ThemeToggle variant={collapsed ? "icon" : "rail"} className={collapsed ? "mx-auto h-9 w-9" : ""} />
           <button
             onClick={toggleCollapsed}
@@ -435,6 +440,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <div className="flex items-center gap-2">
+            <SessionCompte variant="icon" />
             <ThemeToggle variant="icon" className="h-9 w-9" />
             <button
               onClick={() => setPaletteOpen(true)}
@@ -445,8 +451,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
-        {/* Au-dessus de tout : si le stockage local n'enregistre plus, aucune
-            autre information n'a d'importance tant que ce n'est pas réglé. */}
+        {/* Avant tout le reste : quelqu'un qui arrive d'un email de
+            confirmation doit savoir si ça a marché. En cas d'échec, Supabase
+            redirige vers une app d'apparence normale et ne dit rien — c'est
+            le silence le plus cher du tunnel, il tombe pile au moment de la
+            conversion. */}
+        <RetourLien />
+        {/* Puis : si le stockage local n'enregistre plus, aucune autre
+            information n'a d'importance tant que ce n'est pas réglé. */}
         <StorageAlert />
         {/* Et juste en dessous : si le pipe vit sur le serveur, dire s'il est
             chargé. Une liste vide en cours de chargement ressemble trait pour

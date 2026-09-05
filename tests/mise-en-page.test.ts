@@ -388,6 +388,45 @@ test("pas de verre dans le verre", () => {
   );
 });
 
+test("⚠ le chrome est un parent floutant COMME UN AUTRE — la règle l'oubliait", () => {
+  /**
+   * ⚠ LA MOITIÉ MANQUANTE DE LA RÈGLE DU DESSUS, TROUVÉE EN L'UTILISANT.
+   *
+   * « Pas de verre dans le verre » ne nommait que `.card` en parent. Or le
+   * rail, l'en-tête mobile et la barre du bas portent EXACTEMENT le même
+   * `backdrop-filter` — le fichier le dit lui-même : « même verre, mais
+   * teinté avec le fond de page ». Tout panneau ouvert depuis le chrome
+   * empilait donc un second flou sur un rendu déjà flouté.
+   *
+   * Ça ne s'est vu qu'en posant le menu de session dans le rail : la plaque
+   * rendait gris sale, le symptôme exact décrit dans le commentaire au-dessus
+   * de la règle incomplète. Un commentaire juste et une règle à moitié.
+   *
+   * ⚠⚠ ET LA SECONDE MOITIÉ, celle qu'on oublie toujours : une surface qui
+   * perd son flou doit devenir OPAQUE. Sinon son texte se pose sur le contenu
+   * de la page — et un menu ouvert depuis le rail FLOTTE au-dessus de ce
+   * contenu, rien ne le porte. C'est la même leçon que `@supports not`,
+   * pour la même raison mécanique.
+   */
+  /**
+   * On lit CHAQUE bloc où le sélecteur apparaît, et on exige que les deux
+   * propriétés soient couvertes quelque part — plutôt qu'une fenêtre de
+   * caractères après la première occurrence : les deux règles sont séparées
+   * par le commentaire qui les explique, et un test qui casse quand on
+   * documente sa propre règle apprend à ne plus documenter.
+   */
+  const blocs = [...CSS.matchAll(/([^{}]*\.glass-chrome \.card[^{}]*)\{([^}]*)\}/g)].map((m) => m[2]);
+  assert.ok(blocs.length > 0, "le chrome doit figurer parmi les parents qui coupent le flou de leurs surfaces");
+
+  const tout = blocs.join("\n");
+  assert.match(tout, /backdrop-filter:\s*none/, "une surface dans le chrome doit perdre son flou");
+  assert.match(
+    tout,
+    /background:\s*rgb\(var\(--card-bg\)\)\s*;/,
+    "…et devenir OPAQUE, sinon elle est illisible au-dessus du contenu de la page"
+  );
+});
+
 /* ═══════════════════════════════════════════════════════════════════
    4. AUCUNE SURFACE BRICOLÉE
    ═══════════════════════════════════════════════════════════════════ */
