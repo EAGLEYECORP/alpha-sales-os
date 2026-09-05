@@ -6,6 +6,7 @@ import {
   statusGrantsAccess,
   isOwnerServer,
   planForPriceId,
+  PLANS,
 } from "../lib/stripe";
 
 const SECRET = "whsec_test_0123456789abcdef";
@@ -76,12 +77,24 @@ test("stripe — allowlist propriétaire par DOMAINE entier (@eagleyecorp.fr)", 
 });
 
 test("stripe — résolution plan ↔ prix depuis l'env", () => {
-  process.env.STRIPE_PRICE_SOLO = "price_solo_1";
-  process.env.STRIPE_PRICE_PRO = "price_pro_1";
-  assert.equal(planForPriceId("price_solo_1"), "solo");
-  assert.equal(planForPriceId("price_pro_1"), "pro");
+  /**
+   * ⚠ CE TEST NOMMAIT « solo » ET « pro » EN DUR. Les deux plans ont été
+   * retirés le 04/09/2026, et le test est tombé — c'est le bon comportement,
+   * mais le réflexe serait de recopier les nouveaux noms à la main. On
+   * PARCOURT la table : un plan ajouté demain est couvert sans toucher ici,
+   * et un plan retiré ne laisse pas de fixture fantôme.
+   */
+  const noms = Object.values(PLANS);
+  assert.ok(noms.length >= 2, "il faut au moins deux plans pour que la résolution ait un sens");
+
+  for (const p of noms) process.env[p.priceEnv] = `price_${p.id}_1`;
+  for (const p of noms) {
+    assert.equal(planForPriceId(`price_${p.id}_1`), p.id, `${p.priceEnv} doit résoudre vers « ${p.id} »`);
+  }
   assert.equal(planForPriceId("price_inconnu"), null);
   assert.equal(planForPriceId(null), null);
-  delete process.env.STRIPE_PRICE_SOLO;
-  delete process.env.STRIPE_PRICE_PRO;
+  for (const p of noms) delete process.env[p.priceEnv];
+
+  // Une fois l'env vidé, plus rien ne résout : un prix ne s'invente pas.
+  assert.equal(planForPriceId(`price_${noms[0].id}_1`), null, "sans variable posée, aucun plan ne doit sortir");
 });

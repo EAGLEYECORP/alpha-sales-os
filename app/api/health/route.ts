@@ -4,6 +4,7 @@ import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 import { verifierProprietaire } from "@/lib/proprietaire-coherence";
 import { serverAuthEnforced, serverAuthMisconfigured } from "@/lib/supabase-jwt";
 import { verrouDeComptesActif } from "@/lib/entitlements";
+import { OFFRES } from "@/lib/offres-publiques";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,7 +146,21 @@ export async function GET(req: NextRequest) {
         // Facturation Stripe (revente SaaS). Booléens uniquement.
         configured: has("STRIPE_SECRET_KEY"),
         webhook: has("STRIPE_WEBHOOK_SECRET"),
-        prices: has("STRIPE_PRICE_SOLO") || has("STRIPE_PRICE_PRO"),
+        /**
+         * ⚠ CE DIAGNOSTIC LISAIT DEUX VARIABLES MORTES.
+         *
+         * Il regardait `STRIPE_PRICE_SOLO` / `STRIPE_PRICE_PRO`, retirées de
+         * la grille le 04/09/2026 avec les offres qu'elles portaient. Le
+         * panneau « État du système » serait donc resté ÉTEINT pour toujours,
+         * y compris sur une installation parfaitement configurée — et le
+         * réflexe, devant un voyant rouge qui ne s'allume jamais, est de
+         * repasser une heure sur une configuration qui marchait déjà.
+         *
+         * On lit maintenant la grille : toute offre encaissable déclare la
+         * variable qui porte son prix Stripe. Une offre ajoutée demain est
+         * couverte sans toucher à ce fichier.
+         */
+        prices: OFFRES.some((o) => o.priceEnv !== null && has(o.priceEnv)),
         // Abonnement exigé pour envoyer (garde-fou opt-in).
         enforced: /^(1|true|yes)$/i.test(String(env.REQUIRE_SUBSCRIPTION ?? "")),
       },

@@ -52,8 +52,8 @@ export interface Brick {
 // Les prix PUBLICS viennent de `lib/offres-publiques.ts` : c'est le module
 // que le navigateur a le droit d'atteindre, donc c'est lui qui les porte.
 // Les réimporter garantit qu'il n'existe qu'un seul nombre.
-export { ESSAI_CALLS, ESSAI_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
-import { ESSAI_CALLS, ESSAI_HT, OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
+export { OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
+import { ALPHA_VOICE_SETUP_HT, OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS, OUTBOUND_UNIT_HT, PACK_SETUP_HT, PACK_MONTHLY_HT } from "./offres-publiques";
 
 export interface OutboundTier {
   calls: number;
@@ -81,70 +81,35 @@ export const OUTBOUND_TIERS: OutboundTier[] = [
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * LE PALIER D'ESSAI — ce qui manquait pour transformer une démo en client.
+ * ⚠ LE PALIER D'ESSAI A ÉTÉ RETIRÉ LE 04/09/2026 — et il faut dire pourquoi,
+ * parce que le trou qu'il bouchait était réel.
  *
- * Le parcours voulu est : démo gratuite → PREMIER LOT PAYANT → mensualité.
- * Or la grille n'avait pas de marche entre les deux : 100 appels étaient
- * facturés au millier entamé, soit 364 € — le prix d'un mois entier pour un
- * test. Personne ne dit oui à ça après une démo.
+ * Ce qu'il était : 290 € HT pour la mise en route d'Alpha Voice + 100 appels
+ * réels, déductibles du premier mois. Il existait parce que la grille sautait
+ * de RIEN à 364 €/millier : 100 appels se facturaient au millier entamé, soit
+ * le prix d'un mois entier pour un test. Personne ne dit oui à ça après une
+ * démo, et le palier était la bonne réponse à ce moment-là.
  *
- * ⚠ CE QU'ON VEND ICI N'EST PAS « 100 APPELS ».
+ * DEUX CHOSES ONT CHANGÉ, et chacune suffirait :
  *
- * 100 appels coûtent quelques euros de téléphonie et de jetons : les vendre au
- * prix de la consommation (×4 ferait ~16 €) n'aurait aucun sens. Ce qui coûte,
- * c'est la MISE EN ROUTE — le script, le trunk SIP, le premier lot de numéros,
- * l'écoute des premiers appels. Plusieurs heures de travail humain, qu'on
- * facture une fois.
+ *  1. **Le trou est comblé par un vrai produit.** Alpha Voice Essentiel —
+ *     200 appels, 149 €/mois — EST le produit sous le millier. On n'a plus
+ *     besoin d'une marche jetable pour franchir un escalier qui a désormais
+ *     une première marche.
  *
- * D'où le cadrage, et il doit être dit tel quel au client : « frais de mise en
- * route, 100 appels réels inclus ». Pas « un forfait 100 appels » — sinon il
- * compare au prix du millier et il a raison de trouver ça cher.
+ *  2. **La garantie fait le travail, et mieux.** « L'installation ne se paie
+ *     qu'au premier rendez-vous pris » renverse le risque SANS encaisser
+ *     d'avance. À côté d'elle, un palier à 290 € vend une seconde fois, moins
+ *     cher, ce que l'installation à 990 € vend déjà — deux prix pour la même
+ *     chose sur le même devis, et c'est le client qui a raison de le relever.
  *
- * ⚠ Le prix est VOLONTAIREMENT loin de la proportionnelle (2 900 €/millier
- * équivalent contre 364 €). Sans cet écart, dix lots de 100 coûteraient moins
- * cher qu'un lot de 1 000 et on fabriquerait l'arbitrage inverse de celui
- * qu'on veut.
- *
- * ⚠ À VALIDER : ce montant couvre ~4 h de mise en route. Il se corrige ici
- * après la première installation réelle, quand on saura le vrai temps passé.
+ * ⚠ `prixEssai()` était un EXPORT MORT : aucun composant, aucune route ne
+ * l'appelait — seuls ses tests le tenaient en vie. C'est le défaut récurrent
+ * du dépôt (un mécanisme juste branché nulle part), et il a rendu ce retrait
+ * indolore. Ne pas le relire comme une preuve que le retrait était sans
+ * conséquence : c'est une preuve qu'il n'était déjà plus vendu.
  * ─────────────────────────────────────────────────────────────────────
  */
-
-/** Fenêtre pendant laquelle l'essai se déduit du premier mois. */
-export const ESSAI_DEDUCTIBLE_JOURS = 30;
-
-export interface EssaiQuote {
-  calls: number;
-  totalHT: number;
-  /** Ce qu'un millier coûterait à ce rythme — l'écart rend le palier suivant évident. */
-  perThousandEquivalentHT: number;
-  /** Déduit du premier mois si le client bascule dans la fenêtre. */
-  deductibleHT: number;
-  pitch: string;
-  conditions: string[];
-}
-
-/**
- * Le devis d'essai. Un seul par client — c'est une porte d'entrée, pas un
- * abonnement déguisé.
- */
-export function prixEssai(): EssaiQuote {
-  return {
-    calls: ESSAI_CALLS,
-    totalHT: ESSAI_HT,
-    perThousandEquivalentHT: Math.round((ESSAI_HT / ESSAI_CALLS) * OUTBOUND_UNIT_CALLS),
-    deductibleHT: ESSAI_HT,
-    pitch:
-      `Mise en route d'Alpha Voice + ${ESSAI_CALLS} appels réels inclus — ${ESSAI_HT} € HT, une fois. ` +
-      `La démo est gratuite ; dès qu'on compose de vrais numéros, il y a de la téléphonie et des jetons à payer.`,
-    conditions: [
-      `Déduit intégralement du premier mois si tu passes au palier ${OUTBOUND_UNIT_CALLS} appels sous ${ESSAI_DEDUCTIBLE_JOURS} jours.`,
-      "Un seul essai par client — ce n'est pas un abonnement à 100 appels.",
-      `Au-delà de ${ESSAI_CALLS} appels, on bascule sur la grille mensuelle (${OUTBOUND_UNIT_HT} € HT le millier).`,
-      "Les numéros à appeler sont fournis par le client, ou sourcés ensemble au cadrage.",
-    ],
-  };
-}
 
 export interface OutboundQuote {
   calls: number;
@@ -185,10 +150,11 @@ export function outboundPrice(calls: number): OutboundQuote {
     perThousandHT: Math.round(monthlyHT / (c / OUTBOUND_UNIT_CALLS)),
     note:
       c < OUTBOUND_UNIT_CALLS
-        ? // Sous le millier, l'abonnement est le mauvais produit : c'est une
-          // mise en route, pas un mois. On le dit au lieu de facturer un
-          // millier entamé — c'est ce prix-là qui tuait les premiers essais.
-          `Sous ${OUTBOUND_UNIT_CALLS} appels, l'abonnement mensuel n'est pas le bon produit : prends le palier d'essai (${ESSAI_HT} € HT, mise en route + ${ESSAI_CALLS} appels inclus, déduits du premier mois).`
+        ? // Sous le millier, CETTE grille est le mauvais produit : elle
+          // facture un millier entamé pour un volume qui tient dans un
+          // forfait. On renvoie vers le palier qui existe, au lieu de
+          // facturer 364 € un test — c'est ce prix-là qui tuait les débuts.
+          `Sous ${OUTBOUND_UNIT_CALLS} appels, cette grille n'est pas le bon produit : prends le palier Alpha Voice Essentiel (${ALPHA_VOICE_SETUP_HT} € HT d'installation, puis 149 €/mois pour ~200 appels).`
         : c % OUTBOUND_UNIT_CALLS !== 0
           ? `Facturé au millier entamé (${thousands} × ${OUTBOUND_UNIT_HT} € HT).`
           : undefined,
@@ -315,7 +281,7 @@ export const getBrick = (id: string): Brick | undefined => BRICKS.find((b) => b.
  * du catalogue (10 000 € et 1 000 €/mois, l'ANCRE de toute négociation).
  *
  * L'en-tête de `offres-publiques` promettait déjà « bricks le réimporte », et
- * le test qui l'exige ne couvrait que `OUTBOUND_UNIT_HT` et `ESSAI_HT` : la
+ * le test qui l'exige ne couvrait que `OUTBOUND_UNIT_HT` et le palier d'essai : la
  * garde s'arrêtait juste avant l'endroit où le doublon vivait encore. Les
  * valeurs coïncidaient, donc rien ne se voyait — `tests/marche.test.ts` lit la
  * version `offres-publiques`, tout le reste du produit lit celle-ci. Changer

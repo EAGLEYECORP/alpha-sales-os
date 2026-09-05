@@ -38,7 +38,7 @@ function metadataEnvoyee(abonnement: boolean): Record<string, string> {
   for (const m of bloc.matchAll(/"(subscription_data\[metadata\]\[|metadata\[)([a-z_]+)\]"/g)) {
     const surAbonnement = m[1].startsWith("subscription_data");
     if (surAbonnement && !abonnement) continue;
-    out[m[2]] = m[2] === "user_id" ? "u-42" : "essai";
+    out[m[2]] = m[2] === "user_id" ? "u-42" : "omnicanal";
   }
   return out;
 }
@@ -55,7 +55,7 @@ test("le PLAN survit au trajet checkout → webhook (paiement unique)", () => {
     metadata: meta,
     payment_status: "paid",
   })!;
-  assert.equal(ligne.plan, "essai", `le plan s'est perdu — métadonnées envoyées : ${JSON.stringify(meta)}`);
+  assert.equal(ligne.plan, "omnicanal", `le plan s'est perdu — métadonnées envoyées : ${JSON.stringify(meta)}`);
   assert.equal(ligne.user_id, "u-42");
   assert.equal(ligne.status, "active");
 });
@@ -72,7 +72,7 @@ test("…et pour un ABONNEMENT, la session porte le plan elle aussi", () => {
     metadata: metadataEnvoyee(true),
     payment_status: "paid",
   })!;
-  assert.equal(ligne.plan, "essai", "la session d'un abonnement doit porter son plan");
+  assert.equal(ligne.plan, "omnicanal", "la session d'un abonnement doit porter son plan");
 });
 
 test("les sessions de l'ANCIENNE clé se relisent encore", () => {

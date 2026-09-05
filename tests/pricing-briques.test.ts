@@ -19,13 +19,11 @@ import {
 } from "../lib/pricing-briques";
 import {
   BRICKS,
-  ESSAI_CALLS,
-  ESSAI_HT,
   OUTBOUND_UNIT_CALLS,
   OUTBOUND_UNIT_HT,
   outboundPrice,
-  prixEssai,
 } from "../lib/bricks";
+import { ALPHA_VOICE_SETUP_HT } from "../lib/offres-publiques";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -142,48 +140,37 @@ test("un modèle cher coûte plus cher — le rapport entre modèles reste lisib
   );
 });
 
-// ─────────── 4. LE PALIER D'ESSAI ───────────
+// ─────────── 4. SOUS LE MILLIER — le renvoi, pas le millier entamé ───────────
 
-test("l'essai existe — 100 appels ne se facturent plus au prix d'un mois entier", () => {
-  const e = prixEssai();
-  assert.equal(e.calls, ESSAI_CALLS);
-  assert.equal(e.totalHT, ESSAI_HT);
-  assert.ok(e.totalHT < OUTBOUND_UNIT_HT, "un essai doit coûter moins qu'un mois complet, sinon personne ne l'achète");
-  assert.ok(e.conditions.length >= 3, "un essai sans conditions écrites devient un abonnement déguisé");
-});
+/**
+ * ⚠ CINQ TESTS DU PALIER D'ESSAI VIVAIENT ICI. Le palier a été retiré le
+ * 04/09/2026 (raisonnement complet dans `lib/bricks.ts`). Ce qu'ils gardaient
+ * de vraiment important n'était pas le prix de 290 € : c'était l'invariant
+ * « un petit volume ne se facture jamais au millier entamé ». Cet invariant
+ * n'a pas disparu avec l'offre, et c'est lui qu'on garde ici.
+ */
 
-test("l'essai est LOIN de la proportionnelle — sinon dix lots de 100 battent un lot de 1 000", () => {
-  const e = prixEssai();
-  const proportionnel = (OUTBOUND_UNIT_HT / OUTBOUND_UNIT_CALLS) * ESSAI_CALLS;
-  assert.ok(
-    e.totalHT > proportionnel * 3,
-    `${e.totalHT} € contre ${proportionnel} € au prorata — l'écart doit rendre le palier 1 000 évident`
-  );
-  // Le test qui compte vraiment : la monotonie de la grille.
-  const dixEssais = e.totalHT * 10;
-  assert.ok(
-    dixEssais > outboundPrice(OUTBOUND_UNIT_CALLS).monthlyHT,
-    "dix essais doivent coûter PLUS qu'un palier 1 000, sinon on fabrique un arbitrage contre soi"
-  );
-});
-
-test("l'essai se déduit du premier mois — c'est ce qui en fait une porte, pas un péage", () => {
-  const e = prixEssai();
-  assert.equal(e.deductibleHT, e.totalHT);
-  assert.ok(e.conditions.some((c) => /déduit/i.test(c)));
-  assert.ok(e.conditions.some((c) => /un seul essai/i.test(c)), "sinon il devient un abonnement à 100 appels");
-});
-
-test("sous le millier, la grille mensuelle renvoie vers l'essai au lieu de facturer un millier", () => {
+test("sous le millier, la grille mensuelle RENVOIE au lieu de facturer un millier entamé", () => {
   const q = outboundPrice(100);
-  assert.match(q.note ?? "", /palier d'essai/i);
-  assert.match(q.note ?? "", new RegExp(String(ESSAI_HT)));
+  assert.equal(q.monthlyHT, OUTBOUND_UNIT_HT, "le calcul reste le millier entamé — c'est la NOTE qui protège");
+  assert.match(q.note ?? "", /pas le bon produit/i, "il faut dire que ce produit-là ne convient pas");
+  assert.match(q.note ?? "", /Essentiel/i, "…et nommer celui qui convient");
+  assert.match(
+    q.note ?? "",
+    new RegExp(String(ALPHA_VOICE_SETUP_HT)),
+    "avec son installation chiffrée : un renvoi sans prix ne se transforme pas en devis"
+  );
 });
 
-test("l'essai reste rentable — la mise en route est du temps, pas de la consommation", () => {
-  const d = devisVoix(ESSAI_CALLS, ESSAI_HT, { ...VOLUME_PALIER, calls: ESSAI_CALLS });
-  assert.ok(d.margeEur > 0, `marge ${d.margeEur} € : un essai à perte n'est pas une porte, c'est un trou`);
-  assert.ok(d.multipleReel >= MULTIPLE_CONSOMMATION - 1, `×${d.multipleReel} du coût`);
+test("⚠ la note ne renvoie plus vers une offre qui n'existe plus", () => {
+  /**
+   * Le piège exact qu'on vient de payer ailleurs : un texte de vente qui
+   * nomme un palier retiré de la grille. Il ne plante pas — il se lit au
+   * téléphone, devant un prospect, et c'est lui qui découvre que l'offre
+   * n'existe pas.
+   */
+  const q = outboundPrice(100);
+  assert.doesNotMatch(q.note ?? "", /palier d'essai/i, "l'essai est mort : plus aucun texte ne doit le proposer");
 });
 
 // ─────────── 5. LA GRILLE RESTE COHÉRENTE ───────────

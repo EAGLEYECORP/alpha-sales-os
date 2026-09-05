@@ -15,7 +15,6 @@ import {
 import {
   ALPHA_VOICE_PALIERS,
   ALPHA_VOICE_SETUP_HT,
-  ESSAI_HT,
   PACK_MONTHLY_HT,
   PACK_SETUP_HT,
 } from "../lib/offres-publiques";
@@ -229,11 +228,25 @@ test("le total an 1 est bien setup + douze mois", () => {
   assert.equal(r.nous.an1HT, r.client.an1HT, "EAGLEYE à 100 % : les deux colonnes coïncident");
 });
 
-test("l'essai est un one-shot, pas un abonnement", () => {
-  const r = chiffrer({ essai: true }, opts);
-  const l = r.lignes.find((x) => x.famille === "essai")!;
-  assert.equal(l.clientSetupHT, ESSAI_HT);
-  assert.equal(l.clientMensuelHT, 0, "un essai ne se renouvelle pas tous les mois");
+test("⚠ Alpha Voice ne se chiffre QUE par les minutes — un seul bouton pour un seul prix", () => {
+  /**
+   * Il y avait une seconde entrée ici : la famille « essai » (290 €, 100
+   * appels), retirée le 04/09/2026. Elle facturait, moins cher, la même
+   * installation que le palier Alpha Voice — deux lignes possibles pour la
+   * même chose sur un même devis.
+   *
+   * Ce test garde la porte fermée : la seule façon de faire apparaître une
+   * ligne Alpha Voice est le curseur de minutes, et elle porte l'installation
+   * ET le mensuel. Rouvrir un bouton « palier d'entrée » le fera tomber.
+   */
+  const r = chiffrer({ alphaVoiceMinutes: 500 }, opts);
+  const voix = r.lignes.filter((x) => x.famille === "alpha-voice");
+  assert.equal(voix.length, 1, "une seule ligne voix, jamais deux");
+  assert.equal(voix[0].clientSetupHT, ALPHA_VOICE_SETUP_HT);
+  assert.ok((voix[0].clientMensuelHT ?? 0) > 0, "le palier voix est un abonnement, pas un one-shot");
+
+  // Et sans minutes demandées, aucune ligne voix ne s'invente.
+  assert.equal(chiffrer({}, opts).lignes.filter((x) => x.famille === "alpha-voice").length, 0);
 });
 
 test("la répartition par compte sépare les deux économies", () => {
@@ -336,7 +349,6 @@ test("le routage par famille suit l'escalier", () => {
     "alpha-carte": "eagleye",
     "alpha-revshare": "eagleye",
     sortant: "eagleye",
-    essai: "eagleye",
     "os-personnalise": "eagleye",
     visibilite: "eagleye",
     digitalisation: "eagleye",

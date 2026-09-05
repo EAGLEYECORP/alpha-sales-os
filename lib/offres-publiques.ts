@@ -46,8 +46,13 @@
  * vérifie que les deux disent la même chose : la source unique reste unique,
  * elle a simplement changé de côté.
  */
-export const ESSAI_CALLS = 100;
-export const ESSAI_HT = 290;
+/**
+ * ⚠ `ESSAI_CALLS` (100) et `ESSAI_HT` (290) VIVAIENT ICI. Retirés le
+ * 04/09/2026 avec le palier qu'ils portaient — voir le bloc « LE PALIER
+ * D'ESSAI A ÉTÉ RETIRÉ » dans `lib/bricks.ts` pour le raisonnement complet.
+ * Les laisser en place aurait garanti qu'une session suivante les recâble :
+ * une constante exportée finit toujours par retrouver un lecteur.
+ */
 export const OUTBOUND_UNIT_CALLS = 1000;
 export const OUTBOUND_UNIT_HT = 364;
 /**
@@ -95,6 +100,41 @@ export const PACK_MENSUALITES = 10;
 export const PACK_MENSUALITE_HT = 800;
 
 /**
+ * ── L'OFFRE OMNICANALE — la boîte de réception unique, à leur marque ──
+ *
+ * Ce qu'elle règle, et qu'aucune autre offre ne réglait : un maître d'ouvrage
+ * en commercialisation reçoit des demandes d'acquéreurs par le portail
+ * d'annonces, par le formulaire de son site, par WhatsApp et par téléphone —
+ * quatre files qui ne se parlent pas, dont aucune ne dit qui a déjà été
+ * rappelé. Ce n'est pas un problème d'appels manqués, c'est un problème de
+ * FILE UNIQUE.
+ *
+ * Ce qu'on installe : une boîte de réception partagée (Chatwoot, auto-hébergée
+ * et à LEUR marque) où toutes les demandes arrivent, plus **Alpha Voice
+ * inclus** pour la file téléphonique.
+ *
+ * ⚠ « ALPHA VOICE OFFERT » A UN BORD, ET IL EST OBLIGATOIRE. `validerOffres`
+ * refuse déjà toute offre qui inclut la voix sans plafond d'appels — c'est la
+ * règle née du jour où « Alpha Voice inclus » était annoncé sans limite et
+ * passait en perte sèche vers 2 200 appels. « Offert » veut donc dire : le
+ * SETUP de 990 € est offert, et le forfait Essentiel est compris. Au-delà, la
+ * minute se facture à la grille, comme partout ailleurs.
+ *
+ * ⚠⚠ CE QUE ÇA NOUS COÛTE VRAIMENT, ET CE N'EST PAS LA MARGE AFFICHÉE.
+ * Le coût marginal est faible (~63 €/mois : hébergement + 500 min de voix,
+ * marge ~89 %). Le coût RÉEL est humain : une instance Chatwoot par client,
+ * c'est une application Rails avec sa base, son cache, son SMTP, son domaine,
+ * ses sauvegardes et ses mises à jour de sécurité — à faire pour CHACUN.
+ * C'est le même mur que les identifiants par locataire, en plus lourd. Cette
+ * offre ne se vend pas à vingt clients avant que ce soit industrialisé, et la
+ * rareté qu'on annonce ailleurs est ici un fait technique, pas un argument.
+ */
+export const OMNICANAL_SETUP_HT = 2_500;
+export const OMNICANAL_MENSUEL_HT = 590;
+/** Ce que « Alpha Voice offert » comprend : le forfait Essentiel, borné. */
+export const OMNICANAL_APPELS_INCLUS = 200;
+
+/**
  * ── LES LIFETIME DEALS ──
  *
  * Ce qu'un lifetime EST vraiment : on échange tout le revenu futur d'un client
@@ -131,10 +171,24 @@ export interface PalierLifetime {
   places: number;
 }
 
+/**
+ * ⚠ REPRICÉ LE 04/09/2026, ET LE MOTIF EST UNE INCOHÉRENCE, PAS UNE ENVIE.
+ *
+ * Les paliers étaient 1 900 / 2 900 / 3 900 pour 60 places. Ancrés sur Alpha
+ * Voice seul (149 €/mois), ils tenaient. Face à l'offre omnicanale à
+ * 590 €/mois, 1 900 € représente **3,2 mois** — payés une fois, pour toujours.
+ * Un lifetime moins cher qu'un trimestre de l'offre phare n'est pas une offre
+ * de lancement : c'est une fuite, et elle plafonne le récurrent définitivement.
+ *
+ * Ré-ancrés sur l'offre phare : le premier palier vaut ~8 mois d'omnicanal.
+ * Et 20 places au lieu de 60 — « exclusif » et « soixante » ne vont pas
+ * ensemble, et la rareté ici est un fait (une instance par client, installée à
+ * la main), pas un compteur.
+ */
 export const LIFETIME_PALIERS: PalierLifetime[] = [
-  { rang: 1, prixHT: 1_900, places: 10 },
-  { rang: 2, prixHT: 2_900, places: 20 },
-  { rang: 3, prixHT: 3_900, places: 30 },
+  { rang: 1, prixHT: 4_900, places: 5 },
+  { rang: 2, prixHT: 6_900, places: 7 },
+  { rang: 3, prixHT: 8_900, places: 8 },
 ];
 
 /**
@@ -358,86 +412,99 @@ const CADRAGE = {
 };
 
 export const OFFRES: OffrePublique[] = [
+  /**
+   * ── LA GRILLE A ÉTÉ REFAITE LE 04/09/2026, ET LE MOTIF N'EST PAS ESTHÉTIQUE ──
+   *
+   * Il y avait SEPT offres, dont trois héritées du revendeur disparu :
+   *   · « Essai terrain » 290 € · « Solo » 79 €/mois · « Pro » 149 €/mois
+   *
+   * Elles ne se contentaient pas d'être nombreuses, elles étaient FAUSSES :
+   * Solo facturait 79 €/mois un périmètre devenu GRATUIT le 02/09 (crm,
+   * closer, pilotage), et Pro chevauchait Alpha Voice au même prix sans être
+   * la même chose. Un prospect qui compare sept lignes ne choisit pas : il
+   * remet à plus tard.
+   *
+   * ⚠ ET LE VRAI DÉFAUT, QUI N'ÉTAIT PAS LE NOMBRE : cette grille a été
+   * construite pour des ARTISANS — un garage, un couvreur, une auto-école.
+   * L'ICP est devenu le MAÎTRE D'OUVRAGE, qui pilote un programme à plusieurs
+   * millions. À ce niveau-là, 79 €/mois ne se lit pas comme une bonne affaire,
+   * ça se lit comme un gadget — c'est le deuxième terme de l'équation de
+   * valeur, la probabilité perçue, et un prix trop bas l'abîme.
+   *
+   * La grille tient maintenant en une échelle : le socle gratuit, la voix pour
+   * qui n'a qu'un problème de téléphone, l'omnicanale pour qui reçoit de
+   * partout, l'OS complet, et le lifetime pour les premiers.
+   *
+   * ⚠⚠ TOUS CES PRIX SONT DES DÉCISIONS. Zéro vente les a validés. Le coût à
+   * la minute est le seul chiffre mesuré de ce fichier.
+   */
   {
-    id: "essai",
-    nom: "Essai terrain",
-    cadence: "unique",
-    prixHT: ESSAI_HT,
-    sousTitre: `Mise en route d'Alpha Voice + ${ESSAI_CALLS} appels réels. Une fois.`,
+    id: "voix-essentiel",
+    nom: "Alpha Voice — Essentiel",
+    cadence: "mensuel",
+    prixHT: ALPHA_VOICE_PALIERS[0].prixHT,
+    sousTitre: `${ALPHA_VOICE_SETUP_HT} € HT d'installation, puis l'abonnement. L'accueil qui décroche à votre place.`,
     inclus: [
-      "Script d'appel écrit avec toi",
-      "Configuration téléphonie et voix",
-      `${ESSAI_CALLS} appels réellement composés`,
-      "Écoute et débrief des premiers appels",
+      `${ALPHA_VOICE_SETUP_HT} € HT d'installation (script, téléphonie, voix)`,
+      `${ALPHA_VOICE_PALIERS[0].minutes} minutes par mois — environ ${ALPHA_VOICE_PALIERS[0].appels.replace("~", "")}`,
+      "L'agent annonce qu'il est une IA, dès la première phrase",
+      "Le résumé de chaque appel dans votre CRM",
     ],
     voixIncluse: true,
-    appelsInclus: ESSAI_CALLS,
-    auDela: `Au-delà de ${ESSAI_CALLS} appels, on bascule sur la grille mensuelle (${OUTBOUND_UNIT_HT} € HT le millier).`,
-    // Déduit du premier mois : c'est une porte, pas un péage.
-    priceEnv: "STRIPE_PRICE_ESSAI",
-    cta: { label: "Lancer l'essai", href: "/souscrire?offre=essai" },
+    appelsInclus: 200,
+    auDela: `Au-delà, ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} € HT la minute — sans coupure, sans palier à revendre.`,
+    priceEnv: "STRIPE_PRICE_VOIX_ESSENTIEL",
+    cta: { label: "Prendre Essentiel", href: "/souscrire?offre=voix-essentiel" },
     capacites: ["alpha-voice"],
   },
   {
-    id: "solo",
-    nom: "Solo",
+    id: "voix-intensif",
+    nom: "Alpha Voice — Intensif",
     cadence: "mensuel",
-    prixHT: 79,
-    /**
-     * ⚠ CE SOUS-TITRE DISAIT « TOUT LE CŒUR DU SYSTÈME », ET LE CŒUR EST
-     * DEVENU GRATUIT LE 02/09/2026.
-     *
-     * Trois des quatre capacités de cette offre — `crm`, `closer`, `pilotage` —
-     * sont depuis ce jour-là ouvertes à n'importe quel compte, sans limite de
-     * durée. L'offre continuait de les vendre 79 €/mois, et le premier acheteur
-     * l'aurait découvert en créant un deuxième compte : il découvre qu'il paie
-     * ce qu'on donne. C'est la façon la plus rapide de perdre un client, et
-     * elle ne se voit dans aucune relecture d'écran.
-     *
-     * Ce qui reste réellement payant ici : les AUDITS automatiques et la boîte
-     * d'envoi. Le texte le dit maintenant, et il dit aussi que le reste est
-     * gratuit — le taire serait la même faute avec un autre mot.
-     *
-     * ⚠⚠ La question COMMERCIALE reste ouverte et n'est pas tranchée ici :
-     * cette offre a-t-elle encore un sens à 79 € face à un socle gratuit ?
-     * C'est un arbitrage, pas une correction de bug. Un test refuse désormais
-     * le seul cas indéfendable — une offre payante qui n'ouvrirait QUE des
-     * briques gratuites.
-     */
-    sousTitre: "Les audits automatiques et la boîte d'envoi. Le CRM, lui, est gratuit.",
+    prixHT: ALPHA_VOICE_PALIERS[1].prixHT,
+    sousTitre: "Le même accueil, pour un volume d'appels qui ne redescend pas.",
     inclus: [
-      "Audits cadeaux automatiques",
-      "Boîte d'envoi + brouillons Gmail",
-      "Inclus gratuitement de toute façon : pipeline, Aujourd'hui, À décider, débrief à la voix",
-    ],
-    // ⚠ La dictée du débrief n'est PAS Alpha Voice : elle transcrit ce que TU
-    // dis après un rendez-vous. Aucun appel n'est composé, donc aucun plafond.
-    voixIncluse: false,
-    appelsInclus: null,
-    auDela: null,
-    priceEnv: "STRIPE_PRICE_SOLO",
-    cta: { label: "Prendre Solo", href: "/souscrire?offre=solo" },
-    capacites: ["crm", "closer", "audits", "pilotage"],
-  },
-  {
-    id: "pro",
-    nom: "Pro",
-    cadence: "mensuel",
-    prixHT: 149,
-    sousTitre: `La machine complète — la voix incluse, ${PRO_APPELS_INCLUS} appels par mois.`,
-    inclus: [
-      "Tout Solo, plus :",
-      `Alpha Voice — ${PRO_APPELS_INCLUS} appels/mois inclus`,
-      "Récap urgent par SMS",
-      "Pilote automatique (n8n)",
+      `${ALPHA_VOICE_SETUP_HT} € HT d'installation`,
+      `${ALPHA_VOICE_PALIERS[1].minutes} minutes par mois — environ ${ALPHA_VOICE_PALIERS[1].appels.replace("~", "")}`,
+      "Tout ce que contient Essentiel",
     ],
     voixIncluse: true,
-    appelsInclus: PRO_APPELS_INCLUS,
-    auDela: `Au-delà de ${PRO_APPELS_INCLUS} appels/mois : ${OUTBOUND_UNIT_HT} € HT par millier supplémentaire, sans engagement.`,
-    priceEnv: "STRIPE_PRICE_PRO",
-    cta: { label: "Prendre Pro", href: "/souscrire?offre=pro" },
-    capacites: ["crm", "closer", "audits", "pilotage", "alpha-voice", "campagnes", "tracking"],
+    appelsInclus: 600,
+    auDela: `Au-delà, ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} € HT la minute.`,
+    priceEnv: "STRIPE_PRICE_VOIX_INTENSIF",
+    cta: { label: "Prendre Intensif", href: "/souscrire?offre=voix-intensif" },
+    capacites: ["alpha-voice"],
   },
+  {
+    /**
+     * L'offre pensée POUR le maître d'ouvrage : quatre files de demandes qui
+     * ne se parlent pas (portail, formulaire, WhatsApp, téléphone) et aucune
+     * qui dise qui a déjà été rappelé.
+     *
+     * ⚠ « Alpha Voice offert » est BORNÉ, et `validerOffres` l'impose : le
+     * setup de 990 € est offert, le forfait Essentiel est compris, et la
+     * minute au-delà se facture à la grille. « Offert sans limite » est
+     * exactement la formule qui a déjà mis une offre en perte.
+     */
+    id: "omnicanal",
+    nom: "Réponse omnicanale",
+    cadence: "mensuel",
+    prixHT: OMNICANAL_MENSUEL_HT,
+    sousTitre: `${OMNICANAL_SETUP_HT} € HT d'installation, puis l'abonnement. Toutes vos demandes dans une seule file, à votre marque.`,
+    inclus: [
+      `${OMNICANAL_SETUP_HT} € HT d'installation : boîte de réception à VOTRE marque, canaux branchés`,
+      "Email, formulaire de site, WhatsApp, réseaux — une file unique, qui dit qui a déjà répondu",
+      `**Alpha Voice inclus** : installation offerte (${ALPHA_VOICE_SETUP_HT} € HT) et ${OMNICANAL_APPELS_INCLUS} appels par mois compris`,
+      "Réponses enregistrées, attribution, historique par contact",
+    ],
+    voixIncluse: true,
+    appelsInclus: OMNICANAL_APPELS_INCLUS,
+    auDela: `Au-delà des ${OMNICANAL_APPELS_INCLUS} appels compris, ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} € HT la minute. La boîte de réception, elle, n'a pas de plafond.`,
+    priceEnv: "STRIPE_PRICE_OMNICANAL",
+    cta: { label: "Parler de l'omnicanal", href: "/souscrire?offre=omnicanal" },
+    capacites: ["alpha-voice", "crm", "closer", "tracking"],
+  },
+
   {
     id: "voix-1000",
     nom: "Alpha Voice — 1 000 appels",
@@ -523,10 +590,11 @@ export const OFFRES: OffrePublique[] = [
     prixHT: LIFETIME_PALIERS[0].prixHT,
     sousTitre: "Le logiciel à vie, payé une fois. La consommation reste à l'usage.",
     inclus: [
-      "Les dix briques, à vie, sans abonnement",
-      `${LIFETIME_APPELS_INCLUS} appels compris, une fois pour toutes`,
+      "Le CRM, le closer, le Cerveau, le pilotage, le suivi et les audits — à vie, sans abonnement",
+      `Alpha Voice avec ${LIFETIME_APPELS_INCLUS} appels compris, une fois pour toutes`,
       "Toutes les mises à jour",
       `${LIFETIME_PLACES_TOTAL} places au total, puis l'offre ferme`,
+      "Les campagnes, l'agent autonome et Alpha Live restent sur abonnement — ils consomment à chaque usage",
     ],
     voixIncluse: true,
     appelsInclus: LIFETIME_APPELS_INCLUS,
@@ -538,9 +606,37 @@ export const OFFRES: OffrePublique[] = [
     auDela: `Au-delà des appels compris, ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} € HT la minute. Le logiciel, lui, reste à vie.`,
     priceEnv: "STRIPE_PRICE_LIFETIME",
     cta: { label: "Prendre une place", href: "/souscrire?offre=lifetime" },
-    capacites: ["alpha-voice", "campagnes", "cerveau", "crm", "audits", "tracking", "alpha-live", "closer", "agent-alpha", "pilotage"],
+    /**
+     * ⚠ LE LIFETIME PORTAIT LES DIX BRIQUES, ET ÇA TUAIT L'OFFRE BUSINESS.
+     *
+     * Le même périmètre exactement, à 4 900 € une fois d'un côté, à 10 000 €
+     * PUIS 1 000 €/mois de l'autre. Aucun acheteur rationnel ne prend le
+     * second : la grille se cannibalisait elle-même, et ça ne se voyait dans
+     * aucun test — les deux offres étaient valides séparément.
+     *
+     * ⚠⚠ ET LE DANGER RÉEL N'ÉTAIT PAS COMMERCIAL, IL ÉTAIT COMPTABLE. Trois
+     * briques dépensent NOTRE argent à chaque usage, pour toujours :
+     *  · `campagnes`  → envoie par NOTRE SMTP, sur NOTRE domaine (réputation) ;
+     *  · `agent-alpha`→ brûle NOS jetons IA à chaque tour ;
+     *  · `alpha-live` → session en direct, même mécanique.
+     * `appelsInclus` plafonne les minutes — le reste n'avait AUCUN plafond. On
+     * a écrit « un lifetime sans plafond d'appels est une dette ouverte sans
+     * terme » et on a vendu à vie trois autres compteurs qui tournent.
+     *
+     * Le lifetime porte donc ce dont le coût marginal est proche de zéro, plus
+     * une voix BORNÉE. Les trois consommatrices restent sur abonnement, et
+     * c'est ce qui laisse Business exister.
+     */
+    capacites: ["alpha-voice", "cerveau", "crm", "audits", "tracking", "closer", "pilotage"],
   },
 ];
+
+/**
+ * Les briques qu'on ne vend JAMAIS à vie : chaque usage nous coûte de l'argent
+ * ou de la réputation, indéfiniment. `tests/offres-publiques.test.ts` interdit
+ * qu'une offre de cadence « unique » en porte une.
+ */
+export const BRIQUES_CONSOMMATRICES: readonly string[] = ["campagnes", "agent-alpha", "alpha-live"];
 
 /**
  * ⚠ LES CTA POINTENT VERS `/souscrire`, PAS VERS `/compte`.

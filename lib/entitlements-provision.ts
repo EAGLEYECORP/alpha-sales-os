@@ -67,17 +67,22 @@ export function droitsPourOffre(
   // sans brique correspondante ouvrirait un droit qui n'existe pas.
   const bricks = offre.capacites.filter((c): c is BrickId => (BRIQUES as readonly string[]).includes(c));
 
-  const essai = offre.id === "essai";
-  return {
-    bricks,
-    // Un essai est un essai : il a une fin, et le statut le dit. Le marquer
-    // « actif » ferait vivre un compte gratuit indéfiniment le jour où
-    // personne ne repasse derrière.
-    statut: essai ? "essai" : "actif",
-    essaiJusquA: essai
-      ? new Date(new Date(achatLe).getTime() + ESSAI_JOURS * 86_400_000).toISOString()
-      : null,
-  };
+  /**
+   * ⚠ LA BRANCHE « ESSAI » A ÉTÉ RETIRÉE LE 04/09/2026, PAS OUBLIÉE.
+   *
+   * Elle testait `offre.id === "essai"` — une offre payante à 290 € qui
+   * ouvrait un statut à durée limitée. Cette offre est sortie de la grille :
+   * elle faisait double emploi avec la GARANTIE (« l'installation ne se paie
+   * qu'au premier rendez-vous »), qui renverse le risque sans encaisser
+   * d'avance, et avec le socle gratuit, qui laisse essayer sans rien payer.
+   *
+   * ⚠⚠ Le STATUT « essai », lui, reste vivant et géré : `resoudreDroits` le
+   * lit depuis la base et le fait expirer. Un abonnement Stripe en `trialing`
+   * ou une ligne posée à la main continuent donc de fonctionner. Ce qui
+   * disparaît, c'est le chemin « acheter une offre ouvre un essai » — plus
+   * aucune offre de la grille ne le fait, et un test le vérifie.
+   */
+  return { bricks, statut: "actif", essaiJusquA: null };
 }
 
 /**

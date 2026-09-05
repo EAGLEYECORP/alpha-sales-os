@@ -5,8 +5,6 @@ import { AlertTriangle, Building2, Coins, FileQuestion, Layers } from "lucide-re
 import {
   ALPHA_VOICE_PALIERS,
   ALPHA_VOICE_SETUP_HT,
-  ESSAI_CALLS,
-  ESSAI_HT,
   OUTBOUND_UNIT_CALLS,
   PACK_MONTHLY_HT,
   PACK_SETUP_HT,
@@ -182,13 +180,6 @@ export function CalculateurComplet() {
                     ? "le 4e millier est offert : palier de montée en charge, à ouvrir APRÈS le réglage"
                     : undefined
               }
-            />
-
-            <Case
-              actif={Boolean(sel.essai)}
-              onClick={() => set({ essai: !sel.essai })}
-              titre={`Essai — ${ESSAI_CALLS} appels`}
-              droite={`${eur(ESSAI_HT)} une fois`}
             />
 
             <Ligne label={`Modèle « ${REV_SHARE_PCT} % du CA généré » — alternative au VIP`}>

@@ -39,17 +39,26 @@ test("le doc nomme TOUTES les offres payables — et le code fait foi", () => {
   }
 });
 
-test("le doc dit que l'essai est un paiement UNIQUE", () => {
+test("le doc dit, pour CHAQUE offre à paiement unique, qu'elle ne doit pas être récurrente", () => {
   /**
-   * Créer le prix Stripe en récurrent prélèverait 290 € tous les mois à
-   * quelqu'un qui croyait payer une mise en route. Le code déduit le mode de
-   * la cadence — mais si le prix est mal créé chez Stripe, c'est Stripe qui
-   * gagne, et le mode d'emploi est le seul garde-fou.
+   * Créer le prix Stripe en récurrent prélèverait tous les mois quelqu'un qui
+   * croyait payer une fois. Le code déduit le mode de la cadence — mais si le
+   * prix est mal créé chez Stripe, c'est Stripe qui gagne, et le mode d'emploi
+   * est le seul garde-fou.
+   *
+   * ⚠ CE TEST VISAIT « essai » PAR SON ID, et il est tombé le jour où l'offre
+   * est sortie de la grille — alors que le piège, lui, n'avait pas bougé : il
+   * s'était juste déplacé sur Lifetime, où l'erreur coûte vingt fois plus.
+   * Un test qui nomme une fixture meurt avec elle ; on interroge donc la
+   * CADENCE, qui est la propriété qui crée le risque.
    */
-  const essai = OFFRES.find((o) => o.id === "essai")!;
-  assert.equal(essai.cadence, "unique", "si l'essai devenait mensuel, ce test doit être réécrit");
+  const uniques = OFFRES.filter((o) => o.cadence === "unique" && o.priceEnv);
+  assert.ok(uniques.length >= 1, "aucune offre à paiement unique — ce test n'a plus de sujet, pas de raison de le garder vert");
   assert.match(doc, /paiement \*\*UNIQUE\*\*|paiement UNIQUE/i);
-  assert.match(doc, /tous les mois à quelqu'un qui croyait payer une mise en route/i);
+  assert.match(doc, /prélèverait|prélèv|facturerait/i, "le doc doit dire ce qui se passe si le prix est créé en récurrent");
+  for (const o of uniques) {
+    assert.ok(doc.includes(o.priceEnv!), `${o.priceEnv} (offre unique « ${o.nom} ») absent du mode d'emploi`);
+  }
 });
 
 test("le doc envoie sur /souscrire, pas sur une route derrière le mot de passe", () => {

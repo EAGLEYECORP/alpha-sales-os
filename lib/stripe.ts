@@ -18,7 +18,21 @@ import { createClient } from "@supabase/supabase-js";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-export type Plan = "solo" | "pro";
+/**
+ * ⚠ « solo » ET « pro » ONT ÉTÉ RETIRÉS LE 04/09/2026.
+ *
+ * Ce n'était pas un ménage : `solo` facturait 79 €/mois un périmètre devenu
+ * GRATUIT le 02/09 (crm, closer, pilotage), et `pro` chevauchait Alpha Voice
+ * au même prix sans être la même chose. Les deux plans Stripe existaient et
+ * étaient encaissables — un client qui cliquait payait pour ce qu'on donne.
+ *
+ * ⚠⚠ CE QUI RESTE À FAIRE CÔTÉ STRIPE, ET QUE LE CODE NE PEUT PAS FAIRE :
+ * archiver les prix `STRIPE_PRICE_SOLO` et `STRIPE_PRICE_PRO` dans le tableau
+ * de bord. Les retirer d'ici les rend inatteignables depuis l'app ; ça
+ * n'annule pas un abonnement déjà en cours, et ça ne ferme pas un lien de
+ * paiement partagé ailleurs.
+ */
+export type Plan = "voix-essentiel" | "voix-intensif" | "omnicanal";
 
 export interface PlanInfo {
   id: Plan;
@@ -28,8 +42,9 @@ export interface PlanInfo {
 }
 
 export const PLANS: Record<Plan, PlanInfo> = {
-  solo: { id: "solo", name: "Solo", monthly: 79, priceEnv: "STRIPE_PRICE_SOLO" },
-  pro: { id: "pro", name: "Pro", monthly: 149, priceEnv: "STRIPE_PRICE_PRO" },
+  "voix-essentiel": { id: "voix-essentiel", name: "Alpha Voice — Essentiel", monthly: 149, priceEnv: "STRIPE_PRICE_VOIX_ESSENTIEL" },
+  "voix-intensif": { id: "voix-intensif", name: "Alpha Voice — Intensif", monthly: 349, priceEnv: "STRIPE_PRICE_VOIX_INTENSIF" },
+  omnicanal: { id: "omnicanal", name: "Réponse omnicanale", monthly: 590, priceEnv: "STRIPE_PRICE_OMNICANAL" },
 };
 
 /** Statuts d'abonnement Stripe considérés comme donnant accès. */

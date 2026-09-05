@@ -14,7 +14,7 @@ import {
 } from "../lib/offres-publiques";
 import { margeOffre } from "../lib/offres-marge";
 import { PLANS } from "../lib/stripe";
-import { BRICKS, ESSAI_HT, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "../lib/bricks";
+import { BRICKS, OUTBOUND_TIERS, OUTBOUND_UNIT_HT } from "../lib/bricks";
 import {
   ALPHA_VOICE_MINUTE_SUP_HT, ALPHA_VOICE_SETUP_HT, OUTBOUND_SETUP_HT, OUTBOUND_UNIT_CALLS,
 } from "../lib/offres-publiques";
@@ -60,7 +60,7 @@ test("la grille publique est valide — aucune offre bancale", () => {
 test("une offre qui inclut la voix SANS plafond est refusée", () => {
   // Le cas exact qui était en ligne. Le validateur doit le rejeter.
   const perte: OffrePublique = {
-    ...offreParId("pro")!,
+    ...offreParId("omnicanal")!,
     id: "pro-sans-plafond",
     appelsInclus: null,
     auDela: null,
@@ -74,7 +74,7 @@ test("une offre qui inclut la voix SANS plafond est refusée", () => {
 });
 
 test("un plafond sans « au-delà » écrit est refusé aussi", () => {
-  const piege: OffrePublique = { ...offreParId("pro")!, id: "pro-piege", auDela: "" };
+  const piege: OffrePublique = { ...offreParId("omnicanal")!, id: "pro-piege", auDela: "" };
   const erreurs = validerOffres([piege]);
   assert.ok(erreurs.some((e) => e.champ === "auDela"));
 });
@@ -82,13 +82,13 @@ test("un plafond sans « au-delà » écrit est refusé aussi", () => {
 test("un prix affiché sans moyen d'encaisser est refusé", () => {
   // Le visiteur clique « payer » et tombe dans le vide, au moment exact où il
   // voulait payer. C'est arrivé une fois avec des liens Stripe de gabarit.
-  const orphelin: OffrePublique = { ...offreParId("solo")!, id: "solo-orphelin", priceEnv: null };
+  const orphelin: OffrePublique = { ...offreParId("omnicanal")!, id: "omni-orphelin", priceEnv: null };
   const erreurs = validerOffres([orphelin]);
   assert.ok(erreurs.some((e) => e.champ === "priceEnv"));
 });
 
 test("l'offre Pro est rentable AU PLAFOND, et son seuil de perte est connu", () => {
-  const m = margeOffre(offreParId("pro")!);
+  const m = margeOffre(offreParId("voix-essentiel")!);
   assert.ok((m.margeMarginalePct ?? 0) > 60, `marge marginale ${m.margeMarginalePct} %`);
   assert.ok(m.seuilPerteAppels !== null, "on doit SAVOIR à partir de combien d'appels ça bascule");
   assert.ok(
@@ -98,9 +98,31 @@ test("l'offre Pro est rentable AU PLAFOND, et son seuil de perte est connu", () 
 });
 
 test("une offre sans appels n'invente pas de coût marginal", () => {
-  const m = margeOffre(offreParId("solo")!);
+  /**
+   * ⚠ CE TEST PRENAIT `os-complet` COMME SUJET, ET IL AVAIT CESSÉ D'EN ÊTRE UN.
+   * Depuis que TOUTE offre de la grille inclut la voix (le 04/09/2026), plus
+   * aucune n'emprunte la branche « coût marginal nul » — le test mesurait donc
+   * la mauvaise branche et réclamait 0 là où le calcul rend 52,13 € à juste
+   * titre. On construit le sujet à la main : la branche existe, elle se
+   * réveillera dès qu'on vendra une brique logicielle seule, et elle doit
+   * être juste ce jour-là, pas ce jour-là seulement.
+   */
+  const logicielSeul: OffrePublique = {
+    ...offreParId("os-complet")!,
+    id: "logiciel-seul",
+    voixIncluse: false,
+    appelsInclus: null,
+    prixHT: 500,
+  };
+  const m = margeOffre(logicielSeul);
   assert.equal(m.coutMarginalEur, 0, "l'hébergement est mutualisé : le client de plus ne coûte rien");
+  assert.equal(m.margeMarginalePct, 100, "sans coût marginal, tout le prix est de la marge marginale");
+  assert.equal(m.seuilPerteAppels, null, "sans appels, il n'existe aucun seuil de bascule");
   assert.match(m.phrase, /vient de la valeur/, "et il faut dire d'où vient le prix à la place");
+
+  // Et le contre-test, sans lequel le précédent passerait sur n'importe quoi :
+  // une offre AVEC voix doit, elle, porter un coût marginal non nul.
+  assert.ok(margeOffre(offreParId("os-complet")!).coutMarginalEur > 0, "la voix coûte, et ça doit se voir");
 });
 
 // ─────────── 2. LA VITRINE NE PEUT PLUS DIVERGER ───────────
@@ -221,10 +243,6 @@ test("les offres nouvelles sont déclarées dans .env.example, sinon elles ne s'
 
 // ─────────── 4. COHÉRENCE AVEC LE CATALOGUE INTERNE ───────────
 
-test("l'essai public est au même prix que l'essai du catalogue", () => {
-  assert.equal(offreParId("essai")!.prixHT, ESSAI_HT);
-});
-
 test("le palier voix public est au même prix que la grille de volume", () => {
   assert.equal(offreParId("voix-1000")!.prixHT, OUTBOUND_UNIT_HT);
 });
@@ -264,7 +282,7 @@ test("le catalogue interne réimporte les prix publics au lieu de les recopier",
   );
   // Et surtout : il ne doit PAS les redéclarer.
   assert.doesNotMatch(bricks, /^export const OUTBOUND_UNIT_HT = \d+;/m);
-  assert.doesNotMatch(bricks, /^export const ESSAI_HT = \d+;/m);
+  assert.doesNotMatch(bricks, /^export const PACK_SETUP_HT = \d+;/m);
 });
 
 test("⚠ AUCUN prix public ne se redéclare ailleurs — la garde s'arrêtait avant le pack", () => {
@@ -570,9 +588,18 @@ test("lifetime — les paliers montent, et l'offre FERME", async () => {
     );
   }
 
+  /**
+   * ⚠ CES DEUX ASSERTIONS ÉCRIVAIENT « 9 » ET « 10 » EN DUR. Elles sont
+   * tombées au repricing du 04/09/2026 (60 places → 20), alors que la règle
+   * qu'elles gardent — « la dernière place d'un palier reste à ce palier, la
+   * suivante bascule » — n'avait pas bougé d'un pouce. On dérive donc la
+   * frontière du tableau : le prochain repricing ne fera plus tomber un test
+   * qui n'a rien à dire dessus.
+   */
+  const derniereDuPremier = LIFETIME_PALIERS[0].places - 1;
   assert.equal(palierLifetime(0)!.prixHT, LIFETIME_PALIERS[0].prixHT, "aucune vente : premier palier");
-  assert.equal(palierLifetime(9)!.rang, 1, "la dernière place du palier 1 est encore au palier 1");
-  assert.equal(palierLifetime(10)!.rang, 2, "la place suivante bascule");
+  assert.equal(palierLifetime(derniereDuPremier)!.rang, 1, "la dernière place du palier 1 est encore au palier 1");
+  assert.equal(palierLifetime(derniereDuPremier + 1)!.rang, 2, "la place suivante bascule");
   assert.equal(
     palierLifetime(LIFETIME_PLACES_TOTAL),
     null,
@@ -588,6 +615,58 @@ test("lifetime — les paliers montent, et l'offre FERME", async () => {
   assert.ok(LIFETIME_PLACES_TOTAL > 0 && LIFETIME_PLACES_TOTAL <= 200, "le total doit être borné et réaliste");
 });
 
+test("⚠ AUCUNE offre « à vie » ne porte une brique qui nous coûte à chaque usage", async () => {
+  /**
+   * ⚠ LE TROU TROUVÉ EN REPRIÇANT, ET IL NE RESSEMBLAIT PAS À UN TROU.
+   *
+   * On avait écrit, au-dessus de `appelsInclus` : « un lifetime sans plafond
+   * d'appels est une dette ouverte sans terme ». C'est exact — et pendant ce
+   * temps le même lifetime vendait à vie, SANS AUCUN PLAFOND, trois briques
+   * qui dépensent notre argent à chaque usage : `campagnes` (notre SMTP,
+   * notre domaine, notre réputation), `agent-alpha` et `alpha-live` (nos
+   * jetons IA). On avait bordé le compteur visible et laissé courir les trois
+   * autres.
+   *
+   * Rien ne l'aurait signalé : la facture arrive un mois plus tard, et elle
+   * n'arrive jamais avec le nom du client qui l'a causée.
+   */
+  const { BRIQUES_CONSOMMATRICES } = await import("../lib/offres-publiques");
+  const aVie = OFFRES.filter((o) => o.cadence === "unique");
+  assert.ok(aVie.length >= 1, "sans offre à vie, ce test n'a plus de sujet");
+  for (const o of aVie) {
+    for (const c of o.capacites) {
+      assert.ok(
+        !BRIQUES_CONSOMMATRICES.includes(c),
+        `« ${o.nom} » vend « ${c} » à vie : cette brique dépense à chaque usage, et le paiement s'arrête au premier jour`
+      );
+    }
+  }
+});
+
+test("⚠ le lifetime ne CANNIBALISE pas Business — deux offres, deux périmètres", async () => {
+  /**
+   * Elles portaient EXACTEMENT les mêmes dix briques : 4 900 € une fois d'un
+   * côté, 10 000 € puis 1 000 €/mois de l'autre. Aucun acheteur rationnel ne
+   * prend le second, et aucun test ne le voyait — chaque offre était valide
+   * séparément, et `validerOffres` ne compare pas les offres entre elles.
+   *
+   * La règle : si une offre à vie coûte moins cher qu'une offre récurrente,
+   * elle doit ouvrir STRICTEMENT MOINS. Sinon la récurrente est morte le jour
+   * de sa mise en ligne.
+   */
+  const lifetime = offreParId("lifetime")!;
+  const business = offreParId("business")!;
+  assert.ok(lifetime.prixHT! < business.prixHT!, "prémisse : le lifetime est le moins cher des deux");
+
+  const enPlus = lifetime.capacites.filter((c) => !business.capacites.includes(c));
+  assert.deepEqual(enPlus, [], "le lifetime ne doit rien ouvrir que Business n'ouvre pas");
+  assert.ok(
+    lifetime.capacites.length < business.capacites.length,
+    `le lifetime ouvre ${lifetime.capacites.length} briques et Business ${business.capacites.length} : ` +
+      "à périmètre égal et prix inférieur, Business ne se vend plus jamais"
+  );
+});
+
 test("⚠ le lifetime coûte moins cher qu'un an et demi d'abonnement — et ça se sait", async () => {
   /**
    * Ce test ne juge pas le prix : il refuse qu'on OUBLIE l'arbitrage. Un
@@ -597,8 +676,17 @@ test("⚠ le lifetime coûte moins cher qu'un an et demi d'abonnement — et ça
    * prendra. À l'inverse, s'il descend trop bas, on brade le revenu de
    * plusieurs années.
    */
-  const { LIFETIME_PALIERS, ALPHA_VOICE_PALIERS } = await import("../lib/offres-publiques");
-  const mensuel = ALPHA_VOICE_PALIERS[0].prixHT;
+  const { LIFETIME_PALIERS, OMNICANAL_MENSUEL_HT } = await import("../lib/offres-publiques");
+  /**
+   * ⚠ L'ANCRE ÉTAIT `ALPHA_VOICE_PALIERS[0]` (149 €/mois), ET ELLE MENTAIT.
+   * Le lifetime n'ouvre pas Alpha Voice seul : il ouvre le CRM, le closer, le
+   * Cerveau, le pilotage, le suivi, les audits ET la voix. Ce que ce client
+   * paierait en abonnement, c'est l'offre omnicanale — 590 €/mois. Mesuré à
+   * 149 €, le premier palier valait 33 mois et le test hurlait « ce n'est plus
+   * une offre de lancement » ; mesuré à ce qu'il remplace vraiment, il en vaut
+   * 8. Le prix n'était pas le problème : le dénominateur l'était.
+   */
+  const mensuel = OMNICANAL_MENSUEL_HT;
   const moisEquivalents = LIFETIME_PALIERS[0].prixHT / mensuel;
   assert.ok(
     moisEquivalents >= 6,

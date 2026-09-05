@@ -1,8 +1,6 @@
 import {
   ALPHA_VOICE_PALIERS,
   ALPHA_VOICE_SETUP_HT,
-  ESSAI_CALLS,
-  ESSAI_HT,
   OUTBOUND_UNIT_CALLS,
   OUTBOUND_UNIT_HT,
   PACK_MONTHLY_HT,
@@ -63,7 +61,6 @@ export type FamilleOffre =
   | "alpha-carte"
   | "alpha-revshare"
   | "sortant"
-  | "essai"
   | "os-personnalise"
   | "visibilite"
   | "digitalisation"
@@ -104,7 +101,6 @@ export const COMPTE_DE_LA_FAMILLE: Record<FamilleOffre, string> = {
   "alpha-carte": "eagleye",
   "alpha-revshare": "eagleye",
   sortant: "eagleye",
-  essai: "eagleye",
   "os-personnalise": "eagleye",
   visibilite: "eagleye",
   digitalisation: "eagleye",
@@ -136,8 +132,6 @@ export interface Selection {
    * une alerte le dit, plutôt qu'un montant approximatif.
    */
   sortantMensuelHT?: number;
-  /** L'essai 100 appels. */
-  essai?: boolean;
   /**
    * Modèle « 30 % du CA généré ». On saisit le CA MENSUEL qu'on projette
    * pour le client — c'est SON chiffre d'affaires, pas le nôtre.
@@ -367,17 +361,6 @@ export function chiffrer(sel: Selection, options: OptionsChiffrage = {}): Chiffr
     }
   }
 
-  // ── EAGLEYE — l'essai ──
-  if (sel.essai) {
-    ajouter(
-      "essai",
-      `Essai — ${ESSAI_CALLS} appels`,
-      ESSAI_HT,
-      0,
-      `${ESSAI_HT} € une fois. C'est une porte d'entrée, pas une offre : elle sert à prouver, puis à basculer.`
-    );
-  }
-
   // ── EAGLEYE — 30 % du CA généré (un PRIX, pas une commission) ──
   if ((sel.caMensuelGenere ?? 0) > 0) {
     const ca = sel.caMensuelGenere!;
@@ -401,9 +384,24 @@ export function chiffrer(sel: Selection, options: OptionsChiffrage = {}): Chiffr
     }
   }
 
-  // ── EAGLEYE — Alpha Voice ──
-  // ⚠ Cette ligne était rattachée à un compte revendeur, à 30 % + 10 %.
-  // L'accord est mort : l'offre est à nous, donc `bareme("eagleye")` et 100 %.
+  /**
+   * ── EAGLEYE — Alpha Voice ──
+   *
+   * ⚠ Cette ligne était rattachée à un compte revendeur, à 30 % + 10 %.
+   * L'accord est mort : l'offre est à nous, donc `bareme("eagleye")` et 100 %.
+   *
+   * ⚠⚠ IL Y AVAIT UNE DEUXIÈME LIGNE ICI, ET ELLE VENDAIT LA MÊME CHOSE.
+   * La famille « essai » ajoutait « Essai — 100 appels, 290 € une fois »,
+   * retirée le 04/09/2026. Deux raisons, et la seconde est la vraie :
+   *  1. elle vendait moins cher ce que l'installation Alpha Voice (990 €)
+   *     vend déjà avec la garantie « le setup ne se paie qu'au premier
+   *     rendez-vous pris » — deux prix pour la même chose sur un devis ;
+   *  2. le palier Essentiel (200 appels, 149 €/mois) EST le produit sous le
+   *     millier, c'est-à-dire exactement le trou que l'essai bouchait quand
+   *     la grille sautait de rien à 364 €/millier.
+   * Le curseur de minutes ci-dessous couvre donc tous les volumes. Rouvrir
+   * un second bouton pour le même palier, c'est rouvrir la divergence.
+   */
   if ((sel.alphaVoiceMinutes ?? 0) > 0) {
     const p = palierAlphaVoice(sel.alphaVoiceMinutes!);
     const b = bareme("eagleye");

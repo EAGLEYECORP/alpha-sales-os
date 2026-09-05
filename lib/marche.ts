@@ -165,7 +165,11 @@ export const MARCHE_FRANCE: RelevePrix[] = [
     fiabilite: "secondaire",
     source: "locklead.fr, agaphone.com",
     releveLe: RELEVE_LE,
-    reserve: "C'est le comparable direct de notre palier d'essai.",
+    reserve:
+      "C'est le comparable direct de NOTRE installation (990 € HT), et nous sommes ×3,3 au-dessus " +
+      "du haut de fourchette. L'écart est réel et se défend — eux facturent une mise en relation, " +
+      "nous installons une ligne, un script audité et une voix — mais il doit être ARGUMENTÉ à l'oral, " +
+      "jamais espéré invisible : c'est le premier chiffre qu'un prospect compare.",
   },
 ];
 

@@ -111,11 +111,18 @@ SUPABASE_SERVICE_ROLE_KEY=
 REQUIRE_AUTH=
 SUPABASE_JWT_SECRET=
 
-# ── Facturation Stripe (revente SaaS : abonnements Solo/Pro) ──
+# ── Facturation Stripe (un ID de prix par offre encaissable) ──
+# ⚠ Les noms suivent la GRILLE (lib/offres-publiques.ts). « SOLO » et « PRO »
+# ont disparu avec les offres du même nom : les laisser ici ferait créer chez
+# Stripe deux prix que plus aucun bouton n'atteint.
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_SOLO=price_xxx      # ID de prix Stripe (abonnement 79 €/mois)
-STRIPE_PRICE_PRO=price_xxx       # ID de prix Stripe (abonnement 149 €/mois)
+STRIPE_PRICE_VOIX_ESSENTIEL=price_xxx  # Alpha Voice Essentiel — abonnement 149 €/mois
+STRIPE_PRICE_VOIX_INTENSIF=price_xxx   # Alpha Voice Intensif — abonnement 349 €/mois
+STRIPE_PRICE_OMNICANAL=price_xxx       # Réponse omnicanale — abonnement 590 €/mois
+STRIPE_PRICE_VOIX_1000=price_xxx       # 1 000 appels sortants — abonnement 364 €/mois
+STRIPE_PRICE_BUSINESS=price_xxx        # Business — acompte 2 500 € (le reste hors Stripe)
+STRIPE_PRICE_LIFETIME=price_xxx        # Lifetime — paiement UNIQUE, jamais récurrent
 # Accès permanent du propriétaire (jamais bloqué par la facture) ; côté serveur.
 # C'est AUSSI ce qui donne le compte maître (toutes les briques ouvertes).
 # Domaine entier (@ton-domaine.fr) et/ou adresses exactes, séparés par des virgules.
@@ -352,11 +359,11 @@ export function SystemStatus() {
             {
               label: c.billing?.configured ? "Stripe configuré" : "Stripe (STRIPE_SECRET_KEY)",
               level: c.billing?.configured ? "ok" : "off",
-              hint: "Abonnements Solo/Pro pour revendre l'OS. Sans Stripe, la page /compte affiche les plans mais le paiement est inactif.",
+              hint: "Encaissement des offres de la grille. Sans Stripe, /souscrire affiche les offres mais le paiement est inactif.",
               optional: true,
             },
             {
-              label: c.billing?.prices ? "Prix Solo/Pro liés" : "Prix (STRIPE_PRICE_SOLO / STRIPE_PRICE_PRO)",
+              label: c.billing?.prices ? "Prix Stripe liés" : "Prix (STRIPE_PRICE_* — un par offre)",
               level: c.billing?.prices ? "ok" : "off",
               hint: "IDs de prix Stripe (mode abonnement) pour chaque plan.",
               optional: true,

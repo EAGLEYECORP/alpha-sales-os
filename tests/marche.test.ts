@@ -12,7 +12,7 @@ import {
   prixConseille,
   type RelevePrix,
 } from "../lib/marche";
-import { OFFRES, offreParId, PACK_SETUP_HT } from "../lib/offres-publiques";
+import { ALPHA_VOICE_SETUP_HT, OFFRES, offreParId, PACK_SETUP_HT } from "../lib/offres-publiques";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -121,10 +121,27 @@ test("le pack complet est DANS la fourchette d'une implémentation sur mesure", 
   assert.equal(c.position, "dans-marche");
 });
 
-test("l'essai est DANS la fourchette des frais de mise en service", () => {
-  const essai = offreParId("essai")!;
-  const c = comparer("Essai", essai.prixHT!, ref("mise-en-service-fr"));
-  assert.equal(c.position, "dans-marche", `290 € contre 100–300 € — ${c.phrase}`);
+test("⚠ notre installation est TRÈS AU-DESSUS des frais de mise en service du marché", () => {
+  /**
+   * ⚠ CE TEST DISAIT LE CONTRAIRE, ET IL AVAIT RAISON À L'ÉPOQUE.
+   *
+   * Il comparait « Essai terrain » (290 €) à la fourchette française des frais
+   * de mise en service (100–300 €) et concluait « dans-marché ». L'offre est
+   * sortie de la grille le 04/09/2026 — et avec elle, le seul prix d'entrée
+   * qui ressemblait au marché. Ce que le prospect voit maintenant en premier,
+   * c'est **990 € d'installation**, soit ×3,3 le haut de fourchette.
+   *
+   * Recopier l'ancien verdict sur la nouvelle offre aurait été confortable et
+   * faux. Le test asserte donc ce qui est VRAI : on est hors marché sur ce
+   * poste, et c'est la première objection qu'on entendra. Elle a une réponse
+   * — le télésecrétariat facture une mise en relation, nous installons une
+   * ligne, un script audité et une voix — mais cette réponse doit être
+   * SERVIE, pas supposée. Si un jour l'installation redescend sous 600 €, ce
+   * test tombera : ce sera le moment de réécrire l'argument, pas de le taire.
+   */
+  const c = comparer("Installation Alpha Voice", ALPHA_VOICE_SETUP_HT, ref("mise-en-service-fr"));
+  assert.equal(c.position, "hors-marche", `${ALPHA_VOICE_SETUP_HT} € contre 100–300 € — ${c.phrase}`);
+  assert.ok(c.ratioHaut >= 3, "l'écart doit rester chiffré, pas seulement qualifié");
 });
 
 test("Alpha Voice tient face au comparable FRANÇAIS, pas face à une API américaine", () => {
@@ -148,7 +165,7 @@ test("Alpha Voice tient face au comparable FRANÇAIS, pas face à une API améri
 test("aucune offre mensuelle ne se retrouve hors marché sans qu'on le sache", () => {
   // Ce test ne juge pas les prix : il exige qu'on ait REGARDÉ. Une offre
   // mensuelle sans comparable au relevé est un prix posé à l'aveugle.
-  const comparables = new Set(["solo", "pro", "voix-1000"]);
+  const comparables = new Set(["voix-essentiel", "voix-intensif", "omnicanal", "voix-1000"]);
   for (const o of OFFRES.filter((x) => x.cadence === "mensuel")) {
     assert.ok(comparables.has(o.id), `${o.id} n'a aucun comparable dans le relevé de marché`);
   }

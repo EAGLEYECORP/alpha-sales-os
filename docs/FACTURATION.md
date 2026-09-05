@@ -47,12 +47,12 @@ signature des webhooks à la main** (HMAC-SHA256). Pas de SDK.
 
 | Offre | Mode Stripe | Prix | Variable |
 |---|---|---|---|
-| Essai terrain | **paiement unique** | 290 € HT | `STRIPE_PRICE_ESSAI` |
-| Solo | abonnement mensuel | 79 € HT | `STRIPE_PRICE_SOLO` |
-| Pro | abonnement mensuel | 149 € HT | `STRIPE_PRICE_PRO` |
+| Alpha Voice — Essentiel | abonnement mensuel | 149 € HT (+ 990 € d'installation) | `STRIPE_PRICE_VOIX_ESSENTIEL` |
+| Alpha Voice — Intensif | abonnement mensuel | 349 € HT (+ 990 € d'installation) | `STRIPE_PRICE_VOIX_INTENSIF` |
+| Réponse omnicanale | abonnement mensuel | 590 € HT (+ 2 500 € d'installation) | `STRIPE_PRICE_OMNICANAL` |
 | Alpha Voice — 1 000 appels | abonnement mensuel | 364 € HT | `STRIPE_PRICE_VOIX_1000` |
 | Business | installation **étalée** puis abonnement | 2 500 € + 10 × 800 €, puis 1 000 € HT/mois | `STRIPE_PRICE_BUSINESS` |
-| Lifetime | **paiement unique** | à partir de 1 900 € HT | `STRIPE_PRICE_LIFETIME` |
+| Lifetime | **paiement unique** | à partir de 4 900 € HT | `STRIPE_PRICE_LIFETIME` |
 
 > ⚠ **Business demande DEUX prix Stripe, pas un.** L'étalement est un
 > abonnement à 800 € qui doit s'**arrêter après 10 prélèvements** ; l'abonnement
@@ -64,10 +64,16 @@ signature des webhooks à la main** (HMAC-SHA256). Pas de SDK.
 > les mois quelqu'un à qui on vient de promettre « payé une fois » — la faute
 > la plus coûteuse en réputation de toute cette table.
 
-⚠ **L'essai est un paiement UNIQUE.** Le créer en récurrent prélèverait 290 €
-tous les mois à quelqu'un qui croyait payer une mise en route. Le code déduit
-le mode de la cadence de l'offre — mais si le prix Stripe est mal créé, c'est
-Stripe qui gagne.
+⚠ **La règle vaut pour TOUTE offre de cadence « unique ».** Le code déduit le
+mode Stripe de la cadence déclarée dans la grille — mais si le prix est créé en
+récurrent chez Stripe, c'est Stripe qui gagne : on prélèverait tous les mois à
+quelqu'un qui croyait payer une mise en route.
+
+> **Note historique.** Ce paragraphe visait « Essai terrain » (290 €), retirée
+> de la grille le 04/09/2026 : elle faisait double emploi avec la garantie
+> (« l'installation ne se paie qu'au premier rendez-vous ») et avec le socle
+> gratuit. Le piège Stripe, lui, n'a pas disparu — il porte désormais sur
+> Lifetime, où la somme en jeu est vingt fois plus grosse.
 
 L'installation complète (10 000 €) n'a **pas** de prix Stripe, et c'est
 volontaire : la doctrine impose le cadrage avant tout devis.
@@ -76,9 +82,9 @@ volontaire : la doctrine impose le cadrage avant tout devis.
 
 ```
 STRIPE_SECRET_KEY=sk_live_…            # Stripe → Developers → API keys
-STRIPE_PRICE_ESSAI=price_…             # paiement UNIQUE, 290 €
-STRIPE_PRICE_SOLO=price_…              # abonnement, 79 €
-STRIPE_PRICE_PRO=price_…               # abonnement, 149 €
+STRIPE_PRICE_VOIX_ESSENTIEL=price_…    # abonnement, 149 €
+STRIPE_PRICE_VOIX_INTENSIF=price_…     # abonnement, 349 €
+STRIPE_PRICE_OMNICANAL=price_…         # abonnement, 590 €
 STRIPE_PRICE_VOIX_1000=price_…         # abonnement, 364 €
 STRIPE_PRICE_BUSINESS=price_…          # abonnement 800 €, À ARRÊTER après 10 prélèvements
 STRIPE_PRICE_LIFETIME=price_…          # paiement UNIQUE, à partir de 1 900 €
@@ -140,9 +146,11 @@ de voir ce qu'il voit.
    `subscriptions.status` à `canceled` ET `entitlements.statut` à `suspendu`.
    Re-teste `/pipeline` : refusé. Sans cette dernière vérification, tu ne sais
    pas si résilier coûte quelque chose au client.
-7. Refais le tour avec **Essai terrain** : le paiement doit être UNIQUE (pas
-   d'abonnement créé dans Stripe) et `entitlements.statut` doit valoir
-   `essai`, avec `essai_jusqu_a` à +14 jours.
+7. Refais le tour avec **Lifetime** : le paiement doit être UNIQUE (aucun
+   abonnement ne doit apparaître dans Stripe → Subscriptions) et
+   `entitlements.statut` doit valoir `actif`, avec `essai_jusqu_a` **vide**.
+   Si un abonnement s'est créé, le prix Stripe a été fait en récurrent :
+   archive-le et refais-en un en « one-time ».
 
 ---
 

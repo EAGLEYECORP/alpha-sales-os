@@ -136,11 +136,11 @@ export const BUSINESS_PUBLIC = {
 
 export const LIFETIME_PUBLIC = {
   paliers: [
-    { rang: 1, prixHT: 1_900, places: 10 },
-    { rang: 2, prixHT: 2_900, places: 20 },
-    { rang: 3, prixHT: 3_900, places: 30 },
+    { rang: 1, prixHT: 4_900, places: 5 },
+    { rang: 2, prixHT: 6_900, places: 7 },
+    { rang: 3, prixHT: 8_900, places: 8 },
   ],
-  placesTotal: 60,
+  placesTotal: 20,
   appelsInclus: 1_200,
 };
 

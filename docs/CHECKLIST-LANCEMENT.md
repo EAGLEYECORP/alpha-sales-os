@@ -192,10 +192,14 @@ le facteur limitant.
       seulement à l'encaissement), et les REFERME à la résiliation. Reste à
       le prouver sur un vrai compte Stripe : `docs/FACTURATION.md`, étape 4,
       qui vérifie LES DEUX tables et la résiliation.
-- [ ] Créer les **six** prix Stripe (`STRIPE_PRICE_ESSAI`, `_SOLO`, `_PRO`,
-      `_VOIX_1000`, `_BUSINESS`, `_LIFETIME`). ⚠ Deux d'entre eux sont des
-      paiements **UNIQUES** — `_ESSAI` et `_LIFETIME` : les créer en récurrent
+- [ ] Créer les **six** prix Stripe (`STRIPE_PRICE_VOIX_ESSENTIEL`,
+      `_VOIX_INTENSIF`, `_OMNICANAL`, `_VOIX_1000`, `_BUSINESS`, `_LIFETIME`).
+      ⚠ `_LIFETIME` est un paiement **UNIQUE** : le créer en récurrent
       prélèverait tous les mois quelqu'un qui croyait payer une seule fois.
+- [ ] **Archiver** `STRIPE_PRICE_SOLO` et `STRIPE_PRICE_PRO` dans le tableau de
+      bord Stripe : les offres sont retirées de la grille (« solo » facturait un
+      périmètre devenu gratuit). Les retirer du code les rend inatteignables
+      depuis l'app ; ça n'annule aucun abonnement déjà en cours.
       ⚠⚠ `_BUSINESS` est l'inverse : c'est un abonnement d'étalement qui doit
       **s'arrêter après 10 prélèvements**, sinon les 800 € continuent en plus
       de l'abonnement de 1 000 € qui prend le relais.

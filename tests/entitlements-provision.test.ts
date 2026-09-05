@@ -10,7 +10,7 @@ import {
   offresSansDroits,
   revocationPour,
 } from "../lib/entitlements-provision";
-import { OFFRES } from "../lib/offres-publiques";
+import { OFFRES, offreParId } from "../lib/offres-publiques";
 import { ESSAI_JOURS } from "../lib/client-onboarding";
 
 /**
@@ -52,14 +52,29 @@ test("les droits correspondent aux capacités annoncées sur la page publique", 
   }
 });
 
-test("l'essai est marqué « essai » et porte sa date de fin", () => {
-  const d = droitsPourOffre("essai", "2026-08-27T10:00:00.000Z")!;
-  assert.equal(d.statut, "essai", "le marquer « actif » ferait vivre un compte gratuit indéfiniment");
-  assert.equal(d.essaiJusquA, new Date(Date.UTC(2026, 7, 27, 10) + ESSAI_JOURS * 86_400_000).toISOString());
+test("⚠ AUCUNE offre de la grille n'ouvre un statut « essai »", () => {
+  /**
+   * Il y en avait une : « Essai terrain », 290 €, qui posait `statut: "essai"`
+   * avec une date de fin. Elle est sortie de la grille le 04/09/2026 — elle
+   * faisait double emploi avec la GARANTIE (« l'installation ne se paie qu'au
+   * premier rendez-vous »), qui renverse le risque sans encaisser d'avance, et
+   * avec le socle gratuit, qui laisse essayer sans rien payer.
+   *
+   * ⚠ Ce test ne dit PAS que le statut « essai » est mort : `resoudreDroits`
+   * le lit toujours depuis la base et le fait expirer, et un abonnement Stripe
+   * en `trialing` s'appuie dessus. Ce qu'il interdit, c'est qu'une OFFRE
+   * ouvre un droit à durée limitée sans que personne l'ait décidé.
+   */
+  for (const o of OFFRES) {
+    const d = droitsPourOffre(o.id, "2026-08-27T10:00:00.000Z");
+    if (!d) continue;
+    assert.equal(d.statut, "actif", `« ${o.nom} » ouvre un statut « ${d.statut} » — décision non prise`);
+    assert.equal(d.essaiJusquA, null, `« ${o.nom} » pose une date de fin d'essai`);
+  }
 });
 
 test("un abonnement payant est « actif » et n'a pas de date de fin d'essai", () => {
-  for (const id of ["solo", "pro", "voix-1000"]) {
+  for (const id of ["voix-intensif", "omnicanal", "voix-1000"]) {
     const d = droitsPourOffre(id)!;
     assert.equal(d.statut, "actif", `${id} devrait être actif`);
     assert.equal(d.essaiJusquA, null, `${id} ne doit pas porter de fin d'essai`);
@@ -83,12 +98,22 @@ test("⚠ un paiement NON ENCAISSÉ n'ouvre aucun droit", () => {
   // Même règle que partout dans ce tunnel : « session terminée » n'est pas
   // « argent reçu ». Ouvrir avant l'encaissement, c'est livrer à crédit sans
   // l'avoir décidé.
-  assert.equal(ligneEntitlements({ tenantId: "u1", offreId: "pro", encaisse: false }), null);
+  assert.equal(ligneEntitlements({ tenantId: "u1", offreId: "omnicanal", encaisse: false }), null);
 
-  const ok = ligneEntitlements({ tenantId: "u1", offreId: "pro", encaisse: true })!;
+  const ok = ligneEntitlements({ tenantId: "u1", offreId: "omnicanal", encaisse: true })!;
   assert.equal(ok.tenant_id, "u1");
   assert.equal(ok.statut, "actif");
-  assert.ok(Array.isArray(ok.bricks) && (ok.bricks as string[]).length === 7);
+  /**
+   * ⚠ Le nombre était écrit en dur (7, hérité de l'offre « pro » disparue).
+   * Un compte figé se périme au premier changement de grille, et le test
+   * échoue alors pour une raison qui n'a rien à voir avec ce qu'il garde.
+   * On lit le périmètre RÉEL de l'offre.
+   */
+  const attendues = offreParId("omnicanal")!.capacites.length;
+  assert.ok(
+    Array.isArray(ok.bricks) && (ok.bricks as string[]).length === attendues,
+    `l'encaissement doit ouvrir les ${attendues} capacités de l'offre`
+  );
 });
 
 test("le webhook provisionne VRAIMENT les droits, pas seulement l'abonnement", () => {
