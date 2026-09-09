@@ -57,6 +57,13 @@ const INTERNAL = [
   "/api/debrief",
   // Facturation : création de session Checkout / portail par le compte connecté.
   "/api/billing",
+  /**
+   * Positionnement tarifaire : elle sert le relevé du marché, notre taux
+   * horaire et le COÛT de chaque brique (`pricing-briques` et `offres-marge`
+   * remontent jusqu'à `voice-costs`). C'est notre marge, agrégée mais
+   * lisible — même origine exigée, comme `/api/voice-costs`.
+   */
+  "/api/positionnement",
   // Studio contenu (posts sociaux) + rendu vidéo : même origine.
   "/api/social",
   "/api/video",

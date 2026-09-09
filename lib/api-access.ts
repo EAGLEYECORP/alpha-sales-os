@@ -45,6 +45,10 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // File de propositions : c'est du pilotage du pipe, donc du CRM.
   "/api/propositions": "/pipeline",
 
+  // Le positionnement sert notre modèle de coût agrégé : même porte que
+  // l'écran qu'il alimente, donc maître seul.
+  "/api/positionnement": "/offre",
+
   // Le moniteur suit la même porte que l'écran qu'il alimente.
   "/api/moniteur": "/moniteur",
 

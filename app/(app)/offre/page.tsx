@@ -8,6 +8,7 @@ import { calcTelephony, defaultTelephony, type TelephonyInput } from "@/lib/tele
 import { useAlpha } from "@/lib/store";
 import { CalculateurComplet } from "@/components/offre/calculateur-complet";
 import { PageHeader } from "@/components/ui/page-header";
+import { Positionnement } from "@/components/offre/positionnement";
 
 export default function OffrePage() {
   // Tarifs du compte (white-label) — défaut = modèle EAGLEYE.
@@ -77,6 +78,14 @@ export default function OffrePage() {
           </div>
         }
       />
+
+      {/* ⚠ Trois modules de mesure vivaient sans lecteur : le relevé du marché
+          (`lib/marche`), le taux horaire (`lib/taux-horaire`) et le coût par
+          brique (`lib/pricing-briques`). Ils répondent tous les trois à « mon
+          prix est-il défendable ? », qui est la question de cet écran.
+          Tout est calculé côté SERVEUR : deux d'entre eux portent notre coût
+          minute par minute, et un chunk client se télécharge sans compte. */}
+      <Positionnement />
 
       {mode === "toutes" && <CalculateurComplet />}
 
