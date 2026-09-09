@@ -243,6 +243,88 @@ l'identifiant qu'elle consomme, et vérifie qu'aucune n'est atteignable par le
 gratuit. Trois y échappaient en écrivant la garde — `/api/ai`, `/api/sparring`
 et `/api/digest` pointaient vers des chemins devenus gratuits le même jour.
 
+### Deux façons de s'en servir — et le produit ne les traite pas pareil
+
+Le même logiciel sert deux personnes qui n'ont pas le même problème. Ça se voit
+dans les écrans, dans les droits, et dans ce qu'on facture.
+
+#### 1. Le commercial seul
+
+Il vend pour lui. Prospection, qualification, relances, closing : tout passe par
+lui, et son problème est le **temps** — un bon vendeur passe sa journée à ne
+pas vendre. Il s'inscrit, décrit sa cible, et l'outil se remplit de fiches qui
+ressemblent à SON marché. Un compte, pas de hiérarchie, rien à administrer.
+
+C'est le socle gratuit : CRM, Closer OS, Cerveau, pilotage. Il n'a rien à payer
+tant qu'il fait le travail lui-même — il paie le jour où il veut que la machine
+agisse à sa place (appels, campagnes, agent autonome).
+
+#### 2. Le responsable d'équipe commerciale
+
+Il ne vend pas — ou pas seulement. Il pilote trois à quinze commerciaux, et son
+problème n'est pas le temps, c'est l'**écart** : la différence entre son
+meilleur vendeur et les autres est énorme, et le savoir du meilleur reste dans
+sa tête. Il lui faut voir ce que font ses vendeurs, reprendre un portefeuille
+quand quelqu'un part, et comparer.
+
+Il crée des **sous-comptes** — un par commercial. Chacun a ses identifiants,
+son pipe, ses fiches. Le responsable voit le contenu de chacun ; un commercial
+ne voit ni son responsable, ni ses collègues.
+
+> ⚠ **Le sens de la hiérarchie n'est pas symétrique, et c'est délibéré.** Un
+> commercial qui lit le pipe de son collègue peut lui prendre ses affaires ; un
+> commercial qui lit le compte de son responsable voit la marge faite sur son
+> propre travail. Le rattachement donne une visibilité **descendante**, jamais
+> latérale ni montante.
+
+> ⚠ **Les prospects appartiennent à l'entreprise, pas au vendeur qui les a
+> saisis.** C'est ce qui justifie que le responsable voie tout : un directeur
+> commercial qui ne peut pas reprendre le portefeuille d'un vendeur parti n'a
+> pas un CRM, il a un carnet privé par personne. Ça se dit au commercial le
+> jour où on lui crée son compte — pas le jour où il s'en aperçoit.
+
+Règles pures et testées : [`lib/organisation.ts`](./lib/organisation.ts),
+[`tests/organisation.test.ts`](./tests/organisation.test.ts). Structure et
+politiques : [`supabase/migrations/003-organisation.sql`](./supabase/migrations/003-organisation.sql).
+
+#### Et nous, au-dessus — ce qu'on voit et ce qu'on ne voit pas
+
+Le compte maître (EAGLEYE) est le socle des opérations et du succès client. Il
+voit **l'exploitation** de chaque compte : combien de fiches, quelles briques
+ouvertes, quel statut d'abonnement, quelle dernière activité. Des compteurs et
+des états.
+
+Il ne voit **pas le contenu** : aucun nom de prospect, aucun téléphone, aucun
+email, aucun montant de deal.
+
+> ⚠ **Ce refus n'est pas de la prudence décorative, et il tient en deux
+> raisons.**
+>
+> La première est juridique : lire le CRM d'un client, c'est lire les nom,
+> téléphone et email de gens qui ne nous connaissent pas. Ça fait de nous un
+> **sous-traitant** au sens de l'art. 28 du RGPD — il faudrait un contrat écrit,
+> une finalité déclarée, une durée, et le client devrait pouvoir dire non.
+>
+> La seconde est plus simple : **l'exploitation suffit à faire le travail.** Le
+> support, le succès client et le suivi de la facturation ont besoin de savoir
+> si le compte tourne, s'il consomme et s'il paie. Aucun des trois n'a besoin du
+> numéro de téléphone d'un prospect. Et encaisser avant le client se règle par
+> Stripe Connect (`application_fee_amount`), qui ne touche à aucune donnée
+> métier.
+
+Une porte de support existe pour le contenu, et elle est **fermée par défaut**.
+Elle s'ouvre sur quatre conditions cumulatives : consentement du client depuis
+SON compte, date de fin, journalisation, et contrat de sous-traitance signé. La
+quatrième ne se code pas — elle est prise en paramètre justement pour qu'on ne
+puisse pas l'oublier en croyant que le code s'en occupe.
+
+> ⚠ **Nous ne créons PAS de sous-comptes chez un client**, alors que nous le
+> pourrions techniquement. Un compte créé par nous sous le nom d'un client est
+> un compte dont le client ignore l'existence : c'est la forme exacte qu'aurait
+> une porte dérobée, et elle serait indiscernable d'une vraie. Si un client veut
+> un commercial de plus pendant un accompagnement, ça se fait depuis SON compte,
+> avec lui.
+
 ### Mettre un client en route
 
 `lib/client-onboarding.ts` — dix étapes datées depuis la signature, chacune

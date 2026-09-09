@@ -32,6 +32,16 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // la porte de l'écran ne suffit pas, et c'est voulu.
   "/api/prompts": "/prompts",
   "/api/compte": "/compte",
+  /**
+   * Mon équipe : qui m'est rattaché. Chemin COMMUN, comme `/compte`.
+   *
+   * ⚠ Elle ne rend que de l'EXPLOITATION — des compteurs et des états, jamais
+   * une fiche. La rattacher à `crm` aurait été le réflexe et aurait été faux
+   * de deux façons : elle serait refusée à un compte sans CRM (or tout le
+   * monde doit pouvoir voir sa propre équipe), et elle laisserait croire
+   * qu'elle sert des données de pipe. Elle n'en sert aucune.
+   */
+  "/api/organisation": "/compte",
   // File de propositions : c'est du pilotage du pipe, donc du CRM.
   "/api/propositions": "/pipeline",
 

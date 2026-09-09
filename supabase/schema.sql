@@ -315,3 +315,51 @@ create policy "attachments own" on storage.objects
   for all
   using (bucket_id = 'attachments' and owner = auth.uid())
   with check (bucket_id = 'attachments' and owner = auth.uid());
+
+-- ─────────────────────────────────────────────────────────────────────
+-- L'ORGANISATION — responsables, membres, et l'accès support.
+--
+-- ⚠ Détail complet, raisonnement et politiques RLS :
+-- `supabase/migrations/003-organisation.sql`. Elles sont ici pour que ce
+-- fichier reste la carte COMPLÈTE des tables (un test l'exige : toute table
+-- interrogée par le code doit y figurer, sinon une requête échoue en silence
+-- et le code journalise une erreur que personne ne lit).
+--
+-- ⚠⚠ `create table if not exists` : sur une base DÉJÀ créée, ce fichier ne
+-- fait RIEN et le SQL Editor annonce quand même « Success ». C'est la
+-- migration 003 qu'il faut passer, pas celui-ci.
+-- ─────────────────────────────────────────────────────────────────────
+create table if not exists public.organisation (
+  tenant_id uuid primary key references auth.users (id) on delete cascade,
+  role text not null default 'responsable' check (role in ('maitre', 'responsable', 'membre')),
+  parent_id uuid references auth.users (id) on delete set null,
+  libelle text,
+  cree_le timestamptz not null default now(),
+  constraint parent_seulement_pour_membre check (
+    (role = 'membre' and parent_id is not null)
+    or (role <> 'membre' and parent_id is null)
+  ),
+  constraint pas_son_propre_parent check (parent_id is null or parent_id <> tenant_id)
+);
+create index if not exists organisation_parent_idx on public.organisation (parent_id);
+alter table public.organisation enable row level security;
+
+create table if not exists public.acces_support (
+  tenant_id uuid primary key references auth.users (id) on delete cascade,
+  consenti boolean not null default false,
+  expire_le timestamptz,
+  contrat_sous_traitance boolean not null default false,
+  maj_le timestamptz not null default now()
+);
+alter table public.acces_support enable row level security;
+
+create table if not exists public.journal_acces_support (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references auth.users (id) on delete cascade,
+  operateur_id uuid references auth.users (id) on delete set null,
+  objet text not null,
+  motif text,
+  le timestamptz not null default now()
+);
+create index if not exists journal_acces_tenant_idx on public.journal_acces_support (tenant_id, le desc);
+alter table public.journal_acces_support enable row level security;
