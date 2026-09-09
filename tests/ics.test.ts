@@ -92,13 +92,13 @@ test("rendez-vous — l'UID est stable, sinon chaque rafraîchissement crée un 
 });
 
 test("rendez-vous — la description porte de quoi préparer depuis un téléphone", () => {
-  const p = prospect({ company: "Toitures du Rhône", name: "Marc Perrin", phone: "04 78 12 34 56" });
+  const p = prospect({ company: "Toitures du Rhône", name: "Marc Perrin", phone: "04 65 71 34 56" });
   const m = meeting({ id: "m-1", title: "Audit", date: "2026-08-25T14:00:00+02:00", location: "Lyon 6e" });
   const e = meetingToIcs(m, p, "https://alphasalesos.vercel.app");
 
   assert.match(e, /Toitures du Rhône/);
   assert.match(e, /Marc Perrin/);
-  assert.match(e, /04 78 12 34 56/);
+  assert.match(e, /04 65 71 34 56/);
   // Le lien vers la fiche : c'est lui qui transforme une ligne d'agenda en
   // préparation d'entretien, en salle d'attente.
   assert.match(e, new RegExp(`prospects/${p.id}`));

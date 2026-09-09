@@ -49,7 +49,7 @@ test("deep-dive — une fiche riche sort chaude, avec des signaux dicibles", () 
   const d = deepDive(
     fixture({
       name: "Marc Dubois",
-      phone: "0478000000",
+      phone: "0465710000",
       email: "marc@test.fr",
       trust: 70,
       deepAudit: {
@@ -117,7 +117,7 @@ test("deep-dive — le lot est trié du plus chaud au plus froid", () => {
   const froid = fixture({ id: "froid" });
   const chaud = fixture({
     id: "chaud",
-    phone: "0478000000",
+    phone: "0465710000",
     email: "a@b.fr",
     trust: 80,
     deepAudit: { websiteState: "aucun", socialState: "aucun", localCompetition: "x", currentProcess: "y", missedCallsPerWeek: 10, googleRating: 3 },

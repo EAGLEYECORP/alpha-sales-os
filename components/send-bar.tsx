@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { isDemoProspect } from "@/lib/seed";
 import { identiteEnvoi } from "@/lib/expediteur";
 
-/** 06 12 34 56 78 → 33612345678 (format wa.me / SMS international) */
+/** 06 39 98 56 78 → 33612345678 (format wa.me / SMS international) */
 export function toIntlPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("0")) return "33" + digits.slice(1);

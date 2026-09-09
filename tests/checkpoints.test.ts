@@ -6,7 +6,7 @@ import type { Prospect } from "../lib/types";
 function fixture(over: Partial<Prospect> = {}): Prospect {
   return {
     id: "p1", name: "Marc Dubois", company: "Test SARL", sector: "artisan", city: "Lyon",
-    phone: "0478000000", email: "m@t.fr", stage: "prospect", trust: 50, likeness: 50, auditScore: 0,
+    phone: "0465710000", email: "m@t.fr", stage: "prospect", trust: 50, likeness: 50, auditScore: 0,
     conviction: 5, monthlyValue: 0, setupValue: 0, probability: 20, ignoranceTax: 0,
     croyances: { produit: 5, soutien: 5, pourLui: 5 }, obstacles: [], objections: [], events: [],
     demoShownBeforePrice: false, nextStep: null, tags: [], attachments: [], notes: "",
@@ -94,7 +94,7 @@ test("checkpoints — au stade DÉMO, le prix avant la démo bloque", () => {
 test("checkpoints — la progression reflète les validés", () => {
   const vide = checkpointsFor(fixture({ name: "Gérant", phone: "", email: "" }));
   assert.equal(vide.progress, 0);
-  const plein = checkpointsFor(fixture({ name: "Marc Dubois", phone: "0478000000" }));
+  const plein = checkpointsFor(fixture({ name: "Marc Dubois", phone: "0465710000" }));
   assert.equal(plein.progress, 100);
 });
 

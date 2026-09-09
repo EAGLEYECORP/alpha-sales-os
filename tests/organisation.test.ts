@@ -216,11 +216,11 @@ test("⚠ l'exploitation est une LISTE BLANCHE — tout le reste est refusé", (
     statutAbonnement: "actif",
     // Tout ce qui suit doit disparaître.
     name: "Marc Perrin",
-    phone: "04 78 12 34 56",
+    phone: "04 65 71 34 56",
     email: "marc@vraie-boite.fr",
     notes: "Sa femme tient la caisse",
     monthlyValue: 290,
-    telephoneDirect: "06 11 22 33 44",
+    telephoneDirect: "06 39 98 33 44",
   };
   const vue = filtrerExploitation(brut);
 

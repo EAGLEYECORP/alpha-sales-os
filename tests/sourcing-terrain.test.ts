@@ -40,7 +40,7 @@ const fiche = (over: Partial<FicheTerrain> = {}): FicheTerrain => ({
   entreprise: "Carrosserie des Lilas",
   secteur: "carrosserie",
   ville: "Lyon 3e",
-  telephone: "04 78 12 34 56",
+  telephone: "04 65 71 34 56",
   avis: "142",
   note: "4,6",
   horaires: "Lun-Ven 8h-18h, fermé samedi dimanche",
@@ -68,9 +68,9 @@ test("terrain — une fiche sans numéro composable est EXCLUE, pas mal notée",
 });
 
 test("terrain — le numéro est normalisé en E.164, prêt à composer", () => {
-  assert.equal(qualifierTerrain(fiche({ telephone: "04 78 12 34 56" })).telephone, "+33478123456");
-  assert.equal(qualifierTerrain(fiche({ telephone: "+33478123456" })).telephone, "+33478123456");
-  assert.equal(qualifierTerrain(fiche({ telephone: "0033478123456" })).telephone, null, "on ne devine pas un préfixe international mal formé");
+  assert.equal(qualifierTerrain(fiche({ telephone: "04 65 71 34 56" })).telephone, "+33465713456");
+  assert.equal(qualifierTerrain(fiche({ telephone: "+33465713456" })).telephone, "+33465713456");
+  assert.equal(qualifierTerrain(fiche({ telephone: "0035301123456" })).telephone, null, "on ne devine pas un préfixe international mal formé");
 });
 
 // ── LE SIGNAL DE DEMANDE ───────────────────────────────────────────────
@@ -89,7 +89,7 @@ test("terrain — la plainte publique d'injoignabilité est le signal le plus fo
    * de comparer deux scores bruts : le score est borné à 100, et une fiche qui
    * coche tout y est écrêtée — l'écart y devient plus petit que le poids réel.
    */
-  const nu: FicheTerrain = { entreprise: "X", telephone: "0478000000" };
+  const nu: FicheTerrain = { entreprise: "X", telephone: "0465710000" };
   const poids = (f: Partial<FicheTerrain>) => qualifierTerrain({ ...nu, ...f }).score - qualifierTerrain(nu).score;
 
   const plainte = poids({ extraitsAvis: "impossible de les joindre" });
@@ -188,7 +188,7 @@ test("terrain — le lot dit combien sont appelables ET par quoi commencer", () 
    */
   const lot = trierTerrain([
     fiche(),
-    fiche({ entreprise: "Plomberie Durand", telephone: "06 12 34 56 78", avis: "12", extraitsAvis: "" }),
+    fiche({ entreprise: "Plomberie Durand", telephone: "06 39 98 56 78", avis: "12", extraitsAvis: "" }),
     fiche({ entreprise: "Norauto", avis: "900" }),
   ]);
   assert.equal(lot.retenus.length + lot.ecartes.length, 3);
@@ -233,10 +233,10 @@ test("import terrain — le lecteur de tableaux est MUTUALISÉ, pas recopié", (
 test("import terrain — les colonnes d'annuaire courantes sont reconnues", () => {
   // Chaque source nomme ses colonnes autrement. Une colonne non reconnue est
   // SIGNALÉE, jamais rattachée au champ qui lui ressemble le plus.
-  const r = parserFiches("name;category;phone;reviews;rating\nGarage X;garage;0478000000;120;4,5");
+  const r = parserFiches("name;category;phone;reviews;rating\nGarage X;garage;0465710000;120;4,5");
   assert.equal(r.fiches.length, 1);
   assert.equal(r.fiches[0].entreprise, "Garage X");
-  assert.equal(r.fiches[0].telephone, "0478000000");
+  assert.equal(r.fiches[0].telephone, "0465710000");
   assert.equal(r.fiches[0].avis, "120");
 
   const inconnue = parserFiches("entreprise;lubie\nX;z");
@@ -249,7 +249,7 @@ test("import terrain — les signaux atterrissent dans deepAudit, pas dans les n
    * Callflow. Les ranger ailleurs reviendrait à faire le travail deux fois —
    * et l'escalier resterait muet sur une fiche qui coche tout.
    */
-  const r = importerFiches(`${ENTETE_TERRAIN}\nCarrosserie des Lilas;carrosserie;Lyon 3e;0478123456;;142;4,6;;"impossible de les joindre"`);
+  const r = importerFiches(`${ENTETE_TERRAIN}\nCarrosserie des Lilas;carrosserie;Lyon 3e;0465713456;;142;4,6;;"impossible de les joindre"`);
   assert.equal(r.retenus.length, 1);
   const p = r.retenus[0].prospect;
   assert.equal(p.deepAudit.googleReviews, 142);
@@ -265,14 +265,14 @@ test("import terrain — sans plainte, AUCUN nombre d'appels manqués n'est inve
    * d'appels manqués inventé gonflerait la Taxe d'Ignorance affichée, et le
    * premier prospect qui demande d'où il sort n'aurait pas de réponse.
    */
-  const r = importerFiches(`${ENTETE_TERRAIN}\nGarage Y;garage;Lyon 8e;0478000002;;120;4,5;;`);
+  const r = importerFiches(`${ENTETE_TERRAIN}\nGarage Y;garage;Lyon 8e;0465710002;;120;4,5;;`);
   assert.equal(r.retenus.length, 1);
   assert.equal(r.retenus[0].prospect.deepAudit.missedCallsPerWeek, undefined);
 });
 
 test("import terrain — l'identifiant est le NUMÉRO : réimporter n'appelle pas deux fois", () => {
   // Deux fiches au même numéro sont le même standard, donc le même appel.
-  const ligne = `${ENTETE_TERRAIN}\nCarrosserie;carrosserie;Lyon;04 78 12 34 56;;142;4,6;;"injoignable"`;
+  const ligne = `${ENTETE_TERRAIN}\nCarrosserie;carrosserie;Lyon;04 65 71 34 56;;142;4,6;;"injoignable"`;
   const a = importerFiches(ligne).retenus[0].prospect.id;
   const b = importerFiches(ligne.replace("Carrosserie;", "Carrosserie SARL;")).retenus[0].prospect.id;
   assert.equal(a, b, "le même numéro doit donner la même fiche, même sous un autre nom");
@@ -280,7 +280,7 @@ test("import terrain — l'identifiant est le NUMÉRO : réimporter n'appelle pa
 });
 
 test("import terrain — une fiche entrée par ce canal reste au DÉBUT du pipeline", () => {
-  const r = importerFiches(`${ENTETE_TERRAIN}\nX;garage;Lyon;0478000003;;120;4,5;;"injoignable"`);
+  const r = importerFiches(`${ENTETE_TERRAIN}\nX;garage;Lyon;0465710003;;120;4,5;;"injoignable"`);
   assert.equal(r.retenus[0].prospect.stage, "prospect");
   assert.equal(r.retenus[0].prospect.preferredChannel, "tel");
   assert.ok(r.retenus[0].prospect.tags.includes("terrain"));
@@ -423,7 +423,7 @@ test("places — la réponse imbriquée de l'API devient une fiche exploitable",
     displayName: { text: "Carrosserie des Lilas" },
     primaryTypeDisplayName: { text: "Atelier de carrosserie" },
     shortFormattedAddress: "12 rue Baraban, 69003 Lyon",
-    nationalPhoneNumber: "04 78 12 34 56",
+    nationalPhoneNumber: "04 65 71 34 56",
     rating: 4.6,
     userRatingCount: 142,
     regularOpeningHours: { weekdayDescriptions: ["lundi: 08:00–12:00, 14:00–18:00"] },
@@ -431,7 +431,7 @@ test("places — la réponse imbriquée de l'API devient une fiche exploitable",
   });
   assert.equal(f.entreprise, "Carrosserie des Lilas");
   assert.equal(f.ville, "Lyon", "la ville se lit après le code postal");
-  assert.equal(f.telephone, "04 78 12 34 56");
+  assert.equal(f.telephone, "04 65 71 34 56");
   assert.equal(f.avis, "142");
   assert.equal(f.note, "4.6");
 });
@@ -444,7 +444,7 @@ test("places — TOUS les avis sont lus, pas seulement le premier", () => {
    */
   const f = placeVersFiche({
     displayName: { text: "X" },
-    nationalPhoneNumber: "0478000000",
+    nationalPhoneNumber: "0465710000",
     reviews: [
       { text: { text: "Très bon accueil." } },
       { text: { text: "Prix corrects." } },
@@ -463,7 +463,7 @@ test("places — « pas de site » et « champ non demandé » ne sont pas la m�
 });
 
 test("places — la réponse complète comme le tableau nu sont acceptés", () => {
-  const place = { displayName: { text: "X" }, nationalPhoneNumber: "0478000000", userRatingCount: 100, reviews: [{ text: { text: "injoignable" } }] };
+  const place = { displayName: { text: "X" }, nationalPhoneNumber: "0465710000", userRatingCount: 100, reviews: [{ text: { text: "injoignable" } }] };
   assert.equal(importerPlaces(JSON.stringify({ places: [place] })).retenus.length, 1);
   assert.equal(importerPlaces(JSON.stringify([place])).retenus.length, 1, "concaténer plusieurs pages à la main donne un tableau nu");
   assert.equal(importerPlaces("pas du json").resume[0].includes("JSON invalide"), true);
@@ -475,7 +475,7 @@ test("places — un masque sans « reviews » est SIGNALÉ, pas subi", () => {
    * quelques euros et perd le seul signal qui pèse plus que tous les autres —
    * et rien ne le dirait sans ce message.
    */
-  const sansAvis = importerPlaces(JSON.stringify({ places: [{ displayName: { text: "X" }, nationalPhoneNumber: "0478000000", userRatingCount: 200 }] }));
+  const sansAvis = importerPlaces(JSON.stringify({ places: [{ displayName: { text: "X" }, nationalPhoneNumber: "0465710000", userRatingCount: 200 }] }));
   assert.ok(sansAvis.resume.some((r) => /masque de champs/.test(r)));
   assert.match(CHAMPS_PLACES, /places\.reviews/, "le masque fourni doit demander les avis");
 });
@@ -532,7 +532,7 @@ test("registre — le code APE PRIME sur l'enseigne", () => {
    */
   const opaque: FicheTerrain = {
     entreprise: "Les Ateliers du Rhône",
-    telephone: "0478000000",
+    telephone: "0465710000",
     avis: "120",
     adresse: "69003 Lyon",
     extraitsAvis: "injoignable",
@@ -550,7 +550,7 @@ test("registre — le code APE PRIME sur l'enseigne", () => {
 test("registre — un code hors de nos verticales le DIT au lieu de se taire", () => {
   // Ce n'est pas un échec de lecture, c'est un métier qu'on ne sait pas
   // servir. Le dire évite de recroiser la même fiche le mois prochain.
-  const q = qualifierTerrain({ entreprise: "X", telephone: "0478000000", naf: "6201Z" }); // programmation
+  const q = qualifierTerrain({ entreprise: "X", telephone: "0465710000", naf: "6201Z" }); // programmation
   assert.ok(q.manque.some((m) => /hors de nos verticales/.test(m)));
   assert.equal(q.verticaleId, null);
 });
@@ -639,7 +639,7 @@ test("registre — la table NAF a une DATE DE PÉREMPTION, et elle est connue", 
   assert.equal(nomenclaturePerimee(new Date("2026-12-31")), false);
   assert.equal(nomenclaturePerimee(new Date("2027-01-01")), true);
 
-  const lot = trierTerrain([{ entreprise: "X", telephone: "0478000000", avis: "120", naf: "4520A", extraitsAvis: "injoignable" }]);
+  const lot = trierTerrain([{ entreprise: "X", telephone: "0465710000", avis: "120", naf: "4520A", extraitsAvis: "injoignable" }]);
   assert.ok(!lot.resume.some((r) => /NAF 2025/.test(r)), "avant la bascule, aucune alerte");
 });
 
@@ -691,7 +691,7 @@ test("feuille — le tri terrain survit au passage par le Sheet", () => {
   // réellement une fois importé.
   const csv =
     `${ENTETE_TERRAIN}\n` +
-    `Les Ateliers du Rhône;;Lyon 3e;04 78 00 00 01;;140;4,6;fermé samedi dimanche;"impossible de les joindre";4391B;123456789`;
+    `Les Ateliers du Rhône;;Lyon 3e;04 65 71 00 01;;140;4,6;fermé samedi dimanche;"impossible de les joindre";4391B;123456789`;
   assert.equal(ressembleAuTerrain(csv), true);
   const r = importerFiches(csv);
   assert.equal(r.retenus.length, 1);
@@ -716,11 +716,11 @@ test("flux — une fiche terrain arrive dans SA file d'appels, pas dans « gener
    * — donc sans son script, sans son miroir, sans ses questions de diagnostic.
    */
   const cas: [string, string, string][] = [
-    ["restauration", "Le Bouchon;restaurant;Lyon 1er;0478000001;;140;4,6;;\"injoignable\";5610A;1", "restauration"],
-    ["bar-pub", "Le Comptoir;bar;Lyon 2e;0478000002;;140;4,6;;\"injoignable\";5630Z;2", "bar-pub"],
-    ["ambulance", "Ambulances du Rhône;ambulance;Lyon 8e;0478000003;;140;4,6;;\"injoignable\";8690A;3", "ambulance"],
-    ["garage", "Les Ateliers du Rhône;;Lyon 3e;0478000004;;140;4,6;;\"injoignable\";4520A;4", "garage-carrosserie"],
-    ["couvreur", "Toiture Roux;;Lyon 7e;0478000005;;140;4,6;;\"injoignable\";4391B;5", "artisan-batiment"],
+    ["restauration", "Le Bouchon;restaurant;Lyon 1er;0465710001;;140;4,6;;\"injoignable\";5610A;1", "restauration"],
+    ["bar-pub", "Le Comptoir;bar;Lyon 2e;0465710002;;140;4,6;;\"injoignable\";5630Z;2", "bar-pub"],
+    ["ambulance", "Ambulances du Rhône;ambulance;Lyon 8e;0465710003;;140;4,6;;\"injoignable\";8690A;3", "ambulance"],
+    ["garage", "Les Ateliers du Rhône;;Lyon 3e;0465710004;;140;4,6;;\"injoignable\";4520A;4", "garage-carrosserie"],
+    ["couvreur", "Toiture Roux;;Lyon 7e;0465710005;;140;4,6;;\"injoignable\";4391B;5", "artisan-batiment"],
   ];
   for (const [nom, ligne, attendu] of cas) {
     const p = importerFiches(`${ENTETE_TERRAIN}\n${ligne}`).retenus[0]?.prospect;
@@ -737,7 +737,7 @@ test("flux — la fiche terrain déclenche bien la marche Alpha Voice de l'ESCAL
   // Le tri, l'import et l'escalier doivent parler de la même chose : sans ça,
   // la fiche remonte en tête de file d'appels et l'escalier reste muet.
   const p = importerFiches(
-    `${ENTETE_TERRAIN}\nToiture Roux;;Lyon 7e;0478000006;;140;4,6;;"impossible de les joindre";4391B;6`
+    `${ENTETE_TERRAIN}\nToiture Roux;;Lyon 7e;0465710006;;140;4,6;;"impossible de les joindre";4391B;6`
   ).retenus[0].prospect;
   const escalier = buildLadder(p);
   assert.ok(escalier.rungs.some((r) => r.id === "alpha-voice"), "la marche Alpha Voice doit se déclencher");
@@ -753,7 +753,7 @@ test("terrain — les notes gardent la PHRASE DU CLIENT, pas la doctrine", () =>
    * seule chose qui serve au téléphone, l'avis brut, était jetée.
    */
   const r = importerFiches(
-    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie;Lyon 3e;04 78 12 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre, j'ai appelé trois fois";45.20A;123456789`
+    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie;Lyon 3e;04 65 71 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre, j'ai appelé trois fois";45.20A;123456789`
   );
   const notes = r.retenus[0].prospect.notes;
   assert.match(notes, /impossible de les joindre/, "l'avis du client doit être conservé");
@@ -766,7 +766,7 @@ test("terrain — les notes gardent la PHRASE DU CLIENT, pas la doctrine", () =>
 
 test("terrain — une fiche reste sous le poids qui rend 1 000 numéros tenables", () => {
   const r = importerFiches(
-    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie automobile;Lyon 3e;04 78 12 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre, j'ai appelé trois fois et personne ne répond jamais au téléphone";45.20A;123456789`
+    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie automobile;Lyon 3e;04 65 71 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre, j'ai appelé trois fois et personne ne répond jamais au téléphone";45.20A;123456789`
   );
   const octets = JSON.stringify(r.retenus[0].prospect).length;
   // 1 500 octets × 2 (UTF-16) × 1 000 fiches = 3 Mo, sur un quota de 5 Mo.
@@ -777,7 +777,7 @@ test("terrain — une fiche reste sous le poids qui rend 1 000 numéros tenables
 test("terrain — un avis très long est coupé, pas stocké en entier", () => {
   const pave = "impossible de les joindre. ".repeat(40);
   const r = importerFiches(
-    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie;Lyon;04 78 12 34 56;;142;4,6;;"${pave}";45.20A;123456789`
+    `${ENTETE_TERRAIN}\nCarrosserie X;carrosserie;Lyon;04 65 71 34 56;;142;4,6;;"${pave}";45.20A;123456789`
   );
   const notes = r.retenus[0].prospect.notes;
   assert.ok(notes.length < 700, `${notes.length} caractères de notes`);

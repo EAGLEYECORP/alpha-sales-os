@@ -36,7 +36,49 @@ import type { Meeting, Prospect, Sector, Stage } from "./types";
 
 const iso = (d: string) => new Date(`${d}T09:00:00`).toISOString();
 
-interface Seed {
+/**
+ * Tarifs publics Alpha Voice, lus dans l'audit ***NOM-RETIRE***.
+ *
+ * ⚠ Ils sont DÉCLARÉS dans `lib/offres-publiques.ts` et réimportés ici. Ce
+ * module porte de vraies fiches prospects : aucun composant client ne doit
+ * l'atteindre, or le calculateur d'offres a besoin de ces prix. Ce qui est
+ * public vit dans le module public — même arbitrage que pour le pack.
+ */
+export { ALPHA_VOICE_SETUP_HT as ALPHA_VOICE_SETUP, ALPHA_VOICE_PALIERS } from "./offres-publiques";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LES FICHES NE SONT PLUS DANS CE FICHIER, ET C'EST UN CORRECTIF DE FUITE.
+ *
+ * Ce module portait SEIZE FICHES RÉELLES en dur : raison sociale, ville,
+ * numéro de téléphone, étape de vente, montant du deal, et les notes de ce
+ * qui s'est dit au téléphone. Parmi elles, au moins une personne physique
+ * IDENTIFIÉE — nom complet, MOBILE personnel, poste, employeur, et la note
+ * qu'elle avait posé un lapin à un rendez-vous.
+ *
+ * Le dépôt a été rendu PUBLIC sur GitHub. Ces données étaient donc publiées
+ * sur internet, sans base légale et sans que ces personnes en sachent rien.
+ * Ce n'est pas une fuite commerciale : c'est un traitement illicite de
+ * données personnelles de tiers (RGPD, art. 6).
+ *
+ * ⚠⚠ CE QUI PROTÉGEAIT DÉJÀ, ET POURQUOI ÇA NE SUFFISAIT PAS. Le module est
+ * gardé côté SERVEUR (`tests/vitrine-fuite`), `/api/pipeline` est réservé au
+ * compte maître, et `store.ts` a été purgé de son `require()`. Tout ça
+ * empêchait la donnée d'atteindre un NAVIGATEUR. Rien n'empêchait le FICHIER
+ * d'être lu — et un dépôt public se lit sans navigateur.
+ *
+ * Les fiches vivent désormais dans `donnees-privees/`, ignoré par git. Ce
+ * qui reste ici : la STRUCTURE (le type `Seed`, la transformation) et les
+ * CHIFFRES AGRÉGÉS (`JUILLET_REEL`), qui n'identifient personne et qui sont
+ * la seule chose dont la doctrine se sert.
+ *
+ * ⚠ ABSENT ⇒ VIDE, JAMAIS UNE ERREUR. Sur une machine sans le fichier —
+ * un contributeur, une CI, un déploiement neuf — le pipeline de juillet est
+ * simplement vide. Jeter une exception ferait tomber une route pour une
+ * donnée qui, par construction, n'est pas censée être partout.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface Seed {
   id: string;
   name: string;
   company: string;
@@ -54,335 +96,24 @@ interface Seed {
   objections?: string[];
 }
 
-/**
- * Tarifs publics Alpha Voice, lus dans l'audit ***NOM-RETIRE***.
- *
- * ⚠ Ils sont DÉCLARÉS dans `lib/offres-publiques.ts` et réimportés ici. Ce
- * module porte de vraies fiches prospects : aucun composant client ne doit
- * l'atteindre, or le calculateur d'offres a besoin de ces prix. Ce qui est
- * public vit dans le module public — même arbitrage que pour le pack.
- */
-export { ALPHA_VOICE_SETUP_HT as ALPHA_VOICE_SETUP, ALPHA_VOICE_PALIERS } from "./offres-publiques";
-
-const SEEDS: Seed[] = [
-  {
-    id: "sc-brotteaux-carrosserie",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "artisan",
-    city: "Lyon 6e — 15 rue Curie",
-    phone: "***TEL-RETIRE***",
-    stage: "offre",
-    probability: 55,
-    trust: 75,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-09", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-29", kind: "visite", summary: "***NOM-RETIRE***" },
-      { date: "2026-07-29", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-09-02", action: "RDV CLOSING 9h — prêt à signer" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-brotteaux-conduite",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon 6e — 75 cours Vitton",
-    phone: "***TEL-RETIRE***",
-    stage: "offre",
-    probability: 50,
-    trust: 70,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-24", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-29", kind: "visite", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-09-29", action: "RDV CLOSING 10h" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-hosman",
-    name: "***NOM-RETIRE***",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Paris — 137 av. de Versailles",
-    phone: "***TEL-RETIRE***",
-    stage: "offre",
-    probability: 45,
-    trust: 65,
-    setupValue: 990,
-    monthlyValue: 319,
-    events: [
-      { date: "2026-07-17", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-22", kind: "note", summary: "***NOM-RETIRE***" },
-      { date: "2026-07-27", kind: "email", summary: "***NOM-RETIRE***" },
-      { date: "2026-07-29", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-05", action: "RDV CLOSING 14h30 — décision attendue" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-corzani",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "artisan",
-    city: "Lyon 7e — 90 rue du Repos",
-    phone: "***TEL-RETIRE***",
-    stage: "demo",
-    probability: 35,
-    trust: 60,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-20", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-24", kind: "appel", summary: "***NOM-RETIRE***" },
-      { date: "2026-07-29", kind: "visite", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-03", action: "DÉMO 9h sur place" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-vauban",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon 6e — 20 rue Vauban",
-    phone: "***TEL-RETIRE***",
-    stage: "demo",
-    probability: 35,
-    trust: 60,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-20", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-27", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-03", action: "DÉMO 16h — gérant + équipe" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-arlim",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon",
-    phone: "***TEL-RETIRE***",
-    stage: "demo",
-    probability: 30,
-    trust: 55,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-20", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-27", kind: "appel", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-09-02", action: "RDV 14h30" },
-    notes: "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-marietton",
-    name: "Gérante",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Vaugneray — D30",
-    phone: "***TEL-RETIRE***",
-    stage: "redzone",
-    probability: 15,
-    trust: 40,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-23", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-24", kind: "email", summary: "***NOM-RETIRE***" },
-      { date: "2026-07-24", kind: "appel", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-09-01", action: "Reprendre après la rentrée — process strict" },
-    notes:
-      "***NOM-RETIRE***",
-    objections: ["Attend la réponse au mail avant tout RDV — process strict, rien avant septembre"],
-  },
-  {
-    id: "sc-centralym",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon 5e — 36 rue des Aqueducs",
-    phone: "***TEL-RETIRE***",
-    stage: "audit",
-    probability: 20,
-    trust: 50,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-20", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-29", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-04", action: "Relancer sur l'audit — passer à 9h" },
-    notes: "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-reneuv",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "artisan",
-    city: "Lyon",
-    phone: "***TEL-RETIRE***",
-    stage: "audit",
-    probability: 20,
-    trust: 45,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-10", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-28", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-04", action: "Obtenir le RDV sur la base de l'audit" },
-    notes: "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-lamy-lexel",
-    name: "Cabinet",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon 3e — 54 cours Lafayette",
-    phone: "***TEL-RETIRE***",
-    stage: "audit",
-    probability: 15,
-    trust: 45,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-10", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-23", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-05", action: "Relancer — le mail est tombé en spam" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-juri-europ",
-    name: "Cabinet",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon 6e — Cité Internationale",
-    phone: "***TEL-RETIRE***",
-    stage: "audit",
-    probability: 15,
-    trust: 40,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-10", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-23", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-04", action: "Relance mail à ***EMAIL-RETIRE***" },
-    notes: "Le standard a orienté vers ***EMAIL-RETIRE***. Relance mail à faire.",
-  },
-  {
-    id: "sc-maxillyon",
-    name: "***NOM-RETIRE***",
-    company: "***NOM-RETIRE***",
-    sector: "autre",
-    city: "Lyon",
-    phone: "***TEL-RETIRE***",
-    stage: "audit",
-    probability: 15,
-    trust: 40,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-24", kind: "appel", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-05", action: "Joindre le décideur, pas l'accueil" },
-    notes: "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-vitton",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "artisan",
-    city: "Lyon 6e — 19 rue Ney",
-    phone: "***TEL-RETIRE***",
-    stage: "contact",
-    probability: 15,
-    trust: 40,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-23", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-24", kind: "appel", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-04", action: "Visite terrain — obtenir le RDV" },
-    notes: "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-garibaldi",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "artisan",
-    city: "Lyon 6e — 59 rue Garibaldi",
-    phone: "***TEL-RETIRE***",
-    stage: "contact",
-    probability: 20,
-    trust: 55,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [{ date: "2026-07-09", kind: "appel", summary: "***NOM-RETIRE***" }],
-    nextStep: { date: "2026-08-04", action: "Aller le voir sur place" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-lion-ambulance",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "ambulance",
-    city: "Lyon",
-    phone: "***TEL-RETIRE***",
-    stage: "audit",
-    probability: 15,
-    trust: 40,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [
-      { date: "2026-07-20", kind: "appel", summary: "Premier contact" },
-      { date: "2026-07-23", kind: "email", summary: "***NOM-RETIRE***" },
-    ],
-    nextStep: { date: "2026-08-05", action: "Relancer — angle ***NOM-RETIRE*** (preuve client)" },
-    notes: "***NOM-RETIRE***",
-  },
-  {
-    id: "sc-youmishiguang",
-    name: "Gérant",
-    company: "***NOM-RETIRE***",
-    sector: "restaurant",
-    city: "Lyon",
-    phone: "***TEL-RETIRE***",
-    stage: "contact",
-    probability: 20,
-    trust: 45,
-    setupValue: 990,
-    monthlyValue: 115,
-    events: [{ date: "2026-07-26", kind: "appel", summary: "***NOM-RETIRE***" }],
-    nextStep: { date: "2026-08-06", action: "Confirmer le RDV — leur téléphone ne marche pas" },
-    notes:
-      "***NOM-RETIRE***",
-  },
-];
+function chargerSeeds(): Seed[] {
+  try {
+    // `require` et non `import` : le chemin doit rester résolu À L'EXÉCUTION.
+    // Un `import` statique ferait échouer le BUILD partout où le fichier
+    // privé n'existe pas — c'est-à-dire sur toute machine autre que la
+    // sienne, y compris le déploiement.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const m = require("../donnees-privees/pipeline-juillet.seeds") as { SEEDS?: Seed[] };
+    return Array.isArray(m.SEEDS) ? m.SEEDS : [];
+  } catch {
+    return [];
+  }
+}
 
 const SECTOR_FALLBACK: Sector = "autre";
 
 export function pipelineJuillet(): { prospects: Prospect[]; meetings: Meeting[] } {
-  const prospects: Prospect[] = SEEDS.map((s) => ({
+  const prospects: Prospect[] = chargerSeeds().map((s) => ({
     id: s.id,
     name: s.name,
     company: s.company,

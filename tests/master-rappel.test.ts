@@ -19,7 +19,7 @@ function fixture(over: Partial<Prospect> = {}): Prospect {
     company: "Test SARL",
     sector: "artisan",
     city: "Lyon",
-    phone: "0478000000",
+    phone: "0465710000",
     email: "marc@test.fr",
     stage: "contact",
     trust: 50,

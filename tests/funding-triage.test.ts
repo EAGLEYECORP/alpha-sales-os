@@ -12,7 +12,7 @@ const inDays = (d: number) => new Date(NOW.getTime() + d * 86_400_000).toISOStri
 function fixture(over: Partial<Prospect> = {}): Prospect {
   return {
     id: "p1", name: "Marc Dubois", company: "Test SARL", sector: "artisan", city: "Lyon",
-    phone: "0478000000", email: "m@t.fr", stage: "offre", trust: 80, likeness: 50, auditScore: 70,
+    phone: "0465710000", email: "m@t.fr", stage: "offre", trust: 80, likeness: 50, auditScore: 70,
     conviction: 9, monthlyValue: 115, setupValue: 990, probability: 60, ignoranceTax: 0,
     croyances: { produit: 9, soutien: 9, pourLui: 9 }, obstacles: [], objections: [], events: [],
     demoShownBeforePrice: true, nextStep: null, tags: [], attachments: [], notes: "",

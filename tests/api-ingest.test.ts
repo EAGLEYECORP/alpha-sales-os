@@ -13,7 +13,7 @@ test("ingestion — une fiche sans société est REFUSÉE, avec les alias accept
 
 test("ingestion — les alias français sont compris", () => {
   const r = normalizeIncoming(
-    { societe: "Carrosserie Test", gérant: "Marc Dubois", téléphone: "04 78 00 00 00", ville: "Lyon", courriel: "m@t.fr" },
+    { societe: "Carrosserie Test", gérant: "Marc Dubois", téléphone: "04 65 71 00 00", ville: "Lyon", courriel: "m@t.fr" },
     NOW
   );
   assert.equal(r.ok, true);
@@ -22,7 +22,7 @@ test("ingestion — les alias français sont compris", () => {
   assert.equal(p.name, "Marc Dubois");
   assert.equal(p.city, "Lyon");
   assert.equal(p.email, "m@t.fr");
-  assert.equal(p.phone, "+33478000000", "le numéro est normalisé en E.164");
+  assert.equal(p.phone, "+33465710000", "le numéro est normalisé en E.164");
 });
 
 test("ingestion — les champs non reconnus sont SIGNALÉS, pas avalés en silence", () => {
@@ -71,7 +71,7 @@ test("ingestion — sans contact, la fiche entre mais l'avertissement est clair"
 test("ingestion — le score d'audit est calculé dès l'entrée", () => {
   const pauvre = normalizeIncoming({ company: "Pauvre" }, NOW).prospect!;
   const riche = normalizeIncoming(
-    { company: "Riche", phone: "0478000000", missedCallsPerWeek: 9, avgTicket: 400, site: "aucun" },
+    { company: "Riche", phone: "0465710000", missedCallsPerWeek: 9, avgTicket: 400, site: "aucun" },
     NOW
   ).prospect!;
   assert.ok(riche.auditScore > pauvre.auditScore);

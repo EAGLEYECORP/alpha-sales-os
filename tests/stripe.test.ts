@@ -9,7 +9,7 @@ import {
   PLANS,
 } from "../lib/stripe";
 
-const SECRET = "whsec_test_0123456789abcdef";
+const SECRET = "whsec_test_0199006789abcdef";
 
 /** Forge un en-tête Stripe-Signature comme Stripe le ferait. */
 function sign(payload: string, secret = SECRET, t = Math.floor(Date.now() / 1000)): string {

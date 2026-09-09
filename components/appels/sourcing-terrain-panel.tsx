@@ -113,7 +113,7 @@ export function SourcingTerrainPanel() {
 
       <textarea
         className="input mt-2.5 h-32 font-mono text-[11.5px]"
-        placeholder={`${ENTETE_TERRAIN}\nCarrosserie des Lilas;carrosserie;Lyon 3e;04 78 12 34 56;;142;4,6;fermé samedi dimanche;"impossible de les joindre"`}
+        placeholder={`${ENTETE_TERRAIN}\nCarrosserie des Lilas;carrosserie;Lyon 3e;04 65 71 34 56;;142;4,6;fermé samedi dimanche;"impossible de les joindre"`}
         value={texte}
         onChange={(e) => {
           setTexte(e.target.value);

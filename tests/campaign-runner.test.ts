@@ -15,7 +15,7 @@ function ev(over: Partial<TimelineEvent>): TimelineEvent {
 function fixture(over: Partial<Prospect> = {}): Prospect {
   return {
     id: "p1", name: "Marc", company: "Test SARL", sector: "artisan", city: "Lyon",
-    phone: "0478000000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 60,
+    phone: "0465710000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 60,
     conviction: 5, monthlyValue: 115, setupValue: 990, probability: 20, ignoranceTax: 0,
     croyances: { produit: 5, soutien: 5, pourLui: 5 }, obstacles: [], objections: [], events: [],
     demoShownBeforePrice: false, nextStep: null, tags: [], attachments: [], notes: "",
@@ -33,7 +33,7 @@ test("campagne — une fiche exploitable entre dans la file avec SON script", ()
   const run = buildCampaignRun([fixture()], { now: NOW });
   assert.equal(run.queue.length, 1);
   const t = run.queue[0];
-  assert.equal(t.phone, "+33478000000");
+  assert.equal(t.phone, "+33465710000");
   assert.equal(t.rank, 1);
   // Le brief est personnalisé : il porte les signaux de CETTE fiche.
   assert.match(t.brief, /Test SARL/);

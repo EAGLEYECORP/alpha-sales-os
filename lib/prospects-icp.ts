@@ -37,27 +37,44 @@
  * Format CSV (délimiteur `;`, champs entre guillemets) directement digéré
  * par `csvToProspects`. En-têtes mappés par `HEADER_MAP` de lib/csv.ts.
  */
-export const PROSPECTS_ICP_CSV = `company;name;sector;city;phone;email;stage;problems;notes
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Quand vous êtes sous un capot, qui décroche ?";"garage. L7 — 50 Rue Saint-Michel. Créneau conseillé 7h30–8h ou 14h. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Fermé le dimanche — mais les pannes non. Ces appels partent où ?";"garage. L7 — 14 Rue du Général de Miribel. Numéro à confirmer. Un RDV aurait été pris — à vérifier. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Entre midi et 14h et le week-end, le standard est muet.";"garage / pièces auto. L7 — 208 Gde Rue de la Guillotière. À rappeler (éviter 12h–14h). Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Sous un capot, personne ne décroche = un RDV chez le voisin.";"garage mécanique et carrosserie. L7 — 106 Rue André Bollier. Pas de site web. Source : feuille de sourcing terrain (liste B)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Ouvert tard, un seul standard : les appels du soir, captés ?";"garage. L7. Contacté 2× au téléphone, dit ne pas en avoir besoin — à convaincre EN PHYSIQUE, le potentiel est réel (il a rappelé). Source : feuille de sourcing terrain (liste B)."
-"***NOM-RETIRE***";"";"artisan";"Meyzieu";"***TEL-RETIRE***";"";"prospect";"Seul au garage : décrocher pendant une intervention, impossible.";"garage. Meyzieu — 4 bis av. Docteur Schweitzer. Répond et intervient seul — à creuser. Source : feuille de sourcing terrain."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Seul sur le terrain : décrocher ET travailler, impossible.";"électricien. L7 — 20 Bd des Tchécoslovaques. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Un seul téléphone : combien d'appels simultanés perdus ?";"électricien. L7 — ≈40 rue Bancel. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"À l'atelier, pas au bureau : les devis sonnent dans le vide.";"menuisier. L7 — 29 Rue Sébastien Gryphe. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Un devis demandé samedi, pas rappelé lundi = client parti.";"menuisier. L7 — 18 Rue d'Anvers. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 6";"***TEL-RETIRE***";"";"prospect";"Vous répondez 24/7 — mais deux appels en même temps ?";"serrurier. L6 — 45 rue de Sèze. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 7";"***TEL-RETIRE***";"";"prospect";"Sur chantier toute la journée, les prospects réno vont à la concurrence.";"rénovation. L7 — 25 Rue Michel Félizat. Source : feuille de sourcing terrain (liste A)."
-"***NOM-RETIRE***";"";"artisan";"Lyon 6";"***TEL-RETIRE***";"***EMAIL-RETIRE***";"prospect";"Vos techniciens en intervention — qui prend les demandes d'entretien ?";"chauffagiste. L6 — 108 Rue de Sèze. A un email : cible email + appel. Source : feuille de sourcing terrain (liste B)."
-"***NOM-RETIRE***";"";"autre";"Lyon 6";"***TEL-RETIRE***";"***EMAIL-RETIRE***";"prospect";"Gestion locative = téléphone saturé : combien d'appels locataires ratés ?";"régie immobilière (gestion, gros volume d'appels). L6 — 14 Rue Tronchet. Aussi location ***TEL-RETIRE*** / transaction ***TEL-RETIRE***. Source : Sheet Lyon 6 enrichi (fit Fort)."
-"***NOM-RETIRE***";"";"autre";"Lyon 6";"***TEL-RETIRE***";"***EMAIL-RETIRE***";"prospect";"Quatre métiers sur une seule ligne : le standard déborde.";"agence immobilière (transaction + location + gestion + syndic). L6 — 6 Place Kléber. Source : Sheet Lyon 6 enrichi (fit Fort)."
-"***NOM-RETIRE***";"";"autre";"Lyon 6";"***TEL-RETIRE***";"***EMAIL-RETIRE***";"prospect";"Moniteur en leçon = personne ne décroche pour les inscriptions.";"auto-école. L6 — 20 Rue Vauban. PROSPECT ACTIF, kit d'approche déjà prêt. A un email. Source : Sheet Lyon 6 enrichi (fit Fort)."
-"***NOM-RETIRE***";"";"autre";"Lyon 6";"***TEL-RETIRE***";"";"prospect";"Un labo = le téléphone ne s'arrête jamais : combien basculent sur répondeur ?";"laboratoire médical d'analyses, cabinet à très gros volume d'appels. L6 — 69 Cours Vitton. Chaîne : vérifier si la décision est locale. Source : Sheet Lyon 6 enrichi (fit Moyen)."
-"***NOM-RETIRE***";"";"autre";"Lyon 6";"***TEL-RETIRE***";"";"prospect";"Les praticiennes sont en cabine : qui prend les RDV qui appellent ?";"spa / institut de beauté, sur RDV, 5/5 (79 avis). L6 — 57 Rue Pierre Corneille. Aussi ***TEL-RETIRE***. Décideuses = les praticiennes, souvent en soin. Source : Sheet Lyon 6 enrichi (fit Fort)."
-"***NOM-RETIRE***";"";"autre";"Lyon 6";"***TEL-RETIRE***";"";"prospect";"Le patron a les mains dans les cheveux : les RDV téléphoniques tombent.";"salon de coiffure. L6 — 60 Cours Vitton. Manque : email + nom du gérant (à récupérer en repérage). Source : Sheet Lyon 6 enrichi (fit Fort)."
-"***NOM-RETIRE***";"";"autre";"Lyon Presqu'île";"***TEL-RETIRE***";"";"prospect";"Walk-ins et coups de rush : les appels non pris partent chez le voisin.";"bar à ongles / institut, 4.3/417 avis, réservations de dernière minute = gros volume tél. Cordeliers (presqu'île). Réserve en ligne → angle complémentaire, pas concurrent. Source : Sheet Lyon 6 enrichi (fit Fort*)."`;
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE CSV N'EST PLUS DANS CE FICHIER — MÊME CORRECTIF QUE `pipeline-juillet`.
+ *
+ * Il portait une vingtaine d'entreprises lyonnaises RÉELLES avec leur
+ * téléphone (dont des mobiles en 06/07, donc des lignes de personnes), leur
+ * métier et des notes de prospection. Le dépôt étant public sur GitHub, ces
+ * lignes étaient publiées sur internet sans base légale.
+ *
+ * Le fichier vit maintenant dans `donnees-privees/`, ignoré par git. Ce qui
+ * reste ici : la façon de le lire, et le compte. Absent ⇒ chaîne vide, jamais
+ * une exception : sur une machine sans le fichier, l'import ICP ne rend
+ * simplement rien.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+function chargerCsv(): string {
+  try {
+    // Résolution À L'EXÉCUTION : un import statique casserait le build partout
+    // où le fichier privé n'existe pas, c'est-à-dire partout sauf ici.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { join } = require("node:path") as typeof import("node:path");
+    return readFileSync(join(process.cwd(), "donnees-privees/prospects-icp.csv"), "utf8");
+  } catch {
+    return "";
+  }
+}
+
+export const PROSPECTS_ICP_CSV = chargerCsv();
 
 /** Nombre de fiches ICP embarquées (pour l'UI). */
-export const PROSPECTS_ICP_COUNT = PROSPECTS_ICP_CSV.trim().split("\n").length - 1;
+/**
+ * ⚠ `Math.max(0, …)` : sur une chaîne vide, `"".trim().split("\n")` rend
+ * `[""]` — donc `length - 1` vaut 0, ce qui est juste par accident. Le
+ * `max` rend l'intention explicite plutôt que de dépendre d'un cas limite
+ * de `split`, et protège si la chaîne devient un jour `"\n"`.
+ */
+export const PROSPECTS_ICP_COUNT = PROSPECTS_ICP_CSV.trim()
+  ? PROSPECTS_ICP_CSV.trim().split("\n").length - 1
+  : 0;

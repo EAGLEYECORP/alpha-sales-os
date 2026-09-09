@@ -111,10 +111,10 @@ test("prospection B2B — la porte de conformité tranche (dur, non forçable)",
 });
 
 test("numéro — conversion en E.164, et refus de ce qui n'en est pas un", () => {
-  assert.equal(toE164("06 12 34 56 78"), "+33612345678");
-  assert.equal(toE164("04.78.52.72.81"), "+33478527281");
-  assert.equal(toE164("+33612345678"), "+33612345678");
-  assert.equal(toE164("33612345678"), "+33612345678");
+  assert.equal(toE164("06 39 98 56 78"), "+33639985678");
+  assert.equal(toE164("04.65.71.72.81"), "+33465717281");
+  assert.equal(toE164("+33639985678"), "+33639985678");
+  assert.equal(toE164("33639985678"), "+33639985678");
   // Un numéro incomplet composé en SIP tombe dans le vide ou, pire, sur
   // quelqu'un d'autre.
   assert.equal(toE164("06 12 34"), null);

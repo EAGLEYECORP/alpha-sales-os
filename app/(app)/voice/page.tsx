@@ -223,7 +223,7 @@ export default function VoicePage() {
             </p>
             <input
               className="input w-full text-[13px]"
-              placeholder={prospect?.phone || "06 12 34 56 78"}
+              placeholder={prospect?.phone || "06 39 98 56 78"}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               disabled={mode === "demo-entrante"}

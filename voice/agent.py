@@ -37,7 +37,7 @@ Installation
 Appel sortant (déclenché par ALPHA, ou à la main) :
     lk dispatch create --new-room \\
        --agent-name alpha-voice \\
-       --metadata '{"phone":"+33612345678","script":"...","company":"Garage X"}'
+       --metadata '{"phone":"+33639985678","script":"...","company":"Garage X"}'
 
 Prérequis LiveKit : un trunk SIP sortant configuré, son ID dans
 SIP_OUTBOUND_TRUNK_ID. Voir voice/README.md.

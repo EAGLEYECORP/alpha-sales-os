@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { BRICKS, OUTBOUND_TIERS, OUTBOUND_UNIT_HT, OUTBOUND_UNIT_CALLS, PACK_SETUP_HT, PACK_MONTHLY_HT } from "../lib/bricks";
 import { CAPACITES, PALIERS_LABELS, PRIX_PUBLICS } from "../lib/public-catalogue";
@@ -523,7 +523,28 @@ test("⚠ bundle app — aucun NOM de prospect réel, même recopié à la main"
    * fichier atteignable par le navigateur ne les écrit. Il n'y a pas de
    * troisième endroit où les recopier sans qu'il le voie.
    */
-  const source = readFileSync(join(process.cwd(), "lib/pipeline-juillet.ts"), "utf8");
+  /**
+   * ⚠ LA SOURCE A CHANGÉ DE PLACE, ET C'EST LE CORRECTIF QUI L'A DÉPLACÉE.
+   *
+   * Ce test lisait les noms d'entreprises DANS `lib/pipeline-juillet.ts`.
+   * C'était juste tant que les fiches y étaient — mais le dépôt a été rendu
+   * public, et ces fiches portaient des noms, des mobiles personnels et des
+   * notes d'appel. Elles ont été sorties du dépôt (`donnees-privees/`,
+   * ignoré par git).
+   *
+   * Le test garde exactement le même travail, en lisant la donnée là où elle
+   * vit maintenant. Sur une machine qui ne l'a pas — un contributeur, la CI —
+   * il n'y a rien à comparer : la garde SPÉCIFIQUE se tait, et la garde
+   * STRUCTURELLE du test suivant continue de tourner. C'est le bon partage :
+   * on ne peut pas exiger la donnée protégée pour pouvoir la protéger.
+   */
+  const chemin = join(process.cwd(), "donnees-privees/pipeline-juillet.seeds.ts");
+  if (!existsSync(chemin)) {
+    // Rien à vérifier ici, et surtout : on ne fabrique pas une fausse
+    // assurance. Le test suivant couvre le cas générique.
+    return;
+  }
+  const source = readFileSync(chemin, "utf8");
   const entreprises = [...source.matchAll(/company:\s*"([^"]+)"/g)]
     /**
      * Ce qui est entre parenthèses QUALIFIE, ça n'identifie pas :

@@ -171,7 +171,7 @@ test("cadence — sans SIREN, le plafond légal B2C s'impose", () => {
    * Avant : l'app AVERTISSAIT à l'import (`planifierAppels`) et EXÉCUTAIT six
    * contacts ici. Un avertissement qui ne pilote rien s'apprend à être ignoré.
    */
-  const p = plafondRappels({ telephone: "0612345678" });
+  const p = plafondRappels({ telephone: "0639985678" });
   assert.equal(p.plafonne, true);
   assert.equal(p.max, PLAFOND_SOLLICITATIONS_B2C - 1, "le PREMIER appel compte dans les sollicitations");
   assert.match(p.pourquoi, /2022-1313/);
@@ -185,7 +185,7 @@ test("cadence — un SIREN lève le plafond : la cadence complète s'applique", 
    * complète s'applique. Il empêche seulement la cadence longue de
    * partir en silence sur une cible à risque.
    */
-  const p = plafondRappels({ siren: "123456789", telephone: "0612345678" });
+  const p = plafondRappels({ siren: "123456789", telephone: "0639985678" });
   assert.equal(p.plafonne, false);
   assert.equal(p.max, RAPPELS_MAX);
   assert.match(p.pourquoi, /inscrite au registre/);
@@ -199,7 +199,7 @@ test("cadence — le plafond MORD réellement sur la décision, pas juste sur le
       outcome: "sans-reponse" as const,
     }));
 
-  const sansSiren = cadenceFor(tentatives(PLAFOND_SOLLICITATIONS_B2C), new Date(), { telephone: "0612345678" });
+  const sansSiren = cadenceFor(tentatives(PLAFOND_SOLLICITATIONS_B2C), new Date(), { telephone: "0639985678" });
   assert.equal(sansSiren.state, "epuisee", "plafond de sollicitations atteint : on arrête");
   assert.equal(sansSiren.callNow, false);
   assert.equal(sansSiren.handoffToHuman, true, "on repasse à l'humain, on n'abandonne pas la fiche");
@@ -215,14 +215,14 @@ test("cadence — le plafond MORD réellement sur la décision, pas juste sur le
    * SIREN, jamais plus que le décret n'autorise — quelle que soit la cadence
    * qu'on remettra demain.
    */
-  const sans = plafondRappels({ telephone: "0612345678" });
+  const sans = plafondRappels({ telephone: "0639985678" });
   assert.equal(sans.plafonne, true);
   assert.ok(
     sans.max <= PLAFOND_SOLLICITATIONS_B2C - 1,
     "le premier appel compte : 4 sollicitations = 3 rappels au maximum"
   );
 
-  const avec = plafondRappels({ siren: "123456789", telephone: "0612345678" });
+  const avec = plafondRappels({ siren: "123456789", telephone: "0639985678" });
   assert.equal(avec.plafonne, false, "un SIREN lève le plafond légal");
   assert.equal(avec.max, RAPPELS_MAX, "et rend la cadence entière, quelle qu'elle soit");
 });
@@ -246,7 +246,7 @@ test("cadence — le SIREN doit VOYAGER de l'import jusqu'au runner", () => {
 
   // Le mécanisme, pas le mot : la relecture du SIREN doit vraiment marcher
   // sur le texte que l'import écrit.
-  const cible = cibleDepuisProspect({ phone: "0612345678", notes: "Fiche terrain\nSIREN : 123456789\nAPE 45.20A" });
+  const cible = cibleDepuisProspect({ phone: "0639985678", notes: "Fiche terrain\nSIREN : 123456789\nAPE 45.20A" });
   assert.equal(cible.siren, "123456789");
   assert.equal(plafondRappels(cible).plafonne, false, "un SIREN lu doit lever le plafond");
 });
@@ -259,7 +259,7 @@ test("cadence — le plan affiché à l'humain annonce le MÊME plafond que l'au
    * qui compose.
    */
   const p = prospect({
-    phone: "0612345678",
+    phone: "0639985678",
     notes: "aucun SIREN connu",
     events: [
       { id: "e1", date: at(0).toISOString(), kind: "appel", summary: "Sans réponse" },

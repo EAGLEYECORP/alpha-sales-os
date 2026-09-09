@@ -46,3 +46,9 @@ voice/.venv/
 # Captures produit (motion design) — matière de travail, pas du code.
 # 19 Mo de PNG regénérables par un script : rien à faire dans le dépôt.
 .captures/
+
+# ⚠ DONNÉES RÉELLES — jamais commitées.
+# Fiches prospects et listes de prospection : noms, téléphones, notes de vente.
+# Ce sont des données personnelles de tiers ; le dépôt a été public une fois,
+# et une fois suffit. Voir lib/pipeline-juillet.ts pour le raisonnement.
+donnees-privees/

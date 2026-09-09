@@ -67,9 +67,9 @@ test("buildUrgentDigest — un RDV aujourd'hui est toujours critique", () => {
 test("CSV — un métier hors enum (auto-école, immobilier) garde sa verticale via les notes", () => {
   const csv = [
     "company;sector;city;phone;notes",
-    '"Auto-École Rive Gauche";auto-école;Lyon 7;04 72 00 11 22;"moniteur souvent en leçon"',
-    '"Régie du Centre";immobilier;Lyon 2;04 78 00 00 00;""',
-    '"Plomberie Éclair";plombier;Villeurbanne;06 12 34 56 78;""',
+    '"Auto-École Rive Gauche";auto-école;Lyon 7;04 65 71 11 22;"moniteur souvent en leçon"',
+    '"Régie du Centre";immobilier;Lyon 2;04 65 71 00 00;""',
+    '"Plomberie Éclair";plombier;Villeurbanne;06 39 98 56 78;""',
   ].join("\n");
   const { prospects } = csvToProspects(csv);
   const byName = (n: string) => prospects.find((p) => p.company.includes(n))!;

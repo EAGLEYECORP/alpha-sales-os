@@ -429,7 +429,7 @@ export const storageIsFailing = (): boolean => storageFailed;
 /**
  * Numéro réduit à ses chiffres significatifs, pour comparer deux écritures.
  *
- * « 04 78 12 34 56 », « +33478123456 » et « 0478123456 » sont le même
+ * « 04 65 71 34 56 », « +33465713456 » et « 0465713456 » sont le même
  * téléphone. Comparer les chaînes brutes ferait échouer la fusion sur la seule
  * différence de mise en forme entre deux sources — et deux fiches au même
  * numéro, c'est deux appels à la même personne.
@@ -437,7 +437,7 @@ export const storageIsFailing = (): boolean => storageFailed;
 function normTel(tel: string | undefined): string {
   const d = (tel ?? "").replace(/\D/g, "");
   if (!d) return "";
-  // 0478123456 et 33478123456 pointent le même poste : on garde les 9 derniers
+  // 0465713456 et 33478123456 pointent le même poste : on garde les 9 derniers
   // chiffres, qui suffisent à identifier une ligne française.
   return d.length >= 9 ? d.slice(-9) : d;
 }

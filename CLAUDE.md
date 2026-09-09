@@ -588,6 +588,46 @@ on doit encore pouvoir entrer chez nous.
 > `brique_absente`). Délibéré : voir la porte fermée vaut mieux que ne pas
 > savoir qu'elle existe, et la sécurité ne dépend jamais de l'écran.
 
+## ⚠ AUCUNE DONNÉE RÉELLE DANS LE DÉPÔT (`tests/donnees-reelles.test.ts`)
+**Le dépôt a été rendu public sur GitHub le 09/09/2026, et il contenait des
+données personnelles de tiers.** Seize fiches prospects réelles avec raison
+sociale, ville, téléphone, étape de vente, montant du deal et notes d'appel —
+dont au moins **une personne physique identifiée** : nom complet, mobile
+personnel, poste, employeur, et la note qu'elle avait posé un lapin. Plus une
+vingtaine d'entreprises lyonnaises avec leurs numéros.
+
+> ⚠ **Trois gardes existaient, et les trois ont fait leur travail.**
+> `tests/vitrine-fuite` tenait ces modules hors du bundle, `/api/pipeline` est
+> réservé au maître, `store.ts` avait été purgé de son `require()`. Toutes
+> empêchaient la donnée d'atteindre un **navigateur**. Aucune n'empêchait le
+> **fichier** d'être lu — et un dépôt public ne se visite pas, il se `clone`.
+> Le modèle de menace entier supposait un attaquant qui passe par le produit.
+
+- Les fiches vivent dans **`donnees-privees/`**, ignoré par git. `lib/pipeline-juillet.ts`
+  et `lib/prospects-icp.ts` sont des **chargeurs** : absent ⇒ vide, jamais une
+  exception (une CI ou un déploiement neuf n'a pas ce dossier).
+- Ce qui RESTE dans le code : les **chiffres agrégés** (`JUILLET_REEL` — 78
+  prospects, 132 appels, 6 RDV, 0 gagné). Ils n'identifient personne et ce sont
+  eux dont la doctrine se sert. Les effacer par excès de prudence détruirait la
+  mesure sans protéger qui que ce soit.
+- **Tout numéro du dépôt est dans une plage ARCEP réservée à la fiction**
+  (décision 2018-0881) : `0199 00` · `0261 91` · `0353 01` · `0465 71` ·
+  `0536 49` · `0639 98`. Ni appelables, ni attribuables.
+  > ⚠ **C'est le jeu de démo écrit à la main qui s'est fait attraper**, pas les
+  > fiches générées : `lib/demo-icp.ts` était déjà sur la plage fiction, `seed.ts`
+  > portait des numéros lyonnais *parfaitement valides* qui peuvent sonner chez
+  > quelqu'un. Corrigé d'un côté, oublié de l'autre — la garde est structurelle
+  > pour que ça ne se reproduise pas.
+  > · **Une seule exception, nommée** : `+33 4 51 22 21 82`, NOTRE ligne
+  >   entrante Alpha Voice. Elle existe pour être appelée. Mais elle nous est
+  >   facturée à la minute : un dépôt public l'expose à l'abus.
+- La garde cherche la **FORME** d'un numéro, jamais une liste de numéros connus
+  — une liste de ce qu'il faut cacher serait une copie de ce qu'on cache.
+
+> ⚠⚠ **Rendre le dépôt privé n'annule rien.** L'historique git garde tout, les
+> forks et clones existants aussi, et les caches d'indexation. Corriger `HEAD`
+> arrête l'hémorragie ; ça ne rappelle pas ce qui est sorti.
+
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
   Elles sont à **rotate**. Ne JAMAIS écrire une clé collée dans un fichier, un

@@ -30,7 +30,7 @@ beforeEach(() => {
 function fixture(over: Partial<Prospect> = {}): Prospect {
   return {
     id: "p1", name: "Marc", company: "Test SARL", sector: "artisan", city: "Lyon",
-    phone: "0478000000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 0,
+    phone: "0465710000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 0,
     conviction: 5, monthlyValue: 0, setupValue: 0, probability: 20, ignoranceTax: 0,
     croyances: { produit: 5, soutien: 5, pourLui: 5 }, obstacles: [], objections: [], events: [],
     demoShownBeforePrice: false, nextStep: null, tags: [], attachments: [], notes: "",
@@ -260,11 +260,11 @@ test("store — l'import dédoublonne par TÉLÉPHONE : jamais deux appels au m�
    */
   useAlpha.setState({ prospects: [] });
   const { importProspects } = useAlpha.getState();
-  importProspects([fixture({ id: "a", company: "Carrosserie des Lilas", email: undefined, phone: "+33478123456" })]);
+  importProspects([fixture({ id: "a", company: "Carrosserie des Lilas", email: undefined, phone: "+33465713456" })]);
 
   // Autre nom, autre écriture du numéro, même ligne téléphonique.
   const b = importProspects([
-    fixture({ id: "b", company: "Carrosserie des Lilas SARL", email: undefined, phone: "04 78 12 34 56" }),
+    fixture({ id: "b", company: "Carrosserie des Lilas SARL", email: undefined, phone: "04 65 71 34 56" }),
   ]);
   assert.deepEqual([b.added, b.updated], [0, 1], "deux écritures du même numéro doivent fusionner");
   assert.equal(useAlpha.getState().prospects.length, 1);
@@ -275,8 +275,8 @@ test("store — deux numéros DIFFÉRENTS restent deux fiches", () => {
   // enseigne locale ont deux numéros et se travaillent séparément.
   useAlpha.setState({ prospects: [] });
   const { importProspects } = useAlpha.getState();
-  importProspects([fixture({ id: "a", company: "Garage Nord", email: undefined, phone: "0478000001" })]);
-  const b = importProspects([fixture({ id: "b", company: "Garage Sud", email: undefined, phone: "0478000002" })]);
+  importProspects([fixture({ id: "a", company: "Garage Nord", email: undefined, phone: "0465710001" })]);
+  const b = importProspects([fixture({ id: "b", company: "Garage Sud", email: undefined, phone: "0465710002" })]);
   assert.equal(b.added, 1);
   assert.equal(useAlpha.getState().prospects.length, 2);
 });
@@ -289,9 +289,9 @@ test("store — les tags s'AJOUTENT à la réimportation", () => {
    */
   useAlpha.setState({ prospects: [] });
   const { importProspects } = useAlpha.getState();
-  importProspects([fixture({ id: "a", company: "Toiture Roux", email: undefined, phone: "0478000009", tags: ["terrain"] })]);
+  importProspects([fixture({ id: "a", company: "Toiture Roux", email: undefined, phone: "0465710009", tags: ["terrain"] })]);
   importProspects([
-    fixture({ id: "a2", company: "Toiture Roux", email: undefined, phone: "0478000009", tags: ["injoignable"] }),
+    fixture({ id: "a2", company: "Toiture Roux", email: undefined, phone: "0465710009", tags: ["injoignable"] }),
   ]);
   const p = useAlpha.getState().prospects[0];
   assert.ok(p.tags.includes("terrain"), "l'ancien tag survit");

@@ -8,7 +8,7 @@ test("propriétés — le format Notion est respecté type par type", () => {
     company: "Toitures du Rhône",
     name: "Marc Perrin",
     city: "Lyon 6e",
-    phone: "04 78 12 34 56",
+    phone: "04 65 71 34 56",
     email: "marc@toitures.fr",
     probability: 65,
     setupValue: 3500,
@@ -20,7 +20,7 @@ test("propriétés — le format Notion est respecté type par type", () => {
   // Notion refuse une propriété mal typée : le titre est un tableau de blocs,
   // pas une chaîne. C'est l'erreur qui fait échouer tout un envoi.
   assert.deepEqual(props["Société"].title, [{ text: { content: "Toitures du Rhône" } }]);
-  assert.equal((props["Téléphone"] as { phone_number: string }).phone_number, "04 78 12 34 56");
+  assert.equal((props["Téléphone"] as { phone_number: string }).phone_number, "04 65 71 34 56");
   assert.equal((props["Email"] as { email: string }).email, "marc@toitures.fr");
   assert.equal((props["Probabilité"] as { number: number }).number, 65);
   assert.equal((props["Prochain pas"] as { date: { start: string } }).date.start, "2026-08-25T14:00:00+02:00");

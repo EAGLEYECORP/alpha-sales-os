@@ -52,7 +52,7 @@ test("le socle de fiche couvre TOUS les tableaux — leur absence est un plantag
 
 test("une fiche importée du terrain ne fait pas tomber l'écran du matin", () => {
   const lot = importerFiches(
-    `${ENTETE_TERRAIN}\nCarrosserie des Lilas;carrosserie;Lyon 3e;04 78 12 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre";45.20A;123456789`
+    `${ENTETE_TERRAIN}\nCarrosserie des Lilas;carrosserie;Lyon 3e;04 65 71 34 56;;142;4,6;09:00–12:00, 14:00–18:00;"impossible de les joindre";45.20A;123456789`
   );
   const p = lot.retenus[0].prospect;
   // Les trois lecteurs qui tournent sur la fiche dès son arrivée.
@@ -76,14 +76,14 @@ test("on ne demande JAMAIS de rappeler quelqu'un qui a dit « ne plus m'appeler 
   // Le tag, posé par le bouton de la page /appels.
   const parTag = prospect({
     id: "opp1",
-    phone: "0612345678",
+    phone: "0639985678",
     tags: ["terrain", "ne-pas-appeler"],
     events: [ev("e", 20, "appel", "Sans réponse")],
   });
   // Et la timeline, quand l'opposition vient d'une session vocale.
   const parTimeline = prospect({
     id: "opp2",
-    phone: "0612345679",
+    phone: "0639985679",
     events: [ev("e", 20, "appel", RESULTATS_MANUELS.opposition.summary)],
   });
 
@@ -118,7 +118,7 @@ const rdv = (prospectId: string, date: string) => ({
 });
 
 test("un rendez-vous avec une fiche en opposition n'est PAS effacé du plan", () => {
-  const p = prospect({ id: "opp3", phone: "0612345671", tags: ["terrain", DO_NOT_CALL_TAG] });
+  const p = prospect({ id: "opp3", phone: "0639985671", tags: ["terrain", DO_NOT_CALL_TAG] });
   const j = construireJournee({
     prospects: [p],
     meetings: [rdv("opp3", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
@@ -129,7 +129,7 @@ test("un rendez-vous avec une fiche en opposition n'est PAS effacé du plan", ()
 });
 
 test("…mais il DIT que la personne a demandé à ne plus être appelée", () => {
-  const p = prospect({ id: "opp4", phone: "0612345672", tags: ["terrain", DO_NOT_CALL_TAG] });
+  const p = prospect({ id: "opp4", phone: "0639985672", tags: ["terrain", DO_NOT_CALL_TAG] });
   const j = construireJournee({
     prospects: [p],
     meetings: [rdv("opp4", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
@@ -147,7 +147,7 @@ test("l'opposition lue dans la TIMELINE marque le rendez-vous elle aussi", () =>
   // oppositions passe à travers.
   const p = prospect({
     id: "opp5",
-    phone: "0612345673",
+    phone: "0639985673",
     events: [ev("e", 1, "appel", RESULTATS_MANUELS.opposition.summary)],
   });
   const j = construireJournee({
@@ -160,7 +160,7 @@ test("l'opposition lue dans la TIMELINE marque le rendez-vous elle aussi", () =>
 
 test("un rendez-vous ORDINAIRE ne porte aucun avertissement", () => {
   // Le contre-test : sans lui, marquer tout le monde passerait pour une réussite.
-  const p = prospect({ id: "sain", phone: "0612345674" });
+  const p = prospect({ id: "sain", phone: "0639985674" });
   const j = construireJournee({
     prospects: [p],
     meetings: [rdv("sain", new Date(NOW.getTime() + 3 * 3_600_000).toISOString())],
@@ -173,7 +173,7 @@ test("un rendez-vous ORDINAIRE ne porte aucun avertissement", () => {
 
 test("…mais une fiche ordinaire qui refroidit produit bien une tâche", () => {
   // Le contre-test : sans lui, une exclusion trop large passerait inaperçue.
-  const froid = prospect({ id: "ok", phone: "0612345670", events: [ev("e", 20, "appel", "Sans réponse")] });
+  const froid = prospect({ id: "ok", phone: "0639985670", events: [ev("e", 20, "appel", "Sans réponse")] });
   const j = construireJournee({ prospects: [froid], meetings: [], now: NOW });
   assert.equal(j.taches.length, 1);
 });
@@ -290,12 +290,12 @@ test("la file d'appels aussi écarte l'opposition — le troisième endroit qui 
   const opp = prospect({
     id: "o",
     stage: "prospect",
-    phone: "0478000000",
+    phone: "0465710000",
     sector: "restaurant",
     tags: [DO_NOT_CALL_TAG],
     events: [],
   });
-  const ok = prospect({ id: "k", stage: "prospect", phone: "0478000001", sector: "restaurant", events: [] });
+  const ok = prospect({ id: "k", stage: "prospect", phone: "0465710001", sector: "restaurant", events: [] });
 
   const { targets } = buildCallSession([opp, ok], "restauration");
   assert.deepEqual(targets.map((t) => t.prospect.id), ["k"], "la fiche opposée revenait dans la file le lendemain");
@@ -355,11 +355,11 @@ test("la progression d'appel survit au rechargement — elle se lit dans la time
   const fait = prospect({
     id: "fait",
     stage: "prospect",
-    phone: "0478000001",
+    phone: "0465710001",
     sector: "restaurant",
     events: [ev("e", 0, "appel", RESULTATS_MANUELS.messagerie.summary)],
   });
-  const aFaire = prospect({ id: "todo", stage: "prospect", phone: "0478000002", sector: "restaurant", events: [] });
+  const aFaire = prospect({ id: "todo", stage: "prospect", phone: "0465710002", sector: "restaurant", events: [] });
 
   assert.equal(appeleAujourdhui(fait, NOW), true);
   assert.equal(appeleAujourdhui(aFaire, NOW), false);
@@ -377,7 +377,7 @@ test("un appel d'HIER ne compte pas comme fait aujourd'hui", () => {
   const hier = prospect({
     id: "h",
     stage: "prospect",
-    phone: "0478000003",
+    phone: "0465710003",
     sector: "restaurant",
     events: [ev("e", 1, "appel", RESULTATS_MANUELS.messagerie.summary)],
   });

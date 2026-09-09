@@ -77,7 +77,7 @@ function fixture(over: Partial<Prospect> = {}): Prospect {
     contract: { status: "aucun" },
     delivery: "non-demarre",
     email: "marc@test.fr",
-    phone: "0478000000",
+    phone: "0465710000",
     createdAt: "2026-08-01T09:00:00.000Z",
     updatedAt: "2026-08-01T09:00:00.000Z",
     ...over,

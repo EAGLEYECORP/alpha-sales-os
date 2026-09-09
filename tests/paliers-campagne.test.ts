@@ -56,7 +56,7 @@ const fiche = (id: string, events: TimelineEvent[] = []): Prospect =>
     company: `Test ${id}`,
     sector: "artisan",
     city: "Lyon",
-    phone: "0478000000",
+    phone: "0465710000",
     email: "m@t.fr",
     stage: "contact",
     trust: 50,

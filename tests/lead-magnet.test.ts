@@ -7,7 +7,7 @@ import type { Prospect } from "../lib/types";
 function fixture(over: Partial<Prospect> = {}): Prospect {
   return {
     id: "p1", name: "Marc Dubois", company: "Carrosserie Test", sector: "artisan", city: "Lyon",
-    phone: "0478000000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 60,
+    phone: "0465710000", email: "m@t.fr", stage: "contact", trust: 50, likeness: 50, auditScore: 60,
     conviction: 5, monthlyValue: 0, setupValue: 0, probability: 20, ignoranceTax: 0,
     croyances: { produit: 5, soutien: 5, pourLui: 5 }, obstacles: [], objections: [], events: [],
     demoShownBeforePrice: false, nextStep: null, tags: [], attachments: [], notes: "",

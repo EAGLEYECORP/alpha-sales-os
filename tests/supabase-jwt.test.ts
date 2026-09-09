@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { verifySupabaseJwt } from "../lib/supabase-jwt";
 
-const SECRET = "super-secret-jwt-du-projet-supabase-0123456789";
+const SECRET = "super-secret-jwt-du-projet-supabase-0199006789";
 
 const b64url = (buf: Buffer | string) =>
   (typeof buf === "string" ? Buffer.from(buf) : buf).toString("base64url");
