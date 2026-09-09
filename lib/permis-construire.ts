@@ -173,6 +173,77 @@ const PARTICULIER = /^\s*(m\.|mme|mr|monsieur|madame|m et mme|m\. et mme|consort
 const FORME_SOCIETE = /\b(sas|sasu|sarl|eurl|sa|snc|sci|sccv|scic|scop|gie|sem|spl)\b/i;
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA ZONE — LYON + VILLEURBANNE, ET RIEN D'AUTRE (décision du 09/09/2026).
+ *
+ * ── POURQUOI UNE EXCLUSION, ET PAS UN MALUS DE SCORE ──
+ *
+ * La commune ne faisait que rapporter dix points. Un permis de Bron ou de
+ * Saint-Priest sortait donc RETENU dès qu'il était par ailleurs bon — et rien
+ * dans le lot ne disait qu'on venait d'ajouter à la file d'appels des cibles
+ * hors du terrain qu'on couvre. C'est la même leçon que le reste du fichier :
+ * un barème qui laisse passer ce qu'on a décidé d'exclure est décoratif.
+ *
+ * Ce que la zone achète, concrètement : l'ancrage local est le seul argument
+ * qu'on ait à zéro vente. « Je suis à Villeurbanne, votre programme est rue
+ * Anatole-France » se vérifie ; « je couvre la région » ne se vérifie pas et
+ * ne vaut rien.
+ *
+ * ⚠ CE QUE ÇA COÛTE, ET C'EST ASSUMÉ. Un export métropolitain perdra la
+ * majorité de ses lignes. C'est le comportement voulu — mais le lot le DIT
+ * (`trierPermis` compte les hors-zone à part), sinon un import qui rend
+ * trois fiches sur deux cents ressemble à une panne du parseur.
+ *
+ * ⚠⚠ COMMUNE ABSENTE N'EST PAS HORS ZONE. Une colonne manquante est un angle
+ * mort à nommer, pas une ligne fausse : elle reste dans `manque`, comme
+ * avant. Exclure sur une donnée absente jetterait des cibles au motif que
+ * l'export était pauvre.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const COMMUNES_CIBLES = ["Lyon (tous arrondissements)", "Villeurbanne"] as const;
+
+/** Minuscules, sans accent, espaces normalisés — pour comparer des libellés d'open data. */
+function normaliseCommune(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * ⚠ L'ANCRAGE EN DÉBUT DE CHAÎNE EST TOUT LE SUJET.
+ *
+ * Un `includes("lyon")` retiendrait **Sainte-Foy-lès-Lyon**, **Champagne-au-
+ * Mont-d'Or** non mais **Saint-Fons** non plus — et surtout il retiendrait
+ * n'importe quel libellé portant « Métropole de Lyon » ou « Grand Lyon »,
+ * c'est-à-dire des lignes dont la commune réelle est ailleurs. Le nom de la
+ * commune COMMENCE par « Lyon », suivi d'une fin de chaîne ou d'un séparateur
+ * (« Lyon 3e », « Lyon-7e », « LYON 09 »). « Lyons-la-Forêt » ne passe pas
+ * non plus : le « s » n'est ni un espace, ni un tiret, ni une fin.
+ */
+const NOM_CIBLE = /^(?:lyon|villeurbanne)(?:[\s-]|$)/;
+
+/**
+ * Les codes, quand le libellé porte le code plutôt que le nom (« 69003 LYON »,
+ * ou l'INSEE brut d'un export Sitadel).
+ *  · postaux : 69001-69009 (Lyon) · 69100 (Villeurbanne) ;
+ *  · INSEE  : 69381-69389 (arrondissements) · 69266 (Villeurbanne).
+ * Lyon n'a pas de code INSEE unique par ailleurs utilisable ici : 69123
+ * désigne la commune entière et se rencontre aussi dans les exports.
+ */
+const CODE_CIBLE = /\b(?:6900[1-9]|69100|6938[1-9]|69266|69123)\b/;
+
+/** Cette commune est-elle dans la zone ? `null` = la donnée manque, ce n'est pas un refus. */
+export function communeDansLaZone(commune?: string): boolean | null {
+  const brut = (commune ?? "").trim();
+  if (!brut) return null;
+  const n = normaliseCommune(brut);
+  return NOM_CIBLE.test(n) || CODE_CIBLE.test(n);
+}
+
+/**
  * Le nombre de logements sous lequel l'offre VIP n'est pas proportionnée.
  *
  * DÉCISION, pas mesure : une opération de trois lots se vend par le
@@ -359,11 +430,19 @@ export function lirePermis(p: PermisConstruire, now = new Date()): LecturePermis
   }
 
   // ── Le lieu : l'ancrage local se dit dans le message, il n'est pas décoratif. ──
-  if ((p.commune ?? "").trim()) {
+  const zone = communeDansLaZone(p.commune);
+  if (zone === null) {
+    manque.push("commune absente : le message perdra son ancrage local");
+  } else if (zone) {
     score += 10;
     pourquoi.push(`localisé — ${p.commune!.trim()}`);
   } else {
-    manque.push("commune absente : le message perdra son ancrage local");
+    // Exclusion sèche, pas un malus : un bon permis hors zone sortait retenu et
+    // rien ne le disait. Voir COMMUNES_CIBLES pour ce que ce choix coûte.
+    exclusions.push(
+      `${p.commune!.trim()} est hors zone : la cible est ${COMMUNES_CIBLES.join(" et ")}. ` +
+        "L'ancrage local est le seul argument qu'on ait à zéro vente, et il ne s'improvise pas à trente kilomètres."
+    );
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -416,6 +495,23 @@ export function trierPermis(lignes: PermisConstruire[], now = new Date()): LotPe
   if (sansVente) {
     resume.push(
       `${sansVente} écarté(s) parce que le maître d'ouvrage n'a rien à vendre (particuliers, bailleurs sociaux, personnes publiques). C'est le gros du volume d'un export de permis, c'est normal.`
+    );
+  }
+
+  /**
+   * ⚠ Les hors-zone se comptent À PART des « rien à vendre ».
+   *
+   * Les deux exclusions n'appellent pas le même geste : « 312 particuliers »
+   * est le fonctionnement normal d'un export de permis et ne demande rien ;
+   * « 180 hors zone » veut dire que le fichier a été tiré trop large, et que
+   * la prochaine extraction doit filtrer à la source. Les fondre dans un seul
+   * total ferait passer une erreur de collecte pour une fatalité.
+   */
+  const horsZone = ecartes.filter((e) => communeDansLaZone(e.permis.commune) === false).length;
+  if (horsZone) {
+    resume.push(
+      `${horsZone} écarté(s) hors zone (${COMMUNES_CIBLES.join(" + ")}). Si c'est le gros du fichier, ` +
+        "l'extraction est à refiltrer à la source plutôt qu'ici."
     );
   }
 

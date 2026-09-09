@@ -49,8 +49,12 @@ test("la prochaine action ne double jamais les guillemets d'une objection", () =
 
   // Et la citation doit rester PRÉSENTE : on ne l'a pas supprimée pour faire
   // passer le test — la phrase du prospect doit se lire mot pour mot.
-  const bouchon = seedProspects.find((p) => p.id === "p-bouchon")!;
-  assert.match(nextBestAction(bouchon).action, /« C'est trop cher pour un resto comme le mien »/);
+  const redzone = seedProspects.find((p) => p.id === "demo-sccv-canuts")!;
+  assert.match(
+    nextBestAction(redzone).action,
+    /« Un robot au téléphone, sur un achat à 320 000 €, ça ne passera pas »/,
+    "la phrase du prospect doit se lire MOT POUR MOT dans la prochaine action"
+  );
 });
 
 /**

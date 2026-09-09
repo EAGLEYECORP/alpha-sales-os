@@ -1,5 +1,5 @@
 import type { Prospect } from "./types";
-import { isDemoProspect } from "./seed";
+import { estAdresseDeDemo, isDemoProspect } from "./seed";
 // L'angle du message vient de l'aimant routé par le deep-dive, pas d'une
 // phrase figée : voir l'en-tête de ce module pour ce que ça corrigeait.
 import { approcheEcrite } from "./approche-ecrite";
@@ -149,6 +149,17 @@ export interface OutboxTarget {
    * produit un rebond dur, et les rebonds comptent contre le domaine
    * pendant longtemps. La file la montre — pour qu'on comprenne pourquoi
    * l'envoi est refusé — mais aucune surface ne doit la laisser partir.
+   *
+   * ⚠ LA QUESTION SE POSAIT ICI SUR LE SEUL IDENTIFIANT, ET SUR LES DEUX
+   * CLÉS DANS `/api/send`. Deux définitions de « est-ce une fiche de démo ? »,
+   * et c'est la plus permissive qui s'affichait.
+   *
+   * Conséquence, sans faille de sécurité mais avec un écran menteur : une
+   * fiche portant une adresse de démonstration sans identifiant de démo
+   * (import CSV, fusion, copie) sortait NON marquée dans la file. On cliquait
+   * « envoyer », le serveur refusait en 409, et l'écran n'avait rien annoncé.
+   * Le serveur reste l'autorité — mais un écran qui contredit le serveur
+   * s'apprend comme un bug du serveur.
    */
   demo: boolean;
 }
@@ -181,6 +192,6 @@ export function buildOutbox(prospects: Prospect[], limit: number, opts: ComposeO
         p.events.length === 0
           ? "jamais contactée"
           : `dernière touche : ${p.events[0].kind}`,
-      demo: isDemoProspect(p.id),
+      demo: isDemoProspect(p.id) || estAdresseDeDemo(p.email ?? ""),
     }));
 }

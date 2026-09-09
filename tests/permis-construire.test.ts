@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   LOGEMENTS_MIN,
   SCORE_MIN_PERMIS,
+  communeDansLaZone,
   VALIDITE_MOIS,
   importerPermis,
   lirePermis,
@@ -159,6 +160,70 @@ test("une opération minuscule n'est pas exclue, elle est dite disproportionnée
   );
   const grand = lirePermis(promoteur({ logements: 60 }), MAINTENANT);
   assert.ok(grand.score > petit.score, "la taille doit peser dans l'ordre de la file");
+});
+
+// ── LA ZONE : LYON + VILLEURBANNE ──
+
+test("⚠ HORS ZONE EST UNE EXCLUSION, PAS DIX POINTS EN MOINS", () => {
+  /**
+   * ⚠ CE QUE CE TEST GARDE, ET IL A ÉTÉ ÉCRIT PARCE QUE ÇA NE TENAIT PAS.
+   *
+   * La commune ne faisait qu'ajouter dix points. Un promoteur de Bron, de
+   * Saint-Priest ou de Vénissieux — phase parfaite, 42 logements — sortait
+   * donc RETENU, entrait dans la file, et rien dans le lot ne disait qu'on
+   * venait d'ajouter des cibles hors du terrain qu'on couvre.
+   *
+   * ⚠ Le piège de test du dépôt : asserter que le refus EST LÀ. On vérifie
+   * donc la CONDITION — le MÊME permis, à la commune près, passe. Mutation
+   * vérifiée : remettre `score += 10` à la place de l'exclusion fait tomber
+   * l'assertion `retenu === false` et elle seule.
+   */
+  const dedans = lirePermis(promoteur({ commune: "Lyon 7e" }), MAINTENANT);
+  const dehors = lirePermis(promoteur({ commune: "Bron" }), MAINTENANT);
+
+  assert.equal(dedans.retenu, true, "le permis de référence doit passer, sinon ce test ne prouve rien");
+  assert.equal(dehors.retenu, false, "le même permis à Bron ne doit pas passer");
+  assert.ok(
+    dehors.risques.some((r) => /hors zone/i.test(r)),
+    `la raison doit être écrite : ${dehors.risques.join(" | ")}`
+  );
+});
+
+test("⚠ la zone se reconnaît sur la FORME du libellé, pas sur un `includes(\"lyon\")`", () => {
+  /**
+   * ⚠ LE FAUX POSITIF QU'UN `includes` AURAIT CRÉÉ, ET IL EST À CÔTÉ.
+   *
+   * « Sainte-Foy-lès-Lyon » contient « lyon ». « Métropole de Lyon » et
+   * « Grand Lyon » aussi, et ce sont des libellés qu'un export porte
+   * réellement, pour des lignes dont la commune est ailleurs. Le nom doit
+   * COMMENCER par la commune visée, suivi d'une fin de chaîne ou d'un
+   * séparateur — sinon on rouvre la zone à toute la métropole en croyant
+   * l'avoir fermée.
+   */
+  for (const ok of ["Lyon", "LYON 3E", "Lyon 7e", "Lyon-9e", "Villeurbanne", "VILLEURBANNE", "69003 LYON", "69100"]) {
+    assert.equal(communeDansLaZone(ok), true, `« ${ok} » doit être dans la zone`);
+  }
+  for (const ko of ["Sainte-Foy-lès-Lyon", "Métropole de Lyon", "Grand Lyon", "Bron", "Vénissieux", "Lyons-la-Forêt", "69200"]) {
+    assert.equal(communeDansLaZone(ko), false, `« ${ko} » ne doit PAS être dans la zone`);
+  }
+
+  /**
+   * ⚠⚠ COMMUNE ABSENTE N'EST PAS HORS ZONE — c'est `null`, et ça reste un
+   * `manque`. Exclure sur une donnée absente jetterait des cibles au motif
+   * que l'export était pauvre en colonnes : le module dit ses angles morts,
+   * il ne les comble pas et ne les punit pas.
+   */
+  assert.equal(communeDansLaZone(undefined), null);
+  assert.equal(communeDansLaZone("   "), null);
+  const sansCommune = lirePermis(promoteur({ commune: undefined }), MAINTENANT);
+  assert.ok(
+    sansCommune.manque.some((m) => /commune absente/i.test(m)),
+    "l'absence se NOMME"
+  );
+  assert.ok(
+    !sansCommune.risques.some((r) => /hors zone/i.test(r)),
+    "…et ne se transforme jamais en exclusion"
+  );
 });
 
 // ── LE LOT, ET CE QU'IL VAUT ──

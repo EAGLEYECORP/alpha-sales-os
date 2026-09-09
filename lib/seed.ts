@@ -1,11 +1,46 @@
-// Seed data — Lyon terrain. Fictional but realistic prospects, used to make
-// the UI legible before the first real import.
-//
-// ⚠ These 8 records cover the ORIGINAL local-business market only (restaurant,
-// pub, ambulance, artisan). They are a demo dataset, not the ICP: the real
-// targeting lives in `lib/segments.ts` and now spans field sales teams, call
-// centres, B2B agencies, franchise networks and insurance. Do not read the
-// product's reach from this file.
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE JEU DE DÉMONSTRATION EAGLEYE — REMIS À ZÉRO LE 09/09/2026.
+ *
+ * ── CE QUI ÉTAIT LÀ AVANT, ET POURQUOI ÇA NE POUVAIT PAS RESTER ──
+ *
+ * Huit fiches de commerces lyonnais : un bouchon, un pub irlandais, deux
+ * sociétés d'ambulances, un menuisier, un plombier. C'était le marché
+ * d'ORIGINE — celui d'avant l'avatar. Le premier bouton de l'app est
+ * « Explorer la démo » : la première chose qu'un prospect voyait de l'OS
+ * décrivait donc une cible que nous ne prospectons plus.
+ *
+ * ── CE QUI LES REMPLACE ──
+ *
+ * L'avatar décidé : le **maître d'ouvrage PROFESSIONNEL** dont le permis de
+ * construire est **actif**, sur **Lyon et Villeurbanne**. C'est un ICP à
+ * DÉCLENCHEUR, pas à secteur : un permis dit non seulement QUI, mais OÙ EN EST
+ * l'affaire, au mois près — donc QUAND appeler.
+ *
+ * ⚠ CES FICHES NE SONT PAS DÉCORATIVES : ELLES DESCENDENT DE PERMIS.
+ * Chaque fiche déclare son arrêté dans `PERMIS_DEMO`, et
+ * `tests/seed-moa.test.ts` rejoue chacun d'eux dans le VRAI trieur
+ * (`lirePermis`, lib/permis-construire.ts) pour vérifier qu'il serait retenu.
+ * Un jeu de démonstration qui contredirait le module de ciblage montrerait au
+ * prospect exactement ce que le produit refuse de faire.
+ *
+ * ⚠⚠ Ce n'est PAS l'ICP complet du produit. Alpha Sales OS se vend aussi
+ * ailleurs (`lib/segments.ts`) ; ce fichier porte la campagne EN COURS, pas la
+ * portée de l'outil. Ne pas lire l'une dans l'autre.
+ *
+ * ── LES QUATRE GARANTIES, IDENTIQUES À CELLES DU JEU ENGENDRÉ ──
+ *
+ * Elles étaient tenues par `lib/demo-icp.ts` et PAS par ce fichier-ci, qui est
+ * pourtant celui qu'on voit en premier. Elles le sont maintenant des deux
+ * côtés :
+ *  · identifiant préfixé `demo-` → `isDemoProspect` répond sur la FORME ;
+ *  · téléphone dans les plages ARCEP réservées à la fiction (2018-0881) ;
+ *  · adresse sur `example.com`, réservé à jamais par la RFC 2606 — les
+ *    anciennes fiches portaient des domaines INVENTÉS en `.fr`, qui peuvent
+ *    être déposés par n'importe qui demain ;
+ *  · « (démo) » DANS le nom de société, donc dans les exports et les captures.
+ * ─────────────────────────────────────────────────────────────────────
+ */
 import type {
   Activity,
   Attachment,
@@ -25,6 +60,17 @@ import type {
   TimelineEvent,
 } from "./types";
 import { daysAgo, daysAhead, daysAheadAt } from "./utils";
+import { ALPHA_VOICE_PALIERS, ALPHA_VOICE_SETUP_HT, PACK_SETUP_HT } from "./offres-publiques";
+/**
+ * ⚠ IMPORT DE TYPE UNIQUEMENT, ET C'EST OBLIGATOIRE.
+ *
+ * `lib/permis-construire.ts` importe `prospectDefaults` d'ici. Un import de
+ * VALEUR dans l'autre sens fermerait le cycle, et un cycle rend `undefined`
+ * au module qui s'initialise en premier — c'est-à-dire un plantage à
+ * l'ouverture de l'app, pas une erreur de compilation. Un `import type`
+ * s'efface à la compilation : il n'y a aucun cycle à l'exécution.
+ */
+import type { PermisConstruire } from "./permis-construire";
 
 /**
  * Defaults for fields added over time — applied to every seed prospect.
@@ -107,372 +153,497 @@ export const prospectDefaults = {
   } as DeepAudit,
 };
 
-/** Ids of the demo dataset — used to detect « données de démo » in the UI. */
-export const SEED_PROSPECT_IDS = [
-  "p-bouchon",
-  "p-smoking-dog",
-  "p-ambulances-rhone",
-  "p-menuiserie",
-  "p-brasserie-part-dieu",
-  "p-taxi-fourviere",
-  "p-paddy",
-  "p-boulangerie",
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES ARRÊTÉS DONT DESCENDENT LES FICHES DE DÉMONSTRATION.
+ *
+ * Onze lignes telles qu'un export d'open data les livre — huit qui passent le
+ * trieur, trois qui sortent, chacune pour une raison DIFFÉRENTE : un
+ * particulier, une commune hors zone, un permis périmé. Les trois écartées
+ * comptent autant que les huit autres : elles montrent, sur l'écran d'import,
+ * que le filtre travaille.
+ *
+ * ⚠ Les dates sont RELATIVES (`daysAgo`), sinon le jeu de démonstration
+ * périmerait tout seul : au bout de trois ans, tous les permis deviendraient
+ * « perime » et les huit fiches disparaîtraient du tri sans que personne
+ * touche à rien.
+ *
+ * ⚠⚠ `tests/seed-moa.test.ts` rejoue chacune de ces lignes dans `lirePermis`.
+ * Changer une commune, un demandeur ou une date ici fait tomber le test —
+ * c'est exactement le but : la démo ne peut pas dériver de la doctrine de
+ * ciblage sans que ça se voie.
+ */
+export const PERMIS_DEMO: readonly PermisConstruire[] = [
+  // ── LES HUIT RETENUS ──
+  { numero: "PC 069 384 26 A0117", demandeur: "SCCV LES TERRASSES DES CANUTS (démo)", dateDecision: daysAgo(240), logements: 68, surfacePlancher: 4210, commune: "Lyon 4e" },
+  { numero: "PC 069 266 25 A0043", demandeur: "GRATTE-CIEL PROMOTION SAS (démo)", dateDecision: daysAgo(600), logements: 94, surfacePlancher: 6180, commune: "Villeurbanne" },
+  { numero: "PC 069 388 26 A0201", demandeur: "SCCV CARRÉ MONPLAISIR (démo)", dateDecision: daysAgo(150), logements: 34, surfacePlancher: 2240, commune: "Lyon 8e" },
+  { numero: "PC 069 386 25 A0090", demandeur: "FONCIÈRE DU RHÔNE NORD — PROMOTION IMMOBILIÈRE (démo)", dateDecision: daysAgo(420), logements: 22, surfacePlancher: 1610, commune: "Lyon 6e" },
+  { numero: "PC 069 389 26 A0064", demandeur: "MAISONS INDIVIDUELLES DU VAL D'OUEST (démo)", dateDecision: daysAgo(95), logements: 12, surfacePlancher: 1080, commune: "Lyon 9e" },
+  { numero: "PC 069 382 24 A0288", demandeur: "SCCV QUAI DE LA CONFLUENCE (démo)", dateDecision: daysAgo(880), dateOuvertureChantier: daysAgo(300), logements: 51, surfacePlancher: 3390, commune: "Lyon 2e" },
+  { numero: "PC 069 266 26 A0112", demandeur: "SAS RÉSIDENCES DES GRATTE-CIEL (démo)", dateDecision: daysAgo(120), logements: 9, surfacePlancher: 640, commune: "Villeurbanne" },
+  { numero: "PC 069 383 26 A0305", demandeur: "PART-DIEU AMÉNAGEUR SAS (démo)", dateDecision: daysAgo(40), logements: 120, surfacePlancher: 8900, commune: "Lyon 3e" },
+
+  /**
+   * ── LES TROIS ÉCARTÉS, ET CHACUN PAR UNE RÈGLE DIFFÉRENTE ──
+   *
+   * Ils ne produisent AUCUNE fiche : `trierPermis` les sort, et c'est tout ce
+   * qu'on veut montrer. Les garder dans le lot est ce qui rend l'écran
+   * d'import honnête — « 8 retenus sur 11 » se comprend, « 8 fiches » ne dit
+   * rien du travail fait.
+   */
+  // Personne physique : elle construit une fois, elle ne vend rien — et c'est
+  // un consommateur, donc le décret n° 2022-1313 s'applique.
+  { numero: "PC 069 381 26 A0019", demandeur: "M. et Mme DUVAL (démo)", dateDecision: daysAgo(60), logements: 1, surfacePlancher: 140, commune: "Lyon 1er" },
+  // Hors zone : un bon permis, au mauvais endroit.
+  { numero: "PC 069 029 26 A0071", demandeur: "BÂTIR BRON SAS (démo)", dateDecision: daysAgo(130), logements: 40, surfacePlancher: 2800, commune: "Bron" },
+  // Périmé : plus de trois ans sans chantier déclaré. « Je vous appelle pour
+  // votre programme » sur une opération morte coûte l'appel entier.
+  { numero: "PC 069 385 22 A0154", demandeur: "SCCV LES JARDINS DE SAINT-JUST (démo)", dateDecision: daysAgo(1400), logements: 18, surfacePlancher: 1250, commune: "Lyon 5e" },
 ];
+
+/**
+ * Quel arrêté a fait entrer quelle fiche.
+ *
+ * ⚠ Une table séparée, et pas un champ sur `Prospect` : le type est partagé
+ * avec tous les imports (CSV, LinkedIn, terrain, API) et n'a aucune raison de
+ * porter un numéro de permis. Ce lien-là n'existe que pour la démonstration et
+ * pour le test qui la garde honnête.
+ */
+export const PERMIS_PAR_FICHE: Readonly<Record<string, string>> = {
+  "demo-sccv-canuts": "PC 069 384 26 A0117",
+  "demo-gratteciel-promotion": "PC 069 266 25 A0043",
+  "demo-sccv-monplaisir": "PC 069 388 26 A0201",
+  "demo-fonciere-rhone-nord": "PC 069 386 25 A0090",
+  "demo-maisons-val-ouest": "PC 069 389 26 A0064",
+  "demo-sccv-confluence": "PC 069 382 24 A0288",
+  "demo-residences-gratteciel": "PC 069 266 26 A0112",
+  "demo-partdieu-amenageur": "PC 069 383 26 A0305",
+};
+
+/**
+ * Les deux paliers Alpha Voice, nommés une fois.
+ *
+ * ⚠ AUCUN MONTANT N'EST RECOPIÉ ICI. La grille vit dans
+ * `lib/offres-publiques.ts` et elle a déjà changé deux fois (990 + cinq
+ * paliers hérités d'un revendeur, puis 990 + 149/349). Une démo qui affiche
+ * un prix périmé est pire qu'une démo vide : c'est le prix qu'un prospect
+ * retient.
+ */
+const VOIX_ESSENTIEL = ALPHA_VOICE_PALIERS[0].prixHT;
+const VOIX_INTENSIF = ALPHA_VOICE_PALIERS[1].prixHT;
 
 const baseProspects = [
   {
-    id: "p-bouchon",
-    name: "Marc Perrin",
-    company: "Le Bouchon des Canuts",
-    sector: "restaurant",
-    city: "Lyon 4e — Croix-Rousse",
-    phone: "04 65 71 34 56",
-    email: "contact@bouchondescanuts.fr",
+    id: "demo-sccv-canuts",
+    name: "Camille Ferrand",
+    company: "SCCV Les Terrasses des Canuts (démo)",
+    sector: "autre",
+    city: "Lyon 4e",
+    phone: "04 65 71 30 12",
+    email: "contact1@example.com",
     stage: "redzone",
-    trust: 82,
-    auditScore: 90,
+    trust: 78,
+    auditScore: 85,
     conviction: 9,
-    monthlyValue: 290,
-    setupValue: 1800,
-    probability: 78,
-    ignoranceTax: 2400,
+    monthlyValue: VOIX_INTENSIF,
+    setupValue: ALPHA_VOICE_SETUP_HT,
+    probability: 70,
+    ignoranceTax: 4200,
     croyances: { produit: 10, soutien: 10, pourLui: 7 },
     obstacles: [
-      { id: "o1", label: "« Les clients viennent par bouche-à-oreille »", blameLayer: "circonstances", resolved: true, note: "Audit : 62 % des recherches « bouchon croix-rousse » partent chez le concurrent." },
+      { id: "o1", label: "« On a une assistante commerciale, elle décroche »", blameLayer: "circonstances", resolved: true, note: "Audit : 31 appels non aboutis par semaine sur la ligne du bureau de vente, dont 12 entre 12h et 14h." },
     ],
     objections: [
-      { id: "j1", label: "« C'est trop cher pour un resto comme le mien »", type: "argent", croyance: 3, status: "ouverte", counter: "Taxe d'Ignorance 2 400 €/mois vs 290 €/mois. Le calcul sur SON téléphone." },
+      { id: "j1", label: "« Un robot au téléphone, sur un achat à 320 000 €, ça ne passera pas »", type: "confiance", croyance: 1, status: "ouverte", counter: "Il ne vend pas : il prend le nom, le budget, le type de lot, et cale le rendez-vous avec l'humain. La démo se fait EN DIRECT pendant l'entretien — l'agent appelle son propre portable." },
     ],
     events: [
-      { id: "e1", date: daysAgo(21), kind: "visite", summary: "Passage 15h, heure creuse. Marc sceptique mais curieux.", nextStep: { date: daysAgo(14), action: "Revenir avec audit chiffré" } },
-      { id: "e2", date: daysAgo(14), kind: "meeting", summary: "Audit sur place : 40+ appels ratés/mois, fiche Google à l'abandon.", nextStep: { date: daysAgo(7), action: "Démo mobile maquette" } },
-      { id: "e3", date: daysAgo(7), kind: "demo", summary: "Démo mobile avec SA devanture en photo. Émotion visible — il a montré au chef.", nextStep: { date: daysAgo(2), action: "Présenter l'offre" } },
-      { id: "e4", date: daysAgo(2), kind: "offre", summary: "Offre : 1 800 € setup + 290 €/mois. Objection prix immédiate.", nextStep: { date: daysAhead(1), action: "Closing — recadrage Taxe d'Ignorance" } },
+      { id: "e1", date: daysAgo(24), kind: "appel", summary: "Premier contact sur l'angle du permis : 68 lots, arrêté purgé, bureau de vente ouvert.", nextStep: { date: daysAgo(17), action: "Relever le volume d'appels perdus" } },
+      { id: "e2", date: daysAgo(17), kind: "meeting", summary: "Audit du bureau de vente : 31 appels non aboutis/semaine, aucune trace de qui a appelé.", nextStep: { date: daysAgo(9), action: "Démo Alpha Voice en direct" } },
+      { id: "e3", date: daysAgo(9), kind: "demo", summary: "Démo en direct : l'agent l'a rappelée pendant le rendez-vous et a qualifié un acquéreur fictif en 50 s.", nextStep: { date: daysAgo(3), action: "Poser l'offre" } },
+      { id: "e4", date: daysAgo(3), kind: "offre", summary: "Offre posée après la démo (doctrine respectée). Objection « robot » immédiate.", nextStep: { date: daysAhead(1), action: "Traiter l'objection de confiance" } },
     ],
     demoShownBeforePrice: true,
-    nextStep: { date: daysAhead(1), action: "Closing — recadrage Taxe d'Ignorance avec calcul sur son téléphone" },
-    tags: ["chaud", "croix-rousse"],
+    nextStep: { date: daysAhead(1), action: "Traiter l'objection « un robot ne passera pas » — recadrer sur la QUALIFICATION, pas la vente" },
+    tags: ["permis-construire", "maitrise-ouvrage", "commercialisation", "chaud"],
     attachments: [
-      { id: "a1", name: "audit-bouchon-canuts.pdf", kind: "audit", size: 245000, addedAt: daysAgo(14) },
-      { id: "a2", name: "maquette-mobile-v2.png", kind: "maquette", size: 890000, addedAt: daysAgo(7) },
+      { id: "a1", name: "audit-appels-bureau-de-vente.pdf", kind: "audit", size: 218000, addedAt: daysAgo(17) },
     ],
-    notes: "Fait 90 couverts le week-end, 15 en semaine. Le mardi soir est mort. Femme tient la caisse — l'inclure dans la boucle.",
+    preferredChannel: "tel",
+    notes: "Permis PC 069 384 26 A0117 — 68 logements, arrêté il y a 8 mois, chantier non ouvert. Le numéro du bureau de vente a été relevé à la main sur le panneau de chantier : l'open data n'en porte aucun.",
     likeness: 76,
+    deepAudit: {
+      websiteState: "Site programme dédié, correct",
+      socialState: "Page entreprise LinkedIn active",
+      localCompetition: "Deux programmes concurrents à moins de 400 m, livrables la même année",
+      currentProcess: "Une assistante commerciale à mi-temps ; hors de sa présence, la ligne sonne dans le vide",
+      missedCallsPerWeek: 31,
+      avgTicket: 320000,
+      googleRating: 4.1,
+      googleReviews: 12,
+    },
     problems: [
-      "40+ appels ratés/mois pendant le coup de feu",
-      "Fiche Google à l'abandon (photos 2019, horaires faux)",
-      "Zéro réservation possible hors horaires d'ouverture",
-      "Mardis soirs à 15 couverts sur 90 places",
+      "31 appels non aboutis par semaine au bureau de vente",
+      "Aucune trace de l'appelant : impossible de rappeler",
+      "Deux programmes concurrents livrables la même année à 400 m",
     ],
-    solution: "Site vitrine premium + module résa 24/7 + overlay IA qui répond aux appels ratés et relance les no-shows par SMS.",
-    personalizedOffer: "Setup 1 800 € (maquette déjà validée émotionnellement) + 290 €/mois. Garantie : 30 réservations captées hors horaires le 1er mois ou 2e mois offert.",
+    solution: "Alpha Voice sur la ligne du bureau de vente : qualifie (budget, typologie, délai), consigne, et cale le rendez-vous dans l'agenda du commercial.",
+    personalizedOffer: "Setup " + String(ALPHA_VOICE_SETUP_HT) + " € + palier Intensif " + String(VOIX_INTENSIF) + " €/mois. Garantie : le setup ne se paie qu'au premier rendez-vous pris.",
     contract: { status: "brouillon" } as ContractInfo,
-    createdAt: daysAgo(25),
+    createdAt: daysAgo(26),
+    updatedAt: daysAgo(3),
+  },
+  {
+    id: "demo-gratteciel-promotion",
+    name: "Samir Amrani",
+    company: "Gratte-Ciel Promotion SAS (démo)",
+    sector: "autre",
+    city: "Villeurbanne",
+    phone: "04 65 71 44 08",
+    email: "contact2@example.com",
+    stage: "offre",
+    trust: 62,
+    auditScore: 78,
+    conviction: 8,
+    monthlyValue: 0,
+    setupValue: PACK_SETUP_HT,
+    probability: 45,
+    ignoranceTax: 0,
+    croyances: { produit: 9, soutien: 8, pourLui: 6 },
+    obstacles: [
+      { id: "o1", label: "« Le marché est bloqué, ce n'est pas nous »", blameLayer: "circonstances", resolved: false, note: "Vrai en partie. Reste que deux programmes voisins ont ouvert leur chantier cette année, pas celui-ci." },
+    ],
+    objections: [],
+    events: [
+      { id: "e1", date: daysAgo(31), kind: "appel", summary: "Angle : permis obtenu il y a 20 mois, aucun chantier déclaré. Il a confirmé — la pré-commercialisation ne passe pas le seuil de financement.", nextStep: { date: daysAgo(20), action: "Cadrage : combien de réservations, sur combien de contacts ?" } },
+      { id: "e2", date: daysAgo(20), kind: "meeting", summary: "Cadrage : 94 lots, 21 réservés en 20 mois. Le suivi des contacts tient dans un classeur partagé.", nextStep: { date: daysAgo(8), action: "Démo du pipe + relances" } },
+      { id: "e3", date: daysAgo(8), kind: "demo", summary: "Démo : reprise de son classeur dans le pipe, relances datées, prévision par étape.", nextStep: { date: daysAhead(2), action: "Décision" } },
+      { id: "e4", date: daysAgo(2), kind: "offre", summary: "Offre VIP posée. Il compare avec un CRM immobilier du marché." },
+    ],
+    demoShownBeforePrice: true,
+    nextStep: { date: daysAhead(2), action: "Rappel décision — comparer sur ce qui SORT (relances tenues), pas sur la liste de fonctions" },
+    tags: ["permis-construire", "maitrise-ouvrage", "lancement-bloque"],
+    attachments: [],
+    preferredChannel: "tel",
+    notes: "Permis PC 069 266 25 A0043 — 94 logements, arrêté il y a 20 mois, chantier non ouvert. ⚠ Ce signal est le plus fort du lot ET le plus ambigu : opération qui traîne ou opération abandonnée. Vérifié à l'appel — elle est vivante.",
+    likeness: 68,
+    deepAudit: {
+      websiteState: "Site corporate, pas de page programme",
+      socialState: "LinkedIn dormant depuis 14 mois",
+      localCompetition: "Deux programmes voisins ont ouvert leur chantier cette année",
+      currentProcess: "Un classeur partagé, relances au fil de l'eau, aucune date d'échéance",
+      avgTicket: 295000,
+      conversionRate: 8,
+    },
+    problems: [
+      "21 lots réservés sur 94 en 20 mois — le seuil de financement n'est pas atteint",
+      "Le suivi des contacts tient dans un classeur partagé, sans relance datée",
+    ],
+    solution: "Alpha Sales OS : pipe par lot, relances datées et tenues, prévision par étape, et l'historique de chaque contact au même endroit.",
+    personalizedOffer: "Offre VIP " + String(PACK_SETUP_HT) + " €. Alternative si le comptant bloque : l'étalement (acompte + mensualités), à cadrer.",
+    contract: { status: "envoye" } as ContractInfo,
+    createdAt: daysAgo(33),
     updatedAt: daysAgo(2),
   },
   {
-    id: "p-smoking-dog",
-    name: "Aurélie Vasseur",
-    company: "The Smoking Dog Pub",
-    sector: "pub",
-    city: "Lyon 5e — Vieux Lyon",
-    phone: "04 65 71 76 54",
-    email: "aurelie@smokingdog.fr",
+    id: "demo-sccv-monplaisir",
+    name: "Léa Delcourt",
+    company: "SCCV Carré Monplaisir (démo)",
+    sector: "autre",
+    city: "Lyon 8e",
+    phone: "04 65 71 52 77",
+    email: "contact3@example.com",
     stage: "demo",
-    trust: 65,
-    auditScore: 75,
-    conviction: 8,
-    monthlyValue: 240,
-    setupValue: 1400,
-    probability: 50,
-    ignoranceTax: 1800,
-    croyances: { produit: 8, soutien: 9, pourLui: 6 },
-    obstacles: [
-      { id: "o1", label: "« Mon barman gère l'Instagram, ça suffit »", blameLayer: "autres", resolved: true, note: "Insta ≠ réservation. Zéro conversion mesurée." },
-      { id: "o2", label: "« Les soirées quiz se remplissent toutes seules »", blameLayer: "circonstances", resolved: false },
-    ],
-    objections: [],
-    events: [
-      { id: "e1", date: daysAgo(12), kind: "visite", summary: "Contact au comptoir un mardi creux. 8 clients dans la salle.", nextStep: { date: daysAgo(8), action: "Audit express" } },
-      { id: "e2", date: daysAgo(8), kind: "meeting", summary: "Audit : mardi/mercredi = 20 % de remplissage. Événements annoncés à la craie.", nextStep: { date: daysAhead(2), action: "Démo mobile agenda IA" } },
-    ],
-    demoShownBeforePrice: false,
-    nextStep: { date: daysAhead(2), action: "Démo mobile : agenda événements + relances WhatsApp automatiques" },
-    tags: ["vieux-lyon", "événementiel"],
-    attachments: [],
-    notes: "Anglophone, clientèle expat + étudiants. Très sensible à l'esthétique — la démo doit être léchée.",
-    likeness: 68,
-    problems: [
-      "Mardis/mercredis à 20 % de remplissage",
-      "Événements annoncés à la craie — invisibles en ligne",
-      "Aucune base de contacts d'habitués exploitable",
-    ],
-    solution: "Site événementiel + agenda auto-publié + relances WhatsApp des habitués avant chaque soirée.",
-    createdAt: daysAgo(14),
-    updatedAt: daysAgo(8),
-  },
-  {
-    id: "p-ambulances-rhone",
-    name: "Karim Benali",
-    company: "Ambulances Rhône Assistance",
-    sector: "ambulance",
-    city: "Villeurbanne",
-    phone: "04 65 71 22 33",
-    email: "k.benali@ambulances-rhone.fr",
-    stage: "audit",
-    trust: 55,
-    auditScore: 40,
-    conviction: 8,
-    monthlyValue: 390,
-    setupValue: 2400,
-    probability: 30,
-    ignoranceTax: 3600,
-    croyances: { produit: 7, soutien: 8, pourLui: 5 },
-    obstacles: [
-      { id: "o1", label: "« Le standard gère, on a toujours fait comme ça »", blameLayer: "circonstances", resolved: false },
-      { id: "o2", label: "« Mon frère co-gérant doit valider »", blameLayer: "autres", resolved: false },
-    ],
-    objections: [],
-    events: [
-      { id: "e1", date: daysAgo(10), kind: "appel", summary: "Appel entrant suite reco du Bouchon des Canuts (même expert-comptable).", nextStep: { date: daysAgo(4), action: "RDV audit au dépôt" } },
-      { id: "e2", date: daysAgo(4), kind: "meeting", summary: "Visite dépôt. Standard saturé 8h-10h, demandes de nuit perdues.", nextStep: { date: daysAhead(3), action: "Finaliser audit chiffré + inviter le frère" } },
-    ],
-    demoShownBeforePrice: false,
-    nextStep: { date: daysAhead(3), action: "Audit chiffré + démo à deux avec le frère co-gérant" },
-    tags: ["referral", "b2b"],
-    attachments: [{ id: "a1", name: "notes-depot.pdf", kind: "audit", size: 120000, addedAt: daysAgo(4) }],
-    notes: "2 co-gérants — TOUJOURS les deux frères présents pour la démo. Karim est le champion interne.",
-    createdAt: daysAgo(10),
-    updatedAt: daysAgo(4),
-  },
-  {
-    id: "p-menuiserie",
-    name: "Sylvie Charbonnier",
-    company: "Menuiserie Charbonnier & Fils",
-    sector: "artisan",
-    city: "Caluire-et-Cuire",
-    phone: "06 39 98 89 01",
-    email: "contact@menuiserie-charbonnier.fr",
-    stage: "signe",
-    trust: 95,
-    auditScore: 100,
-    conviction: 10,
-    monthlyValue: 190,
-    setupValue: 1200,
-    probability: 100,
-    ignoranceTax: 1500,
-    croyances: { produit: 10, soutien: 10, pourLui: 10 },
-    obstacles: [
-      { id: "o1", label: "« J'ai déjà payé pour un site qui n'a rien donné »", blameLayer: "soi", resolved: true, note: "Ancien site 2014, jamais référencé. Preuve : artisan plombier Caluire équipé, +9 devis/mois." },
-    ],
-    objections: [
-      { id: "j1", label: "« Je vais réfléchir »", type: "temps", croyance: 3, status: "traitee", counter: "Isolé la vraie peur (re-payer pour rien) → garantie résultat conditionnelle." },
-    ],
-    events: [
-      { id: "e1", date: daysAgo(40), kind: "visite", summary: "Contact atelier via marché des artisans.", nextStep: { date: daysAgo(33), action: "Audit" } },
-      { id: "e2", date: daysAgo(33), kind: "meeting", summary: "Audit : 12 appels manqués/semaine pendant les chantiers." },
-      { id: "e3", date: daysAgo(26), kind: "demo", summary: "Démo mobile formulaire devis intelligent. Son fils a dit « enfin ! »." },
-      { id: "e4", date: daysAgo(20), kind: "offre", summary: "Offre acceptée après traitement « je vais réfléchir »." },
-      { id: "e5", date: daysAgo(18), kind: "stage", summary: "SIGNÉ ✓ — 1 200 € setup + 190 €/mois. Conviction 10/10." },
-    ],
-    demoShownBeforePrice: true,
-    nextStep: { date: daysAhead(5), action: "Point onboarding + demander 2 recommandations d'artisans" },
-    tags: ["signé", "referral-source"],
-    attachments: [{ id: "a1", name: "proposition-signee.pdf", kind: "proposition", size: 310000, addedAt: daysAgo(18) }],
-    notes: "Cliente ambassadrice. Le fils (Thomas) gère le téléphone — le former sur l'overlay IA.",
-    likeness: 94,
-    /**
-     * ⚠ L'AUDIT ÉTAIT VIDE SUR TOUTES LES FICHES DE DÉMONSTRATION.
-     *
-     * Une seule occurrence de `deepAudit` existait dans ce fichier : la valeur
-     * NEUTRE de `prospectDefaults`. Chaque fiche de démo retombait donc dessus,
-     * et le routeur d'offre, faute de signal, renvoyait « visibilité » sur les
-     * huit. Conséquence, constatée en lançant le calcul sur le jeu complet :
-     * **0/8 fiches routées Alpha Voice**. Le diagnostic central du produit, le
-     * chiffrage de la perte, la marche 2 de l'escalier et la garantie ne
-     * s'affichaient nulle part — sur le jeu de données prévu pour MONTRER le
-     * produit.
-     *
-     * Les chiffres ci-dessous ne sont pas inventés : la prose de cette fiche
-     * les affirmait déjà (`problems`, événement d'audit « 12 appels
-     * manqués/semaine pendant les chantiers »). Ils passent du texte libre au
-     * champ STRUCTURÉ, celui que le routeur lit réellement.
-     */
-    deepAudit: {
-      websiteState: "Site de 2014, jamais référencé — invisible sur les recherches locales",
-      socialState: "Aucune page active",
-      localCompetition: "Trois menuisiers mieux placés sur « menuisier Lyon 4 »",
-      currentProcess: "Le gérant décroche lui-même entre deux chantiers, ou pas du tout",
-      missedCallsPerWeek: 12,
-      avgTicket: 2400,
-      conversionRate: 25,
-      googleRating: 4.6,
-      googleReviews: 31,
-    },
-    problems: ["12 appels manqués/semaine pendant les chantiers", "Ancien site 2014 jamais référencé — traumatisme « payé pour rien »"],
-    solution: "Site premium + formulaire devis intelligent (budget, délai, photos) + notifications SMS instantanées.",
-    personalizedOffer: "Setup 1 200 € + 190 €/mois, garantie résultat conditionnelle (résiliable si < 5 demandes qualifiées/mois après M2).",
-    payments: [
-      { id: "pay1", label: "Setup", amount: 1200, dueDate: daysAgo(16), status: "paye" },
-      { id: "pay2", label: "Abonnement M1", amount: 190, dueDate: daysAgo(10), status: "paye" },
-      { id: "pay3", label: "Abonnement M2", amount: 190, dueDate: daysAhead(20), status: "en-attente" },
-    ] as Payment[],
-    contract: { status: "signe", signedAt: daysAgo(18) } as ContractInfo,
-    delivery: "en-cours" as DeliveryStatus,
-    wonReason: "Garantie résultat conditionnelle + preuve locale (plombier Caluire) — la croyance n°3 a basculé.",
-    createdAt: daysAgo(40),
-    updatedAt: daysAgo(18),
-  },
-  {
-    id: "p-brasserie-part-dieu",
-    name: "Olivier Roux",
-    company: "Brasserie du Lac",
-    sector: "restaurant",
-    city: "Lyon 3e — Part-Dieu",
-    phone: "04 65 71 44 55",
-    stage: "contact",
-    trust: 35,
-    auditScore: 10,
+    trust: 48,
+    auditScore: 66,
     conviction: 7,
-    monthlyValue: 290,
-    setupValue: 1800,
-    probability: 15,
-    ignoranceTax: 2000,
-    croyances: { produit: 5, soutien: 6, pourLui: 3 },
+    monthlyValue: VOIX_ESSENTIEL,
+    setupValue: ALPHA_VOICE_SETUP_HT,
+    probability: 30,
+    ignoranceTax: 2600,
+    croyances: { produit: 8, soutien: 7, pourLui: 5 },
     obstacles: [
-      { id: "o1", label: "« Pas le moment, c'est la haute saison »", blameLayer: "circonstances", resolved: false },
-      { id: "o2", label: "« Mon neveu s'occupe déjà du site »", blameLayer: "autres", resolved: false },
+      { id: "o1", label: "« On lance la commercialisation le mois prochain, rappelez-moi après »", blameLayer: "circonstances", resolved: false, note: "C'est l'inverse : le standard doit être en place AVANT le lancement, pas après la première semaine ratée." },
     ],
     objections: [],
     events: [
-      { id: "e1", date: daysAgo(6), kind: "visite", summary: "Premier passage. Poli mais pressé. Deux couches d'oignon posées d'entrée.", nextStep: { date: daysAhead(4), action: "Repasser avec le comparatif site du neveu vs démo" } },
+      { id: "e1", date: daysAgo(14), kind: "appel", summary: "Angle : permis purgé depuis 5 mois, 34 lots, lancement imminent.", nextStep: { date: daysAgo(6), action: "Audit du dispositif d'accueil" } },
+      { id: "e2", date: daysAgo(6), kind: "meeting", summary: "Audit : une ligne mobile unique, renvoyée sur messagerie dès qu'elle est en visite.", nextStep: { date: daysAhead(2), action: "Démo Alpha Voice en direct" } },
     ],
     demoShownBeforePrice: false,
-    nextStep: { date: daysAhead(4), action: "Repasser à 15h avec comparatif : site actuel vs maquette EAGLEYE" },
-    tags: ["part-dieu"],
+    nextStep: { date: daysAhead(2), action: "Démo en direct : faire sonner l'agent sur SON portable pendant le rendez-vous" },
+    tags: ["permis-construire", "maitrise-ouvrage", "commercialisation"],
     attachments: [],
-    notes: "Terrasse 60 places sous-exploitée. Le site du neveu : dernière mise à jour il y a 2 ans.",
-    createdAt: daysAgo(6),
+    preferredChannel: "tel",
+    notes: "Permis PC 069 388 26 A0201 — 34 logements, arrêté il y a 5 mois. Fenêtre : pré-commercialisation, c'est là que le nombre de réservations conditionne le financement.",
+    likeness: 61,
+    deepAudit: {
+      websiteState: "Landing programme en cours de fabrication",
+      socialState: "Aucune page dédiée",
+      localCompetition: "Marché tendu sur Monplaisir, peu d'offre neuve",
+      currentProcess: "Une ligne mobile unique, renvoyée sur messagerie dès qu'elle est en visite",
+      missedCallsPerWeek: 18,
+      avgTicket: 268000,
+    },
+    problems: [
+      "18 appels sur messagerie par semaine, aucun rappel systématique",
+      "Le lancement commercial arrive et le dispositif d'accueil n'existe pas",
+    ],
+    solution: "Alpha Voice branché AVANT le lancement : chaque appelant est qualifié et consigné, même pendant les visites.",
+    personalizedOffer: "",
+    createdAt: daysAgo(16),
     updatedAt: daysAgo(6),
   },
   {
-    id: "p-taxi-fourviere",
-    name: "Nadia Slimani",
-    company: "Ambulances Fourvière Santé",
-    sector: "ambulance",
-    city: "Lyon 9e — Vaise",
+    id: "demo-fonciere-rhone-nord",
+    name: "Thomas Rousset",
+    company: "Foncière du Rhône Nord — Promotion immobilière (démo)",
+    sector: "autre",
+    city: "Lyon 6e",
+    phone: "04 65 71 61 30",
+    email: "contact4@example.com",
+    stage: "audit",
+    trust: 30,
+    auditScore: 42,
+    conviction: 6,
+    monthlyValue: 0,
+    setupValue: 0,
+    probability: 20,
+    ignoranceTax: 0,
+    croyances: { produit: 6, soutien: 5, pourLui: 3 },
+    obstacles: [
+      { id: "o1", label: "« On est trois, on se parle, on n'a pas besoin d'un outil »", blameLayer: "soi", resolved: false },
+    ],
+    objections: [],
+    events: [
+      { id: "e1", date: daysAgo(11), kind: "appel", summary: "Angle : permis de 14 mois, 22 lots, chantier non ouvert. Accepte un audit de 20 min.", nextStep: { date: daysAhead(3), action: "Audit — combien de contacts entrants, et où ils atterrissent" } },
+    ],
+    demoShownBeforePrice: false,
+    nextStep: { date: daysAhead(3), action: "Compléter l'audit (42/100) : volume de contacts entrants et devenir de chacun" },
+    tags: ["permis-construire", "maitrise-ouvrage", "lancement-bloque"],
+    attachments: [],
+    preferredChannel: "tel",
+    notes: "Permis PC 069 386 25 A0090 — 22 logements, arrêté il y a 14 mois. Structure de trois personnes : l'offre VIP peut être disproportionnée, la version à la carte est le bon angle.",
+    likeness: 52,
+    deepAudit: {
+      websiteState: "Site vitrine à jour",
+      socialState: "Aucune",
+      currentProcess: "Les contacts arrivent sur une boîte partagée, personne n'en est propriétaire",
+      avgTicket: 310000,
+    },
+    problems: ["Boîte partagée sans propriétaire : un contact sur deux n'est jamais rappelé"],
+    solution: "",
+    personalizedOffer: "",
+    createdAt: daysAgo(11),
+    updatedAt: daysAgo(11),
+  },
+  {
+    id: "demo-maisons-val-ouest",
+    name: "Nadia Vasseur",
+    company: "Maisons individuelles du Val d'Ouest (démo)",
+    sector: "autre",
+    city: "Lyon 9e",
+    phone: "04 65 71 79 44",
+    email: "contact5@example.com",
+    stage: "contact",
+    trust: 22,
+    auditScore: 18,
+    conviction: 4,
+    monthlyValue: 0,
+    setupValue: 0,
+    probability: 10,
+    ignoranceTax: 0,
+    croyances: { produit: 4, soutien: 4, pourLui: 2 },
+    obstacles: [
+      { id: "o1", label: "« Les gens nous trouvent par le bouche-à-oreille »", blameLayer: "circonstances", resolved: false, note: "Audit : introuvable sur « constructeur maison Lyon 9 ». Le bouche-à-oreille n'est pas une stratégie, c'est ce qui reste quand il n'y en a pas." },
+    ],
+    objections: [],
+    events: [
+      { id: "e1", date: daysAgo(5), kind: "appel", summary: "Angle : permis purgé, 12 maisons. Curieuse, pas convaincue. Audit accepté.", nextStep: { date: daysAhead(4), action: "Audit visibilité chiffré" } },
+    ],
+    demoShownBeforePrice: false,
+    nextStep: { date: daysAhead(4), action: "Audit visibilité : lui montrer sa propre position sur « constructeur maison Lyon 9 »" },
+    tags: ["permis-construire", "maitrise-ouvrage", "commercialisation"],
+    attachments: [],
+    preferredChannel: "tel",
+    notes: "Permis PC 069 389 26 A0064 — 12 maisons, arrêté il y a 3 mois. Constructeur de maisons individuelles : il vend, lui aussi — c'est ce qui le distingue d'un particulier qui bâtit la sienne.",
+    likeness: 44,
+    deepAudit: {
+      websiteState: "Aucun",
+      socialState: "Aucune",
+      localCompetition: "Quatre constructeurs mieux placés sur les recherches locales",
+      currentProcess: "Un numéro de portable sur un panneau, rien d'autre",
+      googleRating: 3.4,
+      googleReviews: 4,
+    },
+    problems: ["Aucun site : invisible sur toutes les recherches locales", "4 avis Google, note 3,4"],
+    solution: "",
+    personalizedOffer: "",
+    createdAt: daysAgo(5),
+    updatedAt: daysAgo(5),
+  },
+  {
+    id: "demo-sccv-confluence",
+    name: "Hugo Bonnet",
+    company: "SCCV Quai de la Confluence (démo)",
+    sector: "autre",
+    city: "Lyon 2e",
+    phone: "04 65 71 20 65",
+    email: "contact6@example.com",
+    stage: "perdu",
+    trust: 35,
+    auditScore: 50,
+    conviction: 5,
+    monthlyValue: 0,
+    setupValue: 0,
+    probability: 0,
+    ignoranceTax: 0,
+    croyances: { produit: 6, soutien: 4, pourLui: 2 },
+    obstacles: [],
+    objections: [
+      { id: "j1", label: "« Vous m'avez donné un prix avant de m'avoir montré quoi que ce soit »", type: "confiance", croyance: 1, status: "bloquante", counter: "Il a raison, et c'est la faute. Le prix est sorti au premier appel, sur sa question directe. Il n'y a pas eu de deuxième rendez-vous." },
+    ],
+    events: [
+      { id: "e1", date: daysAgo(45), kind: "appel", summary: "Angle : chantier ouvert, queue de programme sur 51 lots." },
+      { id: "e2", date: daysAgo(44), kind: "offre", summary: "⚠ Prix annoncé au téléphone, AVANT toute démonstration — sur sa question directe." },
+      { id: "e3", date: daysAgo(30), kind: "stage", summary: "Perdu. Cause racine : le prix a été donné avant que la valeur existe." },
+    ],
+    demoShownBeforePrice: false,
+    nextStep: { date: daysAhead(75), action: "Nurture : revenir avec une RAISON NEUVE — la livraison du programme, pas une relance" },
+    tags: ["permis-construire", "maitrise-ouvrage", "chantier", "leçon"],
+    attachments: [],
+    preferredChannel: "email",
+    notes: "Permis PC 069 382 24 A0288 — chantier ouvert, il reste la queue de programme. LEÇON : « jamais de prix avant la démo » n'est pas une préférence de style. Une question directe au téléphone est exactement le moment où on la casse.",
+    likeness: 40,
+    deepAudit: {
+      websiteState: "Site programme complet",
+      socialState: "Active",
+      currentProcess: "Deux commerciaux dédiés, outillés",
+      avgTicket: 340000,
+    },
+    problems: ["Queue de programme : les derniers lots sont les plus longs à écouler"],
+    solution: "",
+    personalizedOffer: "",
+    lostReason: "Prix annoncé au téléphone avant toute démonstration (violation doctrine)",
+    createdAt: daysAgo(45),
+    updatedAt: daysAgo(30),
+  },
+  {
+    id: "demo-residences-gratteciel",
+    name: "Inès Mahé",
+    company: "SAS Résidences des Gratte-Ciel (démo)",
+    sector: "autre",
+    city: "Villeurbanne",
+    phone: "04 65 71 48 19",
+    email: "contact7@example.com",
+    stage: "signe",
+    trust: 95,
+    auditScore: 92,
+    conviction: 10,
+    monthlyValue: VOIX_INTENSIF,
+    setupValue: ALPHA_VOICE_SETUP_HT,
+    probability: 100,
+    ignoranceTax: 0,
+    croyances: { produit: 10, soutien: 10, pourLui: 10 },
+    obstacles: [
+      { id: "o1", label: "« J'ai déjà payé pour un outil que personne n'a jamais installé »", blameLayer: "soi", resolved: true, note: "Traité par la garantie : le setup ne se paie qu'au premier rendez-vous pris. Elle a une durée (30 j de ligne active) et un critère (un RDV PRIS, pas honoré)." },
+    ],
+    objections: [
+      { id: "j1", label: "« Je vais y réfléchir »", type: "temps", croyance: 3, status: "traitee", counter: "La vraie peur était de repayer pour rien. La garantie l'a levée en une phrase — c'est elle qui a fait basculer, pas un argument." },
+    ],
+    events: [
+      { id: "e1", date: daysAgo(52), kind: "appel", summary: "Angle : surélévation de 9 logements, arrêté récent." },
+      { id: "e2", date: daysAgo(44), kind: "meeting", summary: "Audit : 14 appels perdus/semaine, elle est seule et sur site tous les matins." },
+      { id: "e3", date: daysAgo(36), kind: "demo", summary: "Démo en direct : l'agent l'a rappelée pendant le rendez-vous. Elle a rappelé deux fois pour tester." },
+      { id: "e4", date: daysAgo(30), kind: "offre", summary: "Offre + garantie. Acceptée le jour même." },
+      { id: "e5", date: daysAgo(28), kind: "stage", summary: "SIGNÉ — setup + palier Intensif." },
+    ],
+    demoShownBeforePrice: true,
+    nextStep: { date: daysAhead(5), action: "Point à J+30 : lui montrer les appels captés, et lui demander ce qui manque" },
+    tags: ["permis-construire", "maitrise-ouvrage", "commercialisation", "signé"],
+    attachments: [{ id: "a1", name: "proposition-signee.pdf", kind: "proposition", size: 296000, addedAt: daysAgo(28) }],
+    preferredChannel: "tel",
+    notes: "Permis PC 069 266 26 A0112 — surélévation, 9 logements. ⚠ Sous le seuil de proportion de l'offre VIP : c'est Alpha Voice qui est vendu ici, pas l'OS complet. Le trieur le disait, et il avait raison.",
+    likeness: 90,
+    deepAudit: {
+      websiteState: "Page programme simple",
+      socialState: "Aucune",
+      localCompetition: "Peu d'offre neuve sur ce périmètre de Villeurbanne",
+      currentProcess: "Seule à la structure, sur site tous les matins",
+      missedCallsPerWeek: 14,
+      avgTicket: 245000,
+      googleRating: 4.7,
+      googleReviews: 8,
+    },
+    problems: ["14 appels perdus par semaine", "Seule à la structure, sur site tous les matins"],
+    solution: "Alpha Voice sur la ligne unique : qualifie, consigne, et cale le rendez-vous quand elle est sur site.",
+    personalizedOffer: "Setup " + String(ALPHA_VOICE_SETUP_HT) + " € + palier Intensif " + String(VOIX_INTENSIF) + " €/mois, setup payable au premier rendez-vous pris.",
+    payments: [
+      { id: "pay1", label: "Setup Alpha Voice", amount: ALPHA_VOICE_SETUP_HT, dueDate: daysAgo(26), status: "paye" },
+      { id: "pay2", label: "Abonnement M1 (Intensif)", amount: VOIX_INTENSIF, dueDate: daysAgo(12), status: "paye" },
+      { id: "pay3", label: "Abonnement M2 (Intensif)", amount: VOIX_INTENSIF, dueDate: daysAhead(18), status: "en-attente" },
+    ] as Payment[],
+    contract: { status: "signe", signedAt: daysAgo(28) } as ContractInfo,
+    delivery: "en-cours" as DeliveryStatus,
+    wonReason: "La garantie « le setup ne se paie qu'au premier RDV » a levé la peur de repayer pour rien. Zéro preuve sociale citée — il n'y en avait pas à citer.",
+    createdAt: daysAgo(52),
+    updatedAt: daysAgo(28),
+  },
+  {
+    id: "demo-partdieu-amenageur",
+    name: "Marc Leclerc",
+    company: "Part-Dieu Aménageur SAS (démo)",
+    sector: "autre",
+    city: "Lyon 3e",
+    email: "contact8@example.com",
     stage: "prospect",
     trust: 10,
     auditScore: 0,
-    conviction: 7,
-    monthlyValue: 390,
-    setupValue: 2400,
+    conviction: 3,
+    monthlyValue: 0,
+    setupValue: 0,
     probability: 5,
-    ignoranceTax: 3000,
-    croyances: { produit: 3, soutien: 3, pourLui: 2 },
+    ignoranceTax: 0,
+    croyances: { produit: 2, soutien: 2, pourLui: 1 },
     obstacles: [],
     objections: [],
     events: [],
     demoShownBeforePrice: false,
-    nextStep: { date: daysAhead(2), action: "Premier contact : appeler avant 8h (avant les tournées)" },
-    tags: ["à-contacter"],
+    nextStep: { date: daysAhead(1), action: "Premier contact sur LinkedIn — l'export de permis ne porte aucun numéro" },
+    tags: ["permis-construire", "maitrise-ouvrage", "recours"],
     attachments: [],
-    notes: "Repérée via annuaire ARS. Flotte de 6 véhicules. Site inexistant.",
-    createdAt: daysAgo(3),
-    updatedAt: daysAgo(3),
-  },
-  {
-    id: "p-paddy",
-    name: "Sean Murphy",
-    company: "Paddy's Corner",
-    sector: "pub",
-    city: "Lyon 2e — Cordeliers",
-    stage: "perdu",
-    trust: 40,
-    auditScore: 55,
-    conviction: 6,
-    monthlyValue: 240,
-    setupValue: 1400,
-    probability: 0,
-    ignoranceTax: 1600,
-    croyances: { produit: 6, soutien: 4, pourLui: 3 },
-    obstacles: [
-      { id: "o1", label: "« La conjoncture est mauvaise »", blameLayer: "circonstances", resolved: false },
-    ],
-    objections: [
-      { id: "j1", label: "« Un concurrent me propose moins cher »", type: "concurrent", croyance: 1, status: "bloquante", counter: "Parti chez WebLyon Express à 49 €/mois. Rendez-vous dans 6 mois quand le site low-cost n'aura rien produit." },
-    ],
-    events: [
-      { id: "e1", date: daysAgo(30), kind: "visite", summary: "Bon premier contact." },
-      { id: "e2", date: daysAgo(15), kind: "offre", summary: "Offre présentée — AVANT la démo mobile (erreur doctrine)." },
-      { id: "e3", date: daysAgo(9), kind: "stage", summary: "Perdu vs WebLyon Express. Cause racine : prix annoncé sans émotion préalable." },
-    ],
-    demoShownBeforePrice: false,
-    nextStep: { date: daysAhead(90), action: "Nurture : reprendre contact quand le site low-cost aura montré ses limites" },
-    tags: ["nurture", "leçon"],
-    attachments: [],
-    notes: "LEÇON : offre présentée sans démo mobile. La doctrine existe pour une raison. Recontact planifié J+90.",
-    lostReason: "Concurrent low-cost — offre présentée avant la démo (violation doctrine)",
-    createdAt: daysAgo(30),
-    updatedAt: daysAgo(9),
-  },
-  {
-    id: "p-boulangerie",
-    name: "Étienne Fabre",
-    company: "Plomberie Fabre",
-    sector: "artisan",
-    city: "Lyon 7e — Gerland",
-    phone: "06 39 98 76 54",
-    stage: "offre",
-    trust: 70,
-    auditScore: 85,
-    conviction: 9,
-    monthlyValue: 190,
-    setupValue: 1200,
-    probability: 65,
-    ignoranceTax: 2200,
-    croyances: { produit: 9, soutien: 9, pourLui: 8 },
-    obstacles: [
-      { id: "o1", label: "« Je suis nul avec la technologie »", blameLayer: "soi", resolved: true, note: "« Vous n'avez rien à toucher. Tout arrive par SMS. »" },
-    ],
-    objections: [],
-    events: [
-      { id: "e1", date: daysAgo(18), kind: "appel", summary: "Reco de Sylvie Charbonnier (Menuiserie).", nextStep: { date: daysAgo(12), action: "Audit" } },
-      { id: "e2", date: daysAgo(12), kind: "meeting", summary: "Audit : 12 appels manqués/semaine sur chantier. Urgences plomberie = or perdu." },
-      { id: "e3", date: daysAgo(5), kind: "demo", summary: "Démo mobile : demande d'urgence qualifiée en 40 s. Il a testé lui-même, trois fois." },
-      { id: "e4", date: daysAgo(1), kind: "offre", summary: "Offre posée après démo (doctrine respectée). Réponse attendue.", nextStep: { date: daysAhead(1), action: "Appel décision" } },
-    ],
-    demoShownBeforePrice: true,
-    nextStep: { date: daysAhead(1), action: "Appel décision 9h (avant ses chantiers)" },
-    tags: ["referral", "chaud"],
-    attachments: [{ id: "a1", name: "proposition-fabre.pdf", kind: "proposition", size: 298000, addedAt: daysAgo(1) }],
-    notes: "Referral chain : Charbonnier → Fabre. La preuve « pour lui » est déjà faite par Sylvie.",
-    likeness: 82,
     /**
-     * Même correction que sur la fiche Charbonnier, et mêmes sources : la
-     * prose de cette fiche affirmait déjà « 12 appels manqués/semaine sur
-     * chantier » et « interventions à 300 €+ ». On les met là où le routeur
-     * les lit.
+     * ⚠ CANAL LINKEDIN, ET PAS TÉLÉPHONE — c'est le défaut par défaut de
+     * `permisVersProspect`, et il est reproduit ici exprès. Un export de
+     * permis ne porte AUCUN numéro : mettre « tel » ferait entrer la fiche
+     * dans la file d'appels, où elle resterait sans numéro jusqu'à ce que
+     * quelqu'un s'en aperçoive. Les autres fiches de ce jeu ont un téléphone
+     * parce qu'un humain est allé le chercher — la troisième colonne.
      */
-    deepAudit: {
-      websiteState: "Page Google Business seule, aucun site",
-      socialState: "Aucune",
-      localCompetition: "Deux plombiers en tête sur les urgences Lyon 7",
-      currentProcess: "Sous un évier ou en intervention : le téléphone sonne dans le vide",
-      missedCallsPerWeek: 12,
-      avgTicket: 300,
-      conversionRate: 35,
-      googleRating: 4.8,
-      googleReviews: 19,
-    },
-    problems: ["12 appels manqués/semaine sur chantier", "Urgences plomberie perdues = interventions à 300 €+ chez le concurrent"],
-    solution: "Site + capture d'urgence qualifiée en 40 s (adresse, photo, urgence) routée par SMS.",
-    personalizedOffer: "Même formule que Charbonnier (preuve sociale directe) : 1 200 € + 190 €/mois.",
-    contract: { status: "envoye" } as ContractInfo,
-    createdAt: daysAgo(18),
-    updatedAt: daysAgo(1),
+    preferredChannel: "linkedin",
+    notes: "Permis PC 069 383 26 A0305 — 120 logements, arrêté il y a 40 jours. ⚠ Le délai de recours des tiers court encore : trop tôt pour parler commercialisation à plein régime, juste à l'heure pour se faire connaître avant le lancement.",
+    likeness: 55,
+    problems: [],
+    solution: "",
+    personalizedOffer: "",
+    createdAt: daysAgo(2),
+    updatedAt: daysAgo(2),
   },
 ];
+
+/**
+ * Ids du jeu de démonstration — DÉRIVÉS, jamais recopiés.
+ *
+ * ⚠ C'ÉTAIT UNE LISTE TENUE À LA MAIN, ET ELLE ÉTAIT DÉCLARÉE AU-DESSUS DES
+ * FICHES. Ajouter une fiche sans penser à la lister la sortait du périmètre de
+ * `isDemoProspect` — c'est-à-dire qu'elle devenait un VRAI prospect pour
+ * `/api/send`, qui acceptait alors de lui écrire.
+ *
+ * Le préfixe `demo-` rend d'ailleurs cette liste presque redondante
+ * (`isDemoProspect` répond déjà sur la forme). On la garde parce que des
+ * écrans l'importent, mais elle ne peut plus diverger.
+ */
+export const SEED_PROSPECT_IDS: string[] = baseProspects.map((p) => p.id);
 
 export const seedProspects: Prospect[] = baseProspects.map((p) => ({
   ...prospectDefaults,
@@ -481,56 +652,69 @@ export const seedProspects: Prospect[] = baseProspects.map((p) => ({
 
 export const seedCampaigns: Campaign[] = [
   {
-    id: "c-restos-hiver",
-    name: "Restos Lyon — Remplir les soirs creux",
-    sector: "restaurant",
+    id: "c-permis-lyon-commercialisation",
+    name: "Permis Lyon/Villeurbanne — pré-commercialisation",
+    sector: "autre",
     status: "active",
-    offerInfo: "Site premium + résa 24/7 + overlay IA anti no-show. Setup 1 800 € + 290 €/mois. Garantie : 30 résas captées hors horaires le 1er mois.",
-    cible: "Restaurateurs indépendants Lyon intra-muros, 30–90 couverts, sans module de réservation en ligne, fiche Google mal tenue.",
-    industries: ["Restauration traditionnelle", "Bouchons lyonnais", "Bistronomie"],
-    marketInfo: "~4 200 restaurants dans le Grand Lyon ; 62 % des recherches « restaurant + quartier » se font après 19h, quand personne ne décroche. TheFork prélève 2–4 €/couvert : l'argument « récupérez vos habitués en direct » porte.",
-    leadMagnet: "Audit gratuit : « Combien vous coûtent vos mardis soirs ? » (calculateur couverts perdus × ticket moyen)",
+    offerInfo: "Alpha Voice sur la ligne du bureau de vente : qualifie l'appelant (budget, typologie, délai), consigne, cale le rendez-vous. Setup + palier mensuel, setup payable au premier RDV pris.",
+    cible: "Maîtres d'ouvrage professionnels — promoteurs, SCCV, sociétés de promotion — dont le permis est purgé et le chantier non ouvert, sur Lyon et Villeurbanne. Opérations de 6 lots et plus.",
+    industries: ["Promotion immobilière", "SCCV", "Construction de maisons individuelles"],
+    marketInfo: "La fenêtre utile est la PRÉ-COMMERCIALISATION : entre l'arrêté purgé et l'ouverture du chantier, le nombre de réservations conditionne le financement de l'opération. C'est là que le sujet est le plus vif, et la date est publique — elle est sur l'arrêté.",
+    leadMagnet: "Audit d'accueil téléphonique du bureau de vente : combien d'appels n'aboutissent pas, à quelles heures, et ce qu'ils devenaient.",
+    /**
+     * ⚠ LE PREMIER PAS SE FAIT À LA MAIN, ET CE N'EST PAS UN OUBLI.
+     *
+     * `CampaignStepKind` ne connaît que email / whatsapp / appel. Or un export
+     * de permis ne porte AUCUN moyen de contact : `permisVersProspect` met
+     * donc « linkedin » par défaut, et le moteur de campagne ne sait pas
+     * poster sur LinkedIn. L'étape s1 est marquée « email » parce que le type
+     * l'exige — le message, lui, part à la main tant que le canal n'existe pas.
+     *
+     * On le NOMME au lieu de le masquer : c'est la troisième colonne de la
+     * doctrine (ce qu'Alpha ne sait pas faire, on le fait à la main et on le
+     * dit). Une étape qui prétend partir toute seule et ne part jamais est
+     * exactement le genre de silence vert que ce dépôt paie cher.
+     */
     steps: [
-      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Vos mardis soirs, M. {prenom}", body: "Bonjour {prenom},\n\nJ'ai compté : {concurrents} restaurants dans votre rue prennent des réservations à 23h. Pas vous.\n\nChaque mardi soir vide vous coûte environ {taxe} €. Je passe 10 minutes vous montrer, sur mon téléphone, à quoi ressemblerait {commerce} en ligne — sans engagement, sans prix, juste pour voir.\n\n{closer} — EAGLEYE, Lyon" },
-      { id: "s2", kind: "whatsapp", role: "relance", delayDays: 3, subject: "Relance douce", body: "Bonjour {prenom}, c'est {closer} (EAGLEYE Lyon). Je vous ai envoyé un mot sur vos soirées creuses — je passe mardi à 15h dans le quartier, je vous montre 2 minutes ?" },
-      { id: "s3", kind: "appel", role: "relance", delayDays: 6, subject: "Appel heure creuse", body: "Appeler entre 14h30 et 17h. Objectif unique : décrocher 20 min d'audit terrain daté. Zéro pitch produit au téléphone." },
-      { id: "s4", kind: "email", role: "reponse", delayDays: 0, subject: "Réponse à un intéressé", body: "Bonjour {prenom},\n\nParfait — je passe {jour} à 15h (heure creuse) avec deux choses : la maquette de {commerce} sur mon téléphone, et le calcul exact de ce que vous perdez chaque mois. 20 minutes, montre en main.\n\nÀ {jour} !\n{closer}" },
+      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Votre programme {commerce}", body: "Bonjour {prenom},\n\nVotre permis pour {commerce} est purgé depuis {mois} mois et le chantier n'est pas ouvert : vous êtes en pré-commercialisation.\n\nUne question, une seule : sur les gens qui appellent votre bureau de vente pendant que l'équipe est en visite, vous savez lesquels n'ont jamais été rappelés ?\n\n{closer} — EAGLEYE, Lyon" },
+      { id: "s2", kind: "appel", role: "relance", delayDays: 3, subject: "Appel — angle permis", body: "Appeler entre 9h et 11h30 ou 14h et 17h. Ouvrir sur SON permis et SA date, jamais sur nous. Objectif unique : 20 minutes d'audit daté. Aucun prix au téléphone." },
+      { id: "s3", kind: "email", role: "reponse", delayDays: 0, subject: "Réponse à un intéressé", body: "Bonjour {prenom},\n\nParfait. Je passe {jour} avec deux choses : le relevé de ce qui n'aboutit pas sur votre ligne, et une démonstration en direct — je fais sonner l'agent sur votre portable pendant le rendez-vous, vous jugez vous-même.\n\n20 minutes, montre en main.\n\n{closer}" },
     ],
-    stats: { sent: 42, opened: 28, replied: 9, booked: 4 },
-    createdAt: daysAgo(20),
+    stats: { sent: 34, opened: 21, replied: 7, booked: 3 },
+    createdAt: daysAgo(26),
   },
   {
-    id: "c-ambulances",
-    name: "Ambulanciers Rhône — Standard 24/7",
-    sector: "ambulance",
+    id: "c-permis-lancement-bloque",
+    name: "Permis > 1 an sans chantier — le lancement qui traîne",
+    sector: "autre",
     status: "active",
-    offerInfo: "Standard IA 24/7 qui qualifie et route les demandes de transport. Setup 2 400 € + 390 €/mois.",
-    cible: "Sociétés d'ambulances 3–15 véhicules du Rhône, standard humain uniquement en journée, co-gérants familiaux.",
-    industries: ["Transport sanitaire", "Ambulances privées", "VSL"],
-    marketInfo: "~180 sociétés de transport sanitaire dans le Rhône. 31 % des demandes de transport programmé arrivent entre 20h et 7h. Décideurs joignables avant 8h (avant les tournées). Cycle de décision : 2 co-gérants → toujours les deux à la démo.",
-    leadMagnet: "Rapport : « Les demandes de transport que votre standard ne voit jamais » (grille d'auto-diagnostic)",
+    offerInfo: "Alpha Sales OS : pipe par lot, relances datées et tenues, prévision par étape, historique de chaque contact au même endroit.",
+    cible: "Maîtres d'ouvrage dont l'arrêté a plus d'un an SANS ouverture de chantier déclarée, Lyon + Villeurbanne, 20 lots et plus.",
+    industries: ["Promotion immobilière", "SCCV", "Aménagement"],
+    marketInfo: "⚠ C'est le signal le plus fort du fichier ET le plus ambigu : un permis d'un an sans chantier veut dire soit que la pré-commercialisation ne passe pas le seuil de financement — notre sujet exactement — soit que l'opération est abandonnée. Ça se vérifie AU PREMIER APPEL, ça ne se devine pas, et écrire à une opération morte brûle la relation avec le promoteur pour ses suivantes.",
+    leadMagnet: "Relevé de la file : combien de contacts entrants sur les douze derniers mois, combien ont eu une relance datée, combien n'ont jamais été rappelés.",
     steps: [
-      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Les demandes de nuit que vous ne voyez jamais", body: "Bonjour {prenom},\n\nEntre 20h et 7h, votre standard dort. Les demandes de transport programmé, elles, continuent d'arriver — chez ceux qui répondent.\n\nIl existe un standard IA qui qualifie et route ces demandes 24/7 — je vous montre lesquelles vous ne voyez pas. Audit gratuit de vos flux : 20 minutes au dépôt.\n\n{closer} — EAGLEYE" },
-      { id: "s2", kind: "appel", role: "relance", delayDays: 4, subject: "Appel avant tournées", body: "Appeler avant 8h. Partir de SON créneau de nuit relevé à l'audit, pas des confrères. Objectif : RDV dépôt daté." },
+      { id: "s1", kind: "appel", role: "premiere-impression", delayDays: 0, subject: "Appel — vérifier que l'opération est vivante", body: "Objectif de CET appel : savoir si l'opération existe encore. Rien d'autre. On ne propose rien à quelqu'un dont on ignore s'il a abandonné." },
+      { id: "s2", kind: "email", role: "relance", delayDays: 4, subject: "Suite à notre échange", body: "Bonjour {prenom},\n\nVous m'avez dit {reservations} réservations sur {lots} lots. Je vous propose 30 minutes pour regarder où les contacts se perdent — pas pour vous montrer un outil, pour compter.\n\n{closer}" },
     ],
-    stats: { sent: 18, opened: 12, replied: 5, booked: 2 },
-    createdAt: daysAgo(12),
+    stats: { sent: 12, opened: 9, replied: 4, booked: 2 },
+    createdAt: daysAgo(18),
   },
   {
-    id: "c-artisans",
-    name: "Artisans — Devis pendant le chantier",
-    sector: "artisan",
+    id: "c-permis-recours",
+    name: "Arrêtés du mois — se faire connaître avant le lancement",
+    sector: "autre",
     status: "brouillon",
-    offerInfo: "Site + formulaire devis intelligent (budget, délai, photos) + SMS instantané. Setup 1 200 € + 190 €/mois, garantie résultat conditionnelle.",
-    cible: "Artisans du bâtiment (plomberie, menuiserie, élec) Lyon + périphérie, 1–5 salariés, sur chantier la journée, sans site ou site mort.",
-    industries: ["Plomberie", "Menuiserie", "Électricité", "Chauffage"],
-    marketInfo: "~11 000 artisans du bâtiment dans la métropole. Un artisan sur chantier rate ~12 appels/semaine ; 70 % des appelants ne rappellent pas et prennent le devis suivant. Meilleur canal d'entrée : referral d'artisan équipé (chaîne Charbonnier → Fabre).",
-    leadMagnet: "Checklist : « 12 appels manqués par semaine = combien de devis perdus ? » (calculateur)",
+    offerInfo: "Prise de contact seule. Aucune offre, aucun prix : le but est d'exister avant que le lancement commercial commence.",
+    cible: "Permis délivrés il y a moins de deux mois sur Lyon + Villeurbanne — le délai de recours des tiers court encore.",
+    industries: ["Promotion immobilière", "Aménagement"],
+    marketInfo: "Pendant le recours, un maître d'ouvrage sérieux ne lance pas sa commercialisation à plein régime. Le contacter n'est pas une erreur, mais l'angle n'est pas le même : on se fait connaître, on ne vend pas. Vouloir closer ici, c'est arriver deux mois trop tôt et griller la fiche pour le moment où elle vaudra quelque chose.",
+    leadMagnet: "Rien. C'est le sujet : à ce stade on n'a rien à donner qui ne soit prématuré.",
     steps: [
-      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "12 appels manqués par semaine", body: "Bonjour {prenom},\n\nUn artisan sur chantier rate en moyenne 12 appels par semaine. Chaque appel raté = un devis chez le concurrent.\n\nNos artisans reçoivent des demandes pré-qualifiées (budget, délai, photos) par SMS, sans décrocher. {preuve}\n\nJe vous montre sur votre téléphone ? 10 minutes, quand vous voulez.\n\n{closer} — EAGLEYE" },
+      { id: "s1", kind: "email", role: "premiere-impression", delayDays: 0, subject: "Félicitations pour l'arrêté", body: "Bonjour {prenom},\n\nJ'ai vu passer l'arrêté sur {commerce}. Je ne vous propose rien aujourd'hui — le recours court encore.\n\nJe reprends contact quand vous ouvrirez la commercialisation, si ça vous va.\n\n{closer} — EAGLEYE, Lyon" },
     ],
     stats: { sent: 0, opened: 0, replied: 0, booked: 0 },
-    createdAt: daysAgo(5),
+    createdAt: daysAgo(4),
   },
 ];
 
@@ -549,11 +733,11 @@ export const seedCampaigns: Campaign[] = [
  * semaine de travail.
  */
 export const seedMeetings: Meeting[] = [
-  { id: "m1", prospectId: "p-bouchon", title: "Closing — Le Bouchon des Canuts", date: daysAheadAt(1, 10, 30), durationMin: 45, kind: "closing", channel: "physique", location: "Sur place — Croix-Rousse", calLink: "https://cal.com/eagleye/closing-bouchon", reminded: true, done: false },
-  { id: "m2", prospectId: "p-smoking-dog", title: "Démo mobile — Smoking Dog", date: daysAheadAt(2, 14, 0), durationMin: 30, kind: "demo", channel: "physique", location: "Sur place — Vieux Lyon", calLink: "https://cal.com/eagleye/demo-smokingdog", reminded: false, done: false },
-  { id: "m3", prospectId: "p-ambulances-rhone", title: "Audit + démo (les 2 frères)", date: daysAheadAt(3, 9, 30), durationMin: 60, kind: "audit", channel: "physique", location: "Dépôt Villeurbanne", calLink: "https://cal.com/eagleye/audit-rhone", reminded: false, done: false },
-  { id: "m4", prospectId: "p-boulangerie", title: "Appel décision — Plomberie Fabre", date: daysAheadAt(1, 16, 0), durationMin: 15, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
-  { id: "m5", prospectId: "p-menuiserie", title: "Onboarding + referrals — Charbonnier", date: daysAheadAt(5, 11, 0), durationMin: 45, kind: "suivi", channel: "visio", location: "Google Meet", calLink: "https://cal.com/eagleye/onboarding-charbonnier", reminded: false, done: false },
+  { id: "m1", prospectId: "demo-sccv-canuts", title: "Closing — Terrasses des Canuts", date: daysAheadAt(1, 10, 30), durationMin: 45, kind: "closing", channel: "visio", location: "Visioconférence", calLink: "https://cal.com/eagleye/closing-canuts", reminded: true, done: false },
+  { id: "m2", prospectId: "demo-sccv-monplaisir", title: "Démo en direct — Carré Monplaisir", date: daysAheadAt(2, 14, 0), durationMin: 30, kind: "demo", channel: "physique", location: "Bureau de vente — Lyon 8e", calLink: "https://cal.com/eagleye/demo-monplaisir", reminded: false, done: false },
+  { id: "m3", prospectId: "demo-gratteciel-promotion", title: "Rappel décision — Gratte-Ciel Promotion", date: daysAheadAt(2, 16, 30), durationMin: 20, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
+  { id: "m4", prospectId: "demo-fonciere-rhone-nord", title: "Audit — Foncière du Rhône Nord", date: daysAheadAt(3, 9, 30), durationMin: 45, kind: "audit", channel: "physique", location: "Sur place — Lyon 6e", calLink: "https://cal.com/eagleye/audit-rhone-nord", reminded: false, done: false },
+  { id: "m5", prospectId: "demo-residences-gratteciel", title: "Point J+30 — Résidences des Gratte-Ciel", date: daysAheadAt(5, 11, 0), durationMin: 45, kind: "suivi", channel: "visio", location: "Visioconférence", calLink: "https://cal.com/eagleye/suivi-gratteciel", reminded: false, done: false },
 ];
 
 export const seedNurture: NurtureSequence[] = [
@@ -593,44 +777,44 @@ export const seedNurture: NurtureSequence[] = [
 
 export const seedCompetitors: Competitor[] = [
   {
-    id: "comp-weblyon",
-    name: "WebLyon Express",
+    id: "comp-crm-immobilier",
+    name: "CRM immobiliers du marché",
     sector: "tous",
-    pricing: "49–89 €/mois, template, sans setup",
-    strengths: "Prix d'appel très bas, promesse « en ligne en 48h »",
-    weaknesses: "Templates identiques, zéro IA, zéro accompagnement, support ticket only, aucun résultat mesuré",
-    counter: "Ne jamais se battre sur le prix. Montrer deux sites WebLyon identiques côte à côte, puis NOTRE overlay IA en action. « Moins cher et invisible, ou rentable et vivant ? » Preuve : Paddy's Corner nous recontactera.",
+    pricing: "Licence par utilisateur, engagement annuel, paramétrage facturé",
+    strengths: "Métier maîtrisé, connecteurs notaires et VEFA, éditeur installé depuis longtemps",
+    weaknesses: "Outil de GESTION, pas de vente : il enregistre ce qui s'est passé, il ne fait pas passer le coup de fil. Le paramétrage prend des semaines et se paie.",
+    counter: "Ne jamais opposer les listes de fonctions — la sienne sera plus longue, c'est un éditeur installé. Poser une seule question : « sur les trente derniers contacts entrants, combien ont eu une relance datée ? » La réponse est dans SON outil, et elle est presque toujours mauvaise.",
     updatedAt: daysAgo(9),
   },
   {
-    id: "comp-freelance",
-    name: "Freelances / neveux",
+    id: "comp-standard-telephonique",
+    name: "Standards téléphoniques / permanences externalisées",
     sector: "tous",
-    pricing: "300–800 € one-shot, pas de récurrent",
-    strengths: "Relation de confiance existante (famille, ami)",
-    weaknesses: "Pas de maintenance, pas de suivi, site mort en 6 mois, aucune obligation de résultat",
-    counter: "Jamais attaquer le neveu (couche « Les Autres » de l'oignon). Proposer un comparatif factuel : dernière mise à jour, vitesse, mobile, conversions. Les chiffres critiquent, pas nous.",
+    pricing: "Forfait mensuel + à l'appel, souvent avec un minimum",
+    strengths: "Une voix humaine au bout du fil, mise en place rapide",
+    weaknesses: "L'opérateur ne connaît ni le programme, ni les typologies, ni les prix : il prend un message. Le rappel reste à faire, et il se fait tard ou pas.",
+    counter: "Ne pas attaquer l'humain — c'est un vrai avantage et le dire renforce notre crédibilité. Déplacer la question sur ce qui SORT de l'appel : un message, ou un rendez-vous calé dans l'agenda avec le budget et la typologie déjà notés ?",
     updatedAt: daysAgo(6),
   },
   {
-    id: "comp-resa-platforms",
-    name: "Plateformes de résa (TheFork etc.)",
-    sector: "restaurant",
-    pricing: "Commission 2–4 €/couvert + abonnement",
-    strengths: "Apport de trafic immédiat, notoriété",
-    weaknesses: "Le resto loue SES clients : commissions à vie, data captive, dépendance aux promos -50 %",
-    counter: "Pas un remplacement, un rééquilibrage : « Gardez TheFork pour les nouveaux, récupérez vos habitués en direct. Chaque habitué migré = commission économisée à vie. »",
+    id: "comp-statu-quo",
+    name: "Le statu quo — « on s'en sort comme ça »",
+    sector: "tous",
+    pricing: "Gratuit, en apparence",
+    strengths: "Aucun effort, aucun risque, aucune décision à prendre. C'est le concurrent qui gagne le plus souvent.",
+    weaknesses: "Le coût est réel mais invisible : il ne figure sur aucune facture. Personne ne compte les appels qui n'ont pas abouti, donc personne ne les manque.",
+    counter: "Le rendre VISIBLE avec SES chiffres à lui, relevés pendant l'audit — jamais avec une moyenne de marché. Un nombre qu'il a donné lui-même ne se conteste pas.",
     updatedAt: daysAgo(15),
   },
 ];
 
 export const seedActivities: Activity[] = [
-  { id: "ac1", date: daysAgo(1), kind: "stage", message: "Le Bouchon des Canuts → Red Zone (objection prix ouverte)", prospectId: "p-bouchon" },
-  { id: "ac2", date: daysAgo(1), kind: "campagne", message: "Campagne « Restos Lyon » : 3 nouvelles réponses, 1 RDV réservé" },
-  { id: "ac3", date: daysAgo(2), kind: "meeting", message: "Audit dépôt réalisé — Ambulances Rhône Assistance", prospectId: "p-ambulances-rhone" },
-  { id: "ac4", date: daysAgo(5), kind: "ia", message: "Script généré pour Plomberie Fabre (démo urgences)", prospectId: "p-boulangerie" },
-  { id: "ac5", date: daysAgo(9), kind: "perdu", message: "Paddy's Corner perdu vs WebLyon Express — leçon : démo avant prix, toujours", prospectId: "p-paddy" },
-  { id: "ac6", date: daysAgo(18), kind: "signe", message: "SIGNÉ ✓ Menuiserie Charbonnier & Fils — 1 200 € + 190 €/mois", prospectId: "p-menuiserie" },
+  { id: "ac1", date: daysAgo(3), kind: "stage", message: "Terrasses des Canuts → Red Zone (objection de confiance ouverte)", prospectId: "demo-sccv-canuts" },
+  { id: "ac2", date: daysAgo(4), kind: "campagne", message: "Import permis Lyon + Villeurbanne : 11 arrêtés examinés, 8 retenus, 3 écartés (1 particulier, 1 hors zone, 1 périmé)" },
+  { id: "ac3", date: daysAgo(6), kind: "meeting", message: "Audit du dispositif d'accueil — Carré Monplaisir", prospectId: "demo-sccv-monplaisir" },
+  { id: "ac4", date: daysAgo(11), kind: "ia", message: "Brief d'appel généré — Foncière du Rhône Nord (angle : permis de 14 mois sans chantier)", prospectId: "demo-fonciere-rhone-nord" },
+  { id: "ac5", date: daysAgo(30), kind: "perdu", message: "Quai de la Confluence perdu — prix donné au téléphone avant toute démonstration", prospectId: "demo-sccv-confluence" },
+  { id: "ac6", date: daysAgo(28), kind: "signe", message: "SIGNÉ ✓ Résidences des Gratte-Ciel — Alpha Voice, setup payable au premier RDV pris", prospectId: "demo-residences-gratteciel" },
 ];
 
 // La doctrine par défaut (DEFAULT_BUSINESS_RULES) a déménagé dans
@@ -694,7 +878,7 @@ export const isDemoProspect = (id: string): boolean =>
  *
  * C'est ce qui protège le cas où l'identifiant n'arrive pas jusqu'au serveur.
  */
-const DOMAINES_RESERVES = ["example.com", "example.org", "example.net", ".invalid", ".test", ".example"];
+export const DOMAINES_RESERVES = ["example.com", "example.org", "example.net", ".invalid", ".test", ".example"];
 
 export function estAdresseDeDemo(email: string): boolean {
   const a = email.trim().toLowerCase();

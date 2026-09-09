@@ -147,8 +147,22 @@ test("outbox — une fiche de démonstration est marquée comme telle", () => {
   // Ses adresses sont inventées : un envoi produirait un rebond dur, et les
   // rebonds comptent contre le domaine pendant des mois. La file doit la
   // montrer (pour qu'on comprenne le blocage) mais la marquer sans ambiguïté.
-  const demo = buildOutbox([prospect({ id: "p-bouchon", email: "contact@bouchondescanuts.fr" })], 5);
+  const demo = buildOutbox([prospect({ id: "demo-sccv-canuts", email: "contact1@example.com" })], 5);
   assert.equal(demo[0].demo, true);
+
+  /**
+   * ⚠ LES DEUX CLÉS SE VÉRIFIENT SÉPARÉMENT, sinon on ne sait pas laquelle
+   * tient. L'identifiant est l'autorité ; l'adresse est le filet quand
+   * l'identifiant n'arrive pas jusqu'au serveur.
+   *
+   * ⚠⚠ Le jeu de démonstration écrit à la main portait des domaines INVENTÉS
+   * en `.fr` — seule la liste `EMAILS_DE_DEMO` le rattrapait, et une liste ne
+   * couvre pas ce qu'on ajoutera demain. Il est passé sur `example.com`
+   * (RFC 2606, réservé à jamais) comme le jeu engendré : la deuxième clé est
+   * structurelle des deux côtés.
+   */
+  const sansId = buildOutbox([prospect({ id: "crm-9001", email: "contact1@example.com" })], 5);
+  assert.equal(sansId[0].demo, true, "un domaine réservé suffit, même sans identifiant de démo");
 
   const real = buildOutbox([prospect({ id: "crm-4821", email: "vrai@garage-lyon.fr" })], 5);
   assert.equal(real[0].demo, false);
