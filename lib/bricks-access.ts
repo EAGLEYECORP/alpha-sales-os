@@ -120,6 +120,12 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
   "/appels": ["alpha-voice"],
 
   // ── Campagnes & outreach ──
+  /**
+   * Le moniteur surveille l'autopilote de campagne : sans la brique, il n'y a
+   * rien à surveiller. Il se GRISE donc (il est à vendre), il ne se masque
+   * pas — contrairement à `/ceo`, qui parle de notre exploitation à nous.
+   */
+  "/moniteur": ["campagnes"],
   "/campaigns": ["campagnes"],
   "/outbox": ["campagnes"],
   "/templates": ["campagnes"],

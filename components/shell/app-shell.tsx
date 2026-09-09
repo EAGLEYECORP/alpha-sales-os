@@ -38,6 +38,7 @@ import {
   Stethoscope,
   Lock,
   Sparkles,
+  Radio,
   RadioTower,
   Sprout,
   TrendingUp,
@@ -170,6 +171,7 @@ const NAV_GROUPES: NavGroup[] = [
     id: "verifier",
     label: "Vérifier que ça tourne",
     items: [
+      { href: "/moniteur", label: "Moniteur", icon: Radio },
       { href: "/ceo", label: "Alpha CEO", icon: Stethoscope },
       { href: "/pilote", label: "Pilote", icon: Cpu },
       { href: "/recette", label: "Recette", icon: ClipboardCheck },
@@ -190,9 +192,20 @@ const NAV_GROUPES: NavGroup[] = [
 /** Toutes les entrées, à plat — sert au mode replié et aux vérifications. */
 const NAV = [...NAV_QUOTIDIEN, ...NAV_GROUPES.flatMap((g) => g.items)];
 
-// Sur téléphone, le Closer OS remplace Templates : c'est LE compagnon terrain.
+/**
+ * ⚠ `/settings` A CÉDÉ SA PLACE AU MONITEUR, ET C'EST UN ARBITRAGE, PAS UN
+ * OUBLI. Une barre de pouce tient cinq entrées ; à six, on vise mal et on
+ * ouvre le mauvais écran.
+ *
+ * On règle depuis un ordinateur, une fois. On regarde ce que la machine a fait
+ * depuis un téléphone, vingt fois par jour — surtout depuis que l'autopilote
+ * tourne sur le serveur et n'a plus besoin qu'on soit devant.
+ *
+ * Les réglages ne disparaissent pas : la palette de l'en-tête mobile y va en
+ * trois lettres, et un test refuse qu'une page devienne inatteignable.
+ */
 const MOBILE_NAV = NAV.filter((n) =>
-  ["/aujourdhui", "/decisions", "/closer", "/debrief", "/settings"].includes(n.href)
+  ["/aujourdhui", "/decisions", "/closer", "/moniteur", "/debrief"].includes(n.href)
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {

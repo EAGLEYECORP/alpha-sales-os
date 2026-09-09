@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
 import { buildCampaignRun } from "@/lib/campaign-runner";
-import { PALIERS_CAMPAGNE } from "@/lib/paliers-campagne";
+import { PALIERS_CAMPAGNE, plafondPalierServeur } from "@/lib/paliers-campagne";
 import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-tick";
 import { safeEqual } from "@/lib/access";
 
@@ -129,11 +129,7 @@ export async function POST(req: NextRequest) {
    * ⚠ Absent ou illisible = palier le plus bas. Jamais « pas de plafond » :
    * une variable mal orthographiée ne doit pas ouvrir les vannes.
    */
-  const palierEnv = (process.env.CAMPAIGN_PALIER ?? "").trim();
-  const plafondPalier =
-    palierEnv === "aucun"
-      ? null
-      : PALIERS_CAMPAGNE.find((p) => String(p.appels) === palierEnv)?.appels ?? PALIERS_CAMPAGNE[0].appels;
+  const plafondPalier = plafondPalierServeur(process.env.CAMPAIGN_PALIER);
 
   // ── La file, avec toutes les portes habituelles (jamais de force) ──
   const run = buildCampaignRun(prospects, { accountId, plafondPalier });

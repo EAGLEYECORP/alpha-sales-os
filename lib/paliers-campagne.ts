@@ -293,6 +293,25 @@ export function plafondPalierCampagne(valides: IdPalierCampagne[] = []): number 
   return null;
 }
 
+/**
+ * Le plafond CÔTÉ SERVEUR, lu dans `CAMPAIGN_PALIER`.
+ *
+ * ⚠ CETTE LECTURE ÉTAIT ÉCRITE DANS `/api/campaign/tick`, ET ELLE ALLAIT ÊTRE
+ * RECOPIÉE DANS LE MONITEUR. Deux lectures de la même variable, et l'écran se
+ * serait mis à annoncer un plafond que le cron n'applique pas — un moniteur
+ * qui ment sur ce qu'il surveille est pire qu'un moniteur absent, parce qu'on
+ * le croit. Elle vit ici, une fois, et les deux appellent.
+ *
+ * ⚠⚠ ABSENTE, VIDE OU MAL ORTHOGRAPHIÉE = LE PLAFOND LE PLUS BAS. Jamais
+ * « pas de plafond » : ce serait 1 000 appels réels sur une faute de frappe.
+ * Seul le mot exact `aucun` lève le bornage, et il faut l'avoir écrit exprès.
+ */
+export function plafondPalierServeur(brut: string | undefined): number | null {
+  const v = (brut ?? "").trim();
+  if (v === "aucun") return null;
+  return PALIERS_CAMPAGNE.find((p) => String(p.appels) === v)?.appels ?? PALIERS_CAMPAGNE[0].appels;
+}
+
 
 export function evaluerProgression(prospects: Prospect[], e: EntreeProgression = {}): Progression {
   const vecu = vecuAppels(prospects);

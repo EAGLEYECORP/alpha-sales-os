@@ -9,6 +9,7 @@ import {
   plafondPalierCampagne,
   vecuAppels,
   type IdPalierCampagne,
+  plafondPalierServeur,
 } from "../lib/paliers-campagne";
 import { budgetPaliers } from "../lib/paliers-campagne-cout";
 import { buildCampaignRun } from "../lib/campaign-runner";
@@ -325,25 +326,47 @@ test("⚠ l'écran de contrôle ET le cron appliquent le plafond, pas seulement 
   assert.match(ecran, /buildCampaignRun\(prospects, \{[^}]*plafondPalier/, "et le passer à la file");
 
   const cron = sansCommentaires(readFileSync(join(process.cwd(), "app/api/campaign/tick/route.ts"), "utf8"));
-  assert.match(cron, /CAMPAIGN_PALIER/, "l'autopilote serveur doit être borné lui aussi");
+  assert.match(cron, /plafondPalierServeur\(process\.env\.CAMPAIGN_PALIER\)/, "l'autopilote serveur doit être borné lui aussi");
   assert.match(cron, /buildCampaignRun\(prospects, \{[^}]*plafondPalier/);
 
   /**
-   * ⚠ La valeur par défaut est le plafond le PLUS BAS. Une variable absente,
-   * mal orthographiée ou vide ne doit jamais valoir « pas de plafond » : ce
-   * serait 1 000 appels réels sur une faute de frappe.
+   * ⚠ ET LE MONITEUR LIT LA MÊME FONCTION.
    *
-   * ⚠⚠ Le contrôle est BORNÉ à la déclaration de `plafondPalier`. Une
-   * première version cherchait le motif dans tout le fichier : la mutation
-   * « repli à null » a survécu, parce que la même expression apparaît aussi
-   * dans le GET de statut. Un test qui cherche une chaîne quelque part dans un
-   * fichier ne teste rien — c'est la deuxième fois cette session.
+   * Il allait recopier la lecture de `CAMPAIGN_PALIER`. Un écran qui annonce
+   * un plafond que le cron n'applique pas est pire qu'un écran absent : on le
+   * croit. La lecture vit dans `plafondPalierServeur`, une fois.
    */
-  const iDecl = cron.indexOf("const plafondPalier =");
-  assert.ok(iDecl > 0, "le cron doit déclarer son plafond de palier");
-  const decl = cron.slice(iDecl, cron.indexOf(";", iDecl));
-  assert.match(decl, /PALIERS_CAMPAGNE\[0\]\.appels/, "le repli doit être le premier palier, pas null");
-  assert.ok(!/\?\?\s*null/.test(decl), "aucun repli ne doit valoir « pas de plafond »");
+  const moniteur = sansCommentaires(readFileSync(join(process.cwd(), "app/api/moniteur/route.ts"), "utf8"));
+  assert.match(moniteur, /plafondPalierServeur\(process\.env\.CAMPAIGN_PALIER\)/, "le moniteur doit lire le MÊME plafond que le cron");
+  assert.ok(
+    !/CAMPAIGN_PALIER/.test(moniteur.replace(/plafondPalierServeur\(process\.env\.CAMPAIGN_PALIER\)/g, "")),
+    "aucune seconde lecture de CAMPAIGN_PALIER dans le moniteur"
+  );
+});
+
+test("⚠ le plafond serveur retombe sur le PLUS BAS, jamais sur « pas de plafond »", () => {
+  /**
+   * ⚠ Une variable absente, vide ou mal orthographiée ne doit jamais valoir
+   * « pas de plafond » : ce serait 1 000 appels réels sur une faute de frappe.
+   * Seul le mot exact `aucun` lève le bornage.
+   *
+   * ⚠⚠ Ce contrôle portait sur le TEXTE de la déclaration dans le fichier du
+   * cron. C'était fragile de deux façons : il tombait au premier refactor
+   * (celui-ci), et il ne prouvait rien du COMPORTEMENT. Il teste maintenant la
+   * fonction. Mutation vérifiée : passer le repli à `null` fait tomber ce test.
+   */
+  const bas = PALIERS_CAMPAGNE[0].appels;
+  assert.equal(plafondPalierServeur(undefined), bas, "absente");
+  assert.equal(plafondPalierServeur(""), bas, "vide");
+  assert.equal(plafondPalierServeur("   "), bas, "des espaces");
+  assert.equal(plafondPalierServeur("AUCUN"), bas, "la casse compte : seul « aucun » exact lève le bornage");
+  assert.equal(plafondPalierServeur("mille"), bas, "mal orthographiée");
+  assert.equal(plafondPalierServeur("999"), bas, "une valeur qui n'est pas un palier");
+
+  assert.equal(plafondPalierServeur("aucun"), null, "…et le mot exact, lui, lève bien le bornage");
+  for (const p of PALIERS_CAMPAGNE) {
+    assert.equal(plafondPalierServeur(String(p.appels)), p.appels);
+  }
 });
 
 test("⚠ les taux s'écrivent en FRANÇAIS, et le formatage n'existe qu'une fois", () => {
