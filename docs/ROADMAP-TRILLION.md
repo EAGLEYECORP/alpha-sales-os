@@ -108,6 +108,14 @@ classé par « ça rapproche d'un virement bancaire ».
       hypothèse est à 0,012 $/min.
 - [ ] **UN appel sortant réel** — il valide toute la chaîne d'un coup.
 - [ ] DNS Amen + domaines Vercel (confort, pas prérequis).
+- [x] **Stripe Connect : EXPRESS** — décidé le 09/09/2026. Reste à poser
+      `STRIPE_CONNECT_CLIENT_ID`.
+- [x] **Hébergement de l'agent vocal** — décidé le 09/09/2026 : **local pour
+      EAGLEYE**, VPS **pour les clients** seulement. ⚠ Voir CLAUDE.md : un
+      appel composé sans agent vivant sonne dans le vide, et rien ne le
+      vérifie aujourd'hui.
+- [ ] **French Tech 2030** — ⚠ l'échéance citée plus haut (4 septembre 2026)
+      est PASSÉE. Ligne à trancher : déposé, ou manqué ?
 
 ### Pas encore construit
 - [ ] **Calendrier bidirectionnel** (API Google / Microsoft) — exige de l'OAuth

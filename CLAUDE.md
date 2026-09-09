@@ -478,6 +478,19 @@ ordi, sans qu'aucune machine reste allumée chez nous.
   > Base injoignable → `null` et un tiret, jamais `0`. Zéro parce que rien ne
   > tourne, zéro parce qu'on ne voit rien et zéro parce que tout va bien
   > demandent trois gestes opposés.
+- **OÙ TOURNE L'AGENT VOCAL — décidé le 09/09/2026.** `voice/agent.py` reste
+  **en LOCAL chez nous** ; un VPS ne se monte que **pour les clients**.
+  > ⚠⚠ **CE CHOIX A UNE CONSÉQUENCE QU'IL FAUT TENIR : un appel composé sans
+  > agent vivant sonne dans le VIDE.** Le dispatch LiveKit se crée, la ligne
+  > SIP compose, le prospect décroche — et personne ne parle. C'est pire que
+  > de ne pas appeler : ça brûle la fiche, la réputation du numéro et des
+  > minutes Telnyx réelles, et `/api/voice/call` rend `dispatched: true` dans
+  > les deux cas. Tant que l'autopilote est armé et que la machine est
+  > éteinte, le cron compose toutes les 10 minutes dans le silence.
+  > **Corollaire : l'autopilote ne s'arme jamais sur un poste qu'on éteint**,
+  > ou il lui faut une vérification de présence d'agent avant de composer.
+- **Stripe Connect : formule EXPRESS** (décidé le 09/09/2026). On garde la main
+  sur le parcours ; le client n'a pas de tableau de bord Stripe à lui.
 - **`/ceo`** (`lib/alpha-ceo.ts` + `lib/ceo-sondes.ts`) diagnostique tout ça.
   Maître seul, **masqué** et non grisé : griser, c'est annoncer, et cette
   console parle de NOTRE exploitation, pas d'une brique à vendre.
