@@ -67,7 +67,8 @@ qui sous-estime.
 >
 > J'avais avancé qu'on payait de la **synthèse jamais entendue** : LiveKit
 > générant du TTS en spéculatif, jeté quand le prospect coupe. **Vérifié dans
-> la source de `livekit-agents` 1.7.1** (`voice/turn.py`) :
+> la source de `livekit-agents` 1.7.1** — son fichier `voice/turn.py`,
+> dans la DÉPENDANCE, pas dans notre dépôt :
 > `_PREEMPTIVE_GENERATION_DEFAULTS` vaut `enabled: True` mais
 > **`preemptive_tts: False`** — seul le LLM tourne en spéculatif, le TTS ne
 > démarre qu'une fois le tour confirmé. `voice/agent.py` ne passe aucun

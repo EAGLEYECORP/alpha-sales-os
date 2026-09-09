@@ -117,11 +117,16 @@ SUPABASE_JWT_SECRET=
 # Stripe deux prix que plus aucun bouton n'atteint.
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_VOIX_ESSENTIEL=price_xxx  # Alpha Voice Essentiel — abonnement 149 €/mois
-STRIPE_PRICE_VOIX_INTENSIF=price_xxx   # Alpha Voice Intensif — abonnement 349 €/mois
-STRIPE_PRICE_OMNICANAL=price_xxx       # Réponse omnicanale — abonnement 590 €/mois
-STRIPE_PRICE_VOIX_1000=price_xxx       # 1 000 appels sortants — abonnement 364 €/mois
-STRIPE_PRICE_BUSINESS=price_xxx        # Business — acompte 2 500 € (le reste hors Stripe)
+# ⚠ AUCUN MONTANT ICI, ET C'EST VOLONTAIRE. Ce bloc se copie-colle chez
+# l'hébergeur : un prix recopié qui a bougé dans la grille ferait créer chez
+# Stripe un prix que l'app n'annonce plus, et ça ne se verrait qu'au premier
+# paiement. Le montant de chaque offre se lit dans l'app (Offre & Tarifs) ou
+# dans lib/offres-publiques.ts, qui fait foi. Ici, on ne nomme que la VARIABLE.
+STRIPE_PRICE_VOIX_ESSENTIEL=price_xxx  # Alpha Voice Essentiel — abonnement
+STRIPE_PRICE_VOIX_INTENSIF=price_xxx   # Alpha Voice Intensif — abonnement
+STRIPE_PRICE_OMNICANAL=price_xxx       # Réponse omnicanale — abonnement
+STRIPE_PRICE_VOIX_1000=price_xxx       # 1 000 appels sortants — abonnement
+STRIPE_PRICE_BUSINESS=price_xxx        # Business — acompte (le reste hors Stripe)
 STRIPE_PRICE_LIFETIME=price_xxx        # Lifetime — paiement UNIQUE, jamais récurrent
 # Accès permanent du propriétaire (jamais bloqué par la facture) ; côté serveur.
 # C'est AUSSI ce qui donne le compte maître (toutes les briques ouvertes).

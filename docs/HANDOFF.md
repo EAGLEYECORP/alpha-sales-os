@@ -81,7 +81,7 @@ n8n → Supabase → l'app la relit.
   critique manquante**, relire, répondre (inbound), confirmer/débriefer RDV,
   closer, contrat, encaisser, livraison, satisfaction, témoignage, upsell.
 
-**Client 360** — `lib/types.ts`, `app/prospects/[id]/page.tsx`
+**Client 360** — `lib/types.ts`, `app/(app)/prospects/[id]/page.tsx`
 - Historique/timeline, audit, commercial (paiements, contrat, livraison),
   **Suivi & fidélisation** (canal, satisfaction, témoignage, upsell) — tout en
   CRUD. AI Coach (réponses suggérées). Fichiers. **Bouton « Synchroniser CRM »**.
