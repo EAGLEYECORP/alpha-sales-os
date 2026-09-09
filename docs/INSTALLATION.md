@@ -68,7 +68,7 @@ export ALPHA_APP_URL="http://localhost:3000"
 export ALPHA_WEBHOOK_SECRET="choisis-un-secret"     # le même ira dans l'app (Phase 3)
 export ALPHA_CRM_URL="URL_SHEETS"                    # Phase 1.7
 export ALPHA_CRM_TOKEN="TOKEN_SHEETS"                # Phase 1.6
-export ALPHA_ALERT_EMAIL="ton@email.fr"              # reçoit les alertes d'erreur
+export ALPHA_ALERT_EMAIL="alerte@example.com"        # reçoit les alertes d'erreur
 export GOOGLE_PLACES_KEY="…"                         # sourcing (Places API New)
 export PAPPERS_TOKEN="…"  APOLLO_API_KEY="…"          # sourcing (optionnels)
 npx n8n

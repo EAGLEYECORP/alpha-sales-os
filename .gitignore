@@ -52,3 +52,8 @@ voice/.venv/
 # Ce sont des données personnelles de tiers ; le dépôt a été public une fois,
 # et une fois suffit. Voir lib/pipeline-juillet.ts pour le raisonnement.
 donnees-privees/
+
+# Export public — généré par scripts/export-public.mjs, jamais commité ici.
+# Le dépôt public est un dépôt DISTINCT : pas de chemin automatique du privé
+# vers le public.
+/.export-public/

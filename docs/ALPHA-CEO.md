@@ -148,7 +148,7 @@ d'expéditeur, conformité, données perdues.
 
 ## L'écran et les sondes
 
-> Écran : [`app/(app)/ceo/page.tsx`](../app/(app)/ceo/page.tsx) ·
+> Écran : `app/(app)/ceo/page.tsx` ·
 > Branchement : [`lib/ceo-sondes.ts`](../lib/ceo-sondes.ts) ·
 > Tests : [`tests/ceo-sondes.test.ts`](../tests/ceo-sondes.test.ts)
 

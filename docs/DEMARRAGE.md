@@ -63,9 +63,14 @@ personne ne l'a reçu.
 `/settings` → *Délivrabilité du domaine* → lis le verdict → copie
 l'enregistrement → publie-le chez OVH → reviens → « Vérifier ».
 
-*État connu de `eagleye.fr` : SPF publié, **DMARC absent**. À corriger.*
-Enregistrement à publier sur `_dmarc.eagleye.fr` :
-`v=DMARC1; p=none; rua=mailto:postmaster@eagleye.fr`
+*Cas le plus fréquent au premier contrôle : SPF publié, **DMARC absent**.*
+Enregistrement à publier sur `_dmarc.ton-domaine.example` :
+`v=DMARC1; p=none; rua=mailto:postmaster@ton-domaine.example`
+
+> ⚠ `example` / `example.com` ne sont pas des placeholders décoratifs : la
+> RFC 2606 les réserve à la documentation, donc ils n'appartiendront jamais à
+> personne. Un exemple de DMARC qui nomme un vrai domaine finit copié-collé
+> tel quel, et les rapports d'un tiers partent chez son propriétaire.
 Commence en `p=none` (observation), passe à `p=quarantine` après quelques
 semaines de rapports.
 
