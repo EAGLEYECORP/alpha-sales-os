@@ -359,6 +359,21 @@ export interface OffrePublique {
   cadence: CadenceOffre;
   /** Prix HT. `null` UNIQUEMENT pour la cadence « devis ». */
   prixHT: number | null;
+  /**
+   * Les frais d'INSTALLATION, une fois, en plus de `prixHT`.
+   *
+   * ⚠ CE MONTANT N'EXISTAIT QUE DANS LA PROSE. `sousTitre` disait « 990 € HT
+   * d'installation » et rien d'autre ne le savait : impossible de le
+   * totaliser, de le comparer, ou d'asseoir une commission dessus. Le prix
+   * le plus élevé de plusieurs offres n'était pas une donnée, c'était une
+   * phrase.
+   *
+   * `null` = pas d'installation facturée (le lifetime, qui EST le paiement
+   * unique) ou installation sur devis (`os-complet`). `0` n'existe pas ici :
+   * il se lirait comme « installation gratuite », ce qui est une promesse
+   * commerciale, pas une absence de prix.
+   */
+  setupHT: number | null;
   sousTitre: string;
   inclus: string[];
   /** La voix est-elle comprise dans l'offre ? */
@@ -443,6 +458,7 @@ export const OFFRES: OffrePublique[] = [
     nom: "Alpha Voice — Essentiel",
     cadence: "mensuel",
     prixHT: ALPHA_VOICE_PALIERS[0].prixHT,
+    setupHT: ALPHA_VOICE_SETUP_HT,
     sousTitre: `${ALPHA_VOICE_SETUP_HT} € HT d'installation, puis l'abonnement. L'accueil qui décroche à votre place.`,
     inclus: [
       `${ALPHA_VOICE_SETUP_HT} € HT d'installation (script, téléphonie, voix)`,
@@ -462,6 +478,7 @@ export const OFFRES: OffrePublique[] = [
     nom: "Alpha Voice — Intensif",
     cadence: "mensuel",
     prixHT: ALPHA_VOICE_PALIERS[1].prixHT,
+    setupHT: ALPHA_VOICE_SETUP_HT,
     sousTitre: "Le même accueil, pour un volume d'appels qui ne redescend pas.",
     inclus: [
       `${ALPHA_VOICE_SETUP_HT} € HT d'installation`,
@@ -490,6 +507,9 @@ export const OFFRES: OffrePublique[] = [
     nom: "Réponse omnicanale",
     cadence: "mensuel",
     prixHT: OMNICANAL_MENSUEL_HT,
+    // ⚠ L'installation Alpha Voice (990 €) est OFFERTE dans cette offre : le
+    // setup facturé est celui de l'omnicanale seule, pas la somme des deux.
+    setupHT: OMNICANAL_SETUP_HT,
     sousTitre: `${OMNICANAL_SETUP_HT} € HT d'installation, puis l'abonnement. Toutes vos demandes dans une seule file, à votre marque.`,
     inclus: [
       `${OMNICANAL_SETUP_HT} € HT d'installation : boîte de réception à VOTRE marque, canaux branchés`,
@@ -510,6 +530,7 @@ export const OFFRES: OffrePublique[] = [
     nom: "Alpha Voice — 1 000 appels",
     cadence: "mensuel",
     prixHT: OUTBOUND_UNIT_HT,
+    setupHT: OUTBOUND_SETUP_HT,
     sousTitre: "Le palier de campagne : on prouve que ça convertit.",
     inclus: [
       `${OUTBOUND_UNIT_CALLS} appels composés par mois`,
@@ -529,6 +550,8 @@ export const OFFRES: OffrePublique[] = [
     nom: "Alpha Sales OS — complet",
     cadence: "devis",
     prixHT: null,
+    // Sur devis : le périmètre se fixe au cadrage, l'installation aussi.
+    setupHT: null,
     sousTitre: "Tout l'écosystème, installé chez toi et à ton nom.",
     inclus: [
       "Les dix briques, installées et paramétrées",
@@ -557,6 +580,13 @@ export const OFFRES: OffrePublique[] = [
      * signature au dernier mètre.
      */
     prixHT: PACK_SETUP_HT,
+    /**
+     * ⚠ `null`, ET CE N'EST PAS UN OUBLI. Sur Business, l'installation N'EST
+     * PAS un supplément : elle EST le prix affiché (10 000 € étalés). Y
+     * remettre `PACK_SETUP_HT` ferait compter la même somme deux fois — dans
+     * un total, dans une commission, dans une prévision.
+     */
+    setupHT: null,
     sousTitre: "L'installation complète, étalée. Puis l'abonnement prend le relais.",
     inclus: [
       "Les dix briques installées et paramétrées, à ton nom",
@@ -588,6 +618,8 @@ export const OFFRES: OffrePublique[] = [
      * module public n'a pas le droit de lire ; c'est l'écran qui le fait.
      */
     prixHT: LIFETIME_PALIERS[0].prixHT,
+    // Le lifetime EST le paiement unique : aucune installation en plus.
+    setupHT: null,
     sousTitre: "Le logiciel à vie, payé une fois. La consommation reste à l'usage.",
     inclus: [
       "Le CRM, le closer, le Cerveau, le pilotage, le suivi et les audits — à vie, sans abonnement",
