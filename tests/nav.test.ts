@@ -57,6 +57,13 @@ test("navigation — chaque page de l'app est atteignable, et une seule fois", (
     "/login", // connexion Supabase, atteinte par la porte d'authentification
     "/overlay", // fenêtre transparente Electron
     "/prospects", // atteint depuis le pipeline, pas depuis le menu
+    /**
+     * Atteinte en CLIQUANT une entrée grisée : c'est elle qui répond
+     * « pourquoi je ne peux pas entrer ici ». La lister au menu créerait une
+     * entrée « Ce que tu n'as pas » chez quelqu'un qui a tout — un rappel
+     * permanent de ce qu'il ne lui manque pas.
+     */
+    "/offre-brique",
   ]);
 
   const orphelines = routes.filter((r) => !tous.includes(r) && !horsMenu.has(r));

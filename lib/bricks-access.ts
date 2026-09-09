@@ -55,6 +55,16 @@ export const CHEMINS_COMMUNS = [
   "/login",
   "/compte",
   "/settings",
+  /**
+   * ⚠ LA PAGE QUI EXPLIQUE POURQUOI UNE BRIQUE EST FERMÉE DOIT ÊTRE OUVERTE.
+   *
+   * Elle ne montre aucune donnée : le nom de la brique, la raison technique
+   * pour laquelle elle est payante, et l'offre qui l'ouvre — trois choses
+   * déjà publiques sur la page de vente. La ranger derrière la brique
+   * qu'elle explique serait la boucle parfaite : on ne peut savoir pourquoi
+   * c'est fermé qu'en l'ayant déjà acheté.
+   */
+  "/offre-brique",
   "/demarrage",
   /**
    * Les prompts sont un réglage de la MACHINE, pas une brique vendue : ils

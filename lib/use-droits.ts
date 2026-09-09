@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { peutOuvrir } from "./bricks-access";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -76,9 +75,19 @@ export function useDroits(): Droits {
   return d;
 }
 
-/** Faut-il MONTRER cette entrée de menu ? (confort, pas sécurité) */
-export function afficherChemin(d: Droits, chemin: string): boolean {
-  if (d.solo || d.maitre) return true;
-  if (d.statut === "suspendu") return peutOuvrir(chemin, [], false);
-  return peutOuvrir(chemin, d.bricks, false);
-}
+/**
+ * ⚠ `afficherChemin` VIVAIT ICI, ET ELLE A ÉTÉ RETIRÉE — pas oubliée. Elle
+ * répondait « faut-il MONTRER cette entrée ? » et le rail s'en servait pour
+ * MASQUER tout ce que le compte ne possède pas.
+ *
+ * C'était le défaut : un inscrit gratuit voyait une application plus petite
+ * que la vraie, sans jamais apprendre ce qui manquait. On ne peut pas vouloir
+ * ce qu'on ne voit pas, et on ne peut surtout pas comprendre un refus dont la
+ * porte était invisible. `etatChemin` (`lib/verrous.ts`) la remplace et
+ * distingue les deux cas qu'elle confondait : ce qui est à VENDRE se grise
+ * avec sa raison, ce qui est à NOUS se masque.
+ *
+ * Elle est supprimée plutôt que laissée en place : un export que plus rien
+ * n'importe est mort, et le seul destin d'une fonction morte dans ce dépôt
+ * est d'être rebranchée par erreur — ce qui remasquerait tout.
+ */

@@ -35,6 +35,7 @@ import {
   Search,
   Send,
   Settings,
+  Lock,
   Sparkles,
   RadioTower,
   Sprout,
@@ -64,7 +65,8 @@ import { StorageAlert } from "@/components/security/storage-alert";
 import { PipeServeur } from "@/components/pipe-serveur";
 import { SyncMoteur } from "@/components/sync-moteur";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
-import { afficherChemin, useDroits } from "@/lib/use-droits";
+import { useDroits } from "@/lib/use-droits";
+import { etatChemin } from "@/lib/verrous";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -248,7 +250,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Ce que ce compte a le droit de VOIR dans le menu. La barrière réelle est
   // le middleware ; ici on évite seulement les culs-de-sac.
   const droits = useDroits();
-  const visible = (href: string) => afficherChemin(droits, href);
+  /**
+   * ⚠ ON NE MASQUE PLUS CE QUI EST À VENDRE — ON LE GRISE.
+   *
+   * Le rail filtrait avec `afficherChemin`, donc un inscrit gratuit voyait
+   * une application plus petite que la vraie sans jamais apprendre ce qui
+   * manquait. On ne peut pas vouloir ce qu'on ne voit pas, et on ne peut
+   * surtout pas comprendre un refus dont la porte était invisible.
+   *
+   * `etatChemin` distingue les deux cas, et la distinction est la règle
+   * entière : on GRISE ce qui est à vendre, on MASQUE ce qui est à nous
+   * (`/payouts`, `/offre` — griser reviendrait à annoncer notre économie à
+   * un client, et à l'inviter à demander notre part).
+   */
+  const etat = (href: string) => etatChemin(href, droits.bricks, droits.maitre, droits.solo);
+  const visible = (href: string) => etat(href).type !== "masque";
+  const verrouDe = (href: string) => {
+    const e = etat(href);
+    return e.type === "verrouille" ? e.brique : undefined;
+  };
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -349,12 +369,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               sans libellés, autant ne pas la simuler. */}
           {collapsed
             ? NAV.filter((i) => visible(i.href)).map(({ href, label, icon: Icon }) => (
-                <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} collapsed />
+                <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} collapsed verrou={verrouDe(href)} />
               ))
             : (
               <>
                 {NAV_QUOTIDIEN.filter((i) => visible(i.href)).map(({ href, label, icon: Icon }) => (
-                  <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} />
+                  <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} verrou={verrouDe(href)} />
                 ))}
 
                 {NAV_GROUPES.map((g) => {
@@ -380,7 +400,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </button>
                       {ouvert &&
                         items.map(({ href, label, icon: Icon }) => (
-                          <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} />
+                          <NavLink key={href} href={href} label={label} Icon={Icon} active={isActive(href)} verrou={verrouDe(href)} />
                         ))}
                     </div>
                   );
@@ -497,33 +517,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 /** Une entrée de navigation — un seul rendu, pour que replié et déplié ne divergent jamais. */
+/**
+ * ⚠ UNE ENTRÉE VERROUILLÉE RESTE UN LIEN, ELLE N'EST PAS DÉSACTIVÉE.
+ *
+ * La tentation est d'en faire un `<button disabled>`. Ce serait le pire des
+ * deux mondes : la porte devient visible ET impossible à interroger, donc
+ * l'inscrit apprend qu'il lui manque quelque chose sans jamais apprendre
+ * QUOI. Un élément désactivé n'est en plus pas atteignable au clavier — on
+ * le retirerait des lecteurs d'écran au moment où il a le plus à dire.
+ *
+ * Le lien mène donc à `/offre-brique`, qui explique la brique, dit pourquoi
+ * elle est payante et propose l'offre. C'est le lien qui PORTE
+ * l'explication ; le gris ne fait qu'annoncer qu'il y en a une.
+ */
 function NavLink({
   href,
   label,
   Icon,
   active,
   collapsed,
+  verrou,
 }: {
   href: string;
   label: string;
   Icon: typeof BarChart3;
   active: boolean;
   collapsed?: boolean;
+  /** La brique manquante, si l'entrée est verrouillée. */
+  verrou?: string;
 }) {
+  const cible = verrou ? `/offre-brique?b=${encodeURIComponent(verrou)}&de=${encodeURIComponent(href)}` : href;
   return (
     <Link
-      href={href}
-      aria-label={label}
+      href={cible}
+      // L'état se dit au lecteur d'écran, il ne se devine pas à la couleur.
+      aria-label={verrou ? `${label} — non inclus dans ton offre` : label}
       aria-current={active ? "page" : undefined}
-      title={collapsed ? label : undefined}
+      title={collapsed ? (verrou ? `${label} — non inclus` : label) : undefined}
       className={cn(
         "flex items-center rounded-lg text-sm transition-colors",
         collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
-        active ? "bg-bronze-900/70 text-bronze-300 font-medium" : "text-paper-dim hover:text-paper hover:bg-ink-800"
+        active
+          ? "bg-bronze-900/70 text-bronze-300 font-medium"
+          : verrou
+            ? "text-paper-faint hover:text-paper-dim hover:bg-ink-800"
+            : "text-paper-dim hover:text-paper hover:bg-ink-800"
       )}
     >
       <Icon size={17} strokeWidth={active ? 2.4 : 1.8} />
-      {!collapsed && label}
+      {!collapsed && <span className="flex-1 truncate">{label}</span>}
+      {!collapsed && verrou && <Lock size={12} className="shrink-0 opacity-60" />}
     </Link>
   );
 }
