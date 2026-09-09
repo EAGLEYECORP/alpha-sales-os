@@ -487,8 +487,16 @@ ordi, sans qu'aucune machine reste allumée chez nous.
   > minutes Telnyx réelles, et `/api/voice/call` rend `dispatched: true` dans
   > les deux cas. Tant que l'autopilote est armé et que la machine est
   > éteinte, le cron compose toutes les 10 minutes dans le silence.
-  > **Corollaire : l'autopilote ne s'arme jamais sur un poste qu'on éteint**,
-  > ou il lui faut une vérification de présence d'agent avant de composer.
+  > **CE TROU EST REFERMÉ** (`lib/presence-agent.ts` + migration 005) :
+  > l'agent bat toutes les 30 s, et le tick REFUSE de composer sans battement
+  > récent. ⚠ L'inconnu vaut REFUS — table absente, base injoignable, agent
+  > jamais lancé : on ne compose pas. Ici, contrairement aux écrans de mesure,
+  > `null` ne se contente pas de se dire, il bloque : ne pas appeler coûte un
+  > créneau, appeler dans le vide coûte une fiche, un numéro et de l'argent.
+  > ⚠⚠ La garde ne s'applique QU'À L'EXÉCUTION : `dryRun` continue de rendre
+  > ce qu'il aurait fait, sinon on perd l'outil qui explique pourquoi rien ne
+  > part. Et un battement prouve qu'un PROCESSUS TOURNE, pas qu'il sait parler
+  > — une clé TTS expirée laisserait le voyant vert.
 - **Stripe Connect : formule EXPRESS** (décidé le 09/09/2026). On garde la main
   sur le parcours ; le client n'a pas de tableau de bord Stripe à lui.
 - **`/ceo`** (`lib/alpha-ceo.ts` + `lib/ceo-sondes.ts`) diagnostique tout ça.

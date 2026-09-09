@@ -86,6 +86,23 @@ create table if not exists public.propositions (
   created_at   timestamptz not null default now()
 );
 
+-- ── LE BATTEMENT DE L'AGENT VOCAL ──
+--
+-- Une seule ligne, écrasée toutes les 30 s par `voice/agent.py`. Elle répond à
+-- « y a-t-il quelqu'un au bout ? » avant que l'autopilote compose un numéro :
+-- LiveKit n'expose pas la liste des workers, donc l'agent s'annonce et son
+-- silence vaut absence. Sans elle, un poste éteint laisse le cron appeler dans
+-- le vide — le prospect décroche, personne ne parle, et les journaux restent
+-- verts. Voir lib/presence-agent.ts et supabase/migrations/005.
+create table if not exists public.agent_presence (
+  cle    text primary key,
+  vu_le  timestamptz not null default now()
+);
+
+alter table public.agent_presence enable row level security;
+-- Aucune politique : cette table ne se touche que par le service role. Un
+-- battement falsifiable serait pire que pas de battement.
+
 -- La trace des appels Alpha Voice. Colonnes calées sur `toRow()` dans
 -- app/api/voice/session/route.ts.
 create table if not exists public.call_sessions (

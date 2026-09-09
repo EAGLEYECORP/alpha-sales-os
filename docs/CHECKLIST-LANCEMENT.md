@@ -88,6 +88,11 @@ LLM payant, c'est le seul chiffrage honnête.
       ⚠⚠ **Pas de Vercel Cron** : il émet des `GET`, or ces routes réservent
       le `GET` au statut en lecture seule. Un cron Vercel rendrait 200 sans
       jamais rien exécuter.
+- [ ] Appliquer `supabase/migrations/005-presence-agent.sql`, puis poser
+      `ALPHA_APP_URL` et `CRON_SECRET` dans l'environnement de l'agent vocal.
+      ⚠ Sans battement, l'autopilote REFUSE de composer — c'est voulu : un
+      appel sans agent sonne dans le vide et brûle la fiche. Vérifier avec
+      `GET /api/voice/presence` → `etat: "vivant"`.
 - [ ] Après application : relire `cron.job_run_details` (requête en bas de la
       migration). Un job **planifié** n'est pas un job qui **réussit** — des
       401 ou 412 en boucle veulent dire que le Vault et l'environnement ne

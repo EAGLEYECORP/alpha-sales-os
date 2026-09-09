@@ -6,6 +6,7 @@ import { PALIERS_CAMPAGNE, plafondPalierServeur } from "@/lib/paliers-campagne";
 import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-tick";
 import { safeEqual } from "@/lib/access";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
+import { presenceAgent } from "@/lib/presence-agent";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -165,6 +166,41 @@ export async function POST(req: NextRequest) {
       queueSize: run.queue.length,
       tooSoon: plan.tooSoon.length,
       cap: plan.cap,
+    });
+  }
+
+  /**
+   * ── PERSONNE AU BOUT ? ALORS ON NE COMPOSE PAS ──
+   *
+   * ⚠ LA DERNIÈRE PORTE, ET ELLE EST FAIL-CLOSED.
+   *
+   * `/api/voice/call` crée un dispatch LiveKit et rend `dispatched: true` que
+   * `voice/agent.py` tourne ou non. Sans cette vérification, un poste éteint
+   * un vendredi soir laisse le cron composer tout le week-end : la ligne
+   * sonne, le prospect décroche, personne ne parle. La fiche est brûlée, le
+   * numéro perd sa réputation, les minutes sont facturées — et rien n'échoue.
+   *
+   * ⚠⚠ ELLE NE S'APPLIQUE QU'À L'EXÉCUTION RÉELLE, jamais à la simulation :
+   * `dryRun` doit continuer de rendre ce qu'il AURAIT fait, sinon on perd
+   * précisément l'outil qui sert à comprendre pourquoi rien ne part.
+   *
+   * ⚠⚠⚠ L'inconnu vaut REFUS. Table absente, base injoignable, migration 005
+   * non passée : on ne compose pas. Ne pas appeler coûte un créneau ; appeler
+   * dans le vide coûte une fiche, un numéro et de l'argent.
+   */
+  const presence = await (async () => {
+    const { data } = await db.from("agent_presence").select("vu_le").eq("cle", "agent-vocal").maybeSingle();
+    return presenceAgent((data as { vu_le?: string } | null)?.vu_le ?? null);
+  })().catch(() => presenceAgent(null));
+
+  if (!presence.peutAppeler) {
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      agent: presence.etat,
+      pret: tasks.length,
+      why: presence.phrase,
+      ...(avertissement ? { avertissement } : {}),
     });
   }
 

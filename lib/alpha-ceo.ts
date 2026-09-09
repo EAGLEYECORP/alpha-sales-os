@@ -314,6 +314,15 @@ export const PANNES: PanneCEO[] = [
     module: "CLAUDE.md",
   },
   {
+    id: "agent-absent",
+    symptome: "Le prospect décroche, et personne ne parle.",
+    pourquoiInvisible:
+      "`/api/voice/call` crée le dispatch LiveKit et rend `dispatched: true` que `voice/agent.py` tourne ou non. Un poste éteint un vendredi soir laisse donc le cron composer tout le week-end : la ligne sonne, la fiche est brûlée, le numéro perd sa réputation, les minutes sont facturées — et les journaux restent VERTS. LiveKit n'expose pas la liste des workers : on ne peut pas demander si un agent écoute, il faut qu'il le dise.",
+    detection: "`GET /api/voice/presence` → `etat` vaut `silencieux` ou `inconnu` alors que l'autopilote est armé.",
+    gravite: "urgent",
+    module: "lib/presence-agent.ts",
+  },
+  {
     id: "ordonnanceur-muet",
     symptome: "L'autopilote existe, il est verrouillé, il est testé — et personne ne l'appelle jamais.",
     pourquoiInvisible:

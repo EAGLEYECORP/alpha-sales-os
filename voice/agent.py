@@ -50,6 +50,9 @@ import json
 import logging
 import os
 import re
+import threading
+import urllib.error
+import urllib.request
 
 from dotenv import load_dotenv
 from livekit import agents, api, rtc
@@ -683,7 +686,90 @@ async def entrypoint(ctx: JobContext) -> None:
             raise
 
 
+# ─────────────────────────────────────────────────────────────────────
+# LE BATTEMENT — « je suis là », toutes les 30 secondes.
+#
+# ⚠ POURQUOI CE FIL EXISTE, ET CE QU'IL EMPÊCHE.
+#
+# `/api/voice/call` crée un dispatch LiveKit et rend `dispatched: true` que ce
+# processus tourne ou non. Sans battement, un poste éteint un vendredi soir
+# laisse le cron composer tout le week-end : la ligne SIP sonne, le prospect
+# décroche, et personne ne parle. La fiche est brûlée, le numéro perd sa
+# réputation, les minutes sont facturées — et les journaux restent VERTS.
+#
+# L'API Twirp de LiveKit n'expose pas la liste des workers enregistrés : on ne
+# peut pas DEMANDER si un agent écoute. On inverse donc la question — l'agent
+# le dit, et son silence vaut absence.
+#
+# ⚠⚠ `urllib` de la bibliothèque standard, pas `requests` : la maison n'ajoute
+# pas de dépendance sans raison impérieuse, et poster un JSON n'en est pas une.
+#
+# ⚠⚠⚠ Un battement PROUVE QU'UN PROCESSUS TOURNE, pas qu'il sait parler. Une
+# clé TTS expirée laisserait ce voyant vert. C'est une garde contre l'ABSENCE,
+# et la confondre avec une garde contre la panne remplacerait un angle mort par
+# une fausse assurance.
+# ─────────────────────────────────────────────────────────────────────
+
+BATTEMENT_INTERVALLE_S = 30
+
+
+def _battement_une_fois(url: str, secret: str) -> None:
+    req = urllib.request.Request(
+        url,
+        data=b"{}",
+        method="POST",
+        headers={"content-type": "application/json", "authorization": f"Bearer {secret}"},
+    )
+    with urllib.request.urlopen(req, timeout=10):
+        pass
+
+
+def _boucle_battement(url: str, secret: str) -> None:
+    rate = 0
+    while True:
+        try:
+            _battement_une_fois(url, secret)
+            if rate:
+                logger.info("Alpha Voice — battement rétabli après %d échec(s).", rate)
+            rate = 0
+        except Exception as e:  # noqa: BLE001
+            rate += 1
+            # ⚠ On journalise le PREMIER échec puis on se tait : un agent qui
+            # tourne sans réseau ne doit pas noyer ses propres logs d'appel.
+            # Côté serveur, l'absence de battement suffit — c'est elle qui
+            # arrête l'autopilote, pas ce message.
+            if rate == 1:
+                logger.warning("Alpha Voice — battement refusé (%s). L'autopilote va cesser d'appeler.", e)
+        threading.Event().wait(BATTEMENT_INTERVALLE_S)
+
+
+def demarrer_battement() -> None:
+    """Lance le battement si l'app et le secret sont connus. Sinon, se tait.
+
+    ⚠ Sans `ALPHA_APP_URL` ou `CRON_SECRET`, on ne bat pas — et l'autopilote
+    refusera donc de composer. C'est le bon défaut : mieux vaut un autopilote
+    qui ne part pas qu'un autopilote qui appelle dans le vide. Le démarrage
+    manuel (`python agent.py dev`) pour une démo reste évidemment possible.
+    """
+    base = (os.getenv("ALPHA_APP_URL") or "").rstrip("/")
+    secret = (os.getenv("CRON_SECRET") or "").strip()
+    if not base or not secret:
+        logger.warning(
+            "Alpha Voice — pas de battement : ALPHA_APP_URL ou CRON_SECRET manquent. "
+            "L'autopilote refusera de composer tant que l'agent ne s'annonce pas."
+        )
+        return
+    threading.Thread(
+        target=_boucle_battement,
+        args=(f"{base}/api/voice/presence", secret),
+        daemon=True,  # ne retient jamais l'arrêt du worker
+        name="alpha-battement",
+    ).start()
+    logger.info("Alpha Voice — battement démarré (toutes les %d s).", BATTEMENT_INTERVALLE_S)
+
+
 if __name__ == "__main__":
+    demarrer_battement()
     cli.run_app(
         WorkerOptions(
             entrypoint_fnc=entrypoint,
