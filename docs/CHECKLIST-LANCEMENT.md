@@ -79,9 +79,19 @@ LLM payant, c'est le seul chiffrage honnête.
 - [ ] Variables d'environnement : il y en a **63**, toutes documentées dans
       `.env.example` (un test le vérifie). Utiliser Réglages → État système,
       qui liste exactement ce qui manque.
-- [ ] `CRON_SECRET` + brancher l'ordonnanceur sur `/api/campaign/tick` et
-      `/api/push/tick`. ⚠ Sans `CRON_SECRET`, ces routes **refusent tout** —
-      c'est voulu, mais rien dans la réponse ne le relie au réglage.
+- [ ] `CRON_SECRET` + appliquer `supabase/migrations/004-ordonnanceur.sql`,
+      qui planifie `/api/campaign/tick` et `/api/push/tick` via `pg_cron` +
+      `pg_net`. ⚠ Sans `CRON_SECRET`, ces routes **refusent tout** — c'est
+      voulu, mais rien dans la réponse ne le relie au réglage. Le secret se
+      pose dans le **Vault** Supabase (`alpha_cron_secret`), jamais dans le
+      SQL versionné, et il doit être **identique** à la variable Vercel.
+      ⚠⚠ **Pas de Vercel Cron** : il émet des `GET`, or ces routes réservent
+      le `GET` au statut en lecture seule. Un cron Vercel rendrait 200 sans
+      jamais rien exécuter.
+- [ ] Après application : relire `cron.job_run_details` (requête en bas de la
+      migration). Un job **planifié** n'est pas un job qui **réussit** — des
+      401 ou 412 en boucle veulent dire que le Vault et l'environnement ne
+      concordent pas, et rien d'autre ne te le dira.
 - [ ] `CALENDAR_TOKEN` pour le flux iCal.
 - [ ] `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` pour les notifications.
 - [ ] Vérifier que `/vitrine` est bien indexable et que l'app ne l'est pas.
