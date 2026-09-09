@@ -10,6 +10,78 @@
 
 ---
 
+## LA CHECKLIST — dans cet ordre, et l'ordre compte
+
+> Coche au fur et à mesure. Chaque ligne dit **où** cliquer et **comment savoir
+> que c'est fait** — une étape « faite » qu'on ne peut pas vérifier n'est pas
+> faite.
+
+### Chez Amen — la boîte
+- [ ] **Créer `noreply@eagleyecorp.fr`** — Espace client → `eagleyecorp.fr` →
+      services associés → **EMAIL** → créer une boîte.
+      ⚠ Une **vraie boîte**, pas un alias : un alias n'a pas de mot de passe,
+      donc pas d'authentification SMTP possible.
+- [ ] **Noter le mot de passe** quelque part de sûr, maintenant.
+      Supabase le chiffre à l'enregistrement et ne le réaffiche **jamais**.
+- [ ] *Vérif* : se connecter au webmail Amen avec cette adresse. Si ça ouvre,
+      la boîte existe vraiment.
+
+### Chez Amen — le DNS (c'est ici que ça se joue)
+- [ ] **Regarder le SPF EXISTANT** avant d'en ajouter un.
+      Domaine et DNS → Configuration DNS → *Gérer les paramètres avancés* →
+      chercher un TXT commençant par `v=spf1`.
+      ⚠⚠ **Deux SPF valent zéro SPF.** S'il y en a déjà un, tu le **modifies**.
+- [ ] **SPF** — TXT sur l'apex : `v=spf1 include:spf.webapps.net ~all`
+      (ou fusionné avec l'existant : un seul `v=spf1`, un seul `~all`, les
+      `include:` empilés au milieu).
+- [ ] **DKIM** — `eagleyecorp.fr` → **EMAIL** → bouton bleu **ACTION** →
+      **DKIM**. Amen publie l'enregistrement lui-même.
+- [ ] **DMARC** — TXT sur `_dmarc.eagleyecorp.fr` :
+      `v=DMARC1; p=none; rua=mailto:postmaster@eagleyecorp.fr`
+      ⚠ `p=none` d'abord. `p=reject` avec un SPF mal fusionné ferait rejeter
+      tes propres mails partout, d'un coup.
+
+### Chez Supabase — le SMTP
+- [ ] Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*
+- [ ] Sender email : `noreply@eagleyecorp.fr` — **exactement** la boîte
+      authentifiée. Envoyer depuis `contact@` en s'authentifiant avec
+      `noreply@` fait rejeter, ou pire : ça part et c'est classé usurpation.
+- [ ] Sender name : `ALPHA SALES OS`
+- [ ] Host : `smtp-fr.securemail.pro`
+- [ ] Port : `465` (si refus → `587` ; **jamais 25**)
+- [ ] Username : `noreply@eagleyecorp.fr` — **l'adresse entière**
+- [ ] Password : celui de la boîte
+- [ ] **Save changes**
+
+### La vérification — et elle ne se fait PAS sur « le mail est arrivé »
+- [ ] Authentication → **Users** → *Invite user* vers une adresse **Gmail**
+      que tu possèdes.
+- [ ] Ouvrir le mail → **⋮ → Afficher l'original**
+- [ ] Lire les **trois** lignes :
+      `spf=pass` · `dkim=pass` · `dmarc=pass`
+      ⚠ Un mail peut arriver avec `spf=fail`. Gmail le tolère au début, puis
+      le classe en indésirables quand le volume monte — et les inscriptions
+      s'arrêtent sans qu'aucun réglage n'ait changé.
+- [ ] Si un `pass` manque : attendre la propagation DNS (minutes à heures)
+      avant de conclure que c'est mal configuré.
+
+### Une fois les trois `pass` verts
+- [ ] Authentication → Providers → Email → **Confirm email : ✅**
+      (la désactiver était le contournement, pas la cible)
+- [ ] Authentication → **Rate Limits** → monter à ~100/heure avant un post
+      LinkedIn, redescendre après.
+      ⚠ **Jamais au-dessus du plafond d'Amen** : Supabase compterait des
+      essais refusés contre ton quota.
+
+### Ce qui reste, hors emails
+- [ ] Vercel → `REQUIRE_AUTH=1` *(fait — actif au prochain déploiement)*
+- [ ] Vercel → **changer `SITE_PASSWORD`** (l'ancien est publié)
+- [ ] Supabase → SQL Editor → passer **migration 002** (entitlements) et
+      **003** (organisation). Sans la 002, un client paie et l'app le refuse.
+- [ ] GitHub → **repo en privé**
+
+---
+
 ## ⚠ À lire avant de commencer : la réputation est un actif COMMUN
 
 `eagleyecorp.fr` sert déjà à deux choses très différentes :
