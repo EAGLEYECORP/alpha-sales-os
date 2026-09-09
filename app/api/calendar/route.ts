@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import type { Meeting, Prospect } from "@/lib/types";
+import { lireMeetingsBornes, lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { icsCalendar, meetingToIcs } from "@/lib/ics";
 import { safeEqual } from "@/lib/access";
 
@@ -66,13 +66,10 @@ export async function GET(req: NextRequest) {
   }
 
   const db = createClient(url, key, { auth: { persistSession: false } });
-  const [{ data: mRows }, { data: pRows }] = await Promise.all([
-    db.from("meetings").select("data"),
-    db.from("prospects").select("data"),
-  ]);
-
-  const meetings = (mRows ?? []).map((r) => (r as { data: Meeting }).data).filter(Boolean);
-  const byId = new Map((pRows ?? []).map((r) => (r as { data: Prospect }).data).filter(Boolean).map((p) => [p.id, p]));
+  // ⚠ Les deux lectures étaient sans borne ni filtre. Voir lib/lecture-serveur.
+  const [rdv, pipe] = await Promise.all([lireMeetingsBornes(db), lireProspectsOperateur(db)]);
+  const meetings = rdv.meetings;
+  const byId = new Map(pipe.prospects.map((p) => [p.id, p]));
 
   const now = Date.now();
   const min = now - PASSE_JOURS * 86_400_000;

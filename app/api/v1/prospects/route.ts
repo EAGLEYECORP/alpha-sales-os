@@ -96,17 +96,47 @@ export async function POST(req: NextRequest) {
   const db = serviceClient();
   let stored = 0;
   let storeError: string | undefined;
+  let refuseesAutreProprietaire = 0;
 
   if (db && batch.accepted.length > 0) {
     // On fusionne avec l'existant plutôt que d'écraser : une fiche déjà
     // travaillée ne doit pas perdre son stade ni ses événements parce qu'un
     // scraper la renvoie.
     const ids = batch.accepted.map((p) => p.id);
-    const { data: existing } = await db.from("prospects").select("id, data").in("id", ids);
-    const byId = new Map((existing ?? []).map((r) => [String(r.id), r.data as Prospect]));
+    /**
+     * ⚠⚠ ON LIT AUSSI `proprietaire`, ET C'EST UNE CORRECTION DE SÉCURITÉ.
+     *
+     * La lecture ne portait que `id, data`, sans savoir À QUI la ligne
+     * appartenait — puis l'écriture faisait un `upsert` sur `id`, qui est la
+     * clé primaire GLOBALE de la table.
+     *
+     * Conséquence, exploitable par tout porteur d'une clé API valide qui
+     * connaît ou devine un identifiant : sa fiche entrante était fusionnée
+     * avec celle d'un AUTRE locataire — il en récupérait le stade, la
+     * timeline, les notes et le montant du deal — puis réécrite sous SON
+     * propriétaire. La victime perdait la ligne, et rien n'échouait.
+     *
+     * On lit donc le propriétaire, et une collision d'identifiant entre deux
+     * locataires se REFUSE au lieu de se fusionner. Refuser une fiche coûte
+     * un import à refaire ; fusionner coûte le pipe de quelqu'un d'autre.
+     */
+    const { data: existing } = await db.from("prospects").select("id, proprietaire, data").in("id", ids);
+    const byId = new Map(
+      (existing ?? []).map((r) => [String(r.id), { proprietaire: String(r.proprietaire ?? ""), data: r.data as Prospect }])
+    );
 
-    const rowsToWrite = batch.accepted.map((incoming) => {
-      const prev = byId.get(incoming.id);
+    const voles: string[] = [];
+    const rowsToWrite = batch.accepted
+      .filter((incoming) => {
+        const ligne = byId.get(incoming.id);
+        if (ligne && ligne.proprietaire && ligne.proprietaire !== v.appelant.proprietaire) {
+          voles.push(incoming.id);
+          return false;
+        }
+        return true;
+      })
+      .map((incoming) => {
+      const prev = byId.get(incoming.id)?.data;
       const merged: Prospect = prev
         ? {
             ...prev,
@@ -135,9 +165,20 @@ export async function POST(req: NextRequest) {
       return { id: merged.id, proprietaire: v.appelant.proprietaire, data: merged };
     });
 
-    const { error } = await db.from("prospects").upsert(rowsToWrite, { onConflict: "id" });
+    const { error } = rowsToWrite.length > 0
+      ? await db.from("prospects").upsert(rowsToWrite, { onConflict: "id" })
+      : { error: null };
     if (error) storeError = error.message;
     else stored = rowsToWrite.length;
+
+    // ⚠ Le refus se DIT. Un import silencieusement amputé se découvre des
+    // semaines plus tard, quand les fiches manquantes se remarquent.
+    if (voles.length > 0) {
+      refuseesAutreProprietaire = voles.length;
+      storeError =
+        `${voles.length} fiche(s) refusée(s) : leur identifiant appartient déjà à un autre propriétaire. ` +
+        `Fusionner aurait écrasé son pipe. Change les identifiants à la source.`;
+    }
   }
 
   return NextResponse.json(
@@ -148,6 +189,7 @@ export async function POST(req: NextRequest) {
       warnings: batch.warnings,
       summary: batch.summary,
       stored,
+      ...(refuseesAutreProprietaire > 0 ? { refuseesAutreProprietaire } : {}),
       ...(storeError ? { storeError } : {}),
       ...(db ? {} : { note: "Supabase non configuré : les fiches ont été validées mais PAS enregistrées." }),
       triage: {

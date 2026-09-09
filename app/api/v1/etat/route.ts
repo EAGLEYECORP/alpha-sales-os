@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
-import { PROPRIETAIRE_OPERATEUR } from "@/lib/sync-prospects";
+import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { autoriserApi } from "@/lib/api-keys";
 import { vitalSigns } from "@/lib/vital-signs";
 import { statutReel, resumeFile, type Proposition } from "@/lib/propositions";
@@ -61,16 +61,11 @@ export async function GET(req: NextRequest) {
    * ne se voit pas ; le jour où il y en a deux, l'agent de l'un lit le pipe de
    * l'autre. Le filtre coûte un index et ferme la porte avant qu'elle serve.
    */
-  const { data, error } = await db
-    .from("prospects")
-    .select("data")
-    .eq("proprietaire", PROPRIETAIRE_OPERATEUR)
-    .limit(2001);
-  if (error) return NextResponse.json({ error: "lecture impossible", detail: error.message }, { status: 500 });
+  const lecture = await lireProspectsOperateur(db);
+  if (lecture.erreur)
+    return NextResponse.json({ error: "lecture impossible", detail: lecture.erreur }, { status: 500 });
 
-  const brut = (data ?? []).map((r) => r.data as Prospect).filter(Boolean);
-  const tronque = brut.length > 2000;
-  const prospects = tronque ? brut.slice(0, 2000) : brut;
+  const { prospects, tronque } = lecture;
 
   if (prospects.length === 0) {
     return NextResponse.json({

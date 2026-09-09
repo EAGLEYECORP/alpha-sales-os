@@ -198,13 +198,22 @@ test("sync — désactivée, l'écran dit ce qu'on PERD, pas juste « off »", (
 
 // ── LE CHEMIN DE BOUT EN BOUT ──────────────────────────────────────────
 
-test("sync — l'orchestrateur ne lit QUE le périmètre de l'opérateur", () => {
+test("sync — le filtre de propriétaire vit dans la lecture PARTAGÉE", () => {
   /**
-   * La requête balayait la table entière. Avec un seul locataire ça ne se voit
-   * pas ; au deuxième, l'agent de l'un lit le pipe de l'autre.
+   * ⚠ CE TEST NE REGARDAIT QU'UNE ROUTE, ET C'ÉTAIT SON DÉFAUT.
+   *
+   * Le raisonnement était juste — « la requête balayait la table entière ; au
+   * deuxième locataire, l'agent de l'un lit le pipe de l'autre » — et le
+   * filtre avait bien été posé sur `/api/v1/etat`. Un balayage a montré que
+   * TROIS autres routes lisaient `prospects` sans lui, dont `/api/campaign/tick`,
+   * qui COMPOSE DES NUMÉROS. Une règle appliquée à un endroit sur quatre.
+   *
+   * Le filtre vit maintenant dans `lib/lecture-serveur.ts`, et le test qui
+   * compte est celui d'à côté : aucune route ne lit la table directement.
    */
-  const src = readFileSync(join(process.cwd(), "app/api/v1/etat/route.ts"), "utf8");
+  const src = readFileSync(join(process.cwd(), "lib/lecture-serveur.ts"), "utf8");
   assert.match(src, /\.eq\("proprietaire", PROPRIETAIRE_OPERATEUR\)/);
+  assert.match(src, /LIMITE_LECTURE \+ 1/, "on lit une de plus pour SAVOIR qu'on tronque");
 });
 
 test("sync — le schéma accepte une écriture SANS utilisateur authentifié", () => {

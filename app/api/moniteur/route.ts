@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import type { Prospect } from "@/lib/types";
 import { buildCampaignRun } from "@/lib/campaign-runner";
 import { plafondPalierServeur } from "@/lib/paliers-campagne";
 import { etatMoniteur, type EtatAutopilote } from "@/lib/moniteur";
-import { PROPRIETAIRE_OPERATEUR } from "@/lib/sync-prospects";
+import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,19 +78,17 @@ export async function GET() {
 
   if (!db) return NextResponse.json(aveugle(etatAuto));
 
-  const { data, error } = await db
-    .from("prospects")
-    .select("data")
-    // Le périmètre de l'opérateur, comme `/api/v1/etat` : sans ce filtre, le
-    // jour où il y a deux locataires, l'un supervise le pipe de l'autre.
-    .eq("proprietaire", PROPRIETAIRE_OPERATEUR)
-    .limit(2000);
+  // Périmètre de l'opérateur + borne, par la lecture unique du dépôt
+  // (`lib/lecture-serveur.ts`). Ces deux moitiés étaient écrites ici à la
+  // main ; trois autres routes n'en avaient qu'une, ou aucune.
+  const lecture = await lireProspectsOperateur(db);
+  const error = lecture.erreur;
 
   // Une lecture en échec est un ANGLE MORT, pas un pipe vide. Rendre des
   // zéros ici afficherait un tableau de bord calme sur une machine aveugle.
   if (error) return NextResponse.json(aveugle(etatAuto));
 
-  const prospects = (data ?? []).map((r) => r.data as Prospect).filter(Boolean);
+  const prospects = lecture.prospects;
 
   // ⚠ LE MÊME PLAFOND QUE LE CRON, par la même fonction. Le recopier ici
   // ferait annoncer à l'écran un plafond que l'autopilote n'applique pas.

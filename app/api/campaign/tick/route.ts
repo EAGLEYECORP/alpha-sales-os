@@ -5,6 +5,7 @@ import { buildCampaignRun } from "@/lib/campaign-runner";
 import { PALIERS_CAMPAGNE, plafondPalierServeur } from "@/lib/paliers-campagne";
 import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-tick";
 import { safeEqual } from "@/lib/access";
+import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -83,27 +84,23 @@ export async function POST(req: NextRequest) {
   const max = Number(url.searchParams.get("max") ?? MAX_CALLS_PER_TICK);
   const dryRun = !armed() || url.searchParams.get("dryRun") === "1";
 
-  // ── Lecture des prospects ──
-  //
-  // ⚠ La limite est une TRONCATURE, et elle était muette. Au-delà de 2 000
-  // fiches, celles qui suivent n'entrent jamais dans la file : elles ne sont
-  // jamais rappelées, et rien dans la réponse ne le disait. Un autopilote qui
-  // ignore une partie du pipe sans le signaler est pire qu'un autopilote
-  // arrêté — on croit qu'il tourne.
-  //
-  // On lit donc UNE de plus que la limite pour SAVOIR qu'on tronque, puis on
-  // le remonte dans la réponse (et n8n peut alerter dessus).
-  const LIMITE_LECTURE = 2000;
-  const { data, error } = await db.from("prospects").select("data").limit(LIMITE_LECTURE + 1);
-  if (error) {
-    return NextResponse.json({ error: "lecture impossible", detail: error.message }, { status: 500 });
+  /**
+   * ── Lecture des prospects ──
+   *
+   * ⚠ ELLE NE FILTRAIT PAS PAR PROPRIÉTAIRE. La borne à 2 000 était là, le
+   * cloisonnement non — alors que `/api/v1/etat` portait déjà le raisonnement
+   * écrit. Sur cette route-ci la conséquence n'est pas une fuite de lecture :
+   * c'est un APPEL TÉLÉPHONIQUE passé au prospect d'un autre locataire, avec
+   * notre ligne et sur notre facture. Les deux moitiés vivent maintenant dans
+   * `lib/lecture-serveur.ts`, et un test interdit la lecture directe.
+   */
+  const lecture = await lireProspectsOperateur(db);
+  if (lecture.erreur) {
+    return NextResponse.json({ error: "lecture impossible", detail: lecture.erreur }, { status: 500 });
   }
-  const brut = (data ?? []).map((r) => r.data as Prospect).filter(Boolean);
-  const tronque = brut.length > LIMITE_LECTURE;
-  const prospects = tronque ? brut.slice(0, LIMITE_LECTURE) : brut;
-  const avertissement = tronque
-    ? `⚠ Plus de ${LIMITE_LECTURE} prospects côté serveur : seuls les ${LIMITE_LECTURE} premiers entrent dans la file. Les suivants ne sont JAMAIS rappelés — il faut paginer le tick ou filtrer côté base.`
-    : undefined;
+  const prospects = lecture.prospects;
+  const avertissement = lecture.avertissement || undefined;
+
   if (prospects.length === 0) {
     return NextResponse.json({
       ok: true,

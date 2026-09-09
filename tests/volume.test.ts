@@ -113,10 +113,15 @@ test("persistance — l'écriture est différée MAIS vidée avant la fermeture"
 test("autopilote — la troncature à 2 000 prospects ne peut plus être muette", () => {
   // Un autopilote qui ignore une partie du pipe sans le dire est pire qu'un
   // autopilote arrêté : on croit qu'il tourne.
-  const src = readFileSync(join(process.cwd(), "app/api/campaign/tick/route.ts"), "utf8");
+  // La troncature vit désormais dans la lecture partagée : elle était écrite
+  // dans le tick, et les trois autres lecteurs ne l'avaient pas.
+  const src = readFileSync(join(process.cwd(), "lib/lecture-serveur.ts"), "utf8");
   assert.match(src, /LIMITE_LECTURE \+ 1/, "on lit une de plus pour SAVOIR qu'on tronque");
   assert.match(src, /avertissement/);
-  assert.match(src, /tronque: true/);
+  assert.match(src, /tronque,/);
+  // Et le tick la remonte au lieu de l'avaler.
+  const tick = readFileSync(join(process.cwd(), "app/api/campaign/tick/route.ts"), "utf8");
+  assert.match(tick, /lecture\.avertissement/);
 });
 
 test("volume — une leçon de terrain reste légère", () => {

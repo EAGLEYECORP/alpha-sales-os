@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Prospect, Meeting } from "@/lib/types";
+import { lireMeetingsBornes, lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { pickPush } from "@/lib/push-digest";
 import { sendPush, type PushSubscription } from "@/lib/webpush";
 import { safeEqual } from "@/lib/access";
@@ -69,12 +69,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const [{ data: pRows }, { data: mRows }] = await Promise.all([
-    db.from("prospects").select("data"),
-    db.from("meetings").select("data"),
-  ]);
-  const prospects = (pRows ?? []).map((r) => (r as { data: Prospect }).data).filter(Boolean);
-  const meetings = (mRows ?? []).map((r) => (r as { data: Meeting }).data).filter(Boolean);
+  /**
+   * ⚠ Cette route lisait les DEUX tables entières, sans borne et sans filtre —
+   * et elle tourne désormais toutes les 30 minutes sur un cron. Une fonction
+   * serverless qui charge une table entière meurt en mémoire au moment précis
+   * où le produit commence à marcher.
+   */
+  const [pipe, rdv] = await Promise.all([lireProspectsOperateur(db), lireMeetingsBornes(db)]);
+  const prospects = pipe.prospects;
+  const meetings = rdv.meetings;
 
   const now = new Date();
   const message = pickPush(prospects, meetings, now);
