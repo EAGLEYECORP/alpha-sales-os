@@ -86,6 +86,25 @@ export const CHEMINS_COMMUNS = [
  * qui possède une seule brique serait absurde.
  */
 export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
+  /**
+   * ── ALPHA CEO — MAÎTRE SEUL, et le raisonnement n'est pas le confort ──
+   *
+   * ⚠ `[]` = aucune brique ne l'achète. C'est une console d'EXPLOITATION de
+   * NOTRE déploiement : elle dit si le SMTP délivre, si les prix Stripe sont
+   * branchés, si une migration manque. Rien de tout ça n'appartient au
+   * client — il n'existe aucun chemin d'identifiants par locataire, donc ces
+   * réglages sont les nôtres et lui seraient incompréhensibles.
+   *
+   * ⚠⚠ ET ELLE SE MASQUE, ELLE NE SE GRISE PAS (`lib/verrous.ts`) : griser,
+   * c'est annoncer. Montrer à un client une porte « Alpha CEO » l'inviterait
+   * à demander ce qu'on y voit de son compte — alors que la réponse est
+   * « rien de personnel », mais qu'il faudrait la donner à chaque fois.
+   *
+   * Ce qui LE concerne — son stockage, ses brouillons, ses fiches sans
+   * prochaine action — vit déjà sur ses écrans : `/controle`, `/aujourdhui`,
+   * et le bandeau de stockage monté dans la coquille.
+   */
+  "/ceo": [],
   // ── CRM & Pipeline : le socle de la vente ──
   "/pipeline": ["crm"],
   "/prospects": ["crm"],

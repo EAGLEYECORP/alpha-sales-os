@@ -146,12 +146,46 @@ d'expéditeur, conformité, données perdues.
 
 ---
 
+## L'écran et les sondes
+
+> Écran : [`app/(app)/ceo/page.tsx`](../app/(app)/ceo/page.tsx) ·
+> Branchement : [`lib/ceo-sondes.ts`](../lib/ceo-sondes.ts) ·
+> Tests : [`tests/ceo-sondes.test.ts`](../tests/ceo-sondes.test.ts)
+
+`/ceo` affiche les trois blocs dans cet ordre : ce qui demande une main
+maintenant · ce qu'on n'a pas regardé · le micro (la carte par nature, puis le
+relevé des pannes). L'écran est **réservé au compte maître** et **masqué**
+plutôt que grisé chez les autres — c'est l'exploitation de notre déploiement,
+rien n'y est à vendre.
+
+| Champ de `EtatSysteme` | Sonde réelle |
+|---|---|
+| `smtpConfigure` | `GET /api/health` → `capabilities.email.configured` |
+| `prixStripeConfigures` | `GET /api/health` → `capabilities.billing.prices` |
+| `stockage` | `readStorageHealth()` (`lib/storage-health.ts`) |
+| `pipeSynchronisable` | `peutSynchroniser(hydratationPipe)`, **seulement si `pipeServeur`** |
+| `brouillonsEnAttente` | les brouillons du store en statut `pending` |
+| `fichesSansProchaineAction` | fiches **vivantes** sans `nextStep.date` |
+| `palierEnAttente` | `evaluerProgression(...).courant.etat === "pret"` |
+
+> ⚠ **Le branchement vit dans un module pur, pas dans la page**, et ce n'est
+> pas du rangement. `/api/health` ne rend le détail qu'au porteur du cookie
+> d'accès : sans lui la réponse est `{ ok, checkedAt }`, un 200 valide **sans
+> `capabilities`**. Un `Boolean(...)` autour de la lecture rendrait `false` —
+> « aucune inscription n'aboutit », en rouge et en permanence, sur une
+> installation saine. Écrit dans un composant client, rien ne pourrait tester
+> ça. Écrit dans `lib/`, une mutation le fait tomber.
+
+> ⚠ Deuxième piège du même genre : hors mode serveur, `peutSynchroniser`
+> répond **vrai** (mode `locale`, historique). Recopié tel quel, l'écran
+> allumerait un voyant vert sur un organe absent — pire qu'un voyant éteint.
+> D'où le `null` quand `pipeServeur` est inactif.
+
 ## Ce qui reste à faire
 
-Le module est la **carte et le diagnostic**, pas encore l'écran. Il manque :
-
-- l'écran `/ceo` — macro, avec le micro qui s'ouvre sur le module concerné ;
-- le branchement des sondes réelles (`/api/health` pour SMTP et Stripe,
-  `analyseStorage` pour le stockage, `peutSynchroniser` pour le pipe) ;
-- l'historique : une alerte qui revient toutes les semaines est un défaut de
-  conception, pas une tâche.
+- l'**historique** : une alerte qui revient toutes les semaines est un défaut
+  de conception, pas une tâche — et rien ne le voit aujourd'hui ;
+- les pannes du relevé qui n'ont **pas encore de sonde** (`spf-casse`,
+  `migration-absente`, `module-mort`, `fiche-demo-envoyee`, `plafond-decret`)
+  sont documentées et détectables à la main, pas mesurées. Elles restent donc
+  affichées en gris : le relevé ne prétend pas les surveiller.

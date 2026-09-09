@@ -35,6 +35,7 @@ import {
   Search,
   Send,
   Settings,
+  Stethoscope,
   Lock,
   Sparkles,
   RadioTower,
@@ -157,13 +158,28 @@ const NAV_GROUPES: NavGroup[] = [
       { href: "/activity", label: "Activité", icon: Activity },
     ],
   },
+  /**
+   * ⚠ CE GROUPE A ÉTÉ SÉPARÉ DE « Régler la machine », ET LA DISTINCTION EST
+   * RÉELLE : régler, c'est choisir ; vérifier, c'est constater. Alpha CEO,
+   * le pilote et la recette répondent tous les trois à « est-ce que ça tourne
+   * VRAIMENT ? » — question qu'on se pose à un autre moment que « comment je
+   * veux que ça marche ». Les mélanger enterrait le diagnostic entre deux
+   * écrans de préférences.
+   */
+  {
+    id: "verifier",
+    label: "Vérifier que ça tourne",
+    items: [
+      { href: "/ceo", label: "Alpha CEO", icon: Stethoscope },
+      { href: "/pilote", label: "Pilote", icon: Cpu },
+      { href: "/recette", label: "Recette", icon: ClipboardCheck },
+    ],
+  },
   {
     id: "regler",
     label: "Régler la machine",
     items: [
-      { href: "/pilote", label: "Pilote", icon: Cpu },
       { href: "/demarrage", label: "Prise en main", icon: Footprints },
-      { href: "/recette", label: "Recette", icon: ClipboardCheck },
       { href: "/prompts", label: "Prompts", icon: Sparkles },
       { href: "/compte", label: "Compte", icon: UserCog },
       { href: "/settings", label: "Réglages", icon: Settings },
