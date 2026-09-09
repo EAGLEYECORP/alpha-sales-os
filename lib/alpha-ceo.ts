@@ -314,6 +314,25 @@ export const PANNES: PanneCEO[] = [
     module: "CLAUDE.md",
   },
   {
+    id: "ordonnanceur-muet",
+    symptome: "L'autopilote existe, il est verrouillé, il est testé — et personne ne l'appelle jamais.",
+    pourquoiInvisible:
+      "Les routes répondent parfaitement quand on les interroge à la main : 200, un statut propre, aucune erreur. Ce qui manque n'est pas dans le code, c'est l'ORDONNANCEUR — et l'absence d'un déclencheur ne produit aucune trace. Le pipe ne bouge simplement pas, et on cherche le bug dans la file d'appels.",
+    detection:
+      "`GET /api/moniteur` → `autopilote: \"non-configure\"`, ou aucune ligne récente dans `cron.job_run_details` côté Supabase.",
+    gravite: "a-traiter",
+    module: "supabase/migrations/004-ordonnanceur.sql",
+  },
+  {
+    id: "autopilote-en-simulation",
+    symptome: "Le cron tourne, les journaux sont verts, et aucun appel ne part.",
+    pourquoiInvisible:
+      "C'est un état VOULU — sans `CAMPAIGN_AUTOPILOT=on` la route simule et rend ce qu'elle AURAIT fait, ce qui est exactement la garde qu'on veut au démarrage. Le piège est qu'elle répond `ok: true` : tout a l'air de fonctionner, et on peut rester des semaines en simulation en croyant démarcher.",
+    detection: "`GET /api/moniteur` → `autopilote: \"simulation\"`, alors que des fiches attendent dans la file.",
+    gravite: "info",
+    module: "app/api/campaign/tick/route.ts",
+  },
+  {
     id: "prix-stripe-absent",
     symptome: "Le bouton « payer » tombe dans le vide.",
     pourquoiInvisible:
@@ -372,6 +391,15 @@ export interface EtatSysteme {
   fichesSansProchaineAction: number;
   /** Un palier de campagne attend-il une validation ? */
   palierEnAttente: boolean;
+  /**
+   * L'autopilote, tel que le SERVEUR le connaît. `null` = pas regardé.
+   *
+   * ⚠ Trois états, et aucun n'est « en panne » : armé (les appels partent),
+   * simulation (il calcule et n'appelle personne — voulu), non-configuré (il
+   * ne tourne pas du tout). Les confondre fait chercher un bug là où il n'y a
+   * qu'un réglage jamais posé.
+   */
+  autopilote: "arme" | "simulation" | "non-configure" | null;
 }
 
 export interface Alerte {
@@ -435,6 +463,27 @@ export function diagnostiquer(etat: EtatSysteme): Alerte[] {
       true
     );
   }
+  /**
+   * ⚠ « NON CONFIGURÉ » N'EST PAS UNE PANNE, ET POURTANT ÇA S'ALERTE.
+   *
+   * C'est la nuance de ce module : rien n'est cassé, tout est écrit, testé,
+   * verrouillé — et il ne se passe rien, parce que personne n'a posé le
+   * déclencheur. Aucune erreur nulle part. C'est précisément le genre de trou
+   * qu'Alpha CEO existe pour nommer.
+   */
+  if (etat.autopilote === "non-configure") {
+    pousser(
+      parId(PANNES, "ordonnanceur-muet"),
+      "Applique la migration 004 et pose CRON_SECRET : sans ordonnanceur, l'autopilote ne tourne jamais."
+    );
+  }
+  if (etat.autopilote === "simulation") {
+    pousser(
+      parId(PANNES, "autopilote-en-simulation"),
+      "L'autopilote calcule et n'appelle personne. Pose CAMPAIGN_AUTOPILOT=on quand tu veux qu'il parte — c'est un geste délibéré, et il doit le rester.",
+      true
+    );
+  }
   if (etat.palierEnAttente) {
     pousser(parId(POINTS, "validation-palier"), "Un palier de campagne attend TA validation — elle ne se prend jamais toute seule.", true);
   }
@@ -470,6 +519,7 @@ export function anglesMorts(etat: EtatSysteme): string[] {
   if (etat.prixStripeConfigures === null) out.push("On ne sait pas si les prix Stripe sont branchés.");
   if (etat.stockage === null) out.push("Le stockage local n'a pas été mesuré.");
   if (etat.pipeSynchronisable === null) out.push("Le mode pipe serveur n'est pas actif, ou son état n'a pas été lu.");
+  if (etat.autopilote === null) out.push("On ne sait pas si l'autopilote tourne — donc pas si la machine appelle.");
   return out;
 }
 

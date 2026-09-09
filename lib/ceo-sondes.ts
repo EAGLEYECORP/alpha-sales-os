@@ -50,6 +50,11 @@ export interface ReponseSante {
   };
 }
 
+/** La part de `/api/moniteur` dont Alpha CEO a besoin. */
+export interface ReponseMoniteur {
+  autopilote?: "arme" | "simulation" | "non-configure";
+}
+
 export interface EntreeSondes {
   /** La réponse de `/api/health`. `null` = pas encore revenue, ou en échec. */
   sante: ReponseSante | null;
@@ -62,6 +67,8 @@ export interface EntreeSondes {
   prospects: Prospect[];
   /** Un palier de campagne est-il `pret` sans avoir été validé ? */
   palierPret: boolean;
+  /** La réponse de `/api/moniteur`. `null` = pas revenue, ou en échec. */
+  moniteur: ReponseMoniteur | null;
 }
 
 /**
@@ -120,5 +127,17 @@ export function etatDepuisSondes(e: EntreeSondes): EtatSysteme {
     brouillonsEnAttente: e.brouillons.filter((d) => d.status === "pending").length,
     fichesSansProchaineAction: sansProchaineAction(e.prospects),
     palierEnAttente: e.palierPret,
+    /**
+     * ⚠ Même piège que `/api/health` : une réponse absente n'est pas « il ne
+     * tourne pas », c'est « on n'a pas regardé ». Une valeur inconnue non plus
+     * — un état futur qu'on ne saurait pas lire ne doit pas se faire passer
+     * pour l'un des trois qu'on connaît.
+     */
+    autopilote:
+      e.moniteur?.autopilote === "arme" ||
+      e.moniteur?.autopilote === "simulation" ||
+      e.moniteur?.autopilote === "non-configure"
+        ? e.moniteur.autopilote
+        : null,
   };
 }

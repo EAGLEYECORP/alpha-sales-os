@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   commissionPour,
@@ -213,4 +213,57 @@ test("⚠ le socle gratuit reste SANS contrepartie — aucune créance sur un ut
   }
   // La commission se calcule sur une OFFRE, et rien d'autre.
   assert.match(src, /export function commissionPour\(offre: OffrePublique\)/);
+});
+
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE CÂBLAGE — un modèle de commission que personne ne lit ne se pitche pas.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ LE MODULE EST LU PAR UN ÉCRAN, PAS SEULEMENT PAR SES TESTS", () => {
+  /**
+   * ⚠ CE TEST EST NÉ D'UN AUDIT, PAS D'UNE INTUITION.
+   *
+   * Un balayage de `lib/` a montré que `apporteur.ts` n'était importé par
+   * AUCUN fichier hors de ses propres tests — alors qu'il porte une décision
+   * commerciale reconfirmée le jour même. Le module rendait les bons chiffres,
+   * personne ne pouvait les voir, et rien n'échouait : le défaut récurrent du
+   * dépôt, sur le module qui décide de ce qu'on paie à quelqu'un.
+   *
+   * Ce test ne vérifie pas qu'un écran est joli. Il vérifie qu'il existe un
+   * appelant, et que cet appelant lit les VRAIS taux au lieu de recopier
+   * « 30 % » dans du texte — une constante recopiée dans une vue est une
+   * seconde source qui dérive au premier changement de grille.
+   */
+  const fichiers = [
+    ...readdirSync(join(process.cwd(), "components/payouts")).map((f) => join("components/payouts", f)),
+  ];
+  const lecteurs = fichiers.filter((f) => readFileSync(join(process.cwd(), f), "utf8").includes("@/lib/apporteur"));
+  assert.ok(lecteurs.length > 0, "aucun écran ne lit lib/apporteur : le modèle est invisible, donc invendable");
+
+  const src = lecteurs.map((f) => readFileSync(join(process.cwd(), f), "utf8")).join("\n");
+  assert.match(src, /commissionPour\(/, "l'écran doit CALCULER la commission, pas la décrire");
+  assert.match(src, /TAUX_SETUP|TAUX_MENSUEL/, "les taux affichés doivent venir du module");
+  assert.match(src, /messageVersement\(/, "…et le statut de versement aussi : le montant sans la condition est une promesse");
+
+  // Et l'écran est bien monté quelque part.
+  const page = readFileSync(join(process.cwd(), "app/(app)/payouts/page.tsx"), "utf8");
+  assert.match(page, /GrilleApporteur/, "le composant existe mais n'est monté sur aucune page");
+});
+
+test("⚠ aucun taux n'est RECOPIÉ dans la vue", () => {
+  /**
+   * Le piège suivant, et il est classique : écrire « 30 % du setup » en dur
+   * dans le JSX. Ça marche, ça s'affiche, et le jour où la grille change, la
+   * page continue d'annoncer l'ancien taux à un apporteur qui, lui, l'a lu.
+   *
+   * Mutation vérifiée : remplacer `Math.round(TAUX_SETUP * 100)` par `30` fait
+   * tomber ce test.
+   */
+  const src = readFileSync(join(process.cwd(), "components/payouts/grille-apporteur.tsx"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+  assert.ok(!/\b30 ?%/.test(src.replace(/TAUX_SETUP \* 100/g, "")), "un taux en dur dans la vue dérivera de la grille");
+  assert.ok(!/\b12 mois\b/.test(src), "la durée aussi doit venir de MOIS_COMMISSIONNES");
 });

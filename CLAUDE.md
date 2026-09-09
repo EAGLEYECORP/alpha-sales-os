@@ -445,6 +445,43 @@ lui qui fait dire « un closer suffit pour 500/jour »), tarif Telnyx à la minu
 >   verdict et nomme le fichier ; la constante se change à la main, et ça se
 >   voit dans un diff.
 
+## CE QUI TOURNE SANS PERSONNE — l'ordonnanceur et le moniteur
+Décidé le 09/09/2026. Le but : Alpha tourne dans la poche du client ET sur son
+ordi, sans qu'aucune machine reste allumée chez nous.
+- **L'ordonnanceur est `pg_cron` + `pg_net`** (`supabase/migrations/004-ordonnanceur.sql`),
+  jamais Vercel Cron. **Vercel Cron émet des `GET`**, or `/api/campaign/tick`
+  et `/api/push/tick` réservent le `GET` au STATUT en lecture seule et le
+  `POST` à l'exécution : un cron Vercel aurait rendu 200 toutes les heures sans
+  jamais passer un appel. Vert, silencieux, inutile. Et sur un plan Hobby,
+  c'est une exécution par jour. Fusionner les verbes pour contenter le cron
+  serait le mauvais échange : « lire l'état » et « composer des numéros » ne
+  sont pas la même requête.
+  > ⚠ Le secret vit dans le **Vault** Supabase, jamais dans le SQL versionné.
+- **⚠⚠ LE CRON NE DÉCIDE JAMAIS QUAND APPELER, IL DEMANDE.** C'est la route qui
+  refuse hors fenêtre, au-delà du palier, trop tôt après une tentative.
+  L'horaire du plan n'est qu'une économie d'invocations : l'élargir ne peut pas
+  produire un appel à minuit. **Un test interdit au SQL de recopier la fenêtre
+  d'appel** — deux définitions de « peut-on appeler maintenant ? » et c'est
+  celle du cron qui gagne, parce qu'elle s'exécute en premier et que personne
+  ne relit du SQL.
+- **`/moniteur` LIT LE SERVEUR, jamais le store** (`lib/moniteur.ts`), et un
+  test interdit `useAlpha` dans cet écran. Le store vit dans le `localStorage` :
+  un téléphone et un ordinateur sont DEUX Alpha. L'autopilote, lui, tourne sur
+  le serveur — un moniteur branché sur le store afficherait zéro appel pendant
+  que le cron en passe quarante, en ayant l'air parfaitement fonctionnel.
+  > ⚠ **Seules les tentatives du ROBOT** comptent comme travail de la machine
+  > (préfixe d'identifiant posé par `appendCallAttempt`). Sinon l'écran annonce
+  > « la machine a passé 3 appels » un jour où l'humain les a passés à la main.
+  > La garde est dans un test qui fabrique l'événement avec la VRAIE fonction :
+  > changer ce format ferait tomber le moniteur à zéro **en silence**.
+  > ⚠ **Un écran de supervision a un mode de panne à lui : afficher du calme.**
+  > Base injoignable → `null` et un tiret, jamais `0`. Zéro parce que rien ne
+  > tourne, zéro parce qu'on ne voit rien et zéro parce que tout va bien
+  > demandent trois gestes opposés.
+- **`/ceo`** (`lib/alpha-ceo.ts` + `lib/ceo-sondes.ts`) diagnostique tout ça.
+  Maître seul, **masqué** et non grisé : griser, c'est annoncer, et cette
+  console parle de NOTRE exploitation, pas d'une brique à vendre.
+
 ## Les quatre règles d'écran (elles ont toutes coûté un bug)
 1. **`prospectDefaults` (`lib/seed.ts`) est le socle de TOUS les imports**, pas
    des données de démo. Tout champ non optionnel de `Prospect` y a sa valeur

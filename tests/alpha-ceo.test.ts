@@ -30,6 +30,7 @@ const VIDE: EtatSysteme = {
   brouillonsEnAttente: 0,
   fichesSansProchaineAction: 0,
   palierEnAttente: false,
+  autopilote: null,
 };
 
 // ═══════════ LA CARTE ═══════════
@@ -158,7 +159,7 @@ test("⚠ « PAS MESURÉ » NE PRODUIT AUCUNE ALERTE", () => {
    * L'angle mort se DIT, ailleurs et autrement.
    */
   assert.deepEqual(diagnostiquer(VIDE), [], "un état non mesuré ne doit rien alarmer");
-  assert.ok(anglesMorts(VIDE).length >= 4, "…mais il doit se DIRE, explicitement");
+  assert.ok(anglesMorts(VIDE).length >= 5, "…mais il doit se DIRE, explicitement");
 });
 
 test("mesuré et FAUX alerte ; mesuré et VRAI se tait", () => {
@@ -186,6 +187,7 @@ test("⚠ L'URGENT PASSE EN PREMIER — l'ordre est la moitié du produit", () =
     brouillonsEnAttente: 3,
     fichesSansProchaineAction: 12,
     palierEnAttente: true,
+    autopilote: "non-configure",
   };
   const a = diagnostiquer(tout);
   const rang = { urgent: 0, "a-traiter": 1, info: 2 } as const;
@@ -224,6 +226,7 @@ test("chaque alerte porte une ACTION à l'impératif", () => {
     brouillonsEnAttente: 1,
     fichesSansProchaineAction: 1,
     palierEnAttente: true,
+    autopilote: "non-configure",
   });
   assert.ok(a.length >= 6);
   for (const x of a) {

@@ -9,6 +9,7 @@ import { ArgentDeDemo } from "@/components/donnees-de-demo";
 import { eur } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { GrilleApporteur } from "@/components/payouts/grille-apporteur";
 
 /**
  * Payouts — ta part, prélevée sur chaque vente, cumulée depuis la première.
@@ -58,6 +59,11 @@ export default function PayoutsPage() {
         <Tile label="Versé" value={eur(summary.settledTotal)} tone="text-signal-green" sub="ta part reçue" />
         <Tile label="En attente" value={eur(summary.pendingTotal)} tone="text-signal-amber" sub="ta part due" />
       </section>
+
+      {/* ⚠ La grille d'apport : `lib/apporteur.ts` n'était importé par AUCUN
+          fichier hors de ses tests. Un modèle de commission que personne ne peut
+          lire ne se pitche pas — on retombe sur « je te donnerai un truc ». */}
+      <GrilleApporteur />
 
       <p className="flex items-start gap-1.5 px-1 text-[11px] text-paper-faint">
         <Info size={12} className="mt-0.5 shrink-0" />

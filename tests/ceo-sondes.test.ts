@@ -45,6 +45,7 @@ const BASE: EntreeSondes = {
   brouillons: [],
   prospects: [],
   palierPret: false,
+  moniteur: null,
 };
 
 // ═══════════ LE PIÈGE CENTRAL : /api/health TRONQUÉE ═══════════
@@ -102,7 +103,7 @@ test("mesuré et FAUX alerte bien — la sonde n'est pas inerte", () => {
   const ids = diagnostiquer(etat).map((a) => a.id);
   assert.ok(ids.includes("smtp-absent"), "un SMTP mesuré absent doit alerter");
   assert.ok(ids.includes("prix-stripe-absent"));
-  assert.equal(anglesMorts(etat).length, 2, "mesuré = plus un angle mort (restent le stockage et le pipe)");
+  assert.equal(anglesMorts(etat).length, 3, "mesuré = plus un angle mort (restent le stockage, le pipe et l'autopilote)");
 
   // Et l'inverse : configuré ne dit rien et n'aveugle rien.
   const bon = etatDepuisSondes({
@@ -185,6 +186,57 @@ test("le palier PRÊT remonte comme une décision humaine, jamais comme une acti
   assert.equal(alerte!.humain, true);
 });
 
+// ═══════════ L'AUTOPILOTE ═══════════
+
+test("⚠ « NON CONFIGURÉ » N'EST PAS UNE PANNE — ET POURTANT ÇA S'ALERTE", () => {
+  /**
+   * ⚠ LA NUANCE QUE CE MODULE EXISTE POUR NOMMER, et elle est réelle depuis
+   * aujourd'hui : `/api/campaign/tick` est écrit, testé, verrouillé — et si
+   * personne ne pose l'ordonnanceur, il ne tourne jamais. Rien ne casse, rien
+   * n'échoue, aucune erreur nulle part. Le pipe ne bouge simplement pas, et on
+   * va chercher le bug dans la file d'appels.
+   *
+   * Mutation vérifiée : retirer la branche `non-configure` de `diagnostiquer`
+   * fait tomber ce test.
+   */
+  const ids = (a: string) =>
+    diagnostiquer(etatDepuisSondes({ ...BASE, moniteur: { autopilote: a as never } })).map((x) => x.id);
+
+  assert.ok(ids("non-configure").includes("ordonnanceur-muet"), "un autopilote jamais branché doit se dire");
+  assert.ok(ids("simulation").includes("autopilote-en-simulation"), "…et la simulation aussi : elle répond ok à tout");
+  assert.deepEqual(ids("arme"), [], "armé = plus rien à signaler");
+});
+
+test("⚠ la simulation attend une DÉCISION, elle n'attend pas Alpha", () => {
+  /**
+   * Armer l'autopilote fait partir de vrais appels vers de vraies personnes.
+   * C'est le geste le plus lourd de tout le produit : il ne se prend pas tout
+   * seul, et l'écran doit dire qui l'attend — sinon on croit qu'Alpha va s'en
+   * charger, et on reste en simulation des semaines.
+   */
+  const a = diagnostiquer(etatDepuisSondes({ ...BASE, moniteur: { autopilote: "simulation" } }));
+  assert.equal(a.find((x) => x.id === "autopilote-en-simulation")!.humain, true);
+});
+
+test("⚠ un état d'autopilote INCONNU se lit comme « pas mesuré », jamais comme un des trois", () => {
+  /**
+   * ⚠ Même piège que `/api/health` tronquée, sur une autre sonde. Une réponse
+   * absente, un champ manquant, ou une valeur d'un futur état qu'on ne sait
+   * pas lire : aucun des trois ne doit se faire passer pour « armé » (on
+   * croirait que ça tourne) ni pour « non configuré » (on irait reconfigurer
+   * ce qui marche).
+   *
+   * Mutation vérifiée : remplacer la liste blanche par `e.moniteur?.autopilote
+   * ?? null` laisse passer la valeur inconnue et fait tomber ce test.
+   */
+  for (const cas of [null, {}, { autopilote: "en-pause" as never }]) {
+    const etat = etatDepuisSondes({ ...BASE, moniteur: cas });
+    assert.equal(etat.autopilote, null, `« ${JSON.stringify(cas)} » ne doit pas se faire passer pour un état connu`);
+    assert.deepEqual(diagnostiquer(etat), [], "et il n'alarme pas");
+    assert.ok(anglesMorts(etat).some((p) => /autopilote/.test(p)), "…mais il se DIT");
+  }
+});
+
 // ═══════════ LE BRANCHEMENT LUI-MÊME ═══════════
 
 test("⚠ L'ÉCRAN LIT RÉELLEMENT LES SONDES — le défaut récurrent du dépôt", () => {
@@ -205,6 +257,7 @@ test("⚠ L'ÉCRAN LIT RÉELLEMENT LES SONDES — le défaut récurrent du dép�
     "readStorageHealth", // le stockage local
     "hydratationPipe", // l'état de chargement du pipe
     "evaluerProgression", // le palier prêt à valider
+    "/api/moniteur", // l'autopilote, tel que le serveur le connaît
   ]) {
     assert.ok(src.includes(sonde), `l'écran /ceo n'interroge pas « ${sonde} » : la console ne sonde rien`);
   }

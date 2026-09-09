@@ -24,7 +24,7 @@ import {
   type Gravite,
   type NaturePoint,
 } from "@/lib/alpha-ceo";
-import { etatDepuisSondes, type ReponseSante } from "@/lib/ceo-sondes";
+import { etatDepuisSondes, type ReponseMoniteur, type ReponseSante } from "@/lib/ceo-sondes";
 import { readStorageHealth, type StorageLevel } from "@/lib/storage-health";
 import { evaluerProgression } from "@/lib/paliers-campagne";
 import { cn } from "@/lib/utils";
@@ -89,6 +89,8 @@ export default function CeoPage() {
   const hydratationPipe = useAlpha((s) => s.hydratationPipe);
 
   const [sante, setSante] = useState<ReponseSante | null>(null);
+  /** L'autopilote, lu sur le serveur — jamais déduit d'un réglage local. */
+  const [moniteur, setMoniteur] = useState<ReponseMoniteur | null>(null);
   const [chargement, setChargement] = useState(true);
   /**
    * ⚠ Mesuré dans un effet, pas au rendu. `readStorageHealth` lit
@@ -111,6 +113,12 @@ export default function CeoPage() {
       .then((j: ReponseSante | null) => setSante(j))
       .catch(() => setSante(null))
       .finally(() => setChargement(false));
+
+    fetch("/api/moniteur")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: ReponseMoniteur | null) => setMoniteur(j))
+      .catch(() => setMoniteur(null));
+
     setStockage(readStorageHealth()?.level ?? null);
   };
 
@@ -136,8 +144,9 @@ export default function CeoPage() {
         brouillons: drafts,
         prospects,
         palierPret,
+        moniteur,
       }),
-    [sante, stockage, settings.pipeServeur, hydratationPipe, drafts, prospects, palierPret]
+    [sante, stockage, settings.pipeServeur, hydratationPipe, drafts, prospects, palierPret, moniteur]
   );
 
   const alertes = useMemo(() => diagnostiquer(etat), [etat]);
