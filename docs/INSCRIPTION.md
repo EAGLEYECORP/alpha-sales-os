@@ -68,6 +68,10 @@ une limite qu'on subit en grandissant : c'est un outil de démonstration.
 Avec un SMTP personnalisé, la limite passe à 30 messages/heure au départ
 (réglable dans Rate Limits), puis c'est ton fournisseur qui décide.
 
+> **La procédure complète pour `eagleyecorp.fr` chez Amen.fr — hôte, port,
+> SPF, DKIM, DMARC et les pièges qui font échouer ça en silence — vit dans
+> [`docs/SMTP-SUPABASE-AMEN.md`](./SMTP-SUPABASE-AMEN.md).**
+
 **Nous avons déjà un SMTP** — `SMTP_HOST/PORT/USER/PASS/FROM`, utilisés par
 `/api/send`. Ce sont ces mêmes identifiants qui vont dans Supabase → SMTP
 Settings. Attention à deux choses :
