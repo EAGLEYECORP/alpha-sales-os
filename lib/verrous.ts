@@ -107,11 +107,32 @@ export function offrePourBrique(brique: string): OffrePublique | null {
  * qui est REFUSÉ, et lui seul. Quelqu'un qui trafique sa réponse
  * `/api/compte/droits` dégrise un lien qui rend 403 deux clics plus loin.
  */
+/**
+ * ── SANS COMPTE, LA RAISON N'EST PAS L'ARGENT ──
+ *
+ * ⚠ MÊME DÉFAUT QUE `MonOffre`, ET IL S'EST VU EN PRODUCTION. Un visiteur
+ * sans session reçoit `DROIT_REFUSE` : zéro brique. Les verrous se
+ * calculaient donc à partir de zéro brique et annonçaient « cette brique
+ * consomme des minutes de téléphonie » — une explication vraie sur le fond,
+ * et hors sujet pour quelqu'un dont le problème est qu'il n'est pas inscrit.
+ *
+ * On lui demande de payer avant de lui avoir donné ce qui est gratuit.
+ */
+const RAISON_SANS_COMPTE =
+  "Il faut d'abord créer ton compte — c'est gratuit et sans limite de durée. Le CRM, le Closer OS, le Cerveau et le pilotage s'ouvrent immédiatement.";
+
 export function etatChemin(
   chemin: string,
   possedees: readonly string[],
   maitre: boolean,
-  solo: boolean
+  solo: boolean,
+  /**
+   * Un compte est-il connecté ? Par défaut `true` — l'appelant qui ne le sait
+   * pas se comporte comme avant. Un défaut à `false` ferait annoncer
+   * « inscris-toi » à des comptes parfaitement connectés dont l'appelant n'a
+   * simplement pas transmis l'information.
+   */
+  session = true
 ): EtatVerrou {
   if (maitre || solo) return { type: "ouvert" };
 
@@ -138,8 +159,13 @@ export function etatChemin(
   return {
     type: "verrouille",
     brique,
-    pourquoi: POURQUOI_PAYANT[brique] ?? "Cette brique consomme des ressources facturées à l'usage.",
-    offreId: offre?.id ?? null,
+    // Sans compte, on n'explique pas un prix : on explique qu'il manque une
+    // inscription. Et on ne propose aucune offre — la marche suivante est
+    // gratuite.
+    pourquoi: session
+      ? (POURQUOI_PAYANT[brique] ?? "Cette brique consomme des ressources facturées à l'usage.")
+      : RAISON_SANS_COMPTE,
+    offreId: session ? (offre?.id ?? null) : null,
   };
 }
 

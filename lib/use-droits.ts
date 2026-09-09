@@ -22,6 +22,15 @@ import { useEffect, useState } from "react";
  */
 
 export interface Droits {
+  /**
+   * Un compte est-il RÉELLEMENT connecté ?
+   *
+   * ⚠ Distinct de `statut`. Sans session, le serveur rend
+   * `statut: "suspendu"` — c'est son discriminant interne, pas un message.
+   * Confondre les deux fait dire « compte suspendu, régularise » à quelqu'un
+   * qui n'a jamais eu de compte. C'est arrivé en production.
+   */
+  session: boolean;
   bricks: string[];
   statut: "essai" | "actif" | "suspendu";
   essaiJusquA?: string;
@@ -30,7 +39,7 @@ export interface Droits {
 }
 
 /** Optimiste : tout ouvert tant qu'on ne sait pas. */
-const OPTIMISTE: Droits = { bricks: [], statut: "actif", maitre: true, solo: true };
+const OPTIMISTE: Droits = { session: true, bricks: [], statut: "actif", maitre: true, solo: true };
 
 let cache: Droits | null = null;
 let enCours: Promise<Droits> | null = null;

@@ -263,7 +263,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
    * (`/payouts`, `/offre` — griser reviendrait à annoncer notre économie à
    * un client, et à l'inviter à demander notre part).
    */
-  const etat = (href: string) => etatChemin(href, droits.bricks, droits.maitre, droits.solo);
+  const etat = (href: string) => etatChemin(href, droits.bricks, droits.maitre, droits.solo, droits.session);
   const visible = (href: string) => etat(href).type !== "masque";
   const verrouDe = (href: string) => {
     const e = etat(href);

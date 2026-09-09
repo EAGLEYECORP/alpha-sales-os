@@ -55,8 +55,36 @@ export function MonOffre() {
         <PackageCheck size={15} className="text-bronze-400" /> Mon offre
       </h2>
 
+      {/*
+        ⚠ SANS SESSION, LA RAISON DU REFUS N'EST PAS L'OFFRE — C'EST L'ABSENCE
+        DE COMPTE, et c'était le premier écran vu par les visiteurs du
+        lancement.
+
+        Quelqu'un qui arrive sans compte reçoit `DROIT_REFUSE`, donc
+        `statut: "suspendu"`, donc zéro brique. L'écran en concluait trois
+        choses fausses à la fois : « compte suspendu », « régularise »,
+        « cette brique n'est pas dans ton offre ». Il n'a pas d'offre, il n'a
+        pas de compte, et il ne doit rien à personne.
+
+        Le serveur a raison de rendre « suspendu » (c'est son discriminant :
+        pas de session, pas de plancher gratuit) ; c'est ici qu'il fallait
+        traduire.
+      */}
+      {!d.session && (
+        <div className="mt-3 rounded-lg border border-bronze-700/40 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper">
+          <p className="font-medium">Tu n&apos;as pas encore de compte sur cette installation.</p>
+          <p className="mt-1 text-paper-dim">
+            Ce que tu vois est une démonstration. Crée ton compte — c&apos;est gratuit et sans limite de durée : le
+            CRM, le Closer OS, le Cerveau et le pilotage s&apos;ouvrent immédiatement, avec TES données.
+          </p>
+          <a href="/compte" className="btn-bronze mt-2.5 inline-flex">
+            Créer mon compte
+          </a>
+        </div>
+      )}
+
       {/* Le refus, expliqué. C'est le point important de ce composant. */}
-      {bloque && (
+      {bloque && d.session && (
         <div className="mt-3 rounded-lg border border-signal-amber/40 bg-signal-amber/10 px-3 py-2 text-[12px] text-paper">
           <p className="flex items-start gap-2">
             <Lock size={14} className="mt-0.5 shrink-0 text-signal-amber" />
@@ -84,7 +112,9 @@ export function MonOffre() {
           Essai en cours{joursRestants != null && <> — il reste {Math.max(0, joursRestants)} jour(s).</>}
         </p>
       )}
-      {d.statut === "suspendu" && (
+      {/* ⚠ `d.session` en plus du statut : sans lui, cette phrase s'adressait à
+          des inconnus. Voir le bloc du dessus. */}
+      {d.session && d.statut === "suspendu" && (
         <p className="mt-3 rounded-lg border border-signal-red/40 bg-signal-red/10 px-3 py-2 text-[12px] text-paper">
           Compte suspendu. Tes données sont intactes — l&apos;accès revient dès la régularisation.
         </p>
@@ -98,7 +128,7 @@ export function MonOffre() {
             <p className="mt-0.5 text-[11px] text-paper-faint">{c.what}</p>
           </li>
         ))}
-        {!d.maitre && d.bricks.length === 0 && (
+        {!d.maitre && d.session && d.bricks.length === 0 && (
           <li className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-[12px] text-paper-faint">
             Aucune brique active sur ce compte.
           </li>
@@ -106,7 +136,11 @@ export function MonOffre() {
       </ul>
 
       {/* Ce qui manque — la vente, sans en faire trop */}
-      {!d.maitre && manquantes.length > 0 && (
+      {/* ⚠ On ne VEND pas à quelqu'un qui n'a pas encore de compte : la marche
+          suivante est l'inscription gratuite, pas un abonnement. Lui présenter
+          la liste des briques payantes avant qu'il ait vu la sienne, c'est
+          demander de l'argent avant d'avoir rendu un service. */}
+      {!d.maitre && d.session && manquantes.length > 0 && (
         <>
           <h3 className="mt-4 flex items-center gap-2 font-display text-[12.5px] font-semibold text-paper">
             <ShoppingCart size={13} className="text-bronze-400" /> Ce qu&apos;on peut activer en plus

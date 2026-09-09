@@ -239,3 +239,85 @@ test("⚠ une entrée verrouillée reste un LIEN, jamais un bouton désactivé",
   assert.match(shell, /\/offre-brique\?b=\$\{encodeURIComponent\(verrou\)\}/, "le verrou doit MENER à l'explication");
   assert.match(shell, /aria-label=\{verrou \?/, "l'état doit se dire au lecteur d'écran, pas se deviner à la couleur");
 });
+
+// ═══════════ SANS COMPTE — le premier écran d'un lancement ═══════════
+
+test("⚠ SANS SESSION, LA RAISON N'EST PAS L'ARGENT — constaté en production", () => {
+  /**
+   * ⚠ CE TEST VIENT D'UNE CAPTURE D'ÉCRAN, PAS D'UNE RELECTURE.
+   *
+   * Le site était en ligne, l'adresse partagée à 400 personnes. Un visiteur
+   * sans compte reçoit `DROIT_REFUSE` — donc `statut: "suspendu"` et zéro
+   * brique, ce qui est CORRECT côté serveur (« pas de tenantId, pas de
+   * session, pas de plancher gratuit »).
+   *
+   * Mais l'écran lisait ce discriminant interne comme une phrase adressée à
+   * un humain, et affichait à un prospect qui venait d'arriver :
+   *   · « Compte suspendu — l'accès revient dès la régularisation » ;
+   *   · « Aucune brique active sur ce compte » ;
+   *   · « /closer n'est pas inclus dans ton offre » — alors que `closer` est
+   *     GRATUIT.
+   *
+   * Trois affirmations fausses, sur le premier écran d'un lancement, à
+   * quelqu'un à qui on annonçait un impayé qu'il n'avait pas.
+   *
+   * La règle : sans compte, la marche suivante est l'INSCRIPTION GRATUITE,
+   * jamais un abonnement. On ne demande pas d'argent avant d'avoir rendu un
+   * service.
+   */
+  const e = etatChemin("/campaigns", [], false, false, false);
+  assert.equal(e.type, "verrouille");
+  if (e.type !== "verrouille") return;
+  assert.match(e.pourquoi, /créer ton compte|gratuit/i, "la raison doit parler d'inscription, pas de minutes de téléphonie");
+  assert.doesNotMatch(e.pourquoi, /téléphonie|jetons|facturé/i, "on n'explique pas un prix à quelqu'un qui n'a pas de compte");
+  assert.equal(e.offreId, null, "aucune offre proposée : la marche suivante est gratuite");
+});
+
+test("…et AVEC session, la raison redevient économique", () => {
+  // Le contre-test, sans lequel le précédent passerait sur un module qui
+  // ne dirait plus jamais pourquoi une brique se paie.
+  const e = etatChemin("/campaigns", [...BRIQUES_GRATUITES], false, false, true);
+  assert.equal(e.type, "verrouille");
+  if (e.type !== "verrouille") return;
+  assert.match(e.pourquoi, /domaine|réputation/i, "un compte connecté a droit à la vraie raison");
+  assert.ok(e.offreId, "…et à la porte d'achat");
+});
+
+test("le défaut de `session` est OUVERT, pas fermé", () => {
+  /**
+   * Un défaut à `false` ferait annoncer « inscris-toi » à des comptes
+   * parfaitement connectés dont l'appelant n'a simplement pas transmis
+   * l'information — c'est-à-dire transformer un oubli de câblage en message
+   * absurde servi à des clients payants.
+   */
+  const e = etatChemin("/campaigns", [...BRIQUES_GRATUITES], false, false);
+  assert.equal(e.type, "verrouille");
+  if (e.type !== "verrouille") return;
+  assert.match(e.pourquoi, /domaine|réputation/i);
+});
+
+test("⚠ « compte suspendu » ne s'affiche PLUS à qui n'a jamais eu de compte", () => {
+  /**
+   * Le composant lisait `d.statut === "suspendu"` seul. Il doit lire la
+   * session AUSSI — sinon la phrase la plus décourageante du produit
+   * s'adresse à des inconnus.
+   */
+  const src = readFileSync(join(process.cwd(), "components/billing/mon-offre.tsx"), "utf8");
+  assert.match(src, /d\.session && d\.statut === "suspendu"/, "le statut suspendu exige une session réelle");
+  assert.match(src, /\{!d\.session &&/, "…et l'absence de session doit avoir son propre message");
+  assert.match(src, /!d\.maitre && d\.session && manquantes\.length > 0/, "on ne vend rien à qui n'a pas de compte");
+});
+
+test("⚠ la distinction descend bien du SERVEUR — sinon l'écran la devine", () => {
+  /**
+   * `session` ne peut pas se déduire côté client : le JWT vit dans un cookie
+   * que la page ne lit pas de façon fiable, et un écran qui « suppose » une
+   * session finirait par en supposer une là où il n'y en a pas. La route la
+   * calcule à partir de `tenantId`, qui est la seule preuve.
+   */
+  const route = readFileSync(join(process.cwd(), "app/api/compte/droits/route.ts"), "utf8");
+  assert.match(route, /session: Boolean\(d\.tenantId\)/, "la session se déduit du locataire, jamais d'autre chose");
+
+  const shell = readFileSync(join(process.cwd(), "components/shell/app-shell.tsx"), "utf8");
+  assert.match(shell, /droits\.solo, droits\.session\)/, "le rail doit transmettre la session au calcul de verrou");
+});
