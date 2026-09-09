@@ -63,9 +63,10 @@ export const AUTORISES = [
     pourquoi: "La porte d'entrée, écrite POUR le public — pas le README privé, qui porte l'ancre tarifaire.",
   },
   {
-    source: "docs/ARCHITECTURE.md",
+    source: "docs/public-architecture.md",
     cible: "docs/ARCHITECTURE.md",
-    pourquoi: "Comment c'est construit. C'est exactement ce qu'un recruteur ou un pair veut lire, et ça ne vend rien.",
+    pourquoi:
+      "Comment c'est construit — écrit POUR le public. La version interne se termine par l'état d'exploitation de NOTRE déploiement (ce qui reste à prouver contre les vrais services) : utile en interne, publié c'est une carte pour qui cherche par où entrer.",
   },
   {
     source: "docs/INSTALLATION.md",
@@ -76,12 +77,6 @@ export const AUTORISES = [
     source: "docs/DEMARRAGE.md",
     cible: "docs/DEMARRAGE.md",
     pourquoi: "La prise en main et le contrôle DNS. Utile à qui installe, muet sur notre économie.",
-  },
-  {
-    source: "docs/SECURITE.md",
-    cible: "docs/SECURITE.md",
-    pourquoi:
-      "La doctrine de sécurité. La publier ne l'affaiblit pas : nos gardes sont structurelles, pas de l'obscurité — et un modèle de menace écrit est ce qui distingue un projet sérieux d'une démo.",
   },
   {
     source: "docs/BOUCLE.md",
@@ -95,9 +90,10 @@ export const AUTORISES = [
       "Le refus d'automatiser ce qui fabriquerait de la preuve. C'est la page qui montre un jugement d'ingénierie, pas une fonctionnalité.",
   },
   {
-    source: "SECURITY.md",
+    source: "docs/public-security.md",
     cible: "SECURITY.md",
-    pourquoi: "Politique de signalement. Un dépôt public sans elle demande aux gens de deviner où écrire.",
+    pourquoi:
+      "Politique de signalement — un dépôt public sans elle demande aux gens de deviner où écrire. Ce n'est PAS le SECURITY.md interne, qui est un rapport d'audit : avis npm en cours, faiblesse CSP exacte, liste des routes publiques par conception. Un rapport d'audit sur un service en ligne se lit d'abord par qui cherche l'entrée.",
   },
 ];
 
@@ -146,6 +142,31 @@ export const INTERDITS = [
     motif: /z[ée]ro vente|aucune vente [àa] ce jour/iu,
     pourquoi:
       "« Zéro vente ». C'est vrai, c'est honnête en interne, et publié c'est l'objection n°1 tendue à chaque prospect qui fait ses devoirs.",
+  },
+  {
+    id: "posture-securite",
+    /**
+     * ⚠ CE MOTIF A ÉTÉ AJOUTÉ APRÈS COUP, ET C'EST LA LEÇON DU FICHIER.
+     *
+     * La première version du scanner cherchait des montants, des adresses et
+     * des numéros — des formes. Elle a laissé passer trois documents que
+     * personne n'aurait dû publier, et elle les a laissés passer PROPREMENT :
+     * aucun ne contenait un seul chiffre interdit.
+     *
+     * Ce qu'ils contenaient : « npm audit : 9 restantes, 3 hautes », la
+     * faiblesse CSP exacte, « la clé partagée en clair → à régénérer », et
+     * « l'isolation reste à prouver avant de facturer ». Chaque phrase est
+     * honnête et a sa place en interne. Publiées à côté d'une application EN
+     * LIGNE, elles forment un plan d'attaque daté.
+     *
+     * ⚠⚠ Un scanner de formes ne remplace pas la lecture. Ce motif attrape la
+     * récidive mécanique ; il n'attrapera pas la prochaine phrase du même
+     * genre écrite autrement. La règle qui tient vraiment est plus haut, dans
+     * la liste d'autorisation : on ne publie que ce qu'on a LU.
+     */
+    motif: /\bCVE\b|npm audit|vuln[ée]rabilit|unsafe-inline|en clair|[àa] r[ée]g[ée]n[ée]rer|[àa] prouver|non prouv[ée]/iu,
+    pourquoi:
+      "Un aveu de posture de sécurité. Sur un service en ligne, « ce qui reste à corriger » est un plan d'attaque daté — et ça se traite en privé, avec la personne qui opère le déploiement.",
   },
   {
     id: "cible-commerciale",

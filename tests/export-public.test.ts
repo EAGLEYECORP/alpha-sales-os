@@ -138,6 +138,11 @@ test("⚠ chaque motif interdit attrape RÉELLEMENT son cas", () => {
     { texte: "Le chantier part chez Nuwacom au-delà du seuil.", attendu: "partenaire" },
     { texte: "Zéro vente à ce jour, donc zéro témoignage.", attendu: "absence-de-vente" },
     { texte: "Cible : les maîtres d'ouvrage avec un permis de construire actif.", attendu: "cible-commerciale" },
+    // ⚠ Le motif ajouté après avoir relu ce que la première version laissait
+    // sortir : trois documents sans un seul chiffre interdit, et porteurs du
+    // plan d'attaque d'une application en ligne.
+    { texte: "npm audit : 9 restantes, 3 hautes. Montée de version à planifier.", attendu: "posture-securite" },
+    { texte: "L'isolation reste à prouver avec deux comptes réels.", attendu: "posture-securite" },
   ];
 
   for (const c of cas) {

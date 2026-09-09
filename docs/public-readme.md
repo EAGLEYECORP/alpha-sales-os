@@ -115,12 +115,19 @@ Une doc fausse coûte plus cher qu'une doc absente.
 | Fichier | Ce qu'on y trouve |
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | la structure : ce qui vit côté serveur, côté navigateur, et pourquoi |
-| [`docs/INSTALLATION.md`](docs/INSTALLATION.md) | l'installation complète, de zéro à une instance qui tourne |
+| [`docs/INSTALLATION.md`](docs/INSTALLATION.md) | l'installation complète, de zéro à une instance qui tourne — les fichiers qu'elle cite (workflows, schéma SQL, script CRM) vivent dans le dépôt privé, les références y apparaissent donc en simple `code` |
 | [`docs/DEMARRAGE.md`](docs/DEMARRAGE.md) | la prise en main et le contrôle DNS de délivrabilité |
-| [`docs/SECURITE.md`](docs/SECURITE.md) | le modèle de menace, le cloisonnement, ce qui échoue fermé |
 | [`docs/BOUCLE.md`](docs/BOUCLE.md) | la boucle terrain : la sortie revient corriger l'entrée |
 | [`docs/ALPHA-CEO.md`](docs/ALPHA-CEO.md) | le diagnostic système, et le refus d'être un maximiseur |
-| [`SECURITY.md`](SECURITY.md) | comment signaler une faille |
+| [`SECURITY.md`](SECURITY.md) | comment signaler une faille, et les classes de menace traitées |
+
+> ⚠ **Ce qui n'est pas là, et pourquoi.** La version interne de l'architecture
+> et du document de sécurité se termine par l'état d'exploitation d'un
+> déploiement réel : versions, avis de sécurité en cours, ce qui reste à
+> vérifier. Chaque ligne est honnête et utile en interne. Publiée à côté d'une
+> application en ligne, elle forme un plan d'attaque daté. L'état d'un
+> déploiement se traite avec la personne qui l'opère, pas sur une page
+> publique.
 
 ---
 
