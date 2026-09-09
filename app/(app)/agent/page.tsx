@@ -224,7 +224,7 @@ export default function AgentPage() {
       <div className="mt-3 flex gap-2">
         <input
           className="input flex-1"
-          placeholder="« Prépare mon closing chez le Bouchon des Canuts »…"
+          placeholder="« Prépare mon closing chez SCCV Les Terrasses des Canuts »…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(input)}

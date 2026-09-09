@@ -418,53 +418,87 @@ function SequenceEditor({
   );
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES AIMANTS, PAR PHASE DE PERMIS — ET SANS UNE SEULE ÉTUDE DE CAS.
+ *
+ * ⚠ CE QUI ÉTAIT ÉCRIT ICI, ET QU'AUCUN GARDE N'ATTRAPAIT.
+ *
+ * Les quatre aimants étaient classés par secteur (restaurant, pub, ambulance,
+ * artisan) — le marché d'AVANT l'avatar — et chacun dictait une étude de cas
+ * chiffrée :
+ *
+ *   « Étude de cas anonymisée : bouchon Croix-Rousse, +40 réservations/mois »
+ *   « Cas : The Smoking Dog, mardis quiz à 80 % de remplissage »
+ *   « Cas : société de Villeurbanne, +12 transports programmés/mois »
+ *   « Cas : Menuiserie Charbonnier, +9 demandes qualifiées/mois »
+ *
+ * Zéro vente à ce jour : ces quatre lignes sont des CONSIGNES à fabriquer une
+ * preuve. `tests/preuve-sociale.ts` ne les a pas vues parce qu'il scanne
+ * `lib/`, pas `app/` — et parce que son motif cherche des possessifs (« nos
+ * clients »), qu'une référence nommée ne porte pas.
+ *
+ * ⚠⚠ CE QUI LES REMPLACE N'EST PAS « RIEN ». À zéro preuve sociale, ce qui
+ * reste est plus fort qu'un cas inventé, et la doctrine le nomme : SES
+ * chiffres à lui, relevés pendant l'audit — un nombre qu'il a donné lui-même
+ * ne se conteste pas — et une démonstration EN DIRECT.
+ * ─────────────────────────────────────────────────────────────────────
+ */
 const MAGNETS: Record<string, { title: string; outline: string[] }> = {
-  restaurant: {
-    title: "Audit gratuit : « Combien vous coûtent vos mardis soirs ? »",
+  "pré-commercialisation": {
+    title: "Relevé : « Qui appelle votre bureau de vente pendant que l'équipe est en visite ? »",
     outline: [
-      "Checklist PDF : les 7 fuites de clients d'un resto lyonnais (fiche Google, résa, no-shows…)",
-      "Calculateur de Taxe d'Ignorance : couverts perdus × ticket moyen",
-      "Étude de cas anonymisée : bouchon Croix-Rousse, +40 réservations/mois",
-      "CTA unique : 20 minutes d'audit sur place, créneau à réserver",
+      "Comptage sur SA ligne : appels entrants, appels non aboutis, répartition horaire",
+      "Ce qu'il advient d'un appelant sans trace — il n'y a personne à rappeler",
+      "La démonstration se fait EN DIRECT : l'agent le rappelle pendant le rendez-vous",
+      "CTA unique : 20 minutes, sur place ou en visio, créneau daté",
+      "⚠ Aucune étude de cas : zéro vente à ce jour. Ses chiffres à lui, ou rien.",
     ],
   },
-  pub: {
-    title: "Guide : « Remplir un pub un mardi soir (sans promo -50%) »",
+  "lancement qui traîne": {
+    title: "Relevé : « Où se perdent les contacts d'une commercialisation qui n'atteint pas son seuil »",
     outline: [
-      "3 mécaniques d'événements récurrents qui créent des habitués",
-      "Template d'agenda automatisé + relances WhatsApp",
-      "Cas : The Smoking Dog, mardis quiz à 80 % de remplissage",
-      "CTA : audit événementiel gratuit",
+      "Combien de contacts entrants sur les douze derniers mois — chez lui, pas une moyenne de marché",
+      "Combien ont eu une relance DATÉE, combien n'ont jamais été rappelés",
+      "⚠ Vérifier d'abord que l'opération est vivante : un permis d'un an sans chantier peut aussi vouloir dire abandon",
+      "CTA : 30 minutes pour compter, pas pour montrer un outil",
     ],
   },
-  ambulance: {
-    title: "Rapport : « Les demandes de transport que votre standard ne voit jamais »",
+  "queue de programme": {
+    title: "Grille : « Les derniers lots sont les plus longs — pourquoi, et ce qui reste actionnable »",
     outline: [
-      "Données : répartition horaire des demandes (20h–7h = 31 %)",
-      "Grille d'auto-diagnostic du standard",
-      "Cas : société de Villeurbanne, +12 transports programmés/mois",
-      "CTA : audit de flux au dépôt, 20 minutes",
+      "Ce qui distingue un lot invendu d'un lot mal proposé (typologie, étage, exposition, prix)",
+      "L'historique des contacts qui ont visité et ne sont jamais revenus",
+      "CTA : relecture de la file sur ses propres lots restants",
     ],
   },
-  artisan: {
-    title: "Checklist : « 12 appels manqués par semaine = combien de devis perdus ? »",
+  "arrêté récent": {
+    title: "Rien — et c'est le sujet",
     outline: [
-      "Calculateur simple : appels manqués × taux devis × panier moyen",
-      "Le formulaire de devis intelligent : budget, délai, photos en 40 s",
-      "Cas : Menuiserie Charbonnier, +9 demandes qualifiées/mois",
-      "CTA : démo mobile de 10 minutes sur chantier",
+      "⚠ Pendant le délai de recours des tiers, il n'y a rien à donner qui ne soit prématuré",
+      "L'objectif de ce contact est d'EXISTER avant le lancement commercial, pas de vendre",
+      "Vouloir closer ici, c'est arriver deux mois trop tôt et griller la fiche pour le moment où elle vaudra quelque chose",
+      "CTA : aucun. Juste convenir de se reparler à l'ouverture de la commercialisation.",
     ],
   },
 };
 
 function LeadMagnet() {
-  const [sector, setSector] = useState<string>("restaurant");
-  const m = MAGNETS[sector];
+  /**
+   * ⚠ « restaurant » ÉTAIT ÉCRIT EN DUR ICI, ET C'EST CE QUI S'AFFICHAIT.
+   *
+   * L'état initial doit se DÉDUIRE du catalogue, sinon renommer une entrée
+   * laisse l'écran sur une clé qui n'existe plus — `MAGNETS[sector]` rend
+   * alors `undefined` et le panneau plante sur `m.title`.
+   */
+  const phases = Object.keys(MAGNETS);
+  const [phase, setPhase] = useState<string>(phases[0]);
+  const m = MAGNETS[phase] ?? MAGNETS[phases[0]];
   return (
     <div>
-      <label className="label">Secteur</label>
-      <select className="input" value={sector} onChange={(e) => setSector(e.target.value)}>
-        {Object.keys(MAGNETS).map((s) => (
+      <label className="label">Phase du permis</label>
+      <select className="input" value={phase} onChange={(e) => setPhase(e.target.value)}>
+        {phases.map((s) => (
           <option key={s} value={s} className="capitalize">{s}</option>
         ))}
       </select>

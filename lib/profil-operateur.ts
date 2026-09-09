@@ -4,14 +4,18 @@
  *
  * ── LE DÉFAUT QUE CE MODULE EXISTE POUR CORRIGER ──
  *
- * Le jeu de démonstration est huit commerces lyonnais : un bouchon, un pub,
- * une ambulance, une menuiserie. Il a été écrit quand le produit ne servait
- * qu'à ça, et il est bon — pour cette cible-là.
+ * Le jeu de démonstration écrit à la main décrit NOTRE avatar : huit maîtres
+ * d'ouvrage lyonnais à permis actif. Il est bon — pour cette cible-là.
+ *
+ * ⚠ Et c'est vrai quelle que soit la cible du moment : le défaut ne venait
+ * pas de la cible choisie, il vient du fait qu'il y en ait UNE. Le jeu
+ * précédent décrivait huit commerces de proximité et posait exactement le
+ * même problème.
  *
  * Quelqu'un qui vend du logiciel à des DRH s'inscrit, ouvre son pipeline, et
- * voit « Le Bouchon des Canuts — 40 appels ratés pendant le coup de feu ».
- * Il ne se dit pas « ce sont des données d'exemple » : il se dit **« ce
- * produit n'est pas pour moi »**, et il ferme l'onglet. C'est la seule
+ * voit « SCCV Les Terrasses des Canuts — 31 appels non aboutis au bureau de
+ * vente ». Il ne se dit pas « ce sont des données d'exemple » : il se dit
+ * **« ce produit n'est pas pour moi »**, et il ferme l'onglet. C'est la seule
  * seconde où on avait son attention, et on la dépense à lui montrer le
  * métier de quelqu'un d'autre.
  *

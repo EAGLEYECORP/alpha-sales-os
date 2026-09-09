@@ -114,6 +114,88 @@ contrat se dresse **après le cadrage** → levier de négociation. Doctrine :
 nous** (meilleur levier) ; si trop lourd, ou si on leur a présenté et qu'ils
 n'en veulent pas → on passe par leur plateforme.
 
+## NOTRE CIBLE — le maître d'ouvrage à permis actif (09/09/2026)
+`lib/permis-construire.ts` · ICP dans `lib/accounts-commercial.ts` (serveur) ·
+`docs/PERMIS-LYON.md`.
+
+**Le maître d'ouvrage PROFESSIONNEL dont le permis de construire est actif, sur
+Lyon et Villeurbanne.** ICP à **déclencheur**, pas à secteur : « les
+promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois près
+— donc **quand** appeler. L'arrêté est public, daté, vérifiable.
+
+> ⚠ **« Maître d'ouvrage » est un RÔLE juridique, pas un métier.** Le même
+> export contient le promoteur qui bâtit 68 lots POUR LES VENDRE, le bailleur
+> social qui construit pour ATTRIBUER, la commune qui bâtit une école, et le
+> couple qui fait construire sa maison — ce dernier étant le **gros du
+> volume**. Les trois derniers n'ont **rien à vendre**. Et le couple est un
+> **consommateur** : le décret n° 2022-1313 s'applique, et c'est nous qui
+> portons le risque. Le tri sort ces cas par **exclusion sèche**, jamais par un
+> score qui pourrait les rattraper.
+
+- **La zone est une exclusion**, pas dix points de score (`communeDansLaZone`).
+  Elle ne l'était pas : un bon permis de Bron sortait *retenu* et rien ne le
+  disait. Ce que la zone achète : l'ancrage local est le **seul argument
+  vérifiable** à zéro vente. Ce qu'elle coûte : un export métropolitain perd la
+  majorité de ses lignes — et le lot le **dit** (les hors-zone se comptent à
+  part des « rien à vendre » : le premier veut dire « refiltre à la source »,
+  le second est le fonctionnement normal).
+  > ⚠ Ancré en **début de libellé**, jamais un `includes("lyon")` :
+  > Sainte-Foy-lès-Lyon, Métropole de Lyon et Grand Lyon contiennent tous
+  > « lyon ». Commune **absente** ≠ hors zone — c'est un `manque` qu'on nomme,
+  > pas une ligne qu'on jette.
+- **Sous 6 logements, on n'exclut pas — on dit disproportionné.** 10 000 € d'OS
+  de vente sur trois lots est une part indécente du budget de
+  commercialisation. C'est **Alpha Voice seul** qui se propose là.
+- **La phase décide de l'angle** : recours (< 2 mois) → se faire connaître,
+  **ne rien vendre** · pré-commercialisation (2-12 mois) → la meilleure fenêtre
+  · > 12 mois sans chantier → le signal le plus fort **et le plus ambigu**
+  (l'opération peut être morte : le premier appel sert à le vérifier, rien
+  d'autre) · chantier → queue de programme.
+- **Canal par défaut : LinkedIn.** Un export de permis ne porte **aucun
+  numéro** ; mettre « tel » ferait entrer la fiche dans la file d'appels où
+  elle resterait muette. Le téléphone se relève **à la main** — troisième
+  colonne.
+- **Zéro permis converti à ce jour.** 6 logements, score 55, les poids par
+  phase : ce sont des **décisions**, pas des mesures.
+
+> ⚠ **L'ICP écrit et le code qui trie sont DEUX endroits qui posent la même
+> question.** `tests/permis-construire.test.ts` rejoue chaque disqualifiant
+> annoncé dans `lirePermis` — reformuler est libre, retirer du code ne l'est
+> pas. Une prose qui dérive du code ne casse rien : elle ment, à l'endroit
+> précis où quelqu'un vient chercher la règle.
+
+> ⚠ **L'ICP a déménagé** de `IdentiteCompte` vers `AccountCommercial`.
+> `identite` n'existe que pour les comptes PARTENAIRES (la marque qu'on
+> masque) — le compte MAÎTRE était donc le seul du portefeuille sans client
+> parfait déclaré, faute d'endroit où l'écrire. « Quelle marque parle ? » et
+> « à qui on écrit ? » sont deux questions distinctes ; la seconde n'a aucune
+> raison d'être conditionnée à la première. Les deux restent **serveur**.
+
+### Le jeu de démonstration EN DESCEND (`lib/seed.ts`)
+Il décrivait encore un bouchon, un pub irlandais et deux sociétés
+d'ambulances — le marché d'AVANT. Le premier bouton de l'app étant « Explorer
+la démo », **la première chose qu'un prospect apprenait du produit décrivait
+une cible qu'on ne prospecte plus.**
+- Chaque fiche déclare son arrêté dans `PERMIS_DEMO` ; `tests/seed-moa.test.ts`
+  le rejoue dans le **vrai** `lirePermis`. Une démo qui contredirait le module
+  de ciblage montrerait exactement ce que le produit refuse de faire.
+- Le lot garde **3 arrêtés écartés** (particulier · hors zone · périmé) : « 8
+  fiches » ne dit rien du travail fait, « 8 retenus sur 11 » le dit.
+- Les **quatre garanties** du jeu engendré valent maintenant des deux côtés :
+  préfixe `demo-` · plages ARCEP fiction · domaines **RFC 2606** (il portait des
+  `.fr` INVENTÉS, déposables par n'importe qui demain) · « (démo) » dans le nom.
+- **Aucun montant recopié** : les prix viennent de `lib/offres-publiques.ts`.
+
+> ⚠ **La preuve sociale fabriquée passait par des NOMS, pas par des
+> possessifs.** L'ancien jeu portait une chaîne de recommandation complète —
+> une menuiserie « signée », une fiche disant « même formule que Charbonnier
+> (preuve sociale directe) », un concurrent annonçant « Preuve : Paddy's Corner
+> nous recontactera » — et le générateur d'aimants dictait quatre études de cas
+> chiffrées (« +40 réservations/mois »). `tests/preuve-sociale.test.ts` ne les
+> voyait pas : son motif cherche « nos clients » / « qu'on équipe », et une
+> **référence nommée n'en porte aucun**. C'est la forme la plus convaincante
+> des trois, et la seule qu'aucun garde ne tenait.
+
 ## Tarifs Alpha Sales OS (à refléter sur le site)
 - **10 000 € VIP** (offre haute), OU **30 % + frais de setup** (local / cloud)
   sur devis. Ces 30 %-là sont un **PRIX facturé au client** (part de SON CA

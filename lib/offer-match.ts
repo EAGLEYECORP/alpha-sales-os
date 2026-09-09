@@ -2,11 +2,11 @@
  * ─────────────────────────────────────────────────────────────────────
  * Routeur d'offre — après l'audit, QUELLE offre EAGLEYE proposer.
  *
- * La consigne terrain de Zakaria : on audite un prospect, puis on voit si
- * on l'aide avec…
+ * La consigne terrain : on audite un prospect, puis on voit si on l'aide
+ * avec…
  *   • ALPHA SALES OS   — l'OS de vente intelligent (leads à gérer, closing
  *                        à structurer, pipeline à outiller) ;
- *   • SCINTIA CALLFLOW — l'accueil/relance IA au téléphone (appels manqués,
+ *   • ALPHA VOICE      — l'accueil/relance IA au téléphone (appels manqués,
  *                        métiers dépendants du téléphone) ;
  *   • VISIBILITÉ / GROWTH — offre personnalisée quand le trou est d'être vu
  *                        (pas de site, faible présence, peu d'avis).

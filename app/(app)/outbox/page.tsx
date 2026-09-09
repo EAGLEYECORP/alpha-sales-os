@@ -437,7 +437,7 @@ export default function OutboxPage() {
             envoi bloqué
           </h2>
           <p className="mt-1.5 text-[12px] text-paper">
-            Ces fiches portent des adresses <b>inventées</b> (Le Bouchon des Canuts, The Smoking Dog…). Écrire à
+            Ces fiches portent des adresses sur un domaine <b>réservé</b> (<code>example.com</code>, RFC 2606). Écrire à
             l&apos;une d&apos;elles produit un rebond dur, et les rebonds comptent contre ton domaine pendant des
             mois. Sur une boîte qui démarre son historique d&apos;envoi, c&apos;est la pire première journée
             possible.

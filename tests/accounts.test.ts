@@ -195,8 +195,8 @@ test("accounts — l'ICP d'un partenaire a quitté le NAVIGATEUR, pas le produit
    * `/api/catalogue` au compte MAÎTRE seulement. Le test suit la donnée.
    */
   const nuwa = ACCOUNTS_COMMERCIAL.find((c) => c.accountId === "nuwacom");
-  assert.ok(nuwa?.identite?.icp, "l'identité partenaire doit vivre côté serveur");
-  const icp = nuwa.identite.icp;
+  assert.ok(nuwa?.icp, "le ciblage d'un partenaire doit vivre côté serveur");
+  const icp = nuwa.icp;
   assert.match((icp.sector ?? "").toLowerCase(), /assur/);
   assert.match(icp.companySize ?? "", /25/);
   assert.match(icp.companySize ?? "", /2\s?000|2000/);

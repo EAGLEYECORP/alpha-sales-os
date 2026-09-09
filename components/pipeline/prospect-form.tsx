@@ -69,7 +69,7 @@ export function ProspectFormModal({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="label">Commerce</label>
-          <input className="input" value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="Le Bouchon des Canuts" />
+          <input className="input" value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="SCCV Les Terrasses des Canuts" />
         </div>
         <div>
           <label className="label">Décideur</label>

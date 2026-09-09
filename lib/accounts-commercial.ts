@@ -145,8 +145,6 @@ export interface IdentiteCompte {
   offers: EagleyeOffer[];
   /** L'acte de closing propre au compte (le rituel à ne pas rater). */
   closingAction?: string;
-  /** Le client parfait de CE compte — notre travail de ciblage, pas le sien. */
-  icp?: Partial<ICP>;
 }
 
 /** Le volet commercial d'UN compte du portefeuille. */
@@ -159,6 +157,24 @@ export interface AccountCommercial {
    * protégerait rien et casserait l'app hors ligne.
    */
   identite?: IdentiteCompte;
+  /**
+   * Le client parfait de CE compte — NOTRE travail de ciblage, jamais le sien.
+   *
+   * ⚠ IL VIVAIT DANS `identite`, ET ÇA LE RENDAIT INACCESSIBLE AU MAÎTRE.
+   *
+   * `identite` n'existe que pour les comptes PARTENAIRES : elle porte la
+   * marque qu'on masque côté client. EAGLEYE n'en a pas — c'est notre propre
+   * marque, elle est déjà sur chaque écran. Notre ICP n'avait donc nulle part
+   * où être écrit, et il ne l'était pas : le compte maître était le seul du
+   * portefeuille sans client parfait déclaré.
+   *
+   * Les deux notions n'ont rien à voir. « Quelle marque parle ? » est une
+   * question d'identité ; « à qui on écrit ? » est un travail de ciblage. Le
+   * second n'a aucune raison d'être conditionné au premier — il est
+   * simplement, dans les deux cas, du travail à nous qui ne descend pas dans
+   * le navigateur.
+   */
+  icp?: Partial<ICP>;
   /** Les offres commerciales du compte + leurs règles de commission. */
   offerings: Offering[];
   /** Objectif minimal de valeur par projet (€), s'il existe. */
@@ -171,6 +187,73 @@ export interface AccountCommercial {
 export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
   {
     accountId: "eagleye",
+    /**
+     * ─────────────────────────────────────────────────────────────────────
+     * NOTRE CLIENT PARFAIT — décidé le 09/09/2026.
+     *
+     * ⚠ CE N'EST PAS UN ICP DE SECTEUR, C'EST UN ICP DE DÉCLENCHEUR.
+     *
+     * « Les promoteurs » décrit une population : ça dit QUI, jamais QUAND. Un
+     * permis de construire dit les deux — c'est un acte public, daté et
+     * vérifiable, qui situe l'opération au mois près. On sait donc à qui on
+     * parle ET où il en est avant d'avoir décroché.
+     *
+     * ⚠⚠ LE PIÈGE QUE LES DISQUALIFIANTS FERMENT. « Maître d'ouvrage » est un
+     * RÔLE juridique, pas un métier : le même fichier d'open data contient le
+     * promoteur qui construit 68 lots POUR LES VENDRE, le bailleur social qui
+     * construit pour ATTRIBUER, la commune qui bâtit une école, et le couple
+     * qui fait construire sa maison — ce dernier étant le gros du volume. Les
+     * trois derniers n'ont rien à vendre : leur proposer un OS de vente est
+     * absurde, et démarcher le couple est du B2C, plafonné par le décret
+     * n° 2022-1313. Le tri est implémenté (`lib/permis-construire.ts`) et il
+     * exclut sèchement — il ne rattrape rien au score.
+     *
+     * ⚠ CE BLOC NE DESCEND PAS DANS LE NAVIGATEUR, et c'est la raison d'être
+     * de ce fichier : servi par `/api/catalogue` au compte MAÎTRE seulement.
+     * Notre travail de ciblage est le nôtre.
+     *
+     * ⚠ AUCUN CHIFFRE DE CONVERSION ICI. Zéro permis converti à ce jour : les
+     * seuils (6 lots, 3 ans de validité, la zone) sont des DÉCISIONS, et elles
+     * se relisent le jour où dix affaires les auront contredites.
+     * ─────────────────────────────────────────────────────────────────────
+     */
+    icp: {
+      label: "Maître d'ouvrage professionnel dont le permis de construire est ACTIF — Lyon + Villeurbanne",
+      buyer: "Directeur de programmes · responsable commercialisation · gérant de SCCV · directeur du développement",
+      sector: "Promotion immobilière, SCCV, sociétés d'aménagement, constructeurs de maisons individuelles",
+      companySize: "Opérations de 6 lots et plus (sous 6, l'offre VIP n'est pas proportionnée au budget de commercialisation)",
+      geo: "Lyon (tous arrondissements) + Villeurbanne. Rien d'autre : l'ancrage local est le seul argument vérifiable qu'on ait à zéro vente.",
+      pains: [
+        "La pré-commercialisation conditionne le financement de l'opération — et personne ne compte les contacts entrants qui se perdent",
+        "Le bureau de vente est fermé, en visite ou seul : les appels tombent sur messagerie et l'appelant est perdu sans trace",
+        "Le suivi des acquéreurs tient dans un classeur partagé, sans relance datée ni propriétaire",
+        "Une queue de programme qui s'éternise : les derniers lots sont les plus longs à écouler",
+        "Le calendrier court — l'arrêté fait courir trois ans, et l'argent est déjà engagé",
+      ],
+      triggers: [
+        "Arrêté délivré depuis 2 à 12 mois, chantier non ouvert : la fenêtre de pré-commercialisation, celle où le sujet est le plus vif",
+        "Arrêté de plus d'un an SANS chantier déclaré : le signal le plus fort du fichier — et le plus ambigu, car il peut aussi vouloir dire que l'opération est abandonnée",
+        "Ouverture de chantier déclarée : il reste la queue de programme",
+        "Arrêté de moins de deux mois : le recours des tiers court encore — on se fait connaître, on ne vend pas",
+      ],
+      channels: [
+        "LinkedIn en premier : un export de permis ne porte AUCUN numéro, et un directeur de programmes ne se joint pas au standard",
+        "Téléphone quand le numéro du bureau de vente a été relevé à la main (panneau de chantier, site du programme)",
+        "Email cadre + relevé de ce qui n'aboutit pas sur sa ligne",
+      ],
+      disqualifiers: [
+        "Pétitionnaire PERSONNE PHYSIQUE : il construit une fois, il ne vend rien — et c'est un consommateur, donc le décret n° 2022-1313 s'applique",
+        "Bailleur social : il ATTRIBUE des logements, il n'en vend pas — aucune fonction commerciale à équiper",
+        "Personne publique (commune, métropole, hôpital) : commande et marchés publics, pas de vente",
+        "Hors Lyon + Villeurbanne, même si le permis est parfait par ailleurs",
+        "Permis achevé ou au-delà de sa validité : il n'y a plus d'opération derrière la ligne",
+        "Moins de 6 logements : 10 000 € d'OS de vente représentent une part indécente du budget de commercialisation. Ce n'est pas un refus — c'est Alpha Voice seul qui se propose là",
+      ],
+      angle:
+        "« Votre permis pour {programme} est purgé depuis {mois} mois et le chantier n'est pas ouvert. " +
+        "Une question, une seule : sur les gens qui appellent votre bureau de vente pendant que l'équipe est en visite, " +
+        "vous savez lesquels n'ont jamais été rappelés ? »",
+    },
     // ⚠ TOUTES les offres EAGLEYE sont à 100 %. C'est notre société : le
     // chiffre d'affaires ne se partage avec personne. Voir `lib/accounts.ts`
     // pour la distinction avec les 30 % facturés au CLIENT sur son CA généré.
@@ -257,39 +340,39 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
       closingAction:
         "Caler le RDV de CADRAGE avec le CEO de Nuwacom. Le contrat se dresse APRÈS ce cadrage — " +
         "c'est là qu'est le levier de négociation.",
-      icp: {
-        label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
-        buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
-        sector: "Assurance — compagnies, courtiers grossistes, mutuelles, bancassurance",
-        companySize: "25 à 2 000 salariés (cœur de cible ~1 500)",
-        geo: "Lyon puis national",
-        pains: [
-          "Process encore manuels (souscription, sinistres, relances) — lents et coûteux",
-          "Systèmes hérités qui ne parlent pas entre eux",
-          "Parcours client fragmenté, sans mesure de bout en bout",
-          "Pression réglementaire et concurrence des assurtechs",
-        ],
-        triggers: [
-          "Nomination d'un directeur transformation / innovation",
-          "Programme de digitalisation annoncé ou budget voté",
-          "Fusion / rapprochement (mutuelles) → besoin d'unifier les outils",
-          "Publie qu'il recrute sur la data / le digital",
-        ],
-        channels: [
-          "LinkedIn (comité de direction, transformation)",
-          "Introduction par prescripteur (cabinet, éditeur)",
-          "Email cadre + audit de parcours",
-          "Événements assurance / assurtech",
-        ],
-        disqualifiers: [
-          "Budget projet < 40 000 € HT → faisable par nous, ça reste chez EAGLEYE",
-          "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
-          "Aucun sponsor au comité de direction",
-          "Chantier gelé / DSI en refonte de core system bloquante",
-        ],
-        angle:
-          "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
-      },
+    },
+    icp: {
+      label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
+      buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
+      sector: "Assurance — compagnies, courtiers grossistes, mutuelles, bancassurance",
+      companySize: "25 à 2 000 salariés (cœur de cible ~1 500)",
+      geo: "Lyon puis national",
+      pains: [
+        "Process encore manuels (souscription, sinistres, relances) — lents et coûteux",
+        "Systèmes hérités qui ne parlent pas entre eux",
+        "Parcours client fragmenté, sans mesure de bout en bout",
+        "Pression réglementaire et concurrence des assurtechs",
+      ],
+      triggers: [
+        "Nomination d'un directeur transformation / innovation",
+        "Programme de digitalisation annoncé ou budget voté",
+        "Fusion / rapprochement (mutuelles) → besoin d'unifier les outils",
+        "Publie qu'il recrute sur la data / le digital",
+      ],
+      channels: [
+        "LinkedIn (comité de direction, transformation)",
+        "Introduction par prescripteur (cabinet, éditeur)",
+        "Email cadre + audit de parcours",
+        "Événements assurance / assurtech",
+      ],
+      disqualifiers: [
+        "Budget projet < 40 000 € HT → faisable par nous, ça reste chez EAGLEYE",
+        "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
+        "Aucun sponsor au comité de direction",
+        "Chantier gelé / DSI en refonte de core system bloquante",
+      ],
+      angle:
+        "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
     },
     offerings: [
       {

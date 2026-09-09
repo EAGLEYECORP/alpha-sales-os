@@ -18,6 +18,7 @@ import {
 } from "../lib/permis-construire";
 import { verticalForText } from "../lib/playbook";
 import { qualifier } from "../lib/linkedin-ciblage";
+import { ACCOUNTS_COMMERCIAL } from "../lib/accounts-commercial";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -338,4 +339,68 @@ test("⚠ le module est BRANCHÉ : un export lib que rien n'importe est mort, pa
     /estPermis \? importerPermis\(texte\)/,
     "la détection doit ROUTER l'import, pas seulement exister à côté de lui"
   );
+});
+
+test("⚠ L'ICP ÉCRIT ET LE CODE QUI TRIE DISENT LA MÊME CHOSE", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * DEUX ENDROITS POSENT « QUI EST NOTRE CIBLE ? » — ILS DOIVENT RÉPONDRE
+   * PAREIL.
+   *
+   * L'ICP d'EAGLEYE (`lib/accounts-commercial.ts`) énonce ses disqualifiants
+   * en PROSE : elle est lue par l'opérateur, elle nourrit les prompts, elle
+   * s'affiche dans les Réglages. `lirePermis` les applique en CODE : c'est lui
+   * qui décide ce qui entre dans la file.
+   *
+   * C'est exactement la forme du défaut récurrent de ce dépôt. Une prose qui
+   * dérive du code ne casse rien : elle ment, en silence, à l'endroit précis
+   * où quelqu'un vient chercher la règle. On vérifie donc que chaque
+   * disqualifiant ANNONCÉ est réellement APPLIQUÉ, sur un permis qui coche
+   * tout le reste — sinon le refus pourrait venir d'autre chose.
+   *
+   * ⚠ Ce test ne compare pas des chaînes de caractères : il rejoue le tri.
+   * Reformuler un disqualifiant est libre ; le retirer du code ne l'est pas.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const eagleye = ACCOUNTS_COMMERCIAL.find((c) => c.accountId === "eagleye");
+  assert.ok(eagleye?.icp, "le compte MAÎTRE doit avoir un client parfait déclaré, comme les autres");
+  const dq = (eagleye!.icp!.disqualifiers ?? []).join(" \n ").toLowerCase();
+
+  // Le témoin : il coche tout, il doit passer. Sans lui, chaque refus
+  // ci-dessous pourrait venir de n'importe quelle autre règle.
+  assert.equal(lirePermis(promoteur(), MAINTENANT).retenu, true, "le témoin doit passer");
+
+  const applique: [string, RegExp, Partial<PermisConstruire>][] = [
+    ["personne physique", /personne physique/, { demandeur: "M. et Mme DUVAL" }],
+    ["bailleur social", /bailleur social/, { demandeur: "OPAC DU RHONE" }],
+    ["personne publique", /personne publique/, { demandeur: "VILLE DE LYON" }],
+    ["hors zone", /hors lyon \+ villeurbanne/, { commune: "Bron" }],
+    ["permis périmé", /au-delà de sa validité|achevé/, { dateDecision: ilYA(40) }],
+  ];
+
+  for (const [nom, motif, mutation] of applique) {
+    assert.match(dq, motif, `l'ICP doit ANNONCER le disqualifiant « ${nom} »`);
+    assert.equal(
+      lirePermis(promoteur(mutation), MAINTENANT).retenu,
+      false,
+      `l'ICP annonce « ${nom} » mais le code le laisse passer`
+    );
+  }
+
+  /**
+   * ⚠ Le seuil de taille est le seul qui n'EXCLUT pas, et l'ICP doit le dire
+   * comme tel. Une opération de trois lots reste une cible — pour Alpha Voice
+   * seul, pas pour l'offre VIP. Écrire « disqualifiant » sans cette nuance
+   * ferait jeter des fiches que le code garde.
+   */
+  assert.match(dq, /alpha voice/, "le seuil de taille doit renvoyer vers l'offre proportionnée, pas vers la poubelle");
+  assert.equal(
+    lirePermis(promoteur({ logements: LOGEMENTS_MIN - 3 }), MAINTENANT).retenu,
+    true,
+    "une petite opération n'est pas exclue : elle est dite disproportionnée pour le VIP"
+  );
+
+  // Et la zone annoncée est bien celle qui est implémentée.
+  assert.match((eagleye!.icp!.geo ?? "").toLowerCase(), /lyon/);
+  assert.match((eagleye!.icp!.geo ?? "").toLowerCase(), /villeurbanne/);
 });

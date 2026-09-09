@@ -40,7 +40,7 @@ export function AccountSwitcher() {
    * cohérent. Tant que le portefeuille n'est pas chargé, on montre celui-là
    * plutôt qu'un écran vide — et il se précise dès que le serveur répond.
    */
-  const icpServeur = commercial?.identite?.icp;
+  const icpServeur = commercial?.icp;
   const base = accountICP(activeId);
   const icp = icpServeur ? { ...base, ...icpServeur } : base;
 
