@@ -65,6 +65,75 @@ cherchent donc des **formes** : la forme d'un numéro de téléphone, la forme
 d'un montant, la forme d'une adresse. Un test refuse tout numéro qui ne soit
 pas dans une plage réservée à la fiction par le régulateur.
 
+### Une règle écrite en prose n'est pas une règle
+
+Les playbooks d'appel portent des interdits : *ce qu'on ne dit pas à froid à ce
+métier-là*. Ils étaient un tableau de chaînes de caractères — lisibles par un
+humain, invisibles pour le code.
+
+Résultat mesuré : un catalogue voisin faisait prononcer, mot pour mot,
+l'argument qu'un playbook interdisait en toutes lettres. Les deux textes
+arrivaient dans le **même** message assemblé, à trois lignes d'écart. Rien n'a
+bronché — un interdit écrit en français n'avait, structurellement, aucun moyen
+de rencontrer le texte qu'il régit.
+
+Chaque interdit porte désormais, dans la **même entrée**, la règle lisible *et*
+son motif exécutable. Pas deux listes côte à côte : deux listes divergent, et
+c'est toujours celle qu'on ne relit pas qui cesse de mordre. Le motif est
+absent quand l'interdit relève du jugement plutôt que de la formulation —
+en fabriquer un approximatif produirait des faux positifs jusqu'à ce que le
+garde entier soit désarmé.
+
+> ⚠ Ce garde a dû être corrigé **deux fois par mutation, pas par relecture**.
+> Sa première version ne citait qu'une formulation littérale ; la violation
+> réelle était une reformulation de bonne foi, qui ne contenait aucun des mots
+> attendus. La leçon tient en une ligne : **un garde par motif n'attrape que ce
+> qu'on a déjà vu**, et il faut le rouvrir chaque fois qu'on rencontre une
+> tournure neuve.
+
+### Une doc qui diverge du code ne casse rien — elle ment
+
+C'est le pendant documentaire du défaut précédent, et il est plus coûteux :
+personne ne relit un README avant de cocher une case dans un tableau de bord.
+
+Cas réel. Un programme d'aide publique portait un critère d'entrée
+**éliminatoire** que nous ne remplissions pas. Le constat était écrit, daté et
+exact — dans un fichier Markdown. Le code, lui, ne connaissait pas ce critère :
+il annonçait une adéquation « plausible », l'écran l'affichait dans une couleur
+qui encourage, et un module découpait consciencieusement des lots de travail
+pour un dossier qui aurait été rejeté à la première page.
+
+Deux corrections, et la seconde est la vraie :
+
+1. le critère est descendu dans le code ;
+2. **l'admissibilité a été séparée de l'adéquation**. « Ce programme nous
+   va-t-il ? » et « avons-nous le droit d'entrer ? » sont deux questions
+   distinctes qui se lisaient comme une seule — et c'est la rassurante qui
+   gagnait. Un blocage grise désormais l'adéquation à l'écran : rangé dans une
+   phrase sous la carte, il se lit *après* la couleur.
+
+Le test garde les deux moitiés : le critère doit être nommé avec sa valeur — un
+« non éligible » sans le seuil envoie chercher la porte suivante, qui
+appliquera le même — et les dossiers ouverts ne doivent porter aucun blocage,
+sinon on en remplit partout par prudence et l'écran devient un mur rouge que
+personne ne lit.
+
+### Ne jamais fabriquer une preuve, y compris par emprunt
+
+Les gardes refusaient déjà les témoignages inventés, les superlatifs
+invérifiables et les pourcentages de résultat promis. Il manquait une troisième
+famille, trouvée en ligne et non par un test : **l'affiliation
+institutionnelle**. Une page publique s'adossait à un programme qui ne nous
+avait rien accordé.
+
+C'est la pire des trois. Un témoignage inventé se démonte en conversation ; une
+affiliation se vérifie auprès de l'organisme, sans nous prévenir.
+
+> Le garde a immédiatement mordu sur une phrase parfaitement honnête — un motif
+> sans limite de mot attrapait un verbe courant. Corrigé le jour même : **un
+> garde qui refuse une phrase juste est un garde qu'on assouplira au mauvais
+> endroit la fois suivante.**
+
 ### Zéro donnée mesurée → zéro chiffre affiché
 
 Un `0 %` se lit comme un résultat. L'absence de mesure se **dit** :
@@ -94,7 +163,7 @@ l'optimise en croyant finir le travail.
 
 ## Les tests
 
-`node:test`, sans framework. Un millier et demi de cas, et leur objet n'est
+`node:test`, sans framework. Plus de mille six cents cas, et leur objet n'est
 pas la couverture : c'est de tenir les décisions qui ont déjà été payées une
 fois.
 

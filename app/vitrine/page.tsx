@@ -283,7 +283,7 @@ export default function VitrinePage() {
           qui n'a encore rien vu. La porte qui ne coûte que dix secondes
           existait dans le code et pas sur la page.
         */}
-        <section id="gratuit" className="py-20">
+        <section id="gratuit" className="scroll-mt-28 py-20">
           <SectionLabel>Commencer</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             Le socle est gratuit.
@@ -325,7 +325,7 @@ export default function VitrinePage() {
         <Rule />
 
         {/* ── 2. EST-CE QU'ON MATCHE ? ── */}
-        <section id="produit" className="py-20">
+        <section id="produit" className="scroll-mt-28 py-20">
           <SectionLabel>Qualification</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             D&apos;abord : est-ce qu&apos;on matche ?
@@ -425,7 +425,7 @@ export default function VitrinePage() {
               },
               {
                 t: "Ce que la machine change",
-                d: "Chaque personne entrée dans votre pipe porte une prochaine action DATÉE. Ce qui a pris du retard remonte tout seul, un lundi matin, avant que ce soit trop tard.",
+                d: "Chaque personne qui entre chez vous porte une prochaine action, avec une date. Ce qui a pris du retard remonte tout seul, un lundi matin, avant que ce soit trop tard.",
               },
             ].map((x) => (
               <div key={x.t}>
@@ -460,7 +460,7 @@ export default function VitrinePage() {
           réel ; le laisser dit exactement ce que c'est. C'est la même règle
           que partout ailleurs : on ne fabrique pas de preuve.
         */}
-        <section id="ecrans" className="py-20">
+        <section id="ecrans" className="scroll-mt-28 py-20">
           <SectionLabel>Les écrans</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             Voilà à quoi ça ressemble.
@@ -514,7 +514,7 @@ export default function VitrinePage() {
         </section>
 
         {/* ── 4. LES TARIFS ── */}
-        <section id="tarifs" className="py-20">
+        <section id="tarifs" className="scroll-mt-28 py-20">
           <SectionLabel>Tarifs</SectionLabel>
           <h2 className="mt-4 font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             Un prix, annoncé après vous avoir écouté
@@ -777,7 +777,7 @@ export default function VitrinePage() {
           périmètre doit être lu avant le prix, sinon le prix se compare à une
           promesse qu'on n'a jamais faite.
         */}
-        <section id="limites" className="py-20">
+        <section id="limites" className="scroll-mt-28 py-20">
           <SectionLabel>La frontière</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             Ce qu&apos;Alpha ne fera pas
@@ -785,15 +785,15 @@ export default function VitrinePage() {
             <span style={{ color: MUTED }}>— et ne prétendra jamais faire.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-            Deux choses restent chez vous, définitivement. Les écrire ici plutôt qu&apos;au premier
-            jalon est le seul moyen honnête de vous laisser juger ce que vous achetez.
+            Trois limites, écrites ici plutôt qu&apos;au premier jalon. C&apos;est le seul moyen
+            honnête de vous laisser juger ce que vous achetez avant d&apos;en parler.
           </p>
 
           <div className="mt-12 grid gap-10 sm:grid-cols-3">
             {[
               {
                 t: "La livraison",
-                d: "Alpha ne construit pas votre immeuble, ne pose pas votre chantier, ne rend pas votre prestation. Il s'arrête à la signature — ce qui vient après est votre métier, et c'est pour ça qu'on vous paie.",
+                d: "Alpha ne fabrique pas ce que vous vendez, ne pose pas votre chantier, ne rend pas votre prestation. Il s'arrête à la signature — ce qui vient après est votre métier, et c'est exactement pour ça qu'on vous paie.",
               },
               {
                 t: "La poignée de main",
@@ -812,7 +812,7 @@ export default function VitrinePage() {
           </div>
 
           <p className="mt-12 max-w-2xl border-l-2 pl-5 text-[16px] leading-[1.65]" style={{ borderColor: ACCENT, color: MUTED }}>
-            Ce qu&apos;Alpha supprime, c&apos;est tout ce qui se trouve AVANT et AUTOUR : le travail
+            Ce qu&apos;Alpha supprime, c&apos;est tout ce qui se trouve avant et autour : le travail
             répétitif qui fait qu&apos;un bon vendeur passe sa journée à ne pas vendre.
           </p>
         </section>
@@ -832,7 +832,7 @@ export default function VitrinePage() {
           finiraient par diverger, et c'est celle qu'on n'a pas relue qui
           serait prononcée.
         */}
-        <section id="questions" className="py-20">
+        <section id="questions" className="scroll-mt-28 py-20">
           <SectionLabel>Ce qu&apos;on nous demande</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             Les questions qui reviennent
@@ -842,7 +842,7 @@ export default function VitrinePage() {
             {[
               {
                 q: "On a déjà un CRM, et personne ne le remplit.",
-                r: "C'est exactement le problème qu'on traite. Si ça demande de saisir, ça ne sera pas saisi — c'est humain, pas un défaut de vos équipes. Ce qu'on regarde n'est pas votre outil, c'est ce qui n'y est PAS : les gens intéressés sans prochaine date. S'il les a déjà, on vous l'aura dit en vingt minutes et vous n'aurez perdu que ça.",
+                r: "C'est exactement le problème qu'on traite. Si ça demande de saisir, ça ne sera pas saisi — c'est humain, pas un défaut de vos équipes. Ce qu'on regarde n'est pas votre outil, c'est ce qui n'y est pas : les gens intéressés sans prochaine date. S'il les a déjà, on vous l'aura dit en vingt minutes et vous n'aurez perdu que ça.",
               },
               {
                 q: "Je n'ai pas le temps de m'occuper d'un outil de plus.",
@@ -874,7 +874,7 @@ export default function VitrinePage() {
         <Rule />
 
         {/* ── 5. LE CADRAGE ── */}
-        <section id="cadrage" className="py-20">
+        <section id="cadrage" className="scroll-mt-28 py-20">
           <SectionLabel>Avant tout devis</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
             Le cadrage est obligatoire
