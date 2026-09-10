@@ -37,7 +37,7 @@ import type { Meeting, Prospect, Sector, Stage } from "./types";
 const iso = (d: string) => new Date(`${d}T09:00:00`).toISOString();
 
 /**
- * Tarifs publics Alpha Voice, lus dans l'audit ***NOM-RETIRE***.
+ * Tarifs publics Alpha Voice, lus dans l'audit Nervant.
  *
  * ⚠ Ils sont DÉCLARÉS dans `lib/offres-publiques.ts` et réimportés ici. Ce
  * module porte de vraies fiches prospects : aucun composant client ne doit

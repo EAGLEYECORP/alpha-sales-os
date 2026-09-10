@@ -53,7 +53,7 @@ export const OS_MAP = `## La carte de l'app (utilise ces chemins pour guider —
 - Consigner un rendez-vous qu'on vient de faire → **/debrief**, à la voix.
 - Envoyer les emails du jour sans SMTP → **/outbox** : « Ouvrir dans Gmail », puis « J'ai envoyé » pour consigner la touche.
 - Construire du flux qui dure, ou parler à un expert-comptable / assureur / vendeur de caisses → **/prescripteurs**, onglet « La méthode », l'archétype correspondant.
-- Faire ENTENDRE la solution en rendez-vous → **/voice**, mode « démo sortante ». C'est l'émotion avant le prix, et c'est ce qui a converti la Carrosserie des Brotteaux.
+- Faire ENTENDRE la solution en rendez-vous → **/voice**, mode « démo sortante ». C'est l'émotion avant le prix — une décision de méthode, pas un résultat mesuré : zéro affaire signée à ce jour.
 - Être soufflé pendant un appel → bouton « Assistant d'appel » dans **/appels** ou **/closer** : il reconnaît l'objection et affiche la réponse du playbook.`;
 
 export const AGENT_LIMITS = `## Ce que tu ne fais JAMAIS

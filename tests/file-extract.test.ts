@@ -29,13 +29,13 @@ test("HTML — le script et le style ne polluent pas le texte", () => {
   const html = `
     <html><head><style>.a{color:red}</style></head>
     <body><script>var x = "ne doit pas apparaitre";</script>
-    <h1>Audit ***NOM-RETIRE***</h1><p>600 leads par mois.</p><p>Gain estim&eacute; : 76&nbsp;000&euro;.</p>
+    <h1>Audit Nervant</h1><p>600 leads par mois.</p><p>Gain estim&eacute; : 76&nbsp;000&euro;.</p>
     </body></html>`;
   const r = extractHtml(html);
   assert.equal(r.ok, true);
   assert.doesNotMatch(r.text, /ne doit pas apparaitre/);
   assert.doesNotMatch(r.text, /color:red/);
-  assert.match(r.text, /Audit ***NOM-RETIRE***/);
+  assert.match(r.text, /Audit Nervant/);
   assert.match(r.text, /Gain estimé : 76 000€/);
   // Les blocs deviennent des lignes, pas une bouillie d'une seule phrase.
   assert.ok(r.text.split("\n").length >= 3);
@@ -54,9 +54,9 @@ function makePdf(lines: string[], compress = true): ArrayBuffer {
 }
 
 test("PDF — le texte d'un flux compressé est extrait", async () => {
-  const r = await extractPdf(makePdf(["Audit Carrosserie des Brotteaux", "9 appels manques par semaine"]));
+  const r = await extractPdf(makePdf(["Audit Carrosserie Aldrene", "9 appels manques par semaine"]));
   assert.equal(r.ok, true);
-  assert.match(r.text, /Audit Carrosserie des Brotteaux/);
+  assert.match(r.text, /Audit Carrosserie Aldrene/);
   assert.match(r.text, /9 appels manques/);
 });
 
@@ -133,7 +133,7 @@ test("point d'entrée — chaque format passe par extractFile", async () => {
 });
 
 test("titre — proposé depuis la première ligne utile, sinon le nom du fichier", () => {
-  assert.equal(suggestTitle("audit.pdf", "Audit ***NOM-RETIRE*** × Partenaire\nsuite du texte"), "Audit ***NOM-RETIRE*** × Partenaire");
+  assert.equal(suggestTitle("audit.pdf", "Audit Nervant × Partenaire\nsuite du texte"), "Audit Nervant × Partenaire");
   // Lignes trop courtes → repli sur le nom, sans extension.
   assert.equal(suggestTitle("mon-audit.pdf", "a\nb\nc"), "mon-audit");
 });

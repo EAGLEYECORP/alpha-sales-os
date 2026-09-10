@@ -33,7 +33,7 @@ curl -X POST "$APP/api/v1/prospects?accountId=eagleye" \
   -H "Content-Type: application/json" \
   -d '[
     {
-      "societe": "Carrosserie des Brotteaux",
+      "societe": "Carrosserie Aldrene",
       "gérant": "Marc Dubois",
       "téléphone": "04 65 71 00 00",
       "ville": "Lyon 6e",

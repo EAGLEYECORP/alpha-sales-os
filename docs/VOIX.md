@@ -178,7 +178,8 @@ Construit. Le détail d'installation est dans `voice/README.md`.
 
 Il sert la **démonstration** : le prospect entend, sur son propre métier, ce
 que vivraient ses clients. C'est la doctrine appliquée — l'émotion avant le
-prix — et c'est ce qui a converti la Carrosserie des Brotteaux.
+prix. C'est une décision de méthode, pas un résultat mesuré : aucune affaire
+n'a été signée à ce jour (`JUILLET_REEL.gagnes` vaut 0).
 
 **La divulgation est prononcée par le code, pas par le modèle.** Un modèle
 peut reformuler ou sauter une consigne ; une ligne de code, non. Elle passe

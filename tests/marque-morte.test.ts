@@ -21,7 +21,7 @@ const R = process.cwd();
  *     leur champ `notes`, donc visible sur chaque fiche prospect ;
  *   · l'info-bulle du bouton de chargement dans Réglages annonçait
  *     « (Scintia · Lyon) » ;
- *   · une entrée de timeline disait « Audit ***NOM-RETIRE*** × Scintia » ;
+ *   · une entrée de timeline disait « Audit Nervant × Scintia » ;
  *   · et CLAUDE.md documentait une famille de routage `callflow` que le code
  *     avait déjà renommée — une doc qui MENT est pire qu'une doc absente.
  *

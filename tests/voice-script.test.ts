@@ -25,7 +25,7 @@ const cfg = (over: Partial<VoiceConfig> = {}): VoiceConfig => ({
   mode: "demo-sortante",
   agentName: "ALPHA",
   onBehalfOf: "EAGLEYE CORP",
-  company: "***NOM-RETIRE***",
+  company: "Carrosserie Corvane",
   verticalId: "garage-carrosserie",
   ...over,
 });

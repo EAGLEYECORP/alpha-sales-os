@@ -4,9 +4,9 @@ import { stripHtml, safePublicUrl } from "../lib/site-fetch";
 
 test("site-fetch — stripHtml enlève script/style/balises, garde le texte", () => {
   const html = `<html><head><style>.x{color:red}</style><script>alert(1)</script></head>
-    <body><h1>Garage ***NOM-RETIRE***</h1><p>Carrosserie à Lyon 7e.</p><div>Avis&nbsp;: 4,2</div></body></html>`;
+    <body><h1>Garage Corvane</h1><p>Carrosserie à Lyon 7e.</p><div>Avis&nbsp;: 4,2</div></body></html>`;
   const out = stripHtml(html);
-  assert.ok(out.includes("Garage ***NOM-RETIRE***"));
+  assert.ok(out.includes("Garage Corvane"));
   assert.ok(out.includes("Carrosserie à Lyon 7e"));
   assert.ok(out.includes("Avis : 4,2"), "entité &nbsp; convertie");
   assert.ok(!/alert|color:red|<[^>]+>/.test(out), "script/style/balises retirés");

@@ -20,8 +20,11 @@ import { PageHeader } from "@/components/ui/page-header";
  *
  * L'agent sert la DÉMONSTRATION : faire entendre au prospect, sur son
  * propre métier, ce que vivraient ses clients. C'est la doctrine maison
- * appliquée — émotion d'abord, démo avant le prix — et c'est ce qui a
- * converti la Carrosserie des Brotteaux.
+ * appliquée — émotion d'abord, démo avant le prix.
+ *
+ * ⚠ La phrase qui suivait nommait une entreprise réelle « convertie » par
+ * cette séquence. Elle était fausse : zéro affaire signée à ce jour. L'ordre
+ * reste une décision de méthode, pas un résultat mesuré.
  *
  * Le démarchage à froid n'est pas proposé. Techniquement identique à la
  * démo sortante ; la décision est documentée et assumée.

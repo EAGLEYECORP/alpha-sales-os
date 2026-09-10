@@ -117,7 +117,7 @@ test("le socle ne porte RIEN qui ne soit un champ de Prospect", () => {
 
 test("les valeurs neutres sont NEUTRES — pas des données de démonstration", () => {
   /**
-   * Un socle qui porte « ***NOM-RETIRE*** » ou 3 500 € tamponne une fausse donnée sur
+   * Un socle qui porte « Corvane » ou 3 500 € tamponne une fausse donnée sur
    * chaque fiche importée, et personne ne le voit : ça ressemble à une fiche
    * remplie. On vérifie donc que chaque valeur est vide, zéro, ou l'état
    * initial explicite d'une machine à états.

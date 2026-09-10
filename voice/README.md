@@ -7,9 +7,14 @@ et rend la main à un humain. Il sert la **démonstration** : faire entendre au
 prospect, sur son propre métier, ce que vivraient ses clients quand personne ne
 décroche.
 
-C'est la doctrine maison appliquée — *l'émotion avant le prix* — et c'est
-exactement ce qui a converti la Carrosserie des Brotteaux : visite terrain,
-démo live, **puis** le prix.
+C'est la doctrine maison appliquée — *l'émotion avant le prix* : visite
+terrain, démo live, **puis** le prix.
+
+> ⚠ Cette phrase se terminait par « et c'est ce qui a converti *\<enseigne
+> réelle\>* ». Elle nommait une entreprise dans un dépôt public **et** elle
+> était fausse : la fiche est au stade « offre », et le dépôt compte zéro
+> affaire signée. L'ordre des étapes est une **décision de méthode**, pas un
+> résultat mesuré — et il le restera jusqu'à la première signature.
 
 ---
 

@@ -145,6 +145,110 @@ const CLIENTELE_AFFIRMEE = [
   /\b(?:confrères?|voisins?|concurrents?|collègues?) (?:déjà )?(?:équipés?|clients?)\b/i,
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ LA QUATRIÈME FAMILLE : LA CONVERSION ATTRIBUÉE À UN NOM.
+ *
+ * `CLAUDE.md` la désignait déjà comme « la forme la plus convaincante des
+ * trois, et la seule qu'aucun garde ne tenait » — pour les références nommées.
+ * Elle est restée non branchée, et voici ce qu'elle a laissé passer :
+ *
+ *   « et c'est ce qui a converti la <enseigne réelle> »
+ *
+ * recopiée dans CINQ fichiers, dont `lib/os-map.ts` et `lib/voice-script.ts`
+ * qui alimentent les prompts. Deux fautes en huit mots :
+ *  · elle nommait une entreprise réelle dans un dépôt public ;
+ *  · elle était FAUSSE — la fiche est au stade `offre`, `JUILLET_REEL.gagnes`
+ *    vaut 0. Rien n'a jamais été signé.
+ *
+ * Pourquoi les trois motifs existants ne la voyaient pas : ils cherchent un
+ * POSSESSIF (« nos clients »), un « on » nu (« on équipe »), ou une troisième
+ * personne collective (« les confrères équipés »). Une conversion attribuée à
+ * un nom propre n'en porte AUCUN. C'est la même leçon, pour la quatrième fois :
+ * un garde par motif n'attrape que ce qu'on a déjà vu.
+ *
+ * ⚠ CALIBRAGE. Le motif exige un NOM PROPRE derrière le verbe. « Le taux de
+ * conversion », « convertir un prospect », « ce qui convertit le mieux » sont
+ * du vocabulaire de vente parfaitement légitime, écrit partout dans le
+ * produit : les refuser ferait de ce garde un garde qu'on désarme. C'est ce
+ * qui distingue une méthode d'une référence — et seule la référence ment.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const CONVERSION_ATTRIBUEE = [
+  // « a converti la Carrosserie X », « ont converti Untel »
+  /\b(?:a|ont|avait|ont pu) converti\s+(?:la |le |les |l'|chez )?[A-ZÉÈÀ]/,
+  // « notre premier client », « nos premiers clients »
+  /\bnos? premi(?:er|ers|ère|ères) clients?\b/i,
+  /**
+   * « client depuis 2025 », « clients depuis six mois ».
+   *
+   * ⚠ LA DATE EST OBLIGATOIRE DANS LE MOTIF, ET CE N'EST PAS DU ZÈLE. Écrit
+   * d'abord en `\bclients? depuis\b`, il a mordu au premier passage sur une
+   * phrase parfaitement honnête du README : « consentement du **client depuis**
+   * SON compte » — où « depuis » est un lieu, pas une durée.
+   *
+   * On resserre plutôt que de reformuler la phrase juste : c'est la règle que
+   * ce dépôt s'est donnée le jour où un motif d'affiliation a mordu sur le
+   * verbe « supprime ». Un garde qui refuse une phrase vraie est un garde
+   * qu'on assouplira au mauvais endroit la fois suivante.
+   */
+  /\bclients? depuis (?:\d|le \d|janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/i,
+  // « a signé avec nous », « ils ont signé chez nous »
+  /\b(?:a|ont|avait) signé (?:avec|chez) nous\b/i,
+  // « qui nous a fait confiance »
+  /\bnous a fait confiance\b/i,
+  // « X est équipé depuis », attribué à un nom propre
+  /\b[A-ZÉÈÀ][\p{L}'-]{3,} est (?:équipé|client)\b/u,
+];
+
+/**
+ * Le périmètre de CE garde-là est plus large que `REDACTEURS`, et c'est voulu.
+ *
+ * La phrase fautive vivait dans `lib/os-map.ts` (une chaîne markdown lue par
+ * les prompts, donc pas un « rédacteur » au sens de la liste) ET dans trois
+ * fichiers `.md` publics. Un garde qui n'aurait regardé que les rédacteurs en
+ * aurait manqué quatre sur cinq.
+ */
+const PORTEURS_DE_REFERENCE = [
+  ...REDACTEURS,
+  "lib/os-map.ts",
+  "lib/page-guides.ts",
+  "lib/bricks.ts",
+  "docs/VOIX.md",
+  "docs/OFFRE-ALPHA-VOICE.md",
+  "docs/public-readme.md",
+  "voice/README.md",
+  "README.md",
+];
+
+test("⚠ aucune conversion n'est attribuée à un nom — zéro affaire signée", () => {
+  const fautes: string[] = [];
+
+  for (const f of PORTEURS_DE_REFERENCE) {
+    let src: string;
+    try {
+      src = readFileSync(join(RACINE, f), "utf8");
+    } catch {
+      fautes.push(`${f} — introuvable, la liste des porteurs de référence est périmée`);
+      continue;
+    }
+    // Sur un `.md`, tout est du texte ; sur un `.ts`, le commentaire ne part
+    // pas au prospect et a le droit d'expliquer ce qu'on refuse.
+    const code = /\.tsx?$/.test(f) ? sansCommentaires(src) : src;
+    for (const motif of CONVERSION_ATTRIBUEE) {
+      const m = code.match(motif);
+      if (m) fautes.push(`${f} → « ${m[0]} »`);
+    }
+  }
+
+  assert.deepEqual(
+    fautes,
+    [],
+    "zéro affaire signée à ce jour : attribuer une conversion à un nom est une référence inventée, " +
+      "et une référence se vérifie auprès de l'intéressé sans nous prévenir :\n  " + fautes.join("\n  ")
+  );
+});
+
 test("⚠ aucun texte destiné au prospect n'affirme une clientèle", () => {
   const fautes: string[] = [];
 

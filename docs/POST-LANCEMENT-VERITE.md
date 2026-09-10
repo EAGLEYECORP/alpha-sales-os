@@ -104,11 +104,24 @@ Zéro client, zéro vente. Le pluriel invente un programme de validation.
 qui accepte d'être citée, et obtenir son accord **par écrit**. Une semaine, et
 ça ne dépend que d'un oui.
 
-> Le dépôt mentionne la **Carrosserie des Brotteaux** comme « convertie »
-> (`voice/README.md`) alors que `CLAUDE.md` affirme zéro vente. **Les deux ne
-> peuvent pas être vrais.** Si une démo réelle a eu lieu là-bas, tu as le droit
-> de le dire — précisément, au singulier, nommément. Pas « des tests internes
-> en entreprises ».
+> ✅ **TRANCHÉ LE 10/09/2026 — et c'est la donnée qui a tranché, pas un avis.**
+> Le dépôt présentait une enseigne réelle comme « convertie », dans cinq
+> fichiers dont deux qui alimentent les prompts, pendant que `CLAUDE.md`
+> affirmait zéro vente. Les deux ne pouvaient pas être vrais.
+>
+> Vérification faite dans la source : la fiche est au stade **`offre`**, et
+> `JUILLET_REEL.gagnes` vaut **0**. **Rien n'a été converti.** La phrase était
+> de la preuve sociale fabriquée — la forme NOMMÉE, celle que `CLAUDE.md`
+> désigne comme « la plus convaincante des trois, et la seule qu'aucun garde
+> ne tenait ».
+>
+> Elle est retirée partout, et le nom avec (dépôt public). Ce qui la remplace
+> est vrai et tient debout seul : l'ordre « émotion avant prix » est une
+> **décision de méthode**, pas un résultat mesuré.
+>
+> Le droit rappelé plus haut reste entier : le jour où un pilote réel a lieu,
+> il se dit **précisément, au singulier, nommément — et avec l'accord écrit de
+> l'intéressé.**
 
 ### E. « la même qualité de service client que sur place » — **remplacer par la démo**
 

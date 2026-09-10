@@ -33,9 +33,21 @@ import { estPartenaire } from "./validation-partenaire";
  *
  * Il fait : la DÉMONSTRATION. Le prospect entend, sur son propre
  * scénario métier, ce que ses clients entendraient. C'est la doctrine
- * maison appliquée — « émotion d'abord, démo avant le prix » — et c'est
- * ce qui a converti la Carrosserie des Brotteaux : visite terrain, démo
- * live, puis prix.
+ * maison appliquée — « émotion d'abord, démo avant le prix » : visite
+ * terrain, démo live, puis prix.
+ *
+ * ⚠⚠ CETTE PHRASE DISAIT « ET C'EST CE QUI A CONVERTI LA <ENSEIGNE RÉELLE> ».
+ * Deux fautes en huit mots, et elle était recopiée dans CINQ fichiers dont
+ * deux qui alimentent les prompts.
+ * · Elle nommait une entreprise réelle dans un dépôt public.
+ * · Elle était FAUSSE. La fiche en question est au stade `offre`, et
+ *   `JUILLET_REEL.gagnes` vaut 0 : rien n'a jamais été signé. C'était de la
+ *   preuve sociale fabriquée, dans le dépôt qui porte trois gardes contre la
+ *   preuve sociale fabriquée — aucune ne cherchait un nom propre suivi d'un
+ *   verbe de conversion. `docs/POST-LANCEMENT-VERITE.md` avait relevé la
+ *   contradiction sans pouvoir la trancher ; la donnée la tranche.
+ * L'ordre « émotion avant prix » reste ce qu'il a toujours été : une
+ * DÉCISION de méthode, pas un résultat mesuré.
  *
  * Il fait AUSSI, depuis le 28/08/2026 : l'APPEL À FROID, entier.
  *

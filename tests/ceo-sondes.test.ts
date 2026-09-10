@@ -23,13 +23,13 @@ import type { CampaignDraft, DraftStatus, Prospect, Stage } from "../lib/types";
  */
 
 const fiche = (over: Partial<Prospect> = {}): Prospect =>
-  ({ ...prospectDefaults, id: "p1", company: "***NOM-RETIRE***", city: "Lyon", createdAt: "", updatedAt: "", ...over }) as Prospect;
+  ({ ...prospectDefaults, id: "p1", company: "Corvane", city: "Lyon", createdAt: "", updatedAt: "", ...over }) as Prospect;
 
 const brouillon = (status: DraftStatus): CampaignDraft => ({
   id: `d-${status}`,
   campaignId: "c1",
   prospectId: "p1",
-  company: "***NOM-RETIRE***",
+  company: "Corvane",
   channel: "email",
   to: "x@example.com",
   subject: "s",

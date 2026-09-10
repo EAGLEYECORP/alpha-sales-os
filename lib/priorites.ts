@@ -140,7 +140,7 @@ const daysSince = (iso: string, now: Date) =>
  * c'est-à-dire dans le cadran étiqueté « le piège qui remplit la journée
  * sans faire avancer le pipe ». Faux, et activement trompeur.
  *
- * La cause : un seul deal à fort récurrent (***NOM-RETIRE***, 319 €/mois) écrasait
+ * La cause : un seul deal à fort récurrent (Nervant, 319 €/mois) écrasait
  * tous les autres. Dans un pipe homogène — ici tout le monde à 990 € —
  * normaliser sur le maximum rend invisible ce qui compte.
  *

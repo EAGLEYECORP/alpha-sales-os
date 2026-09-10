@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { nomsReels, enseignesToponymiques, DONNEE_PRIVEE_PRESENTE, MOTIF_SKIP_NOMS } from "./noms-reels";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -161,6 +162,59 @@ test("⚠ AUCUN NUMÉRO DE TÉLÉPHONE RÉEL DANS LE DÉPÔT", () => {
       fautes.join("\n")
   );
 });
+
+test(
+  "⚠ AUCUN NOM DE PROSPECT RÉEL DANS LE DÉPÔT",
+  { skip: !DONNEE_PRIVEE_PRESENTE && MOTIF_SKIP_NOMS },
+  () => {
+    /**
+     * ⚠⚠ LA GARDE QUI MANQUAIT PENDANT UN JOUR ENTIER, ET QUI EST LE PENDANT
+     * EXACT DE CELLE DES TÉLÉPHONES, JUSTE AU-DESSUS.
+     *
+     * Les téléphones étaient cherchés dans TOUT fichier commité, parce qu'« un
+     * dépôt public ne se visite pas, il se clone ». Les NOMS, eux, n'étaient
+     * cherchés que dans le bundle client (`vitrine-fuite.test.ts`) — c'est-à-dire
+     * sous le modèle de menace « atteindre un navigateur », précisément celui
+     * dont ce fichier explique en tête qu'il était insuffisant.
+     *
+     * Deux portées pour la même question, et c'est la plus étroite qui gardait
+     * les noms. Mesuré : dix-huit fichiers de `lib/`, `tests/`, `docs/` et
+     * `voice/` portaient des raisons sociales réelles, hors bundle, donc hors
+     * garde. Aucune n'avait jamais fait tomber un test.
+     *
+     * Le garde du bundle a été RETIRÉ, pas doublé : il posait la même question
+     * sur un sous-ensemble strict, et deux définitions d'une règle divergent
+     * toujours — c'est celle qu'on ne relit pas qui cesse de mordre.
+     */
+    const noms = nomsReels();
+    const enseignes = enseignesToponymiques();
+
+    // Non-vacuité : sans elle, une extraction cassée rendrait `[]` et ce test
+    // passerait en vert sans rien chercher. C'est le piège déjà payé ici.
+    assert.ok(noms.length >= 10, `extraction des noms cassée : ${noms.length} nom(s) lu(s)`);
+
+    const fautes: string[] = [];
+    for (const f of fichiers()) {
+      // Le module d'extraction cite forcément ce qu'il extrait.
+      if (f === "tests/noms-reels.ts") continue;
+      const src = readFileSync(join(RACINE, f), "utf8");
+      for (const nom of noms) {
+        const re = new RegExp(`\\b${nom.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+        if (re.test(src)) fautes.push(`${f} → « ${nom} »`);
+      }
+      for (const re of enseignes) {
+        const m = src.match(re);
+        if (m) fautes.push(`${f} → « ${m[0]} »`);
+      }
+    }
+
+    assert.deepEqual(
+      fautes,
+      [],
+      "des noms de prospects réels sont écrits dans des fichiers commités :\n  " + fautes.join("\n  ")
+    );
+  }
+);
 
 test("⚠ le dossier des données réelles est IGNORÉ PAR GIT", () => {
   /**

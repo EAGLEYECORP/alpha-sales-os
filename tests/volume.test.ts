@@ -128,7 +128,7 @@ test("volume — une leçon de terrain reste légère", () => {
   // 0,5 Ko mesuré. Si une leçon se met à porter la fiche entière, le plafond
   // de 400 ne protège plus rien.
   const l = leconDObjection({
-    prospect: prospect({ company: "Carrosserie des Brotteaux", notes: "x".repeat(2000) }),
+    prospect: prospect({ company: "Carrosserie Aldrene", notes: "x".repeat(2000) }),
     objection: "C'est trop cher",
     reponse: "Je lui ai fait chiffrer sa perte.",
     aDebloque: true,

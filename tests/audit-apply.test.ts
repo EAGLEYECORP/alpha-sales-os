@@ -5,7 +5,7 @@ import { prospectDefaults } from "../lib/seed";
 import type { Prospect } from "../lib/types";
 
 function fiche(over: Partial<Prospect>): Prospect {
-  return { ...prospectDefaults, id: "p1", company: "***NOM-RETIRE***", city: "Lyon", createdAt: "", updatedAt: "", ...over } as Prospect;
+  return { ...prospectDefaults, id: "p1", company: "Corvane", city: "Lyon", createdAt: "", updatedAt: "", ...over } as Prospect;
 }
 
 test("audit-apply — remplit les champs vides sans écraser les saisies manuelles", () => {
