@@ -164,6 +164,50 @@ promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois pr�
 > pas. Une prose qui dérive du code ne casse rien : elle ment, à l'endroit
 > précis où quelqu'un vient chercher la règle.
 
+### CE QUE LE SCRIPT A LE DROIT DE DIRE (`InterditFroid`, `lib/playbook.ts`)
+Chaque verticale déclare ses **interdits d'appel à froid** — *ce qu'on ne dit
+pas à ce métier-là*. Sur la maîtrise d'ouvrage, le premier est :
+« **Vous ratez des appels** » — faux ici, et ça prouve qu'on n'a pas compris le
+métier. Sa perte, ce sont des **acquéreurs déjà rencontrés que personne n'a
+rappelés**.
+
+> ⚠⚠ **UNE RÈGLE ÉCRITE EN PROSE N'EST PAS UNE RÈGLE.** `forbidden` était un
+> tableau de chaînes : lisible par un humain, **invisible pour le code**. Or
+> `OFFRES["alpha-voice"].perte` demandait « combien d'appels vous n'arrivez pas
+> à prendre », et `buildVoiceScript` injecte les DEUX dans le même prompt —
+> l'interdit et sa violation, à trois lignes d'écart. Rien n'a bronché.
+> · Chaque interdit porte désormais, **dans la même entrée**, la `regle`
+>   lisible ET son `motif` exécutable. Pas deux listes : deux listes divergent,
+>   et c'est celle qu'on ne relit pas qui cesse de mordre.
+> · `motif` est **absent** quand l'interdit relève du jugement (« citer son
+>   permis à froid ») — en fabriquer un approximatif produirait des faux
+>   positifs jusqu'à ce que le garde entier soit désarmé.
+> · `tests/playbook-interdits.test.ts` croise les interdits contre les CINQ
+>   textes que l'offre fait dire, **et le script assemblé**.
+> ⚠ Le motif a dû être corrigé **deux fois par MUTATION, pas par relecture** :
+> il ne citait qu'une formulation littérale, quand la violation réelle était
+> une reformulation de bonne foi. **Un garde par motif n'attrape que ce qu'on a
+> déjà vu** — il se rouvre à chaque tournure neuve.
+
+### LA VERTICALE SE LIT SUR LE TAG, PAS SUR LE TEXTE (`verticalForProspect`)
+Ordre : **tag → texte → secteur**. Un tag posé par l'importeur est
+DÉTERMINISTE ; un mot dans une note est une devinette qui se trompe en silence.
+
+> ⚠ Mesuré : les huit fiches de maîtrise d'ouvrage tombaient toutes sur la
+> verticale **AUTO-ÉCOLE**. Le mot « Permis » de leurs notes la déclenchait, et
+> son verrou n'excluait que « permis DE construire » — jamais « Permis PC 069…
+> », qui est ce que `notesDepuisPermis` écrit lui-même. En production, la file
+> du matin aurait servi le script du moniteur de conduite à des directeurs de
+> programmes. Aucune erreur, aucun log.
+> · Le motif auto-école exige maintenant un **contexte de conduite** au lieu
+>   d'énumérer les permis d'urbanisme à exclure : une liste d'exceptions est
+>   toujours en retard sur la façon dont les gens écrivent.
+> · « permis » NU est **ambigu** et ne rattache à rien. Les deux erreurs ne
+>   coûtent pas pareil — rater une auto-école coûte un rattachement, servir son
+>   script à un promoteur coûte l'appel et la crédibilité.
+> · La règle existait déjà pour le Cerveau (« verticale identifiée par tag,
+>   jamais par ressemblance de mots ») : elle n'était branchée qu'à un endroit.
+
 > ⚠ **L'ICP a déménagé** de `IdentiteCompte` vers `AccountCommercial`.
 > `identite` n'existe que pour les comptes PARTENAIRES (la marque qu'on
 > masque) — le compte MAÎTRE était donc le seul du portefeuille sans client
@@ -429,11 +473,57 @@ côté serveur dans `/api/send` — le seul endroit d'où un message PART.
   > masquer un trou le rend indétectable. Et **`force` ne passe pas outre** —
   > il arbitre le score anti-spam et la fenêtre de recontact, deux jugements ;
   > une mention obligatoire n'en est pas un.
+- **Le palier du jour** (`lib/email-ramp.ts` → `rampDepuisPremierEnvoi`) :
+  5 envois/jour la première semaine, +5 par semaine, **40 au plafond** pour une
+  seule boîte. Au-delà, on ne gagne pas plus — on grille le domaine d'un coup.
+  > ⚠ **IL NE COUPAIT QUE LA FILE D'UN ÉCRAN.** Le barème était enfermé dans
+  > `emailRamp()`, qui prend des `Prospect[]` — donc inatteignable depuis le
+  > serveur, qui n'a pas le CRM du navigateur. `/outbox` était borné ; les
+  > **trois autres appelants** (revue de campagne, newsletter, recette) ne
+  > connaissaient que `MAX_SENDS_PER_HOUR`. Le palier tenait par la mémoire de
+  > celui qui envoie. Branché côté serveur le 10/09/2026.
+  > ⚠ **24 h GLISSANTES, pas la journée civile**, et ce n'est pas une
+  > divergence par négligence avec l'écran : un jour calendaire autorise cinq
+  > envois à 23h59 et cinq à 00h01 — dix messages en deux minutes depuis une
+  > boîte neuve, soit le schéma exact que les filtres cherchent.
+  > ⚠ **`force` ne passe pas outre**, comme pour les mentions. La réputation
+  > d'un domaine n'est pas un jugement : elle ne se répare pas en redéployant.
+  > ⚠ **Toute panne mène au palier le plus BAS.** `firstSendAt` rend `null` sur
+  > une base injoignable, une table vide ou un service role absent → 5/jour.
+  > C'est l'inverse du réflexe « en cas de doute, ne pas bloquer » : rendre une
+  > date sur une panne ouvrirait le plafond au moment précis où l'on ne sait
+  > plus rien.
+  > **Conséquence à connaître** : une newsletter plus large que le palier est
+  > COUPÉE au palier. Ce n'est pas une panne.
 - **Le câblage** (`lib/expediteur.ts` → `identiteEnvoi`) : les **quatre**
   appelants de `/api/send` (barre d'envoi, revue de campagne, newsletter,
   recette) étalent le même triplet. Trois annonçaient le compte, aucun le
   signataire, la recette rien du tout. Le client ne tranche rien : il
   transmet, le serveur arbitre.
+
+### D'OÙ PARTENT NOS EMAILS — `contact@eagleyecorp.fr` (10/09/2026)
+La boîte `noreply@` prévue n'a jamais été créée, et attendre bloquait tout.
+`contact@eagleyecorp.fr` existe, fonctionne, et **quelqu'un la lit**.
+- Un `noreply@` en expéditeur de **prospection** n'est pas une convention
+  neutre : il annonce « ne répondez pas » à quelqu'un dont on attend
+  précisément une réponse. Et `contact@` est déjà l'adresse du cadrage sur la
+  vitrine et celle d'émission des devis — le prospect qui répond tombe là où
+  quelqu'un regarde, du premier message jusqu'à la signature.
+> ⚠⚠ **CE QUE ÇA COÛTE, et c'est écrit plutôt que tu.** Le transactionnel et
+> le commercial partagent désormais UNE SEULE boîte. Une campagne qui prend
+> des plaintes fait tomber les mails d'inscription Supabase **en même temps**
+> — aucun code ne change, rien ne le signale, et un client qui ne reçoit pas
+> son lien de confirmation ne devient jamais client. La même réputation porte
+> les devis.
+> ⚠ `docs/CHECKLIST-LANCEMENT.md` disait **l'inverse** (« une adresse distincte
+> de celle des campagnes »), et elle avait raison sur le fond. La ligne n'a pas
+> été supprimée : elle porte la décision qui l'annule et son motif. Une
+> consigne remplacée sans sa raison se fait réappliquer à l'envers par la
+> session suivante, qui croit corriger un oubli.
+> ⚠ Ce qui rend le choix tenable est le **palier du jour ci-dessus**, et rien
+> d'autre. La séparation des domaines (transactionnel sur une boîte dédiée,
+> prospection sur un sous-domaine) est **repoussée, pas annulée**.
+> Procédure : `docs/SMTP-SUPABASE-AMEN.md`.
 
 ## Références externes (`lib/references.ts`) — un livre n'est PAS une vérité
 Les sources extérieures (livres, vidéos, cours) entrent dans le Cerveau avec
@@ -459,6 +549,47 @@ chiffre mesuré.
 **Ce qui reste bloqué tant qu'il n'y a pas de client** : témoignages, logos,
 endossements, « 101 histoires de réussite ». Zéro vente = zéro preuve sociale
 disponible ; l'appliquer quand même fabrique de la preuve inventée.
+
+> ⚠⚠ **IL Y A UNE TROISIÈME FAMILLE, ET C'EST LA PIRE : L'AFFILIATION.**
+> Trouvée EN LIGNE le 10/09/2026, pas par un test. La vitrine affirmait
+> « c'est aussi ce qui nous vaut de candidater à French Tech 2030 » — un
+> programme dont un critère d'entrée **éliminatoire** nous écarte, et dont
+> l'échéance était passée sans dépôt.
+> · Les gardes existants refusaient les témoignages comptés et les
+>   superlatifs. Un LABEL, un PROGRAMME, un ACCÉLÉRATEUR, un « lauréat »
+>   forment une famille à part — et la plus dangereuse : un témoignage inventé
+>   se démonte en conversation, une affiliation **se vérifie auprès de
+>   l'organisme, sans nous prévenir**.
+> · `tests/vitrine-fuite.test.ts` la refuse désormais, et exige que l'argument
+>   qui la remplaçait RESTE : la souveraineté est vraie et tient debout sans
+>   aucun label.
+> ⚠ Le garde a immédiatement mordu sur une phrase honnête (« ce qu'Alpha
+> **supprime** » — `prim[ée]` sans limite de mot). Resserré le jour même : un
+> garde qui refuse une phrase juste est un garde qu'on assouplira au mauvais
+> endroit la fois suivante.
+
+## L'ADMISSIBILITÉ N'EST PAS L'ADÉQUATION (`lib/opportunites.ts`)
+Sur tout dossier d'aide, de programme ou d'appel à projets, **deux questions
+distinctes** qui se lisaient comme une seule :
+- `fit` — « ce programme nous va-t-il ? ». Une question de pertinence.
+- `bloquant` — « avons-nous le DROIT d'entrer ? ». Un critère qu'on ne remplit
+  pas et qui **ne se rattrape pas** par la qualité du dossier.
+
+> ⚠ **French Tech 2030 : porte FERMÉE.** Le critère d'entrée est 3 M€ de
+> financements et/ou de CA cumulés depuis 2024 ; nous sommes à 0 €. Le seuil
+> est éliminatoire, **et la promotion suivante appliquera le même**.
+> ⚠⚠ Ce constat était écrit, daté et exact — **dans un README**. Le code, lui,
+> ne connaissait pas le critère : `/trajectoire` affichait « adéquation :
+> plausible » en AMBRE (une couleur qui encourage) et `lib/mission-french-tech`
+> découpait neuf lots de travail pour un dossier rejeté à la première page.
+> Personne ne relit un README avant de cocher une case dans un tableau de bord.
+> · Un blocage **GRISE** l'adéquation à l'écran : rangé dans une phrase sous la
+>   carte, il se lit APRÈS la couleur, et la couleur avait déjà rassuré.
+> · Le critère se nomme **avec sa valeur** — « non éligible » sans le seuil
+>   envoie chercher la porte suivante, qui appliquera le même.
+> · Les dossiers OUVERTS ne portent aucun blocage, et c'est testé : sinon on en
+>   remplit partout par prudence et l'écran devient un mur rouge que personne
+>   ne lit.
 
 ## MASTER RAPPEL (`lib/master-rappel.ts` + `lib/vital-signs.ts`)
 Pour chaque prospect, à chaque instant : **signaux vitaux** (prêt à signer ?),
@@ -855,7 +986,11 @@ trois endroits dont deux répondaient faux.
 - Commentaires en français, denses, qui expliquent le POURQUOI (le style du repo).
 - Modules purs et testables dans `lib/`, testés dans `tests/*.test.ts`.
 - Pas de `any`. Pas de dépendance nouvelle. Pas de secret en dur.
-- Fin de commit :
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` (+ la ligne
-  `Claude-Session:` fournie par le harness). Jamais d'identifiant de modèle
-  ailleurs que dans le chat.
+- Fin de commit : les lignes `Co-Authored-By:` et `Claude-Session:` **fournies
+  par le harness**, telles quelles.
+  > ⚠ Cette ligne gravait « Opus 4.8 » — un numéro périmé, que le harness
+  > écrase de toute façon. Une doc qui prescrit une valeur obsolète se fait
+  > recopier par la session suivante, qui croit suivre la convention. On nomme
+  > la SOURCE, pas la valeur.
+  > ⚠ Jamais d'identifiant de modèle ailleurs : ni dans le code, ni dans un
+  > commentaire, ni dans un artefact poussé.
