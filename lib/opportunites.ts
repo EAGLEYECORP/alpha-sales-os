@@ -39,6 +39,33 @@ export interface Opportunity {
   fit: FitLevel;
   /** Pourquoi ce niveau d'adéquation — dit franchement. */
   fitWhy: string;
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * LE CRITÈRE QU'ON NE REMPLIT PAS, ET QUI NE SE RATTRAPE PAS.
+   *
+   * ⚠ L'ADMISSIBILITÉ N'EST PAS L'ADÉQUATION, et les confondre a coûté un
+   * écran menteur pendant une semaine.
+   *
+   * `fit` répond « ce programme nous va-t-il ? » — une question de pertinence.
+   * French Tech 2030 y répondait « plausible », et c'est JUSTE : l'IA est un
+   * domaine prioritaire et l'argument de souveraineté est réel.
+   *
+   * Mais le programme exige **3 M€ de financements et/ou de CA cumulés depuis
+   * le 1er janvier 2024** (plus TRL 6). EAGLEYE CORP est à 0 €. Le seuil est
+   * ÉLIMINATOIRE : aucune qualité du dossier ne le rattrape.
+   *
+   * Le README le savait — « NON ÉLIGIBLE, vérifié le 3 septembre 2026 » — et
+   * le code ne le savait pas. `/trajectoire` affichait donc « adéquation :
+   * plausible » en ambre, et le panneau de mission faisait travailler neuf
+   * lots pour un dossier qui serait rejeté à la première page. C'est la
+   * divergence habituelle du dépôt, appliquée cette fois à de l'argent : la
+   * doc dit vrai, le code pilote l'écran.
+   *
+   * ⚠ Rempli = la porte est FERMÉE, quel que soit `fit`. Un blocage se lève
+   * en changeant la RÉALITÉ (encaisser), jamais en réécrivant le dossier.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  bloquant?: string;
   /** Ce qui peut faire capoter le dossier. */
   risks?: string[];
 }
@@ -58,7 +85,13 @@ export const OPPORTUNITIES: Opportunity[] = [
       "Entreprise française innovante",
       "Domaine prioritaire : IA, quantique, cybersécurité, spatial, robotique, électronique, infrastructures numériques, santé, énergie/décarbonation",
       "Contribution à la souveraineté numérique française et européenne",
+      // ⚠ CE CRITÈRE MANQUAIT, et c'est le seul qui élimine.
+      "⚠ SEUIL D'ENTRÉE : 3 M€ de financements et/ou de CA cumulés depuis le 1er janvier 2024, et TRL 6 minimum",
     ],
+    bloquant:
+      "3 M€ de financements et/ou de CA cumulés depuis 2024 — EAGLEYE CORP est à 0 €. " +
+      "Vérifié le 3 septembre 2026. Le seuil est éliminatoire : la qualité du dossier ne le rattrape pas, " +
+      "et la promotion suivante ne changera rien tant que rien n'est encaissé.",
     steps: [
       "Vérifier que le dépôt est toujours ouvert sur demarche.numerique.gouv.fr",
       "Écrire le pitch de souveraineté : où vivent les données, quelle dépendance étrangère on supprime",

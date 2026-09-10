@@ -4,6 +4,8 @@ import {
   PALIERS, palierFor, palierProgress, leverageScore, daysToTarget, yearlyMultiple, DOUBLING_TRUTH,
 } from "../lib/paliers";
 import { OPPORTUNITIES, prioritized, urgency, daysLeft, opportunityById } from "../lib/opportunites";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 test("paliers — les 4 paliers se suivent sans trou ni chevauchement", () => {
   assert.equal(PALIERS.length, 4);
@@ -111,4 +113,68 @@ test("opportunités — le tri met l'urgent et le pertinent devant", () => {
   // Les opportunités permanentes à forte adéquation restent présentes.
   assert.ok(list.some((o) => o.id === "cir-cii"));
   assert.ok(OPPORTUNITIES.every((o) => o.eligibility.length > 0 && o.steps.length > 0));
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'ADMISSIBILITÉ N'EST PAS L'ADÉQUATION.
+ *
+ * ⚠ TROUVÉ EN RELISANT LA DOC CONTRE LE CODE, PAS PAR UN TEST.
+ *
+ * `README.md` porte, depuis le 3 septembre 2026 : « NON ÉLIGIBLE à cette
+ * promotion — le critère d'entrée est 3 M€ de financements et/ou de CA
+ * cumulés depuis 2024, EAGLEYE CORP est à 0 €, le seuil est éliminatoire ».
+ *
+ * `lib/opportunites.ts` ne listait pas ce critère et annonçait
+ * `fit: "plausible"`. `/trajectoire` affichait donc « adéquation : plausible »
+ * en AMBRE — une couleur qui encourage — et `lib/mission-french-tech.ts`
+ * découpait neuf lots de travail pour un dossier rejeté à la première page.
+ *
+ * La doc disait vrai, le code pilotait l'écran. C'est le défaut récurrent du
+ * dépôt appliqué à de l'argent : personne ne relit un README avant de cocher
+ * une case dans un tableau de bord.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠ une porte FERMÉE se dit, même quand l'adéquation est bonne", () => {
+  const ft = OPPORTUNITIES.find((o) => o.id === "french-tech-2030");
+  assert.ok(ft, "l'opportunité French Tech doit rester listée — on ne cache pas un dossier, on dit pourquoi il est fermé");
+
+  /**
+   * ⚠ On asserte la CONDITION, pas la présence d'un champ : le critère
+   * éliminatoire doit être NOMMÉ avec son chiffre. « Non éligible » sans le
+   * seuil envoie chercher la promotion suivante, qui appliquera le même seuil.
+   */
+  assert.ok(ft!.bloquant, "le seuil éliminatoire doit être porté par le CODE, pas seulement par le README");
+  assert.match(ft!.bloquant!, /3\s*M€/, "le montant du seuil doit être écrit — c'est lui qu'on doit franchir");
+  assert.match(ft!.bloquant!, /0\s*€|zéro/i, "et où on en est réellement");
+
+  // Le critère doit aussi figurer dans la liste d'éligibilité : c'est là qu'on
+  // regarde avant de commencer un dossier.
+  assert.ok(
+    ft!.eligibility.some((e) => /3\s*M€/.test(e)),
+    "le seuil doit être dans les critères, pas seulement dans le verdict"
+  );
+
+  /**
+   * ⚠ ET LA CONTREPARTIE, qui est ce qui rend le champ utile : une
+   * opportunité dont la porte est OUVERTE ne doit rien porter. Sans cette
+   * moitié, on pourrait remplir `bloquant` partout « par prudence » et
+   * l'écran deviendrait un mur rouge que personne ne lit.
+   */
+  const ouvertes = OPPORTUNITIES.filter((o) => o.id !== "french-tech-2030");
+  assert.ok(ouvertes.length > 0, "il doit rester des opportunités ouvertes, sinon ce test ne garde rien");
+  for (const o of ouvertes) {
+    assert.equal(o.bloquant, undefined, `${o.id} porte un blocage : est-il réel, ou de la prudence recopiée ?`);
+  }
+});
+
+test("⚠ l'écran GRISE ce qui est fermé — il ne se contente pas de l'écrire", () => {
+  /**
+   * Un blocage rangé dans une phrase sous la carte se lit après la couleur, et
+   * la couleur dit « ambre : encourageant ». Le premier signal doit être le
+   * bon, sinon on lit le second en cherchant à le contredire.
+   */
+  const src = readFileSync(join(process.cwd(), "app/(app)/trajectoire/page.tsx"), "utf8");
+  assert.match(src, /o\.bloquant\s*\n?\s*\?\s*"text-paper-faint line-through"/, "un blocage doit primer sur la teinte d'adéquation");
+  assert.match(src, /Porte fermée/, "…et se dire en clair");
 });

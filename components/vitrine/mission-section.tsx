@@ -96,11 +96,34 @@ export function MissionSection() {
       <h2 className="max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
         Une machine de vente française, de 0 à 10 M€.
       </h2>
+      {/**
+        * ⚠ CETTE PHRASE SE TERMINAIT PAR « C'est aussi ce qui nous vaut de
+        * candidater à French Tech 2030. » — ET C'ÉTAIT FAUX, EN PUBLIC.
+        *
+        * Vérifié le 3 septembre 2026 : le critère d'entrée du programme est
+        * 3 M€ de financements et/ou de CA cumulés depuis 2024. EAGLEYE CORP
+        * est à 0 €. Le seuil est éliminatoire. Et l'échéance de dépôt du
+        * 4 septembre est passée sans dépôt.
+        *
+        * La page affirmait donc une candidature qui n'a pas eu lieu et qui
+        * était impossible — sur la seule page que n'importe qui peut lire, à
+        * propos d'un programme public dont l'admissibilité se vérifie en un
+        * appel à Bpifrance.
+        *
+        * ⚠⚠ POURQUOI AUCUN GARDE NE L'A VUE. `tests/vitrine-fuite` refuse les
+        * témoignages inventés, « leader », les pourcentages de résultat
+        * promis. Une AFFILIATION INSTITUTIONNELLE est une troisième forme de
+        * preuve fabriquée, et personne n'y avait pensé — c'est pourtant la
+        * plus dangereuse des trois, parce qu'elle est vérifiable par un tiers.
+        * Le garde couvre maintenant cette famille.
+        *
+        * Ce qui reste est ce qui est VRAI et qui suffit : l'argument de
+        * souveraineté ne dépend d'aucun label pour tenir debout.
+        */}
       <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
         Un angle simple : l&apos;automatisation commerciale des PME françaises ne devrait pas dépendre
         d&apos;acteurs américains. Vos données peuvent rester en France, et la brique vocale
-        s&apos;héberge chez vous si vous le voulez. C&apos;est aussi ce qui nous vaut de candidater à
-        French Tech 2030.
+        s&apos;héberge chez vous si vous le voulez.
       </p>
 
       {/* La barre : l'échelle est logarithmique, et c'est dit. */}

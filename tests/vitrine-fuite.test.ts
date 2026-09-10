@@ -110,6 +110,57 @@ test("vitrine — et aucune preuve inventée non plus", () => {
   assert.doesNotMatch(publique, /\+\s*\d+\s*%\s*de\s*(ventes|chiffre|conversion)/i);
 });
 
+test("⚠ vitrine — AUCUNE AFFILIATION INSTITUTIONNELLE REVENDIQUÉE", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * LA TROISIÈME FORME DE PREUVE FABRIQUÉE, ET LA PLUS DANGEREUSE.
+   *
+   * ⚠ TROUVÉE EN LIGNE, PAS PAR UN TEST. La page disait :
+   *
+   *     « C'est aussi ce qui nous vaut de candidater à French Tech 2030. »
+   *
+   * Vérifié le 3 septembre 2026 : le critère d'entrée du programme est 3 M€
+   * de financements et/ou de CA cumulés depuis 2024. EAGLEYE CORP est à 0 €.
+   * Le seuil est éliminatoire, et l'échéance de dépôt du 4 septembre est
+   * passée sans dépôt. La page affirmait donc une candidature impossible qui
+   * n'a pas eu lieu.
+   *
+   * Les deux gardes voisins ne pouvaient pas la voir : l'un cherche des
+   * témoignages et des clients comptés, l'autre « leader » et les
+   * pourcentages promis. Un LABEL, un PROGRAMME, un ACCÉLÉRATEUR sont une
+   * famille à part — et la pire des trois, parce qu'un témoignage inventé se
+   * démonte en conversation quand une affiliation se vérifie en un appel à
+   * l'organisme, sans nous prévenir.
+   *
+   * ⚠ CE QUI RESTE PERMIS, et c'est le point : rien n'interdit de DIRE
+   * l'argument de souveraineté. Il est vrai, il tient debout tout seul, et il
+   * n'a jamais eu besoin d'un label pour convaincre. Ce qui est interdit,
+   * c'est de s'adosser à une institution qui ne nous a rien accordé.
+   *
+   * Le jour où une candidature est réellement déposée et acceptée, ce test se
+   * modifie — avec la preuve à la main, pas avant.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const AFFILIATIONS = [
+    /french\s*tech/i,
+    /bpifrance|bpi\b/i,
+    /label(?:lis|lé)/i,
+    /incubé|accéléré|accélérateur|incubateur/i,
+    /lauréat|prim[ée]|subventionn/i,
+    /certifi[ée]s? (?:par|iso)|agréé/i,
+  ];
+  const fautes = AFFILIATIONS.map((m) => publique.match(m)).filter(Boolean);
+  assert.deepEqual(
+    fautes.map((m) => m![0]),
+    [],
+    "la page publique revendique une affiliation : elle se vérifie en un appel à l'organisme, et zéro nous a rien accordé"
+  );
+
+  // Et l'argument qui la remplaçait doit RESTER : le retirer aurait vidé la
+  // section de son seul contenu vrai.
+  assert.match(publique, /souverain|ne devrait pas dépendre|rester en France/i, "l'angle de souveraineté est vrai, il reste");
+});
+
 test("vitrine — la pile technique n'est pas détaillée", () => {
   // Nommer les fournisseurs, c'est donner la recette ET créer une dépendance
   // dans la tête du client à des marques qui ne sont pas la nôtre.

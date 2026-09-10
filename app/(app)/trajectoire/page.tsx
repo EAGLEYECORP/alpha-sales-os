@@ -237,8 +237,21 @@ function OpportunityRow({ o, now }: { o: Opportunity; now: Date }) {
   const d = daysLeft(o, now);
   const tone =
     u === "critique" ? "text-signal-red" : u === "urgente" ? "text-signal-amber" : "text-paper-faint";
-  const fitTone =
-    o.fit === "fort" ? "text-signal-green" : o.fit === "plausible" ? "text-signal-amber" : "text-paper-faint";
+  /**
+   * ⚠ UN BLOCAGE PRIME SUR L'ADÉQUATION, et il la GRISE.
+   *
+   * Sans ça, French Tech 2030 s'affichait « adéquation : plausible » en
+   * ambre — c'est-à-dire encourageant — alors qu'un seuil de 3 M€ nous
+   * élimine à la première page du dossier. Deux questions distinctes se
+   * lisaient comme une seule, et c'est la rassurante qui gagnait.
+   */
+  const fitTone = o.bloquant
+    ? "text-paper-faint line-through"
+    : o.fit === "fort"
+      ? "text-signal-green"
+      : o.fit === "plausible"
+        ? "text-signal-amber"
+        : "text-paper-faint";
 
   return (
     <li className="rounded-xl border border-line/50 bg-surface/30 p-3">
@@ -252,6 +265,11 @@ function OpportunityRow({ o, now }: { o: Opportunity; now: Date }) {
         )}
       </div>
       <p className="mt-1 text-[11.5px] text-paper-dim">{o.gain}</p>
+      {o.bloquant && (
+        <p className="mt-1.5 rounded-lg border border-signal-red/30 bg-signal-red/5 px-2 py-1.5 text-[11.5px] text-signal-red">
+          <b>Porte fermée</b> — {o.bloquant}
+        </p>
+      )}
       <p className="mt-1 text-[11px] italic text-paper-faint">{o.fitWhy}</p>
 
       <details className="mt-2">
