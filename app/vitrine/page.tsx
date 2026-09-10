@@ -113,7 +113,9 @@ export default function VitrinePage() {
             <a href="#gratuit" className="hidden hover:text-[#191919] sm:inline">Gratuit</a>
             <a href="#produit" className="hidden hover:text-[#191919] sm:inline">Produit</a>
             <a href="#ecrans" className="hidden hover:text-[#191919] sm:inline">Écrans</a>
+            <a href="#limites" className="hidden hover:text-[#191919] sm:inline">Limites</a>
             <a href="#tarifs" className="hidden hover:text-[#191919] sm:inline">Tarifs</a>
+            <a href="#questions" className="hidden hover:text-[#191919] sm:inline">Questions</a>
             <a href="/souscrire" className="hidden hover:text-[#191919] sm:inline">Souscrire</a>
             <a href="#mission" className="hidden hover:text-[#191919] sm:inline">Mission</a>
             {/*
@@ -340,9 +342,10 @@ export default function VitrinePage() {
               <ul className="mt-4 space-y-3">
                 {[
                   "Vous avez déjà des clients — on amplifie, on ne part pas de zéro.",
-                  "Des demandes arrivent et vous n'arrivez pas à toutes les traiter.",
-                  "Votre suivi tient sur votre tête, un carnet, ou rien.",
-                  "Vous pouvez décider seul, ou avec une personne.",
+                  "Des gens vous contactent, et certains ne sont jamais rappelés.",
+                  "Votre suivi tient dans des têtes, des tableurs, ou les deux.",
+                  "Votre cycle dure plusieurs semaines : il y a du temps pour perdre quelqu'un.",
+                  "Il existe une personne qui peut décider — seule ou avec deux autres.",
                 ].map((x) => (
                   <li key={x} className="flex gap-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                     <span style={{ color: ACCENT }}>—</span>
@@ -358,7 +361,8 @@ export default function VitrinePage() {
                   "Vous cherchez le moins cher du marché — ce ne sera jamais nous.",
                   "Vous voulez « tester » sans changer votre façon de travailler.",
                   "Vous êtes déjà plein et vous refusez du monde.",
-                  "Vous attendez des clients sans jamais décrocher le téléphone.",
+                  "Vous vendez une fois dans votre vie : il n'y a pas de machine à installer.",
+                  "Personne chez vous ne peut trancher avant six mois.",
                 ].map((x) => (
                   <li key={x} className="flex gap-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                     <span style={{ color: LINE }}>—</span>
@@ -372,23 +376,57 @@ export default function VitrinePage() {
 
         <Rule />
 
-        {/* ── 3. LE COÛT DE L'INACTION ── */}
+        {/*
+          ── 3. LE COÛT DE L'INACTION ──
+
+          ⚠ CETTE SECTION DISAIT EXACTEMENT CE QUE NOTRE PROPRE PLAYBOOK
+          INTERDIT.
+
+          Elle s'ouvrait sur « un client qui n'obtient pas de réponse appelle
+          le suivant dans les cinq minutes », et les trois colonnes parlaient
+          de décrocher, de répondre 24/7, de concurrent équipé. C'est juste
+          pour un garage : quelqu'un appelle, ça sonne dans le vide, c'est
+          perdu en trente secondes.
+
+          Ce n'est PAS la perte d'une organisation qui vend sur plusieurs
+          semaines. `lib/playbook.ts`, verticale « maîtrise d'ouvrage », le
+          dit en toutes lettres comme un INTERDIT : « Vous ratez des appels :
+          faux ici, et ça prouve qu'on n'a pas compris le métier. » La même
+          contradiction vivait dans le catalogue d'offres, où un test la
+          refuse désormais — la vitrine, elle, n'avait pas suivi.
+
+          Ce qui la remplace est vrai des DEUX côtés, et plus fort : ce qui
+          coûte le plus cher n'est pas l'inconnu qu'on n'a jamais eu, c'est
+          celui qu'on avait déjà et qu'on a laissé refroidir.
+        */}
         <section className="py-20">
           <SectionLabel>Le vrai coût</SectionLabel>
           <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
-            Ce que ça coûte de ne rien changer
+            Ce qui coûte le plus cher,
+            <br />
+            <span style={{ color: MUTED }}>ce sont ceux que vous aviez déjà.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-            Un client qui n&apos;obtient pas de réponse appelle le suivant dans les cinq minutes. Il
-            ne rappelle pas, il ne vous en veut pas, et vous ne saurez jamais qu&apos;il a existé.
-            C&apos;est la perte la plus chère qui soit : celle qu&apos;on ne voit pas passer.
+            Pas les inconnus que vous n&apos;avez jamais rencontrés — ceux-là, vous savez qu&apos;il
+            faut aller les chercher. Ce sont les autres : ceux qui vous ont contacté, qui étaient
+            intéressés, à qui personne n&apos;a répondu à temps. Ils achètent ailleurs, ils ne vous en
+            veulent pas, et vous ne saurez jamais que vous les aviez eus.
           </p>
 
           <div className="mt-12 grid gap-10 sm:grid-cols-3">
             {[
-              { t: "Aujourd'hui", d: "Vous décrochez quand vous pouvez. Le reste part chez le concurrent." },
-              { t: "Dans six mois", d: "Le même volume, la même fatigue — et un concurrent équipé qui répond 24/7." },
-              { t: "Avec la machine", d: "Chaque demande est prise, qualifiée, relancée. Vous ne traitez que ce qui mérite votre voix." },
+              {
+                t: "Ce qui se voit",
+                d: "Les affaires perdues face à un concurrent. Vous les comptez, vous les commentez, vous en tirez des leçons.",
+              },
+              {
+                t: "Ce qui ne se voit pas",
+                d: "Les contacts intéressés sans prochaine date. Ils ne figurent dans aucun tableau, aucune réunion, aucun bilan — et ce sont les plus chers.",
+              },
+              {
+                t: "Ce que la machine change",
+                d: "Chaque personne entrée dans votre pipe porte une prochaine action DATÉE. Ce qui a pris du retard remonte tout seul, un lundi matin, avant que ce soit trop tard.",
+              },
             ].map((x) => (
               <div key={x.t}>
                 <p className="text-[15px] font-semibold">{x.t}</p>
@@ -398,8 +436,8 @@ export default function VitrinePage() {
           </div>
 
           <p className="mt-12 max-w-2xl border-l-2 pl-5 text-[16px] leading-[1.65]" style={{ borderColor: ACCENT, color: MUTED }}>
-            On ne vous promet pas un chiffre. On mesure le vôtre pendant le cadrage — et si la perte
-            est négligeable, on vous le dira.
+            On ne vous promet pas un chiffre. On compte le vôtre pendant le cadrage — sur vos contacts,
+            pas sur une moyenne de marché — et si la perte est négligeable, on vous le dira.
           </p>
         </section>
 
@@ -712,6 +750,122 @@ export default function VitrinePage() {
                 </a>
               </div>
             )}
+          </div>
+        </section>
+
+        <Rule />
+
+        {/*
+          ── CE QU'ALPHA NE FAIT PAS ──
+
+          ⚠ LA SECTION QUI MANQUAIT, ET C'EST LA PLUS DIFFÉRENCIANTE.
+
+          CLAUDE.md porte cette doctrine depuis longtemps — « Alpha ne livre
+          pas le chantier et ne remplace pas la personne qui rassure » — et
+          elle n'existait NULLE PART sur la page. C'est pourtant le contenu
+          qui travaille le plus dur :
+
+           · il désamorce l'objection réelle de tout logiciel d'IA
+             commerciale (« vous allez me vendre un robot qui parle à mes
+             clients à ma place ») avant qu'elle soit formulée ;
+           · il rend la promesse VÉRIFIABLE, donc crédible : une page qui ne
+             dit que ce qu'elle fait se lit comme une brochure ;
+           · il cadre la livraison. Une frontière dite sur la page publique ne
+             se renégocie pas au premier jalon.
+
+          ⚠ Elle est placée AVANT les tarifs, pas après : ce qui est exclu du
+          périmètre doit être lu avant le prix, sinon le prix se compare à une
+          promesse qu'on n'a jamais faite.
+        */}
+        <section id="limites" className="py-20">
+          <SectionLabel>La frontière</SectionLabel>
+          <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
+            Ce qu&apos;Alpha ne fera pas
+            <br />
+            <span style={{ color: MUTED }}>— et ne prétendra jamais faire.</span>
+          </h2>
+          <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
+            Deux choses restent chez vous, définitivement. Les écrire ici plutôt qu&apos;au premier
+            jalon est le seul moyen honnête de vous laisser juger ce que vous achetez.
+          </p>
+
+          <div className="mt-12 grid gap-10 sm:grid-cols-3">
+            {[
+              {
+                t: "La livraison",
+                d: "Alpha ne construit pas votre immeuble, ne pose pas votre chantier, ne rend pas votre prestation. Il s'arrête à la signature — ce qui vient après est votre métier, et c'est pour ça qu'on vous paie.",
+              },
+              {
+                t: "La poignée de main",
+                d: "La présence, la voix, le regard au moment de signer : ça ne s'automatise pas, et personne de sérieux ne vous dira le contraire. Alpha vous amène quelqu'un qui a envie de vous rencontrer. Le reste est à vous.",
+              },
+              {
+                t: "Ce qu'il ne sait pas encore faire",
+                d: "On le fait à la main, et on vous montre comment. Ce n'est pas un aveu : c'est ce qui nous permet de refuser d'embarquer dans le produit des choses qui n'y ont pas leur place.",
+              },
+            ].map((x) => (
+              <div key={x.t}>
+                <p className="text-[15px] font-semibold">{x.t}</p>
+                <p className="mt-2 text-[16px] leading-[1.6]" style={{ color: MUTED }}>{x.d}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-12 max-w-2xl border-l-2 pl-5 text-[16px] leading-[1.65]" style={{ borderColor: ACCENT, color: MUTED }}>
+            Ce qu&apos;Alpha supprime, c&apos;est tout ce qui se trouve AVANT et AUTOUR : le travail
+            répétitif qui fait qu&apos;un bon vendeur passe sa journée à ne pas vendre.
+          </p>
+        </section>
+
+        <Rule />
+
+        {/*
+          ── LES OBJECTIONS, TRAITÉES SUR LA PAGE ──
+
+          ⚠ Une page qui demande 10 000 € et ne répond à aucune objection les
+          laisse toutes intactes pour le rendez-vous — c'est-à-dire au moment
+          le plus cher, avec quelqu'un qui a déjà décidé sans nous.
+
+          Les réponses ci-dessous ne sont pas écrites pour la page : ce sont
+          celles du playbook d'appel (`lib/playbook.ts`), servies telles
+          qu'elles se disent de vive voix. Deux versions d'une même réponse
+          finiraient par diverger, et c'est celle qu'on n'a pas relue qui
+          serait prononcée.
+        */}
+        <section id="questions" className="py-20">
+          <SectionLabel>Ce qu&apos;on nous demande</SectionLabel>
+          <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
+            Les questions qui reviennent
+          </h2>
+
+          <div className="mt-12 space-y-10">
+            {[
+              {
+                q: "On a déjà un CRM, et personne ne le remplit.",
+                r: "C'est exactement le problème qu'on traite. Si ça demande de saisir, ça ne sera pas saisi — c'est humain, pas un défaut de vos équipes. Ce qu'on regarde n'est pas votre outil, c'est ce qui n'y est PAS : les gens intéressés sans prochaine date. S'il les a déjà, on vous l'aura dit en vingt minutes et vous n'aurez perdu que ça.",
+              },
+              {
+                q: "Je n'ai pas le temps de m'occuper d'un outil de plus.",
+                r: "C'est la bonne objection, et c'est pour ça que l'installation se fait à la main, par nous. Vous ne paramétrez rien. Le seul temps qu'on vous demande est celui du cadrage, et celui de nous dire ce qui se passe réellement chez vous — que personne d'autre ne sait.",
+              },
+              {
+                q: "Un agent qui appelle mes clients, ça va mal passer.",
+                r: "Il ne vend pas : il prend le nom, le besoin, le budget, et cale un rendez-vous avec un humain. Et il annonce à la première phrase qu'il est une intelligence artificielle — c'est le code qui le prononce, pas une consigne au modèle. L'expérience se juge en direct : on le fait sonner sur votre portable pendant le rendez-vous, et vous tranchez.",
+              },
+              {
+                q: "Et si ça ne marche pas chez moi ?",
+                r: "C'est pour ça que le cadrage est obligatoire et qu'il est gratuit. On regarde vos chiffres à vous avant d'annoncer quoi que ce soit, et il nous arrive de dire que ça ne vaut pas le coup. Sur l'accueil téléphonique, l'installation ne se paie qu'au premier rendez-vous obtenu — les bords de cette garantie sont écrits plus bas, pas cachés.",
+              },
+              {
+                q: "Pourquoi pas moins cher ?",
+                r: "Parce que ce n'est pas un abonnement qu'on vous ouvre : c'est une installation faite à la main, sur votre métier, par une seule personne. Le socle, lui, est réellement gratuit et sans durée — vous pouvez travailler dedans sans jamais nous payer. Ce qui se paie, c'est le moment où la machine agit à votre place.",
+              },
+            ].map((x) => (
+              <div key={x.q} className="max-w-3xl">
+                <p className="font-serif text-[22px] leading-[1.3] tracking-[-0.01em]">{x.q}</p>
+                <p className="mt-3 text-[16px] leading-[1.65]" style={{ color: MUTED }}>{x.r}</p>
+              </div>
+            ))}
           </div>
         </section>
 

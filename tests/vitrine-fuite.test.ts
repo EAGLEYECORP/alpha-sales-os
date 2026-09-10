@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { BRICKS, OUTBOUND_TIERS, OUTBOUND_UNIT_HT, OUTBOUND_UNIT_CALLS, PACK_SETUP_HT, PACK_MONTHLY_HT } from "../lib/bricks";
 import { CAPACITES, PALIERS_LABELS, PRIX_PUBLICS } from "../lib/public-catalogue";
+import { VERTICALS } from "../lib/playbook";
 
 /**
  * La vitrine est PUBLIQUE : hors mot de passe, indexable, lisible par un
@@ -141,12 +142,19 @@ test("⚠ vitrine — AUCUNE AFFILIATION INSTITUTIONNELLE REVENDIQUÉE", () => {
    * modifie — avec la preuve à la main, pas avant.
    * ─────────────────────────────────────────────────────────────────────
    */
+  /**
+   * ⚠ LES LIMITES DE MOT NE SONT PAS DÉCORATIVES — mesuré dès la première
+   * réécriture de la page. `prim[ée]` sans `\b` attrape « sup**prime** », et
+   * la phrase « ce qu'Alpha supprime, c'est le travail répétitif » a fait
+   * tomber ce test. Un garde qui refuse une phrase parfaitement honnête est
+   * un garde qu'on assouplit au mauvais endroit la fois suivante.
+   */
   const AFFILIATIONS = [
     /french\s*tech/i,
     /bpifrance|bpi\b/i,
     /label(?:lis|lé)/i,
     /incubé|accéléré|accélérateur|incubateur/i,
-    /lauréat|prim[ée]|subventionn/i,
+    /\blauréats?\b|\bprim[ée]e?s?\b|\bsubventionn/i,
     /certifi[ée]s? (?:par|iso)|agréé/i,
   ];
   const fautes = AFFILIATIONS.map((m) => publique.match(m)).filter(Boolean);
@@ -159,6 +167,59 @@ test("⚠ vitrine — AUCUNE AFFILIATION INSTITUTIONNELLE REVENDIQUÉE", () => {
   // Et l'argument qui la remplaçait doit RESTER : le retirer aurait vidé la
   // section de son seul contenu vrai.
   assert.match(publique, /souverain|ne devrait pas dépendre|rester en France/i, "l'angle de souveraineté est vrai, il reste");
+});
+
+test("⚠ vitrine — l'argumentaire ne PRONONCE PAS un interdit du playbook", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * LA PAGE DISAIT CE QUE NOTRE PROPRE PLAYBOOK REFUSE.
+   *
+   * La section « le vrai coût » s'ouvrait sur : « Un client qui n'obtient pas
+   * de réponse appelle le suivant dans les cinq minutes », et ses trois
+   * colonnes parlaient de décrocher, de répondre 24/7, de concurrent équipé.
+   *
+   * C'est juste pour un garage. Ce n'est PAS la perte d'une organisation qui
+   * vend sur plusieurs semaines — et `lib/playbook.ts` l'écrit comme un
+   * INTERDIT sur les verticales « maîtrise d'ouvrage » et « équipe terrain » :
+   * « Vous ratez des appels : faux ici, et ça prouve qu'on n'a pas compris le
+   * métier. »
+   *
+   * La même contradiction vivait dans le catalogue d'offres, où
+   * `tests/playbook-interdits` la refuse depuis le 10/09. La vitrine n'avait
+   * pas suivi : elle servait l'argument interdit à TOUS les visiteurs, y
+   * compris ceux qu'on prospecte.
+   *
+   * ⚠ Le motif est CELUI DU PLAYBOOK, importé, jamais recopié. Deux
+   * définitions de « qu'est-ce qu'on n'a pas le droit de dire » finiraient par
+   * diverger, et c'est la page publique — celle que personne ne relit — qui
+   * garderait l'ancienne.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const moa = VERTICALS.find((v) => v.id === "maitrise-ouvrage")!;
+  const interdits = moa.forbidden.filter((f) => f.motif);
+  assert.ok(interdits.length > 0, "la verticale doit porter des interdits exécutables, sinon ce test ne garde rien");
+
+  const fautes: string[] = [];
+  for (const f of interdits) {
+    const m = publique.match(f.motif!);
+    if (m) fautes.push(`« ${m[0]} » — ${f.regle.slice(0, 70)}…`);
+  }
+  assert.deepEqual(
+    fautes,
+    [],
+    "la page publique prononce un argument que le playbook interdit :\n  " + fautes.join("\n  ")
+  );
+
+  /**
+   * ⚠ ET LA CONTREPARTIE : l'argument qui REMPLACE doit être là. Sans elle,
+   * on satisferait ce test en vidant la section — c'est-à-dire en retirant la
+   * seule page où le coût de l'inaction est expliqué.
+   */
+  assert.match(
+    publique,
+    /que vous aviez déjà|sans prochaine date|laissé refroidir/i,
+    "le coût de l'inaction doit rester expliqué, sur l'angle qui est vrai partout"
+  );
 });
 
 test("vitrine — la pile technique n'est pas détaillée", () => {

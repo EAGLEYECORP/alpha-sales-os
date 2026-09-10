@@ -128,8 +128,37 @@ export interface OpenerStep {
  * faux positif, et un garde qu'il faut faire taire est un garde qu'on retire.
  * ─────────────────────────────────────────────────────────────────────
  */
-const MOTIF_APPELS_NON_PRIS =
-  /\bappels?\b[^.?!]{0,60}(?:manqu|rat[ée]|perdus?|non abouti|sans réponse|dans le vide|vous ne prenez pas|n'arrivez pas à (?:les )?prendre|personne ne (?:les )?prend)|(?:ratez|perdez|manquez|ne prenez pas)[^.?!]{0,40}\bappels?\b/i;
+const MOTIF_APPELS_NON_PRIS = new RegExp(
+  [
+    // « appels manqués / ratés / perdus / non aboutis / qui sonnent dans le vide »
+    /\bappels?\b[^.?!]{0,60}(?:manqu|rat[ée]|perdus?|non abouti|sans réponse|dans le vide|vous ne prenez pas|n'arrivez pas à (?:les )?prendre|personne ne (?:les )?prend)/,
+    // « vous ratez / perdez / manquez des appels »
+    /(?:ratez|perdez|manquez|ne prenez pas)[^.?!]{0,40}\bappels?\b/,
+    /**
+     * ⚠ CETTE TROISIÈME BRANCHE A ÉTÉ AJOUTÉE APRÈS UNE MUTATION QUI A
+     * SURVÉCU, et c'est la formulation qui vivait RÉELLEMENT sur la vitrine :
+     *
+     *     « Un client qui n'obtient pas de réponse appelle le suivant dans les
+     *       cinq minutes. »
+     *
+     * Aucun mot d'appel au sens de NOM — « appelle » est un verbe — et ni
+     * « manqué », ni « raté », ni « perdu ». Les deux branches précédentes la
+     * laissaient passer intacte, alors que c'est exactement l'affirmation que
+     * la verticale interdit : le prospect perd des gens parce qu'il ne répond
+     * pas assez vite.
+     *
+     * Deuxième fois que ce motif est corrigé par mutation plutôt que par
+     * relecture. La leçon tient en une ligne : un garde par motif n'attrape
+     * que ce qu'on a déjà vu, et il faut le rouvrir chaque fois qu'on
+     * rencontre une tournure neuve.
+     */
+    /(?:n'obtient|sans|jamais de|pas de) r[ée]ponse[^.?!]{0,50}(?:appelle|contacte|part|va voir)/,
+    /(?:appelle|contacte|va voir)\s+(?:le|un|les)\s+(?:suivant|concurrent|autre)/,
+  ]
+    .map((r) => r.source)
+    .join("|"),
+  "i"
+);
 
 /** Un interdit d'appel à froid : la règle pour l'humain, le motif pour la machine. */
 export interface InterditFroid {
