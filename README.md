@@ -12,10 +12,35 @@ capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — 
 
 ## À qui ça s'adresse
 
-L'OS a démarré pour le commerce de proximité lyonnais. Ce n'est plus le marché.
-Une fois les briques posées, il s'installe pour des **organisations** — et
-chacune achète pour une raison différente. Catalogue complet dans
-[`lib/segments.ts`](./lib/segments.ts).
+### 🎯 Qui EAGLEYE prospecte en ce moment (décidé le 09/09/2026)
+
+**Le maître d'ouvrage professionnel dont le permis de construire est actif, sur
+Lyon et Villeurbanne.** Promoteurs, SCCV, sociétés d'aménagement, constructeurs
+de maisons individuelles — ceux qui construisent **pour vendre**.
+
+C'est un ICP à **déclencheur**, pas à secteur : « les promoteurs » dit QUI, un
+permis dit QUI *et* **où en est l'affaire au mois près**, donc **quand**
+appeler. L'arrêté est public, daté, vérifiable.
+
+> ⚠ « Maître d'ouvrage » est un rôle **juridique**, pas un métier. Le même
+> export contient le bailleur social qui construit pour *attribuer*, la commune
+> qui bâtit une école, et le couple qui fait construire sa maison — ce dernier
+> étant le gros du volume. Aucun des trois n'a rien à vendre, et démarcher le
+> couple relève du B2C (décret n° 2022-1313). Le tri les sort par **exclusion
+> sèche** : [`lib/permis-construire.ts`](./lib/permis-construire.ts).
+
+Play opérationnel complet : [`docs/PERMIS-LYON.md`](./docs/PERMIS-LYON.md).
+**Zéro permis converti à ce jour** — les seuils sont des décisions, pas des
+mesures.
+
+### Ce que le PRODUIT sait servir
+
+À ne pas confondre avec la ligne ci-dessus : celle-ci décrit la portée de
+l'outil, celle-là notre campagne en cours. L'OS a démarré pour le commerce de
+proximité lyonnais ; ce n'est plus le marché. Catalogue complet dans
+[`lib/segments.ts`](./lib/segments.ts) et les playbooks d'appel dans
+[`lib/playbook.ts`](./lib/playbook.ts) (dont la verticale
+**maîtrise d'ouvrage**).
 
 | Segment | Ce qui fait mal | Brique d'entrée |
 |---|---|---|
@@ -41,52 +66,32 @@ Ce n'est pas un CRM avec des citations Hormozi — les règles sont **exécutée
 - **Confettis bronze** sur « Signé ». Évidemment.
 
 
-## Trajectoire — 0 → 10 M€ et French Tech 2030
+## Trajectoire — 0 → 10 M€
 
 > Écran vivant : **`/trajectoire`**. Modules : `lib/paliers.ts` (blueprint),
 > `lib/opportunites.ts` (argent hors client), `lib/voice-costs.ts` (coût usine).
 
-### ⏱ French Tech 2030 — dépôt avant le **4 septembre 2026, 23h59** (heure de Paris)
+### ⚫ French Tech 2030 — porte FERMÉE, et ce n'est plus une tâche
 
-> ⚠⚠ **NON ÉLIGIBLE À CETTE PROMOTION — vérifié le 3 septembre 2026.**
-> Le critère d'entrée est **3 M€ de financements et/ou de CA cumulés depuis le
-> 1er janvier 2024** (plus TRL 6 minimum). EAGLEYE CORP est à 0 €. Le seuil est
-> éliminatoire et ne se rattrape pas la veille.
+> **NON ÉLIGIBLE — vérifié le 3 septembre 2026.** Le critère d'entrée est
+> **3 M€ de financements et/ou de CA cumulés depuis le 1ᵉʳ janvier 2024** (plus
+> TRL 6). EAGLEYE CORP est à 0 €. Le seuil est **éliminatoire** : la qualité du
+> dossier ne le rattrape pas, et **la promotion suivante appliquera le même
+> seuil**. L'échéance du 4 septembre est par ailleurs passée sans dépôt.
 >
-> Détail des critères, et les deux chemins pour la promotion suivante :
-> [`docs/DOSSIER-FRENCH-TECH-2030.md`](./docs/DOSSIER-FRENCH-TECH-2030.md) §1.
-> Le reste du dossier — souveraineté, conformité, différenciation — est écrit
-> et sourcé : il resservira pour un dossier Bpifrance ou une page de vente.
+> ⚠⚠ **Ce constat a vécu six jours dans ce README pendant que le code disait
+> autre chose.** `lib/opportunites.ts` ne listait pas le seuil et annonçait
+> « adéquation : plausible » ; `/trajectoire` l'affichait en ambre — une
+> couleur qui encourage — et `lib/mission-french-tech.ts` découpait neuf lots
+> de travail pour un dossier rejeté à la première page. La **vitrine
+> publique**, elle, affirmait « c'est aussi ce qui nous vaut de candidater à
+> French Tech 2030 ». Corrigé le 10/09 : le blocage est porté par le code
+> (`Opportunity.bloquant`), et un test refuse toute affiliation
+> institutionnelle sur une page publique.
 >
-> Le rétroplanning ci-dessous est conservé comme trace de la démarche.
-
-3e promotion. Accompagnement 12 mois : optimisation du financement, mise en
-relation stratégique, simplification administrative. Résultats annoncés en
-octobre 2026. Domaines prioritaires : **IA**, quantique, cybersécurité, spatial,
-robotique, électronique, infrastructures numériques, santé, énergie.
-
-```
-21 août ─────────────────────────────────────────────────► 4 sept.  ►  octobre
-   │         │            │             │            │        │           │
-   J-14      J-11         J-7           J-4          J-2     DÉPÔT     résultats
-   │         │            │             │            │        │
-   ▼         ▼            ▼             ▼            ▼        ▼
- Vérifier  Pitch de   Traction      Rédaction    Relecture  Dépôt
- le dépôt  SOUVE-     RÉELLE        du dossier   à froid    (incomplet
- encore    RAINETÉ    (clients,     (problème,   + pièces   = rejeté)
- ouvert    (où vivent  CA encaissé,  solution,   jointes
-           les données, pipeline —   marché,
-           quelle       jamais des   différen-
-           dépendance   projections)  ciation)
-           supprimée)
-```
-
-**Adéquation : plausible, pas gagnée d'avance.** L'IA est bien un domaine
-prioritaire et l'argument de souveraineté est réel (cascade IA locale d'abord,
-données hébergeables en France, pile vocale déplaçable). Mais le programme
-vise plutôt la deep-tech de souveraineté que le logiciel de vente : le dossier
-se défend sur *« l'automatisation commerciale ne doit pas dépendre d'acteurs
-américains »*, **pas** sur la liste des fonctionnalités.
+> Ce qui reste utile : le dossier écrit — souveraineté, conformité,
+> différenciation — resservira pour Bpifrance ou une page de vente.
+> [`docs/DOSSIER-FRENCH-TECH-2030.md`](./docs/DOSSIER-FRENCH-TECH-2030.md).
 
 ### Les 4 paliers — une seule contrainte à la fois
 

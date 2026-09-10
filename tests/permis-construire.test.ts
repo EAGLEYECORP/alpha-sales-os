@@ -16,7 +16,7 @@ import {
   typeDeMaitreOuvrage,
   type PermisConstruire,
 } from "../lib/permis-construire";
-import { verticalForText } from "../lib/playbook";
+import { verticalForText, verticalForProspect } from "../lib/playbook";
 import { qualifier } from "../lib/linkedin-ciblage";
 import { ACCOUNTS_COMMERCIAL } from "../lib/accounts-commercial";
 
@@ -299,9 +299,85 @@ test("⚠ « permis de construire » ne tombe PLUS sur la verticale auto-école"
 
   // Et la contrepartie : l'auto-école n'a pas été cassée en corrigeant.
   assert.equal(verticalForText("auto-école, permis B, conduite accompagnée")?.id, "auto-ecole");
-  assert.equal(verticalForText("il passe son permis en janvier")?.id, "auto-ecole");
+  assert.equal(verticalForText("permis de conduire, code de la route")?.id, "auto-ecole");
   // L'agence de transaction reste chez elle.
   assert.equal(verticalForText("agence immobilière, mandats de vente")?.id, "immobilier");
+
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * ⚠ CETTE LIGNE ASSERTAIT L'INVERSE, ET C'EST ELLE QUI FIGEAIT LE BUG.
+   *
+   * Elle exigeait que « il passe son permis en janvier » rende `auto-ecole`,
+   * c'est-à-dire que le mot « permis » NU suffise. Le lookahead n'excluait
+   * alors que « permis de construire / d'aménager / de démolir » — trois
+   * formes qu'une fiche réelle n'écrit presque jamais.
+   *
+   * Mesuré : `notesDepuisPermis` produit « Permis : PC 069 383 24 A0123 », et
+   * une note à la main dit « permis obtenu », « permis purgé », « permis
+   * n° … ». Les huit fiches de démonstration de maîtrise d'ouvrage rendaient
+   * TOUTES `auto-ecole`. En production, la file du matin aurait servi le
+   * script du moniteur de conduite à des directeurs de programmes.
+   *
+   * L'arbitrage, dit franchement : « permis » seul est AMBIGU, et rendre
+   * `null` est le bon comportement — la fiche retombe sur son secteur, et une
+   * vraie auto-école écrit « auto-école », « conduite » ou « code de la
+   * route », qui matchent tous. Le coût des deux erreurs n'est pas
+   * symétrique : rater une auto-école coûte un rattachement, servir le script
+   * auto-école à un promoteur coûte l'appel et la crédibilité.
+   *
+   * Une liste d'exceptions est toujours en retard sur la façon dont les gens
+   * écrivent ; un contexte exigé ne l'est pas.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  assert.equal(
+    verticalForText("il passe son permis en janvier"),
+    null,
+    "« permis » nu est ambigu : il ne doit rattacher à AUCUNE verticale"
+  );
+});
+
+test("⚠ LE TAG PRIME SUR LE TEXTE — une devinette ne pilote pas la file du matin", () => {
+  /**
+   * ⚠ LA CORRECTION DE FOND, et le motif du dépôt appliqué à la file d'appels.
+   *
+   * Rattacher une fiche par le TEXTE de ses notes est une devinette : le
+   * résultat dépend de la tournure qu'a employée celui qui a saisi, et il se
+   * trompe en silence. `permisVersProspect` pose pourtant des tags décidés par
+   * le module de TRI — « permis-construire », « maitrise-ouvrage », la phase.
+   *
+   * CLAUDE.md l'énonce déjà pour le Cerveau : « verticale identifiée par tag,
+   * jamais par ressemblance de mots ». La règle existait, elle n'était branchée
+   * qu'à un endroit. C'est le défaut le plus fréquent de ce dépôt.
+   *
+   * ⚠ Le test vérifie la CONDITION : la même fiche, avec un texte qui pointe
+   * ailleurs, suit son TAG. Sans cette mise en opposition, elle pourrait
+   * tomber juste par le texte et on ne saurait pas lequel des deux a décidé.
+   */
+  const fiche = {
+    sector: "autre" as const,
+    notes: "auto-école, conduite accompagnée, code de la route",
+    tags: ["permis-construire", "maitrise-ouvrage", "commercialisation"],
+  };
+  assert.equal(
+    verticalForProspect(fiche)?.id,
+    "maitrise-ouvrage",
+    "le tag posé par l'importeur doit primer sur ce que raconte la note"
+  );
+
+  // Et le texte reste le REPLI : les imports CSV, LinkedIn et terrain ne
+  // posent aucun tag de verticale, et le ciblage LinkedIn n'a pas de fiche.
+  assert.equal(
+    verticalForProspect({ sector: "autre", notes: "auto-école, conduite accompagnée" })?.id,
+    "auto-ecole",
+    "sans tag, on retombe sur le texte — le retirer casserait tous les autres imports"
+  );
+
+  // Un tag qui ne désigne aucune verticale ne doit RIEN décider.
+  assert.equal(
+    verticalForProspect({ sector: "autre", notes: "auto-école", tags: ["chaud", "lyon-3e"] })?.id,
+    "auto-ecole",
+    "un tag ordinaire n'est pas un identifiant de verticale"
+  );
 });
 
 test("un directeur de programmes est retenu par le ciblage LinkedIn, avec le doute sur le playbook", () => {

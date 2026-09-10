@@ -1,12 +1,57 @@
 # Plan d'exécution — de l'OS à la vente payante
 
-> État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, sécurité) ;
-> ce fichier porte le PLAN et l'AVANCEMENT RÉEL.
-> Dernière révision : 2026-08-22 · 579 tests verts · `tsc` clean · `next build` OK.
+> État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, cible,
+> sécurité) ; **ce fichier porte le PLAN et l'AVANCEMENT RÉEL**.
+>
+> Dernière révision : **2026-09-10** · **1 628 tests verts** · `tsc --noEmit`
+> propre · `next build` propre · 179 modules `lib/`, 148 fichiers de test,
+> 44 écrans.
+
+> ⚠⚠ **CE FICHIER AVAIT 19 JOURS DE RETARD, et ce n'est pas un détail de
+> tenue.** Il annonçait « 579 tests · révision du 22 août », décrivait une
+> cadence de 5 rappels abandonnée le 2 septembre, listait French Tech 2030
+> **deux fois dans la même section** avec deux états contradictoires, et
+> marquait « rien ne vérifie qu'un agent est vivant » alors que la garde
+> existe depuis le 9 septembre. Une session qui lit ça y croit : c'est le
+> fichier prévu pour dire où on en est.
+>
+> **La règle qui en sort** : quand une décision tombe, elle se corrige ICI le
+> jour même, ou ce fichier devient le plus dangereux du dépôt — celui qu'on
+> consulte au lieu de lire le code.
 
 ## Le but, dit franchement
-Zakaria a besoin de **ventes encaissées**, pas de features. Tout ce qui suit est
-classé par « ça rapproche d'un virement bancaire ».
+Zakaria a besoin de **ventes encaissées**, pas de fonctionnalités. Tout ce qui
+suit est classé par « ça rapproche d'un virement bancaire ».
+
+**État au 10/09/2026 : 0 € encaissé, 0 client, 0 appel sortant réel.** Le
+produit est complet et gardé ; il n'a jamais rencontré un prospect.
+
+---
+
+## 🎯 LA CIBLE — décidée le 09/09/2026
+
+**Le maître d'ouvrage professionnel dont le permis de construire est actif, sur
+Lyon et Villeurbanne.** Détail doctrinal dans `CLAUDE.md`, play opérationnel
+dans `docs/PERMIS-LYON.md`.
+
+- [x] Trieur de permis (`lib/permis-construire.ts`) — exclusion sèche des
+      maîtres d'ouvrage qui n'ont rien à vendre (particuliers, bailleurs
+      sociaux, personnes publiques), phases datées, parseur tabulaire.
+- [x] **Zone Lyon + Villeurbanne** — exclusion, plus dix points de score.
+      Comptée à part dans le résumé du lot.
+- [x] **ICP EAGLEYE** (`lib/accounts-commercial.ts`, serveur) — le compte
+      maître était le seul du portefeuille sans client parfait déclaré.
+- [x] **Jeu de démonstration refait** (`lib/seed.ts`) — 8 fiches issues de
+      11 arrêtés, dont 3 volontairement écartés. `tests/seed-moa.test.ts`
+      rejoue chacun dans le vrai trieur.
+- [x] **Registre des offres** (`lib/offer-match.ts`) — les 15 champs passent du
+      vocabulaire artisan à celui de la maîtrise d'ouvrage.
+- [x] **Interdits du playbook exécutables** (`InterditFroid.motif`) — la
+      verticale interdisait « vous ratez des appels » pendant que le catalogue
+      le faisait dire.
+
+**Ce que ça ne prouve pas** : zéro permis converti. Les seuils (6 logements,
+score 55, poids par phase) sont des **décisions**, pas des mesures.
 
 ---
 
@@ -14,150 +59,126 @@ classé par « ça rapproche d'un virement bancaire ».
 
 ### Le moteur de vente
 - [x] **Escalier de routage** (`lib/ladder.ts`) — visibilité → EAGLEYE ·
-      volume d'appels → Alpha Voice/EAGLEYE · automatisation → EAGLEYE · > 40 k → Nuwacom.
-      Cascade, pas aiguillage : un prospect nourrit plusieurs comptes.
-- [x] **Deep-dive à l'import** (`lib/deep-dive.ts`) — déterministe, hors-ligne,
-      sans coût. Signaux dicibles, trous à combler, score/fit, angle, objectif.
-- [x] **Triage de lot** (`lib/import-triage.ts`) — combien de fiches sont
-      réellement appelables, où part le lot, quels trous dominent.
-- [x] **Signaux vitaux** (`lib/vital-signs.ts`) — readiness, fatigue (le
-      compteur repart à zéro dès qu'il répond), fenêtre de rappel.
-- [x] **Master rappel** (`lib/master-rappel.ts`) — actions humain/Alpha
-      séparées, checklist « ça tourne », plan de comms (quoi, quand, à quelle
-      fréquence).
-- [x] **Argumentaire** (`lib/argumentaire.ts`) — les 9 blocs, du « se présenter »
-      au « comment payer si le budget est contraint ».
-- [x] **Checkpoints humains** (`lib/checkpoints.ts`) — 17 portes, vérifiables vs
-      déclaratives, bloquantes ou non. `pipelineCoverage()` nomme le point qui
-      bloque le plus de fiches.
-- [x] **Lead magnet** (`lib/lead-magnet.ts`) — 3 aimants ciblés, jamais de prix
-      dans l'email, rien envoyé si aucun ne correspond.
+      volume d'appels → Alpha Voice/EAGLEYE · automatisation → EAGLEYE ·
+      > 40 k → Nuwacom. Cascade, pas aiguillage.
+- [x] **Deep-dive à l'import** (`lib/deep-dive.ts`) — déterministe, hors-ligne.
+- [x] **Triage de lot** (`lib/import-triage.ts`), **signaux vitaux**
+      (`lib/vital-signs.ts`), **Master rappel** (`lib/master-rappel.ts`).
+- [x] **Argumentaire** (9 blocs), **checkpoints** (17 portes), **lead magnet**.
+- [x] **La boucle** — les cinq arcs de retour, gardés par
+      `tests/boucle-terrain.test.ts`.
 
 ### Alpha Voice
 - [x] **Entrant opérationnel** — Telnyx → LiveKit → agent (`voice/INBOUND.md`).
-- [x] **Cadence de rappel** — 5 rappels sur 2 jours ; arrêt dès qu'il répond,
-      passage au closer ; opposition = arrêt définitif.
-- [x] **Article 50** — divulgation prononcée par le code, `audit_script` refuse
+- [x] **Cadence de relance : 3 rappels sur 2 jours** (`[3, 24, 32]` h), calés
+      sur des fenêtres d'appel ouvertes, espacement minimum de 3 h.
+      *(⚠ Ce fichier annonçait encore « 5 rappels » — abandonnés le
+      02/09/2026. Le total fait 4 contacts, exactement au plafond du décret
+      n° 2022-1313, jamais au-dessus.)*
+- [x] **Article 50** — divulgation prononcée par le code, `auditScript` refuse
       un script non conforme.
-- [x] **Journal de sessions + transcription** durable (Supabase), réinjectée
-      dans le brief du prochain appel.
-- [x] **Réconciliation du résultat** (`lib/call-outcome.ts`) — aller-retour
-      résultat → texte → résultat, testé sur les 4 issues.
+- [x] **Passage de main sur INTÉRÊT QUALIFIÉ**, plus sur le décroché.
+- [x] **Présence de l'agent** (`lib/presence-agent.ts` + migration 005) — le
+      tick REFUSE de composer sans battement récent.
+      *(⚠ Ce fichier disait « rien ne le vérifie aujourd'hui ». C'était vrai
+      jusqu'au 09/09, plus depuis.)*
 
 ### L'exécution
-- [x] **Orchestrateur de campagne** (`lib/campaign-runner.ts`) — file triée par
-      proximité de signature, 9 raisons d'écart typées.
-- [x] **Runner manuel ET auto** — armement explicite, arrêt toujours visible.
-- [x] **Autopilote** (`/api/campaign/tick`) — triple verrou, plafond dur de 5
-      appels/tick, écriture AVANT appel (anti-harcèlement).
-- [x] **Salle de contrôle** (`/controle`) — appels en cours, file, blocages.
+- [x] **Orchestrateur** (`lib/campaign-runner.ts`), **runner manuel ET auto**,
+      **autopilote** (`/api/campaign/tick`), **salle de contrôle** (`/controle`).
+- [x] **Paliers de campagne** 10 · 100 · 1 000 — aucun ne se valide seul.
+- [x] **Ordonnanceur `pg_cron` + `pg_net`** (migration 004) — jamais Vercel
+      Cron, qui émet des `GET` là où l'exécution est en `POST`.
+- [x] **Moniteur** (`/moniteur`) — lit le SERVEUR, jamais le store.
 
 ### Le produit
-- [x] **Portefeuille de comptes** — EAGLEYE maître, Nuwacom, avec
-      rituels de closing distincts.
-- [x] **Segments / ICP** (`lib/segments.ts`) — équipes terrain, centres
-      d'appels, agences, réseaux, commerce local, assurance.
-- [x] **Prix à la carte** (`lib/bricks.ts`) — 8 briques, ancrage sur le pack.
-- [x] **Coût usine** (`lib/voice-costs.ts`) — marge réelle, limites du gratuit.
-- [x] **Cerveau cloisonné par compte** + import PDF/DOCX/HTML sans dépendance.
-- [x] **Vitrine publique** (`/vitrine`) — liberté → qualification → coût →
-      prix → cadrage.
-- [x] **Trajectoire** (`/trajectoire`) — paliers 0→10 M, barre du jour,
-      opportunités (French Tech).
-- [x] **API v1** (`/api/v1/prospects`) — ingestion pour n8n et CRM tiers.
-- [x] **Devis à la carte depuis la fiche** — briques cochées, montants tirés du
-      catalogue, ancrage sur le pack calculé, émetteur white-label.
-- [x] **Coût usine visible** (`/voice`) — marge en € et en %, coût d'un appel,
-      limites du gratuit avec les deux verrous de licence.
-- [x] **Scripts des deux nouveaux marchés** (`lib/playbook.ts`) — équipes
-      commerciales terrain et centres d'appels, ouverture → objections.
-- [x] **Notifications hors-app** (Web Push, RFC 8291/8292 faites main) — le
-      serveur pousse app fermée. Chiffrement testé contre le vecteur de la RFC.
-- [x] **Calendrier** (`lib/ics.ts`) — fichier .ics et flux abonnable, vers
-      Google, Outlook/Teams et Apple. Sens unique, assumé.
-- [x] **Notion** (`lib/notion.ts`) — envoi du pipeline, sans OAuth. Ni notes
-      libres ni transcriptions ne partent.
-- [x] **Présentation par prospect** (`lib/deck.ts`) — celle de SON étape.
-      Aucun prix avant l'offre, aucun chiffre inventé, rituel de closing du
-      compte en clôture.
-- [x] **Mission French Tech** (`lib/mission-french-tech.ts`) — 9 lots, porteur
-      et piège nommés, compte à rebours en jours OUVRÉS. Visible sur
-      `/trajectoire` et sur la vitrine.
-- [x] **Mise en route client** (`lib/client-onboarding.ts`) — 10 étapes datées,
-      preuve exigée, cas « essai » traité.
-- [x] **Budget de jetons** (`lib/token-budget.ts`) — coupe par priorité,
-      déduplication, mesure par route. Branché sur `/api/agent`.
-- [x] **Agent ALPHA** vendu comme brique (2 200 € + 220 €/mois).
+- [x] **Portefeuille de comptes** — EAGLEYE maître, Nuwacom, rituels distincts.
+- [x] **Freemium** (`lib/entitlements.ts`) — socle gratuit, frontière payante,
+      invariant « jamais sous le gratuit, jamais au-dessus sans preuve en base ».
+- [x] **Inscription libre** + jeu de démonstration engendré depuis l'ICP.
+- [x] **Vitrine publique**, **`/offre`**, **`/trajectoire`**, **`/ceo`**.
+- [x] **API v1**, **calendrier iCal**, **Notion (écriture)**, **Web Push**.
+- [x] **Cloisonnement serveur** (`lib/lecture-serveur.ts`) — lecture bornée et
+      filtrée par propriétaire, appliquée aux cinq appelants.
+
+### La tenue (sécurité + données)
+- [x] **Dépôt rendu PRIVÉ** + données personnelles sorties dans
+      `donnees-privees/` (ignoré par git).
+- [x] **Garde structurelle des numéros** — plages ARCEP fiction uniquement.
+- [x] **Export public curé** (`scripts/export-public.mjs`) — liste
+      d'autorisation + scanner de ce qui sort.
+- [x] Injection de prompt, SSRF, force brute, fuites d'en-têtes forgés.
 
 ---
 
 ## ⏳ CE QUI RESTE
 
-### Bloqué sur Zakaria — je ne peux pas le faire
-- [ ] **Rotate les clés NVIDIA + Fish** (collées en clair dans une conversation)
-- [ ] **Migrer le LLM hors du tier gratuit NVIDIA** — la licence interdit la
-      production. Coût réel : < 3 € pour 1 000 appels.
-- [ ] **Table `call_sessions` dans Supabase** — sans elle, l'historique repart
-      à zéro à chaque déploiement.
-- [ ] **French Tech 2030** — dépôt avant le 4 septembre 2026, 23h59.
-- [ ] ~~**Envoyer le devis du revendeur**~~ — **ANNULÉ le 02/09/2026 : l'accord
-      est mort.** L'offre vocale est revenue chez EAGLEYE (Alpha Voice, 100 %).
-      Le prochain devis à envoyer est un devis EAGLEYE, sur notre grille — qui
-      reste à décider (`lib/offres-publiques.ts`).
-- [ ] **Tarif Telnyx France réel** — c'est le premier poste variable ; mon
-      hypothèse est à 0,012 $/min.
+### 🔴 Bloqué sur Zakaria — je ne peux pas le faire d'ici
+- [ ] **Rotate les clés NVIDIA + Fish** — collées en clair dans une
+      conversation. **Toujours pas fait.**
+- [ ] **Migrer le LLM hors du tier gratuit NVIDIA** — la licence **interdit la
+      production**. Coût réel : < 3 € pour 1 000 appels.
+- [ ] **Créer `noreply@eagleyecorp.fr`** (boîte réelle, pas un alias) + SPF,
+      DKIM, DMARC. **Rien ne part tant que ça n'existe pas.**
+- [ ] **Extraire la liste de permis** Lyon + Villeurbanne — l'egress de la
+      sandbox bloque `data.grandlyon.com` (mesuré, `HTTP 403`).
+- [ ] **Relever les téléphones à la main** — un export de permis ne porte
+      aucun numéro. C'est la troisième colonne de la doctrine.
+- [ ] Migrations Supabase **002 + 003 + 004 + 005**, `CRON_SECRET`, les deux
+      secrets du Vault.
+- [ ] `STRIPE_CONNECT_CLIENT_ID` (formule **Express**, décidée le 09/09).
+- [ ] **Tarif Telnyx France réel** — premier poste variable, hypothèse à
+      0,012 $/min, le relevé autorise un facteur 29.
 - [ ] **UN appel sortant réel** — il valide toute la chaîne d'un coup.
-- [ ] DNS Amen + domaines Vercel (confort, pas prérequis).
-- [x] **Stripe Connect : EXPRESS** — décidé le 09/09/2026. Reste à poser
-      `STRIPE_CONNECT_CLIENT_ID`.
-- [x] **Hébergement de l'agent vocal** — décidé le 09/09/2026 : **local pour
-      EAGLEYE**, VPS **pour les clients** seulement. ⚠ Voir CLAUDE.md : un
-      appel composé sans agent vivant sonne dans le vide, et rien ne le
-      vérifie aujourd'hui.
-- [ ] **French Tech 2030** — ⚠ l'échéance citée plus haut (4 septembre 2026)
-      est PASSÉE. Ligne à trancher : déposé, ou manqué ?
+- [ ] Changer `SITE_PASSWORD`. DNS Amen + domaines Vercel.
 
-### Pas encore construit
-- [ ] **Calendrier bidirectionnel** (API Google / Microsoft) — exige de l'OAuth
-      non testable ici, et créerait le lien Meet/Teams. Le flux iCal couvre le
-      sens ALPHA → agenda, qui est celui qui sert tous les jours.
-- [ ] **Notion en lecture** — aujourd'hui ALPHA écrit, Notion lit. Le sens
-      inverse demande d'arbitrer les conflits, et cet arbitrage s'écrit mal
-      sans vrais cas.
-- [ ] **Vidéo de lancement** — la vidéo d'ouverture est en place (provisoire) ;
-      la version finale reste à produire.
-- [ ] Tests sur les modules d'affichage (les modules métier, le store, la
-      structure de navigation et la frontière de conformité vocale sont
-      couverts).
+### 🟠 Trous connus, pas encore construits
+- [ ] **Table `call_sessions`** — sans elle, l'historique repart à zéro à
+      chaque déploiement.
+- [ ] **`meetings` n'a pas de colonne propriétaire** — la lecture est bornée,
+      pas cloisonnée. Nommé, pas corrigé.
+- [ ] **Registre d'offres par verticale** — les 15 champs d'`OFFRES` sont
+      GLOBAUX et parlent maîtrise d'ouvrage. Ils se prononcent aussi sur
+      Nuwacom, dont l'ICP est l'assurance. Dette assumée, testée, à lever
+      quand un deuxième marché entre.
+- [ ] **Attribution des apporteurs** — code de parrainage + capture à
+      l'inscription.
+- [ ] **Historique Alpha CEO** + sondes pour les 5 pannes non surveillées.
+- [ ] Calendrier bidirectionnel (OAuth non testable ici), Notion en lecture.
+- [ ] **Vidéo de lancement** — l'ouverture est provisoire.
 
-### La tenue (revue de sécurité + UX, août 2026)
-- [x] **Injection de prompt** (`lib/untrusted.ts`) — tout texte tiers (PDF,
-      site aspiré, réponse entrante, transcription) encadré par une balise à
-      nonce, règles rappelées APRÈS les données.
-- [x] **Fuites fermées** — lecture des réponses prospects et journal d'appels
-      s'ouvraient sur un en-tête forgé (`Sec-Fetch-Site`, `Host`).
-- [x] **SSRF** — redirections revalidées à chaque saut (site aspiré + Sheets).
-- [x] **Force brute** — compteur par IP sur la porte, secrets comparés en
-      temps constant, expiration JWT exigée.
-- [x] **Perte de données silencieuse** (`lib/storage-health.ts`) — le quota
-      localStorage sature sans rien dire ; désormais mesuré et annoncé.
-- [x] **Navigation hiérarchisée** — 4 écrans de quotidien, le reste rangé par
-      moment du métier. Un test interdit qu'une page reste non liée.
+### ⚫ Décidé — la porte est fermée, ce n'est plus une tâche
+- **French Tech 2030 : NON ÉLIGIBLE, et l'échéance est passée.** Le critère
+  d'entrée est **3 M€ de financements et/ou de CA cumulés depuis 2024** ;
+  EAGLEYE CORP est à 0 €. Le seuil est éliminatoire et la promotion suivante
+  appliquera le même. Porté par le CODE depuis le 10/09
+  (`Opportunity.bloquant`), plus seulement par un README.
+  *(Ce fichier le listait DEUX FOIS dans la même section, avec deux états
+  contradictoires. Le dossier écrit resservira pour Bpifrance ou une page de
+  vente — c'est tout ce qu'il reste à en attendre.)*
+- **L'accord revendeur est mort** (02/09/2026). L'offre vocale est revenue chez
+  EAGLEYE sous le nom **Alpha Voice**, à 100 %.
 
 ---
 
 ## Limites — à redire, parce qu'elles ne bougent pas
 1. **Rien n'a été testé en conditions réelles.** Le proxy de la sandbox bloque
-   Telnyx, LiveKit, Vercel et Supabase. Les 579 tests prouvent que la logique
-   est cohérente ; ils ne prouvent pas qu'un appel part.
+   Telnyx, LiveKit, Vercel, Supabase et les portails d'open data. Les 1 628
+   tests prouvent que la logique est cohérente ; ils ne prouvent pas qu'un
+   appel part.
 2. **Aucune automatisation ne closera à ta place.** L'OS source, qualifie,
    appelle, relance et prépare. La signature reste humaine.
 3. **Juillet 2026 : 78 prospects, 132 appels, 18 audits, 0 vente.** Le goulot
-   n'était pas l'outillage. L'OS rend plus rapide un processus qui n'a pas
-   encore prouvé qu'il convertit — c'est une hypothèse, pas un acquis.
-4. **108 modules pour un opérateur solo.** Ce qui n'est pas utilisé devient de
+   n'était pas l'outillage. C'est une hypothèse, pas un acquis.
+4. **179 modules pour un opérateur solo.** Ce qui n'est pas utilisé devient de
    la dette. Mieux vaut trois écrans maîtrisés que quarante survolés.
+5. **Zéro preuve sociale disponible, et c'est structurel.** Pas de témoignage,
+   pas de logo, pas d'affiliation. Ce qui remplace : ses chiffres à lui, une
+   démonstration en direct, une garantie chiffrée.
 
 ## L'ordre qui rapporte
-`un appel réel` → `French Tech` → `rotate les clés` →
-`table Supabase` → le reste.
+`la boîte noreply@ + DNS` → `la liste de permis` → `les numéros à la main` →
+`UN appel réel` → `rotate les clés` → `table call_sessions` → le reste.
+
+> ⚠ Les trois premiers sont chez Zakaria et rien ne part sans eux. Le reste du
+> dépôt est prêt et gardé ; il attend une liste et une boîte mail.

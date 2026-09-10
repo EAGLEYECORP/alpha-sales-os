@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { PERMIS_DEMO, PERMIS_PAR_FICHE, seedProspects, isDemoProspect, DOMAINES_RESERVES } from "../lib/seed";
 import { lirePermis, trierPermis, communeDansLaZone } from "../lib/permis-construire";
 import { deepDive } from "../lib/deep-dive";
+import { verticalForProspect } from "../lib/playbook";
+import { verticalsWithTargets } from "../lib/call-session";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -214,4 +216,51 @@ test("⚠ aucune fiche de démo ne cite une AUTRE fiche comme référence client
     "zéro vente : une fiche qui en cite une autre comme référence fabrique de la preuve sociale.\n  " +
       fautes.join("\n  ")
   );
+});
+
+// ═══════════ LE PLAY EST-IL ATTEIGNABLE DEPUIS L'APP ? ═══════════
+
+test("⚠ LE PLAY MAÎTRISE D'OUVRAGE ARRIVE JUSQU'À L'ÉCRAN D'APPELS", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * LE DÉFAUT RÉCURRENT DU DÉPÔT, APPLIQUÉ À UNE CAMPAGNE.
+   *
+   * Le trieur de permis existe, la verticale `maitrise-ouvrage` existe avec
+   * son opener et ses objections, l'ICP est écrit côté serveur, les fiches de
+   * démonstration descendent d'arrêtés réels. Chaque pièce est juste.
+   *
+   * Rien de tout ça ne sert si l'opérateur n'atteint pas le script le matin.
+   * `/appels` construit ses onglets à partir de `verticalsWithTargets`, qui
+   * rattache chaque fiche via `verticalForProspect` — c'est-à-dire par le
+   * TEXTE des notes, puis par le secteur. Or `Sector` est une union fermée
+   * (restaurant, pub, ambulance, artisan, autre) qui ne connaît pas la
+   * promotion immobilière : les fiches MOA portent `sector: "autre"`, et
+   * c'est donc UNIQUEMENT le contenu des notes qui les rattache.
+   *
+   * ⚠ Autrement dit : réécrire une note de fiche sans le mot qui déclenche la
+   * verticale ferait disparaître l'onglet du matin — sans erreur, sans log,
+   * et l'opérateur appellerait avec le script générique.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const rattachees = seedProspects.map((p) => ({ id: p.id, v: verticalForProspect(p)?.id ?? null }));
+  const horsPlay = rattachees.filter((r) => r.v !== "maitrise-ouvrage");
+  assert.deepEqual(
+    horsPlay,
+    [],
+    "des fiches de démonstration ne tombent pas sur la verticale maîtrise d'ouvrage — l'onglet du matin servira le mauvais script"
+  );
+
+  /**
+   * Et l'onglet existe RÉELLEMENT sur l'écran : `verticalsWithTargets` filtre
+   * les fiches signées, perdues et opposées. Sans cette assertion, les huit
+   * fiches pourraient toutes être exclues du décompte et l'écran resterait
+   * vide alors que le rattachement, lui, est bon.
+   */
+  const onglets = verticalsWithTargets([...seedProspects]);
+  const moa = onglets.find((o) => o.vertical.id === "maitrise-ouvrage");
+  assert.ok(moa, `aucun onglet maîtrise d'ouvrage sur /appels (onglets : ${onglets.map((o) => o.vertical.id).join(", ") || "aucun"})`);
+  assert.ok(moa!.count >= 4, `seulement ${moa!.count} fiche(s) appelable(s) : une liste du matin ne se démontre pas sur deux lignes`);
+
+  // Et le script servi derrière est bien celui de la maîtrise d'ouvrage.
+  assert.match(moa!.vertical.opener.map((o) => o.line).join(" "), /commercialisation|acquéreur/i);
 });

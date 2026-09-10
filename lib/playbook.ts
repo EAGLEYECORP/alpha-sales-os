@@ -884,7 +884,26 @@ const VERTICAL_KEYWORDS: { id: string; re: RegExp }[] = [
    * nommées pour que la prochaine (« permis d'aménager ») ne se rajoute pas
    * en silence.
    */
-  { id: "auto-ecole", re: /auto-?école|auto-?ecole|permis(?! d[e'] ?(construire|am[ée]nager|d[ée]molir))|conduite|moniteur/ },
+  /**
+   * ⚠ LE VERROU SUR « PERMIS » ÉTAIT TROP ÉTROIT, ET ÇA A ENVOYÉ HUIT
+   * PROMOTEURS SUR LE SCRIPT D'UNE AUTO-ÉCOLE.
+   *
+   * Il ne bloquait que « permis DE construire / d'aménager / de démolir ».
+   * Or une fiche issue d'un export d'urbanisme n'écrit presque jamais ça :
+   * `notesDepuisPermis` produit « Permis : PC 069 383 24 A0123 », et une note
+   * saisie à la main dit « permis obtenu », « permis purgé », « permis n° … ».
+   * Aucune de ces formes ne contient « de construire » — donc toutes
+   * tombaient ici, sur la verticale la plus éloignée de la cible.
+   *
+   * Mesuré sur les huit fiches de démonstration, pas supposé : elles
+   * rendaient toutes `auto-ecole`. En production, l'écran du matin aurait
+   * servi le script du moniteur de conduite à un directeur de programmes.
+   *
+   * Le motif exige donc maintenant un CONTEXTE de conduite autour du mot, au
+   * lieu d'énumérer les permis d'urbanisme à exclure — une liste d'exceptions
+   * est toujours en retard sur la façon dont les gens écrivent.
+   */
+  { id: "auto-ecole", re: /auto-?école|auto-?ecole|permis (?:de conduire|b\b|auto|moto)|conduite|moniteur|code de la route/ },
   { id: "garage-carrosserie", re: /garage|carross|mécanic|mecanic|peinture auto/ },
   // « couvreu » ne suffisait pas : une entreprise de toiture s'appelle
   // « Couverture Roux », pas « Roux couvreur ». Idem pour la charpente, le
@@ -908,7 +927,35 @@ export function verticalForText(texte: string): VerticalPlaybook | null {
   return hit ? verticalById(hit.id) : null;
 }
 
-/** Verticale déduite d'une fiche (mots-clés du métier, à défaut le secteur). */
-export function verticalForProspect(p: Pick<Prospect, "sector" | "notes">): VerticalPlaybook | null {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * Verticale déduite d'une fiche : TAG, puis mots-clés, puis secteur.
+ *
+ * ⚠ LE TAG EST PASSÉ DEVANT, ET C'EST LA MÊME LEÇON QUE `lecons-terrain`.
+ *
+ * La déduction se faisait sur le TEXTE des notes. C'est une devinette : elle
+ * dépend de la façon dont quelqu'un a tourné une phrase, et elle se trompe en
+ * silence. Mesuré sur les huit fiches de maîtrise d'ouvrage — elles
+ * contenaient « Permis PC 069 … », ce qui a déclenché la verticale
+ * AUTO-ÉCOLE, à un mot près.
+ *
+ * Un tag posé par l'importeur est DÉTERMINISTE : `permisVersProspect` écrit
+ * `["permis-construire", "maitrise-ouvrage", phase]`, et c'est le module de
+ * tri qui l'a décidé, pas une tournure de phrase. CLAUDE.md l'énonce déjà
+ * pour le Cerveau : « verticale identifiée par tag, jamais par ressemblance
+ * de mots ». La règle valait pour la file d'appels aussi ; elle n'y était pas.
+ *
+ * ⚠ Le texte reste le repli, et il doit le rester : les imports CSV, LinkedIn
+ * et terrain ne posent pas de tag de verticale, et le ciblage LinkedIn n'a
+ * même pas de fiche — seulement un intitulé de poste.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function verticalForProspect(
+  p: Pick<Prospect, "sector" | "notes"> & { tags?: string[] }
+): VerticalPlaybook | null {
+  for (const t of p.tags ?? []) {
+    const v = verticalById(t);
+    if (v) return v;
+  }
   return verticalForText(p.notes ?? "") ?? verticalForSector(p.sector);
 }
