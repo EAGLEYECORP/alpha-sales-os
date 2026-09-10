@@ -35,7 +35,7 @@ test("équipe terrain — l'argument des appels manqués est explicitement inter
   const v = verticalById("equipe-terrain")!;
   // Une organisation qui a des commerciaux ne rate pas ses appels : elle perd
   // ce que ses gens n'ont pas noté. Confondre les deux, c'est se disqualifier.
-  assert.ok(v.forbidden.some((f) => /ratez des appels/i.test(f)));
+  assert.ok(v.forbidden.some((f) => /ratez des appels/i.test(f.regle)));
   assert.ok(v.objections.some((o) => /CRM/i.test(o.q)), "l'objection « on a déjà un CRM » est la première qui vient");
   // Le disqualifiant est dit franchement, pas contourné.
   assert.ok(v.objections.some((o) => /trop peu nombreux/i.test(o.q)));
@@ -45,7 +45,7 @@ test("centre d'appels — la divulgation IA est servie comme argument, pas cach�
   const v = verticalById("centre-appels")!;
   const texte = [...v.opener.map((o) => `${o.line} ${o.note ?? ""}`), ...v.objections.map((o) => o.a)].join(" ").toLowerCase();
   assert.match(texte, /annonce qu'il est une ia|se déclare/, "l'agent annonce qu'il est une IA — art. 50, et ça désamorce");
-  assert.ok(v.forbidden.some((f) => /remplace vos équipes/i.test(f)), "promettre le remplacement des équipes fait fermer la porte");
+  assert.ok(v.forbidden.some((f) => /remplace vos équipes/i.test(f.regle)), "promettre le remplacement des équipes fait fermer la porte");
 });
 
 test("verticales — chacune reste dicible et chiffrable", () => {

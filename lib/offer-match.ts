@@ -168,47 +168,107 @@ export function auditBenefice(texte: string): VerdictBenefice {
   return { ok: trouves.length === 0, trouves };
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ CES QUINZE CHAMPS SONT PASSÉS DU REGISTRE ARTISAN AU REGISTRE MAÎTRISE
+ * D'OUVRAGE — décidé et validé le 10/09/2026.
+ *
+ * ── POURQUOI ──
+ *
+ * Ils ont été écrits pour le marché d'origine : « votre agenda se remplit
+ * tout seul pendant que vous vous occupez de votre métier », « combien
+ * d'appels vous n'arrivez pas à prendre ». C'est juste pour un plombier sous
+ * un évier. Dit à un directeur de programmes, ça décrit un problème qu'il
+ * n'a pas — et il raccroche, non pas parce qu'il n'est pas intéressé, mais
+ * parce qu'on vient de prouver qu'on ne connaît pas son métier.
+ *
+ * ⚠⚠ ET IL Y AVAIT PIRE QU'UN DÉCALAGE DE TON : UNE CONTRADICTION DANS LE
+ * CODE. La verticale `maitrise-ouvrage` (`lib/playbook.ts`) interdit
+ * explicitement « vous ratez des appels » — « faux ici, et ça prouve qu'on
+ * n'a pas compris le métier ». Or `OFFRES["alpha-voice"].perte` demandait mot
+ * pour mot « combien d'appels vous n'arrivez pas à prendre », et
+ * `buildVoiceScript` injecte les DEUX dans le même prompt : l'interdit de la
+ * verticale et la phrase qui le viole, à trois lignes d'écart.
+ *
+ * Personne ne l'avait vu parce que rien ne le vérifiait. C'est fait :
+ * `tests/playbook-interdits.test.ts` assemble le script de chaque verticale
+ * et refuse qu'il contienne un interdit de cette verticale.
+ *
+ * ── CE QUE ÇA COÛTE, ET C'EST ASSUMÉ ──
+ *
+ * ⚠ CES CHAMPS SONT GLOBAUX : ils se prononcent sur TOUS les comptes, Nuwacom
+ * compris, dont l'ICP est l'assurance. « aucun acquéreur ne se perd entre sa
+ * visite et sa réservation » ne veut rien dire pour un assureur. Aujourd'hui
+ * le pipe est entièrement maîtrise d'ouvrage, donc c'est cohérent — mais
+ * c'est une DETTE, pas une solution : le bon design est un registre par
+ * verticale, et il n'existe pas. Le jour où un deuxième marché entre, ces
+ * champs doivent bouger avec lui, ou mentir.
+ *
+ * ── CE QUI A ÉTÉ VÉRIFIÉ AVANT D'ÉCRIRE ──
+ *
+ * Les quinze passent `auditBenefice` (zéro jargon interdit), et le script
+ * assemblé passe `auditScript` — art. 50 compris.
+ * ─────────────────────────────────────────────────────────────────────
+ */
 export const OFFRES: Record<EagleyeOffer, OffreCommerciale> = {
   "alpha-sales-os": {
     label: "Alpha Sales OS — l'OS de vente intelligent",
-    pitch: "« Vous avez des leads. Le vrai enjeu n'est pas d'en avoir plus — c'est de n'en perdre aucun. »",
+    pitch:
+      "« Ce ne sont pas les acquéreurs que vous n'avez jamais vus qui coûtent cher. " +
+      "Ce sont ceux qui sont venus, et que personne n'a rappelés. »",
     benefice:
-      "vous ne perdez plus une seule demande : chaque personne qui vous contacte est suivie, relancée et " +
-      "recontactée au bon moment, sans que vous ayez à y penser",
-    question:
-      "Vous aimeriez ne plus jamais perdre une demande parce que personne n'a eu le temps de la relancer ?",
+      "aucun acquéreur ne se perd entre sa visite et sa réservation : chacun est suivi, rappelé au bon " +
+      "moment, et vous voyez chaque lundi matin qui attend encore une réponse",
+    question: "Vous aimeriez voir, chaque lundi matin, quels acquéreurs intéressés n'ont pas été rappelés ?",
     miseEnPlace: "C'est exactement ce qu'on met en place.",
-    perte: "Sur dix personnes qui vous contactent, combien vont jusqu'au devis ?",
-    consequence: "Et celles qui s'arrêtent en route — vous savez pourquoi, ou ça se perd sans qu'on le sache ?",
+    /**
+      * ⚠ Cette question est celle du `diagnostic` de la verticale
+      * `maitrise-ouvrage`, mot pour mot. Ce n'est PAS un doublon : le
+      * diagnostic est ce que l'HUMAIN pose en rendez-vous, `perte` est ce que
+      * l'agent pose au téléphone. Les faire coïncider est un choix — le même
+      * constat, aux deux bouts de la chaîne — et si l'un des deux change,
+      * l'autre doit suivre à la main.
+      */
+    perte: "Un acquéreur qui a visité il y a trois semaines et que personne n'a rappelé — vous le sauriez comment, aujourd'hui ?",
+    consequence: "Et ceux-là, ils achètent où, à votre avis ?",
   },
   "alpha-voice": {
     label: "Alpha Voice — l'accueil & relance IA au téléphone",
-    pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
+    /**
+      * ⚠ L'ANCIENNE ACCROCHE ÉTAIT « chaque appel manqué est un client qui
+      * appelle le concurrent ». C'est l'affirmation que la verticale
+      * `maitrise-ouvrage` interdit en toutes lettres.
+      *
+      * Ce qui la remplace ne l'affirme plus : elle nomme un MOMENT vérifiable
+      * — l'équipe est en visite, le bureau sonne — et la `perte` ci-dessous
+      * pose la question au lieu de conclure à sa place. C'est la même
+      * discipline que l'opener du playbook : l'observation en question,
+      * jamais en affirmation.
+      */
+    pitch: "« Quand l'équipe est en visite, votre bureau de vente continue de sonner. On le prend à votre place. »",
     benefice:
-      "votre agenda se remplit tout seul pendant que vous vous occupez de votre métier et de vos clients : " +
-      "on décroche à votre place, on note ce qu'il faut, et vous ne rappelez que les gens qui comptent",
-    question:
-      "Vous aimeriez que votre agenda se remplisse tout seul pendant que vous vous concentrez sur votre " +
-      "métier et vos clients ?",
+      "les gens qui appellent votre bureau de vente quand l'équipe est en visite ou fermée sont pris quand " +
+      "même : on note qui ils sont et ce qu'ils cherchent, et vous les rappelez avec leur nom devant vous",
+    question: "Vous aimeriez savoir qui a appelé votre bureau de vente pendant que l'équipe était en visite ?",
     miseEnPlace: "C'est exactement ce qu'on met en place.",
     // Ces deux-là existaient déjà, mot pour mot, dans `buildArgumentaire` :
     // elles sont remontées ici pour que les trois offres se lisent au même
     // endroit — rien n'a été réécrit.
-    perte: "Sur une semaine normale, combien d'appels vous n'arrivez pas à prendre ?",
-    consequence: "Et ceux qui ne rappellent pas — vous pensez qu'ils font quoi ?",
+    perte: "Quand l'équipe est en visite ou que le bureau est fermé, les appels arrivent où ?",
+    consequence: "Et ceux qui tombent sur la messagerie — ils rappellent, ou ils vont voir le programme d'à côté ?",
   },
   "visibilite-growth": {
     label: "Visibilité / Growth — offre personnalisée",
-    pitch: "« On vous rend visible là où vos clients cherchent — puis on transforme ce trafic. »",
+    pitch:
+      "« Quelqu'un qui cherche du neuf dans le quartier doit tomber sur votre programme, " +
+      "pas sur celui d'en face. »",
     benefice:
-      "les gens qui cherchent votre métier près de chez vous tombent sur vous, pas sur le concurrent d'à côté, " +
-      "et vous arrêtez de dépendre du bouche-à-oreille",
-    question:
-      "Vous aimeriez que les gens qui cherchent votre métier dans le secteur tombent sur vous plutôt que sur " +
-      "le concurrent ?",
+      "quelqu'un qui cherche un logement neuf dans le secteur tombe sur votre programme et pas sur celui " +
+      "d'en face, et vous arrêtez de dépendre du panneau et des portails",
+    question: "Vous aimeriez que les gens qui cherchent du neuf dans le secteur tombent sur votre programme ?",
     miseEnPlace: "C'est exactement ce qu'on met en place.",
-    perte: "Quelqu'un qui cherche votre métier dans le secteur, sans vous connaître : il vous trouve ?",
-    consequence: "Et ceux qui ne vous trouvent pas — ils prennent qui, à votre avis ?",
+    perte: "Quelqu'un qui cherche du neuf dans le quartier, sans connaître votre programme : il le trouve ?",
+    consequence: "Et ceux qui ne le trouvent pas — ils visitent quoi, à votre avis ?",
   },
 };
 

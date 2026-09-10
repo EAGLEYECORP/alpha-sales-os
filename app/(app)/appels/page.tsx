@@ -281,7 +281,7 @@ export default function AppelsPage() {
                   <li>Les euros perdus, la note Google, la liste des fonctionnalités.</li>
                   <li>« J&apos;appelle toutes les entreprises du secteur » — le critère, jamais le volume.</li>
                   {vertical.forbidden.map((f, i) => (
-                    <li key={i}>{f}</li>
+                    <li key={i}>{f.regle}</li>
                   ))}
                 </ul>
               </div>

@@ -99,6 +99,49 @@ export interface OpenerStep {
   note?: string;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * « CE PROSPECT RATE DES APPELS » — la famille de formulations, pas une phrase.
+ *
+ * Deux verticales interdisent cette affirmation (maîtrise d'ouvrage, équipe
+ * terrain) : chez elles, la perte n'est pas l'appel qui sonne dans le vide,
+ * c'est le contact déjà rencontré que personne n'a rappelé. Le dire quand même
+ * ne rate pas seulement la cible — ça prouve qu'on n'a pas compris le métier,
+ * et l'appel est fini.
+ *
+ * ⚠ LE MOTIF A ÉTÉ ÉCRIT DEUX FOIS, ET LA PREMIÈRE VERSION NE MORDAIT PAS.
+ *
+ * Elle citait la formulation exacte qui vivait dans le catalogue
+ * (« appels vous n'arrivez pas à prendre ») à côté d'une branche générique sur
+ * « manqué / raté / perdu ». Or la violation réelle ne contenait AUCUN de ces
+ * trois mots. Le garde ne tenait donc que par une citation littérale —
+ * exactement le défaut qu'il existe pour corriger. Mesuré par mutation.
+ *
+ * ⚠⚠ ET IL ÉTAIT ÉCRIT DEUX FOIS, une par verticale. Deux copies d'une même
+ * règle finissent toujours par diverger, et c'est celle qu'on ne relit pas qui
+ * cesse de mordre.
+ *
+ * La version ci-dessous s'ancre sur l'IDÉE : le mot « appel » à proximité
+ * d'une notion de non-prise, dans les deux sens de lecture. Elle reste bornée
+ * à la MÊME phrase (`[^.?!]`) — sans ça, un texte qui parle d'appels dans une
+ * phrase et de quelqu'un qui ne prend pas dans la suivante déclencherait un
+ * faux positif, et un garde qu'il faut faire taire est un garde qu'on retire.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const MOTIF_APPELS_NON_PRIS =
+  /\bappels?\b[^.?!]{0,60}(?:manqu|rat[ée]|perdus?|non abouti|sans réponse|dans le vide|vous ne prenez pas|n'arrivez pas à (?:les )?prendre|personne ne (?:les )?prend)|(?:ratez|perdez|manquez|ne prenez pas)[^.?!]{0,40}\bappels?\b/i;
+
+/** Un interdit d'appel à froid : la règle pour l'humain, le motif pour la machine. */
+export interface InterditFroid {
+  /** La phrase telle qu'elle se lit — elle doit dire POURQUOI, pas seulement quoi. */
+  regle: string;
+  /**
+   * La forme refusée dans un script assemblé. Absent quand l'interdit relève
+   * du jugement et non de la formulation.
+   */
+  motif?: RegExp;
+}
+
 export interface VerticalPlaybook {
   id: string;
   label: string;
@@ -152,8 +195,38 @@ export interface VerticalPlaybook {
   /** Questions de diagnostic — poser, puis se taire. */
   diagnostic: string[];
   mirror: string;
-  /** Ce qu'on ne dit pas à froid, en plus des interdits généraux. */
-  forbidden: string[];
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * CE QU'ON NE DIT PAS À FROID, en plus des interdits généraux.
+   *
+   * ⚠ C'ÉTAIT UN `string[]`, DONC DE LA PROSE QUE PERSONNE NE POUVAIT
+   * VÉRIFIER — et la contradiction est arrivée exactement là où on
+   * l'attendait.
+   *
+   * La verticale `maitrise-ouvrage` interdit « vous ratez des appels ».
+   * `OFFRES["alpha-voice"].perte` demandait « combien d'appels vous n'arrivez
+   * pas à prendre ». `buildVoiceScript` injecte les DEUX dans le même prompt :
+   * l'interdit et sa violation, à trois lignes d'écart. Rien n'a bronché,
+   * parce qu'un interdit écrit en français n'a jamais rencontré le script.
+   *
+   * Chaque entrée porte donc, dans le MÊME objet :
+   *  · `regle` — la phrase lue par l'humain, qui explique POURQUOI ;
+   *  · `motif` — optionnel, la forme que la machine sait refuser.
+   *
+   * ⚠⚠ UNE SEULE ENTRÉE, DEUX LECTEURS. Ranger les motifs dans un second
+   * tableau à côté aurait recréé le défaut qu'on corrige : deux listes, une
+   * qui dérive, et c'est toujours celle qui n'est pas testée qui reste juste
+   * en apparence.
+   *
+   * ⚠ `motif` est ABSENT quand l'interdit ne se réduit pas à une forme
+   * (« citer son permis à froid » est un jugement de situation, pas une
+   * chaîne). Ne JAMAIS en fabriquer un approximatif pour faire du chiffre :
+   * un motif trop large refuse des scripts corrects, et on l'assouplira
+   * jusqu'à ce qu'il ne serve plus à rien. `tests/playbook-interdits.test.ts`
+   * compte ceux qui sont exécutables et refuse que le total tombe à zéro.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  forbidden: InterditFroid[];
   objections: { q: string; a: string }[];
   /**
    * Paramètres de chiffrage de la fuite (ordre de grandeur, à valider).
@@ -198,8 +271,8 @@ export const VERTICALS: VerticalPlaybook[] = [
     mirror:
       "Un vendeur qui veut faire estimer appelle trois agences. La première qui décroche prend le mandat. Les deux autres ne sauront jamais qu'elles sont passées à côté.",
     forbidden: [
-      "Le lien de paiement / l'acompte : ça ne parle pas à une agence, ça fait du bruit.",
-      "Le détail du transfert conditionnel et de la prise de RDV automatique — ça se montre en visio.",
+      { regle: "Le lien de paiement / l'acompte : ça ne parle pas à une agence, ça fait du bruit." },
+      { regle: "Le détail du transfert conditionnel et de la prise de RDV automatique — ça se montre en visio." },
     ],
     objections: [
       { q: "J'ai déjà une assistante / un standard.", a: "Elle ne prend qu'un appel à la fois — c'est physique. Trois personnes qui appellent en même temps, deux tombent dans le vide. Elle n'est pas remplacée, elle arrête juste de rater des appels." },
@@ -273,9 +346,21 @@ export const VERTICALS: VerticalPlaybook[] = [
     mirror:
       "Ce ne sont pas les acquéreurs que vous n'avez jamais rencontrés qui vous coûtent le plus cher. Ce sont ceux qui sont venus, qui étaient intéressés, et que personne n'a rappelés — ils achètent le programme d'en face, et vous ne saurez jamais que vous les aviez eus.",
     forbidden: [
-      "« Vous ratez des appels » : faux ici, et ça prouve qu'on n'a pas compris le métier.",
-      "Citer son permis, son adresse ou son nombre de lots à froid : la donnée est publique, mais l'annoncer sonne fliqué. Elle sert à CHOISIR qui on appelle, pas à ouvrir l'appel.",
-      "Tout chiffre de taux de réservation : on ne connaît pas ses seuils bancaires, et se tromper devant lui coûte l'appel.",
+      {
+        regle: "« Vous ratez des appels » : faux ici, et ça prouve qu'on n'a pas compris le métier.",
+        /**
+         * ⚠ LE MOTIF VISE LA FAMILLE, PAS LA CITATION.
+         *
+         * Chercher « vous ratez des appels » à la lettre n'aurait rien
+         * attrapé : la violation réelle était formulée « combien d'appels
+         * vous n'arrivez pas à prendre ». Un garde qui n'attrape que la
+         * recopie exacte laisse passer la seule chose qui arrive vraiment —
+         * une reformulation de bonne foi.
+         */
+        motif: MOTIF_APPELS_NON_PRIS,
+      },
+      { regle: "Citer son permis, son adresse ou son nombre de lots à froid : la donnée est publique, mais l'annoncer sonne fliqué. Elle sert à CHOISIR qui on appelle, pas à ouvrir l'appel." },
+      { regle: "Tout chiffre de taux de réservation : on ne connaît pas ses seuils bancaires, et se tromper devant lui coûte l'appel." },
     ],
     objections: [
       {
@@ -333,7 +418,9 @@ export const VERTICALS: VerticalPlaybook[] = [
     ],
     mirror:
       "Celui qui tombe sur le répondeur ne laisse pas de message — il appelle l'auto-école suivante. Et c'est une formation à mille deux cents, mille quatre cents euros qui vient de partir. Vous ne saurez jamais qu'il a appelé.",
-    forbidden: ["Le détail de l'intégration planning et des appels simultanés — ça se montre en visio."],
+    forbidden: [
+      { regle: "Le détail de l'intégration planning et des appels simultanés — ça se montre en visio." },
+    ],
     objections: [
       { q: "On a déjà un répondeur.", a: "C'est justement le problème : sur un répondeur, personne ne rappelle. L'agent, lui, parle, prend l'inscription et les coordonnées. C'est le jour et la nuit." },
       { q: "Le matin on est fermés, c'est normal.", a: "Bien sûr. Mais vos futurs élèves, eux, appellent quand ça les arrange — souvent le matin ou le soir. Vous êtes fermés, l'auto-école d'à côté ne l'est peut-être pas." },
@@ -362,7 +449,9 @@ export const VERTICALS: VerticalPlaybook[] = [
     ],
     mirror:
       "Le client sinistré a une liste de carrossiers agréés. Il appelle dans l'ordre. Le premier qui décroche prend le dossier — et le dossier, c'est plusieurs centaines d'euros.",
-    forbidden: ["Le dashboard « le leur » tant qu'il n'existe pas : rester sur « voilà ce que vous verriez »."],
+    forbidden: [
+      { regle: "Le dashboard « le leur » tant qu'il n'existe pas : rester sur « voilà ce que vous verriez »." },
+    ],
     objections: [
       { q: "On est deux, on gère.", a: "Justement — quand vous êtes deux sous des voitures, vous êtes à zéro sur le téléphone. L'agent, c'est votre troisième paire de mains, celle qui décroche." },
       { q: "Les assurances nous envoient déjà des clients.", a: "Oui, et ces clients-là appellent souvent plusieurs carrossiers de la liste. Le premier qui décroche prend le dossier. L'agent fait que ce soit toujours vous." },
@@ -392,7 +481,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     mirror:
       "Un fauteuil vide ne se rattrape pas. Le patient qui n'a pas eu de réponse a déjà pris rendez-vous ailleurs — et vous ne saurez jamais qu'il a appelé.",
     forbidden: [
-      "Toute promesse touchant au secret médical ou au tri clinique : l'agent prend des demandes, il ne fait pas de médecine.",
+      { regle: "Toute promesse touchant au secret médical ou au tri clinique : l'agent prend des demandes, il ne fait pas de médecine." },
     ],
     objections: [
       { q: "On a un secrétariat.", a: "Il ne prend qu'un appel à la fois. L'agent prend les autres — celui-là n'est pas remplacé, il arrête juste de rater des appels." },
@@ -427,7 +516,9 @@ export const VERTICALS: VerticalPlaybook[] = [
     ],
     mirror:
       "Celui qui tombe sur le répondeur ne laisse pas de message : il réserve au restaurant d'à côté. Vous ne saurez jamais qu'il a appelé — il n'apparaîtra nulle part.",
-    forbidden: ["Le détail du logiciel de réservation et des intégrations — ça se montre, ça ne se raconte pas."],
+    forbidden: [
+      { regle: "Le détail du logiciel de réservation et des intégrations — ça se montre, ça ne se raconte pas." },
+    ],
     objections: [
       { q: "On a déjà TheFork / une plateforme.", a: "Et vous leur payez une commission sur chaque couvert. Une réservation prise en direct, c'est votre table, sans commission." },
       { q: "On rappelle toujours après le service.", a: "Le rappel, c'est dans trois heures. La table, elle est réservée dans les dix minutes — chez celui qui a décroché." },
@@ -455,7 +546,9 @@ export const VERTICALS: VerticalPlaybook[] = [
     ],
     mirror:
       "Une soirée d'entreprise se décide dans la journée, sur trois appels. Celui qui décroche prend la privatisation — et c'est votre plus grosse soirée du mois qui part ailleurs.",
-    forbidden: ["La billetterie et l'agenda automatisé : ça se montre en RDV."],
+    forbidden: [
+      { regle: "La billetterie et l'agenda automatisé : ça se montre en RDV." },
+    ],
     objections: [
       { q: "On est connus, les gens viennent.", a: "Justement — capitalisez dessus. Les habitués viennent seuls ; les groupes, eux, appellent. Et en journée, personne ne répond." },
       { q: "On a Instagram.", a: "On ne privatise pas une salle sur Instagram. La demande de groupe passe par le téléphone, toujours." },
@@ -484,7 +577,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     mirror:
       "Un établissement qui n'a personne au bout du fil appelle le transporteur suivant. La course est partie en trente secondes — et le compte avec elle, parce que la prochaine fois il appellera l'autre en premier.",
     forbidden: [
-      "Toute promesse touchant la régulation médicale ou l'urgence vitale : l'agent prend des demandes de transport, il ne régule rien.",
+      { regle: "Toute promesse touchant la régulation médicale ou l'urgence vitale : l'agent prend des demandes de transport, il ne régule rien." },
     ],
     objections: [
       { q: "On a un standard dédié.", a: "Il prend un appel à la fois. Aux heures de pointe, trois établissements appellent en même temps — deux tombent dans le vide." },
@@ -513,7 +606,9 @@ export const VERTICALS: VerticalPlaybook[] = [
     ],
     mirror:
       "Une demande de devis n'attend pas. Celui qui tombe sur la messagerie appelle l'artisan suivant — et c'est un chantier entier qui part, sans que vous sachiez qu'il a appelé.",
-    forbidden: ["Le devis automatisé : à ne promettre qu'après validation technique, sinon c'est une promesse en l'air."],
+    forbidden: [
+      { regle: "Le devis automatisé : à ne promettre qu'après validation technique, sinon c'est une promesse en l'air." },
+    ],
     objections: [
       { q: "Je rappelle le soir.", a: "Le soir, il a déjà eu deux autres devis. Le chantier va au premier qui a répondu, pas au meilleur qui a rappelé." },
       { q: "J'ai déjà trop de travail.", a: "Alors l'agent vous sert à trier : il prend tout, vous ne rappelez que ce qui vaut le coup. Aujourd'hui vous ne choisissez pas, vous subissez." },
@@ -561,8 +656,14 @@ export const VERTICALS: VerticalPlaybook[] = [
     mirror:
       "Vos commerciaux ne perdent pas les affaires qu'ils rencontrent — ils perdent celles qu'ils ont bien travaillées et qu'ils n'ont pas relancées. C'est la partie la plus chère du gisement, parce qu'elle est déjà chaude.",
     forbidden: [
-      "« Vous ratez des appels » : faux ici, et ça prouve qu'on n'a pas compris son métier.",
-      "Le mot CRM à froid : il a déjà essayé, ses commerciaux ne l'ont pas rempli, et il vous rangera là-dedans.",
+      {
+        regle: "« Vous ratez des appels » : faux ici, et ça prouve qu'on n'a pas compris son métier.",
+        motif: MOTIF_APPELS_NON_PRIS,
+      },
+      {
+        regle: "Le mot CRM à froid : il a déjà essayé, ses commerciaux ne l'ont pas rempli, et il vous rangera là-dedans.",
+        motif: /\bcrm\b/i,
+      },
     ],
     objections: [
       {
@@ -619,8 +720,11 @@ export const VERTICALS: VerticalPlaybook[] = [
     mirror:
       "Vous payez au tarif d'un conseiller formé des appels qui ne demandent pas de conseiller. Ce n'est pas un problème de productivité — c'est une couche de travail qui n'a jamais eu besoin d'être humaine.",
     forbidden: [
-      "« On remplace vos équipes » : c'est faux, et ça fait fermer la porte immédiatement.",
-      "Le prix au forfait sans son volume réel : sur ce marché, le prix se dit à la minute et au palier, chiffres en main.",
+      {
+        regle: "« On remplace vos équipes » : c'est faux, et ça fait fermer la porte immédiatement.",
+        motif: /remplace[rz]? (?:vos|les|votre|leurs?) (?:équipes?|conseillers?|salariés?|collaborateurs?)/i,
+      },
+      { regle: "Le prix au forfait sans son volume réel : sur ce marché, le prix se dit à la minute et au palier, chiffres en main." },
     ],
     objections: [
       {
@@ -662,7 +766,9 @@ export const VERTICALS: VerticalPlaybook[] = [
     ],
     mirror:
       "Celui qui n'obtient pas de réponse ne rappelle pas : il appelle le suivant. La perte est invisible — c'est exactement ce qui la rend dangereuse.",
-    forbidden: ["Les fonctionnalités en liste : une seule capacité à la bascule, le reste se montre en RDV."],
+    forbidden: [
+      { regle: "Les fonctionnalités en liste : une seule capacité à la bascule, le reste se montre en RDV." },
+    ],
     objections: [
       { q: "On gère, on n'a pas tant d'appels manqués.", a: "C'est ce qu'on croit tous — jusqu'à les compter. Je vous propose de mesurer une semaine, et on regarde ensemble." },
       { q: "On a un répondeur.", a: "Sur un répondeur, personne ne laisse de message. L'agent, lui, parle et prend la demande. C'est le jour et la nuit." },
@@ -725,7 +831,7 @@ export function playbookPrompt(sector?: Sector, verticalId?: string): string {
       `- Ouverture : ${v.opener.map((o) => `[${o.label}] ${o.line}`).join(" ")}`,
       `- Diagnostic (poser puis se taire) : ${v.diagnostic.join(" / ")}`,
       `- Miroir : ${v.mirror}`,
-      `- Ne pas dire à froid : ${v.forbidden.join(" ; ")}`,
+      `- Ne pas dire à froid : ${v.forbidden.map((f) => f.regle).join(" ; ")}`,
       `- Objections travaillées : ${v.objections.map((o) => `${citer(o.q)} → ${o.a}`).join(" | ")}`,
       // ⚠ Sans fuite chiffrable, on ÉCRIT l'angle mort au lieu de le combler :
       // une IA à qui on ne dit rien invente un montant, une IA à qui on dit
