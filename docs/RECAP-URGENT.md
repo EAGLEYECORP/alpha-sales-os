@@ -56,8 +56,8 @@ qui est prêt.
 
 ```
 ALPHA — 2 priorités aujourd'hui, 1 980 € en jeu :
-• Démo Vauban — aujourd'hui 09:00 (7 août)
-• Rappeler pour la décision — Garage du Parc (5 août)
+• Démo Vireval — aujourd'hui 09:00 (7 août)
+• Rappeler pour la décision — Garage Ternova (5 août)
 ```
 
 Court, daté, actionnable. Le détail (le *pourquoi* de chaque ligne) part en
@@ -68,7 +68,7 @@ email si tu es sur ce canal, et reste dans l'onglet Aujourd'hui.
 ## Ce que ça ne fait pas
 
 - **Ça ne t'envoie pas tout.** Seulement le cadran critique. Le reste attend.
-- **Ça ne décide pas à ta place.** Un SMS dit « prépare la démo Vauban » ; il
+- **Ça ne décide pas à ta place.** Un SMS dit « prépare la démo Vireval » ; il
   ne la prépare pas. Les 20 % qui signent restent à toi (voir `AUTOPILOTE.md`).
 - **Ça n'invente aucune urgence.** Une fiche sans échéance datée n'est jamais
   critique — d'où l'importance de toujours poser une **prochaine étape datée**

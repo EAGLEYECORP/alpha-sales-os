@@ -179,12 +179,71 @@ test("⚠ les modules de données réelles CHARGENT, ils ne CONTIENNENT plus", (
    * recollant les fiches dans le fichier, en croyant réparer une régression.
    * Le test dit ce qui est voulu.
    */
-  const juillet = readFileSync(join(RACINE, "lib/pipeline-juillet.ts"), "utf8");
-  assert.match(juillet, /donnees-privees/, "les fiches se chargent depuis le dossier privé");
-  assert.doesNotMatch(juillet, /^\s*phone:\s*"/m, "aucun téléphone ne doit revenir dans ce fichier");
+  /**
+   * ⚠⚠ CETTE GARDE A LAISSÉ PASSER SIX RENDEZ-VOUS RÉELS PENDANT UN JOUR.
+   *
+   * Elle refusait `phone: "…"`. Or `lib/pipeline-juillet.ts` gardait un
+   * tableau de six rendez-vous datés — raison sociale réelle dans `title`,
+   * date et heure dans `date` — et un rendez-vous ne porte pas de téléphone.
+   * Le garde était écrit sur LA FORME QU'ON VENAIT DE VOIR fuiter, donc il
+   * n'attrapait que celle-là. Même leçon que `MOTIF_APPELS_NON_PRIS`, payée
+   * une troisième fois.
+   *
+   * La règle est donc devenue STRUCTURELLE, et c'est la seule qui tienne :
+   * dans un module CHARGEUR, aucun champ d'enregistrement ne reçoit un
+   * littéral de chaîne. `company: s.company` (un identifiant, une projection)
+   * reste permis ; `company: "…"` (une donnée) ne l'est pas. Le module décrit
+   * une FORME et va chercher le CONTENU ailleurs — c'est toute sa raison
+   * d'être, et c'est vérifiable sans jamais lister ce qu'on cache.
+   *
+   * ⚠ `id:` est volontairement absent de la liste : les identifiants
+   * techniques engendrés (`${s.id}-obj-${i}`) en portent légitimement, et un
+   * identifiant seul ne désigne personne. C'est le couple champ + littéral
+   * PORTEUR DE SENS qu'on refuse.
+   */
+  const CHAMPS_DE_DONNEE = ["phone", "email", "company", "name", "title", "notes", "summary", "city", "address", "adresse"];
 
-  const icp = readFileSync(join(RACINE, "lib/prospects-icp.ts"), "utf8");
-  assert.match(icp, /donnees-privees/, "le CSV se charge depuis le dossier privé");
+  /**
+   * ⚠⚠ LE MOTIF A ÉTÉ ANCRÉ EN DÉBUT DE LIGNE À MA PREMIÈRE ÉCRITURE, ET IL
+   * N'AURAIT PAS ATTRAPÉ LA FUITE QU'IL EST CENSÉ INTERDIRE.
+   *
+   * Les six rendez-vous fuités tenaient chacun sur UNE ligne :
+   * `{ id: "…", prospectId: "…", title: "Démo …", date: "…" }`. Un `^\s*title:`
+   * ne voit rien là-dedans — il ne voit que le champ mis en tête de ligne par
+   * un formateur. J'ai écrit le garde, puis muté, et c'est la mutation qui l'a
+   * dit : elle est repassée VERTE. Écrire le commentaire « un garde par motif
+   * n'attrape que ce qu'on a déjà vu » ne dispense pas de le vérifier sur le
+   * garde qu'on est en train d'écrire.
+   *
+   * Le champ se reconnaît donc après `{`, après `,` ou en début de ligne —
+   * c'est-à-dire partout où une propriété d'objet peut réellement commencer.
+   */
+  const litteral = new RegExp(`(?:^|[{,])\\s*(?:${CHAMPS_DE_DONNEE.join("|")}):\\s*["'\`]`);
+
+  /**
+   * Les commentaires sont retirés AVANT la recherche. Ils sont autorisés à
+   * citer la forme interdite — la doctrine du dépôt tient à ce qu'une garde
+   * explique ce qu'elle refuse, et ce fichier même écrit `phone: "…"` pour
+   * dire ce qui ne doit pas revenir. Sans cette découpe, le garde mordrait
+   * sur sa propre explication, et on l'assouplirait au mauvais endroit.
+   */
+  const sansCommentaires = (src: string) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, (bloc) => bloc.replace(/[^\n]/g, " ")).replace(/\/\/[^\n]*/g, "");
+
+  for (const f of ["lib/pipeline-juillet.ts", "lib/prospects-icp.ts"]) {
+    const src = readFileSync(join(RACINE, f), "utf8");
+    assert.match(src, /donnees-privees/, `${f} doit charger depuis le dossier privé`);
+    const fautes = sansCommentaires(src)
+      .split("\n")
+      .map((l, i) => [i + 1, l] as const)
+      .filter(([, l]) => litteral.test(l));
+    assert.deepEqual(
+      fautes.map(([n, l]) => `${f}:${n} → ${l.trim()}`),
+      [],
+      `${f} est un CHARGEUR : il décrit une forme, il ne contient pas de donnée. ` +
+        "Un champ d'enregistrement assigné à un littéral de chaîne est une fiche recollée dans le dépôt."
+    );
+  }
 });
 
 test("un module de données absent rend VIDE, jamais une exception", () => {

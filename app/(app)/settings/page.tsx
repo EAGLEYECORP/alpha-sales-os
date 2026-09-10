@@ -700,7 +700,7 @@ export default function SettingsPage() {
                   /**
                    * ⚠ CETTE BOÎTE NOMMAIT TROIS VRAIS PROSPECTS ET LEURS DATES
                    * DE RENDEZ-VOUS. Mesuré dans le build : la chaîne
-                   * « ***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08 » se trouvait dans
+                   * une liste de vrais prospects avec leurs dates de RDV se trouvait dans
                    * un chunk de `_next/static/**`, chemin exclu du middleware —
                    * donc lisible sans mot de passe, par un concurrent comme par
                    * n'importe qui.

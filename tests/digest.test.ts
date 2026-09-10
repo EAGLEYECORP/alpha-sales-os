@@ -41,7 +41,7 @@ test("buildUrgentDigest — vide quand rien n'est critique", () => {
 test("buildUrgentDigest — une étape EN RETARD sur un deal avancé remonte en critique", () => {
   const p = fiche({
     id: "a",
-    company: "Garage du Parc",
+    company: "Garage Ternova",
     stage: "offre",
     monthlyValue: 300,
     setupValue: 990,
@@ -50,17 +50,17 @@ test("buildUrgentDigest — une étape EN RETARD sur un deal avancé remonte en 
   });
   const d = buildUrgentDigest([p], [], NOW);
   assert.ok(d.count >= 1, "au moins une tâche critique");
-  assert.match(d.sms, /Garage du Parc/);
+  assert.match(d.sms, /Garage Ternova/);
   assert.ok(d.sms.length <= 600, "le SMS reste court");
   assert.ok(d.emailBody.length > d.sms.length, "l'email développe le pourquoi");
 });
 
 test("buildUrgentDigest — un RDV aujourd'hui est toujours critique", () => {
-  const p = fiche({ id: "b", company: "Vauban", stage: "demo", monthlyValue: 200, setupValue: 990 });
-  const m: Meeting = { id: "m1", prospectId: "b", title: "Démo Vauban", date: iso(0), channel: "physique", done: false } as Meeting;
+  const p = fiche({ id: "b", company: "Vireval", stage: "demo", monthlyValue: 200, setupValue: 990 });
+  const m: Meeting = { id: "m1", prospectId: "b", title: "Démo Vireval", date: iso(0), channel: "physique", done: false } as Meeting;
   const d = buildUrgentDigest([p], [m], NOW);
   assert.ok(d.count >= 1);
-  assert.match(d.sms, /Vauban/);
+  assert.match(d.sms, /Vireval/);
   assert.ok(d.value >= 0);
 });
 

@@ -96,18 +96,70 @@ export interface Seed {
   objections?: string[];
 }
 
-function chargerSeeds(): Seed[] {
+/**
+ * Un rendez-vous daté du dossier de juillet.
+ *
+ * ⚠⚠ CES SIX LIGNES ÉTAIENT ENCORE EN DUR ICI, LE 10/09/2026, ALORS QUE LES
+ * FICHES ÉTAIENT SORTIES DEPUIS LA VEILLE — et `docs/ANGLES-MORTS.md` les
+ * listait déjà comme fuite n° 5, gravité **haute**. Le post-mortem avait été
+ * écrit ; le code, lui, n'avait pas bougé. C'est la panne signature de ce
+ * dépôt, à son maximum de gravité : la règle existait, en prose, et personne
+ * ne l'a branchée.
+ *
+ * Ce qu'elles portaient : six raisons sociales réelles de commerces lyonnais,
+ * chacune avec la DATE ET L'HEURE d'un rendez-vous commercial. Un nom de
+ * société n'est pas anodin quand il est daté — il dit qui négociait quoi et
+ * quand, et l'information vaut pour un concurrent comme pour l'intéressé.
+ *
+ * ⚠ POURQUOI LA GARDE NE LES A PAS VUES. `tests/donnees-reelles.test.ts`
+ * refusait `phone: "…"` dans ce fichier. Un rendez-vous ne porte pas de
+ * téléphone : il porte un `title`. Un garde écrit sur UNE forme n'attrape que
+ * cette forme — la même leçon que `MOTIF_APPELS_NON_PRIS`, payée deux fois.
+ * La garde est désormais structurelle : dans un module CHARGEUR, aucun champ
+ * d'enregistrement ne peut recevoir un littéral de chaîne.
+ */
+export interface RdvSeed {
+  id: string;
+  prospectId: string;
+  title: string;
+  /** ISO local, sans fuseau — converti à la lecture. */
+  date: string;
+  kind: Meeting["kind"];
+}
+
+/**
+ * `require` et non `import` : le chemin doit rester résolu À L'EXÉCUTION.
+ * Un `import` statique ferait échouer le BUILD partout où le fichier privé
+ * n'existe pas — c'est-à-dire sur toute machine autre que la sienne, y
+ * compris le déploiement.
+ *
+ * ⚠ Une seule lecture pour les deux exports : deux `require` du même module
+ * poseraient deux fois la question « le dossier privé est-il là ? », et la
+ * réponse doit être unique.
+ */
+function chargerPrive(): { SEEDS?: Seed[]; RDV?: RdvSeed[] } {
   try {
-    // `require` et non `import` : le chemin doit rester résolu À L'EXÉCUTION.
-    // Un `import` statique ferait échouer le BUILD partout où le fichier
-    // privé n'existe pas — c'est-à-dire sur toute machine autre que la
-    // sienne, y compris le déploiement.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const m = require("../donnees-privees/pipeline-juillet.seeds") as { SEEDS?: Seed[] };
-    return Array.isArray(m.SEEDS) ? m.SEEDS : [];
+    return require("../donnees-privees/pipeline-juillet.seeds") as { SEEDS?: Seed[]; RDV?: RdvSeed[] };
   } catch {
-    return [];
+    return {};
   }
+}
+
+function chargerSeeds(): Seed[] {
+  const m = chargerPrive();
+  return Array.isArray(m.SEEDS) ? m.SEEDS : [];
+}
+
+/**
+ * ⚠ ABSENT ⇒ AUCUN RENDEZ-VOUS, jamais une exception — et surtout jamais un
+ * rendez-vous de repli fabriqué. Un agenda qui invente une démo datée est
+ * pire qu'un agenda vide : il déclenche l'urgence de l'écran du matin sur un
+ * rendez-vous qui n'existe pas.
+ */
+function chargerRdv(): RdvSeed[] {
+  const m = chargerPrive();
+  return Array.isArray(m.RDV) ? m.RDV : [];
 }
 
 const SECTOR_FALLBACK: Sector = "autre";
@@ -160,14 +212,8 @@ export function pipelineJuillet(): { prospects: Prospect[]; meetings: Meeting[] 
   })) as Prospect[];
 
   // Les rendez-vous datés du dossier — ce sont eux qui pilotent l'urgence.
-  const rdv: { id: string; prospectId: string; title: string; date: string; kind: Meeting["kind"] }[] = [
-    { id: "rdv-corzani", prospectId: "sc-corzani", title: "***NOM-RETIRE***", date: "2026-08-03T09:00:00", kind: "demo" },
-    { id: "rdv-vauban", prospectId: "sc-vauban", title: "***NOM-RETIRE***", date: "2026-08-03T16:00:00", kind: "demo" },
-    { id: "rdv-hosman", prospectId: "sc-hosman", title: "***NOM-RETIRE***", date: "2026-08-05T14:30:00", kind: "closing" },
-    { id: "rdv-brotteaux-carr", prospectId: "sc-brotteaux-carrosserie", title: "***NOM-RETIRE***", date: "2026-09-02T09:00:00", kind: "closing" },
-    { id: "rdv-arlim", prospectId: "sc-arlim", title: "***NOM-RETIRE***", date: "2026-09-02T14:30:00", kind: "demo" },
-    { id: "rdv-brotteaux-cond", prospectId: "sc-brotteaux-conduite", title: "***NOM-RETIRE***", date: "2026-09-29T10:00:00", kind: "closing" },
-  ];
+  // Ils vivent dans `donnees-privees/`, avec les fiches : voir `RdvSeed`.
+  const rdv = chargerRdv();
 
   const meetings: Meeting[] = rdv.map((m) => ({
     id: m.id,

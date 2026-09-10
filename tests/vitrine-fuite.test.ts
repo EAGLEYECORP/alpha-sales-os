@@ -624,7 +624,7 @@ test("⚠ bundle app — aucun NOM de prospect réel, même recopié à la main"
   /**
    * ⚠ MESURÉ DANS LE BUILD, ET C'EST LA MÊME LEÇON POUR LA TROISIÈME FOIS.
    *
-   * Un chunk public contenait « ***NOM-RETIRE*** 3/08, Vauban 3/08, ***NOM-RETIRE*** 5/08 » :
+   * Un chunk public contenait une liste de vrais prospects avec leurs dates de RDV :
    * trois vrais prospects et leurs dates de rendez-vous, lisibles sans mot de
    * passe. Ce n'était pas `lib/pipeline-juillet` qui avait fui — ce module est
    * gardé depuis son post-mortem. Les noms avaient été RETAPÉS à la main dans

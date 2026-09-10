@@ -42,7 +42,7 @@ La garde nomme un FICHIER, la donnée est recopiée dans le fichier d'à côté.
 | 2 | `/api/catalogue` et `/api/catalogue/reference` servaient **notre économie de partenariat** à tout locataire authentifié — dont ScintIA et Nuwacom | **haute** |
 | 3 | `lib/ladder.ts` mettait `commissionPct:30` / `15` dans un **chunk public**, servi sans mot de passe | **haute** |
 | 4 | `lib/accounts.ts` faisait de même avec le taux des trois comptes | **haute** |
-| 5 | Trois **vrais prospects et leurs dates de RDV** (***NOM-RETIRE***, Vauban, ***NOM-RETIRE***) dans un chunk public | **haute** |
+| 5 | Trois **vrais prospects et leurs dates de RDV** dans un chunk public (les noms ne sont pas repris ici : les citer pour documenter la fuite, c'est la refaire) | **haute** |
 | 6 | Une fiche importée de LinkedIn sortait avec **sept champs `undefined`** | **haute** |
 | 7 | `clearAllData()` (assistant) et `importData()` (restauration) **détruisaient tout en un clic**, sans rien demander — pendant que le MÊME appel, ailleurs, confirmait | **haute** |
 | 8 | Le mur de stockage n'était branché que sur **une des quatre** surfaces d'import | moyenne |
