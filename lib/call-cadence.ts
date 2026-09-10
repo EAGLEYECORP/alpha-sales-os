@@ -68,9 +68,16 @@ export const RAPPELS_MAX = RAPPELS_OFFSETS_H.length;
  * ─────────────────────────────────────────────────────────────────────
  * ⚠ LE CONFLIT ENTRE CETTE CADENCE ET LE DROIT FRANÇAIS.
  *
- * La cadence fait **6 contacts en 2 jours** (le premier
- * appel plus cinq rappels). Le décret n° 2022-1313 plafonne le démarchage
- * téléphonique à **4 sollicitations par consommateur sur 30 jours glissants**.
+ * ⚠⚠ CE PARAGRAPHE DISAIT « 6 CONTACTS EN 2 JOURS (le premier appel plus
+ * cinq rappels) » ALORS QUE `RAPPELS_OFFSETS_H` EN COMPTE TROIS, vingt lignes
+ * plus haut, depuis la décision du 02/09/2026. Une doctrine qui se contredit
+ * d'un paragraphe à l'autre ne se lit pas en entier : on attrape le premier
+ * des deux et on applique le périmé.
+ *
+ * La cadence fait **4 contacts en 2 jours** (le premier appel plus trois
+ * rappels). Le décret n° 2022-1313 plafonne le démarchage téléphonique à
+ * **4 sollicitations par consommateur sur 30 jours glissants** : on est
+ * exactement AU plafond, jamais au-dessus.
  *
  * Il vise le B2C. Or une liste de prospection terrain est MÊLÉE : un artisan
  * en nom propre sur sa ligne mobile est exactement la zone grise, et c'est
