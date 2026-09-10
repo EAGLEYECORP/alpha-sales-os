@@ -3,7 +3,7 @@
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, cible,
 > sécurité) ; **ce fichier porte le PLAN et l'AVANCEMENT RÉEL**.
 >
-> Dernière révision : **2026-09-10** · **1 628 tests verts** · `tsc --noEmit`
+> Dernière révision : **2026-09-10** · **1 631 tests verts** · `tsc --noEmit`
 > propre · `next build` propre · 179 modules `lib/`, 148 fichiers de test,
 > 44 écrans.
 
@@ -118,8 +118,29 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
       conversation. **Toujours pas fait.**
 - [ ] **Migrer le LLM hors du tier gratuit NVIDIA** — la licence **interdit la
       production**. Coût réel : < 3 € pour 1 000 appels.
-- [ ] **Créer `noreply@eagleyecorp.fr`** (boîte réelle, pas un alias) + SPF,
-      DKIM, DMARC. **Rien ne part tant que ça n'existe pas.**
+- [x] ~~Créer `noreply@eagleyecorp.fr`~~ — **abandonné le 10/09/2026 : on part
+      sur `contact@eagleyecorp.fr`**, qui existe et que quelqu'un LIT. Un
+      `noreply@` en expéditeur de prospection annonce « ne répondez pas » à
+      quelqu'un dont on attend une réponse.
+      > ⚠ Le prix est réel et il est écrit : le transactionnel et le
+      > commercial partagent une seule boîte. Une campagne qui prend des
+      > plaintes fait tomber les mails d'inscription **en même temps**, sans
+      > qu'aucun code change. Ce qui limite le risque : la montée en charge
+      > de `lib/email-ramp.ts` (5/jour la première semaine) — mais elle coupe
+      > l'**ÉCRAN** `/outbox`, **pas le serveur**. Le serveur ne connaît que
+      > `MAX_SENDS_PER_HOUR` (40/h). Le palier du jour tient donc par
+      > l'USAGE, pas par une contrainte : pendant les premières semaines,
+      > envoyer depuis la Boîte d'envoi et de nulle part ailleurs. Détail :
+      > [`SMTP-SUPABASE-AMEN.md`](./SMTP-SUPABASE-AMEN.md).
+- [ ] **Retrouver le mot de passe de `contact@`** et le poser dans Supabase
+      SMTP + `SMTP_*`. ⚠ Le réinitialiser coupe la réception le temps de
+      reconfigurer les clients mail — pas le matin du lancement.
+- [ ] **SPF, DKIM, DMARC sur `eagleyecorp.fr`.** ⚠ Un SPF existe déjà
+      (l'adresse fonctionne) : on le MODIFIE, on n'en ajoute pas un second —
+      deux SPF valent zéro SPF.
+- [ ] **Séparer les domaines d'envoi**, quand le volume le justifiera :
+      transactionnel sur une boîte dédiée, prospection sur un sous-domaine.
+      Repoussé, pas annulé.
 - [ ] **Extraire la liste de permis** Lyon + Villeurbanne — l'egress de la
       sandbox bloque `data.grandlyon.com` (mesuré, `HTTP 403`).
 - [ ] **Relever les téléphones à la main** — un export de permis ne porte
@@ -141,6 +162,11 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
       GLOBAUX et parlent maîtrise d'ouvrage. Ils se prononcent aussi sur
       Nuwacom, dont l'ICP est l'assurance. Dette assumée, testée, à lever
       quand un deuxième marché entre.
+- [ ] **La montée en charge d'envoi n'est pas appliquée côté serveur.**
+      `lib/email-ramp.ts` coupe la file de `/outbox` ; `/api/send` ne connaît
+      que le plafond horaire. Un autre appelant (revue de campagne,
+      newsletter, recette) peut dépasser le palier du jour. Devenu structurant
+      depuis que le transactionnel et la prospection partagent `contact@`.
 - [ ] **Attribution des apporteurs** — code de parrainage + capture à
       l'inscription.
 - [ ] **Historique Alpha CEO** + sondes pour les 5 pannes non surveillées.
@@ -177,8 +203,10 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
    démonstration en direct, une garantie chiffrée.
 
 ## L'ordre qui rapporte
-`la boîte noreply@ + DNS` → `la liste de permis` → `les numéros à la main` →
+`le mot de passe de contact@ + DNS` → `la liste de permis` → `les numéros à la main` →
 `UN appel réel` → `rotate les clés` → `table call_sessions` → le reste.
 
-> ⚠ Les trois premiers sont chez Zakaria et rien ne part sans eux. Le reste du
+> ⚠ Les trois premiers sont chez Zakaria et rien ne part sans eux. Le
+> premier s'est allégé le 10/09 : la boîte n'est plus à créer, seulement à
+> configurer. Le reste du
 > dépôt est prêt et gardé ; il attend une liste et une boîte mail.

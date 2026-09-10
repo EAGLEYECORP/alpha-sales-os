@@ -148,9 +148,21 @@ confirmer, ce sont vingt contacts brûlés et un post qu'on ne rejoue pas.
       confirmation part alors vers `localhost`, et l'inscrit clique dans le
       vide sans aucun moyen de comprendre.
 - [ ] Supabase → **SMTP Settings** : poser NOTRE SMTP (les mêmes `SMTP_*` que
-      `/api/send`). ⚠ Utiliser une adresse **distincte** de celle des campagnes
-      (`compte@` plutôt que `contact@`) : sinon une campagne mal ciblée fait
-      tomber les mails de confirmation avec elle.
+      `/api/send`), sur **`contact@eagleyecorp.fr`**.
+      > ⚠⚠ **CETTE LIGNE DISAIT L'INVERSE**, et elle avait raison sur le fond :
+      > une adresse distincte de celle des campagnes évite qu'un envoi mal
+      > ciblé fasse tomber les mails de confirmation avec lui.
+      >
+      > La décision du 10/09/2026 assume ce risque, pour une raison qui pèse
+      > plus lourd aujourd'hui : la boîte séparée n'existe pas, et attendre
+      > qu'elle existe bloque tout. `contact@` existe, elle est LUE, et un
+      > `noreply@` en expéditeur de prospection est de toute façon une mauvaise
+      > pratique.
+      >
+      > **Ce qui rend le risque tenable** : la montée en charge de
+      > `lib/email-ramp.ts` — 5 envois/jour la première semaine. La lever
+      > annule la décision. Et la séparation reste au programme :
+      > [`SMTP-SUPABASE-AMEN.md`](./SMTP-SUPABASE-AMEN.md).
 - [ ] **Redéployer SANS cache.** Les `NEXT_PUBLIC_*` sont figées au moment du
       build : les poser ne suffit pas, il faut reconstruire.
 - [ ] **LE TEST QUI FAIT FOI** : s'inscrire avec une adresse jetable, en

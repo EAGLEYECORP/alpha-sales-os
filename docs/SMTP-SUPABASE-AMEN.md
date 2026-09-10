@@ -10,6 +10,73 @@
 
 ---
 
+## ⚠ DÉCISION DU 10/09/2026 — ON PART SUR `contact@eagleyecorp.fr`
+
+Ce document était bâti sur une boîte `noreply@` à créer. **Elle ne l'a pas
+été, et attendre coûtait plus cher que le risque.** `contact@eagleyecorp.fr`
+existe, fonctionne, et — c'est l'argument qui décide — **quelqu'un la lit**.
+
+### Ce que ce choix gagne, et ce n'est pas qu'un raccourci
+
+- **Un `noreply@` en expéditeur de prospection est une mauvaise pratique**, pas
+  une convention neutre. Il annonce « ne répondez pas » à quelqu'un dont on
+  attend précisément une réponse, il fait chuter le taux de réponse, et
+  plusieurs filtres le pénalisent explicitement.
+- **La réponse arrive au bon endroit.** `contact@` est déjà l'adresse du
+  cadrage sur la vitrine et l'adresse d'émission des devis EAGLEYE
+  (`lib/accounts-commercial.ts`). Un prospect qui répond tombe là où quelqu'un
+  regarde, du premier message jusqu'à la signature.
+
+### ⚠⚠ CE QUE ÇA COÛTE — à savoir avant, pas après
+
+**Le transactionnel et le commercial partagent désormais une seule boîte.**
+Supabase enverra les confirmations d'inscription depuis l'adresse qui sert
+aussi à la prospection. Conséquence, et c'est le scénario détaillé plus bas :
+si un envoi commercial prend des plaintes, **les mails d'inscription cessent
+d'arriver en même temps** — aucun code ne change, rien ne le signale, et un
+client qui ne reçoit pas son lien de confirmation ne devient jamais client.
+
+Et la même réputation porte **les devis**. Une adresse dégradée touche le
+dernier mètre, celui qui rapporte.
+
+### Les deux règles qui rendent ce choix tenable
+
+1. **La montée en charge ne se lève pas** — et il faut savoir exactement ce
+   qu'elle borne.
+
+**Ce qui borne réellement les envois, et à quel niveau — vérifié, pas supposé :**
+
+| Garde | Où elle s'applique | Ce qu'elle borne |
+|---|---|---|
+| `lib/email-ramp.ts` — 5/jour la 1ʳᵉ semaine, +5/semaine, 40 au plafond | **l'ÉCRAN** `/outbox` : la file affichée est coupée à `ramp.today` | le chemin d'envoi normal, celui qu'on utilise tous les jours |
+| `MAX_SENDS_PER_HOUR` (défaut **40/h**) | **le SERVEUR**, `/api/send` | un pic, quel que soit l'appelant |
+| Fenêtre de recontact (défaut **14 jours**) | le SERVEUR | le réenvoi à la même adresse |
+
+> ⚠⚠ **LA MONTÉE EN CHARGE N'EST PAS APPLIQUÉE CÔTÉ SERVEUR.** Elle coupe la
+> FILE de la Boîte d'envoi ; elle n'empêche pas un autre appelant de
+> `/api/send` (revue de campagne, newsletter, recette) de dépasser le palier
+> du jour. Le serveur, lui, ne connaît que le plafond horaire de 40.
+>
+> Autrement dit : le garde qui protège la réputation de `contact@` tient
+> aujourd'hui par **l'usage**, pas par une contrainte. C'est le défaut le plus
+> fréquent de ce dépôt — une règle juste, branchée à un seul endroit — et il
+> est nommé ici plutôt que masqué, parce qu'écrire « la montée en charge
+> protège la boîte » sans cette réserve serait fabriquer une assurance.
+>
+> **La conséquence pratique** : pendant les premières semaines, envoyer depuis
+> la Boîte d'envoi et de nulle part ailleurs. Ce n'est pas une préférence de
+> confort, c'est le seul endroit où le palier du jour existe.
+2. **La séparation reste au programme, elle est juste repoussée.** Le jour où
+   `noreply@` existe : le transactionnel y retourne, et la prospection part
+   d'un sous-domaine. Voir la parade détaillée plus bas — elle n'est pas
+   annulée, elle attend.
+
+> **Ce document décrit donc `contact@` partout.** L'ancienne version disait
+> `noreply@` ; la remplacer sans écrire pourquoi aurait laissé la prochaine
+> session refaire le choix inverse en croyant corriger un oubli.
+
+---
+
 ## LA CHECKLIST — dans cet ordre, et l'ordre compte
 
 > Coche au fur et à mesure. Chaque ligne dit **où** cliquer et **comment savoir
@@ -17,14 +84,15 @@
 > faite.
 
 ### Chez Amen — la boîte
-- [ ] **Créer `noreply@eagleyecorp.fr`** — Espace client → `eagleyecorp.fr` →
-      services associés → **EMAIL** → créer une boîte.
-      ⚠ Une **vraie boîte**, pas un alias : un alias n'a pas de mot de passe,
-      donc pas d'authentification SMTP possible.
-- [ ] **Noter le mot de passe** quelque part de sûr, maintenant.
+- [x] **La boîte existe déjà** : `contact@eagleyecorp.fr`. Rien à créer.
+      ⚠ Vérifier que c'est une **vraie boîte** et pas un alias redirigé : un
+      alias n'a pas de mot de passe, donc aucune authentification SMTP
+      possible. Si le webmail Amen s'ouvre avec cette adresse, c'est une boîte.
+- [ ] **Retrouver ou réinitialiser son mot de passe**, et le noter maintenant.
       Supabase le chiffre à l'enregistrement et ne le réaffiche **jamais**.
-- [ ] *Vérif* : se connecter au webmail Amen avec cette adresse. Si ça ouvre,
-      la boîte existe vraiment.
+      ⚠ Le réinitialiser coupe la réception le temps de reconfigurer les
+      clients mail qui l'utilisent déjà — à faire à un moment calme, pas à
+      8 h du matin le jour du lancement.
 
 ### Chez Amen — le DNS (c'est ici que ça se joue)
 - [ ] **Regarder le SPF EXISTANT** avant d'en ajouter un.
@@ -43,13 +111,14 @@
 
 ### Chez Supabase — le SMTP
 - [ ] Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*
-- [ ] Sender email : `noreply@eagleyecorp.fr` — **exactement** la boîte
-      authentifiée. Envoyer depuis `contact@` en s'authentifiant avec
-      `noreply@` fait rejeter, ou pire : ça part et c'est classé usurpation.
+- [ ] Sender email : `contact@eagleyecorp.fr` — **exactement** la boîte
+      authentifiée. Une adresse d'expédition différente de l'adresse
+      authentifiée fait rejeter le message, ou pire : ça part et c'est classé
+      usurpation à l'arrivée — sans erreur visible.
 - [ ] Sender name : `ALPHA SALES OS`
 - [ ] Host : `smtp-fr.securemail.pro`
 - [ ] Port : `465` (si refus → `587` ; **jamais 25**)
-- [ ] Username : `noreply@eagleyecorp.fr` — **l'adresse entière**
+- [ ] Username : `contact@eagleyecorp.fr` — **l'adresse entière**
 - [ ] Password : celui de la boîte
 - [ ] **Save changes**
 
@@ -100,7 +169,7 @@ C'est le scénario le plus vicieux du lot : le tunnel d'inscription se casse
 à cause d'un envoi commercial fait trois jours plus tôt.
 
 > **La parade, et elle coûte dix minutes** : séparer les domaines d'envoi.
-> · **Auth** → `noreply@eagleyecorp.fr` (l'apex, réputation protégée)
+> · **Auth** → une boîte dédiée sur l'apex (réputation protégée)
 > · **Prospection** → un **sous-domaine**, `mail.eagleyecorp.fr` par exemple
 >
 > Les réputations d'un sous-domaine et de son apex sont largement distinctes
@@ -116,12 +185,13 @@ attendre le premier envoi de masse — mais elle doit être faite **avant**.
 
 ---
 
-## 1. Créer la boîte `noreply@eagleyecorp.fr` chez Amen
+## 1. La boîte `contact@eagleyecorp.fr` — elle existe déjà
 
 Espace client Amen → **eagleyecorp.fr** → services associés → **EMAIL**.
 
-Crée une **vraie boîte** (pas un alias). L'authentification SMTP a besoin d'un
-mot de passe, et un alias n'en a pas.
+Rien à créer. Ce qu'il faut vérifier : que c'est une **vraie boîte** et pas un
+alias redirigé. L'authentification SMTP a besoin d'un mot de passe, et un
+alias n'en a pas — le webmail Amen tranche en dix secondes.
 
 > ⚠ Note le mot de passe **maintenant**. Supabase le chiffre à
 > l'enregistrement et ne le réaffiche plus jamais : le retrouver veut dire le
@@ -135,11 +205,11 @@ Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*.
 
 | Champ | Valeur |
 |---|---|
-| Sender email address | `noreply@eagleyecorp.fr` |
+| Sender email address | `contact@eagleyecorp.fr` |
 | Sender name | `ALPHA SALES OS` |
 | **Host** | `smtp-fr.securemail.pro` |
 | **Port number** | `465` |
-| **Username** | `noreply@eagleyecorp.fr` — **l'adresse entière**, pas `noreply` |
+| **Username** | `contact@eagleyecorp.fr` — **l'adresse entière**, pas `contact` |
 | **Password** | celui de la boîte |
 | Minimum interval per user | `60` (le défaut convient) |
 
@@ -149,9 +219,10 @@ Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*.
 > fournisseurs pour freiner le spam.
 
 > ⚠ **`Sender email address` doit être EXACTEMENT la boîte authentifiée.**
-> Envoyer depuis `contact@` en s'authentifiant avec `noreply@` fait rejeter le
+> Expédier depuis une adresse et s'authentifier avec une autre fait rejeter le
 > message par le serveur, ou pire : il part et se fait classer en usurpation à
-> l'arrivée. Le second cas ne produit aucune erreur visible.
+> l'arrivée. Le second cas ne produit **aucune erreur visible** — c'est celui
+> qui coûte une semaine avant qu'on comprenne.
 
 ---
 
@@ -214,7 +285,7 @@ Espace client Amen → **eagleyecorp.fr** → **EMAIL** → bouton bleu **ACTION
 3. Cherche les trois lignes :
 
 ```
-spf=pass    (google.com: domain of noreply@eagleyecorp.fr ...)
+spf=pass    (google.com: domain of contact@eagleyecorp.fr ...)
 dkim=pass   header.i=@eagleyecorp.fr
 dmarc=pass  (p=NONE ...)
 ```
@@ -264,7 +335,7 @@ Authentication → Providers → Email → **Confirm email** : ✅
 Les mêmes identifiants servent à `/api/send` (`SMTP_HOST` · `SMTP_PORT` ·
 `SMTP_USER` · `SMTP_PASS` · `SMTP_FROM`) — **mais relis l'encadré du haut avant
 de mettre la même adresse des deux côtés.** Si tu comptes prospecter depuis
-l'application, c'est le sous-domaine qu'il faut là, pas `noreply@`.
+l'application, c'est le sous-domaine qu'il faut là, pas la boîte d'envoi.
 
 ⚠ Ces variables sont des **secrets de serveur**. Jamais de préfixe
 `NEXT_PUBLIC_` : il rendrait le mot de passe de ta boîte lisible dans le
