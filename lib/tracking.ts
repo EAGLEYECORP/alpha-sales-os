@@ -98,6 +98,54 @@ export async function countRecentSends(
 }
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * DEPUIS QUAND CETTE BOÎTE ENVOIE — la date du PREMIER message consigné.
+ *
+ * C'est l'entrée serveur de la montée en charge (`lib/email-ramp.ts`). Le
+ * navigateur, lui, lit la même information dans les timelines des fiches, et
+ * les deux traversent le même barème (`rampDepuisPremierEnvoi`).
+ *
+ * ⚠ `null` a un sens PRÉCIS, et il est du bon côté : « aucun envoi consigné »
+ * fait retomber le barème sur son palier le plus BAS (5/jour). Une base
+ * injoignable, une table vide, un service role absent — tous les chemins de
+ * panne mènent donc à la borne la plus stricte, jamais à l'ouverture.
+ *
+ * C'est l'inverse du réflexe (« en cas de doute, ne pas bloquer ») et c'est
+ * délibéré : ce qui est en jeu est la réputation d'un domaine, qui ne se
+ * répare pas en redéployant.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export async function firstSendAt(
+  channel: "email" | "sms",
+  userId?: string | null
+): Promise<string | null> {
+  const sb = serviceClient();
+  if (sb) {
+    let q = sb
+      .from("tracking_messages")
+      .select("created_at")
+      .eq("channel", channel)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (userId) q = q.eq("user_id", userId);
+    const { data, error } = await q;
+    // ⚠ Une erreur ne rend PAS une date : elle rend `null`, donc le palier le
+    // plus bas. Renvoyer « maintenant » ouvrirait le plafond au maximum au
+    // moment précis où l'on ne sait plus rien.
+    if (error) return null;
+    const first = (data ?? [])[0] as { created_at?: string } | undefined;
+    return first?.created_at ?? null;
+  }
+  let min: string | null = null;
+  for (const r of memory.values()) {
+    if (r.channel !== channel) continue;
+    if (userId && r.userId !== userId) continue;
+    if (!min || r.createdAt < min) min = r.createdAt;
+  }
+  return min;
+}
+
+/**
  * Parmi `emails`, lesquels ont DÉJÀ été contactés depuis `sinceMs` (dédup
  * durable « qui a déjà été contacté »). Comparaison en minuscules.
  */

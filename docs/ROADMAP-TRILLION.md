@@ -3,7 +3,7 @@
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, cible,
 > sécurité) ; **ce fichier porte le PLAN et l'AVANCEMENT RÉEL**.
 >
-> Dernière révision : **2026-09-10** · **1 631 tests verts** · `tsc --noEmit`
+> Dernière révision : **2026-09-10** · **1 636 tests verts** · `tsc --noEmit`
 > propre · `next build` propre · 179 modules `lib/`, 148 fichiers de test,
 > 44 écrans.
 
@@ -100,6 +100,9 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
 - [x] **API v1**, **calendrier iCal**, **Notion (écriture)**, **Web Push**.
 - [x] **Cloisonnement serveur** (`lib/lecture-serveur.ts`) — lecture bornée et
       filtrée par propriétaire, appliquée aux cinq appelants.
+- [x] **Montée en charge d'envoi appliquée par le SERVEUR** (`/api/send`) —
+      elle ne coupait que la file d'un écran. 24 h glissantes, `force` ne
+      passe pas outre, toute panne de compteur retombe au palier le plus bas.
 
 ### La tenue (sécurité + données)
 - [x] **Dépôt rendu PRIVÉ** + données personnelles sorties dans
@@ -126,11 +129,9 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
       > commercial partagent une seule boîte. Une campagne qui prend des
       > plaintes fait tomber les mails d'inscription **en même temps**, sans
       > qu'aucun code change. Ce qui limite le risque : la montée en charge
-      > de `lib/email-ramp.ts` (5/jour la première semaine) — mais elle coupe
-      > l'**ÉCRAN** `/outbox`, **pas le serveur**. Le serveur ne connaît que
-      > `MAX_SENDS_PER_HOUR` (40/h). Le palier du jour tient donc par
-      > l'USAGE, pas par une contrainte : pendant les premières semaines,
-      > envoyer depuis la Boîte d'envoi et de nulle part ailleurs. Détail :
+      > de `lib/email-ramp.ts` (5/jour la première semaine), **branchée côté
+      > serveur le 10/09** — elle borne désormais tous les appelants, pas
+      > seulement l'écran, et `force` ne passe pas outre. Détail :
       > [`SMTP-SUPABASE-AMEN.md`](./SMTP-SUPABASE-AMEN.md).
 - [ ] **Retrouver le mot de passe de `contact@`** et le poser dans Supabase
       SMTP + `SMTP_*`. ⚠ Le réinitialiser coupe la réception le temps de
@@ -162,11 +163,6 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
       GLOBAUX et parlent maîtrise d'ouvrage. Ils se prononcent aussi sur
       Nuwacom, dont l'ICP est l'assurance. Dette assumée, testée, à lever
       quand un deuxième marché entre.
-- [ ] **La montée en charge d'envoi n'est pas appliquée côté serveur.**
-      `lib/email-ramp.ts` coupe la file de `/outbox` ; `/api/send` ne connaît
-      que le plafond horaire. Un autre appelant (revue de campagne,
-      newsletter, recette) peut dépasser le palier du jour. Devenu structurant
-      depuis que le transactionnel et la prospection partagent `contact@`.
 - [ ] **Attribution des apporteurs** — code de parrainage + capture à
       l'inscription.
 - [ ] **Historique Alpha CEO** + sondes pour les 5 pannes non surveillées.

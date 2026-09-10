@@ -48,24 +48,30 @@ dernier mètre, celui qui rapporte.
 
 | Garde | Où elle s'applique | Ce qu'elle borne |
 |---|---|---|
-| `lib/email-ramp.ts` — 5/jour la 1ʳᵉ semaine, +5/semaine, 40 au plafond | **l'ÉCRAN** `/outbox` : la file affichée est coupée à `ramp.today` | le chemin d'envoi normal, celui qu'on utilise tous les jours |
+| `lib/email-ramp.ts` — 5/jour la 1ʳᵉ semaine, +5/semaine, 40 au plafond | **l'ÉCRAN** `/outbox` (la file est coupée) **ET le SERVEUR** `/api/send` (429 au-delà) | tous les envois, quel que soit l'appelant |
 | `MAX_SENDS_PER_HOUR` (défaut **40/h**) | **le SERVEUR**, `/api/send` | un pic, quel que soit l'appelant |
 | Fenêtre de recontact (défaut **14 jours**) | le SERVEUR | le réenvoi à la même adresse |
 
-> ⚠⚠ **LA MONTÉE EN CHARGE N'EST PAS APPLIQUÉE CÔTÉ SERVEUR.** Elle coupe la
-> FILE de la Boîte d'envoi ; elle n'empêche pas un autre appelant de
-> `/api/send` (revue de campagne, newsletter, recette) de dépasser le palier
-> du jour. Le serveur, lui, ne connaît que le plafond horaire de 40.
+> ✅ **BRANCHÉE CÔTÉ SERVEUR LE 10/09/2026.** Elle ne l'était pas : elle
+> coupait la FILE de la Boîte d'envoi et rien d'autre, donc les trois autres
+> appelants de `/api/send` — revue de campagne, newsletter, recette —
+> pouvaient dépasser le palier du jour sans que rien ne le voie. Le garde qui
+> protège `contact@` tenait par l'USAGE, pas par une contrainte.
 >
-> Autrement dit : le garde qui protège la réputation de `contact@` tient
-> aujourd'hui par **l'usage**, pas par une contrainte. C'est le défaut le plus
-> fréquent de ce dépôt — une règle juste, branchée à un seul endroit — et il
-> est nommé ici plutôt que masqué, parce qu'écrire « la montée en charge
-> protège la boîte » sans cette réserve serait fabriquer une assurance.
+> **Deux conséquences pratiques à connaître avant de les rencontrer :**
 >
-> **La conséquence pratique** : pendant les premières semaines, envoyer depuis
-> la Boîte d'envoi et de nulle part ailleurs. Ce n'est pas une préférence de
-> confort, c'est le seul endroit où le palier du jour existe.
+> · Une **newsletter ou une revue de campagne** vers plus de destinataires que
+>   le palier du jour sera **coupée au palier**, avec un 429 qui dit le compte
+>   et la date du prochain palier. Ce n'est pas une panne — c'est exactement ce
+>   qui évite de griller la boîte en un envoi.
+> · Le serveur compte sur **24 h glissantes**, pas sur la journée civile. Un
+>   jour calendaire autoriserait cinq envois à 23h59 et cinq à 00h01 : dix
+>   messages en deux minutes depuis une boîte neuve, soit le schéma exact que
+>   les filtres cherchent.
+>
+> ⚠ `force` **ne passe pas outre**, comme pour le plafond horaire. `force`
+> arbitre des jugements — le score anti-spam, la fenêtre de recontact. La
+> réputation d'un domaine n'en est pas un.
 2. **La séparation reste au programme, elle est juste repoussée.** Le jour où
    `noreply@` existe : le transactionnel y retourne, et la prospection part
    d'un sous-domaine. Voir la parade détaillée plus bas — elle n'est pas

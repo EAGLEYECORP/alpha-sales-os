@@ -160,8 +160,10 @@ confirmer, ce sont vingt contacts brûlés et un post qu'on ne rejoue pas.
       > pratique.
       >
       > **Ce qui rend le risque tenable** : la montée en charge de
-      > `lib/email-ramp.ts` — 5 envois/jour la première semaine. La lever
-      > annule la décision. Et la séparation reste au programme :
+      > `lib/email-ramp.ts` — 5 envois/jour la première semaine, appliquée par
+      > le SERVEUR depuis le 10/09, donc sur tous les appelants. ⚠ Une
+      > newsletter plus large que le palier sera coupée au palier : c'est le
+      > comportement voulu. Et la séparation reste au programme :
       > [`SMTP-SUPABASE-AMEN.md`](./SMTP-SUPABASE-AMEN.md).
 - [ ] **Redéployer SANS cache.** Les `NEXT_PUBLIC_*` sont figées au moment du
       build : les poser ne suffit pas, il faut reconstruire.

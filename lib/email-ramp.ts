@@ -59,9 +59,26 @@ export function firstEmailDate(prospects: Prospect[]): string | null {
 
 const DAY = 86_400_000;
 
-export function emailRamp(prospects: Prospect[], now = new Date()): EmailRamp {
-  const first = firstEmailDate(prospects);
-
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE BARÈME, EXTRAIT POUR N'EXISTER QU'UNE FOIS.
+ *
+ * ⚠ IL ÉTAIT ENFERMÉ DANS `emailRamp`, QUI PREND DES `Prospect[]` — donc
+ * inatteignable depuis le serveur, qui n'a pas le CRM du navigateur.
+ *
+ * Conséquence, mesurée avant d'écrire ces lignes : la montée en charge coupait
+ * la FILE de l'écran `/outbox` et rien d'autre. `/api/send` ne connaissait que
+ * `MAX_SENDS_PER_HOUR` (40/h) — un autre appelant (revue de campagne,
+ * newsletter, recette) pouvait donc dépasser le palier du jour sans que rien
+ * ne le voie. Le palier tenait par l'USAGE, pas par une contrainte.
+ *
+ * Le refactor est minuscule et c'est tout l'intérêt : il n'y a pas deux
+ * barèmes à tenir d'accord. L'écran passe par les fiches, le serveur passe par
+ * la date du premier envoi consigné en base, et les deux traversent CETTE
+ * fonction.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function rampDepuisPremierEnvoi(first: string | null, now = new Date()): EmailRamp {
   if (!first) {
     return {
       today: RAMP_START,
@@ -92,6 +109,14 @@ export function emailRamp(prospects: Prospect[], now = new Date()): EmailRamp {
           RAMP_START + (weeks + 1) * RAMP_STEP > RAMP_CEILING ? RAMP_CEILING : RAMP_START + (weeks + 1) * RAMP_STEP
         }/jour) dans ${7 - (days % 7)} jour${7 - (days % 7) > 1 ? "s" : ""}.`,
   };
+}
+
+/**
+ * Le plafond du jour, vu depuis le NAVIGATEUR : la date du premier envoi se
+ * lit dans les timelines des fiches.
+ */
+export function emailRamp(prospects: Prospect[], now = new Date()): EmailRamp {
+  return rampDepuisPremierEnvoi(firstEmailDate(prospects), now);
 }
 
 /**

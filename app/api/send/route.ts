@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
-import { createTrackedEmail, countRecentSends, contactedEmails } from "@/lib/tracking";
+import { createTrackedEmail, countRecentSends, contactedEmails, firstSendAt } from "@/lib/tracking";
+import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
 import { getTenant } from "@/lib/tenant";
 import { accountTier } from "@/lib/stripe";
@@ -312,6 +313,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: `Limite d'envoi atteinte (${maxSendsPerHour()}/h, anti-spam). Réessaie plus tard.` },
         { status: 429, headers: { "retry-after": "300" } }
+      );
+    }
+
+    /**
+     * ─────────────────────────────────────────────────────────────────────
+     * LA MONTÉE EN CHARGE, APPLIQUÉE ICI — pas seulement dans un écran.
+     *
+     * ⚠ ELLE NE L'ÉTAIT PAS, ET LE TROU ÉTAIT STRUCTUREL.
+     *
+     * `lib/email-ramp.ts` coupait la FILE de `/outbox` : le chemin d'envoi
+     * normal était borné, et lui seul. Les trois autres appelants de cette
+     * route — revue de campagne, newsletter, recette — ne connaissaient que
+     * le plafond horaire (40/h). Le palier du jour tenait donc par l'USAGE,
+     * c'est-à-dire par la mémoire de celui qui envoie.
+     *
+     * C'est le défaut le plus fréquent de ce dépôt : une règle juste,
+     * branchée à un seul endroit. Il est devenu structurant le jour où le
+     * transactionnel et la prospection ont commencé à partager une seule
+     * boîte (décision du 10/09/2026) — une campagne qui grille l'adresse fait
+     * tomber les mails d'inscription avec elle.
+     *
+     * ══ POURQUOI 24 H GLISSANTES, ET PAS « AUJOURD'HUI » ══
+     *
+     * L'écran raisonne en jour calendaire : il masque les fiches déjà écrites
+     * dans la journée. Le serveur compte sur 24 h GLISSANTES, et ce n'est pas
+     * une divergence par négligence — c'est ce que mesure un fournisseur de
+     * messagerie. Un jour calendaire autorise cinq envois à 23h59 et cinq à
+     * 00h01 : dix messages en deux minutes depuis une boîte neuve, soit
+     * exactement le schéma que les filtres cherchent.
+     *
+     * ══ CE QUE `force` NE FAIT PAS ══
+     *
+     * ⚠ Il ne passe PAS outre, comme pour le plafond horaire. `force` arbitre
+     * des JUGEMENTS — le score anti-spam, la fenêtre de recontact. La
+     * réputation d'un domaine n'en est pas un : elle ne se répare pas en
+     * redéployant, et un opérateur pressé ne peut pas décider seul de la
+     * dépenser.
+     * ─────────────────────────────────────────────────────────────────────
+     */
+    const premierEnvoi = await firstSendAt("email", tenantId);
+    const ramp = rampDepuisPremierEnvoi(premierEnvoi);
+    const envoyes24h = await countRecentSends("email", 86_400_000, tenantId);
+    if (envoyes24h >= ramp.today) {
+      return NextResponse.json(
+        {
+          error:
+            `Palier du jour atteint : ${envoyes24h}/${ramp.today} e-mails sur 24 h. ${ramp.why} ` +
+            "Ce plafond protège la réputation de la boîte — il monte tout seul, semaine après semaine.",
+          ramp: { today: ramp.today, sent: envoyes24h, weeks: ramp.weeks, next: ramp.next, daysToNext: ramp.daysToNext },
+        },
+        { status: 429, headers: { "retry-after": "3600" } }
       );
     }
 
