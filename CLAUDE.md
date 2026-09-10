@@ -38,30 +38,21 @@ change l'identité + l'offre + la commission, **pas** les données.
 
 > ⚠ **ILS ÉTAIENT TROIS — 02/09/2026, l'accord ScintIA / Callflow est MORT.**
 > Le compte a été retiré du portefeuille. Son offre, elle, n'est pas morte : le
-> besoin (« un commerce qui ne décroche pas perd le client ») ne dépendait pas
-> de l'accord, et **Alpha Voice fait ce travail et il est à nous**. Elle est
-> donc revenue chez EAGLEYE sous ce nom, à **100 %** au lieu de 30 % + 10 %.
+> besoin ne dépendait pas de l'accord, et **Alpha Voice fait ce travail et il
+> est à nous** — revenu chez EAGLEYE à **100 %** au lieu de 30 % + 10 %.
 > · Le nom « Callflow » ne doit plus apparaître nulle part : c'était **leur**
->   marque, pas la nôtre. **`tests/marque-morte.test.ts` l'applique** — la
->   règle est restée écrite et non branchée pendant des semaines, et il en
->   restait dix-sept traces dont quatre visibles à l'écran. Ce que le test
->   interdit : la marque dans une **chaîne** (ce qui s'affiche, s'envoie ou se
->   stocke) et dans un **identifiant de doctrine**. Ce qu'il autorise : un
->   **commentaire** qui explique pourquoi une garde ou un repli existe —
->   effacer ces noms-là laisserait des décisions sans leur raison.
-> · Leur grille tarifaire (990 € + paliers 59/115/169/219/319) **a été
->   remplacée le même jour** par la nôtre : 990 € + **149 / 349**. Voir la
->   section « Tarifs Alpha Sales OS » plus bas, qui fait foi.
-> · Leur **cadence de 5 rappels sur 2 jours** a été **descendue à 3** le même
->   jour. Voir « Cadence de relance » plus bas, qui fait foi.
->
-> ⚠⚠ Les deux lignes ci-dessus disaient encore « leur grille reste en place,
-> provisoire » et « 5 rappels, c'est devenu un choix » — **alors que les deux
-> décisions avaient été prises le jour même, plus bas dans ce même fichier**.
-> Une doctrine qui se contredit d'un paragraphe à l'autre ne se lit pas en
-> entier : la session suivante attrape le premier des deux et applique le
-> périmé. Quand une décision tombe, elle se corrige PARTOUT, à commencer par
-> le récit de ce qu'elle remplace.
+>   marque. **`tests/marque-morte.test.ts` l'applique** — la règle est restée
+>   écrite et non branchée pendant des semaines. Interdit : la marque dans une
+>   **chaîne** (ce qui s'affiche, s'envoie, se stocke) et dans un **identifiant
+>   de doctrine**. Autorisé : un **commentaire** qui explique pourquoi une garde
+>   ou un repli existe — effacer ces noms-là laisserait des décisions sans leur
+>   raison.
+> · Leur grille (990 € + paliers 59/115/169/219/319) et leur cadence de
+>   5 rappels ont été **remplacées le même jour**. Les sections « Tarifs » et
+>   « Cadence de relance » plus bas font foi.
+> 📦 Ce que sa mort a laissé traîner huit jours — doctrine qui se contredit,
+> dix-sept traces de la marque, une famille de routage prescrite qui n'existait
+> plus : `docs/ANGLES-MORTS.md`.
 
 > ⚠ **Deux « 30 % » différents, ne jamais les confondre.**
 > · Le taux d'un compte = ce qui NOUS revient. Sur EAGLEYE c'est **100 %** :
@@ -165,48 +156,42 @@ promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois pr�
 > précis où quelqu'un vient chercher la règle.
 
 ### CE QUE LE SCRIPT A LE DROIT DE DIRE (`InterditFroid`, `lib/playbook.ts`)
-Chaque verticale déclare ses **interdits d'appel à froid** — *ce qu'on ne dit
-pas à ce métier-là*. Sur la maîtrise d'ouvrage, le premier est :
-« **Vous ratez des appels** » — faux ici, et ça prouve qu'on n'a pas compris le
-métier. Sa perte, ce sont des **acquéreurs déjà rencontrés que personne n'a
-rappelés**.
+Chaque verticale déclare ses **interdits d'appel à froid**. Sur la maîtrise
+d'ouvrage, le premier est : « **Vous ratez des appels** » — faux ici, et ça
+prouve qu'on n'a pas compris le métier. Sa perte, ce sont des **acquéreurs déjà
+rencontrés que personne n'a rappelés**.
 
 > ⚠⚠ **UNE RÈGLE ÉCRITE EN PROSE N'EST PAS UNE RÈGLE.** `forbidden` était un
-> tableau de chaînes : lisible par un humain, **invisible pour le code**. Or
-> `OFFRES["alpha-voice"].perte` demandait « combien d'appels vous n'arrivez pas
-> à prendre », et `buildVoiceScript` injecte les DEUX dans le même prompt —
-> l'interdit et sa violation, à trois lignes d'écart. Rien n'a bronché.
+> tableau de chaînes — invisible pour le code — pendant que le catalogue
+> d'offres faisait prononcer l'argument qu'il interdit, dans le MÊME prompt.
 > · Chaque interdit porte désormais, **dans la même entrée**, la `regle`
->   lisible ET son `motif` exécutable. Pas deux listes : deux listes divergent,
->   et c'est celle qu'on ne relit pas qui cesse de mordre.
+>   lisible ET son `motif` exécutable. Deux listes divergeraient, et c'est
+>   celle qu'on ne relit pas qui cesserait de mordre.
 > · `motif` est **absent** quand l'interdit relève du jugement (« citer son
->   permis à froid ») — en fabriquer un approximatif produirait des faux
->   positifs jusqu'à ce que le garde entier soit désarmé.
+>   permis à froid ») — un motif approximatif produit des faux positifs
+>   jusqu'à ce que le garde entier soit désarmé.
 > · `tests/playbook-interdits.test.ts` croise les interdits contre les CINQ
->   textes que l'offre fait dire, **et le script assemblé**.
+>   textes que l'offre fait dire, **et** le script assemblé.
 > ⚠ Le motif a dû être corrigé **deux fois par MUTATION, pas par relecture** :
-> il ne citait qu'une formulation littérale, quand la violation réelle était
-> une reformulation de bonne foi. **Un garde par motif n'attrape que ce qu'on a
-> déjà vu** — il se rouvre à chaque tournure neuve.
+> **un garde par motif n'attrape que ce qu'on a déjà vu**, il se rouvre à
+> chaque tournure neuve. 📦 Détail : `docs/ANGLES-MORTS.md`.
 
 ### LA VERTICALE SE LIT SUR LE TAG, PAS SUR LE TEXTE (`verticalForProspect`)
 Ordre : **tag → texte → secteur**. Un tag posé par l'importeur est
 DÉTERMINISTE ; un mot dans une note est une devinette qui se trompe en silence.
 
 > ⚠ Mesuré : les huit fiches de maîtrise d'ouvrage tombaient toutes sur la
-> verticale **AUTO-ÉCOLE**. Le mot « Permis » de leurs notes la déclenchait, et
-> son verrou n'excluait que « permis DE construire » — jamais « Permis PC 069…
-> », qui est ce que `notesDepuisPermis` écrit lui-même. En production, la file
-> du matin aurait servi le script du moniteur de conduite à des directeurs de
-> programmes. Aucune erreur, aucun log.
-> · Le motif auto-école exige maintenant un **contexte de conduite** au lieu
->   d'énumérer les permis d'urbanisme à exclure : une liste d'exceptions est
->   toujours en retard sur la façon dont les gens écrivent.
+> verticale **AUTO-ÉCOLE** — le mot « Permis » de leurs notes la déclenchait.
+> En production, la file du matin aurait servi le script du moniteur de
+> conduite à des directeurs de programmes. Aucune erreur, aucun log.
+> · Un motif d'appartenance exige un **contexte**, jamais une liste
+>   d'exceptions : elle est toujours en retard sur la façon dont les gens
+>   écrivent.
 > · « permis » NU est **ambigu** et ne rattache à rien. Les deux erreurs ne
 >   coûtent pas pareil — rater une auto-école coûte un rattachement, servir son
 >   script à un promoteur coûte l'appel et la crédibilité.
-> · La règle existait déjà pour le Cerveau (« verticale identifiée par tag,
->   jamais par ressemblance de mots ») : elle n'était branchée qu'à un endroit.
+> · La règle existait déjà pour le Cerveau (« verticale par tag, jamais par
+>   ressemblance de mots ») : elle n'était branchée qu'à un endroit.
 
 > ⚠ **L'ICP a déménagé** de `IdentiteCompte` vers `AccountCommercial`.
 > `identite` n'existe que pour les comptes PARTENAIRES (la marque qu'on
@@ -231,14 +216,12 @@ une cible qu'on ne prospecte plus.**
 - **Aucun montant recopié** : les prix viennent de `lib/offres-publiques.ts`.
 
 > ⚠ **La preuve sociale fabriquée passait par des NOMS, pas par des
-> possessifs.** L'ancien jeu portait une chaîne de recommandation complète —
-> une menuiserie « signée », une fiche disant « même formule que Charbonnier
-> (preuve sociale directe) », un concurrent annonçant « Preuve : Paddy's Corner
-> nous recontactera » — et le générateur d'aimants dictait quatre études de cas
-> chiffrées (« +40 réservations/mois »). `tests/preuve-sociale.test.ts` ne les
-> voyait pas : son motif cherche « nos clients » / « qu'on équipe », et une
-> **référence nommée n'en porte aucun**. C'est la forme la plus convaincante
-> des trois, et la seule qu'aucun garde ne tenait.
+> possessifs.** L'ancien jeu portait une chaîne de recommandation complète, et
+> le générateur d'aimants dictait quatre études de cas chiffrées.
+> `tests/preuve-sociale.test.ts` ne les voyait pas : son motif cherche « nos
+> clients » / « qu'on équipe », et une **référence nommée n'en porte aucun**.
+> C'est la forme la plus convaincante des trois, et la seule qu'aucun garde ne
+> tenait. 📦 `docs/ANGLES-MORTS.md`.
 
 ## Tarifs Alpha Sales OS (à refléter sur le site)
 - **10 000 € VIP** (offre haute), OU **30 % + frais de setup** (local / cloud)
@@ -358,45 +341,24 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   > que `buildVoiceScript` ÉCRIT et ce qu'`auditScript` EXIGE doivent poser la
   > même question, sinon l'un des deux ment.
 - **Cadence de relance** : après le 1er appel sans réponse → **3 rappels sur
-  2 jours** (`[3, 24, 32]` h : même jour plus tard · lendemain matin ·
-  lendemain après-midi — trois CRÉNEAUX différents, jamais deux fois la même
-  heure).
-  > ⚠ **Il y en avait CINQ, imposés par le revendeur disparu et jamais
-  > mesurés. Descendus à 3 le 02/09/2026.** Trois raisons : (1) 4 sollicitations
-  > = le plafond du décret, premier appel compris — à 3 rappels **le régime à
-  > deux vitesses SIREN/pas-SIREN disparaît** et `plafondRappels` redevient un
-  > filet qu'on ne touche jamais ; (2) les tentatives 4 et 5 ne sont pas
-  > mesurées et coûtent des minutes et de la réputation réelles ; (3) Master
-  > Rappel dit déjà « 3+ touches ignorées → changer de canal » — cinq appels
-  > sur une ligne muette contredisaient notre propre doctrine.
-  > **Remonter le tableau réactive le plafond sur les cibles sans SIREN**, et
-  > c'est testé : le filet ne s'enlève pas avec le chiffre. Dès qu'il répond, la cadence **s'arrête** et le pipeline est mis à
-  jour — mais l'humain n'est appelé que sur un OUI.
-  > ⚠ **Les rappels sont CALÉS sur des fenêtres d'appel ouvertes**
-  > (`prochaineFenetreOuverte`, `lib/call-cadence.ts`). Ils ne l'étaient pas :
-  > les offsets se calculaient en heures sèches sans jamais consulter
-  > `fenetreOuverte`, alors que ce module sait depuis toujours que 12h-14h est
-  > le plancher du décroché. MESURÉ : premier appel lundi 9h30 → rappel n°1 à
-  > 12h30 ; premier appel JEUDI 16h → 4 sur 5 hors fenêtre, dont un à MINUIT ;
-  > premier appel **VENDREDI → 5 sur 5 brûlés**, trois le week-end.
-  > ⚠⚠ Et un **espacement minimum de 3 h**, ajouté après coup parce que le
-  > calage seul créait pire : un vendredi 17h renvoyait les cinq rappels au
-  > lundi matin entre 9h et 10h. Corriger « au bon moment » avait cassé « de la
-  > bonne manière » — les deux règles sont distinctes et doivent coexister.
+  2 jours** (`[3, 24, 32]` h : même jour plus tard · lendemain matin · lendemain
+  après-midi — trois CRÉNEAUX différents, jamais deux fois la même heure). Dès
+  qu'il répond, la cadence **s'arrête** ; l'humain n'est appelé que sur un OUI.
   > ⚠ **Le décret n° 2022-1313 plafonne le démarchage à 4 sollicitations par
   > consommateur sur 30 jours glissants.** Il vise le B2C, mais une liste
-  > terrain est MÊLÉE et c'est nous qui portons le risque. La cadence actuelle
-  > fait **4 contacts** (le premier appel + 3 rappels) : elle est exactement au
-  > plafond, jamais au-dessus. `plafondRappels` (`lib/call-cadence.ts`) reste
-  > armé et arbitre **SIREN connu → cadence entière ; pas de SIREN → 4** —
-  > c'est un filet qui ne mord plus, et c'est l'état qu'on veut.
-  > ⚠⚠ **Ce paragraphe décrivait encore les 5 rappels** (« 6 contacts en
-  > 2 jours », « il n'y a plus de raison de ne pas le baisser ») alors que la
-  > baisse à 3 était décidée douze lignes plus haut, le même jour. Remonter le
-  > tableau à 5 fait repasser le total à 6 et **réarme le régime à deux
-  > vitesses** : le filet se remet à mordre sur les cibles sans SIREN, et c'est
-  > testé. Le code ne tranche pas le choix commercial ; il empêche seulement
-  > une cadence longue de partir en silence sur une cible à risque.
+  > terrain est MÊLÉE et c'est nous qui portons le risque. La cadence fait
+  > **exactement 4 contacts** (1er appel + 3 rappels) : au plafond, jamais
+  > au-dessus. `plafondRappels` reste armé (SIREN connu → cadence entière ;
+  > pas de SIREN → 4) — un filet qui ne mord plus, et c'est l'état qu'on veut.
+  > **Remonter le tableau réactive ce régime à deux vitesses**, et c'est testé :
+  > le filet ne s'enlève pas avec le chiffre.
+  > ⚠ **Les rappels sont CALÉS sur des fenêtres d'appel ouvertes**
+  > (`prochaineFenetreOuverte`), **et espacés d'au moins 3 h**. Deux règles
+  > DISTINCTES qui doivent coexister : le calage seul renvoyait cinq rappels au
+  > lundi matin entre 9h et 10h — corriger « au bon moment » avait cassé « de la
+  > bonne manière ».
+  > 📦 Le récit complet (5 rappels non mesurés, les relevés jeudi/vendredi, la
+  > doctrine qui se contredisait) : `docs/ANGLES-MORTS.md`.
 
 ## L'OFFRE ALPHA VOICE (`lib/offre-alpha-voice.ts` + `docs/OFFRE-ALPHA-VOICE.md`)
 Construite sur l'équation de valeur — **Résultat × Probabilité ÷ (Délai ×
@@ -693,23 +655,20 @@ ordi, sans qu'aucune machine reste allumée chez nous.
   > demandent trois gestes opposés.
 - **OÙ TOURNE L'AGENT VOCAL — décidé le 09/09/2026.** `voice/agent.py` reste
   **en LOCAL chez nous** ; un VPS ne se monte que **pour les clients**.
-  > ⚠⚠ **CE CHOIX A UNE CONSÉQUENCE QU'IL FAUT TENIR : un appel composé sans
-  > agent vivant sonne dans le VIDE.** Le dispatch LiveKit se crée, la ligne
-  > SIP compose, le prospect décroche — et personne ne parle. C'est pire que
-  > de ne pas appeler : ça brûle la fiche, la réputation du numéro et des
-  > minutes Telnyx réelles, et `/api/voice/call` rend `dispatched: true` dans
-  > les deux cas. Tant que l'autopilote est armé et que la machine est
-  > éteinte, le cron compose toutes les 10 minutes dans le silence.
-  > **CE TROU EST REFERMÉ** (`lib/presence-agent.ts` + migration 005) :
-  > l'agent bat toutes les 30 s, et le tick REFUSE de composer sans battement
-  > récent. ⚠ L'inconnu vaut REFUS — table absente, base injoignable, agent
-  > jamais lancé : on ne compose pas. Ici, contrairement aux écrans de mesure,
-  > `null` ne se contente pas de se dire, il bloque : ne pas appeler coûte un
-  > créneau, appeler dans le vide coûte une fiche, un numéro et de l'argent.
-  > ⚠⚠ La garde ne s'applique QU'À L'EXÉCUTION : `dryRun` continue de rendre
-  > ce qu'il aurait fait, sinon on perd l'outil qui explique pourquoi rien ne
-  > part. Et un battement prouve qu'un PROCESSUS TOURNE, pas qu'il sait parler
-  > — une clé TTS expirée laisserait le voyant vert.
+  > ⚠ **La conséquence à tenir** : un appel composé sans agent vivant sonne dans
+  > le VIDE — la ligne compose, le prospect décroche, personne ne parle. C'est
+  > PIRE que de ne pas appeler (fiche brûlée, réputation du numéro, minutes
+  > facturées) et `/api/voice/call` rend `dispatched: true` dans les deux cas.
+  > **Refermé** par `lib/presence-agent.ts` + migration 005 : l'agent bat toutes
+  > les 30 s, le tick REFUSE de composer sans battement récent.
+  > · **L'inconnu vaut REFUS.** Ici, contrairement aux écrans de mesure, `null`
+  >   ne se contente pas de se dire — il bloque. Ne pas appeler coûte un
+  >   créneau ; appeler dans le vide coûte une fiche, un numéro et de l'argent.
+  > · La garde ne s'applique **qu'à l'EXÉCUTION** : `dryRun` continue de rendre
+  >   ce qu'il aurait fait, sinon on perd l'outil qui explique pourquoi rien ne
+  >   part.
+  > · Un battement prouve qu'un **processus tourne**, pas qu'il sait parler —
+  >   une clé TTS expirée laisserait le voyant vert.
 - **Stripe Connect : formule EXPRESS** (décidé le 09/09/2026). On garde la main
   sur le parcours ; le client n'a pas de tableau de bord Stripe à lui.
 - **`/ceo`** (`lib/alpha-ceo.ts` + `lib/ceo-sondes.ts`) diagnostique tout ça.
@@ -780,9 +739,9 @@ définition de chacune** — c'est tout le sujet.
 > de composition. `.card .card` et `.card .panel` perdent leur flou d'office.
 
 > ⚠ **Le clair ne redéfinit PAS le matériau, il reteinte les jetons
-> `--glass-*`.** `html.light .card` existait et redéclarait ombre + bordure :
-> le sombre a reçu le flou et la saturation, le clair **ne les a jamais eus**.
-> Deux définitions du même matériau = deux vérités, et les deux « marchaient ».
+> `--glass-*`.** `html.light .card` existait et redéclarait ombre + bordure : le
+> sombre a reçu le flou et la saturation, le clair **ne les a jamais eus**. Deux
+> définitions du même matériau = deux vérités, et les deux « marchaient ».
 
 > ⚠ **Une carte sans flou doit devenir OPAQUE, sinon elle est illisible** — le
 > texte se pose sur le dégradé et le grain de la page. Deux cas réels : le
@@ -822,13 +781,9 @@ démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiant
 > maintenant, et refuse une entrée orpheline.
 
 > ⚠⚠ **LE MODE SOLO ÉTAIT LA DERNIÈRE PORTE QUI ÉCHAPPAIT À L'INVARIANT.**
-> `resoudreDroits` rendait `DROIT_SOLO` (donc **maître**, donc TOUT ouvert) dès
-> que les comptes n'étaient pas configurés. Juste pour un outil local ; sur une
-> production joignable, ça voulait dire **quiconque connaît l'URL est maître** —
-> `/payouts`, `/offre`, le portefeuille, `/api/send` depuis notre domaine,
-> `/api/voice/call` sur nos minutes. Rien ne l'annonçait : l'app avait le même
-> air. Ce n'était pas une config manquante, c'était un défaut de conception —
-> il n'existait aucun endroit qui distinguait « sur ma machine » de « en ligne ».
+> `resoudreDroits` rendait `DROIT_SOLO` — donc **maître**, donc TOUT ouvert —
+> dès que les comptes n'étaient pas configurés. Sur une production joignable :
+> **quiconque connaît l'URL est maître**.
 > · `deploiementSansSerrure()` = **production ET aucun compte ET aucun
 >   `SITE_PASSWORD`**. Les trois ensemble, jamais moins. Un mot de passe EST une
 >   serrure (le middleware mure déjà tout) ; en dev, le solo reste intact.
@@ -837,6 +792,8 @@ démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiant
 >   une faille. L'app reste utilisable, plus personne n'est maître.
 > · `SITE_PASSWORD=""` (variable créée mais pas remplie, ça arrive) n'est PAS
 >   une serrure — d'où le `.trim()`, et un test qui le vérifie.
+> 📦 Pourquoi ce n'était pas une config manquante mais un défaut de conception :
+> `docs/ANGLES-MORTS.md`.
 
 **L'INVARIANT** : *on ne descend jamais sous le gratuit, on ne monte jamais
 au-dessus sans une ligne prouvée en base.*
@@ -860,23 +817,19 @@ on doit encore pouvoir entrer chez nous.
 > savoir qu'elle existe, et la sécurité ne dépend jamais de l'écran.
 
 ## ⚠ AUCUNE DONNÉE RÉELLE DANS LE DÉPÔT (`tests/donnees-reelles.test.ts`)
-**Le dépôt a été rendu public sur GitHub le 09/09/2026, et il contenait des
-données personnelles de tiers.** Seize fiches prospects réelles avec raison
-sociale, ville, téléphone, étape de vente, montant du deal et notes d'appel —
-dont au moins **une personne physique identifiée** : nom complet, mobile
-personnel, poste, employeur, et la note qu'elle avait posé un lapin. Plus une
-vingtaine d'entreprises lyonnaises avec leurs numéros.
+**Le dépôt a été rendu public le 09/09/2026, et il contenait des données
+personnelles de tiers** — seize fiches prospects réelles, dont une personne
+physique identifiée avec son mobile personnel.
 
-> ⚠ **Trois gardes existaient, et les trois ont fait leur travail.**
-> `tests/vitrine-fuite` tenait ces modules hors du bundle, `/api/pipeline` est
-> réservé au maître, `store.ts` avait été purgé de son `require()`. Toutes
+> ⚠ **Trois gardes existaient, et les trois ont fait leur travail.** Toutes
 > empêchaient la donnée d'atteindre un **navigateur**. Aucune n'empêchait le
 > **fichier** d'être lu — et un dépôt public ne se visite pas, il se `clone`.
 > Le modèle de menace entier supposait un attaquant qui passe par le produit.
 
-- Les fiches vivent dans **`donnees-privees/`**, ignoré par git. `lib/pipeline-juillet.ts`
-  et `lib/prospects-icp.ts` sont des **chargeurs** : absent ⇒ vide, jamais une
-  exception (une CI ou un déploiement neuf n'a pas ce dossier).
+- Les fiches vivent dans **`donnees-privees/`**, ignoré par git.
+  `lib/pipeline-juillet.ts` et `lib/prospects-icp.ts` sont des **chargeurs** :
+  absent ⇒ vide, jamais une exception (une CI ou un déploiement neuf n'a pas ce
+  dossier).
 - Ce qui RESTE dans le code : les **chiffres agrégés** (`JUILLET_REEL` — 78
   prospects, 132 appels, 6 RDV, 0 gagné). Ils n'identifient personne et ce sont
   eux dont la doctrine se sert. Les effacer par excès de prudence détruirait la
@@ -884,20 +837,19 @@ vingtaine d'entreprises lyonnaises avec leurs numéros.
 - **Tout numéro du dépôt est dans une plage ARCEP réservée à la fiction**
   (décision 2018-0881) : `0199 00` · `0261 91` · `0353 01` · `0465 71` ·
   `0536 49` · `0639 98`. Ni appelables, ni attribuables.
-  > ⚠ **C'est le jeu de démo écrit à la main qui s'est fait attraper**, pas les
-  > fiches générées : `lib/demo-icp.ts` était déjà sur la plage fiction, `seed.ts`
-  > portait des numéros lyonnais *parfaitement valides* qui peuvent sonner chez
-  > quelqu'un. Corrigé d'un côté, oublié de l'autre — la garde est structurelle
-  > pour que ça ne se reproduise pas.
-  > · **Une seule exception, nommée** : `+33 4 51 22 21 82`, NOTRE ligne
-  >   entrante Alpha Voice. Elle existe pour être appelée. Mais elle nous est
-  >   facturée à la minute : un dépôt public l'expose à l'abus.
+  > **Une seule exception, nommée** : `+33 4 51 22 21 82`, NOTRE ligne entrante
+  > Alpha Voice. Elle existe pour être appelée — mais elle nous est facturée à
+  > la minute : un dépôt public l'expose à l'abus.
 - La garde cherche la **FORME** d'un numéro, jamais une liste de numéros connus
   — une liste de ce qu'il faut cacher serait une copie de ce qu'on cache.
 
 > ⚠⚠ **Rendre le dépôt privé n'annule rien.** L'historique git garde tout, les
 > forks et clones existants aussi, et les caches d'indexation. Corriger `HEAD`
 > arrête l'hémorragie ; ça ne rappelle pas ce qui est sorti.
+
+> 📦 Le détail de ce qui a fuité, et pourquoi c'est le jeu de démo ÉCRIT À LA
+> MAIN qui s'est fait attraper sur les numéros (pas les fiches générées) :
+> `docs/ANGLES-MORTS.md`.
 
 ## Sécurité — non négociable
 - L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).

@@ -387,3 +387,143 @@ Ces deux-là sont des projets à part entière : à prioriser quand le SaaS tour
 2. **Légal** (CGV/DPA/confidentialité) — débloque la vente.
 3. **Lancer en modèle (a)** une instance par client.
 4. Puis produit : compteur coût → cache IA → agent voix coach → modes mobile.
+
+
+---
+
+# 📦 POST-MORTEMS DÉPLACÉS DE `CLAUDE.md` — 10/09/2026
+
+> **Pourquoi ce déplacement.** `CLAUDE.md` se charge à CHAQUE session et porte
+> la doctrine *vivante*. Il avait atteint **996 lignes / 67 Ko** — le volume
+> exact où l'on cesse de lire un fichier en entier, c'est-à-dire le mode de
+> panne que ce fichier dénonce lui-même à propos des autres.
+>
+> **Le tri appliqué, et il est strict :**
+> · **RESTE dans `CLAUDE.md`** — la règle, plus la raison courte qui empêche de
+>   refaire l'erreur. Une règle sans sa raison se fait défaire par la session
+>   suivante qui la prend pour une préférence.
+> · **PART ici** — le RÉCIT : les mesures, les états intermédiaires, et les
+>   méta-corrections (« ce paragraphe disait encore X ») qui n'ont plus d'objet
+>   une fois le paragraphe corrigé.
+>
+> ⚠ Rien n'a été SUPPRIMÉ. Chaque bloc déplacé laisse un renvoi vers ici, parce
+> que la moitié de la valeur de ces post-mortems est de rappeler que l'erreur a
+> vraiment eu lieu — pas qu'elle était théoriquement possible.
+
+---
+
+## La cadence de relance — de 5 rappels à 3, et les deux corrections qui ont suivi
+
+*(Règle vivante : `CLAUDE.md` → Alpha Voice → « Cadence de relance ».)*
+
+**Il y en avait CINQ**, imposés par le revendeur disparu et **jamais mesurés**.
+Descendus à 3 le 02/09/2026, pour trois raisons :
+
+1. **4 sollicitations = le plafond du décret n° 2022-1313**, premier appel
+   compris. À 3 rappels, le régime à deux vitesses SIREN / pas-SIREN
+   **disparaît** et `plafondRappels` redevient un filet qu'on ne touche jamais.
+2. Les tentatives 4 et 5 ne sont pas mesurées et coûtent des minutes et de la
+   réputation **réelles**. On ne dépense pas du volume pour vérifier une
+   intuition — c'est à ça que servent les paliers.
+3. Master Rappel dit déjà « 3+ touches ignorées → changer de canal ». Cinq
+   appels sur une ligne muette contredisaient notre propre doctrine.
+
+### Les rappels ne regardaient pas l'heure qu'ils proposaient
+
+Les offsets se calculaient en heures sèches sans jamais consulter
+`fenetreOuverte`, alors que ce module sait depuis toujours que 12h–14h est le
+plancher du décroché. **Mesuré, pas supposé :**
+
+| Premier appel | Ce que la cadence proposait |
+|---|---|
+| lundi 9h30 | rappel n°1 à **12h30** — l'heure exacte à éviter |
+| **jeudi 16h** | 4 rappels sur 5 hors fenêtre, **dont un à MINUIT** |
+| **vendredi** | **5 sur 5 brûlés**, dont trois le week-end |
+
+### Puis le calage seul a créé pire
+
+Un vendredi 17h renvoyait les cinq rappels au lundi matin **entre 9h et 10h** :
+cinq appels à la même personne en une heure. Corriger « au bon moment » avait
+cassé « de la bonne manière ». D'où l'**espacement minimum de 3 h**, ajouté
+après coup — les deux règles sont distinctes et doivent coexister.
+
+### Et le paragraphe de doctrine, lui, décrivait encore les 5 rappels
+
+Il annonçait « 6 contacts en 2 jours » et « il n'y a plus de raison de ne pas le
+baisser » alors que **la baisse à 3 était décidée douze lignes plus haut, le
+même jour**. Corrigé le 10/09. C'est le motif que `CLAUDE.md` nomme désormais en
+tête : quand une décision tombe, elle se corrige PARTOUT, à commencer par le
+récit de ce qu'elle remplace.
+
+---
+
+## L'accord revendeur — ce que sa mort a laissé derrière
+
+*(Règle vivante : `CLAUDE.md` → « Les 2 comptes ».)*
+
+L'accord ScintIA / Callflow est mort le 02/09/2026. Le compte a été retiré du
+portefeuille, mais **la doctrine a mis huit jours à finir de le refléter** :
+
+- Deux lignes disaient encore « leur grille reste en place, provisoire » et
+  « 5 rappels, c'est devenu un choix » — **alors que les deux décisions avaient
+  été prises le jour même, plus bas dans le même fichier**. Une doctrine qui se
+  contredit d'un paragraphe à l'autre ne se lit pas en entier : la session
+  suivante attrape le premier des deux et applique le périmé.
+- La marque restait dans **dix-sept traces, dont quatre visibles à l'écran** —
+  la règle « ce nom ne doit plus apparaître » était écrite et **non branchée**
+  depuis des semaines. `tests/marque-morte.test.ts` l'applique depuis.
+- La doc prescrivait une **famille de routage qui n'existait plus** (le code
+  avait déjà été renommé `alpha-voice`). Quiconque l'aurait recopiée aurait
+  créé une offre que `validerOffre` refuse. Une doc fausse coûte plus cher
+  qu'une doc absente.
+- La garde de marque partenaire s'armait sur l'**OFFRE** et non sur le
+  **COMPTE** : laissée en l'état, elle aurait interdit de citer EAGLEYE sur
+  NOTRE propre appel, et n'aurait rien gardé sur un appel Nuwacom.
+
+---
+
+## Le mode solo — « quiconque connaît l'URL est maître »
+
+*(Règle vivante : `CLAUDE.md` → FREEMIUM → `deploiementSansSerrure`.)*
+
+`resoudreDroits` rendait `DROIT_SOLO` — donc **maître**, donc TOUT ouvert — dès
+que les comptes n'étaient pas configurés. Pensé pour un outil local ; sur une
+production joignable, ça voulait dire que **n'importe qui connaissant l'URL**
+avait `/payouts`, `/offre`, le portefeuille, `/api/send` depuis notre domaine et
+`/api/voice/call` sur nos minutes.
+
+Rien ne l'annonçait : l'app avait exactement le même air. Ce n'était pas une
+config manquante, c'était un **défaut de conception** — il n'existait aucun
+endroit qui distinguait « sur ma machine » de « en ligne ».
+
+Ce qui a été refusé en corrigeant : **couper le site**. Une page blanche sur une
+prod en ligne est une panne, et on n'en crée pas une pour corriger une faille.
+On retombe au socle gratuit : l'app reste utilisable, plus personne n'est maître.
+
+---
+
+## La fuite de données personnelles — trois gardes qui ont fait leur travail
+
+*(Règle vivante : `CLAUDE.md` → « AUCUNE DONNÉE RÉELLE DANS LE DÉPÔT ».)*
+
+Le dépôt a été rendu public le 09/09/2026 avec **seize fiches prospects
+réelles** : raison sociale, ville, téléphone, étape de vente, montant du deal,
+notes d'appel — dont au moins **une personne physique identifiée** (nom complet,
+mobile personnel, poste, employeur, et la note qu'elle avait posé un lapin).
+Plus une vingtaine d'entreprises lyonnaises avec leurs numéros.
+
+**Trois gardes existaient, et les trois ont fait leur travail** :
+`tests/vitrine-fuite` tenait ces modules hors du bundle, `/api/pipeline` est
+réservé au maître, `store.ts` avait été purgé de son `require()`. Toutes
+empêchaient la donnée d'atteindre un **navigateur**. Aucune n'empêchait le
+**fichier** d'être lu — et un dépôt public ne se visite pas, il se `clone`.
+**Le modèle de menace entier supposait un attaquant qui passe par le produit.**
+
+Et c'est le jeu de démo **écrit à la main** qui s'est fait attraper sur les
+numéros, pas les fiches générées : `lib/demo-icp.ts` était déjà sur la plage
+ARCEP de fiction, `seed.ts` portait des numéros lyonnais *parfaitement valides*
+qui peuvent sonner chez quelqu'un. Corrigé d'un côté, oublié de l'autre.
+
+> ⚠⚠ **Rendre le dépôt privé n'annule rien.** L'historique git garde tout, les
+> forks et clones existants aussi, et les caches d'indexation. Corriger `HEAD`
+> arrête l'hémorragie ; ça ne rappelle pas ce qui est sorti.
