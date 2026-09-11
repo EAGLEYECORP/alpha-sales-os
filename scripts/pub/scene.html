@@ -1,13 +1,21 @@
 <!doctype html>
 <meta charset="utf-8">
-<style>html,body{margin:0;background:#0A0807}canvas{display:block}</style>
+<style>
+/* ⚠ LA TYPO D'AFFICHAGE DU PRODUIT EST « Bricolage Grotesque » — absente de
+   tout conteneur de rendu. Archivo Black en est le plus proche disponible :
+   même famille (grotesque très grasse), même présence à grande taille.
+   Le repli suit la pile réelle du produit (tailwind.config.ts) plutôt qu'un
+   sans-serif générique : si la vraie police est là un jour, elle gagne. */
+@font-face{font-family:"Archivo Black";src:url("archivo-black-400.woff2") format("woff2");font-weight:400;font-display:block}
+html,body{margin:0;background:#0A0807}canvas{display:block}
+</style>
 <canvas id="c" width="1080" height="1920"></canvas>
 <script>
 // Palette RÉELLE du produit (app/globals.css) — rien d'inventé.
 const INK="#0A0807", INK8="#201B15", PAPER="#F3EEE4", DIM="#A79F92",
       BRONZE="#E8C98A", RED="#E5564E";
 const W=1080, H=1920, FPS=30, DUR=25.6;
-const DISPLAY='"Liberation Sans", "DejaVu Sans", sans-serif';
+const DISPLAY='"Bricolage Grotesque", "Archivo Black", "Montserrat ExtraBold", "Liberation Sans", sans-serif';
 const ctx = document.getElementById("c").getContext("2d");
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -107,5 +115,8 @@ function draw(T){
   }
 }
 window.__draw=draw; window.__FPS=FPS; window.__DUR=DUR;
-draw(0);
+// ⚠ On ATTEND la police avant de dessiner. Sans ça, les premières images
+// sortent en repli — et la toute première est l'image de couverture, celle
+// que tout le monde voit avant de lancer la vidéo.
+window.__prete = document.fonts.ready.then(() => { draw(0); return true; });
 </script>

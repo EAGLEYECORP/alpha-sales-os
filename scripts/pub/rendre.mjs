@@ -40,6 +40,37 @@ const nav = await chromium.launch({
 const page = await nav.newPage({ viewport: { width: 1080, height: 1920 } });
 await page.goto("file://" + join(ici, "scene.html"));
 
+// ⚠ ATTENDRE LA POLICE. `goto` rend la main dès que le DOM est prêt, pas quand
+// la woff2 est décodée : sans cette attente, les premières images sortent dans
+// la police de repli — et la toute première est l'image de couverture.
+await page.evaluate(() => window.__prete ?? document.fonts.ready);
+
+/**
+ * ⚠⚠ LA POLICE SE VÉRIFIE, ELLE NE SE SUPPOSE PAS — et l'échec est BRUYANT.
+ *
+ * `scene.html` charge `archivo-black-400.woff2` par un chemin relatif. Le
+ * fichier n'est PAS dans le dépôt (binaire, et il vit déjà dans le kit de
+ * polices de higgsedit). S'il manque, le navigateur ne proteste pas : il
+ * retombe sur la police suivante de la pile et dessine quand même.
+ *
+ * C'est le pire mode de panne possible ici — la vidéo sort, elle est valide,
+ * elle n'est simplement pas à la bonne typo, et ça ne se voit que si on
+ * compare. On refuse donc de rendre plutôt que de livrer une pub en repli.
+ *
+ * Où le trouver : `/opt/fable/fonts-kit/archivo-black-400.woff2` (sandbox
+ * Higgsfield), ou n'importe quelle distribution OFL d'Archivo Black.
+ */
+const policeOk = await page.evaluate(() => document.fonts.check('bold 100px "Archivo Black"'));
+if (!policeOk && !process.env.PUB_ACCEPTE_REPLI) {
+  await nav.close();
+  throw new Error(
+    "Archivo Black n'est pas chargée : place `archivo-black-400.woff2` à côté de scene.html.\n" +
+      "Rendre sans elle produit une vidéo valide dans la MAUVAISE typo, et rien ne le signale.\n" +
+      "Pour passer outre en connaissance de cause : PUB_ACCEPTE_REPLI=1."
+  );
+}
+console.log("police d'affichage : " + (policeOk ? "Archivo Black" : "⚠ REPLI ASSUMÉ"));
+
 const FPS = await page.evaluate(() => window.__FPS);
 const DUR = await page.evaluate(() => window.__DUR);
 const total = Math.round(FPS * DUR);
