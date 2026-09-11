@@ -15,6 +15,10 @@ html,body{margin:0;background:#0A0807}canvas{display:block}
 const INK="#0A0807", INK8="#201B15", PAPER="#F3EEE4", DIM="#A79F92",
       BRONZE="#E8C98A", RED="#E5564E";
 const W=1080, H=1920, FPS=30, DUR=25.6;
+// ⚠ LA MARGE EST EXPORTÉE, elle ne se recopie pas. Le rendu vérifie qu'aucun
+// texte ne sort de la boîte utile ; s'il portait sa propre valeur, les deux
+// définitions dériveraient et c'est le garde qui cesserait de mordre.
+const M=100;
 const DISPLAY='"Bricolage Grotesque", "Archivo Black", "Montserrat ExtraBold", "Liberation Sans", sans-serif';
 const ctx = document.getElementById("c").getContext("2d");
 
@@ -61,13 +65,12 @@ function plaque(x,y,w,h,alpha,dx,label){
 
 function draw(T){
   ctx.fillStyle=INK; ctx.fillRect(0,0,W,H);
-  const M=100;
 
   // ── 1 · L'ANCRAGE VÉRIFIABLE — une durée publique et datée ───────────
   if(T<3.6){const t=T;
     bar(M,700,120,6,BRONZE,easeOut(t/0.5),1);
     let f=fadeUp(t,0.15); lines("Votre permis\nest affiché",M,750,104,PAPER,1.12,f.a,f.dy);
-    f=fadeUp(t,0.9); lines("depuis 4 mois.",M,1020,126,BRONZE,1.1,f.a,f.dy);
+    f=fadeUp(t,0.9); lines("depuis 4 mois.",M,1020,110,BRONZE,1.1,f.a,f.dy);
   }
 
   // ── 2 · LE RENVERSEMENT — on barre le cliché avant d'y être rangé ────
@@ -80,17 +83,17 @@ function draw(T){
 
   // ── 3 · LA VRAIE PERTE — abstrait : aucun visage, aucun faux témoin ──
   else if(T<12.0){const t=T-6.8;
-    let f=fadeUp(t,0); lines("Vous avez rencontré\ndes acquéreurs.",M,560,88,DIM,1.14,f.a,f.dy);
+    let f=fadeUp(t,0); lines("Vous avez rencontré\ndes acquéreurs.",M,560,78,DIM,1.14,f.a,f.dy);
     [[0.3,2.3],[0.45,2.6],[0.6,2.9]].forEach((d,i)=>{
       const on=clamp((t-d[0])/0.4,0,1), off=clamp((t-d[1])/0.5,0,1);
       dot(M+28+i*92,850,28,BRONZE,on*(1-off*0.88));
     });
-    f=fadeUp(t,2.7); lines("Personne\nne les a rappelés.",M,960,100,PAPER,1.12,f.a,f.dy);
+    f=fadeUp(t,2.7); lines("Personne\nne les a rappelés.",M,960,88,PAPER,1.12,f.a,f.dy);
   }
 
   // ── 4 · LE MÉCANISME — le produit montré, pas promis ────────────────
   else if(T<18.2){const t=T-12.0;
-    const f=fadeUp(t,0); lines("Alpha trie, relance,\nconsigne.",M,500,88,PAPER,1.14,f.a,f.dy);
+    const f=fadeUp(t,0); lines("Alpha trie, relance,\nconsigne.",M,500,82,PAPER,1.14,f.a,f.dy);
     ["Qui rappeler aujourd'hui","Ce qui s'est dit la dernière fois",
      "Quand revenir sans agacer","Ce qui attend une réponse"].forEach((l,i)=>{
       const d=0.9+i*0.35, a=clamp((t-d)/0.35,0,1), dx=-44*(1-easeOut((t-d)/0.45));
@@ -115,6 +118,7 @@ function draw(T){
   }
 }
 window.__draw=draw; window.__FPS=FPS; window.__DUR=DUR;
+window.__W=W; window.__MARGE=M;
 // ⚠ On ATTEND la police avant de dessiner. Sans ça, les premières images
 // sortent en repli — et la toute première est l'image de couverture, celle
 // que tout le monde voit avant de lancer la vidéo.

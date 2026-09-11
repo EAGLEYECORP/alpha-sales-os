@@ -71,6 +71,57 @@ if (!policeOk && !process.env.PUB_ACCEPTE_REPLI) {
 }
 console.log("police d'affichage : " + (policeOk ? "Archivo Black" : "⚠ REPLI ASSUMÉ"));
 
+/**
+ * ⚠⚠ CHANGER DE POLICE CHANGE LA MISE EN PAGE, et ça ne se voit pas d'ici.
+ *
+ * Payé le 11/09/2026 : les tailles avaient été calées sur la police de repli.
+ * Archivo Black est ~17 % plus large à taille égale (735 px contre 628 px sur
+ * « Votre permis » en 104 px). Quatre lignes ont débordé la marge, et
+ * « depuis 4 mois. » — le PLAN D'OUVERTURE, donc l'image de couverture — est
+ * sortie du canevas : 1094 px de bord droit pour une toile de 1080.
+ *
+ * Le fichier produit était parfaitement valide. Il était simplement coupé.
+ * C'est le même mode de panne que le repli de police et que MediaRecorder :
+ * ça ne casse pas, ça ment — et ici ça part chez des gens.
+ *
+ * On ne mesure pas une liste tenue à la main : on instrumente `fillText` et on
+ * balaie TOUTES les images. Ce qui est vérifié est ce qui est réellement
+ * dessiné, y compris ce qu'une session future ajoutera.
+ */
+const debords = await page.evaluate(() => {
+  const c = document.getElementById("c").getContext("2d");
+  const M = window.__MARGE, W = window.__W;
+  const vus = new Map();
+  const brut = c.fillText.bind(c);
+  c.fillText = function (txt, x, y) {
+    const w = c.measureText(txt).width;
+    const g = c.textAlign === "center" ? x - w / 2 : x;
+    const d = g + w;
+    // Bord DROIT : la marge utile. Aucune animation ne pousse vers la droite,
+    // donc la dépasser est toujours un défaut de mise en page.
+    // Bord GAUCHE : le canevas, pas la marge — les plaques du plan 4 entrent
+    // en glissant depuis `dx = -44` et passent volontairement sous la marge.
+    // Contrôler la marge à gauche condamnerait le mouvement lui-même.
+    if (d > W - M || g < 0) {
+      const cle = txt + "|" + c.font;
+      if (!vus.has(cle)) vus.set(cle, `« ${txt} » (${c.font}) : ${Math.round(g)} → ${Math.round(d)}`);
+    }
+    return brut(txt, x, y);
+  };
+  for (let i = 0; i < Math.round(window.__FPS * window.__DUR); i++) window.__draw(i / window.__FPS);
+  c.fillText = brut;
+  return [...vus.values()];
+});
+if (debords.length) {
+  await nav.close();
+  throw new Error(
+    `${debords.length} texte(s) sortent de la boîte utile — la vidéo serait coupée :\n  ` +
+      debords.join("\n  ") +
+      "\nBaisse la taille dans scene.html. Ne rends pas : le fichier serait valide et faux."
+  );
+}
+console.log("mise en page : aucun débordement");
+
 const FPS = await page.evaluate(() => window.__FPS);
 const DUR = await page.evaluate(() => window.__DUR);
 const total = Math.round(FPS * DUR);

@@ -41,6 +41,15 @@ la prudence : chacun de ces refus a déjà été payé une fois dans ce dépôt.
 *Motion : le texte se pose, un cartouche d'arrêté se dessine au trait. Aucun
 chiffre de performance — une durée, publique et datée.*
 
+> ⚠⚠ **La typo d'affichage décide de la mise en page, et ça ne se voit pas
+> dans le script.** Archivo Black est ~17 % plus large que la police de repli à
+> taille égale. Les tailles ayant été calées sur le repli, quatre lignes ont
+> débordé au premier vrai rendu — dont celle-ci, **le plan d'ouverture**, qui
+> sortait du canevas. Le fichier était valide et coupé.
+> `scripts/pub/rendre.mjs` instrumente désormais `fillText`, balaie les 768
+> images et **refuse de rendre** si un texte sort de la boîte utile. Les
+> tailles ne se recalent donc pas à l'œil : le rendu le dit.
+
 **Plan 2 — 3,6 → 6,8 s · Le renversement**
 > Vous ratez
 > des appels.
