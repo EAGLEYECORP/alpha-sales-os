@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Info, MailOpen, MousePointerClick, RefreshCw, Send, TrendingUp } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Sector } from "@/lib/types";
+import { LIBELLE_SECTEUR } from "@/lib/secteurs";
 import { cn, dateTimeFr } from "@/lib/utils";
 
 /* ── Types (miroir de lib/tracking.ts) ─────────────────────────────── */
@@ -37,13 +38,13 @@ interface Summary {
 
 const EMPTY: Summary = { messages: 0, opens: 0, clicks: 0, openRate: 0, clickRate: 0, records: [] };
 
-const SECTOR_LABELS: Record<Sector, string> = {
-  restaurant: "Restaurants",
-  pub: "Pubs & bars",
-  ambulance: "Ambulances",
-  artisan: "Artisans",
-  autre: "Autre",
-};
+/**
+ * ⚠ Troisieme copie de la meme table de libelles, trouvee par le compilateur
+ * en ajoutant un secteur. Elle vit maintenant dans `lib/secteurs.ts` : une
+ * copie oubliee affiche « undefined » dans une colonne, ce qui ne casse rien
+ * et ne se remarque que sur une capture d'ecran.
+ */
+const SECTOR_LABELS = LIBELLE_SECTEUR;
 
 function useStats(qs: string) {
   const [data, setData] = useState<Summary>(EMPTY);

@@ -1,5 +1,6 @@
 import type { Prospect, Sector } from "./types";
 import { prospectDefaults } from "./seed";
+import { ORDRE_SECTEURS } from "./secteurs";
 import { toE164 } from "./voice-script";
 import { auditCompleteness } from "./deep-dive";
 
@@ -27,7 +28,13 @@ import { auditCompleteness } from "./deep-dive";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const SECTORS: Sector[] = ["restaurant", "pub", "ambulance", "artisan", "autre"];
+/**
+ * ⚠ C'ÉTAIT UNE COPIE DE L'UNION, ÉCRITE À LA MAIN. Elle serait restée au
+ * marché d'avant : une fiche de maîtrise d'ouvrage postée sur cette API
+ * aurait été refusée en « secteur inconnu → autre », avec un avertissement
+ * qui liste des valeurs périmées. On dérive du type.
+ */
+const SECTORS: readonly Sector[] = ORDRE_SECTEURS;
 
 /** Alias acceptés pour chaque champ — le monde réel n'utilise pas nos noms. */
 const ALIASES: Record<string, string[]> = {

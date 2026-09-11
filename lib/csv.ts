@@ -91,6 +91,11 @@ const HEADER_MAP: Record<string, string> = {
 };
 
 const SECTOR_ALIASES: Record<string, Sector> = {
+  // Maîtrise d'ouvrage : le marché en cours. Sans ces alias, un CSV qui dit
+  // « promoteur » atterrit dans « autre » et perd son playbook.
+  maitriseouvrage: "maitrise-ouvrage", moa: "maitrise-ouvrage", promoteur: "maitrise-ouvrage",
+  promotion: "maitrise-ouvrage", amenageur: "maitrise-ouvrage", bailleur: "maitrise-ouvrage",
+  constructeur: "maitrise-ouvrage",
   restaurant: "restaurant", resto: "restaurant", restauration: "restaurant", bouchon: "restaurant",
   pub: "pub", bar: "pub", brasserie: "pub",
   ambulance: "ambulance", ambulances: "ambulance", transportsanitaire: "ambulance", vsl: "ambulance",

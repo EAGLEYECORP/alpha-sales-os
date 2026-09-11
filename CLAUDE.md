@@ -149,6 +149,36 @@ promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois pr�
 - **Zéro permis converti à ce jour.** 6 logements, score 55, les poids par
   phase : ce sont des **décisions**, pas des mesures.
 
+### LE SECTEUR NOMME LE MARCHÉ — et rien d'autre n'en dépend (11/09/2026)
+`Sector` (`lib/types.ts`) était resté au marché d'AVANT deux jours après la
+bascule. Faute de valeur pour le dire, `permisVersProspect` rangeait NOS fiches
+dans `"autre"`, le fourre-tout.
+- **Ce que ça coûtait** : `verticalForProspect` lit tag → texte → **secteur**.
+  Une fiche qui perd son tag — un aller-retour par un tableur suffit — tombait
+  sur `verticalForSector("autre")`, donc la verticale **générique**. Le script
+  du marché en cours existait et était inatteignable par le seul chemin dont
+  dispose un import plat. Le secteur est ce qui survit à un CSV ; le tag, non.
+- **On n'a PAS recopié `TypeMaitreOuvrage`** ici. Promoteur / bailleur /
+  collectivité / particulier répond à « a-t-il quelque chose à vendre ? », pas
+  à « quel métier ? ». Deux axes. Le déverser aurait créé un **quatrième**
+  vocabulaire en prétendant en réparer un second.
+- **Les trois valeurs du marché d'avant restent** : elles portent des playbooks
+  et des angles écrits. Ce qui les fait disparaître des écrans, c'est
+  qu'aucune fiche ne les porte (`secteursPresents`, `lib/secteurs.ts`), jamais
+  une suppression de vocabulaire.
+
+> ⚠⚠ **`AngleKey` S'ÉCRIVAIT `Exclude<Sector, "autre">`, ET CE COUPLAGE ÉTAIT UN
+> MENSONGE.** Il affirmait que TOUT secteur a un angle d'appel manqué. Ces
+> gabarits font dire « des lots qui vont chez le concurrent qui répond » et
+> « mettez vos horaires à jour » — la famille accueil téléphonique / visibilité
+> locale. Laissé couplé, **ajouter le marché au type aurait FORCÉ, sous peine
+> d'erreur de compilation, d'écrire pour la maîtrise d'ouvrage l'argument que
+> sa propre verticale interdit.** Le type aurait exigé le mensonge.
+> `AngleKey` est désormais une union EXPLICITE, et un test croise les deux
+> côtés : aucun gabarit n'est engendré pour un secteur dont la verticale porte
+> un interdit exécutable. Deux indices qu'il était déjà faux avant : la liste
+> contenait `equipe-terrain` et `centre-appels`, qui ne sont pas des secteurs.
+
 > ⚠ **L'ICP écrit et le code qui trie sont DEUX endroits qui posent la même
 > question.** `tests/permis-construire.test.ts` rejoue chaque disqualifiant
 > annoncé dans `lirePermis` — reformuler est libre, retirer du code ne l'est

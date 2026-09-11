@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Prospect, Sector } from "@/lib/types";
+import { LIBELLE_SECTEUR, ORDRE_SECTEURS } from "@/lib/secteurs";
 import { STAGES } from "@/lib/hormozi";
 import { daysAhead, uid } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
@@ -11,7 +12,7 @@ const emptyProspect = (): Prospect => ({
   id: uid(),
   name: "",
   company: "",
-  sector: "restaurant",
+  sector: "maitrise-ouvrage",
   city: "Lyon",
   stage: "prospect",
   trust: 10,
@@ -78,11 +79,12 @@ export function ProspectFormModal({
         <div>
           <label className="label">Secteur</label>
           <select className="input" value={form.sector} onChange={(e) => set("sector", e.target.value as Sector)}>
-            <option value="restaurant">Restaurant</option>
-            <option value="pub">Pub</option>
-            <option value="ambulance">Ambulance</option>
-            <option value="artisan">Artisan</option>
-            <option value="autre">Autre</option>
+            {/* ⚠ Quatrieme copie de la liste, trouvee par le compilateur. Ici on
+                les propose TOUTES — c'est l'ecran ou l'on DECLARE le secteur
+                d'une fiche neuve, pas celui ou l'on filtre les siennes. */}
+            {ORDRE_SECTEURS.map((s) => (
+              <option key={s} value={s}>{LIBELLE_SECTEUR[s]}</option>
+            ))}
           </select>
         </div>
         <div>

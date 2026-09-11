@@ -337,7 +337,16 @@ export const VERTICALS: VerticalPlaybook[] = [
     label: "Maîtrise d'ouvrage — promotion & aménagement",
     preuve: "doctrine",
     offre: "alpha-sales-os",
-    sectors: [],
+    /**
+     * ⚠ C'ÉTAIT `[]`, ET ÇA LAISSAIT UN TROU. `verticalForProspect` cherche
+     * TAG, puis texte, puis SECTEUR. Une fiche de maîtrise d'ouvrage importée
+     * par CSV n'a pas de tag de verticale et ses notes ne contiennent aucun
+     * mot-clé d'ici : elle tombait donc sur `verticalForSector("autre")`,
+     * c'est-à-dire la verticale GÉNÉRIQUE. Le script du marché en cours
+     * existait, il était juste inatteignable par le seul chemin dont dispose
+     * un import plat.
+     */
+    sectors: ["maitrise-ouvrage"],
     criterion:
       "Les maîtres d'ouvrage qui construisent pour VENDRE — promoteurs, aménageurs, constructeurs. Chez eux, le rythme des réservations conditionne le lancement de l'opération.",
     structuralPain:

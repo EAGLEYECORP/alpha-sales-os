@@ -39,7 +39,39 @@ export const FORMAT_LABELS: Record<TemplateFormat, string> = {
  * Alpha Live s'installe chez une équipe de porte-à-porte et Alpha Voice sur un
  * plateau d'appels. Sans angle dédié, ces deux marchés n'avaient aucun script.
  */
-export type AngleKey = Exclude<Sector, "autre"> | "equipe-terrain" | "centre-appels";
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES INDUSTRIES POUR LESQUELLES CETTE FAMILLE DE GABARITS EST VRAIE.
+ *
+ * ⚠⚠ CE TYPE S'ÉCRIVAIT `Exclude<Sector, "autre"> | "equipe-terrain" | "centre-appels"`,
+ * ET CE COUPLAGE ÉTAIT UN MENSONGE — il affirmait que TOUT secteur de l'app a
+ * un angle d'appel manqué. Deux indices qu'il était déjà faux : la liste
+ * contenait `equipe-terrain` et `centre-appels`, qui ne sont pas des secteurs
+ * mais des segments ; et `Sector` a fini par changer de marché sans que
+ * personne ne se demande si les gabarits suivaient.
+ *
+ * Ce qu'ils font dire, mot pour mot : « des {lossUnit} qui vont chez le
+ * concurrent qui répond », « mettre vos horaires à jour partout ». C'est la
+ * famille ACCUEIL TÉLÉPHONIQUE / VISIBILITÉ LOCALE. Chez un maître d'ouvrage
+ * c'est faux, et ça prouve qu'on n'a pas compris son métier — l'interdit
+ * numéro un de sa verticale (`InterditFroid`, lib/playbook.ts).
+ *
+ * Laissé couplé, ajouter `"maitrise-ouvrage"` à `Sector` aurait FORCÉ l'écriture
+ * d'un angle d'appels manqués pour la maîtrise d'ouvrage, sous peine d'erreur
+ * de compilation. Le type aurait exigé le mensonge.
+ *
+ * La liste est donc EXPLICITE. Y ajouter une industrie est un geste délibéré :
+ * on l'écrit quand les gabarits sont vrais pour elle, pas parce qu'une autre
+ * union a grandi.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export type AngleKey =
+  | "restaurant"
+  | "pub"
+  | "ambulance"
+  | "artisan"
+  | "equipe-terrain"
+  | "centre-appels";
 
 /**
  * L'angle de chaque industrie : douleur, mécanisme, exemple de perte.

@@ -617,7 +617,16 @@ export function permisVersProspect(p: PermisConstruire, l: LecturePermis, now = 
     id: `pc-${graine}`.slice(0, 60),
     company: demandeur,
     name: "",
-    sector: "autre" as Sector,
+    /**
+     * ⚠ C'ÉTAIT `"autre"`, FAUTE DE MIEUX — et « faute de mieux » a duré.
+     * L'importeur de NOTRE marché rangeait ses fiches dans le fourre-tout,
+     * parce que `Sector` n'avait pas de valeur pour la maîtrise d'ouvrage.
+     * Conséquence : le tag portait la verticale, mais une fiche recopiée vers
+     * un CSV puis réimportée perdait le tag et retombait sur la verticale
+     * générique. Le secteur est le seul chemin qui survit à un aller-retour
+     * par un tableur.
+     */
+    sector: "maitrise-ouvrage" as Sector,
     city: (p.commune ?? "").trim(),
     stage: "prospect",
     preferredChannel: "linkedin",

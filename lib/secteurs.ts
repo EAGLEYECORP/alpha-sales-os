@@ -40,9 +40,18 @@ import type { Prospect, Sector } from "./types";
  * liste déroulante dont les entrées changent de place à chaque import est
  * inutilisable, et on cliquerait à côté.
  */
-export const ORDRE_SECTEURS: readonly Sector[] = ["restaurant", "pub", "ambulance", "artisan", "autre"];
+export const ORDRE_SECTEURS: readonly Sector[] = [
+  // Le marché en cours d'abord : c'est celui qu'on cherche le plus souvent.
+  "maitrise-ouvrage",
+  "restaurant",
+  "pub",
+  "ambulance",
+  "artisan",
+  "autre",
+];
 
 export const LIBELLE_SECTEUR: Record<Sector, string> = {
+  "maitrise-ouvrage": "Maîtrise d'ouvrage",
   restaurant: "Restaurants",
   pub: "Pubs & bars",
   ambulance: "Ambulances",

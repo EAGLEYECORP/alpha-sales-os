@@ -6,7 +6,36 @@ import type { ProfilOperateur } from "./profil-operateur";
 
 export type { ProfilOperateur };
 
-export type Sector = "restaurant" | "pub" | "ambulance" | "artisan" | "autre";
+/**
+ * Le secteur d'une fiche — le bucket grossier choisi à l'import.
+ *
+ * ⚠ IL A CESSÉ D'ÊTRE TENU À JOUR QUAND LE MARCHÉ A CHANGÉ. Le 09/09/2026
+ * l'avatar est devenu le maître d'ouvrage à permis actif ; ce type, lui, est
+ * resté celui d'avant (restauration, pubs, ambulances). Les huit fiches de
+ * démonstration ont donc atterri dans `"autre"` — le fourre-tout — et le
+ * marché ACTUEL n'était nommable nulle part.
+ *
+ * Ce que ça coûtait, mesuré : une fiche de maîtrise d'ouvrage importée par CSV
+ * (donc sans tag de verticale, et dont les notes ne contiennent aucun mot-clé
+ * reconnu) tombait sur `verticalForSector("autre")` → la verticale
+ * **générique**. Le script du marché actuel existait, il était juste
+ * inatteignable par le seul chemin dont dispose un import plat.
+ *
+ * ⚠⚠ ON N'A PAS RECOPIÉ ICI `TypeMaitreOuvrage` (lib/permis-construire.ts).
+ * Promoteur, bailleur social, collectivité, particulier : ce n'est pas le même
+ * AXE. C'est une typologie INTERNE à la maîtrise d'ouvrage, qui répond à « a-t-il
+ * quelque chose à vendre ? », pas à « quel métier ? ». La déverser ici aurait
+ * créé un quatrième vocabulaire en prétendant en réparer un second.
+ *
+ * ⚠ Les trois valeurs du marché d'avant RESTENT, et c'est une décision. Elles
+ * portent des playbooks complets et des angles d'accroche écrits
+ * (`SECTOR_ANGLES`) ; les retirer supprimerait une capacité de vente, pas un
+ * libellé périmé. Le produit ne vise pas QUE la maîtrise d'ouvrage — CLAUDE.md
+ * interdit de lire la campagne en cours dans la portée de l'outil. Ce qui les
+ * fait disparaître des écrans est qu'aucune fiche ne les porte
+ * (`secteursPresents`, lib/secteurs.ts), pas une suppression de vocabulaire.
+ */
+export type Sector = "maitrise-ouvrage" | "restaurant" | "pub" | "ambulance" | "artisan" | "autre";
 
 /**
  * Pipeline stages. Strict doctrine:
