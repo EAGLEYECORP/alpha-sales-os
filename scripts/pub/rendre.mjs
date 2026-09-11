@@ -47,7 +47,20 @@ const nav = await chromium.launch({
   // ⚠ Surchargeable : un chemin de conteneur en dur rend le script inexécutable
   // ailleurs, et ça ne se découvre qu'en essayant.
   executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  args: ["--font-render-hinting=none"],
+  /**
+   * ⚠ `--allow-file-access-from-files` N'EST PAS DU CONFORT.
+   *
+   * Dessiner une image chargée en `file://` sur un canevas le SOUILLE au sens
+   * de la spécification, et `toDataURL` lève alors `SecurityError`. Sans ce
+   * drapeau, toute scène qui affiche une capture (`scene-app.html`) s'arrête
+   * à la première image — mesuré, pas supposé.
+   *
+   * Le risque du drapeau est qu'une page lise d'autres fichiers du disque. Ici
+   * la page est la nôtre, elle est dans le dépôt, et le navigateur est lancé
+   * pour elle seule puis fermé. Le laisser tomber pour « faire propre »
+   * casserait la moitié des pubs.
+   */
+  args: ["--font-render-hinting=none", "--allow-file-access-from-files"],
 });
 const page = await nav.newPage({ viewport: { width: 1080, height: 1920 } });
 await page.goto("file://" + join(ici, SCENE + ".html"));

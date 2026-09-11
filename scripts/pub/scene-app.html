@@ -77,8 +77,15 @@ function draw(T){
   // ── 1 · L'OUVERTURE — ce que la vidéo affirme, et ce qu'elle n'affirme pas ──
   if(T<3.4){const t=T;
     bar(M,700,120,6,BRONZE,easeOut(t/0.5),1);
-    let f=fadeUp(t,0.15); lines("Voilà l'écran.",M,750,104,PAPER,1.12,f.a,f.dy);
-    f=fadeUp(t,0.8);  lines("Pas une maquette.",M,880,104,BRONZE,1.12,f.a,f.dy);
+    /**
+     * ⚠ 84 px, pas 104. Mesuré par le garde de `rendre.mjs`, qui a REFUSÉ de
+     * rendre : « Pas une maquette. » finissait à 1161 px sur une toile de
+     * 1080. Archivo Black coûte 10,2 px de largeur par pixel de corps sur
+     * cette phrase — dix-sept caractères ne tiennent pas en 104.
+     * La phrase serait sortie du cadre sur le plan qui jure le contraire.
+     */
+    let f=fadeUp(t,0.15); lines("Voilà l'écran.",M,750,84,PAPER,1.12,f.a,f.dy);
+    f=fadeUp(t,0.8);  lines("Pas une maquette.",M,860,84,BRONZE,1.12,f.a,f.dy);
     /**
      * ⚠ CETTE LIGNE N'EST PAS UNE PRÉCAUTION JURIDIQUE, C'EST L'ARGUMENT.
      * Les chiffres visibles sur les captures viennent du jeu de démonstration.
