@@ -1,0 +1,133 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+/* Même pile typographique que `scene.html` : deux pubs de la même marque ne
+   peuvent pas avoir deux polices. Voir le commentaire là-bas pour le pourquoi
+   d'Archivo Black. */
+@font-face{font-family:"Archivo Black";src:url("archivo-black-400.woff2") format("woff2");font-weight:400;font-display:block}
+html,body{margin:0;background:#0A0807}canvas{display:block}
+</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// Palette RÉELLE du produit (app/globals.css) — rien d'inventé.
+const INK="#0A0807", INK8="#201B15", PAPER="#F3EEE4", DIM="#A79F92", BRONZE="#E8C98A";
+const W=1080, H=1920, FPS=30, DUR=26.0;
+// ⚠ Exportée, jamais recopiée par le rendu : une seule définition de la marge.
+const M=100;
+const DISPLAY='"Bricolage Grotesque", "Archivo Black", "Montserrat ExtraBold", "Liberation Sans", sans-serif';
+const ctx = document.getElementById("c").getContext("2d");
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const easeOut=t=>1-Math.pow(1-clamp(t,0,1),3);
+// Adoucit les deux bouts : un défilement qui démarre et s'arrête net ressemble
+// à une coupure de montage, pas à une main qui fait défiler un écran.
+const easeBoth=t=>(t=clamp(t,0,1))<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function fadeUp(t,delay){const p=easeOut((t-delay)/0.45);return{a:clamp((t-delay)/0.35,0,1),dy:28*(1-p)};}
+
+function lines(txt,x,y,size,color,lh,alpha,dy,align){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=color;
+  ctx.font="bold "+size+"px "+DISPLAY; ctx.textAlign=align||"left"; ctx.textBaseline="top";
+  txt.split("\n").forEach((l,i)=>ctx.fillText(l,x,y+dy+i*size*lh));
+  ctx.restore();
+}
+function bar(x,y,w,h,color,p,alpha){
+  if(p<=0||alpha<=0)return; ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=color;
+  ctx.fillRect(x,y,w*p,h); ctx.restore();
+}
+
+// ── LES CAPTURES ────────────────────────────────────────────────────
+// Produites par `scripts/pub/capturer.mjs` contre l'app RÉELLE. Absentes,
+// `rendre.mjs` refuse : une pub à cadres noirs vaut moins que pas de pub.
+const NOMS=["s1","s2","s3","s4"];
+const IMGS=NOMS.map(n=>{const i=new Image(); i.src="caps/"+n+".jpg"; return i;});
+
+/**
+ * La fenêtre TÉLÉPHONE. La capture fait 1,4 hauteur d'écran ; le cadre en
+ * montre une, et l'image défile DEDANS. C'est ce défilement qui dit « c'est un
+ * écran, pas une image » — un aplat fixe se lit comme une maquette.
+ */
+const CW=618, CH=1340, CX=(W-CW)/2, CY=470;
+function cadre(img,p,entree){
+  if(!img.complete||!img.naturalWidth) return;
+  const ech=CW/img.naturalWidth, hMis=img.naturalHeight*ech;
+  const course=Math.max(0,hMis-CH);          // de combien on peut défiler
+  const dy=26*(1-easeOut(entree)), a=clamp(entree,0,1);
+  const s=0.965+0.035*easeOut(entree);        // léger rapproché à l'entrée
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.translate(CX+CW/2, CY+CH/2+dy); ctx.scale(s,s); ctx.translate(-CW/2,-CH/2);
+  ctx.beginPath(); ctx.roundRect(0,0,CW,CH,40); ctx.save(); ctx.clip();
+  ctx.fillStyle=INK8; ctx.fillRect(0,0,CW,CH);
+  ctx.drawImage(img,0,-course*easeBoth(p),CW,hMis);
+  ctx.restore();
+  // L'arête bronze : la même que `.card` du produit, arête haute éclairée.
+  ctx.strokeStyle=BRONZE; ctx.globalAlpha=a*0.55; ctx.lineWidth=3; ctx.stroke();
+  ctx.restore();
+}
+
+// Sur-titre + deux lignes : la grammaire de `PageHeader` dans le produit.
+function titre(t,sur,ligne1,ligne2){
+  let f=fadeUp(t,0.05); lines(sur,M,190,34,BRONZE,1.1,f.a,f.dy);
+  f=fadeUp(t,0.22); lines(ligne1,M,250,64,PAPER,1.14,f.a,f.dy);
+  if(ligne2){f=fadeUp(t,0.36); lines(ligne2,M,250+73,64,PAPER,1.14,f.a,f.dy);}
+}
+
+function draw(T){
+  ctx.fillStyle=INK; ctx.fillRect(0,0,W,H);
+
+  // ── 1 · L'OUVERTURE — ce que la vidéo affirme, et ce qu'elle n'affirme pas ──
+  if(T<3.4){const t=T;
+    bar(M,700,120,6,BRONZE,easeOut(t/0.5),1);
+    let f=fadeUp(t,0.15); lines("Voilà l'écran.",M,750,104,PAPER,1.12,f.a,f.dy);
+    f=fadeUp(t,0.8);  lines("Pas une maquette.",M,880,104,BRONZE,1.12,f.a,f.dy);
+    /**
+     * ⚠ CETTE LIGNE N'EST PAS UNE PRÉCAUTION JURIDIQUE, C'EST L'ARGUMENT.
+     * Les chiffres visibles sur les captures viennent du jeu de démonstration.
+     * Sans la dire, ils se lisent comme des résultats — et il n'y en a aucun.
+     * La dire coûte une ligne et rend crédible tout ce qui suit.
+     */
+    f=fadeUp(t,1.5); lines("captures réelles · données de démonstration",M,1060,30,DIM,1.1,f.a,f.dy);
+  }
+
+  // ── 2 · CE QU'ON FAIT AUJOURD'HUI ───────────────────────────────────
+  else if(T<8.6){const t=T-3.4;
+    titre(t,"CALCULÉ, PAS DÉCLARÉ","Ce que tu fais","aujourd'hui.");
+    cadre(IMGS[0],(t-0.5)/4.2,t/0.6);
+  }
+
+  // ── 3 · CE QUI S'EST DIT, ET LE PAS SUIVANT ─────────────────────────
+  else if(T<13.4){const t=T-8.6;
+    titre(t,"LA FICHE","Ce qui s'est dit.","Et le pas suivant.");
+    cadre(IMGS[1],(t-0.5)/3.8,t/0.6);
+  }
+
+  // ── 4 · L'AGENT SE DÉCLARE — art. 50, prononcé par le CODE ───────────
+  else if(T<18.2){const t=T-13.4;
+    titre(t,"ALPHA VOICE · ART. 50","L'IA se déclare.","Dans le code.");
+    cadre(IMGS[2],(t-0.5)/3.8,t/0.6);
+  }
+
+  // ── 5 · TOUT AU MÊME ENDROIT ────────────────────────────────────────
+  else if(T<22.4){const t=T-18.2;
+    titre(t,"LE CERVEAU","Tout au même","endroit.");
+    cadre(IMGS[3],(t-0.5)/3.3,t/0.6);
+  }
+
+  // ── 6 · LA SORTIE — un cadrage, pas un devis ────────────────────────
+  else {const t=T-22.4; const cx=W/2;
+    let f=fadeUp(t,0); lines("Un cadrage.\n20 minutes.",cx,760,100,PAPER,1.14,f.a,f.dy,"center");
+    bar(cx-100,1020,200,6,BRONZE,easeOut((t-0.85)/0.5),t>0.85?1:0);
+    f=fadeUp(t,1.1); lines("eagleyecorp.fr",cx,1070,66,BRONZE,1.1,f.a,f.dy,"center");
+    f=fadeUp(t,1.6); lines("Lyon · Villeurbanne",cx,1180,34,DIM,1.1,f.a,f.dy,"center");
+  }
+}
+window.__draw=draw; window.__FPS=FPS; window.__DUR=DUR;
+window.__W=W; window.__MARGE=M;
+window.__PLANS=[1.9, 6.4, 11.2, 16.0, 20.4, 24.4];
+// ⚠ On attend les POLICES **et** les IMAGES. Une capture qui arrive en retard
+// laisse un cadre vide sur les premières images — et la toute première est la
+// vignette que tout le monde voit avant de lancer la vidéo.
+window.__prete = Promise.all([
+  document.fonts.ready,
+  ...IMGS.map(i => i.decode().catch(() => { throw new Error("capture manquante : " + i.src); })),
+]).then(() => { draw(0); return true; });
+</script>

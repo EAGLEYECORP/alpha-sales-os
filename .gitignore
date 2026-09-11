@@ -57,3 +57,9 @@ donnees-privees/
 # Le dépôt public est un dépôt DISTINCT : pas de chemin automatique du privé
 # vers le public.
 /.export-public/
+
+# Captures d ecran de la pub : binaires, regenerables par scripts/pub/capturer.mjs,
+# et elles dateraient (le jeu de demo porte des dates relatives).
+scripts/pub/caps/
+scripts/pub/frames-*/
+scripts/pub/*-plan*.png

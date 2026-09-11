@@ -27,7 +27,19 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ici = dirname(fileURLToPath(import.meta.url));
-const dossier = join(ici, "frames");
+
+/**
+ * ⚠ UNE SEULE MÉCANIQUE DE RENDU POUR TOUTES LES SCÈNES.
+ *
+ *   node scripts/pub/rendre.mjs             → scene.html      (pub typographique)
+ *   node scripts/pub/rendre.mjs scene-app   → scene-app.html  (captures de l'app)
+ *
+ * Dupliquer ce fichier par scène dupliquerait ses DEUX gardes — la police et
+ * le débordement. C'est le défaut signature de ce dépôt : la copie qu'on ne
+ * relit pas est celle qui cesse de mordre.
+ */
+const SCENE = (process.argv[2] ?? "scene").replace(/\.html$/, "");
+const dossier = join(ici, "frames-" + SCENE);
 rmSync(dossier, { recursive: true, force: true });
 mkdirSync(dossier, { recursive: true });
 
@@ -38,7 +50,7 @@ const nav = await chromium.launch({
   args: ["--font-render-hinting=none"],
 });
 const page = await nav.newPage({ viewport: { width: 1080, height: 1920 } });
-await page.goto("file://" + join(ici, "scene.html"));
+await page.goto("file://" + join(ici, SCENE + ".html"));
 
 // ⚠ ATTENDRE LA POLICE. `goto` rend la main dès que le DOM est prêt, pas quand
 // la woff2 est décodée : sans cette attente, les premières images sortent dans
@@ -136,10 +148,18 @@ for (let i = 0; i < total; i++) {
   if (i % 150 === 0) console.log(`  ${i}/${total}`);
 }
 
-// Six images de contrôle : on REGARDE ce qui est rendu, on ne le suppose pas.
-for (const [n, t] of [[1, 1.9], [2, 5.4], [3, 10.4], [4, 16.2], [5, 20.6], [6, 23.8]]) {
+/**
+ * Images de contrôle : on REGARDE ce qui est rendu, on ne le suppose pas.
+ *
+ * ⚠ Les instants viennent de la SCÈNE (`window.__PLANS`), pas d'une liste
+ * tenue ici. Une liste locale se périme au premier remontage : on déplacerait
+ * une coupe et les vignettes montreraient des transitions au lieu des plans,
+ * sans que rien ne le signale.
+ */
+const instants = await page.evaluate(() => window.__PLANS ?? []);
+for (const [i, t] of instants.entries()) {
   await page.evaluate((x) => window.__draw(x), t);
-  await page.locator("#c").screenshot({ path: join(ici, `plan${n}.png`) });
+  await page.locator("#c").screenshot({ path: join(ici, `${SCENE}-plan${i + 1}.png`) });
 }
 
 await nav.close();

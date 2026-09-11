@@ -119,6 +119,10 @@ function draw(T){
 }
 window.__draw=draw; window.__FPS=FPS; window.__DUR=DUR;
 window.__W=W; window.__MARGE=M;
+// Un instant PAR PLAN, en plein milieu de chacun — c'est ce que le rendu
+// photographie pour contrôle. Déplacer une coupe se répercute ici, et nulle
+// part ailleurs.
+window.__PLANS=[1.9, 5.4, 10.4, 16.2, 20.6, 23.8];
 // ⚠ On ATTEND la police avant de dessiner. Sans ça, les premières images
 // sortent en repli — et la toute première est l'image de couverture, celle
 // que tout le monde voit avant de lancer la vidéo.
