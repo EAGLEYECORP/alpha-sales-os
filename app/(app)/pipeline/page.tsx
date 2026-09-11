@@ -15,6 +15,7 @@ import { ArrowUpDown, ChevronLeft, ChevronRight, Kanban, List, Plus, Search, Tra
 import { useAlpha } from "@/lib/store";
 import type { Prospect, Sector, Stage } from "@/lib/types";
 import { STAGES, weightedValue } from "@/lib/hormozi";
+import { LIBELLE_SECTEUR, secteursPresents } from "@/lib/secteurs";
 import { cn, dateFr, eur } from "@/lib/utils";
 import { KanbanBoard } from "@/components/pipeline/kanban";
 import { ProspectFormModal } from "@/components/pipeline/prospect-form";
@@ -183,10 +184,13 @@ export default function PipelinePage() {
         </div>
         <select className="input w-auto" value={sector} onChange={(e) => setSector(e.target.value as Sector | "tous")}>
           <option value="tous">Tous secteurs</option>
-          <option value="restaurant">Restaurants</option>
-          <option value="pub">Pubs</option>
-          <option value="ambulance">Ambulances</option>
-          <option value="artisan">Artisans</option>
+          {/* ⚠ Dérivé des fiches, jamais écrit à la main : la liste en dur
+              oubliait « autre » — le secteur de TOUTES les fiches de maîtrise
+              d'ouvrage — donc filtrer les faisait disparaître sans aucun moyen
+              de les retrouver. Voir `lib/secteurs.ts`. */}
+          {secteursPresents(prospects).map((s) => (
+            <option key={s} value={s}>{LIBELLE_SECTEUR[s]}</option>
+          ))}
         </select>
         {view === "list" && (
           <select className="input w-auto" value={stage} onChange={(e) => setStage(e.target.value as Stage | "tous")}>

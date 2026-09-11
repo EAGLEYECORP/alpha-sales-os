@@ -13,7 +13,8 @@ import { useAlpha } from "@/lib/store";
 import { isDemoProspect } from "@/lib/seed";
 import { BandeauDemo } from "@/components/bandeau-demo";
 import { STAGES, BLAME_LAYERS, weightedValue, ignoranceTaxTotal, nextBestAction } from "@/lib/hormozi";
-import type { BlameLayer, Sector } from "@/lib/types";
+import type { BlameLayer } from "@/lib/types";
+import { LIBELLE_SECTEUR, secteursPresents } from "@/lib/secteurs";
 import { eur, relativeFr } from "@/lib/utils";
 import { useCountUp } from "@/lib/use-count-up";
 import { FunnelChart, ForecastChart, SectorChart } from "@/components/charts";
@@ -21,14 +22,14 @@ import { StageBadge } from "@/components/ui/stage-badge";
 import { RoutinesPanel } from "@/components/routines-panel";
 import { PageHeader } from "@/components/ui/page-header";
 
-const SECTORS: Sector[] = ["restaurant", "pub", "ambulance", "artisan"];
-const SECTOR_LABELS: Record<string, string> = {
-  restaurant: "Restos",
-  pub: "Pubs",
-  ambulance: "Ambulances",
-  artisan: "Artisans",
-  autre: "Autres",
-};
+/**
+ * ⚠ CETTE LISTE ÉTAIT EN DUR ET OUBLIAIT `"autre"`.
+ *
+ * Les huit fiches de maîtrise d'ouvrage — le marché actuel — sont toutes en
+ * `"autre"`. La répartition par secteur et la carte de chaleur des obstacles
+ * comptaient donc ZÉRO partout, sur l'écran d'accueil, sans que rien ne
+ * tombe. Elles se dérivent maintenant des fiches. Voir `lib/secteurs.ts`.
+ */
 
 export default function DashboardPage() {
   const { prospects, meetings, settings } = useAlpha();
@@ -54,8 +55,9 @@ export default function DashboardPage() {
     pondere: mrrSigned + monthlyWeighted * (i / 5),
   }));
 
+  const SECTORS = secteursPresents(prospects);
   const sectorData = SECTORS.map((sec) => ({
-    name: SECTOR_LABELS[sec],
+    name: LIBELLE_SECTEUR[sec],
     value: prospects.filter((p) => p.sector === sec).reduce((s, p) => s + weightedValue(p), 0),
   }));
 
@@ -166,10 +168,16 @@ export default function DashboardPage() {
           <p className="mb-3 text-[11px] text-paper-faint">
             derrière quoi ils se cachent, par secteur : les circonstances, les autres, ou eux-mêmes
           </p>
-          <div className="grid grid-cols-[auto_repeat(4,1fr)] gap-1 text-[11px]">
+          {/* ⚠ Le nombre de colonnes SUIT les secteurs présents. Il était figé
+              à quatre, ce qui n'était juste que pour la liste en dur d'avant :
+              dérivée, elle peut en rendre un seul — ou six demain. */}
+          <div
+            className="grid gap-1 text-[11px]"
+            style={{ gridTemplateColumns: `auto repeat(${Math.max(1, SECTORS.length)}, minmax(0, 1fr))` }}
+          >
             <span />
             {SECTORS.map((s) => (
-              <span key={s} className="text-center text-paper-faint">{SECTOR_LABELS[s]}</span>
+              <span key={s} className="text-center text-paper-faint">{LIBELLE_SECTEUR[s]}</span>
             ))}
             {heat.map(({ layer, cells }) => (
               <FragmentRow key={layer} label={BLAME_LAYERS[layer].label} cells={cells} maxHeat={maxHeat} />
