@@ -2,6 +2,7 @@ import type { Prospect } from "./types";
 import { estAdresseDeDemo, isDemoProspect } from "./seed";
 // L'angle du message vient de l'aimant routé par le deep-dive, pas d'une
 // phrase figée : voir l'en-tête de ce module pour ce que ça corrigeait.
+import { getAccount } from "./accounts";
 import { approcheEcrite } from "./approche-ecrite";
 import { signataire } from "./signature";
 
@@ -63,7 +64,13 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
   // Critère, question et signal viennent tous les trois de l'aimant routé :
   // un seul endroit décide de QUOI parle ce message.
   const a = approcheEcrite(p, opts.accountId);
-  const agency = opts.agencyName?.trim() || "EAGLEYE CORP";
+  /**
+   * ⚠ LE REPLI ÉTAIT « EAGLEYE CORP » EN DUR, sur un produit white-label :
+   * un revendeur qui ne passe pas son nom signait sous NOTRE raison sociale.
+   * Le compte la connaît — c'est sa définition même. On la lui demande.
+   */
+  const compte = getAccount(opts.accountId);
+  const agency = opts.agencyName?.trim() || compte.name;
   // Un seul endroit décide QUI signe (`lib/signature`). Le repli en dur qui
   // vivait ici signait « Zakaria » — le prénom du propriétaire de l'outil —
   // dans les emails d'un revendeur white-label.
@@ -84,7 +91,9 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
     ...(a.signal ? ["", a.signal] : []),
     ...booking,
     "",
-    `${closer} — ${agency}, Lyon`,
+    // La ville vient du compte : « Lyon » était en dur, donc un partenaire
+    // établi ailleurs signait depuis une ville où il n'est pas.
+    `${closer} — ${agency}${compte.city?.trim() ? `, ${compte.city.trim()}` : ""}`,
     "",
     `Si vous ne souhaitez plus recevoir de message de ma part, répondez STOP : je vous retire immédiatement.`,
   ].join("\n");

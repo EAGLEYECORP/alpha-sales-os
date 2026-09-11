@@ -1,5 +1,6 @@
 import type { Prospect } from "./types";
 import { getAccount } from "./accounts";
+import { signataire } from "./signature";
 import { recovery } from "./recovery";
 import { buildLadder, type LadderResult } from "./ladder";
 import { vitalSigns } from "./vital-signs";
@@ -169,7 +170,14 @@ function priceLine(accountId: string, p: Prospect): string {
     : "Deux formats : 10 000 € en VIP (tout est pris en charge), ou 30 % + les frais d'installation sur devis.";
 }
 
-export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { automationWanted?: boolean } = {}): Argumentaire {
+export function buildArgumentaire(
+  p: Prospect,
+  accountId = "eagleye",
+  // ⚠ `closerName` : ce script se PRONONCE. Sans lui, l'appelant se
+  // présentait sous le prénom du propriétaire de l'outil — y compris depuis
+  // un compte revendeur, où c'est une usurpation dans un appel commercial.
+  opts: { automationWanted?: boolean; closerName?: string } = {}
+): Argumentaire {
   const account = getAccount(accountId);
   const ladder = buildLadder(p, opts);
   const losses = computeLosses(p);
@@ -179,7 +187,9 @@ export function buildArgumentaire(p: Prospect, accountId = "eagleye", opts: { au
   // ── 1. Se présenter : court, situé, sans pitch ──
   const intro =
     `« ${p.name?.trim() && !/^(g[ée]rant|cabinet|accueil|contact)$/i.test(p.name) ? p.name : "Bonjour"}, ` +
-    `je suis Zakaria, de ${account.name}${account.city ? `, à ${account.city}` : ""}. ` +
+    // Une seule source pour « qui parle » (`lib/signature.ts`). Le repli
+    // documenté est la RAISON SOCIALE, jamais un prénom en dur.
+    `je suis ${signataire(opts.closerName, account.name).nom}, de ${account.name}${account.city ? `, à ${account.city}` : ""}. ` +
     `Je travaille avec des ${p.sector === "artisan" ? "artisans" : "entreprises"} du secteur sur un point précis : ` +
     `les demandes qui arrivent et qui ne sont jamais traitées. Je vous vole deux minutes — dites-moi si ça vous parle ou pas. »`;
 

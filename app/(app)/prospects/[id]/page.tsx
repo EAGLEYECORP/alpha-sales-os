@@ -1698,7 +1698,7 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
     {
       channel: "LinkedIn",
       subject: "Invitation (≤ 300 car.)",
-      body: inviteText(p, accountId),
+      body: inviteText(p, accountId, closer),
     },
   ];
 

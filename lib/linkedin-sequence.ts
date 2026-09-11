@@ -6,6 +6,11 @@ import { PRESENCE_LINKEDIN } from "./linkedin-ciblage";
 // Le critère, la question et le signal d'audit viennent de l'aimant routé —
 // la même source que l'email, pour que les deux canaux ne se contredisent pas.
 import { approcheEcrite } from "./approche-ecrite";
+// ⚠ Une seule source pour « qui signe ». Ce fichier était la CINQUIÈME
+// réponse : l'en-tête de `lib/signature.ts` en listait quatre, et le
+// balayage ne l'avait pas atteint.
+import { signataire } from "./signature";
+import { getAccount } from "./accounts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -41,6 +46,36 @@ const DELAY: Record<LinkedinStep, number> = { invitation: 0, message: 2, relance
 
 const firstName = (p: Prospect) => (p.name || "").trim().split(/\s+/)[0] || "";
 
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * QUI PARLE SUR CE CANAL — et sous quelle marque.
+ *
+ * ⚠⚠ LES TROIS MESSAGES SIGNAIENT « Zakaria — EAGLEYE CORP » EN DUR.
+ *
+ * Le produit est WHITE-LABEL. Un revendeur qui utilise la file LinkedIn
+ * envoyait donc des invitations signées du prénom du propriétaire de l'outil,
+ * sous NOTRE raison sociale, à SES prospects. `lib/signature.ts` existe
+ * précisément pour ça, et son en-tête énumère les quatre fichiers qui
+ * répondaient chacun autre chose — celui-ci était le cinquième, et il avait
+ * échappé au balayage parce qu'il n'écrit pas d'email.
+ *
+ * L'ordre de repli ne change pas : nom saisi → RAISON SOCIALE (une identité
+ * légale, et elle appartient à l'expéditeur) → libellé d'usine, rendu visible.
+ *
+ * ⚠ L'élision est calculée, pas écrite : « d'EAGLEYE CORP » mais « de
+ * Nuwacom ». Le texte en dur portait l'apostrophe, donc tout compte dont le
+ * nom commence par une consonne aurait produit « je suis X, d'Nuwacom ».
+ * On n'élide PAS devant un h : « de Hxxx » est toujours correct, « d'Hxxx »
+ * dépend du h aspiré, qu'aucune règle mécanique ne tranche.
+ */
+function identite(accountId?: string, closerName?: string) {
+  const compte = getAccount(accountId);
+  const nom = signataire(closerName, compte.name).nom;
+  const de = /^[aeiouyàâéèêëîïôöûü]/i.test(compte.name) ? `d'${compte.name}` : `de ${compte.name}`;
+  return { nom, agence: compte.name, de, ville: compte.city?.trim() ?? "" };
+}
+
 /**
  * L'invitation : ≤ 300 caractères, un critère, zéro pitch, zéro chiffre.
  * On ne vend rien ici — on demande la connexion, c'est tout.
@@ -62,8 +97,9 @@ const firstName = (p: Prospect) => (p.name || "").trim().split(/\s+/)[0] || "";
  * ⚠⚠ La forme, elle, suit la règle des affirmations : le corps de
  * l'invitation est désormais UNE QUESTION. On ne lui donne rien à contester.
  */
-export function inviteText(p: Prospect, accountId?: string): string {
+export function inviteText(p: Prospect, accountId?: string, closerName?: string): string {
   const a = approcheEcrite(p, accountId);
+  const moi = identite(accountId, closerName);
   const who = firstName(p) ? `Bonjour ${firstName(p)}, ` : "Bonjour, ";
   // Le secteur géographique vient de la FICHE, jamais d'un arrondissement
   // codé en dur : un message qui se trompe de quartier se grille seul.
@@ -75,7 +111,7 @@ export function inviteText(p: Prospect, accountId?: string): string {
    * milieu — c'est-à-dire supprimait la seule partie qui fait répondre. On
    * sacrifie donc la formule de politesse d'abord, la question en dernier.
    */
-  const base = `${who}je suis Zakaria, d'EAGLEYE CORP. Je travaille avec ${a.critere}${zone}.`;
+  const base = `${who}je suis ${moi.nom}, ${moi.de}. Je travaille avec ${a.critere}${zone}.`;
   const question = ` La question qui m'intéresse : ${a.question}`;
   const fin = " Content d'échanger si le sujet vous parle.";
 
@@ -88,7 +124,7 @@ export function inviteText(p: Prospect, accountId?: string): string {
  * Le message post-connexion : le critère, UNE question de diagnostic,
  * et la proposition d'audit — proposée, jamais imposée.
  */
-export function messageText(p: Prospect, bookingUrl?: string, accountId?: string): string {
+export function messageText(p: Prospect, bookingUrl?: string, accountId?: string, closerName?: string): string {
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
   /**
    * ⚠ CES TROIS PHRASES ÉTAIENT ÉCRITES EN DUR, ET DUPLIQUÉES MOT POUR MOT
@@ -102,6 +138,7 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
    * laissait l'autre mentir.
    */
   const a = approcheEcrite(p, accountId);
+  const moi = identite(accountId, closerName);
   const booking = bookingUrl?.trim()
     ? ["", `Mon agenda est ouvert si vous voulez en parler un jour : ${bookingUrl.trim()}`]
     : [];
@@ -116,7 +153,9 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
     ...(a.signal ? [``, a.signal] : []),
     ...booking,
     ``,
-    `Zakaria — EAGLEYE CORP, Lyon`,
+    // La ville vient du COMPTE : elle était en dur, donc un partenaire
+    // ailleurs qu'à Lyon signait depuis une ville où il n'est pas.
+    `${moi.nom} — ${moi.agence}${moi.ville ? `, ${moi.ville}` : ""}`,
   ].join("\n");
 }
 
@@ -124,7 +163,8 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
  * La relance : le coup du méta appliqué à l'écrit — on assume le
  * silence, on ne culpabilise pas, et on ferme sur un choix binaire.
  */
-export function relanceText(p: Prospect): string {
+export function relanceText(p: Prospect, accountId?: string, closerName?: string): string {
+  const moi = identite(accountId, closerName);
   const hi = firstName(p) ? `${firstName(p)},` : "Bonjour,";
   /**
    * ⚠ « Vous êtes sur le terrain, pas sur LinkedIn » était écrit en dur.
@@ -151,7 +191,7 @@ export function relanceText(p: Prospect): string {
     ``,
     `Je ne relancerai pas : vous savez où me trouver si le sujet revient un jour. Bonne continuation à ${p.company}.`,
     ``,
-    `Zakaria — EAGLEYE CORP`,
+    `${moi.nom} — ${moi.agence}`,
   ].join("\n");
 }
 
@@ -169,10 +209,19 @@ export function relanceText(p: Prospect): string {
  * sous sa marque — exactement ce que la validation partenaire existe pour
  * empêcher.
  */
-export function textForStep(p: Prospect, step: LinkedinStep, bookingUrl?: string, accountId?: string): string {
-  if (step === "invitation") return inviteText(p, accountId);
-  if (step === "message") return messageText(p, bookingUrl, accountId);
-  if (step === "relance") return relanceText(p);
+export function textForStep(
+  p: Prospect,
+  step: LinkedinStep,
+  bookingUrl?: string,
+  accountId?: string,
+  closerName?: string
+): string {
+  if (step === "invitation") return inviteText(p, accountId, closerName);
+  if (step === "message") return messageText(p, bookingUrl, accountId, closerName);
+  // ⚠ `relanceText(p)` NE RECEVAIT NI COMPTE NI SIGNATAIRE. C'est exactement
+  // le défaut décrit au-dessus — le paramètre qui meurt au dernier saut —
+  // toujours présent sur cette étape-ci quand l'autre a été corrigée.
+  if (step === "relance") return relanceText(p, accountId, closerName);
   return "";
 }
 
@@ -207,7 +256,10 @@ export function buildLinkedinQueue(
   prospects: Prospect[],
   // Le compte décide des aimants disponibles, donc de ce que le message a le
   // droit d'annoncer. Absent, on retombe sur EAGLEYE.
-  filter?: { city?: string; bookingUrl?: string; accountId?: string }
+  // ⚠ `closerName` traverse jusqu'au texte. Sans lui, la file signe du
+  // libellé d'usine (« Le Closer ») ou de la raison sociale — ce qui est
+  // le repli VOULU, mais il faut pouvoir donner le vrai nom.
+  filter?: { city?: string; bookingUrl?: string; accountId?: string; closerName?: string }
 ): LinkedinTarget[] {
   const city = filter?.city?.trim().toLowerCase();
 
@@ -227,7 +279,7 @@ export function buildLinkedinQueue(
         step,
         touches,
         lastTouchDays,
-        text: textForStep(p, step, filter?.bookingUrl, filter?.accountId),
+        text: textForStep(p, step, filter?.bookingUrl, filter?.accountId, filter?.closerName),
         ready,
         waitDays,
       };

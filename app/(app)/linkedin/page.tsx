@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowUpRight, CheckCircle2, Clock, Copy, ExternalLink, Gauge, Linkedin, Send } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, CheckCircle2, Clock, Copy, ExternalLink, Gauge, Linkedin, Send } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { STEP_LABEL, buildLinkedinQueue, type LinkedinStep } from "@/lib/linkedi
 import { LINKEDIN_WEEKLY_LIMIT, plafondSemaine, quotaDuJour } from "@/lib/linkedin-plan";
 import { SourcingPanel } from "@/components/linkedin/sourcing-panel";
 import { PageHeader } from "@/components/ui/page-header";
+import { identiteDUsine, CLOSER_USINE } from "@/lib/signature";
 
 /**
  * Machine LinkedIn — le canal à quota.
@@ -39,8 +40,15 @@ export default function LinkedinPage() {
   const queue = useMemo(
     // Le compte actif décide des aimants disponibles, donc de l'angle du
     // message. Sans lui, chaque fiche recevait la proposition voix.
-    () => buildLinkedinQueue(prospects, { city, bookingUrl: settings.bookingUrl, accountId: settings.accountId }),
-    [prospects, city, settings.bookingUrl, settings.accountId]
+    () => buildLinkedinQueue(prospects, {
+        city,
+        bookingUrl: settings.bookingUrl,
+        accountId: settings.accountId,
+        // ⚠ Sans ce nom, la file signait « Zakaria — EAGLEYE CORP » en dur,
+        // y compris sur un compte revendeur. Voir `lib/signature.ts`.
+        closerName: settings.closerName,
+      }),
+    [prospects, city, settings.bookingUrl, settings.accountId, settings.closerName]
   );
   /**
    * ⚠ Le quota ne se lit plus à la journée seule.
@@ -88,6 +96,41 @@ export default function LinkedinPage() {
           est mort (CLAUDE.md, 02/09/2026) et cette marque n'est pas la nôtre :
           elle ne doit plus s'afficher nulle part. Ce qui reste vrai, et qui est
           la seule chose utile ici, c'est la règle du canal. */}
+      {/*
+        ⚠ CE BANDEAU EXISTE SUR /outbox DEPUIS LONGTEMPS, ET PAS ICI — alors que
+        ce canal en a PLUS besoin, pas moins.
+
+        Un email part par `/api/send`, qui refuse le libellé d'usine comme
+        identité d'expéditeur (`verifieMentions`, lib/conformite.ts) : le
+        message est bloqué avant d'atteindre qui que ce soit. Une invitation
+        LinkedIn, elle, se COPIE À LA MAIN. Aucun serveur ne la relit. Le seul
+        contrôle possible est de le dire à l'écran, avant le copier-coller.
+
+        Vu sur l'app réelle : l'invitation affichait « je suis Le Closer,
+        d'EAGLEYE CORP » sur une installation fraîche.
+
+        Il ne bloque pas — le nom est un réglage, pas une donnée corrompue.
+        Il NOMME, et il disparaît dès que le champ est rempli.
+      */}
+      {identiteDUsine(settings.closerName, settings.agencyName) && (
+        <section className="card border-signal-amber/50 p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-signal-amber">
+            <AlertTriangle size={15} /> Tes invitations se présentent comme « {CLOSER_USINE} »
+          </h2>
+          <p className="mt-1.5 text-[12px] text-paper">
+            C&apos;est le réglage d&apos;usine — un libellé, pas un nom. Ici il ne sera bloqué par personne : ces
+            messages se copient à la main, sans passer par le contrôle des mentions obligatoires qui protège les
+            emails.
+          </p>
+          <p className="mt-1.5 text-[12px] text-paper-dim">
+            <Link href="/settings" className="text-bronze-400 underline">
+              Réglages → ton nom
+            </Link>{" "}
+            — trente secondes, et ce bandeau disparaît.
+          </p>
+        </section>
+      )}
+
       <PageHeader
         eyebrow="Un canal à quota · le volume s'y paie en compte fermé"
         title="Machine LinkedIn"
