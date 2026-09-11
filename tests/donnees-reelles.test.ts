@@ -193,10 +193,25 @@ test(
     // passerait en vert sans rien chercher. C'est le piège déjà payé ici.
     assert.ok(noms.length >= 10, `extraction des noms cassée : ${noms.length} nom(s) lu(s)`);
 
+    /**
+     * ⚠⚠ IL Y AVAIT UNE EXEMPTION ICI, ET ELLE A LAISSÉ PASSER UN VRAI NOM.
+     *
+     * Elle disait : « le module d'extraction cite forcément ce qu'il extrait »
+     * et sautait `tests/noms-reels.ts`. C'était faux — ce module lit les
+     * sources privées À L'EXÉCUTION, il n'a aucun besoin de citer un nom. Son
+     * commentaire en citait pourtant un, en exemple pédagogique, et
+     * l'exemption que j'avais écrite de ma main l'a rendu invisible.
+     *
+     * Trouvé en construisant la liste de réécriture d'historique, PAS par ce
+     * test : l'invariant « aucun motif ne doit matcher l'arbre propre » a
+     * signalé l'enseigne, et c'est ce qui a révélé le trou.
+     *
+     * La règle générale, écrite dans `CLAUDE.md` le même jour : **expliquer
+     * une règle de non-divulgation est exactement le moment où l'on
+     * redivulgue.** Plus aucun fichier n'est exempté ici.
+     */
     const fautes: string[] = [];
     for (const f of fichiers()) {
-      // Le module d'extraction cite forcément ce qu'il extrait.
-      if (f === "tests/noms-reels.ts") continue;
       const src = readFileSync(join(RACINE, f), "utf8");
       for (const nom of noms) {
         const re = new RegExp(`\\b${nom.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);

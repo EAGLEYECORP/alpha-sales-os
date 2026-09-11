@@ -69,21 +69,25 @@ const VOCABULAIRE_COMMUN =
 /**
  * ⚠⚠ LES TOPONYMES SONT TRAITÉS À PART, ET C'EST LA CALIBRATION QUI COMPTE.
  *
- * `Brotteaux`, `Vitton`, `Garibaldi`, `Vauban` sont des quartiers et des rues
- * de Lyon. Ils arrivent dans la liste parce que des enseignes réelles se
- * nomment d'après eux — mais le mot NU ne désigne personne : « Lyon 6e —
- * Brotteaux Foch Vitton » décrit un TERRITOIRE de prospection, et c'est une
- * phrase parfaitement honnête qu'on écrit partout dans le produit.
+ * La liste ci-dessous est faite de quartiers et de rues de Lyon — de la
+ * géographie publique, pas de la donnée protégée. Ces mots remontent dans
+ * l'extraction parce que des enseignes réelles se nomment d'après eux, mais
+ * le mot NU ne désigne personne : un arrondissement suivi de trois quartiers
+ * décrit un TERRITOIRE de prospection, et c'est une phrase parfaitement
+ * honnête qu'on écrit partout dans le produit.
  *
  * Les interdire au mot ferait tomber une dizaine de fichiers justes. Or « un
  * garde qui refuse une phrase juste est un garde qu'on assouplira au mauvais
  * endroit la fois suivante » — le dépôt l'a déjà payé le jour où un motif
  * d'affiliation a mordu sur le verbe « supprime ».
  *
- * Ce qui identifie, c'est le toponyme ACCOLÉ À UN MOT DE MÉTIER :
- * « Carrosserie des Brotteaux » est une entreprise, « Brotteaux » est un
- * quartier. D'où les deux niveaux : le mot distinctif rare se cherche seul,
- * l'enseigne bâtie sur un toponyme se cherche ENTIÈRE.
+ * Ce qui identifie, c'est le toponyme ACCOLÉ À UN MOT DE MÉTIER : *\<métier\>
+ * de \<quartier\>* est une entreprise, *\<quartier\>* seul est un lieu. D'où
+ * les deux niveaux — le mot distinctif rare se cherche seul, l'enseigne bâtie
+ * sur un toponyme se cherche ENTIÈRE.
+ *
+ * ⚠ L'exemple est écrit en GABARIT et non avec une vraie enseigne, pour la
+ * raison donnée plus bas : c'est en illustrant cette règle qu'on la viole.
  */
 const TOPONYMES_LYONNAIS =
   /^(Brotteaux|Vitton|Garibaldi|Vauban|Foch|Cordeliers|Bellecour|Perrache|Gerland|Confluence|Vaise|Terreaux|Ainay|Charpennes|Monplaisir|Guillotière|Guillotiere|Croix-Rousse|Part-Dieu|Jean-Macé|Grange-Blanche|Montchat|Mermoz|Duchère|Duchere)$/i;
@@ -116,8 +120,18 @@ function enseignesBrutes(): string[] {
 /**
  * NIVEAU 1 — le nom distinctif, celui qui se recopie seul.
  *
- * « ***NOM-RETIRE*** » se raccourcit presque toujours en « ***NOM-RETIRE*** », et
- * c'est sous cette forme courte qu'elle avait fui dans un chunk public.
+ * Une enseigne se recopie presque toujours amputée de son mot de métier, et
+ * c'est sous cette forme courte qu'elle a fui dans un chunk public.
+ *
+ * ⚠⚠ AUCUN EXEMPLE NOMMÉ ICI, ET CE FICHIER EST LA RAISON DE LA RÈGLE.
+ * Sa première rédaction illustrait ce raccourcissement avec une VRAIE
+ * enseigne. Le garde ne l'a pas vue, parce que j'avais écrit de ma main une
+ * exemption pour ce fichier — « le module d'extraction cite forcément ce
+ * qu'il extrait ». C'est faux : il lit les sources privées À L'EXÉCUTION et
+ * n'a besoin de citer aucun nom. **L'exemption écrite pour une bonne raison
+ * ÉTAIT le trou**, et c'est par elle qu'un nom réel est passé — trouvé en
+ * construisant la liste de réécriture d'historique, pas par un test.
+ * L'exemption est retirée : ce fichier est scanné comme les autres.
  */
 export function nomsReels(): string[] {
   return [
