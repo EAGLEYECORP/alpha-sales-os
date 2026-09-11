@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ORDRE_SECTEURS, LIBELLE_SECTEUR, secteursPresents } from "../lib/secteurs";
+import { ORDRE_SECTEURS, LIBELLE_SECTEUR, GROUPE_SECTEUR, secteursPresents } from "../lib/secteurs";
 import { seedProspects } from "../lib/seed";
 import type { Prospect, Sector } from "../lib/types";
 
@@ -93,6 +93,53 @@ test("⚠ LE JEU DE DÉMONSTRATION EST ATTEIGNABLE PAR LE FILTRE", () => {
       proposes.includes(p.sector),
       `${p.company} est en « ${p.sector} », que le filtre ne propose pas — elle est invisible`
     );
+  }
+});
+
+test("⚠ UN IDENTIFIANT DE SECTEUR NE S'AFFICHE JAMAIS TEL QUEL", () => {
+  /**
+   * ⚠⚠ TROUVÉ EN REFAISANT UNE VIDÉO DE CAPTURES, pas par un test.
+   *
+   * La fiche rendait `<span className="capitalize">{p.sector}</span>` — donc
+   * l'identifiant brut, maquillé par du CSS. Tant que les valeurs étaient des
+   * noms communs (« artisan »), ça passait. Avec « maitrise-ouvrage », l'écran
+   * affichait « Maitrise-Ouvrage » : ni accent, ni apostrophe, un trait
+   * d'union à la place. Sur une capture d'écran publique.
+   *
+   * Pire, et c'est ce qui rend ce garde nécessaire : le message LinkedIn
+   * proposé sur la fiche construisait `p.sector + "s"`. Le texte devenait
+   * « je travaille avec des **maitrise-ouvrages** du coin » — un VRAI message
+   * sortant, pas un libellé qu'on corrige au prochain passage.
+   *
+   * ⚠ Ce garde est un MOTIF, donc il n'attrape que la forme déjà vue : rendre
+   * `{p.sector}` dans du JSX, et le concaténer. Il ne prétend pas plus. Ce qui
+   * le rend utile malgré ça, c'est que les deux fautes viennent du même
+   * réflexe — traiter un identifiant comme du texte lisible.
+   */
+  const src = readFileSync(join(process.cwd(), "app/(app)/prospects/[id]/page.tsx"), "utf8");
+  /**
+   * ⚠ LE `(?<!\$)` A ÉTÉ AJOUTÉ LE JOUR MÊME, parce que la première rédaction a
+   * refusé une ligne JUSTE : `${p.sector}` dans un gabarit de chaîne contient
+   * littéralement `{p.sector}`, et celui-là construit une requête de recherche
+   * interne que personne ne lit. Un garde qui refuse une phrase vraie est un
+   * garde qu'on assouplira au mauvais endroit la fois suivante.
+   * Ce qui reste visé est le JSX : `{p.sector}` posé seul dans du rendu.
+   */
+  assert.doesNotMatch(
+    src,
+    /(?<!\$)\{\s*p\.sector\s*\}/,
+    "la fiche rend l'identifiant de secteur tel quel — passe par LIBELLE_SECTEUR"
+  );
+  assert.doesNotMatch(
+    src,
+    /p\.sector\s*\+\s*"/,
+    "un identifiant de secteur est concaténé dans une phrase — passe par GROUPE_SECTEUR"
+  );
+
+  // Et les deux tables sont remplies pour de vrai : le compilateur exige les
+  // clés, pas le contenu. Une chaîne vide afficherait un blanc dans un email.
+  for (const s of ORDRE_SECTEURS) {
+    assert.ok(GROUPE_SECTEUR[s]?.trim().length > 0, `${s} : nom de groupe vide`);
   }
 });
 

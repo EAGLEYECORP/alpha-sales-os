@@ -28,6 +28,7 @@ import {
   Video,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
+import { GROUPE_SECTEUR, LIBELLE_SECTEUR } from "@/lib/secteurs";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
@@ -165,7 +166,7 @@ export default function ProspectDetailPage() {
           badge={<StageBadge stage={p.stage} />}
           subtitle={
             <>
-              {p.name} · <span className="capitalize">{p.sector}</span> · {p.city}
+              {p.name} · <span>{LIBELLE_SECTEUR[p.sector]}</span> · {p.city}
               {p.phone && <> · <a href={`tel:${p.phone}`} className="text-bronze-400 hover:underline">{p.phone}</a></>}
               <span className="mt-3 flex flex-wrap gap-4 font-mono text-sm">
                 <span className="text-paper">
@@ -1666,7 +1667,7 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
     {
       channel: "LinkedIn",
       subject: "Invitation (≤ 300 car.)",
-      body: `Bonjour ${firstName} — j'ai étudié la présence en ligne de ${p.company} (note, avis, réactivité) et j'ai 2-3 constats chiffrés qui devraient vous intéresser. Je suis lyonnais, je travaille avec des ${p.sector === "autre" ? "entreprises" : p.sector + "s"} du coin. Partant pour échanger ? — ${closer}, EAGLEYE`,
+      body: `Bonjour ${firstName} — j'ai étudié la présence en ligne de ${p.company} (note, avis, réactivité) et j'ai 2-3 constats chiffrés qui devraient vous intéresser. Je suis lyonnais, je travaille avec des ${GROUPE_SECTEUR[p.sector]} du coin. Partant pour échanger ? — ${closer}, EAGLEYE`,
     },
     {
       channel: "Email",
