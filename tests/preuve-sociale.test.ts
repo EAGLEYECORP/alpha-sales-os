@@ -251,6 +251,10 @@ const PORTEURS_DE_REFERENCE = [
    * garde qui manquait, c'est le fichier qui manquait au garde.
    */
   "docs/PUB-MOTION-MOA.md",
+  // ⚠ Et le fichier RÉELLEMENT rendu, pas seulement le script relu : c'est
+  // celui-ci qui part chez des gens. Un doc conforme ne protège de rien si la
+  // scène dessine autre chose.
+  "scripts/pub/scene.html",
 ];
 
 test("⚠ aucune conversion n'est attribuée à un nom — zéro affaire signée", () => {

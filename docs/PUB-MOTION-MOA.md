@@ -34,46 +34,72 @@ la prudence : chacun de ces refus a déjà été payé une fois dans ce dépôt.
 
 ## Le script
 
-**Plan 1 — 0 → 3 s · L'ancrage vérifiable**
+**Plan 1 — 0 → 3,6 s · L'ancrage vérifiable**
 > Votre permis est affiché
 > depuis **4 mois**.
 
 *Motion : le texte se pose, un cartouche d'arrêté se dessine au trait. Aucun
 chiffre de performance — une durée, publique et datée.*
 
-**Plan 2 — 3 → 6 s · Le renversement**
-> Non, vous ne ratez pas
-> d'appels.
+**Plan 2 — 3,6 → 6,8 s · Le renversement**
+> Vous ratez
+> des appels.
+>
+> **Non.**
 
-*Motion : la phrase apparaît puis se BARRE d'un trait net. On tue le cliché du
-marché avant que le prospect ne nous y range.*
+*Motion : la phrase s'affiche en gris, puis une rature rouge TRAVERSE les deux
+lignes d'un coup — une négation, pas une transition. « Non. » arrive ensuite,
+en blanc. On tue le cliché du marché avant que le prospect ne nous y range.*
 
-**Plan 3 — 6 → 11 s · La vraie perte**
+> ⚠ La rature est dessinée **ligne par ligne, à la largeur du texte mesuré**.
+> Une barre unique posée à la frontière des deux lignes SOULIGNE la première au
+> lieu de nier les deux — c'est ce que faisait la première version, et ça se
+> voit immédiatement à l'écran.
+
+**Plan 3 — 6,8 → 12,0 s · La vraie perte**
 > Vous avez rencontré des acquéreurs.
 > **Personne ne les a rappelés.**
 
 *Motion : trois silhouettes-points s'allument, puis s'éteignent une à une.
 Abstrait — aucun visage, donc aucun faux témoin.*
 
-**Plan 4 — 11 → 17 s · Le mécanisme**
+**Plan 4 — 12,0 → 18,2 s · Le mécanisme**
 > Alpha trie, relance,
-> consigne, et vous dit
-> **quoi faire maintenant.**
+> consigne.
 
-*Motion : quatre lignes d'une file qui s'ordonnent toutes seules. C'est le
-produit, montré — pas promis.*
+puis quatre plaques qui glissent en place, une par une :
 
-**Plan 5 — 17 → 20 s · La limite, dite**
+> Qui rappeler aujourd'hui
+> Ce qui s'est dit la dernière fois
+> Quand revenir sans agacer
+> Ce qui attend une réponse
+
+*C'est le produit MONTRÉ, pas promis : ces quatre lignes sont ce que l'écran
+du matin affiche réellement.*
+
+**Plan 5 — 18,2 → 21,6 s · La limite, dite**
 > Il ne construit pas.
-> Il ne serre pas la main.
+> Il ne serre pas
+> la main.
+>
+> Tout le reste, si.
 
-*Motion : deux traits qui s'arrêtent net contre un mur. C'est le plan le plus
-important : il est vrai, il est rare, et c'est lui qui rend les quatre
-précédents croyables.*
+*Motion : les deux limites en gris, un trait bronze qui se tire sous elles,
+puis la bascule en blanc. C'est le plan le plus important : il est vrai, il est
+rare, et c'est lui qui rend les quatre précédents croyables.*
 
-**Plan 6 — 20 → 24 s · La sortie**
-> Un cadrage. 20 minutes.
+> ⚠ **Ce plan ne se coupe pas** pour « gagner trois secondes ». Une pub qui ne
+> promet que du bien se lit comme toutes les autres, et la doctrine est
+> explicite : on fait tout sauf la livraison et la poignée de main. Un test
+> refuse son retrait.
+
+**Plan 6 — 21,6 → 25,6 s · La sortie**
+> Un cadrage.
+> 20 minutes.
+>
 > **eagleyecorp.fr**
+>
+> Lyon · Villeurbanne
 
 *Motion : le logo se compose, l'URL reste 2 s pleines à l'écran.*
 

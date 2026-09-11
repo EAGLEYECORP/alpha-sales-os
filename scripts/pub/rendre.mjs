@@ -1,0 +1,64 @@
+/**
+ * Rendu VRAIMENT déterministe : une image = un fichier, ffmpeg cadence.
+ *
+ * ⚠⚠ LA PREMIÈRE VERSION UTILISAIT `MediaRecorder` + `captureStream(0)` +
+ * `requestFrame()`, et son commentaire affirmait « 30 fps exacts quelle que
+ * soit la charge ». C'ÉTAIT FAUX, et la mesure l'a dit : le fichier sortait à
+ * **13,9 s pour un montage de 25,6 s** — tout jouait à environ deux fois la
+ * vitesse.
+ *
+ * La raison : `MediaRecorder` horodate chaque image à l'HORLOGE MURALE, pas au
+ * rythme auquel on la lui pousse. `requestFrame()` dit « voilà une image », pas
+ * « place-la à t = n/30 ». Boucler plus vite que le temps réel comprime donc la
+ * vidéo — et rien ne le signale : le fichier est parfaitement valide, il est
+ * simplement au mauvais tempo. C'est le même mode de panne que partout dans ce
+ * dépôt : ça ne casse pas, ça ment.
+ *
+ * Ici chaque image est écrite sur disque et numérotée ; `ffmpeg -framerate 30`
+ * décide seul du temps. La durée ne dépend plus de la vitesse de la machine.
+ */
+import { createRequire } from "node:module";
+// playwright-core est en CommonJS : un import nommé depuis un module ESM échoue
+// au lien. `createRequire` est le pont, sans ajouter de dépendance au dépôt.
+const require_ = createRequire(process.env.ALPHA_RACINE ?? new URL("../../package.json", import.meta.url).pathname);
+const { chromium } = require_("playwright-core");
+import { writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const ici = dirname(fileURLToPath(import.meta.url));
+const dossier = join(ici, "frames");
+rmSync(dossier, { recursive: true, force: true });
+mkdirSync(dossier, { recursive: true });
+
+const nav = await chromium.launch({
+  // ⚠ Surchargeable : un chemin de conteneur en dur rend le script inexécutable
+  // ailleurs, et ça ne se découvre qu'en essayant.
+  executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  args: ["--font-render-hinting=none"],
+});
+const page = await nav.newPage({ viewport: { width: 1080, height: 1920 } });
+await page.goto("file://" + join(ici, "scene.html"));
+
+const FPS = await page.evaluate(() => window.__FPS);
+const DUR = await page.evaluate(() => window.__DUR);
+const total = Math.round(FPS * DUR);
+console.log(`${total} images à ${FPS} fps (${DUR}s attendues)`);
+
+for (let i = 0; i < total; i++) {
+  const b64 = await page.evaluate((t) => {
+    window.__draw(t);
+    return document.getElementById("c").toDataURL("image/jpeg", 0.96).slice(23);
+  }, i / FPS);
+  writeFileSync(join(dossier, String(i).padStart(4, "0") + ".jpg"), Buffer.from(b64, "base64"));
+  if (i % 150 === 0) console.log(`  ${i}/${total}`);
+}
+
+// Six images de contrôle : on REGARDE ce qui est rendu, on ne le suppose pas.
+for (const [n, t] of [[1, 1.9], [2, 5.4], [3, 10.4], [4, 16.2], [5, 20.6], [6, 23.8]]) {
+  await page.evaluate((x) => window.__draw(x), t);
+  await page.locator("#c").screenshot({ path: join(ici, `plan${n}.png`) });
+}
+
+await nav.close();
+console.log("images écrites");
