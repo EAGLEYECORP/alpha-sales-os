@@ -26,8 +26,22 @@ import { PageHeader } from "@/components/ui/page-header";
  * cette séquence. Elle était fausse : zéro affaire signée à ce jour. L'ordre
  * reste une décision de méthode, pas un résultat mesuré.
  *
- * Le démarchage à froid n'est pas proposé. Techniquement identique à la
- * démo sortante ; la décision est documentée et assumée.
+ * Il fait AUSSI, depuis le 28/08/2026 : l'APPEL À FROID, entier. Le mode
+ * `prospection-b2b` est dans `CALL_MODES`, `allowed: true`, et cet écran mappe
+ * sur `CALL_MODES` — il le SERT donc, et il a même une branche à son nom
+ * (`isProspection`). Ses conditions cumulatives de licéité sont portées par le
+ * mode lui-même (`legal`), pas par cette prose.
+ *
+ * ⚠⚠ CE COMMENTAIRE DISAIT « le démarchage à froid n'est pas proposé », et
+ * c'était FAUX depuis le 28/08/2026. `lib/voice-script.ts` porte le
+ * post-mortem de cette exacte phrase — `COLD_CALLING_REFUSED` y a été renommée
+ * `COLD_CALLING_DISCIPLINE` parce qu'elle décrivait un état qui n'existait
+ * pas. La correction a été faite dans `lib/` et jamais ici : la panne
+ * signature du dépôt, une règle rectifiée à un endroit sur deux.
+ *
+ * Un commentaire faux ne casse rien — il ment à la session suivante, qui le
+ * croit et raisonne dessus. `tests/voice-script.test.ts` refuse désormais
+ * qu'un écran affirme l'indisponibilité d'un mode que `CALL_MODES` autorise.
  */
 export default function VoicePage() {
   const { prospects, settings, patchProspect } = useAlpha();

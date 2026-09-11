@@ -527,3 +527,82 @@ qui peuvent sonner chez quelqu'un. Corrigé d'un côté, oublié de l'autre.
 > ⚠⚠ **Rendre le dépôt privé n'annule rien.** L'historique git garde tout, les
 > forks et clones existants aussi, et les caches d'indexation. Corriger `HEAD`
 > arrête l'hémorragie ; ça ne rappelle pas ce qui est sorti.
+
+---
+
+# 📦 LA PASSE DU 10-11/09/2026 — ce qu'une relecture « A à Z » a trouvé
+
+Trois trous, tous de la même famille : **une règle juste, branchée à un endroit
+sur deux**. Aucun n'a jamais fait tomber un test avant qu'on le cherche.
+
+## 1. Le dépôt ne passait pas sa propre suite tel qu'il se clone
+
+`donnees-privees/` déplacé, suite relancée : **3 échecs**. `tests/audit-icp`
+assertait sur un CSV chargé depuis un dossier ignoré par git — donc vide sur une
+CI, chez un contributeur, sur un déploiement neuf. Le dépôt affichait 1636 tests
+verts et n'en passait pas autant chez quelqu'un d'autre.
+
+Deux d'entre eux citaient en dur **cinq entreprises lyonnaises réelles** pour
+vérifier une verticale et un slug. Un test n'a jamais eu besoin d'un vrai nom, et
+un dépôt public publie ses tests comme le reste.
+
+**Ce qui a été appris** : une *fixture* mesure le CODE, le *vrai fichier* mesure
+la DONNÉE, et le second se déclare `skip` quand il manque — un `skip` se compte
+dans le rapport, un test qui passerait à vide ne se verrait jamais. Un quatrième
+test passait justement **vacant** : sur une liste vide, `filter` rend `[]` et
+l'assertion réussit. Il n'était tenu que par le `skip` ; il tombe maintenant tout
+seul quand il n'a rien mesuré.
+
+## 2. Six rendez-vous réels, encore en dur, avec un post-mortem déjà écrit
+
+`lib/pipeline-juillet.ts` gardait six raisons sociales réelles **avec la date et
+l'heure** d'un rendez-vous commercial, dans un module commité. Le tableau de ce
+même document les listait déjà comme **fuite n° 5, gravité haute**. Le récit
+avait été écrit ; le code n'avait pas bougé.
+
+**Pourquoi la garde ne les voyait pas** : elle refusait `phone: "…"` — la forme
+qu'on venait de voir fuiter. Un rendez-vous ne porte pas de téléphone, il porte
+un `title`. Devenue structurelle : dans un module **chargeur**, aucun champ
+d'enregistrement ne reçoit un littéral de chaîne.
+
+> ⚠ Ce garde-là a raté sa **première écriture**, et c'est la mutation qui l'a
+> dit : ancré en début de ligne, il ne voyait pas les six RDV, qui tenaient
+> chacun sur **une** ligne. Écrire le commentaire « un garde par motif n'attrape
+> que ce qu'on a déjà vu » ne dispense pas de le vérifier sur le garde qu'on est
+> en train d'écrire.
+
+## 3. Les noms étaient gardés dans le bundle, les numéros dans le dépôt
+
+Deux portées pour la même question, et c'est la plus étroite qui gardait les
+noms. **18 fichiers** de `lib/`, `tests/`, `docs/` et `voice/` portaient des
+raisons sociales réelles hors bundle.
+
+Le garde du bundle a été **retiré**, pas doublé : sur un sous-ensemble strict, il
+créait la deuxième définition que ce dépôt s'interdit.
+
+## 4. ⚠⚠ Et la phrase trouvée en chemin était pire que les noms
+
+> « et c'est ce qui a **converti** la \<enseigne réelle\> »
+
+Recopiée dans **cinq** fichiers, dont deux qui alimentent les prompts. Deux
+fautes en huit mots : elle nommait une entreprise réelle dans un dépôt public,
+**et elle était fausse** — stade `offre`, `JUILLET_REEL.gagnes` = **0**.
+
+C'était de la preuve sociale fabriquée, dans le dépôt qui porte trois gardes
+contre la preuve sociale fabriquée. Aucun ne cherchait un **nom propre suivi d'un
+verbe de conversion**. `docs/POST-LANCEMENT-VERITE.md` avait posé la question
+(« les deux ne peuvent pas être vrais ») ; c'est la donnée qui a répondu.
+
+**Une affiliation se vérifie auprès de l'organisme ; une référence nommée se
+vérifie auprès de l'intéressé — dans les deux cas, sans nous prévenir.**
+
+## 5. Et le commentaire qui mentait depuis treize jours
+
+`app/(app)/voice/page.tsx` : « le démarchage à froid n'est pas proposé », dans
+l'écran qui mappe sur `CALL_MODES` — donc qui le **sert**, avec une branche
+`isProspection`. La correction du 28/08 n'avait été faite que dans `lib/`.
+
+Le garde ne cherche pas une phrase interdite dans l'absolu : il refuse une phrase
+que **la donnée contredit**. Si le mode repasse `allowed: false`, l'écrire
+redevient licite. Et les citations sont exclues — une phrase rapportée n'est pas
+une phrase affirmée.

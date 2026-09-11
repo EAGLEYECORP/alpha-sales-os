@@ -222,6 +222,26 @@ une cible qu'on ne prospecte plus.**
 > clients » / « qu'on équipe », et une **référence nommée n'en porte aucun**.
 > C'est la forme la plus convaincante des trois, et la seule qu'aucun garde ne
 > tenait. 📦 `docs/ANGLES-MORTS.md`.
+>
+> ⚠⚠ **ELLE EST RESTÉE NON BRANCHÉE, ET VOICI CE QU'ELLE A LAISSÉ PASSER :**
+> « et c'est ce qui a **converti** la \<enseigne réelle\> », recopiée dans
+> **cinq** fichiers dont `lib/os-map.ts` et `lib/voice-script.ts`, qui
+> alimentent les prompts. **Deux fautes en huit mots** : elle nommait une
+> entreprise réelle dans un dépôt public, **et elle était fausse** — la fiche
+> est au stade `offre`, `JUILLET_REEL.gagnes` vaut **0**. Rien n'a jamais été
+> signé. `docs/POST-LANCEMENT-VERITE.md` avait relevé la contradiction sans
+> pouvoir la trancher ; la donnée l'a tranchée.
+> · **Quatrième famille** désormais armée : la conversion **attribuée à un
+>   nom**. Les trois motifs existants cherchent un possessif, un « on » nu ou
+>   une troisième personne collective — une conversion attribuée à un nom
+>   propre n'en porte **aucun**.
+> · Le motif exige un **nom propre derrière le verbe** : « taux de conversion »
+>   et « convertir un prospect » restent du vocabulaire de vente légitime. Il a
+>   mordu au premier passage sur une phrase honnête du README (« consentement
+>   du **client depuis** SON compte ») — resserré le jour même, jamais la
+>   phrase juste reformulée.
+> · Ce qui remplace, et qui tient debout seul : l'ordre « émotion avant prix »
+>   est une **décision de méthode**, pas un résultat mesuré.
 
 ## Tarifs Alpha Sales OS (à refléter sur le site)
 - **10 000 € VIP** (offre haute), OU **30 % + frais de setup** (local / cloud)
@@ -319,6 +339,18 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   `COLD_CALLING_DISCIPLINE`. L'ancien argument reste vrai et devient une
   contrainte de script : **une IA qui démarche n'a droit à aucune
   improvisation**.
+  > ⚠ **La correction n'avait été faite que dans `lib/`.** `app/(app)/voice/page.tsx`
+  > a gardé **treize jours de plus** « le démarchage à froid n'est pas
+  > proposé » — dans l'écran qui mappe sur `CALL_MODES`, donc qui le **sert**,
+  > et qui porte même une branche `isProspection`. Un commentaire faux ne fait
+  > rien tomber : il ment à la session suivante, qui le croit et raisonne
+  > dessus. `tests/voice-script.test.ts` relie désormais la **prose** à la
+  > **donnée** — il ne cherche pas une phrase interdite dans l'absolu, il
+  > refuse une phrase que `CALL_MODES` contredit. Si un mode repasse
+  > `allowed: false`, l'écrire redevient licite et le garde se tait.
+  > **Les citations (« … ») sont exclues** : une phrase rapportée n'est pas une
+  > phrase affirmée, et effacer l'explication laisserait la décision sans sa
+  > raison.
 - **Le passage de main se fait sur INTÉRÊT QUALIFIÉ, plus sur le décroché.**
   Nouveau résultat `interesse` (`lib/call-cadence.ts`) : lui seul rend
   `handoffToHuman: true`. Un « non » ou un « rappelez-moi » se traite et se
@@ -842,6 +874,35 @@ physique identifiée avec son mobile personnel.
   > la minute : un dépôt public l'expose à l'abus.
 - La garde cherche la **FORME** d'un numéro, jamais une liste de numéros connus
   — une liste de ce qu'il faut cacher serait une copie de ce qu'on cache.
+- **Les NOMS sont gardés à la même échelle que les numéros** (`tests/noms-reels.ts`,
+  branché dans `tests/donnees-reelles`). Ils ne l'étaient pas : les numéros
+  étaient cherchés dans **tout fichier commité**, les noms seulement dans le
+  **bundle client** — donc sous le modèle de menace « atteindre un navigateur »,
+  celui dont l'encadré ci-dessus dit qu'il est insuffisant. Mesuré : 18 fichiers
+  de `lib/`, `tests/`, `docs/`, `voice/` portaient des raisons sociales réelles
+  hors bundle. Le garde du bundle a été **retiré**, pas doublé : sur un
+  sous-ensemble strict, il créait une deuxième définition de la même règle.
+  > ⚠ **Deux niveaux, et la calibration EST le sujet.** Le nom distinctif rare
+  > se cherche **seul** — c'est la forme courte qui fuit, une enseigne se
+  > recopiant presque toujours amputée de son mot de métier. L'enseigne bâtie
+  > sur un **toponyme** se cherche **entière** : un quartier nu décrit un
+  > territoire de prospection dans une dizaine de fichiers justes, et seul le
+  > couple *métier + toponyme* identifie quelqu'un. Les interdire au mot aurait
+  > fait tomber des phrases vraies — et un garde qui refuse une phrase vraie
+  > est un garde qu'on assouplit au mauvais endroit.
+  > ⚠⚠ **Cette règle-ci s'est fait attraper par elle-même** : la première
+  > rédaction du paragraphe ci-dessus **citait deux vrais noms en exemple**, et
+  > le garde a fait tomber `CLAUDE.md`. C'est le bon comportement, et ça dit
+  > quelque chose de général — **expliquer une règle de non-divulgation est
+  > exactement le moment où l'on redivulgue.** Une règle se décrit par sa
+  > FORME, jamais par l'échantillon qui l'a motivée.
+- **Un test qui dépend de `donnees-privees/` déclare `skip`**, il ne passe
+  jamais à vide. Trois tests tombaient sur un clone propre ; un quatrième
+  passait **vacant** (une liste vide filtrée rend une liste vide). Règle :
+  une **fixture** (`tests/fixtures-icp.ts`) mesure le CODE et tourne partout ;
+  le **vrai fichier** mesure la DONNÉE et se déclare `skip` quand il manque.
+  Asserter « chaque fiche a un téléphone » sur un texte qu'on a tapé soi-même
+  ne mesure rien.
 
 > ⚠⚠ **Rendre le dépôt privé n'annule rien.** L'historique git garde tout, les
 > forks et clones existants aussi, et les caches d'indexation. Corriger `HEAD`
