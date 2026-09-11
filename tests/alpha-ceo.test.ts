@@ -31,6 +31,8 @@ const VIDE: EtatSysteme = {
   fichesSansProchaineAction: 0,
   palierEnAttente: false,
   autopilote: null,
+  agentVocal: null,
+  ciblesAuPlafond: null,
 };
 
 // ═══════════ LA CARTE ═══════════
@@ -188,6 +190,8 @@ test("⚠ L'URGENT PASSE EN PREMIER — l'ordre est la moitié du produit", () =
     fichesSansProchaineAction: 12,
     palierEnAttente: true,
     autopilote: "non-configure",
+    agentVocal: null,
+    ciblesAuPlafond: null,
   };
   const a = diagnostiquer(tout);
   const rang = { urgent: 0, "a-traiter": 1, info: 2 } as const;
@@ -227,6 +231,8 @@ test("chaque alerte porte une ACTION à l'impératif", () => {
     fichesSansProchaineAction: 1,
     palierEnAttente: true,
     autopilote: "non-configure",
+    agentVocal: null,
+    ciblesAuPlafond: null,
   });
   assert.ok(a.length >= 6);
   for (const x of a) {

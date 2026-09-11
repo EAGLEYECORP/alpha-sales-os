@@ -180,9 +180,28 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
       GLOBAUX et parlent maîtrise d'ouvrage. Ils se prononcent aussi sur
       Nuwacom, dont l'ICP est l'assurance. Dette assumée, testée, à lever
       quand un deuxième marché entre.
-- [ ] **Attribution des apporteurs** — code de parrainage + capture à
-      l'inscription.
-- [ ] **Historique Alpha CEO** + sondes pour les 5 pannes non surveillées.
+- [x] ~~**Attribution des apporteurs**~~ — **fait le 11/09/2026**. Code de
+      parrainage (`?ref=`), capture montée dans la RACINE (un prospect amené
+      arrive sur `/vitrine`, hors coquille), attribution **immuable** posée à
+      la fois dans le code et par un trigger en base (migration 007).
+      > ⚠ L'attribution n'est pas une autorisation : elle n'ouvre aucune
+      > brique et le versement reste gouverné par `statutApporteur`.
+- [x] ~~**Historique Alpha CEO** + sondes pour les 5 pannes non surveillées~~ —
+      **fait le 11/09/2026**, et le chiffre était faux : `diagnostiquer` levait
+      **6 pannes sur 13**, donc sept étaient aveugles, pas cinq.
+      > · **Historique** (`lib/ceo-historique.ts`) : « depuis quand », la seule
+      >   chose que la photo instantanée ne disait pas. Une panne du jour et la
+      >   même ouverte depuis trois semaines demandent des gestes opposés.
+      >   ⚠ Un relevé PARTIEL ne ferme jamais rien — sinon la panne disparaît
+      >   de l'écran le jour où sa sonde tombe.
+      > · **Deux sondes branchées sur des signaux RÉELS** : `agent-absent`
+      >   (`/api/voice/presence`, la plus chère du relevé) et `plafond-decret`
+      >   (comptage sur 30 j glissants).
+      > · **Cinq restent sans sonde possible** (`SANS_SONDE_POSSIBLE`), chacune
+      >   avec sa raison et comment la vérifier à la main. Elles sont rangées
+      >   HORS de `anglesMorts` : une entrée qui ne se referme jamais y ferait
+      >   un fond permanent, et une liste qui ne descend pas à zéro cesse
+      >   d'être lue.
 - [ ] Calendrier bidirectionnel (OAuth non testable ici), Notion en lecture.
 - [ ] **Vidéo de lancement** — l'ouverture est provisoire.
 

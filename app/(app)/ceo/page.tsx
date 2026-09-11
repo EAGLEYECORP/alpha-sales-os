@@ -24,7 +24,7 @@ import {
   type Gravite,
   type NaturePoint,
 } from "@/lib/alpha-ceo";
-import { etatDepuisSondes, type ReponseMoniteur, type ReponseSante } from "@/lib/ceo-sondes";
+import { etatDepuisSondes, type ReponseMoniteur, type ReponsePresence, type ReponseSante } from "@/lib/ceo-sondes";
 import { readStorageHealth, type StorageLevel } from "@/lib/storage-health";
 import { evaluerProgression } from "@/lib/paliers-campagne";
 import { cn } from "@/lib/utils";
@@ -100,6 +100,7 @@ export default function CeoPage() {
    * morts.
    */
   const [stockage, setStockage] = useState<StorageLevel | null>(null);
+  const [presence, setPresence] = useState<ReponsePresence | null>(null);
 
   const sonder = () => {
     setChargement(true);
@@ -118,6 +119,18 @@ export default function CeoPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((j: ReponseMoniteur | null) => setMoniteur(j))
       .catch(() => setMoniteur(null));
+
+    /**
+     * ⚠ LA SONDE QUI MANQUAIT, ET C'EST LA PLUS CHÈRE DU RELEVÉ. `agent-absent`
+     * portait sa détection écrite en toutes lettres — « GET /api/voice/presence
+     * → etat vaut silencieux ou inconnu alors que l'autopilote est armé » — et
+     * personne ne l'appelait. Un cron qui compose sans agent fait sonner dans
+     * le vide : fiche brûlée, numéro grillé, minutes facturées, journaux verts.
+     */
+    fetch("/api/voice/presence")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: ReponsePresence | null) => setPresence(j))
+      .catch(() => setPresence(null));
 
     setStockage(readStorageHealth()?.level ?? null);
   };
@@ -143,6 +156,7 @@ export default function CeoPage() {
         hydratation: hydratationPipe,
         brouillons: drafts,
         prospects,
+        presence,
         palierPret,
         moniteur,
       }),

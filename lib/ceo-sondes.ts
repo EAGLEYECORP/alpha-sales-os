@@ -3,6 +3,7 @@ import type { EtatHydratation } from "./hydratation";
 import { peutSynchroniser } from "./hydratation";
 import type { StorageLevel } from "./storage-health";
 import type { CampaignDraft, Prospect } from "./types";
+import { PLAFOND_SOLLICITATIONS_B2C, cibleDepuisProspect, plafondRappels } from "./call-cadence";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -50,6 +51,11 @@ export interface ReponseSante {
   };
 }
 
+/** La part de `/api/voice/presence` dont Alpha CEO a besoin. */
+export interface ReponsePresence {
+  etat?: "vivant" | "silencieux" | "inconnu";
+}
+
 /** La part de `/api/moniteur` dont Alpha CEO a besoin. */
 export interface ReponseMoniteur {
   autopilote?: "arme" | "simulation" | "non-configure";
@@ -69,6 +75,8 @@ export interface EntreeSondes {
   palierPret: boolean;
   /** La réponse de `/api/moniteur`. `null` = pas revenue, ou en échec. */
   moniteur: ReponseMoniteur | null;
+  /** La réponse de `/api/voice/presence`. `null` = pas revenue, ou en échec. */
+  presence: ReponsePresence | null;
 }
 
 /**
@@ -139,5 +147,72 @@ export function etatDepuisSondes(e: EntreeSondes): EtatSysteme {
       e.moniteur?.autopilote === "non-configure"
         ? e.moniteur.autopilote
         : null,
+    /**
+     * ⚠ Même discipline que l'autopilote : une réponse absente n'est PAS
+     * « l'agent est mort », et un état qu'on ne saurait pas lire ne doit pas
+     * se faire passer pour l'un des trois connus.
+     *
+     * ⚠⚠ Et `inconnu` n'est pas `null`. `inconnu` est une réponse : le serveur
+     * a répondu et dit qu'aucun agent ne s'est jamais annoncé — c'est une
+     * information, et elle vaut REFUS de composer. `null` veut dire qu'on n'a
+     * pas pu demander. Les fondre ferait disparaître la panne la plus chère
+     * du relevé le jour où la sonde tombe.
+     */
+    agentVocal:
+      e.presence?.etat === "vivant" || e.presence?.etat === "silencieux" || e.presence?.etat === "inconnu"
+        ? e.presence.etat
+        : null,
+    ciblesAuPlafond: ciblesAuPlafond(e.prospects),
   };
+}
+
+/** Les canaux qui comptent comme une SOLLICITATION au sens du décret. */
+const CANAUX_SOLLICITATION = new Set(["appel", "email", "whatsapp", "linkedin"]);
+
+/** La fenêtre du décret n° 2022-1313 : 30 jours GLISSANTS. */
+export const FENETRE_DECRET_MS = 30 * 86_400_000;
+
+/**
+ * Combien de fiches ont atteint le plafond de 4 sollicitations sur 30 jours.
+ *
+ * ⚠⚠ CETTE PANNE ÉTAIT DÉCRITE ET NON SURVEILLÉE, et sa propre fiche disait
+ * pourquoi : « chaque appel pris isolément est légitime, c'est le CUMUL qui
+ * dépasse, et personne ne compte de tête sur trente jours ». `plafondRappels`
+ * arbitre un appel à venir ; il ne regarde jamais en arrière. Personne ne
+ * comptait.
+ *
+ * ⚠ LES CANAUX SONT ÉNUMÉRÉS, PAS DÉDUITS. Une `visite`, une `demo`, un
+ * `meeting` sont des rendez-vous ACCEPTÉS — les compter comme sollicitations
+ * ferait dépasser le plafond au client le plus engagé, c'est-à-dire
+ * exactement celui qu'on veut pouvoir rappeler. `note`, `stage` et `offre`
+ * sont des écritures internes : elles ne touchent personne.
+ *
+ * ⚠ GLISSANT, pas calendaire. Un mois civil autoriserait quatre sollicitations
+ * le 31 et quatre le 1er — huit en deux jours, le schéma exact que le décret
+ * vise.
+ */
+export function ciblesAuPlafond(prospects: Prospect[], maintenant: Date = new Date()): number {
+  const depuis = maintenant.getTime() - FENETRE_DECRET_MS;
+  let n = 0;
+  for (const p of prospects) {
+    /**
+     * ⚠ LE PLAFOND NE VAUT QUE SUR LES CIBLES SANS SIREN — c'est `plafondRappels`
+     * qui le dit, et la question ne se pose qu'à UN endroit. Une entreprise
+     * inscrite au registre est hors du champ du décret ; la compter ici ferait
+     * une alerte permanente que rien ne fait baisser.
+     */
+    const { plafonne } = plafondRappels(cibleDepuisProspect(p));
+    if (!plafonne) continue;
+
+    const sollicitations = p.events.filter((ev) => {
+      if (!CANAUX_SOLLICITATION.has(ev.kind)) return false;
+      const t = new Date(ev.date).getTime();
+      // Une date illisible ne COMPTE PAS : inventer une sollicitation ferait
+      // bloquer un recontact légitime.
+      return Number.isFinite(t) && t >= depuis;
+    }).length;
+
+    if (sollicitations >= PLAFOND_SOLLICITATIONS_B2C) n++;
+  }
+  return n;
 }

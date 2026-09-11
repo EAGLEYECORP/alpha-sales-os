@@ -409,6 +409,24 @@ export interface EtatSysteme {
    * qu'un réglage jamais posé.
    */
   autopilote: "arme" | "simulation" | "non-configure" | null;
+  /**
+   * L'agent vocal bat-il ? `null` = la sonde n'a pas répondu.
+   *
+   * ⚠ `agent-absent` était une panne DÉCRITE et non SURVEILLÉE — elle portait
+   * sa détection en toutes lettres (« `GET /api/voice/presence` → `etat` vaut
+   * `silencieux` ou `inconnu` alors que l'autopilote est armé ») et rien ne la
+   * posait. C'est la panne la plus chère du relevé : le cron compose, le
+   * prospect décroche, personne ne parle, et les journaux restent verts.
+   */
+  agentVocal: "vivant" | "silencieux" | "inconnu" | null;
+  /**
+   * Combien de fiches ont atteint le plafond du décret n° 2022-1313.
+   *
+   * ⚠ `null` = non mesuré, `0` = mesuré et aucune. Les confondre ferait lire
+   * « aucune fiche au plafond » sur une absence de mesure, ce qui est
+   * exactement le risque qu'on porte.
+   */
+  ciblesAuPlafond: number | null;
 }
 
 export interface Alerte {
@@ -493,6 +511,40 @@ export function diagnostiquer(etat: EtatSysteme): Alerte[] {
       true
     );
   }
+  /**
+   * ⚠⚠ L'AGENT ABSENT NE SE SIGNALE QUE SI L'AUTOPILOTE EST ARMÉ, et la
+   * condition est la moitié de la sonde.
+   *
+   * Un agent éteint pendant que rien ne compose n'est pas une panne : c'est
+   * un poste de travail fermé, l'état normal la nuit et le week-end. Alerter
+   * dessus remplirait l'écran de rouge en permanence, et on apprendrait à ne
+   * plus le lire — donc à rater le jour où ça compte.
+   *
+   * Ce qui est une panne, c'est le CROISEMENT : la machine a le droit de
+   * composer ET personne n'écoute. Là, chaque appel brûle une fiche, un
+   * numéro, et des minutes facturées, pendant que tout répond 200.
+   */
+  if (etat.autopilote === "arme" && (etat.agentVocal === "silencieux" || etat.agentVocal === "inconnu")) {
+    pousser(
+      parId(PANNES, "agent-absent"),
+      etat.agentVocal === "inconnu"
+        ? "Aucun agent vocal ne s'est jamais annoncé alors que l'autopilote est ARMÉ : lance l'agent, ou désarme."
+        : "L'agent vocal ne bat plus alors que l'autopilote est ARMÉ : chaque appel composé sonne dans le vide."
+    );
+  }
+
+  /**
+   * ⚠ Le plafond du décret est un RISQUE JURIDIQUE, pas une métrique. Il se
+   * signale dès la première fiche concernée : « seulement deux » n'existe pas
+   * quand c'est nous qui portons le risque sur une liste mêlée B2B/B2C.
+   */
+  if (etat.ciblesAuPlafond !== null && etat.ciblesAuPlafond > 0) {
+    pousser(
+      parId(PANNES, "plafond-decret"),
+      `${etat.ciblesAuPlafond} fiche(s) ont atteint 4 sollicitations sur 30 jours glissants — ne les recontacte pas avant que la fenêtre glisse.`
+    );
+  }
+
   if (etat.palierEnAttente) {
     pousser(parId(POINTS, "validation-palier"), "Un palier de campagne attend TA validation — elle ne se prend jamais toute seule.", true);
   }
@@ -529,8 +581,63 @@ export function anglesMorts(etat: EtatSysteme): string[] {
   if (etat.stockage === null) out.push("Le stockage local n'a pas été mesuré.");
   if (etat.pipeSynchronisable === null) out.push("Le mode pipe serveur n'est pas actif, ou son état n'a pas été lu.");
   if (etat.autopilote === null) out.push("On ne sait pas si l'autopilote tourne — donc pas si la machine appelle.");
+  if (etat.agentVocal === null) out.push("On ne sait pas si l'agent vocal écoute — donc pas si un appel composé aboutirait à une voix.");
+  if (etat.ciblesAuPlafond === null) out.push("Les sollicitations sur 30 jours glissants n'ont pas été comptées (décret n° 2022-1313).");
+
   return out;
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES PANNES QU'AUCUNE SONDE NE PEUT VOIR — dites, et rangées À PART.
+ *
+ * ⚠ POURQUOI CE N'EST PAS DANS `anglesMorts`. J'ai d'abord poussé cette
+ * information dans la liste des angles morts, et un test existant l'a
+ * refusée : `anglesMorts` répond à « qu'est-ce que je n'ai pas regardé
+ * AUJOURD'HUI ? » — une liste qui se vide quand les sondes répondent. Y
+ * ajouter une entrée qui ne se referme JAMAIS en fait un fond permanent, et
+ * une liste qui ne descend jamais à zéro est une liste qu'on cesse de lire.
+ * C'est la même règle que « les dossiers ouverts ne portent aucun blocage,
+ * sinon l'écran devient un mur rouge que personne ne lit ».
+ *
+ * Ces cinq-là ne manquent pas d'une sonde qu'on aurait oublié d'écrire :
+ * elles n'ont **aucun signal lisible depuis l'application**. Fabriquer une
+ * sonde qui n'observe rien serait pire que l'absence — un voyant vert sur une
+ * question jamais posée.
+ *
+ * Chacune porte SA raison : un angle mort sans motif se fait refermer au
+ * hasard par la session suivante, qui croit finir le travail.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const SANS_SONDE_POSSIBLE: { id: string; pourquoi: string; commentVerifier: string }[] = [
+  {
+    id: "spf-casse",
+    pourquoi: "C'est du DNS : il ne se lit pas depuis l'application, et une réponse mise en cache mentirait des heures.",
+    commentVerifier: "Un contrôle DNS externe sur le domaine d'envoi, à la main.",
+  },
+  {
+    id: "migration-absente",
+    pourquoi:
+      "La base ne le dit qu'au moment précis où on en a besoin (« colonne inconnue »). Le sonder demanderait d'interroger `information_schema` à chaque chargement d'écran.",
+    commentVerifier: "Les requêtes de vérification en pied de chaque fichier de migration.",
+  },
+  {
+    id: "module-mort",
+    pourquoi: "C'est de l'analyse STATIQUE — qui importe quoi — et pas un état d'exécution. Sa place est un test, pas un diagnostic.",
+    commentVerifier: "`tests/` — un export que rien n'importe est mort, et ça se voit à la compilation, pas à l'écran.",
+  },
+  {
+    id: "fiche-demo-envoyee",
+    pourquoi: "Elle se PRÉVIENT à l'envoi (`/api/send` refuse une adresse de démonstration). La constater après coup ne rattrape rien.",
+    commentVerifier: "La garde d'envoi, et son test.",
+  },
+  {
+    id: "compte-sans-session",
+    pourquoi:
+      "Sa propre `detection` dit « ouvrir l'application en navigation privée et lire le premier écran ». L'inventer en sonde reviendrait à se demander à soi-même ce qu'un inconnu voit.",
+    commentVerifier: "Une fenêtre de navigation privée, sur l'URL de production.",
+  },
+];
 
 /**
  * Le relevé par nature — pour l'écran macro qui montre ce qui PEUT bouger.

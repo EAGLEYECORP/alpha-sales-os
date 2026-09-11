@@ -46,6 +46,7 @@ const BASE: EntreeSondes = {
   prospects: [],
   palierPret: false,
   moniteur: null,
+  presence: null,
 };
 
 // ═══════════ LE PIÈGE CENTRAL : /api/health TRONQUÉE ═══════════
@@ -103,7 +104,24 @@ test("mesuré et FAUX alerte bien — la sonde n'est pas inerte", () => {
   const ids = diagnostiquer(etat).map((a) => a.id);
   assert.ok(ids.includes("smtp-absent"), "un SMTP mesuré absent doit alerter");
   assert.ok(ids.includes("prix-stripe-absent"));
-  assert.equal(anglesMorts(etat).length, 3, "mesuré = plus un angle mort (restent le stockage, le pipe et l'autopilote)");
+  /**
+   * ⚠ ON ASSERTE LE CONTENU, PLUS LE COMPTE. Ce test disait `length === 3`
+   * avec, en commentaire, le nom des trois. Brancher une sonde de plus l'a
+   * fait tomber sur « 4 !== 3 » — un message qui ne dit ni laquelle est
+   * apparue, ni si c'est voulu. Un compte figé transforme chaque ajout
+   * légitime en échec illisible, et pousse à le rehausser sans regarder.
+   *
+   * ⚠ `ciblesAuPlafond` n'est PAS un angle mort ici : il se calcule depuis les
+   * fiches, et une liste vide rend `0` — mesuré, pas ignoré. C'est justement
+   * la distinction que ce module protège.
+   */
+  const mm = anglesMorts(etat);
+  assert.ok(!mm.some((p) => /SMTP/.test(p)), "mesuré = plus un angle mort");
+  assert.ok(mm.some((p) => /stockage/i.test(p)), "le stockage n'a pas été mesuré");
+  assert.ok(mm.some((p) => /pipe serveur/i.test(p)), "le pipe non plus");
+  assert.ok(mm.some((p) => /autopilote/i.test(p)), "l'autopilote non plus");
+  assert.ok(mm.some((p) => /agent vocal/i.test(p)), "ni l'agent vocal — la sonde la plus chère du relevé");
+  assert.equal(mm.length, 4);
 
   // Et l'inverse : configuré ne dit rien et n'aveugle rien.
   const bon = etatDepuisSondes({
