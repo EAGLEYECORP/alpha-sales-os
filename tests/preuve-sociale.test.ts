@@ -138,8 +138,27 @@ const CLIENTELE_AFFIRMEE = [
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,
   /\bils sont \d+ à nous\b/i,
-  // Le « on » nu : « On équipe des ambulanciers du Rhône avec… »
-  /\bon (?:équipe|accompagne|installe|a équipé|a installé)\b/i,
+  /**
+   * Le « on » nu : « On équipe des ambulanciers du Rhône avec… ».
+   *
+   * ⚠ L'OBJET EST OBLIGATOIRE DANS LE MOTIF, et c'est lui qui sépare les deux
+   * sens. Écrit d'abord en `\bon (équipe|installe|…)\b`, il a mordu en
+   * élargissant le périmètre, sur une phrase parfaitement honnête de la
+   * garantie Alpha Voice : « **On installe**, l'agent tourne, et vous ne payez
+   * l'installation que le jour où il vous a pris un premier rendez-vous ».
+   *
+   * Là, « on installe » décrit le SERVICE, au futur conditionnel d'une offre.
+   * Ce qu'on refuse, c'est « on équipe DES ambulanciers » — un objet au
+   * pluriel qui affirme une clientèle existante. Sans objet, il n'y a aucune
+   * revendication.
+   *
+   * ⚠⚠ Et on ne reformule PAS la garantie pour contenter une regex : son
+   * libellé est une décision du 02/09/2026, lue à voix haute en rendez-vous.
+   * Tordre une phrase vraie pour éviter un faux positif, c'est apprendre à
+   * contourner ses propres gardes — après quoi on les assouplit au mauvais
+   * endroit.
+   */
+  /\bon (?:équipe|accompagne|installe|a équipé|a installé)\s+(?:des?|les|nos|plusieurs|\d+)\s+\p{L}/iu,
   // La clientèle affirmée à la troisième personne : « les confrères équipés »,
   // « des voisins déjà équipés ». C'est la même promesse, sans le possessif.
   /\b(?:confrères?|voisins?|concurrents?|collègues?) (?:déjà )?(?:équipés?|clients?)\b/i,
@@ -219,6 +238,19 @@ const PORTEURS_DE_REFERENCE = [
   "docs/public-readme.md",
   "voice/README.md",
   "README.md",
+  /**
+   * ⚠ LE SCRIPT DE PUBLICITÉ, ET IL A FAILLI ÊTRE OUBLIÉ ICI.
+   *
+   * Une pièce DIFFUSÉE est le pire endroit possible pour une preuve
+   * fabriquée : contrairement à une page qu'on corrige en redéployant, une
+   * vidéo part chez des gens et ne se rappelle pas. Elle est pourtant arrivée
+   * dans `docs/` sans que rien ne la regarde — la suite est passée au vert
+   * alors qu'aucun garde n'avait ouvert le fichier.
+   *
+   * C'est la panne signature du dépôt vue de l'autre côté : ce n'est pas le
+   * garde qui manquait, c'est le fichier qui manquait au garde.
+   */
+  "docs/PUB-MOTION-MOA.md",
 ];
 
 test("⚠ aucune conversion n'est attribuée à un nom — zéro affaire signée", () => {
@@ -250,9 +282,23 @@ test("⚠ aucune conversion n'est attribuée à un nom — zéro affaire signée
 });
 
 test("⚠ aucun texte destiné au prospect n'affirme une clientèle", () => {
+  /**
+   * ⚠⚠ CE TEST NE REGARDAIT QUE `REDACTEURS`, ET UNE MUTATION L'A DIT.
+   *
+   * En ajoutant le script de publicité à `PORTEURS_DE_REFERENCE`, j'ai cru la
+   * pièce couverte. Elle l'était contre les conversions NOMMÉES, et pas du
+   * tout contre la clientèle AFFIRMÉE : deux listes de fichiers, deux
+   * couvertures, et la seconde ne regardait pas la pièce la plus diffusée.
+   * J'ai collé « nos clients gagnent 3 RDV par semaine » dans le script : vert.
+   *
+   * Les deux familles balaient désormais le MÊME ensemble. `PORTEURS_DE_REFERENCE`
+   * contient `REDACTEURS` : c'est un sur-ensemble strict, donc élargir ne perd
+   * rien et supprime la question « laquelle des deux listes ? », qui est
+   * exactement le genre de question dont la mauvaise réponse ne se voit pas.
+   */
   const fautes: string[] = [];
 
-  for (const f of REDACTEURS) {
+  for (const f of PORTEURS_DE_REFERENCE) {
     let src: string;
     try {
       src = readFileSync(join(RACINE, f), "utf8");
