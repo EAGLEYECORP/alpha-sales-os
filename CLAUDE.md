@@ -483,6 +483,26 @@ côté serveur dans `/api/send` — le seul endroit d'où un message PART.
   humain. Ordre de repli : le nom saisi → la **société** (une raison sociale
   identifie légalement, et elle est à l'expéditeur) → le libellé d'usine,
   **rendu visible** (`usine: true`) au lieu d'être masqué.
+  > ⚠⚠ **LE BALAYAGE S'ÉTAIT ARRÊTÉ AUX EMAILS** (11/09/2026). Trois modules
+  > sortants signaient encore en dur : les **trois** messages LinkedIn,
+  > l'**argumentaire d'appel** — qui se PRONONCE — et le repli d'agence de
+  > `mail-compose` (plus sa ville, « Lyon »). Un revendeur écrivait à SES
+  > prospects sous NOTRE raison sociale.
+  > · `presentation()` (`lib/signature.ts`) est désormais la seule source de la
+  >   phrase « je suis … ». Elle tient deux règles que deux fichiers
+  >   recopiaient : ne pas nommer la société **deux fois** quand le repli tombe
+  >   sur elle (« je suis EAGLEYE CORP, de EAGLEYE CORP » — défaut CRÉÉ en
+  >   retirant le prénom en dur), et l'**élision** (« d'EAGLEYE CORP » mais
+  >   « de Nuwacom » ; jamais devant un h, le h aspiré ne se devine pas).
+  > · **Un email est rattrapé par `/api/send`, une invitation LinkedIn NON** :
+  >   elle se copie à la main, aucun serveur ne la relit. `/linkedin` porte
+  >   donc le bandeau d'identité d'usine que `/outbox` avait déjà.
+  > · ⚠ Un garde qui cherche la RAISON SOCIALE ne voit pas un **prénom** en
+  >   dur — et `lib/signature.ts` appelle celui-là « le pire des quatre ».
+  >   Mesuré : deux mutations sur trois n'ont pas mordu. Le garde ne nomme donc
+  >   personne : on passe un nom SAISI et on exige qu'il ressorte, par la file
+  >   entière, pas seulement par les fonctions appelées en direct.
+
   > ⚠ Le produit est **white-label**. Aucun repli ne remet « EAGLEYE » : la
   > marque, l'adresse légale, le papier à en-tête et le logo suivent le
   > **compte**. Ils étaient tous les quatre en dur — un email partenaire partait

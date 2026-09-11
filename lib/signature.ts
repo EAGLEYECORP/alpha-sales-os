@@ -79,3 +79,41 @@ export function signataire(closerName?: string, agencyName?: string): Signataire
  */
 export const identiteDUsine = (closerName?: string, agencyName?: string): boolean =>
   signataire(closerName, agencyName).usine;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * COMMENT ON SE PRÉSENTE À VOIX HAUTE — « je suis … ».
+ *
+ * ⚠⚠ DEUX DÉFAUTS QUE CETTE FONCTION EXISTE POUR EMPÊCHER, et les deux ont
+ * été vus sur le rendu réel, jamais déduits.
+ *
+ * 1. LA RÉPÉTITION. `signataire` rend la RAISON SOCIALE quand aucun nom n'est
+ *    saisi — c'est le repli documenté. Une phrase écrite « je suis {nom}, de
+ *    {société} » produit alors « je suis EAGLEYE CORP, de EAGLEYE CORP ».
+ *    Le défaut n'existait pas tant qu'un prénom était codé en dur : le
+ *    corriger l'a créé. Quand le signataire EST la société, on ne la dit
+ *    qu'une fois.
+ *
+ * 2. L'ÉLISION. « d'EAGLEYE CORP » mais « de Nuwacom ». Les textes en dur
+ *    portaient l'apostrophe, donc tout compte à consonne initiale aurait
+ *    produit « d'Nuwacom ». On n'élide PAS devant un h : « de Hxxx » est
+ *    toujours correct, « d'Hxxx » dépend du h aspiré, qu'aucune règle
+ *    mécanique ne tranche.
+ *
+ * ⚠ Elle vit ICI parce que `linkedin-sequence` et `argumentaire` posaient la
+ * même question. Deux copies de la règle d'élision divergeraient, et c'est
+ * celle qu'on ne relit pas qui se mettrait à dire « d'Nuwacom ».
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function presentation(closerName?: string, agencyName?: string, city?: string): string {
+  const qui = signataire(closerName, agencyName);
+  const agence = agencyName?.trim() ?? "";
+  const ou = city?.trim() ? `, à ${city.trim()}` : "";
+
+  // Le signataire EST la société : la nommer deux fois sonne comme un bug,
+  // parce que c'en est un.
+  if (!agence || qui.nom === agence) return `je suis ${qui.nom}${ou}`;
+
+  const de = /^[aeiouyàâéèêëîïôöûü]/i.test(agence) ? `d'${agence}` : `de ${agence}`;
+  return `je suis ${qui.nom}, ${de}${ou}`;
+}

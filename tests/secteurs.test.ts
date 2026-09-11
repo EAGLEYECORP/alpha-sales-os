@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ORDRE_SECTEURS, LIBELLE_SECTEUR, secteursPresents } from "../lib/secteurs";
+import { ORDRE_SECTEURS, LIBELLE_SECTEUR, GROUPE_SECTEUR, secteursPresents } from "../lib/secteurs";
+import { buildArgumentaire, argumentaireText } from "../lib/argumentaire";
 import { seedProspects } from "../lib/seed";
 import type { Prospect, Sector } from "../lib/types";
 
@@ -165,5 +166,56 @@ test("⚠ AUCUN ÉCRAN NE RECOPIE LA LISTE POUR REGARDER SES PROPRES FICHES", ()
         `${f} nomme « ${mort} » en dur — la liste doit venir de secteursPresents()`
       );
     }
+  }
+});
+
+test("⚠⚠ LE SCRIPT PRONONCÉ NOMME LE GROUPE DU PROSPECT, secteur par secteur", () => {
+  /**
+   * ⚠⚠ LE TEST QUI AURAIT ATTRAPÉ LE TERNAIRE.
+   *
+   * L'argumentaire d'appel tranchait par `sector === "artisan" ? "artisans" :
+   * "entreprises"` — deux branches sur une union de six valeurs. Tout ce qui
+   * n'était pas artisan tombait donc dans « entreprises », y compris le marché
+   * en cours : on disait à un maître d'ouvrage « je travaille avec des
+   * entreprises du secteur », c'est-à-dire rien.
+   *
+   * Et ce script se PRONONCE. C'est la deuxième phrase que le prospect entend,
+   * celle qui décide s'il écoute la suite.
+   *
+   * ⚠ Le test ne lit aucune source : il fait produire le script pour CHAQUE
+   * secteur et vérifie que le groupe nommé est celui du prospect. Un ternaire,
+   * une table, une fonction — peu importe le moyen : ce qui est vérifié, c'est
+   * ce qui sort.
+   */
+  const base = seedProspects[0];
+  assert.ok(base, "aucune fiche de référence — le test ne mesure rien");
+
+  for (const s of ORDRE_SECTEURS) {
+    const texte = argumentaireText(buildArgumentaire({ ...base, sector: s }, "eagleye"));
+    assert.ok(texte.length > 200, `${s} : argumentaire vide ou tronqué`);
+    assert.ok(
+      texte.includes(GROUPE_SECTEUR[s]),
+      `secteur « ${s} » : le script ne dit pas « ${GROUPE_SECTEUR[s] }» — il nomme un autre groupe que celui du prospect`
+    );
+  }
+});
+
+test("⚠ chaque secteur a un nom de groupe DISTINCT et non vide", () => {
+  /**
+   * Le compilateur exige les clés, pas le contenu : une chaîne vide laisserait
+   * un blanc au milieu d'une phrase prononcée. Et deux secteurs qui partagent
+   * le même libellé rendraient le test ci-dessus tautologique pour l'un d'eux.
+   *
+   * ⚠ Exception assumée : aucune pour l'instant. Si un jour deux secteurs
+   * doivent partager un nom de groupe, il faudra l'écrire ici avec son motif
+   * plutôt que d'assouplir l'assertion.
+   */
+  const vus = new Map<string, Sector>();
+  for (const s of ORDRE_SECTEURS) {
+    const g = GROUPE_SECTEUR[s];
+    assert.ok(g?.trim().length > 0, `${s} : nom de groupe vide`);
+    const deja = vus.get(g);
+    assert.ok(!deja, `« ${g} » sert à la fois pour ${deja} et ${s}`);
+    vus.set(g, s);
   }
 });

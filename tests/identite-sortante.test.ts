@@ -7,7 +7,7 @@ import { emailBody } from "../lib/mail-compose";
 import { buildArgumentaire, argumentaireText } from "../lib/argumentaire";
 import { seedProspects } from "../lib/seed";
 import { ACCOUNTS } from "../lib/accounts";
-import { CLOSER_USINE } from "../lib/signature";
+import { CLOSER_USINE, presentation } from "../lib/signature";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -226,4 +226,56 @@ test("⚠ le nom saisi PRIME, et il traverse jusqu'au texte", () => {
   for (const t of file) {
     assert.ok(t.text.includes(NOM), `file · ${t.step} · ${t.prospect.company} : le nom saisi n'y est pas`);
   }
+});
+
+test("⚠⚠ ON NE SE PRÉSENTE PAS DEUX FOIS SOUS LE MÊME NOM", () => {
+  /**
+   * ⚠⚠ DÉFAUT QUE LA CORRECTION PRÉCÉDENTE A CRÉÉ, et qui était déjà poussé.
+   *
+   * `signataire` rend la RAISON SOCIALE quand aucun nom n'est saisi — c'est le
+   * repli documenté et voulu. Une phrase écrite « je suis {nom}, de {société} »
+   * produit alors « je suis EAGLEYE CORP, de EAGLEYE CORP ». Le défaut
+   * n'existait pas tant qu'un prénom était en dur : le remplacer l'a fabriqué.
+   *
+   * Vu en IMPRIMANT le script des six secteurs, pas en le relisant. C'est la
+   * troisième fois de la journée qu'une faute de français ne se voit qu'au
+   * rendu — « les ceux », « les les », et maintenant celle-ci.
+   *
+   * Le garde cherche la RÉPÉTITION, pas une chaîne : un même nom deux fois
+   * dans la phrase de présentation, quel que soit ce nom.
+   */
+  const p = seedProspects[0];
+  for (const compte of ACCOUNTS) {
+    const sortants: Array<[string, string]> = [
+      ["argumentaire", argumentaireText(buildArgumentaire(p, compte.id))],
+      ["invitation LinkedIn", inviteText(p, compte.id)],
+    ];
+    for (const [ou, texte] of sortants) {
+      const occurrences = texte.split(compte.name).length - 1;
+      const presentation = texte.match(/je suis [^.»]{0,120}/)?.[0] ?? "";
+      assert.ok(
+        (presentation.split(compte.name).length - 1) <= 1,
+        `${compte.name} · ${ou} : la présentation nomme la société deux fois — « ${presentation} »`
+      );
+      assert.ok(occurrences >= 1, `${compte.name} · ${ou} : la société n'est jamais nommée`);
+    }
+  }
+});
+
+test("⚠ l'élision suit le nom du compte, elle n'est pas écrite en dur", () => {
+  /**
+   * « d'EAGLEYE CORP » mais « de Nuwacom ». Les textes en dur portaient
+   * l'apostrophe : tout compte à consonne initiale aurait produit
+   * « je suis X, d'Nuwacom ». La règle vit dans `lib/signature.ts`, une seule
+   * fois — elle était sur le point d'être recopiée dans un deuxième fichier.
+   *
+   * ⚠ On n'élide PAS devant un h : « de Hxxx » est toujours correct, « d'Hxxx »
+   * dépend du h aspiré, qu'aucune règle mécanique ne tranche.
+   */
+  assert.equal(presentation("Marc Perrin", "EAGLEYE CORP"), "je suis Marc Perrin, d'EAGLEYE CORP");
+  assert.equal(presentation("Marc Perrin", "Nuwacom"), "je suis Marc Perrin, de Nuwacom");
+  assert.equal(presentation("Marc Perrin", "Hauts Bâtisseurs"), "je suis Marc Perrin, de Hauts Bâtisseurs");
+  // Sans nom saisi : la société, UNE fois.
+  assert.equal(presentation(undefined, "EAGLEYE CORP"), "je suis EAGLEYE CORP");
+  assert.equal(presentation(undefined, "Nuwacom", "Lyon"), "je suis Nuwacom, à Lyon");
 });

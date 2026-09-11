@@ -60,6 +60,38 @@ export const LIBELLE_SECTEUR: Record<Sector, string> = {
 };
 
 /**
+ * Comment NOMMER LE GROUPE dans une phrase — « je travaille avec des … ».
+ *
+ * ⚠ POURQUOI IL EXISTE. Deux endroits construisaient ce bout de phrase à
+ * partir de l'IDENTIFIANT :
+ *  · le message LinkedIn d'une fiche faisait `p.sector + "s"`. Ça marchait
+ *    tant que les identifiants étaient des noms communs au singulier
+ *    (« artisan » → « artisans ») ; avec « maitrise-ouvrage », le texte
+ *    proposé devenait « je travaille avec des maitrise-ouvrages du coin » ;
+ *  · l'argumentaire d'appel — un script qui se PRONONCE — tranchait par un
+ *    ternaire à deux branches sur une union de six valeurs :
+ *    `sector === "artisan" ? "artisans" : "entreprises"`. Tout ce qui n'était
+ *    pas artisan devenait donc « entreprises », y compris le marché en cours.
+ *
+ * Un identifiant technique ne se met pas au pluriel — il se traduit.
+ *
+ * ⚠ CETTE TABLE A ÉTÉ SUPPRIMÉE PUIS REMISE LE MÊME JOUR, et c'est volontaire
+ * dans les deux sens. Créée pour le message LinkedIn, elle s'est retrouvée
+ * sans consommateur quand ce message est passé par `approcheEcrite` : un
+ * export que rien n'importe est mort, pas « prêt ». Elle revient parce que
+ * l'argumentaire pose la même question — pas « au cas où ».
+ */
+export const GROUPE_SECTEUR: Record<Sector, string> = {
+  "maitrise-ouvrage": "maîtres d'ouvrage",
+  restaurant: "restaurants",
+  pub: "bars et pubs",
+  ambulance: "sociétés d'ambulances",
+  artisan: "artisans",
+  // Le fourre-tout n'a pas de nom de métier : on dit ce qu'on sait, pas plus.
+  autre: "entreprises",
+};
+
+/**
  * Les secteurs réellement portés par des fiches, dans l'ordre d'affichage.
  *
  * Rend `[]` sur une liste vide, et c'est voulu : aucune fiche, donc rien à

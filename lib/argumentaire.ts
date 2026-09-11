@@ -1,6 +1,7 @@
 import type { Prospect } from "./types";
 import { getAccount } from "./accounts";
-import { signataire } from "./signature";
+import { presentation } from "./signature";
+import { GROUPE_SECTEUR } from "./secteurs";
 import { recovery } from "./recovery";
 import { buildLadder, type LadderResult } from "./ladder";
 import { vitalSigns } from "./vital-signs";
@@ -187,10 +188,23 @@ export function buildArgumentaire(
   // ── 1. Se présenter : court, situé, sans pitch ──
   const intro =
     `« ${p.name?.trim() && !/^(g[ée]rant|cabinet|accueil|contact)$/i.test(p.name) ? p.name : "Bonjour"}, ` +
-    // Une seule source pour « qui parle » (`lib/signature.ts`). Le repli
-    // documenté est la RAISON SOCIALE, jamais un prénom en dur.
-    `je suis ${signataire(opts.closerName, account.name).nom}, de ${account.name}${account.city ? `, à ${account.city}` : ""}. ` +
-    `Je travaille avec des ${p.sector === "artisan" ? "artisans" : "entreprises"} du secteur sur un point précis : ` +
+    /**
+     * Une seule source pour « qui parle » ET pour la façon de le dire
+     * (`lib/signature.ts`). La phrase écrite à la main ici produisait
+     * « je suis EAGLEYE CORP, de EAGLEYE CORP » dès que le repli tombait sur
+     * la raison sociale — c'est-à-dire sur toute installation sans nom saisi.
+     */
+    `${presentation(opts.closerName, account.name, account.city)}. ` +
+    /**
+     * ⚠ C'ÉTAIT UN TERNAIRE À DEUX BRANCHES SUR UNE UNION DE SIX VALEURS :
+     * `sector === "artisan" ? "artisans" : "entreprises"`. Tout ce qui
+     * n'était pas artisan tombait donc dans « entreprises » — y compris le
+     * marché en cours, à qui on disait « je travaille avec des entreprises
+     * du secteur », c'est-à-dire rien. Et ce script se PRONONCE : c'est la
+     * deuxième phrase que le prospect entend, celle qui décide s'il écoute.
+     * Une table de traduction, pas une branche (`lib/secteurs.ts`).
+     */
+    `Je travaille avec des ${GROUPE_SECTEUR[p.sector] ?? GROUPE_SECTEUR.autre} du secteur sur un point précis : ` +
     `les demandes qui arrivent et qui ne sont jamais traitées. Je vous vole deux minutes — dites-moi si ça vous parle ou pas. »`;
 
   /**

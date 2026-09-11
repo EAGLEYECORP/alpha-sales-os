@@ -9,7 +9,7 @@ import { approcheEcrite } from "./approche-ecrite";
 // ⚠ Une seule source pour « qui signe ». Ce fichier était la CINQUIÈME
 // réponse : l'en-tête de `lib/signature.ts` en listait quatre, et le
 // balayage ne l'avait pas atteint.
-import { signataire } from "./signature";
+import { signataire, presentation } from "./signature";
 import { getAccount } from "./accounts";
 
 /**
@@ -72,8 +72,15 @@ const firstName = (p: Prospect) => (p.name || "").trim().split(/\s+/)[0] || "";
 function identite(accountId?: string, closerName?: string) {
   const compte = getAccount(accountId);
   const nom = signataire(closerName, compte.name).nom;
-  const de = /^[aeiouyàâéèêëîïôöûü]/i.test(compte.name) ? `d'${compte.name}` : `de ${compte.name}`;
-  return { nom, agence: compte.name, de, ville: compte.city?.trim() ?? "" };
+  // ⚠ L'élision vivait ici ET allait être recopiée dans l'argumentaire.
+  // Elle est remontée dans `lib/signature.ts` : deux copies de la même
+  // règle divergent, et c'est celle qu'on ne relit pas qui dit « d'Nuwacom ».
+  return {
+    nom,
+    agence: compte.name,
+    presentation: presentation(closerName, compte.name),
+    ville: compte.city?.trim() ?? "",
+  };
 }
 
 /**
@@ -111,7 +118,7 @@ export function inviteText(p: Prospect, accountId?: string, closerName?: string)
    * milieu — c'est-à-dire supprimait la seule partie qui fait répondre. On
    * sacrifie donc la formule de politesse d'abord, la question en dernier.
    */
-  const base = `${who}je suis ${moi.nom}, ${moi.de}. Je travaille avec ${a.critere}${zone}.`;
+  const base = `${who}${moi.presentation}. Je travaille avec ${a.critere}${zone}.`;
   const question = ` La question qui m'intéresse : ${a.question}`;
   const fin = " Content d'échanger si le sujet vous parle.";
 
