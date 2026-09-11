@@ -23,6 +23,18 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // ── Communs : tout compte authentifié, quelle que soit son offre ──
   "/api/gate": "/login",
   "/api/billing": "/compte",
+  /**
+   * L'attribution d'apport se pose sur le compte de CELUI QUI S'INSCRIT, donc
+   * elle doit être atteignable par n'importe quel compte authentifié — y
+   * compris un gratuit, puisque c'est au moment de la création qu'elle se
+   * joue. La rattacher à `/payouts` (réflexe : « c'est de l'apporteur ») en
+   * aurait fait une route MAÎTRE, et plus aucun client n'aurait pu être
+   * attribué à personne.
+   *
+   * ⚠ Elle n'ouvre rien : elle écrit deux colonnes qui ne gouvernent aucun
+   * accès. C'est ce qui rend cette classification sûre.
+   */
+  "/api/apporteur/attribution": "/compte",
   "/api/health": "/",
   // Le catalogue sert le chiffrage et l'offre : accessible à tout compte,
   // sinon un client ne peut pas voir ce qu'il pourrait acheter en plus.

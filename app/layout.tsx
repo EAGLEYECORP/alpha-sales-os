@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { CaptureParrainage } from "@/components/capture-parrainage";
 
 export const metadata: Metadata = {
   title: {
@@ -62,6 +63,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           attributs sur <body>. Ni l'un ni l'autre ne doit faire échouer
           l'hydratation. */}
       <body suppressHydrationWarning>
+        {/*
+          ⚠ La capture du code d'apport vit ICI, dans la racine — un prospect
+          amené par un apporteur arrive sur `/vitrine`, qui est hors de la
+          coquille applicative. La monter dans `app/(app)/layout` l'aurait
+          rendue inerte pour le seul public qu'elle concerne.
+        */}
+        <CaptureParrainage />
         {children}
       </body>
     </html>

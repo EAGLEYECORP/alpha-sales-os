@@ -92,6 +92,32 @@ function estFictionOuPublic(brut: string): boolean {
    */
   const corps = n.slice(2);
   if (/^(\d)\1+$/.test(corps)) return true;
+
+  /**
+   * ⚠⚠ LA SUITE CROISSANTE ÉTAIT PROMISE DEUX FOIS EN PROSE ET IMPLÉMENTÉE
+   * NULLE PART. Les deux commentaires de cette fonction annoncent qu'on tolère
+   * « les chiffres répétés ou EN SUITE » ; seul le cas répété était codé. Le
+   * défaut signature du dépôt, dans le garde qui protège la donnée
+   * personnelle — trouvé parce qu'il a refusé `0123456789`, qui est un
+   * ALPHABET de codes d'apport, pas un numéro.
+   *
+   * ⚠ LA CONDITION PORTE SUR LE NUMÉRO ENTIER, ET C'EST TOUT LE SUJET. Le
+   * commentaire juste en dessous rappelle le cas qui a coûté cher : un
+   * indicatif mobile suivi d'une suite croissante ressemble à un exemple et
+   * n'en est pas un — c'est un numéro valide qui peut sonner chez quelqu'un.
+   * Exiger que la progression couvre TOUS les chiffres exclut ce cas : dès
+   * que l'indicatif casse la suite, le numéro reste refusé.
+   *
+   * ⚠⚠ AUCUN NUMÉRO N'EST ÉCRIT DANS CETTE EXPLICATION, et ce n'est pas une
+   * coquetterie : la première rédaction en citait deux en exemple, et le
+   * garde a fait tomber SON PROPRE FICHIER. Un garde qui cherche une forme ne
+   * distingue pas l'illustration de la donnée — expliquer une règle de
+   * non-divulgation reste le moment précis où l'on redivulgue. On décrit la
+   * forme, on ne l'écrit pas.
+   */
+  const suiteConsecutive = (s: string, pas: 1 | -1) =>
+    s.length > 2 && [...s].every((c, i) => i === 0 || Number(c) === Number(s[i - 1]) + pas);
+  if (suiteConsecutive(n, 1) || suiteConsecutive(n, -1)) return true;
   /**
    * ⚠ « 00 00 00 00 » ET LES SUITES CROISSANTES sont des exemples manifestes,
    * et ils sont partout dans les tests et la doc. Les refuser ne protégerait

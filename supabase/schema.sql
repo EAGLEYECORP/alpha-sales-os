@@ -37,6 +37,16 @@ create table if not exists public.prospects (
   updated_at timestamptz not null default now()
 );
 
+-- Le registre des codes d'apport. Voir migration 007 : l'attribution qu'il
+-- porte est IMMUABLE (trigger sur `entitlements`) — une attribution qui se
+-- réécrit est une attribution qui se vole.
+create table if not exists public.apporteur_codes (
+  code text primary key,
+  apporteur_id uuid not null references auth.users (id) on delete cascade,
+  actif boolean not null default true,
+  cree_le timestamptz not null default now()
+);
+
 create table if not exists public.campaigns (
   id text primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
