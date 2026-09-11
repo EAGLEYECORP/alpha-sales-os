@@ -147,3 +147,38 @@ export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcri
     objet: pick ? pick.magnet.title.toLowerCase() : "une question",
   };
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA FORME COURTE — WhatsApp, SMS, tout canal où l'on n'a que trois lignes.
+ *
+ * ⚠ POURQUOI ELLE VIT ICI ET PAS DANS L'ÉCRAN QUI S'EN SERT. L'onglet
+ * « messages » d'une fiche portait SES TROIS textes en dur, écrits pour le
+ * marché d'avant. Le pire disait : « j'ai préparé une maquette de {société}
+ * sur mobile ». Servi à une SCCV qui construit soixante-huit logements, ça
+ * annonce qu'on n'a pas regardé à qui on écrit.
+ *
+ * Les deux autres canaux avaient déjà leur module — `emailBody`,
+ * `inviteText` — et les deux dérivent d'`approcheEcrite`. L'écran, lui,
+ * n'appelait aucun des deux. C'est le défaut signature du dépôt : un
+ * mécanisme juste, branché partout sauf à l'endroit qu'on regarde.
+ *
+ * Écrire la forme courte DANS l'écran aurait été la quatrième formulation.
+ * Elle est donc ici, à côté des autres, et elle ne décide de rien : le
+ * critère et la question viennent d'`approcheEcrite`, comme pour l'email et
+ * pour l'invitation.
+ *
+ * ⚠ Aucune mention légale ajoutée : c'est un brouillon qu'on copie à la main.
+ * Passé dans un envoi SMS automatisé, `verifieMentions` (lib/conformite.ts) le
+ * REFUSE côté serveur — et c'est le bon endroit pour ce contrôle, pas ici.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function messageCourt(p: Prospect, accountId?: string): string {
+  const a = approcheEcrite(p, accountId);
+  const prenom = p.name.split(" ")[0]?.trim();
+  const salut = prenom ? `Bonjour ${prenom},` : "Bonjour,";
+  // Zéro pitch, zéro chiffre, zéro prix : une phrase de critère et UNE
+  // question. C'est la même discipline que l'invitation LinkedIn, qui est
+  // plafonnée, et que l'appel à froid, qui n'a droit à aucune improvisation.
+  return `${salut} je n'écris pas au hasard : je travaille avec ${a.critere}. Une question, celle qui m'intéresse vraiment : ${a.question}`;
+}

@@ -91,7 +91,37 @@ export const LEAD_MAGNETS: LeadMagnet[] = [
     ],
     offer: "visibilite-growth",
     accountIds: ["eagleye"],
-    targets: "Commerces et artisans invisibles en ligne alors qu'ils sont bons dans leur métier.",
+    /**
+     * ⚠ CE CIBLAGE N'AVAIT PAS DE DEUX-POINTS, ET C'EST UNE PANNE MÉCANIQUE,
+     * PAS UNE FAUTE DE RÉDACTION.
+     *
+     * `critereDepuisCiblage` (lib/approche-ecrite.ts) coupe au deux-points
+     * pour séparer le CRITÈRE des EXEMPLES — réciter la liste des secteurs à
+     * un prospect donne l'impression d'un publipostage. Les deux autres
+     * aimants en ont un. Celui-ci n'en avait pas : ses exemples DEVENAIENT
+     * donc le critère, mot pour mot.
+     *
+     * Mesuré sur le jeu de démonstration : deux fiches de maîtrise d'ouvrage
+     * routées « visibilité » proposaient « je travaille avec les commerces et
+     * artisans invisibles en ligne » — servi à une société d'aménagement. Le
+     * marché d'avant, dans un message sortant, en 2026.
+     *
+     * Le critère est réécrit pour dire ce qui est vrai des DEUX marchés : on
+     * ne le trouve pas quand on cherche ce qu'il vend. Un commerce fermé le
+     * dimanche et un programme neuf sans page ont exactement ce problème.
+     */
+    /**
+     * ⚠ DEUX RÉDACTIONS FAUSSES AVANT CELLE-CI, pour la même raison.
+     * `approcheEcrite` écrit « je travaille avec **les** {critère} ». Le
+     * critère doit donc être un GROUPE NOMINAL PLURIEL SANS SON ARTICLE :
+     *  · « Ceux qu'on ne trouve pas » → « les CEUX qu'on ne trouve pas » ;
+     *  · « Les entreprises qu'on… »   → « les LES entreprises qu'on… ».
+     * La première a été vue sur le rendu réel des huit fiches — c'est pour ça
+     * qu'on les imprime avant de livrer ; la seconde en relisant le mécanisme
+     * plutôt qu'en le supposant. Un test refuse maintenant les deux.
+     */
+    targets:
+      "Entreprises qu'on ne trouve pas quand on cherche ce qu'elles vendent : commerces, artisans, programmes neufs.",
     triggers: ["Site absent ou daté", "Moins de dix avis Google", "Note sous 4/5", "Réseaux inactifs"],
     hook:
       "« J'ai cherché votre métier dans votre ville et regardé ce qui remonte. " +

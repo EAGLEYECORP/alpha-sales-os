@@ -1,8 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ORDRE_SECTEURS } from "../lib/secteurs";
 import { verticalForProspect, verticalForSector, VERTICALS } from "../lib/playbook";
 import { buildTemplates, type AngleKey } from "../lib/templates";
+import { emailBody, emailSubject } from "../lib/mail-compose";
+import { inviteText } from "../lib/linkedin-sequence";
+import { messageCourt } from "../lib/approche-ecrite";
 import { permisVersProspect, lirePermis } from "../lib/permis-construire";
 import { PERMIS_DEMO, seedProspects } from "../lib/seed";
 import type { Prospect, Sector } from "../lib/types";
@@ -140,4 +145,68 @@ test("⚠⚠ AUCUN GABARIT « APPELS MANQUÉS » N'EST ENGENDRÉ POUR LA MAÎTRI
 
   // Et le cas nommé, pour que l'échec soit lisible sans dérouler la boucle.
   assert.ok(!servis.has("maitrise-ouvrage" as AngleKey), "un gabarit d'appels manqués vise la maîtrise d'ouvrage");
+});
+
+test("⚠⚠ LES MESSAGES DE LA FICHE NE DISENT PAS L'INTERDIT DE LA VERTICALE", () => {
+  /**
+   * ⚠⚠ CE QUE CE GARDE A ATTRAPÉ, ET QU'AUCUN TEST NE VOYAIT.
+   *
+   * L'onglet « messages » d'une fiche portait SES TROIS textes en dur, écrits
+   * pour le marché d'avant :
+   *  · « Pendant que {société} est fermé, vos futurs clients cherchent — et
+   *    trouvent le concurrent qui répond » ;
+   *  · « j'ai préparé une maquette de {société} sur mobile » ;
+   *  · « j'ai étudié la présence en ligne de {société} (note, avis,
+   *    réactivité) ».
+   * Servis à une SCCV qui construit soixante-huit logements, les trois
+   * annoncent qu'on n'a pas regardé à qui on écrit — et le premier prononce
+   * exactement l'interdit numéro un de la verticale.
+   *
+   * ⚠ Le test ne cherche PAS ces phrases-là : il croise les DEUX côtés. Il
+   * construit les messages que la fiche propose réellement, pour une vraie
+   * fiche du marché en cours, et il les passe dans les motifs EXÉCUTABLES de
+   * sa propre verticale. Une reformulation de bonne foi tombe donc aussi —
+   * c'est la seule chose qui arrive vraiment.
+   */
+  /**
+   * ⚠ CE BLOC EXISTE PARCE QUE LE RESTE DU TEST A UN TROU, et le dire vaut
+   * mieux que le laisser. Les assertions ci-dessous portent sur les MODULES.
+   * Si une session future recopie du texte en dur dans l'écran — le geste
+   * exact qui a créé le défaut — elles resteraient muettes : l'écran
+   * n'appellerait simplement plus les modules qu'on vérifie.
+   *
+   * On vérifie donc aussi que l'écran les APPELLE. C'est faible (un motif,
+   * sur un nom de fonction), et ça ne prétend pas plus ; mais c'est le seul
+   * lien entre « le module dit vrai » et « c'est ce module qui parle ».
+   */
+  const ecran = readFileSync(join(process.cwd(), "app/(app)/prospects/[id]/page.tsx"), "utf8");
+  for (const appel of ["emailBody(", "inviteText(", "messageCourt("]) {
+    assert.ok(
+      ecran.includes(appel),
+      `la fiche n'appelle plus ${appel} — si elle écrit ses messages elle-même, ils redeviendront ceux du marché d'avant`
+    );
+  }
+
+  const fiche = seedProspects[0];
+  assert.ok(fiche, "aucune fiche de démonstration — le test ne mesure rien");
+
+  const v = verticalForProspect(fiche);
+  assert.equal(v?.id, "maitrise-ouvrage", `la fiche témoin est routée sur « ${v?.id} »`);
+
+  const motifs = v!.forbidden.filter((f) => f.motif);
+  assert.ok(motifs.length > 0, "la verticale ne porte aucun interdit exécutable — le test ne mesure rien");
+
+  const messages: Array<[string, string]> = [
+    ["objet email", emailSubject(fiche)],
+    ["corps email", emailBody(fiche, { closerName: "Zakaria" })],
+    ["message court", messageCourt(fiche)],
+    ["invitation LinkedIn", inviteText(fiche)],
+  ];
+
+  for (const [ou, texte] of messages) {
+    assert.ok(texte.trim().length > 20, `${ou} : vide ou tronqué (${texte.length} car.)`);
+    for (const f of motifs) {
+      assert.doesNotMatch(texte, f.motif!, `${ou} prononce un interdit de la verticale — « ${f.regle} »\n${texte}`);
+    }
+  }
 });

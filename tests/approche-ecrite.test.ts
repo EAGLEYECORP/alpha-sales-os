@@ -6,6 +6,7 @@ import { approcheEcrite } from "../lib/approche-ecrite";
 import { emailSubject, emailBody } from "../lib/mail-compose";
 import { messageText } from "../lib/linkedin-sequence";
 import { pickMagnet, LEAD_MAGNETS } from "../lib/lead-magnet";
+import { seedProspects } from "../lib/seed";
 import { deepDive } from "../lib/deep-dive";
 import { VERTICALS } from "../lib/playbook";
 import type { Prospect } from "../lib/types";
@@ -295,5 +296,71 @@ test("⚠ plus aucun angle d'offre n'est écrit en dur dans les deux rédacteurs
       `${f} : le critère Alpha Voice ne doit plus être en dur`
     );
     assert.match(code, /approcheEcrite\(/, `${f} doit tirer son angle de l'aimant routé`);
+  }
+});
+
+test("⚠⚠ TOUT CIBLAGE D'AIMANT SÉPARE LE CRITÈRE DES EXEMPLES", () => {
+  /**
+   * ⚠⚠ SANS CE SÉPARATEUR, LES EXEMPLES DEVIENNENT LE CRITÈRE — et le message
+   * récite au prospect une liste de métiers qui ne sont pas le sien.
+   *
+   * `critereDepuisCiblage` coupe `targets` au deux-points : ce qui précède est
+   * la RÈGLE (« les métiers où le téléphone EST le canal d'entrée »), ce qui
+   * suit est une note interne (« garages, artisans, santé… »). Réciter la
+   * seconde à un prospect donne l'impression d'un publipostage.
+   *
+   * ⚠ Mesuré le 11/09/2026 : l'aimant « visibilité » n'avait pas de
+   * deux-points. Son ciblage entier — « Commerces et artisans invisibles en
+   * ligne » — devenait donc le critère, et DEUX fiches de maîtrise d'ouvrage
+   * du jeu de démonstration proposaient « je travaille avec les commerces et
+   * artisans invisibles en ligne » à une société d'aménagement. Le marché
+   * d'avant, dans un message sortant.
+   *
+   * Aucun test ne pouvait l'attraper : les deux autres aimants avaient leur
+   * deux-points, donc le mécanisme marchait — sur deux cas sur trois.
+   */
+  assert.ok(LEAD_MAGNETS.length >= 3, `extraction cassée : ${LEAD_MAGNETS.length} aimant(s)`);
+  for (const m of LEAD_MAGNETS) {
+    assert.ok(
+      m.targets.includes(":"),
+      `l'aimant « ${m.title} » n'a pas de deux-points dans son ciblage — ses EXEMPLES deviendront le critère servi au prospect :\n  « ${m.targets} »`
+    );
+    const critere = m.targets.split(":")[0].trim();
+    assert.ok(critere.length >= 12, `« ${m.title} » : critère trop court avant le deux-points (« ${critere} »)`);
+
+    /**
+     * ⚠ `approcheEcrite` écrit « je travaille avec **les** {critère} ». Le
+     * critère doit donc être un groupe nominal pluriel SANS SON ARTICLE.
+     * Deux rédactions fausses le même jour, sur le même aimant :
+     *  · « Ceux qu'on ne trouve pas » → « je travaille avec les CEUX… » ;
+     *  · « Les entreprises qu'on… »   → « je travaille avec les LES… ».
+     * La première n'a été vue qu'en imprimant le rendu réel des huit fiches.
+     */
+    assert.doesNotMatch(
+      critere,
+      /^(?:les|la|le|des|du|un|une|ceux|celles|ce|cet|cette)\b/i,
+      `« ${m.title} » : le ciblage commence par « ${critere.split(" ")[0]} » — le message dirait « je travaille avec les ${critere.toLowerCase()} »`
+    );
+  }
+});
+
+test("⚠ LA PHRASE DE CRITÈRE SE LIT EN FRANÇAIS, sur chaque fiche livrée", () => {
+  /**
+   * ⚠ LE TEST CI-DESSUS GARDE LA SOURCE ; CELUI-CI GARDE LE RÉSULTAT.
+   *
+   * Les deux sont nécessaires : le premier attrape la cause connue (l'article
+   * dans le ciblage), le second attrape la faute quelle qu'en soit la cause —
+   * un déterminant doublé dans la phrase réellement envoyée. C'est le seul qui
+   * aurait vu « je travaille avec les ceux » sans qu'on sache pourquoi.
+   */
+  const fiches = seedProspects;
+  assert.ok(fiches.length > 0, "aucune fiche — le test ne mesure rien");
+  for (const p of fiches) {
+    const phrase = `je travaille avec ${approcheEcrite(p).critere}`;
+    assert.doesNotMatch(
+      phrase,
+      /\b(les|la|le|des|du|un|une)\s+(les|la|le|des|du|un|une|ceux|celles|ce|cet|cette)\b/i,
+      `déterminant doublé pour ${p.company} : « ${phrase} »`
+    );
   }
 });

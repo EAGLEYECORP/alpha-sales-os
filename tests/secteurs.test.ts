@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ORDRE_SECTEURS, LIBELLE_SECTEUR, GROUPE_SECTEUR, secteursPresents } from "../lib/secteurs";
+import { ORDRE_SECTEURS, LIBELLE_SECTEUR, secteursPresents } from "../lib/secteurs";
 import { seedProspects } from "../lib/seed";
 import type { Prospect, Sector } from "../lib/types";
 
@@ -133,14 +133,9 @@ test("⚠ UN IDENTIFIANT DE SECTEUR NE S'AFFICHE JAMAIS TEL QUEL", () => {
   assert.doesNotMatch(
     src,
     /p\.sector\s*\+\s*"/,
-    "un identifiant de secteur est concaténé dans une phrase — passe par GROUPE_SECTEUR"
+    "un identifiant de secteur est concaténé dans une phrase — le message doit venir d'un module"
   );
 
-  // Et les deux tables sont remplies pour de vrai : le compilateur exige les
-  // clés, pas le contenu. Une chaîne vide afficherait un blanc dans un email.
-  for (const s of ORDRE_SECTEURS) {
-    assert.ok(GROUPE_SECTEUR[s]?.trim().length > 0, `${s} : nom de groupe vide`);
-  }
 });
 
 test("⚠ AUCUN ÉCRAN NE RECOPIE LA LISTE POUR REGARDER SES PROPRES FICHES", () => {

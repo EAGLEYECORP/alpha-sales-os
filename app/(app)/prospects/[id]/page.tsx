@@ -28,7 +28,10 @@ import {
   Video,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { GROUPE_SECTEUR, LIBELLE_SECTEUR } from "@/lib/secteurs";
+import { LIBELLE_SECTEUR } from "@/lib/secteurs";
+import { emailBody, emailSubject } from "@/lib/mail-compose";
+import { inviteText } from "@/lib/linkedin-sequence";
+import { messageCourt } from "@/lib/approche-ecrite";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
@@ -1651,28 +1654,51 @@ function CoachTab({ p, rules }: { p: Prospect; rules: string }) {
 /* ── Templates tab ───────────────────────────────────────────────────── */
 
 function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
-  // 3 messages prêts pour CE prospect — la bibliothèque complète est dans /templates
-  const firstName = p.name.split(" ")[0];
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * ⚠⚠ CES TROIS MESSAGES ÉTAIENT ÉCRITS EN DUR ICI, ET LES TROIS PARLAIENT
+   * DU MARCHÉ D'AVANT.
+   *
+   *  · « Pendant que {société} est fermé, vos futurs clients cherchent — et
+   *    trouvent le concurrent qui répond. »
+   *  · « J'ai préparé une maquette de {société} sur mobile. »
+   *  · « j'ai étudié la présence en ligne de {société} (note, avis,
+   *    réactivité) […] je travaille avec des {secteur}s du coin. »
+   *
+   * Servis à une SCCV qui construit soixante-huit logements, les trois
+   * annoncent qu'on n'a pas regardé à qui on écrit. Le premier promet un
+   * concurrent qui décroche à un maître d'ouvrage qui ne rate pas d'appels —
+   * l'interdit numéro un de sa verticale (`InterditFroid`, lib/playbook.ts).
+   *
+   * ⚠ ET LA CORRECTION EXISTAIT DÉJÀ, DEUX FOIS. `emailBody` et `inviteText`
+   * dérivent tous les deux d'`approcheEcrite`, qui route le message sur
+   * l'aimant réellement choisi pour la fiche. Le commentaire d'`inviteText`
+   * nomme même ce cas mot pour mot : « Sur un maître d'ouvrage, la version en
+   * dur promettait de parler d'appels manqués à quelqu'un qui n'en rate pas —
+   * c'est-à-dire se disqualifiait avant même d'être accepté. » La correction
+   * n'était jamais remontée jusqu'à cet écran.
+   *
+   * ⚠ Les textes en dur signaient aussi « EAGLEYE » en clair, sur un produit
+   * WHITE-LABEL. `emailBody` passe par `signataire` (lib/signature.ts), qui
+   * est le seul endroit qui décide qui signe.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  const accountId = useAlpha((s) => s.settings.accountId);
   const templates = [
     {
       channel: "Email",
-      subject: `Vos clients de 23h, ${firstName}`,
-      body: `Bonjour ${firstName},\n\nPendant que ${p.company} est fermé, vos futurs clients cherchent — et trouvent le concurrent qui répond.\n\nChaque mois sans présence sérieuse en ligne vous coûte environ ${p.ignoranceTax.toLocaleString("fr-FR")} €. Ce n'est pas un argument de vente, c'est un calcul qu'on fera ensemble, sur place, en 20 minutes.\n\nJe passe dans le quartier mardi. Je vous montre 2 minutes sur mon téléphone à quoi ressemblerait ${p.company} en ligne — sans prix, sans engagement, juste pour voir.\n\n${closer} — EAGLEYE, Lyon`,
+      subject: emailSubject(p, accountId),
+      body: emailBody(p, { accountId, closerName: closer }),
     },
     {
       channel: "WhatsApp",
-      subject: "Relance douce",
-      body: `Bonjour ${firstName}, ${closer} d'EAGLEYE (Lyon). J'ai préparé une maquette de ${p.company} sur mobile — ça prend 2 minutes à regarder et ça vaut mille discours. Je passe mardi 15h ou jeudi 10h ?`,
+      subject: "Prise de contact",
+      body: messageCourt(p, accountId),
     },
     {
       channel: "LinkedIn",
       subject: "Invitation (≤ 300 car.)",
-      body: `Bonjour ${firstName} — j'ai étudié la présence en ligne de ${p.company} (note, avis, réactivité) et j'ai 2-3 constats chiffrés qui devraient vous intéresser. Je suis lyonnais, je travaille avec des ${GROUPE_SECTEUR[p.sector]} du coin. Partant pour échanger ? — ${closer}, EAGLEYE`,
-    },
-    {
-      channel: "Email",
-      subject: "Après notre échange — les chiffres",
-      body: `Bonjour ${firstName},\n\nComme convenu, le résumé de l'audit :\n\n• Manque à gagner estimé : ${p.ignoranceTax.toLocaleString("fr-FR")} €/mois\n• Soit ${(p.ignoranceTax * 12).toLocaleString("fr-FR")} €/an de Taxe d'Ignorance\n• Notre solution : ${p.setupValue.toLocaleString("fr-FR")} € + ${p.monthlyValue.toLocaleString("fr-FR")} €/mois\n\nLa question n'est pas « est-ce que ça coûte cher » — c'est « combien coûte le fait de ne rien faire ».\n\nOn se voit ${p.nextStep ? relativeFr(p.nextStep.date) : "cette semaine"} pour décider avec les vrais chiffres.\n\n${closer} — EAGLEYE`,
+      body: inviteText(p, accountId),
     },
   ];
 
