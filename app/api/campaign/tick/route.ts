@@ -106,12 +106,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       called: 0,
-      // ⚠ Ce cas n'est PAS théorique : aucun composant de l'app ne pousse les
-      // prospects vers la table `prospects`. Le store vit dans le navigateur.
-      // Tant que la synchro n'existe pas, l'autopilote tourne à vide en
-      // rendant « ok: true » — d'où cette formulation, qui ne se lit pas
-      // comme un succès.
-      why: "Aucun prospect synchronisé côté serveur — l'autopilote n'a rien à appeler. Le CRM vit dans le navigateur ; il faut une synchro vers Supabase pour que le cron voie quelque chose.",
+      /**
+       * ⚠⚠ CE MESSAGE ENVOYAIT CONSTRUIRE CE QUI EXISTE DÉJÀ.
+       *
+       * Il disait « aucun composant de l'app ne pousse les prospects » et
+       * « il faut une synchro vers Supabase ». C'était vrai quand il a été
+       * écrit ; ça ne l'est plus. La chaîne est complète : le moteur
+       * (`components/sync-moteur.tsx`) est monté dans la coquille, pousse
+       * après 8 s de silence et repousse au `pagehide` ; la route
+       * `/api/sync/prospects` écrit ; `lib/lecture-serveur.ts` relit sous le
+       * même propriétaire.
+       *
+       * Ce qui manque dans ce cas-là n'est donc pas du code — c'est un
+       * INTERRUPTEUR : `settings.supabaseSync` vaut `false` par défaut. Un
+       * message qui envoie bâtir un chantier de plusieurs jours à la place de
+       * « coche la case » coûte exactement ces jours-là. Le mode de panne
+       * d'une prose périmée n'est pas de casser : c'est de mentir à celui qui
+       * vient chercher quoi faire.
+       *
+       * ⚠ Les deux causes restent distinctes et se disent toutes les deux :
+       * la synchro éteinte, et la synchro allumée qui n'a encore rien poussé.
+       */
+      why:
+        "Aucun prospect côté serveur — l'autopilote n'a rien à appeler. " +
+        "La synchro existe et tourne dans la coquille de l'app, mais elle est EN OPT-IN : " +
+        "Réglages → Synchronisation Supabase. Si elle est déjà active, c'est qu'aucune poussée n'a encore " +
+        "abouti — la carte de Réglages en donne l'état et la dernière erreur.",
     });
   }
 

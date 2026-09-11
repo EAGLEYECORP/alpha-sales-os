@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { PROPRIETAIRE_OPERATEUR } from "./sync-prospects";
+import { PROPRIETAIRE_OPERATEUR, prospectDepuisLigne } from "./sync-prospects";
 import type { Meeting, Prospect } from "./types";
 
 /**
@@ -80,7 +80,15 @@ export async function lireProspectsOperateur(db: SupabaseClient): Promise<Lectur
     return { prospects: [], tronque: false, avertissement: "", erreur: error.message };
   }
 
-  const brut = (data ?? []).map((r) => (r as { data: Prospect }).data).filter(Boolean);
+  /**
+   * ⚠ Le dépliage passe par `prospectDepuisLigne` (`lib/sync-prospects.ts`),
+   * l'inverse exact de `ligneProspect` qui écrit. Il était fait ici à la main,
+   * pendant que la route d'écriture composait la ligne de son côté : deux
+   * définitions de la même forme, accordées par inspection et par rien
+   * d'autre. Une divergence n'aurait pas planté — l'autopilote aurait lu des
+   * `undefined` et rendu `ok: true` sur zéro appel.
+   */
+  const brut = (data ?? []).map(prospectDepuisLigne).filter((p): p is Prospect => p !== null);
   const tronque = brut.length > LIMITE_LECTURE;
 
   return {

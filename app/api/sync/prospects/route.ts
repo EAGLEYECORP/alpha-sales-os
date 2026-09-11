@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
-import { LOT_MAX, PROPRIETAIRE_OPERATEUR } from "@/lib/sync-prospects";
+import { LOT_MAX, PROPRIETAIRE_OPERATEUR, ligneProspect, prospectDepuisLigne } from "@/lib/sync-prospects";
 
 export const runtime = "nodejs";
 
@@ -92,8 +92,8 @@ export async function GET(req: NextRequest) {
     // recompose rien ici : le serveur est un dépôt, pas une source de vérité
     // qui réinterprète.
     const fiches = (data ?? [])
-      .map((r) => (r as Record<string, unknown>).data as Prospect)
-      .filter((f): f is Prospect => Boolean(f && typeof f.id === "string"));
+      .map(prospectDepuisLigne)
+      .filter((f): f is Prospect => f !== null);
 
     return NextResponse.json({ fiches, total: count ?? 0, depuis, taille });
   }
@@ -164,9 +164,13 @@ export async function POST(req: NextRequest) {
   if (ecrire.length) {
     // Une fiche sans identifiant ni entreprise n'est pas une fiche : la
     // laisser entrer créerait une ligne fantôme que rien ne pourrait relier.
+    // ⚠ La forme de ligne vit dans `lib/sync-prospects.ts` (`ligneProspect`),
+    // avec son inverse. Elle était construite ici en dur pendant que
+    // `lib/lecture-serveur.ts` la dépliait de son côté : deux définitions qui
+    // s'accordaient par inspection, et rien pour les tenir.
     const lignes = ecrire
       .filter((p) => p && typeof p.id === "string" && p.id.trim())
-      .map((p) => ({ id: p.id, proprietaire: PROPRIETAIRE_OPERATEUR, data: p }));
+      .map(ligneProspect);
 
     if (lignes.length) {
       const { error } = await db.from("prospects").upsert(lignes, { onConflict: "id" });

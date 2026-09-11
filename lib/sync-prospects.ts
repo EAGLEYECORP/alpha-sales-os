@@ -199,3 +199,52 @@ export function etatSync(i: {
  * il y en a deux.
  */
 export const PROPRIETAIRE_OPERATEUR = "operateur";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA FORME D'UNE LIGNE `prospects` — écrite ici, lue ici, nulle part ailleurs.
+ *
+ * ⚠ ELLE ÉTAIT DÉFINIE DEUX FOIS, ET RIEN NE LES TENAIT ENSEMBLE.
+ * `/api/sync/prospects` construisait `{ id, proprietaire, data: p }` en dur
+ * dans la route ; `lib/lecture-serveur.ts` dépliait `(r as { data: Prospect }).data`
+ * de son côté. Les deux s'accordaient — par inspection, pas par construction.
+ *
+ * C'est précisément la configuration que ce dépôt s'interdit : deux endroits
+ * qui posent la même question. Le jour où quelqu'un éclate `data` en colonnes
+ * (les colonnes générées `stage`, `sector`, `company` existent déjà et donnent
+ * envie), ou passe la lecture en `select("*")`, l'écriture et la lecture
+ * divergent **sans que rien n'échoue** : l'autopilote lit des `undefined` et
+ * rend `ok: true` sur zéro appel. Exactement le mode de panne qu'on ne voit
+ * pas.
+ *
+ * Les deux fonctions ci-dessous sont l'aller et le retour de la MÊME forme, et
+ * `tests/sync-prospects.test.ts` les fait tourner l'une dans l'autre.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface LigneProspect {
+  id: string;
+  proprietaire: string;
+  data: Prospect;
+}
+
+/** Aller : la fiche telle qu'elle s'écrit en base. */
+export function ligneProspect(p: Prospect): LigneProspect {
+  return { id: p.id, proprietaire: PROPRIETAIRE_OPERATEUR, data: p };
+}
+
+/**
+ * Retour : la fiche telle qu'elle se relit.
+ *
+ * ⚠ Rend `null` plutôt que de jeter. Une ligne malformée — écrite par une
+ * version antérieure, ou par une main dans le SQL Editor — ne doit pas faire
+ * tomber le tick entier : elle doit être ignorée pendant que les autres
+ * fiches partent. Une exception ici arrêterait toute la campagne du jour pour
+ * une ligne abîmée.
+ */
+export function prospectDepuisLigne(row: unknown): Prospect | null {
+  if (!row || typeof row !== "object") return null;
+  const data = (row as { data?: unknown }).data;
+  if (!data || typeof data !== "object") return null;
+  const p = data as Prospect;
+  return typeof p.id === "string" && p.id.trim() ? p : null;
+}

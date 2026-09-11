@@ -4,7 +4,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   LOT_MAX, PLANCHER_EFFACEMENT, PROPRIETAIRE_OPERATEUR, SEUIL_EFFACEMENT,
-  allegerPourSync, etatSync, lots, planifierSync, type EmpreinteServeur,
+  allegerPourSync, etatSync, lots, planifierSync, ligneProspect, prospectDepuisLigne,
+  type EmpreinteServeur,
 } from "../lib/sync-prospects";
 import { prospect } from "./fixtures";
 import type { Prospect } from "../lib/types";
@@ -333,4 +334,111 @@ test("schéma — une correction de structure existe AUSSI en migration", () => 
   // Idempotence : relancer la migration ne doit rien casser.
   assert.match(mig, /information_schema\.columns/, "les ALTER doivent être conditionnels");
   assert.ok(mig.includes("begin;") && mig.includes("commit;"), "la migration doit être transactionnelle");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'ALLER-RETOUR : CE QUE LA SYNCHRO ÉCRIT EST CE QUE L'AUTOPILOTE LIT.
+ *
+ * ⚠⚠ LE CHAÎNON QUI N'ÉTAIT TENU PAR RIEN, ET C'EST TOUTE LA BOUCLE.
+ *
+ * La chaîne existe en entier — moteur monté dans la coquille, route qui
+ * écrit, `lib/lecture-serveur.ts` qui lit, `/api/campaign/tick` qui appelle.
+ * Mais la FORME DE LIGNE était définie à TROIS endroits : la route la
+ * composait en dur pour l'écriture, la redépliait à la main pour le
+ * chargement `?fiches=1`, et `lecture-serveur` la dépliait de son côté. Les
+ * trois s'accordaient — par inspection, jamais par construction.
+ *
+ * C'est le mode de panne qu'on ne voit pas. Le jour où quelqu'un éclate
+ * `data` en colonnes (les colonnes générées `stage`, `sector` et `company`
+ * existent déjà et donnent envie) ou passe une lecture en `select("*")`,
+ * l'écriture et la lecture divergent : l'autopilote lit des `undefined`,
+ * n'appelle personne, et rend `ok: true`. Rien n'échoue, rien n'alerte, et
+ * le moniteur affiche du calme.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("aller-retour — une fiche écrite par la synchro ressort intacte à la lecture", () => {
+  const p = prospect({ id: "p-ar", company: "Fiche test", phone: "04 65 71 00 21", tags: ["moa"] });
+
+  const ligne = ligneProspect(p);
+  assert.equal(ligne.id, p.id, "l'identifiant doit être en colonne : c'est la clé de l'upsert");
+  assert.equal(ligne.proprietaire, PROPRIETAIRE_OPERATEUR, "sans propriétaire, la lecture filtrée ne voit rien");
+
+  // Le cœur : ce qui sort est ce qui est entré.
+  assert.deepEqual(prospectDepuisLigne(ligne), p, "l'aller-retour doit être l'identité");
+});
+
+test("aller-retour — l'allègement ne coupe rien dont l'autopilote a besoin", () => {
+  /**
+   * `allegerPourSync` coupe les pièces jointes en base64 (lourdes). Il ne doit
+   * JAMAIS toucher ce qui décide d'un appel : sans téléphone la fiche est
+   * muette, sans tags la verticale se devine, sans timeline la cadence
+   * rappelle quelqu'un qui a déjà dit non.
+   */
+  const p = prospect({
+    id: "p-lourd",
+    phone: "04 65 71 00 22",
+    tags: ["moa", "permis-actif"],
+    attachments: [
+      {
+        id: "a1",
+        name: "devis.pdf",
+        kind: "proposition",
+        size: 1234,
+        addedAt: "2026-09-11T09:00:00.000Z",
+        url: "data:application/pdf;base64,AAAA",
+      },
+    ],
+  });
+
+  const allege = allegerPourSync(p);
+  const relu = prospectDepuisLigne(ligneProspect(allege));
+
+  assert.equal(relu?.phone, p.phone, "le téléphone survit — sinon la fiche est injoignable");
+  assert.deepEqual(relu?.tags, p.tags, "les tags survivent — la verticale se lit dessus");
+  assert.deepEqual(relu?.events, p.events, "la timeline survit — la cadence s'y appuie");
+  assert.equal(relu?.attachments?.[0]?.url, undefined, "la data URL, elle, est bien coupée");
+  assert.equal(relu?.attachments?.[0]?.name, "devis.pdf", "mais la fiche continue de dire ce qu'elle a");
+});
+
+test("aller-retour — une ligne abîmée est IGNORÉE, elle ne fait pas tomber le tick", () => {
+  /**
+   * ⚠ Le choix est délibéré et il a un sens opérationnel : une ligne écrite
+   * par une version antérieure, ou par une main dans le SQL Editor, ne doit
+   * pas arrêter la campagne du jour. Jeter ici ferait perdre TOUTES les
+   * fiches saines du même lot pour une seule ligne cassée.
+   */
+  assert.equal(prospectDepuisLigne(null), null);
+  assert.equal(prospectDepuisLigne({}), null, "pas de colonne data");
+  assert.equal(prospectDepuisLigne({ data: null }), null, "data vide");
+  assert.equal(prospectDepuisLigne({ data: "pas un objet" }), null);
+  assert.equal(prospectDepuisLigne({ data: { id: "  " } }), null, "un identifiant blanc n'est pas un identifiant");
+});
+
+test("⚠ la forme de ligne `prospects` ne se déplie QU'À UN ENDROIT", () => {
+  /**
+   * La garde qui empêche le retour du défaut. Elle cherche le dépliage fait à
+   * la main — un accès à `.data` suivi d'une conversion en `Prospect` — dans
+   * les fichiers qui touchent cette table. C'est la FORME du raccourci, pas
+   * une liste de fichiers connus.
+   */
+  const fichiers = [
+    "app/api/sync/prospects/route.ts",
+    "lib/lecture-serveur.ts",
+    "app/api/campaign/tick/route.ts",
+    "app/api/voice/session/route.ts",
+  ];
+  const MANUEL = /\.data\s+as\s+Prospect|\(\s*r\s+as\s*\{\s*data\s*:\s*Prospect\s*\}\s*\)/;
+
+  const fautes = fichiers.filter((f) => {
+    const src = readFileSync(join(process.cwd(), f), "utf8");
+    return MANUEL.test(src);
+  });
+
+  assert.deepEqual(
+    fautes,
+    [],
+    "dépliage manuel de la ligne `prospects` — passe par `prospectDepuisLigne` (lib/sync-prospects.ts), " +
+      "sinon l'écriture et la lecture divergent en silence :\n  " + fautes.join("\n  ")
+  );
 });

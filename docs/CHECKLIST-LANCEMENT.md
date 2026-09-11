@@ -142,10 +142,28 @@ le SQL Editor annonce quand même « Success ». Passe les migrations.
       ⚠ À passer AVANT de poser `REQUIRE_AUTH` : dès que les comptes sont
       actifs, tout compte non provisionné est refusé — y compris le tien si
       `OWNER_EMAILS` n'est pas posé.
-- [ ] `prospects` — ⚠ **elle est lue par l'autopilote et remplie par
-      personne.** Aucun composant de l'app ne pousse le CRM vers Supabase. Tant
-      que la synchro n'existe pas, `/api/campaign/tick` tourne à vide en
-      renvoyant `ok: true`. C'est un chantier, pas un réglage.
+- [ ] `prospects` — **c'est un RÉGLAGE, pas un chantier.**
+      Aller dans **Réglages → Synchronisation Supabase** et l'activer.
+      `settings.supabaseSync` vaut `false` par défaut ; tant qu'il est éteint,
+      `/api/campaign/tick` tourne à vide en renvoyant `ok: true`.
+      > ⚠⚠ **CETTE LIGNE DISAIT L'INVERSE**, et je l'ai répétée telle quelle :
+      > « elle est lue par l'autopilote et remplie par personne… c'est un
+      > chantier, pas un réglage ». C'était vrai quand ça a été écrit. La
+      > chaîne est complète depuis : moteur monté dans la coquille
+      > (`components/sync-moteur.tsx`, poussée après 8 s de silence +
+      > `sendBeacon` au `pagehide`), route `/api/sync/prospects` qui écrit,
+      > `lib/lecture-serveur.ts` qui relit sous le même propriétaire, forme de
+      > ligne unique (`ligneProspect` / `prospectDepuisLigne`) tenue par
+      > `tests/sync-prospects.test.ts`.
+      >
+      > Le message d'erreur de `/api/campaign/tick` portait la même phrase
+      > périmée et envoyait **construire ce qui existe**. Une prose qui dérive
+      > du code ne casse rien — elle ment à l'endroit précis où quelqu'un vient
+      > chercher quoi faire, et ici elle coûtait plusieurs jours de chantier
+      > inutile.
+- [ ] Vérifier après activation : la carte de Réglages doit passer à
+      **« à jour »**. « jamais synchronisé » et « erreur » sont deux états
+      distincts et demandent deux gestes différents — ne pas les confondre.
 
 ---
 
