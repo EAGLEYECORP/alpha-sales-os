@@ -25,6 +25,22 @@
 Une clé exposée reste exposée. Tant que ce n'est pas fait, tout le reste
 s'appuie sur des secrets compromis.
 
+### L'historique git a été réécrit le 11/09/2026 — ce qu'il reste à faire
+
+Les fiches, téléphones et rendez-vous réels ont été retirés de **tout**
+l'historique (`git filter-repo`, 154 motifs présents avant, 0 après). Deux
+gestes ne peuvent pas se faire depuis le code :
+
+- [ ] **Ouvrir un ticket au support GitHub** en demandant un `gc` sur le dépôt.
+      Un `push --force` rend les anciens commits orphelins ; il ne les
+      **supprime pas**. Ils restent servis par SHA et par l'API tant que GitHub
+      ne ramasse pas. SHA concernés : `9d32b81` et `13e3c8c`.
+      ⚠ Le dépôt est `private` aujourd'hui, 0 fork — le risque est faible
+      **maintenant**, et il ne le sera plus le jour où il repasse public.
+- [ ] **Re-cloner tout clone local existant**, ne surtout pas `pull`. Un `pull`
+      fusionnerait l'ancienne histoire dans la nouvelle et réintroduirait tout
+      ce qui vient d'être retiré.
+
 ---
 
 ## BLOC 1 — L'appel qui prouve que ça existe
@@ -76,9 +92,15 @@ LLM payant, c'est le seul chiffrage honnête.
       `REQUIRE_AUTH=1` et `SUPABASE_JWT_SECRET`. Sans ces deux dernières, le
       mur ne se lève jamais et tes clients restent dehors **sans erreur
       visible**. Réglages → État système → **Compte propriétaire** le dit.
-- [ ] Variables d'environnement : il y en a **63**, toutes documentées dans
-      `.env.example` (un test le vérifie). Utiliser Réglages → État système,
-      qui liste exactement ce qui manque.
+- [ ] Variables d'environnement : toutes documentées dans `.env.example` (un
+      test le vérifie). Utiliser **Réglages → État système**, qui liste
+      exactement ce qui manque sur CETTE instance.
+      > ⚠ Cette ligne annonçait « il y en a **63** » avec « un test le
+      > vérifie » accolé. Le test vérifie qu'elles sont **documentées**, pas
+      > combien il y en a — et le compte réel était passé à 66. Un compteur
+      > figé dans une doc dérive en silence : `tests/docs-chiffres.test.ts`
+      > existe précisément pour refuser ceux-là. On nomme l'écran qui compte,
+      > jamais le nombre du jour.
 - [ ] `CRON_SECRET` + appliquer `supabase/migrations/004-ordonnanceur.sql`,
       qui planifie `/api/campaign/tick` et `/api/push/tick` via `pg_cron` +
       `pg_net`. ⚠ Sans `CRON_SECRET`, ces routes **refusent tout** — c'est
@@ -201,11 +223,36 @@ Rien de technique ici, et c'est le bloc qui compte.
       raisonnement complet et les guichets réellement ouverts sont dans
       [`DOSSIER-FRENCH-TECH-2030.md`](./DOSSIER-FRENCH-TECH-2030.md) et
       [`FINANCEMENTS.md`](./FINANCEMENTS.md).
-- [ ] Choisir **un** prospect du pipe de juillet et le closer. Un seul.
+> ⚠⚠ **CE BLOC POINTAIT ENCORE SUR LE MARCHÉ D'AVANT.** La cible a changé le
+> 09/09/2026 — **le maître d'ouvrage professionnel à permis de construire
+> actif, sur Lyon et Villeurbanne** (`lib/permis-construire.ts`) — et ce
+> document, qui est le seul à dire quoi faire ensuite, continuait d'envoyer
+> vers les garages et auto-écoles de juillet. Le pipe de juillet reste
+> travaillable (il existe, il est chaud), mais ce n'est plus là que se
+> construit la suite.
 
-**Zéro vente à ce jour.** Une suite de tests complète, et aucun euro. Tout ce qui est construit
-est une hypothèse tant que ce bloc n'est pas entamé — le code n'a jamais été
-le facteur limitant.
+**Les trois marches qui manquent, et aucune n'est du code** — elles sont dans
+cet ordre parce que chacune dépend de la précédente :
+
+- [ ] **Extraire les permis Lyon + Villeurbanne.** Les arrêtés sont publics et
+      datés. Sans cette liste, tout le module de ciblage tourne sur un jeu de
+      démonstration. ⚠ Le sandbox de développement n'atteint pas
+      `data.grandlyon.com` — c'est un geste qui se fait de ton côté.
+- [ ] **Relever les téléphones à la main.** Un export de permis n'en porte
+      **aucun** : c'est la troisième colonne, celle qu'Alpha ne fait pas et
+      l'assume (`docs/PERMIS-LYON.md`). Le canal par défaut reste **LinkedIn**
+      tant que le numéro n'est pas relevé — mettre « tel » sur une fiche muette
+      la fait entrer dans la file d'appels où elle ne sonnera jamais.
+- [ ] **Appeler, et écrire ce qui a été dit.** C'est ce qui remplace les trois
+      hypothèses non mesurées (décroché 30 %, intérêt qualifié 20 %, tarif
+      minute) et les seuils décidés sans mesure (6 logements, score 55, poids
+      par phase).
+
+- [ ] Et **un** prospect du pipe de juillet, closé. Un seul. Il est déjà chaud.
+
+**Zéro vente à ce jour.** Et zéro permis converti. Une suite de tests complète,
+et aucun euro. Tout ce qui est construit est une hypothèse tant que ce bloc
+n'est pas entamé — le code n'a jamais été le facteur limitant.
 
 ---
 
