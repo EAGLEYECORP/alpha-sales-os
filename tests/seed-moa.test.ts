@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PERMIS_DEMO, PERMIS_PAR_FICHE, seedProspects, isDemoProspect, DOMAINES_RESERVES } from "../lib/seed";
+import {
+  PERMIS_DEMO,
+  PERMIS_PAR_FICHE,
+  seedProspects,
+  seedMeetings,
+  seedActivities,
+  isDemoProspect,
+  DOMAINES_RESERVES,
+} from "../lib/seed";
 import { lirePermis, trierPermis, communeDansLaZone } from "../lib/permis-construire";
 import { deepDive } from "../lib/deep-dive";
 import { verticalForProspect } from "../lib/playbook";
@@ -149,6 +157,64 @@ test("⚠ les garanties structurelles valent AUSSI pour les fiches écrites à l
       );
     }
   }
+});
+
+test("⚠ LE MARQUEUR SUIT LE NOM PARTOUT, pas seulement dans le champ `company`", () => {
+  /**
+   * ⚠⚠ LE TEST AU-DESSUS DIT LE BON MOT — « le marqueur doit être DANS le nom,
+   * pas dans un champ à côté » — ET NE LE VÉRIFIAIT QUE SUR `company`.
+   *
+   * Mesuré le 11/09/2026, en préparant une vidéo de captures d'écran : DIX
+   * chaînes nommaient une fiche de démo sans marqueur, dans `seedMeetings.title`
+   * et `seedActivities.message`. Or ce sont exactement celles que l'écran
+   * affiche : `/aujourdhui` — le premier onglet, l'écran du matin — rend le
+   * TITRE du rendez-vous, jamais le champ `company`. Le marqueur existait donc
+   * là où personne ne regarde et manquait là où tout le monde regarde.
+   *
+   * La pire des dix : « SIGNÉ ✓ <fiche> — Alpha Voice, setup payable au premier
+   * RDV pris ». Zéro vente à ce jour (`JUILLET_REEL.gagnes` vaut 0). Sur une
+   * capture d'écran sortie de son app, cette ligne est un client signé inventé
+   * — la famille d'erreur que tout ce dépôt refuse.
+   *
+   * ⚠⚠ LA PREMIÈRE RÉDACTION DE CE GARDE ÉTAIT LEXICALE, ET ELLE EST MORTE À
+   * LA MUTATION — retirer « (démo) » d'un titre n'a fait tomber AUCUN test.
+   *
+   * Pourquoi : le nom dérivé de `company` valait « **Les** Terrasses des
+   * Canuts », le titre affiché dit le même nom sans l'article, et le `includes`
+   * échouait. C'est la calibration décrite dans CLAUDE.md — un motif n'attrape
+   * que la forme exacte déjà vue, et se rouvre à la tournure suivante. Élargir
+   * l'aurait fait mordre sur un toponyme nu, qui décrit un quartier de
+   * l'agglomération dans des phrases parfaitement justes.
+   *
+   * On abandonne donc le lexical pour le STRUCTUREL : une fiche n'est pas
+   * reconnue à son nom, elle l'est à son IDENTIFIANT. Tout enregistrement
+   * RATTACHÉ à une fiche de démo parle d'elle — quelle que soit la façon dont
+   * il l'écrit, ou même s'il ne l'écrit pas. Aucun motif, donc rien à rouvrir.
+   *
+   * Conséquence assumée : la règle vaut aussi pour un texte qui ne nomme
+   * personne (« Brief d'appel généré »). Le marquer coûte quatre caractères et
+   * supprime toute question de calibration. Un enregistrement NON rattaché
+   * reste exempt : il ne parle d'aucune fiche, et l'obliger fabriquerait du
+   * bruit que quelqu'un finirait par désarmer.
+   */
+  const rattaches: Array<{ ou: string; texte: string; fiche: string }> = [
+    ...seedMeetings.map((m) => ({ ou: `meeting ${m.id}.title`, texte: m.title, fiche: m.prospectId })),
+    ...seedActivities
+      .filter((a) => a.prospectId)
+      .map((a) => ({ ou: `activité ${a.id}.message`, texte: a.message, fiche: a.prospectId! })),
+  ].filter((r) => isDemoProspect(r.fiche));
+
+  // Non-vacuité : un filtre sur une liste vide rend une liste vide et ce test
+  // passerait sans rien comparer. Le piège déjà payé quatre fois ici.
+  assert.ok(rattaches.length >= 9, `extraction cassée : ${rattaches.length} enregistrement(s) rattaché(s)`);
+
+  const nus = rattaches.filter((r) => !r.texte.includes("(démo)")).map((r) => `${r.ou} — « ${r.texte} »`);
+  assert.deepEqual(
+    nus,
+    [],
+    "ces textes parlent d'une fiche de démo SANS porter le marqueur — sur une capture " +
+      "d'écran sortie de l'app, ils se lisent comme des clients réels :\n  " + nus.join("\n  ")
+  );
 });
 
 // ═══════════ CE QUE LA DÉMO DOIT MONTRER DU PRODUIT ═══════════

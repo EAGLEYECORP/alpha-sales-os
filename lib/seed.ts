@@ -39,6 +39,18 @@
  *    anciennes fiches portaient des domaines INVENTÉS en `.fr`, qui peuvent
  *    être déposés par n'importe qui demain ;
  *  · « (démo) » DANS le nom de société, donc dans les exports et les captures.
+ *
+ * ⚠ LA QUATRIÈME S'EST RÉVÉLÉE TENUE À UN SEUL ENDROIT, le 11/09/2026, en
+ * préparant une vidéo de captures d'écran. Le marqueur vivait dans `company`
+ * — que l'écran du matin n'affiche JAMAIS — et manquait dans les dix chaînes
+ * qu'il affiche vraiment : `seedMeetings[].title` et `seedActivities[].message`.
+ * Dont « SIGNÉ ✓ <fiche> », c'est-à-dire un client signé inventé sur une image
+ * sortie de son contexte, alors que `JUILLET_REEL.gagnes` vaut 0.
+ * La règle est désormais STRUCTURELLE : tout enregistrement rattaché à une
+ * fiche de démo porte le marqueur, qu'il la nomme ou non. Reconnaître par
+ * l'identifiant, jamais par le nom — un motif lexical ratait « Terrasses des
+ * Canuts » face à « **Les** Terrasses des Canuts », et c'est la mutation qui
+ * l'a dit, pas la relecture.
  * ─────────────────────────────────────────────────────────────────────
  */
 import type {
@@ -733,11 +745,11 @@ export const seedCampaigns: Campaign[] = [
  * semaine de travail.
  */
 export const seedMeetings: Meeting[] = [
-  { id: "m1", prospectId: "demo-sccv-canuts", title: "Closing — Terrasses des Canuts", date: daysAheadAt(1, 10, 30), durationMin: 45, kind: "closing", channel: "visio", location: "Visioconférence", calLink: "https://cal.com/eagleye/closing-canuts", reminded: true, done: false },
-  { id: "m2", prospectId: "demo-sccv-monplaisir", title: "Démo en direct — Carré Monplaisir", date: daysAheadAt(2, 14, 0), durationMin: 30, kind: "demo", channel: "physique", location: "Bureau de vente — Lyon 8e", calLink: "https://cal.com/eagleye/demo-monplaisir", reminded: false, done: false },
-  { id: "m3", prospectId: "demo-gratteciel-promotion", title: "Rappel décision — Gratte-Ciel Promotion", date: daysAheadAt(2, 16, 30), durationMin: 20, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
-  { id: "m4", prospectId: "demo-fonciere-rhone-nord", title: "Audit — Foncière du Rhône Nord", date: daysAheadAt(3, 9, 30), durationMin: 45, kind: "audit", channel: "physique", location: "Sur place — Lyon 6e", calLink: "https://cal.com/eagleye/audit-rhone-nord", reminded: false, done: false },
-  { id: "m5", prospectId: "demo-residences-gratteciel", title: "Point J+30 — Résidences des Gratte-Ciel", date: daysAheadAt(5, 11, 0), durationMin: 45, kind: "suivi", channel: "visio", location: "Visioconférence", calLink: "https://cal.com/eagleye/suivi-gratteciel", reminded: false, done: false },
+  { id: "m1", prospectId: "demo-sccv-canuts", title: "Closing — Terrasses des Canuts (démo)", date: daysAheadAt(1, 10, 30), durationMin: 45, kind: "closing", channel: "visio", location: "Visioconférence", calLink: "https://cal.com/eagleye/closing-canuts", reminded: true, done: false },
+  { id: "m2", prospectId: "demo-sccv-monplaisir", title: "Démo en direct — Carré Monplaisir (démo)", date: daysAheadAt(2, 14, 0), durationMin: 30, kind: "demo", channel: "physique", location: "Bureau de vente — Lyon 8e", calLink: "https://cal.com/eagleye/demo-monplaisir", reminded: false, done: false },
+  { id: "m3", prospectId: "demo-gratteciel-promotion", title: "Rappel décision — Gratte-Ciel Promotion (démo)", date: daysAheadAt(2, 16, 30), durationMin: 20, kind: "closing", channel: "appel", location: "Téléphone", reminded: true, done: false },
+  { id: "m4", prospectId: "demo-fonciere-rhone-nord", title: "Audit — Foncière du Rhône Nord (démo)", date: daysAheadAt(3, 9, 30), durationMin: 45, kind: "audit", channel: "physique", location: "Sur place — Lyon 6e", calLink: "https://cal.com/eagleye/audit-rhone-nord", reminded: false, done: false },
+  { id: "m5", prospectId: "demo-residences-gratteciel", title: "Point J+30 — Résidences des Gratte-Ciel (démo)", date: daysAheadAt(5, 11, 0), durationMin: 45, kind: "suivi", channel: "visio", location: "Visioconférence", calLink: "https://cal.com/eagleye/suivi-gratteciel", reminded: false, done: false },
 ];
 
 export const seedNurture: NurtureSequence[] = [
@@ -809,12 +821,12 @@ export const seedCompetitors: Competitor[] = [
 ];
 
 export const seedActivities: Activity[] = [
-  { id: "ac1", date: daysAgo(3), kind: "stage", message: "Terrasses des Canuts → Red Zone (objection de confiance ouverte)", prospectId: "demo-sccv-canuts" },
+  { id: "ac1", date: daysAgo(3), kind: "stage", message: "Terrasses des Canuts (démo) → Red Zone (objection de confiance ouverte)", prospectId: "demo-sccv-canuts" },
   { id: "ac2", date: daysAgo(4), kind: "campagne", message: "Import permis Lyon + Villeurbanne : 11 arrêtés examinés, 8 retenus, 3 écartés (1 particulier, 1 hors zone, 1 périmé)" },
-  { id: "ac3", date: daysAgo(6), kind: "meeting", message: "Audit du dispositif d'accueil — Carré Monplaisir", prospectId: "demo-sccv-monplaisir" },
-  { id: "ac4", date: daysAgo(11), kind: "ia", message: "Brief d'appel généré — Foncière du Rhône Nord (angle : permis de 14 mois sans chantier)", prospectId: "demo-fonciere-rhone-nord" },
-  { id: "ac5", date: daysAgo(30), kind: "perdu", message: "Quai de la Confluence perdu — prix donné au téléphone avant toute démonstration", prospectId: "demo-sccv-confluence" },
-  { id: "ac6", date: daysAgo(28), kind: "signe", message: "SIGNÉ ✓ Résidences des Gratte-Ciel — Alpha Voice, setup payable au premier RDV pris", prospectId: "demo-residences-gratteciel" },
+  { id: "ac3", date: daysAgo(6), kind: "meeting", message: "Audit du dispositif d'accueil — Carré Monplaisir (démo)", prospectId: "demo-sccv-monplaisir" },
+  { id: "ac4", date: daysAgo(11), kind: "ia", message: "Brief d'appel généré — Foncière du Rhône Nord (démo) (angle : permis de 14 mois sans chantier)", prospectId: "demo-fonciere-rhone-nord" },
+  { id: "ac5", date: daysAgo(30), kind: "perdu", message: "Quai de la Confluence (démo) perdu — prix donné au téléphone avant toute démonstration", prospectId: "demo-sccv-confluence" },
+  { id: "ac6", date: daysAgo(28), kind: "signe", message: "SIGNÉ ✓ Résidences des Gratte-Ciel (démo) — Alpha Voice, setup payable au premier RDV pris", prospectId: "demo-residences-gratteciel" },
 ];
 
 // La doctrine par défaut (DEFAULT_BUSINESS_RULES) a déménagé dans
