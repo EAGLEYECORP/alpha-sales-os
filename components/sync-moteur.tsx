@@ -6,6 +6,7 @@ import {
   allegerPourSync, etatSync, lots, planifierSync,
   type EmpreinteServeur, type EtatSync, type PlanSync,
 } from "@/lib/sync-prospects";
+import { planifierSyncRdv } from "@/lib/sync-meetings";
 import { peutSynchroniser } from "@/lib/hydratation";
 
 /**
@@ -55,10 +56,12 @@ export const useMoteurSync = (): EtatMoteurSync | null => useContext(Ctx);
 
 export function SyncMoteur({ children }: { children: React.ReactNode }) {
   const prospects = useAlpha((s) => s.prospects);
+  const meetings = useAlpha((s) => s.meetings);
   const settings = useAlpha((s) => s.settings);
   const etatHydratation = useAlpha((s) => s.hydratationPipe);
 
   const [empreintes, setEmpreintes] = useState<EmpreinteServeur[] | null>(null);
+  const [empreintesRdv, setEmpreintesRdv] = useState<EmpreinteServeur[] | null>(null);
   const [derniereSync, setDerniereSync] = useState<string | undefined>();
   const [erreur, setErreur] = useState<string | undefined>();
   const [enCours, setEnCours] = useState(false);
@@ -95,11 +98,51 @@ export function SyncMoteur({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /**
+   * ⚠ LES RENDEZ-VOUS PASSENT PAR LE MÊME MOTEUR, ET C'EST LA RAISON D'ÊTRE
+   * DE CE COMPOSANT. Ils n'étaient poussés NULLE PART : `/api/calendar` (le
+   * flux iCal) et `/api/push/tick` (la notif du matin) lisaient une table que
+   * personne ne remplissait, en répondant 200. Un agenda vide se lit comme une
+   * journée libre.
+   *
+   * Deux ROUTES distinctes (volumes et garde-fous sans rapport), un seul
+   * MOTEUR : deux minuteurs se disputeraient l'état de confirmation
+   * d'effacement, et c'est ce composant qui existe pour l'empêcher.
+   */
+  const lireEmpreintesRdv = useCallback(async () => {
+    try {
+      const r = await fetch("/api/sync/meetings");
+      const j = (await r.json()) as { empreintes?: EmpreinteServeur[]; why?: string; error?: string };
+      if (!r.ok) {
+        setEmpreintesRdv(null);
+        return null;
+      }
+      const e = j.empreintes ?? [];
+      setEmpreintesRdv(e);
+      return e;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (active) void lireEmpreintes();
-  }, [active, lireEmpreintes]);
+    if (active) {
+      void lireEmpreintes();
+      void lireEmpreintesRdv();
+    }
+  }, [active, lireEmpreintes, lireEmpreintesRdv]);
 
   const plan = empreintes ? planifierSync(prospects, empreintes) : null;
+
+  /**
+   * ⚠ LE PLAN DES RENDEZ-VOUS COMPTE DANS L'ÉTAT AFFICHÉ, et ce n'est pas
+   * cosmétique. Sans lui, la carte de Réglages annoncerait « à jour » avec
+   * trois rendez-vous jamais poussés — c'est-à-dire le mensonge exact que
+   * l'agenda vide produisait déjà, mais cette fois avec un voyant vert pour
+   * le couvrir. Un écran de supervision qui affiche du calme sur un travail
+   * en attente est pire que pas d'écran du tout.
+   */
+  const planRdv = empreintesRdv ? planifierSyncRdv(meetings, empreintesRdv) : null;
 
   const pousser = useCallback(
     async (forcer = false) => {
@@ -146,6 +189,47 @@ export function SyncMoteur({ children }: { children: React.ReactNode }) {
             throw new Error(j.why ?? j.error ?? `HTTP ${r.status}`);
           }
         }
+        /**
+         * ⚠ LES RENDEZ-VOUS PARTENT APRÈS LES FICHES, ET DANS CET ORDRE.
+         * Un rendez-vous porte `prospectId` : poussé avant la fiche qu'il
+         * référence, le flux iCal aurait un événement dont il ne peut pas
+         * nommer l'entreprise. L'inverse ne coûte rien — une fiche sans son
+         * rendez-vous est simplement une fiche.
+         *
+         * ⚠⚠ Et ils partent dans le MÊME try : si les rendez-vous échouent,
+         * l'erreur s'affiche et `derniereSync` n'est PAS posée. Marquer « à
+         * jour » sur une moitié poussée est exactement le mensonge qu'un
+         * écran de supervision ne doit jamais faire.
+         */
+        const baseRdv = (await lireEmpreintesRdv()) ?? [];
+        const pRdv = planifierSyncRdv(meetings, baseRdv);
+        for (const lot of lots(pRdv.aEcrire)) {
+          const r = await fetch("/api/sync/meetings", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ ecrire: lot }),
+          });
+          if (!r.ok) {
+            const j = (await r.json()) as { why?: string; error?: string };
+            throw new Error(j.why ?? j.error ?? `HTTP ${r.status}`);
+          }
+        }
+        // ⚠ Le garde-fou d'effacement massif vaut aussi ici : un navigateur qui
+        // a perdu son store ne doit pas vider l'agenda du serveur.
+        if (!pRdv.effacementMassif) {
+          for (const lot of lots(pRdv.aSupprimer)) {
+            const r = await fetch("/api/sync/meetings", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ supprimer: lot }),
+            });
+            if (!r.ok) {
+              const j = (await r.json()) as { why?: string; error?: string };
+              throw new Error(j.why ?? j.error ?? `HTTP ${r.status}`);
+            }
+          }
+        }
+
         setDerniereSync(new Date().toISOString());
         setErreur(undefined);
         await lireEmpreintes();
@@ -155,7 +239,7 @@ export function SyncMoteur({ children }: { children: React.ReactNode }) {
         setEnCours(false);
       }
     },
-    [prospects, lireEmpreintes, etatHydratation]
+    [prospects, meetings, lireEmpreintes, lireEmpreintesRdv, etatHydratation]
   );
 
   // Poussée automatique après un silence — jamais pendant la saisie, et
@@ -167,7 +251,7 @@ export function SyncMoteur({ children }: { children: React.ReactNode }) {
     return () => {
       if (minuteur.current) clearTimeout(minuteur.current);
     };
-  }, [prospects, active, enCours, confirmerEffacement, autorise, pousser]);
+  }, [prospects, meetings, active, enCours, confirmerEffacement, autorise, pousser]);
 
   /**
    * ⚠ LE PIÈGE DE TOUT ENVOI DIFFÉRÉ, déjà payé une fois sur l'écriture
@@ -215,8 +299,9 @@ export function SyncMoteur({ children }: { children: React.ReactNode }) {
     active,
     derniereSync,
     derniereErreur: erreur,
-    aEcrire: plan?.aEcrire.length ?? 0,
-    aSupprimer: plan?.aSupprimer.length ?? 0,
+    // Fiches ET rendez-vous : ce qui reste à pousser, tout compris.
+    aEcrire: (plan?.aEcrire.length ?? 0) + (planRdv?.aEcrire.length ?? 0),
+    aSupprimer: (plan?.aSupprimer.length ?? 0) + (planRdv?.aSupprimer.length ?? 0),
   });
 
   return (

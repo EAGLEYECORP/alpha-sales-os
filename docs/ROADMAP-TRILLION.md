@@ -155,10 +155,27 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
 - [ ] Changer `SITE_PASSWORD`. DNS Amen + domaines Vercel.
 
 ### 🟠 Trous connus, pas encore construits
-- [ ] **Table `call_sessions`** — sans elle, l'historique repart à zéro à
-      chaque déploiement.
-- [ ] **`meetings` n'a pas de colonne propriétaire** — la lecture est bornée,
-      pas cloisonnée. Nommé, pas corrigé.
+- [x] ~~**Table `call_sessions`**~~ — **elle existe** : migration 001, avec ses
+      deux index et la RLS. Cette ligne décrivait un trou refermé il y a
+      longtemps. ⚠ Une roadmap qui garde une case à cocher déjà faite fait
+      reconstruire ce qui existe : vérifier le code avant d'ouvrir un chantier.
+- [x] ~~**`meetings` n'a pas de colonne propriétaire**~~ — **refermé le
+      11/09/2026**, migration 006 + `/api/sync/meetings`.
+      > ⚠⚠ **Ce qui a été trouvé en le refermant est pire que le trou.**
+      > `meetings` était lue par `/api/calendar` (le flux iCal auquel tu
+      > abonnes ton agenda) et par `/api/push/tick` (la notification du matin),
+      > et **écrite par personne** : le moteur de synchro ne poussait que des
+      > `Prospect[]`. L'agenda partagé servait donc un calendrier **vide** et la
+      > notif du matin n'annonçait **aucun** rendez-vous — les deux en répondant
+      > 200. Un agenda vide se lit comme une journée libre.
+      >
+      > L'ORDRE comptait : poser le chemin d'écriture sans la colonne aurait
+      > rempli une table non cloisonnée, c'est-à-dire rendu le trou **utile**.
+      >
+      > ⚠ Deux routes, un seul moteur — deux minuteurs se disputeraient l'état
+      > de confirmation d'effacement. Et le garde-fou d'effacement massif est
+      > le MÊME (`planifier`) : deux seuils auraient divergé au premier
+      > ajustement.
 - [ ] **Registre d'offres par verticale** — les 15 champs d'`OFFRES` sont
       GLOBAUX et parlent maîtrise d'ouvrage. Ils se prononcent aussi sur
       Nuwacom, dont l'ICP est l'assurance. Dette assumée, testée, à lever

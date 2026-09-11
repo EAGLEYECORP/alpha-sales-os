@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { PROPRIETAIRE_OPERATEUR, prospectDepuisLigne } from "./sync-prospects";
+import { rdvDepuisLigne } from "./sync-meetings";
 import type { Meeting, Prospect } from "./types";
 
 /**
@@ -118,28 +119,47 @@ export interface LectureRdv {
  * utilisateurs, et aucun filtre écrit ici ne peut y remédier : il n'existe
  * aucune colonne qui distingue « les nôtres ».
  *
- * On BORNE donc, et on ne prétend pas cloisonner. Fermer vraiment ce trou
- * demande une migration (ajouter `proprietaire` à `meetings`) ET de changer le
- * chemin d'écriture qui la remplit — ça ne se fait pas à l'aveugle depuis un
- * environnement qui n'atteint aucune base réelle.
+ * ✅ **REFERMÉ LE 11/09/2026 — migration 006 + `/api/sync/meetings`.**
  *
- * Tant que c'est ouvert, c'est écrit : dans ce commentaire, dans le relevé de
- * pannes d'Alpha CEO, et dans la réponse des routes concernées. Un trou nommé
- * se referme un jour ; un trou tacite se découvre en production.
+ * Le trou disait exactement ce qu'il fallait faire : « une migration (ajouter
+ * `proprietaire` à `meetings`) ET le chemin d'écriture qui la remplit ». Les
+ * deux existent maintenant, et l'ORDRE comptait : poser le chemin d'écriture
+ * sans la colonne aurait rempli une table non cloisonnée, c'est-à-dire rendu
+ * le trou UTILE au lieu de le refermer.
+ *
+ * ⚠ Ce qui a été trouvé en le refermant est pire que le trou lui-même :
+ * `meetings` était lue par `/api/calendar` et `/api/push/tick`, et écrite par
+ * PERSONNE. Le flux iCal servait un agenda vide et la notification du matin
+ * n'annonçait aucun rendez-vous — les deux en répondant 200. Un agenda vide se
+ * lit comme une journée libre.
+ *
+ * Un trou nommé se referme un jour ; un trou tacite se découvre en production.
+ * Celui-ci était nommé, et c'est ce qui a permis de le refermer sans le
+ * redécouvrir.
  */
 export const RDV_SANS_CLOISON =
-  "Les rendez-vous n'ont pas de colonne propriétaire : une lecture par le service role voit ceux de tous les " +
-  "utilisateurs. Tant qu'il n'y a qu'un opérateur c'est sans conséquence. Fermer le trou demande une migration " +
-  "sur `meetings` et le chemin d'écriture qui la remplit.";
+  "Les rendez-vous sont cloisonnés par `proprietaire` depuis la migration 006. Sur un déploiement où elle n'a " +
+  "PAS été appliquée, la lecture filtre sur une colonne absente et Supabase rend une erreur — bruyante, donc " +
+  "visible. C'est le bon sens de panne : un filtre qui échoue vaut mieux qu'un filtre qu'on croit actif.";
 
 export async function lireMeetingsBornes(db: SupabaseClient): Promise<LectureRdv> {
-  const { data, error } = await db.from("meetings").select("data").limit(LIMITE_LECTURE + 1);
+  /**
+   * ⚠ LE FILTRE EST LA MOITIÉ QUI MANQUAIT. La borne était là depuis
+   * longtemps ; la cloison, non. Les deux sont distinctes : borner protège la
+   * mémoire, cloisonner protège le locataire d'à côté.
+   */
+  const { data, error } = await db
+    .from("meetings")
+    .select("data")
+    .eq("proprietaire", PROPRIETAIRE_OPERATEUR)
+    .limit(LIMITE_LECTURE + 1);
 
   if (error) {
     return { meetings: [], tronque: false, avertissement: "", erreur: error.message };
   }
 
-  const brut = (data ?? []).map((r) => (r as { data: Meeting }).data).filter(Boolean);
+  // Même doctrine que les fiches : la forme de ligne se déplie à UN endroit.
+  const brut = (data ?? []).map(rdvDepuisLigne).filter((m): m is Meeting => m !== null);
   const tronque = brut.length > LIMITE_LECTURE;
 
   return {

@@ -39,6 +39,8 @@ function routes(dir = "app/api", acc: string[] = []): string[] {
 const EXCEPTIONS: Record<string, string> = {
   "app/api/sync/prospects/route.ts":
     "C'est LA synchro : elle définit la convention de propriétaire au lieu de la consommer, et elle écrit autant qu'elle lit.",
+  "app/api/sync/meetings/route.ts":
+    "Même raison que la synchro des fiches, plus une qui lui est propre : elle lit `id, version` pour rendre les EMPREINTES, pas les rendez-vous. Passer par `lireMeetingsBornes` rendrait des `Meeting[]` complets plafonnés à LIMITE_LECTURE — c'est-à-dire télécharger tout l'agenda pour savoir quoi envoyer, ce que les empreintes existent précisément pour éviter. Elle porte quand même le filtre de propriétaire, et un test le vérifie.",
   "app/api/v1/prospects/route.ts":
     "Ingestion par clé API : elle lit par identifiants fournis (`.in`), pas la table, et doit voir le propriétaire des lignes existantes pour REFUSER une collision entre locataires.",
   "app/api/voice/session/route.ts":

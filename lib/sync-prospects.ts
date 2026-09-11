@@ -76,17 +76,48 @@ export const PLANCHER_EFFACEMENT = 10;
  * fois de suite — une synchro qui change d'avis n'est pas une synchro.
  */
 export function planifierSync(locaux: Prospect[], serveur: EmpreinteServeur[]): PlanSync {
-  const parId = new Map(serveur.map((e) => [e.id, e.maj]));
-  const idsLocaux = new Set(locaux.map((p) => p.id));
+  // `updatedAt` fait foi pour une fiche. Il est écrit à chaque modification par
+  // le store ; comparer les objets entiers coûterait plus cher que d'envoyer.
+  return planifier(locaux, serveur, (p) => p.updatedAt, "fiche(s)");
+}
 
-  const aEcrire: Prospect[] = [];
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE PLAN, POUR N'IMPORTE QUELLE TABLE — un seul algorithme, deux versions.
+ *
+ * ⚠ POURQUOI C'EST GÉNÉRIQUE PLUTÔT QUE RECOPIÉ. Les rendez-vous ont besoin
+ * exactement du même plan : quoi écrire, quoi supprimer, et le garde-fou
+ * d'effacement massif qui refuse de vider le serveur depuis un navigateur qui
+ * a perdu ses données. Recopier l'algorithme aurait donné DEUX garde-fous à
+ * tenir d'accord — et c'est toujours celui qu'on ne relit pas qui cesse de
+ * mordre le jour où l'on ajuste le seuil.
+ *
+ * ⚠⚠ CE QUI DIFFÈRE LÉGITIMEMENT, C'EST LA VERSION. Un `Prospect` porte
+ * `updatedAt`, écrit par le store à chaque modification. Un `Meeting` n'en a
+ * PAS — et lui en ajouter un demanderait de migrer l'état déjà persisté dans
+ * les navigateurs, pour un gain nul. Sa version est donc l'EMPREINTE DE SON
+ * CONTENU : elle change exactement quand le rendez-vous change, ce qui est la
+ * propriété qu'on cherchait de toute façon.
+ *
+ * L'extracteur de version est donc un paramètre, pas une branche `if` : une
+ * branche aurait fait du planificateur un module qui connaît ses appelants.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function planifier<T extends { id: string }>(
+  locaux: T[],
+  serveur: EmpreinteServeur[],
+  version: (x: T) => string,
+  unite = "ligne(s)"
+): PlanGenerique<T> {
+  const parId = new Map(serveur.map((e) => [e.id, e.maj]));
+  const idsLocaux = new Set(locaux.map((x) => x.id));
+
+  const aEcrire: T[] = [];
   let inchangees = 0;
 
-  for (const p of locaux) {
-    const majServeur = parId.get(p.id);
-    // `updatedAt` fait foi. Il est écrit à chaque modification de fiche par le
-    // store ; comparer les objets entiers coûterait plus cher que d'envoyer.
-    if (majServeur === undefined || majServeur !== p.updatedAt) aEcrire.push(p);
+  for (const x of locaux) {
+    const majServeur = parId.get(x.id);
+    if (majServeur === undefined || majServeur !== version(x)) aEcrire.push(x);
     else inchangees++;
   }
 
@@ -96,10 +127,18 @@ export function planifierSync(locaux: Prospect[], serveur: EmpreinteServeur[]): 
     serveur.length >= PLANCHER_EFFACEMENT && aSupprimer.length / serveur.length > SEUIL_EFFACEMENT;
 
   const resume = effacementMassif
-    ? `⚠ Cette synchro supprimerait ${aSupprimer.length} fiche(s) sur ${serveur.length} côté serveur. C'est le symptôme d'un navigateur qui a perdu ses données, pas d'un nettoyage. Rien n'a été envoyé.`
+    ? `⚠ Cette synchro supprimerait ${aSupprimer.length} ${unite} sur ${serveur.length} côté serveur. C'est le symptôme d'un navigateur qui a perdu ses données, pas d'un nettoyage. Rien n'a été envoyé.`
     : `${aEcrire.length} à écrire · ${aSupprimer.length} à supprimer · ${inchangees} inchangée(s).`;
 
   return { aEcrire, aSupprimer, inchangees, effacementMassif, resume };
+}
+
+export interface PlanGenerique<T> {
+  aEcrire: T[];
+  aSupprimer: string[];
+  inchangees: number;
+  effacementMassif: boolean;
+  resume: string;
 }
 
 /**
