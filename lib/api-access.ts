@@ -97,7 +97,26 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // ── Campagnes & outreach ──
   "/api/send": "/campaigns",
   "/api/compose": "/outbox",
-  "/api/email": "/campaigns",
+  /**
+   * ⚠⚠ CLASSÉE SUR `/campaigns`, DONC PAYANTE — ET ELLE N'ENVOIE RIEN.
+   *
+   * `app/api/email/` ne contient qu'une seule route : `preview`. Elle rend
+   * l'email tel qu'il s'affichera, et ne touche ni `sendMail`, ni transport,
+   * ni SMTP — vérifié en lisant le fichier, pas en le supposant. C'est
+   * l'aperçu de `/templates`, l'écran où l'on ÉCRIT.
+   *
+   * La ranger avec l'envoi fermait l'aperçu à un compte gratuit, donc lui
+   * faisait écrire à l'aveugle un texte qu'il allait copier lui-même.
+   *
+   * ⚠ LE RISQUE DE CE RECLASSEMENT, ET CE QUI LE TIENT. `cheminMetierDeLApi`
+   * prend le PREMIER préfixe qui correspond : tout ce qui serait ajouté sous
+   * `app/api/email/` hériterait désormais d'un chemin GRATUIT. Un
+   * `app/api/email/send/` créé demain partirait donc de notre SMTP sans
+   * qu'aucune brique ne le garde. `tests/entitlements.test.ts` refuse toute
+   * route sous ce préfixe autre que `preview` — quiconque en ajoute une doit
+   * la classer explicitement, et le test le lui dit.
+   */
+  "/api/email": "/templates",
   "/api/gmail": "/outbox",
   "/api/social": "/social",
   "/api/video": "/social",

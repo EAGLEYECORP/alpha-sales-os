@@ -192,7 +192,23 @@ test("gratuit — il ne contient que des briques connues, et jamais les payantes
 test("droits — un client Alpha Voice n'ouvre pas le Cerveau", () => {
   const client = compte({ bricks: ["alpha-voice"] });
   assert.equal(autorise(client, "/voice"), true, "sa brique s'ouvre");
-  assert.equal(autorise(client, "/appels"), true);
+  /**
+   * ⚠ `/appels` A QUITTÉ CETTE BRIQUE LE 12/09/2026, et l'assertion a changé
+   * de sens plutôt que d'être supprimée.
+   *
+   * La « liste du matin » est une session d'appels HUMAINE : l'opérateur
+   * compose depuis SON téléphone, aucun `fetch`, aucune minute chez nous.
+   * `alpha-voice` est le robot qui compose depuis NOS minutes. Seul le mot
+   * « appel » les rapprochait. Elle est passée au socle `crm`.
+   *
+   * ⚠ CE COMPTE EST UNE FICTION, et c'est ce qui rend le changement sûr :
+   * l'invariant du dépôt est « on ne descend jamais sous le gratuit ». Aucun
+   * compte réel ne porte `alpha-voice` SANS `crm` — un vrai client Alpha
+   * Voice garde donc sa liste du matin. Ce que le test vérifie ici reste le
+   * cloisonnement : une brique achetée n'en ouvre pas une autre.
+   */
+  assert.equal(autorise(client, "/appels"), false, "la liste du matin appartient au socle, pas au robot");
+  assert.equal(autorise(compte({ bricks: ["alpha-voice", "crm"] }), "/appels"), true, "…et tout compte réel l'a");
   assert.equal(autorise(client, "/cerveau"), false, "le Cerveau reste fermé");
   assert.equal(autorise(client, "/campaigns"), false);
   assert.equal(autorise(client, "/pipeline"), false);
@@ -345,7 +361,24 @@ const API_QUI_DEPENSENT: Record<string, string> = {
   "/api/video": "rendu vidéo — calcul et stockage",
   "/api/audit": "récupération de sites tiers depuis notre serveur (egress + abus)",
   "/api/digest": "SMS Textbelt + email SMTP — nos crédits",
-  "/api/email": "SMTP — notre serveur",
+  /**
+   * ⚠⚠ `/api/email` A ÉTÉ RETIRÉE DE CETTE LISTE LE 12/09/2026, ET SON ENTRÉE
+   * ÉTAIT FAUSSE — pas seulement trop large.
+   *
+   * Elle disait « SMTP — notre serveur ». Mesuré en ouvrant le dossier :
+   * `app/api/email/` ne contient QUE `preview`, une route qui rend l'email
+   * tel qu'il s'affichera et ne touche ni `sendMail`, ni transport, ni SMTP.
+   * Le vrai envoi est `/api/send`, qui reste ici et le restera.
+   *
+   * Ce n'est pas une nuance comptable : c'est cette ligne qui fermait
+   * l'aperçu d'email à un compte gratuit, donc qui lui faisait écrire à
+   * l'aveugle un texte qu'il allait de toute façon copier lui-même.
+   *
+   * ⚠ Ce qui remplace la garde : `tests` refuse toute route sous
+   * `app/api/email/` autre que `preview` (voir plus bas). Retirer une entrée
+   * de cette liste sans la remplacer par un garde structurel serait ouvrir
+   * une porte en silence.
+   */
   "/api/gmail": "SMTP / API Google — notre compte",
   "/api/track": "notre infrastructure de tracking et sa persistance",
 };
@@ -759,5 +792,131 @@ test("⚠⚠ UNE BRIQUE GRATUITE N'EST DÉCLARÉE COÛTEUSE NULLE PART AILLEURS"
     [],
     "ces briques sont GRATUITES et annoncent au client des frais refacturés à l'usage :\n  " +
       avecPassThrough.join("\n  ")
+  );
+});
+
+test("⚠⚠ RIEN NE S'AJOUTE SOUS /api/email SANS ÊTRE RECLASSÉ", () => {
+  /**
+   * ⚠⚠ LE GARDE QUI REMPLACE UNE ENTRÉE RETIRÉE DE `API_QUI_DEPENSENT`.
+   *
+   * `/api/email` est désormais classée sur `/templates`, un chemin GRATUIT,
+   * parce que la seule route qu'elle contient rend un aperçu et n'envoie
+   * rien. Et `cheminMetierDeLApi` (middleware) prend le PREMIER préfixe qui
+   * correspond, pas le plus spécifique : tout ce qu'on ajouterait sous
+   * `app/api/email/` hériterait donc du chemin gratuit.
+   *
+   * Un `app/api/email/send/route.ts` créé demain partirait de notre SMTP,
+   * sur notre domaine, pour n'importe quel inscrit — et ça ne se verrait que
+   * sur la réputation du domaine, des semaines plus tard.
+   *
+   * Le test ne cherche pas un mot dans un fichier : il liste le DOSSIER.
+   * Ajouter une route y est possible, mais impose de venir ici dire laquelle
+   * et de la classer.
+   */
+  const dossier = join(process.cwd(), "app/api/email");
+  const routes = readdirSync(dossier, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
+
+  assert.deepEqual(
+    routes.sort(),
+    ["preview"],
+    "une route a été ajoutée sous /api/email, qui est classée sur un chemin GRATUIT (/templates). " +
+      "Si elle envoie quoi que ce soit, elle doit être classée à part dans CHEMIN_PAR_API et " +
+      "déclarée dans API_QUI_DEPENSENT — sinon elle part de notre SMTP pour n'importe quel inscrit.\n" +
+      `  trouvé : ${routes.join(", ")}`
+  );
+
+  /**
+   * ⚠ Et la vérification de fond, sur la route elle-même : « preview » doit
+   * rester un aperçu. Un nom ne garantit rien — c'est l'absence de transport
+   * qui garantit l'absence d'envoi.
+   */
+  const src = readFileSync(join(dossier, "preview/route.ts"), "utf8");
+  for (const interdit of [/sendMail/, /createTransport/, /nodemailer/]) {
+    assert.doesNotMatch(
+      src,
+      interdit,
+      "/api/email/preview envoie réellement quelque chose — elle ne peut plus être sur un chemin gratuit"
+    );
+  }
+});
+
+test("⚠⚠ LE PARCOURS ORGANIQUE COMPLET TIENT DANS LE GRATUIT", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * LE BUT DU GRATUIT, ÉCRIT COMME UNE ASSERTION.
+   *
+   * Ce n'est pas « donner un aperçu ». C'est qu'un opérateur sans un euro
+   * puisse prospecter POUR DE VRAI — cibler, écrire, approcher, appeler,
+   * décrocher des rendez-vous, en tirer du chiffre — et acheter ENSUITE ce
+   * qui lui fait gagner du temps. Un gratuit qui s'arrête avant le premier
+   * rendez-vous ne convertit personne : il fabrique des comptes morts.
+   *
+   * ⚠ CE TEST EST LE SEUL QUI REGARDE LA CHAÎNE, PAS LES MAILLONS. Chaque
+   * écran pris isolément avait l'air correctement classé ; c'est le PARCOURS
+   * qui était coupé, à deux endroits, et personne ne pouvait le voir parce
+   * qu'aucun test ne le parcourait. Trois écrans étaient payants sans nous
+   * coûter un centime — `/templates`, `/linkedin`, `/appels` — tous les trois
+   * rangés par FAMILLE (« campagnes », « appels ») au lieu de l'être par
+   * coût.
+   *
+   * ⚠ Il n'affirme PAS que tout est gratuit. Ce qui part de notre
+   * infrastructure reste fermé, et le contre-test juste en dessous le tient.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  const g = droitGratuit("t-neuf");
+
+  const PARCOURS: [string, string][] = [
+    ["/pipeline", "charger et cibler ses fiches"],
+    ["/prospects", "ouvrir une fiche et lire son angle"],
+    ["/aujourdhui", "savoir qui travailler ce matin"],
+    ["/templates", "ÉCRIRE le message — et le voir tel qu'il s'affichera"],
+    ["/linkedin", "APPROCHER : la file LinkedIn, copiée à la main"],
+    ["/appels", "APPELER : la liste du matin, depuis son propre téléphone"],
+    ["/debrief", "consigner ce qui s'est dit"],
+    ["/meetings", "poser le rendez-vous décroché"],
+    ["/nurture", "relancer ceux qui n'ont pas répondu"],
+    ["/closer", "préparer le closing"],
+    ["/cerveau", "retrouver quoi dire face à une objection"],
+    ["/preuves", "montrer que ça a produit quelque chose"],
+    ["/kpis", "mesurer, pour savoir quoi acheter ensuite"],
+  ];
+
+  const coupures = PARCOURS.filter(([chemin]) => !autorise(g, chemin));
+  assert.deepEqual(
+    coupures,
+    [],
+    "le parcours organique est COUPÉ ici — un opérateur sans budget ne peut pas aller au bout, " +
+      "donc il n'aura jamais l'argent pour acheter la suite :\n  " +
+      coupures.map(([c, quoi]) => `${c} — ${quoi}`).join("\n  ")
+  );
+});
+
+test("⚠ …et il s'arrête net quand ça part de CHEZ NOUS", () => {
+  /**
+   * Le contre-test, sans lequel le précédent serait satisfait par un produit
+   * entièrement gratuit. La frontière n'est pas « ce qui est utile » : c'est
+   * « ce qui quitte notre infrastructure ». Un gratuit écrit tout ce qu'il
+   * veut et l'envoie LUI-MÊME ; le jour où il veut que la machine envoie à sa
+   * place, il paie.
+   */
+  const g = droitGratuit("t-neuf");
+  const FERMES: [string, string][] = [
+    ["/campaigns", "envoyer en séquence par NOTRE SMTP"],
+    ["/outbox", "la file d'envoi, sur NOTRE domaine"],
+    ["/newsletter", "l'envoi de masse"],
+    ["/voice", "le robot qui compose NOS minutes"],
+    ["/agent", "l'agent qui brûle NOS jetons"],
+    ["/audits", "la récupération de sites depuis NOTRE IP"],
+    ["/activity", "NOTRE infrastructure de tracking"],
+    ["/social", "génération et rendu vidéo chez NOUS"],
+  ];
+  const ouvertes = FERMES.filter(([chemin]) => autorise(g, chemin));
+  assert.deepEqual(
+    ouvertes,
+    [],
+    "ces chemins dépensent chez nous et sont ouverts au gratuit :\n  " +
+      ouvertes.map(([c, quoi]) => `${c} — ${quoi}`).join("\n  ")
   );
 });

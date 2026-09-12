@@ -83,7 +83,14 @@ export const PRIX_PUBLICS = {
  * ─────────────────────────────────────────────────────────────────────
  */
 export const SOCLE_GRATUIT: { id: string; label: string; what: string }[] = [
-  { id: "crm", label: "Le CRM", what: "Vos fiches, votre pipeline, votre journée. Vos données restent les vôtres." },
+  /**
+   * ⚠⚠ CE QUE « LE CRM » COUVRE A CHANGÉ LE 12/09/2026, ET C'EST LE POINT DE
+   * VENTE LE PLUS FORT DU PRODUIT. Trois écrans l'ont rejoint — écrire ses
+   * messages, la file LinkedIn, la liste d'appels du matin — parce qu'aucun
+   * des trois ne nous coûte quoi que ce soit. Le parcours de prospection
+   * ENTIER, jusqu'au rendez-vous signé, tient désormais dans le gratuit.
+   */
+  { id: "crm", label: "Le CRM et la prospection", what: "Vos fiches, votre pipeline, votre journée — et de quoi prospecter pour de vrai : écrire vos messages, votre file LinkedIn, votre liste d'appels du matin. Vos données restent les vôtres." },
   { id: "closer", label: "Le Closer OS", what: "La tournée du jour, le débrief à la voix, les priorités de closing." },
   { id: "cerveau", label: "Le Cerveau", what: "Votre doctrine, vos scripts, vos objections — cherchables en une phrase." },
   { id: "pilotage", label: "Le pilotage", what: "Ce qui tourne, ce qui bloque, et les chiffres qui le disent." },
@@ -104,7 +111,7 @@ export const SOCLE_GRATUIT: { id: string; label: string; what: string }[] = [
  * Le dire franchement vaut mieux qu'un « premium » sans justification.
  */
 export const FRONTIERE_PAYANT =
-  "Tout ce qui DÉPENSE chez nous se paie : l'envoi des campagnes, les appels, l'agent qui écrit, les audits automatiques. Tout ce qui tourne chez VOUS est gratuit, y compris le copilote qui vous souffle pendant un appel.";
+  "Écrire est gratuit, envoyer depuis notre infrastructure se paie. Vous pouvez prospecter entièrement sans payer : cibler, écrire, approcher sur LinkedIn, appeler depuis votre téléphone, décrocher vos rendez-vous. Ce qui se paie, c'est le jour où la machine envoie à votre place — notre serveur d'emails, nos minutes d'appel, nos jetons d'IA.";
 
 /**
  * La grille Alpha Voice, décidée le 02/09/2026.

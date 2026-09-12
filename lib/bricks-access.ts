@@ -117,7 +117,26 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
 
   // ── Alpha Voice : l'agent vocal ──
   "/voice": ["alpha-voice"],
-  "/appels": ["alpha-voice"],
+  /**
+   * ⚠⚠ « LA LISTE DU MATIN » ÉTAIT RANGÉE AVEC LE ROBOT PARCE QU'ELLE PARLE
+   * D'APPELS. Troisième fois que la FAMILLE l'emporte sur le COÛT.
+   *
+   * `/appels` est une session d'appels HUMAINE : une verticale, son script
+   * terrain, les prospects à appeler avec l'angle de chacun, et un résultat
+   * qui consigne une touche réelle dans le CRM. L'opérateur compose depuis
+   * SON téléphone. `alpha-voice`, c'est le robot qui compose depuis NOS
+   * minutes — deux choses que seul le mot « appel » rapproche.
+   *
+   * Mesuré : zéro `fetch` dans la page, et aucun de ses modules
+   * (`call-outcome`, `call-session`, `closer`, `voice-script`) n'atteint
+   * `/api/voice`. Elle ne nous coûte rien.
+   *
+   * Ce que ça fermait : « faire des appels » est la moitié du travail d'un
+   * commercial qui démarre sans budget — et c'est précisément ce que le
+   * gratuit doit permettre. On lui laissait le CRM et on lui retirait la file
+   * d'appels qui va avec.
+   */
+  "/appels": ["crm"],
 
   // ── Campagnes & outreach ──
   /**
@@ -126,11 +145,53 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
    * pas — contrairement à `/ceo`, qui parle de notre exploitation à nous.
    */
   "/moniteur": ["campagnes"],
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * ÉCRIRE EST GRATUIT. ENVOYER DEPUIS NOTRE INFRASTRUCTURE SE PAIE.
+   *
+   * ⚠⚠ LA LIGNE PASSAIT AU MAUVAIS ENDROIT, ET ELLE COÛTAIT LE PARCOURS
+   * ENTIER D'UN DÉBUTANT (12/09/2026).
+   *
+   * Le but du gratuit n'est pas d'être une démo : c'est qu'un opérateur sans
+   * un euro puisse prospecter pour de vrai, décrocher des rendez-vous, en
+   * tirer du chiffre, et acheter ENSUITE ce qui lui fait gagner du temps. Ce
+   * chemin-là existait presque entièrement — il butait sur deux écrans.
+   *
+   * Mesuré, pas supposé :
+   *  · `/linkedin` ne fait **aucun appel API**. Zéro `fetch` dans la page. Les
+   *    messages se copient à la main — la doctrine le dit déjà ailleurs :
+   *    « une invitation LinkedIn se copie à la main, aucun serveur ne la
+   *    relit ». Elle ne nous coûte RIEN, et c'est le canal par défaut de
+   *    notre propre ICP.
+   *  · `/templates` n'appelle que `/api/email/preview`, et `app/api/email/`
+   *    ne contient QUE `preview` — une route qui rend un aperçu et n'envoie
+   *    jamais (aucun `sendMail`, aucun transport). Elle ne nous coûte rien
+   *    non plus.
+   *
+   * Les deux étaient payants au titre de la FAMILLE « campagnes », alors que
+   * le critère du dépôt est le COÛT — le même défaut que `alpha-live`, à un
+   * autre endroit. Ils passent au socle.
+   *
+   * ⚠ CE QUI RESTE PAYANT, et la frontière est nette : `/campaigns`,
+   * `/outbox` et `/newsletter` passent par `/api/send` — NOTRE serveur SMTP,
+   * NOTRE réputation de domaine. `/social` brûle nos jetons et notre calcul
+   * vidéo. Un gratuit écrit tout ce qu'il veut et l'envoie LUI-MÊME ; le jour
+   * où il veut que la machine envoie à sa place, il paie.
+   *
+   * ⚠ On les rattache à `crm`, la brique du socle, plutôt que de créer une
+   * septième brique. Une brique de plus se recopie dans huit fichiers
+   * (catalogue, offres, provisionnement, vitrine, relevé de marché) et n'a
+   * rien à vendre — elle est gratuite. Le précédent est `/controle`, ouvert
+   * par `["pilotage", "crm"]` pour la même raison : c'est le CHEMIN qu'on
+   * classe, pas une nouvelle ligne de produit.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  "/templates": ["crm"],
+  "/linkedin": ["crm"],
+
   "/campaigns": ["campagnes"],
   "/outbox": ["campagnes"],
-  "/templates": ["campagnes"],
   "/newsletter": ["campagnes"],
-  "/linkedin": ["campagnes"],
   "/social": ["campagnes"],
 
   // ── Le Cerveau (RAG) ──

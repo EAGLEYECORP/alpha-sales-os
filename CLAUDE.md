@@ -984,6 +984,48 @@ démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiant
 | **PAYANT** | `campagnes` · `alpha-voice` · `agent-alpha` · `audits` · `tracking` — **tout ce qui DÉPENSE chez nous** |
 | **MAÎTRE seul** | `/payouts`, `/offre`, `MAITRE_SEULEMENT` — notre économie |
 
+### LE BUT DU GRATUIT : qu'il rapporte assez pour payer la suite (12/09/2026)
+Ce n'est **pas** de donner un aperçu. C'est qu'un opérateur sans un euro puisse
+prospecter POUR DE VRAI — cibler, écrire, approcher, appeler, décrocher des
+rendez-vous, en tirer du chiffre — et acheter **ensuite** ce qui lui fait gagner
+du temps. Un gratuit qui s'arrête avant le premier rendez-vous ne convertit
+personne : il fabrique des comptes morts.
+
+**La frontière : écrire est gratuit, envoyer depuis NOTRE infrastructure se paie.**
+
+> ⚠⚠ **TROIS ÉCRANS ÉTAIENT PAYANTS SANS NOUS COÛTER UN CENTIME**, et les trois
+> pour la même raison : rangés par **famille**, pas par coût. Le même défaut que
+> `alpha-live`, à trois endroits de plus.
+> · **`/linkedin`** — mesuré : **zéro `fetch`** dans la page. Les messages se
+>   copient à la main, la doctrine le disait déjà ailleurs. C'est le canal par
+>   défaut de notre propre ICP, et il était derrière un paywall.
+> · **`/templates`** — n'appelle que `/api/email/preview`, et `app/api/email/`
+>   ne contient QUE `preview` : aucun `sendMail`, aucun transport. On fermait
+>   l'aperçu à quelqu'un qui allait de toute façon copier le texte lui-même.
+> · **`/appels`** — « la liste du matin » est une session d'appels **humaine** :
+>   l'opérateur compose depuis SON téléphone. Elle était avec `alpha-voice`, le
+>   ROBOT qui compose depuis NOS minutes. Seul le mot « appel » les rapprochait.
+
+> ⚠ **On ne crée pas une 7ᵉ brique pour ça** : une brique de plus se recopie
+> dans huit fichiers (catalogue, offres, provisionnement, vitrine, relevé de
+> marché) et n'aurait rien à vendre. C'est le **CHEMIN** qu'on reclasse, sur
+> `crm`. Précédent : `/controle`, ouvert par `["pilotage", "crm"]`.
+
+> ⚠⚠ **UN SEUL TEST REGARDE LA CHAÎNE, ET C'EST LUI QUI A TOUT TROUVÉ**
+> (`⚠⚠ LE PARCOURS ORGANIQUE COMPLET TIENT DANS LE GRATUIT`). Chaque écran pris
+> isolément avait l'air correctement classé ; c'est le PARCOURS qui était coupé,
+> à trois endroits, et aucun test ne le parcourait. Son contre-test
+> (`…et il s'arrête net quand ça part de CHEZ NOUS`) est obligatoire : sans lui,
+> un produit entièrement gratuit le satisferait.
+
+> ⚠ **`/api/email` a été retirée de `API_QUI_DEPENSENT`** — son entrée disait
+> « SMTP — notre serveur » et c'était **faux**, la seule route du dossier rend un
+> aperçu. Retirer une entrée de cette liste sans garde serait ouvrir une porte en
+> silence : un test **liste le dossier** `app/api/email/` et refuse toute route
+> autre que `preview`. Motif : `cheminMetierDeLApi` prend le **premier** préfixe
+> qui correspond, pas le plus spécifique — un `app/api/email/send/` ajouté demain
+> hériterait du chemin **gratuit** et partirait de notre SMTP pour tout inscrit.
+
 > ⚠ **Cette ligne n'est PAS un arbitrage commercial, elle est imposée par un
 > fait technique.** `/api/send` lit `SMTP_*` dans l'environnement du SERVEUR,
 > `/api/voice/call` lit `LIVEKIT_*`, `/api/ai` brûle nos jetons. **Il n'existe
