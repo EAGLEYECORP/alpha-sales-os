@@ -1,3 +1,4 @@
+import { ALPHA_VOICE_SETUP_HT, ALPHA_VOICE_PALIERS, ALPHA_VOICE_MINUTE_SUP_HT } from "./offres-publiques";
 import type { KnowledgeNote } from "./knowledge";
 
 /**
@@ -26,6 +27,14 @@ import type { KnowledgeNote } from "./knowledge";
  * `tests/vitrine-fuite.test.ts`.
  * ─────────────────────────────────────────────────────────────────────
  */
+
+/**
+ * L'espace insécable des milliers. ⚠ Vu au RENDU, jamais déduit : une note
+ * engendrée écrivait « 1490 € HT » et « 1500 min ». Ces notes sont lues par un
+ * humain en rendez-vous ET recopiées dans des emails par le modèle — un nombre
+ * mal formaté dans un devis se remarque immédiatement.
+ */
+const euros = (n: number) => n.toLocaleString("fr-FR");
 
 export const seedKnowledge: KnowledgeNote[] = [
   {
@@ -123,24 +132,44 @@ export const seedTerrain: KnowledgeNote[] = [
   {
     id: "sc-voix-tarifs",
     accountId: "eagleye",
-    title: "Alpha Voice — grille tarifaire (héritée, à décider)",
+    /**
+     * ⚠⚠ CETTE NOTE PORTAIT LA GRILLE DU REVENDEUR MORT, ET LE CERVEAU ALIMENTE
+     * LES PROMPTS QUI ÉCRIVENT DE VRAIS EMAILS (12/09/2026).
+     *
+     * Elle annonçait « Installation : 990 € HT » puis les cinq paliers
+     * 59/115/169/219/319 — la grille publique de l'ancien partenaire, remplacée
+     * le 02/09/2026 par 149/349. Et elle affirmait « le PRIX n'a pas encore été
+     * décidé par nous », ce qui était faux depuis dix jours : son `updatedAt`
+     * portait justement le 02/09. Quelqu'un a touché la date le jour de la
+     * décision sans toucher au contenu.
+     *
+     * Le Cerveau est la seule source de prix que l'IA peut citer. Il tenait
+     * donc deux générations de retard, et il le disait avec assurance.
+     *
+     * ⚠ LA GRILLE EST DÉSORMAIS DÉRIVÉE DES CONSTANTES, pas recopiée. Une
+     * note recopiée redevient fausse au prochain changement de prix — c'est
+     * exactement ce qui vient d'arriver, deux fois.
+     */
+    title: "Alpha Voice — grille tarifaire",
     body:
-      "Installation : **990 € HT**.\n\n" +
-      "Paliers minutes (abonnement mensuel) :\n" +
-      "- 250 min — 59 € (~100 appels courts)\n" +
-      "- 500 min — 115 € (~200 appels)\n" +
-      "- 750 min — 169 € (~300 appels)\n" +
-      "- 1 000 min — 219 € (~400 appels)\n" +
-      "- 1 500 min — 319 € (~600 appels)\n\n" +
-      "⚠ **Ces montants viennent de la grille publique de l'ancien partenaire.** " +
-      "L'offre est revenue chez EAGLEYE (100 %, plus de commission reversée), mais le PRIX " +
-      "n'a pas encore été décidé par nous. Vérifié en revanche : la marge tient — 74 à 76 % " +
-      "sur notre coût de revient mesuré (0,0563 €/min). Bémol : le socle fixe est ~57 €/mois, " +
-      "donc le premier palier à 59 € ne paie pas l'infrastructure à lui seul.\n\n" +
+      `Installation : **${euros(ALPHA_VOICE_SETUP_HT)} € HT**.\n\n` +
+      "Abonnement mensuel, deux paliers :\n" +
+      ALPHA_VOICE_PALIERS.map(
+        (p) => `- ${p.nom} — ${euros(p.minutes)} min, ${euros(p.prixHT)} €/mois (${p.appels})`
+      ).join("\n") +
+      `\n- Au-delà du forfait : ${ALPHA_VOICE_MINUTE_SUP_HT.toFixed(2).replace(".", ",")} €/min, ` +
+      "pas de coupure, pas de palier à revendre.\n\n" +
+      "⚠ **Le coût est MESURÉ, les prix sont des DÉCISIONS.** Coût de revient relevé : " +
+      "0,0563 €/min, plus un socle fixe d'environ 57 €/mois. Marges : ~81 % sur Essentiel, " +
+      "~76 % sur Intensif. Aucune vente n'a validé ces prix.\n\n" +
+      `L'installation est passée de 990 à ${euros(ALPHA_VOICE_SETUP_HT)} € le 12/09/2026 : le marché ` +
+      "français de l'installation d'agent vocal commence vers 1 500 € et monte au-delà de 11 000 € " +
+      "(voir `lib/marche.ts`), et nous étions SOUS ce plancher. Un prix sous le moins cher du marché " +
+      "ne se lit pas « bonne affaire », il se lit « ce n'est pas le même produit ».\n\n" +
       "Jamais de prix avant la démo. Voir [[Cadence de relance téléphonique]].",
-    tags: ["tarifs", "alpha-voice", "a-decider"],
+    tags: ["tarifs", "alpha-voice"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-09-02T00:00:00.000Z",
+    updatedAt: "2026-09-12T00:00:00.000Z",
     source: "playbook",
   },
   {

@@ -115,7 +115,7 @@ export const FRONTIERE_PAYANT =
  * qu'un test interdit d'afficher ici.
  */
 export const ALPHA_VOICE_PUBLIC = {
-  setupHT: 990,
+  setupHT: 1490,
   paliers: [
     { nom: "Essentiel", prixHT: 149, ce: "500 minutes, environ 200 appels par mois" },
     { nom: "Intensif", prixHT: 349, ce: "1 500 minutes, environ 600 appels par mois" },

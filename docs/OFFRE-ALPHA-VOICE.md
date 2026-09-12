@@ -185,7 +185,7 @@ de zéro.
 | **Essentiel** | 500 | **149 €** | ~200 appels | ~81 % |
 | **Intensif** | 1 500 | **349 €** | ~600 appels | ~76 % |
 
-**Setup : 990 € HT** — et il n'est facturé qu'au premier rendez-vous (garantie).
+**Setup : 1 490 € HT** — et il n'est facturé qu'au premier rendez-vous (garantie).
 **Au-delà du forfait : 0,20 €/min.** Pas de coupure, pas de palier à revendre.
 
 **Ce qui a changé, et pourquoi :**
@@ -261,8 +261,8 @@ deux.
 | | Prix | Ce que ça règle |
 |---|---|---|
 | **Socle** | gratuit, sans durée | Il faut pouvoir entrer sans parler à personne |
-| **Essentiel** | 990 € HT + 149 €/mois | L'accueil qui décroche, volume normal |
-| **Intensif** | 990 € HT + 349 €/mois | Le même, gros volume |
+| **Essentiel** | 1 490 € HT + 149 €/mois | L'accueil qui décroche, volume normal |
+| **Intensif** | 1 490 € HT + 349 €/mois | Le même, gros volume |
 | **Business** | 10 000 € HT **étalés** : 2 500 € à la signature + 10 × 800 €, puis 1 000 € HT/mois | « 10 000 € d'un coup, c'est trop » |
 | **Lifetime** | à partir de 1 900 € HT, 60 places | « Je ne veux pas d'un abonnement de plus » |
 
@@ -327,3 +327,42 @@ C'est la règle que `validerOffres` impose déjà à toute offre qui inclut la v
 **Tous ces nombres sont des DÉCISIONS.** Zéro client a signé l'un ou l'autre de
 ces deux plans. Le premier qui refuse en disant pourquoi vaudra plus que ce
 raisonnement.
+
+---
+
+## Le setup est passé de 990 € à 1 490 € — 12/09/2026
+
+**Pourquoi, et sur quelle base.** Le marché français de l'installation d'agent
+vocal, relevé dans `lib/marche.ts` :
+
+| Comparable | Installation |
+|---|---|
+| Télésecrétariat humain — mise en service | 100 – 300 € |
+| Agences d'automatisation IA | 1 840 – 11 040 € |
+| Implémentation branchée au CRM et à la téléphonie | 4 600 – 23 000 € |
+| Agent packagé, un seul canal | à partir de 2 999 € |
+
+**Ces deux premiers chiffres se contredisent d'un facteur 15, et les deux
+étaient déjà dans le dépôt depuis le 26/08 sans être réconciliés.** À 990 €,
+nous étions ×3,3 au-dessus du télésecrétariat ET sous le plancher des agences.
+
+Ce qui tranche n'est pas une moyenne, c'est **l'acheteur**. Un artisan compare
+à son télésecrétariat — c'était le marché d'avant. Un maître d'ouvrage
+professionnel, notre cible depuis le 09/09/2026, compare à une agence
+d'automatisation. **L'ancrage applicable a changé avec l'ICP, et le prix
+n'avait pas suivi.**
+
+1 490 € reste sous le plancher des agences : on ne suit pas ces fourchettes
+jusqu'en haut, parce qu'elles sont publiées **par des agences qui vendent ce
+service** et qui ont intérêt à ancrer haut.
+
+> ⚠ **Ce que ça change pour la garantie.** « Le setup ne se paie qu'au premier
+> RDV » engage maintenant 1 490 €, pas 990 €. Le risque réel n'a pas bougé —
+> c'est toujours une demi-journée d'installation à la main — mais la promesse
+> pèse 50 % de plus. C'est ce qui la rend meilleure, et ce qui rend la rareté
+> encore moins négociable.
+
+> ⚠ Les paliers mensuels **ne bougent pas**. Le même relevé donne 80–150 €/mois
+> sous 500 appels (Essentiel est à 149 €) et 300–600 €/mois en volume élevé
+> (Intensif est à 349 €). Ils tombent pile : c'était le setup, et lui seul, qui
+> était hors marché.

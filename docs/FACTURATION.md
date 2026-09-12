@@ -47,8 +47,8 @@ signature des webhooks à la main** (HMAC-SHA256). Pas de SDK.
 
 | Offre | Mode Stripe | Prix | Variable |
 |---|---|---|---|
-| Alpha Voice — Essentiel | abonnement mensuel | 149 € HT (+ 990 € d'installation) | `STRIPE_PRICE_VOIX_ESSENTIEL` |
-| Alpha Voice — Intensif | abonnement mensuel | 349 € HT (+ 990 € d'installation) | `STRIPE_PRICE_VOIX_INTENSIF` |
+| Alpha Voice — Essentiel | abonnement mensuel | 149 € HT (+ 1 490 € d'installation) | `STRIPE_PRICE_VOIX_ESSENTIEL` |
+| Alpha Voice — Intensif | abonnement mensuel | 349 € HT (+ 1 490 € d'installation) | `STRIPE_PRICE_VOIX_INTENSIF` |
 | Réponse omnicanale | abonnement mensuel | 590 € HT (+ 2 500 € d'installation) | `STRIPE_PRICE_OMNICANAL` |
 | Alpha Voice — 1 000 appels | abonnement mensuel | 364 € HT | `STRIPE_PRICE_VOIX_1000` |
 | Business | installation **étalée** puis abonnement | 2 500 € + 10 × 800 €, puis 1 000 € HT/mois | `STRIPE_PRICE_BUSINESS` |

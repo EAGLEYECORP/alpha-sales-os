@@ -44,6 +44,27 @@ export interface RelevePrix {
   releveLe: string;
   /** Ce que la comparaison ne dit PAS — c'est souvent l'essentiel. */
   reserve: string;
+  /**
+   * ⚠⚠ LE PRIX EST-IL PAR SIÈGE ? C'EST LE PIÈGE N°1 DE TOUT CE MODULE, et il
+   * était invisible tant que personne ne rapprochait les briques du marché.
+   *
+   * Le SaaS de vente facture par UTILISATEUR. Notre catalogue facture par
+   * COMPTE : la même somme fait face à un artisan seul et à une équipe de
+   * vingt. Passer « 190 €/mois » et « 14–79 €/utilisateur » dans le même
+   * `comparer()` rend « ×2,4 le haut de fourchette, HORS MARCHÉ » — une phrase
+   * fausse, produite par un calcul juste sur deux grandeurs qui n'ont pas la
+   * même unité.
+   *
+   * Le drapeau est optionnel et vaut `false` par défaut : un relevé au forfait
+   * (Axonaut), à la minute ou à l'installation ne se multiplie pas.
+   */
+  parSiege?: boolean;
+  /**
+   * La brique du catalogue que ce relevé sert à SITUER. Optionnel : beaucoup
+   * de relevés existent pour situer une OFFRE (voir `lib/positionnement.ts`),
+   * pas une brique.
+   */
+  brickId?: string;
 }
 
 export const RELEVE_LE = "2026-08-26";
@@ -166,10 +187,15 @@ export const MARCHE_FRANCE: RelevePrix[] = [
     source: "locklead.fr, agaphone.com",
     releveLe: RELEVE_LE,
     reserve:
-      "C'est le comparable direct de NOTRE installation (990 € HT), et nous sommes ×3,3 au-dessus " +
-      "du haut de fourchette. L'écart est réel et se défend — eux facturent une mise en relation, " +
-      "nous installons une ligne, un script audité et une voix — mais il doit être ARGUMENTÉ à l'oral, " +
-      "jamais espéré invisible : c'est le premier chiffre qu'un prospect compare.",
+      "⚠⚠ DEUX ANCRAGES OPPOSÉS SUR LE MÊME CHIFFRE, ET C'EST L'ICP QUI TRANCHE — pas nous. " +
+      "Face à CE relevé (100–300 €), notre installation à 1 490 € est ×5 au-dessus. Face au relevé " +
+      "des agences d'automatisation (`setup-typique`, 1 840–11 040 €), elle est SOUS le plancher. " +
+      "Les deux étaient déjà dans ce fichier, ils se contredisaient d'un facteur 15, et personne ne " +
+      "les avait réconciliés : le setup vivait entre les deux sans raison écrite. " +
+      "La réconciliation est que le comparable suit l'ACHETEUR. Un artisan compare à son " +
+      "télésecrétariat — c'était le marché d'avant. Un maître d'ouvrage professionnel, notre cible " +
+      "depuis le 09/09/2026, compare à une agence d'automatisation. L'ancrage applicable a changé " +
+      "avec l'ICP, et le prix n'avait pas suivi. Ce relevé-ci reste vrai et cesse d'être le nôtre.",
   },
 ];
 
@@ -185,6 +211,7 @@ export const MARCHE_LOGICIEL: RelevePrix[] = [
     fiabilite: "secondaire",
     source: "comparatifs CRM PME France 2026",
     releveLe: RELEVE_LE,
+    parSiege: true,
     reserve: "Par utilisateur. Pour un solo, c'est le prix d'une seule licence.",
   },
   {
@@ -209,6 +236,7 @@ export const MARCHE_LOGICIEL: RelevePrix[] = [
     fiabilite: "secondaire",
     source: "comparatifs CRM PME France 2026",
     releveLe: RELEVE_LE,
+    parSiege: true,
     reserve: "",
   },
   {
@@ -221,6 +249,7 @@ export const MARCHE_LOGICIEL: RelevePrix[] = [
     fiabilite: "secondaire",
     source: "hackingdemand.com, enginy.ai — 49 à 119 $ en annuel, 65 à 149 $ en mensuel",
     releveLe: RELEVE_LE,
+    parSiege: true,
     reserve: "Inclut une base de données de contacts que nous n'avons pas.",
   },
   {
@@ -233,6 +262,7 @@ export const MARCHE_LOGICIEL: RelevePrix[] = [
     fiabilite: "secondaire",
     source: "astragtm.io, emelia.io — 59 à 159 $/siège",
     releveLe: RELEVE_LE,
+    parSiege: true,
     reserve: "Le comparable direct de notre brique « Campagnes ».",
   },
 ];
@@ -279,12 +309,257 @@ export const MARCHE_SETUP: RelevePrix[] = [
   },
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * RELEVÉ DU 12/09/2026 — LES CATÉGORIES QUI MANQUAIENT.
+ *
+ * ⚠⚠ CE QUE LE RELEVÉ D'AOÛT NE COUVRAIT PAS, ET CE QUE ÇA COÛTAIT. Il tenait
+ * la voix, le CRM, l'outreach et l'installation. Quatre briques du catalogue
+ * n'avaient AUCUN comparable : l'Agent ALPHA, Alpha Live, le Closer OS et le
+ * tracking. Leurs prix ne venaient donc d'aucune mesure (le ×4 ne mord pas sur
+ * du logiciel), d'aucun relevé (il n'existait pas) et d'aucune vente (il n'y
+ * en a aucune). Trois ancrages possibles, zéro utilisé — et le plus gros écart
+ * du catalogue était là : l'Agent à 220 €/mois dans une catégorie qui commence
+ * à 250 $.
+ *
+ * ⚠ MÊME NIVEAU DE PREUVE QU'EN AOÛT, ET PAS MEILLEUR. Le proxy sortant de
+ * l'environnement autorise la RECHERCHE et refuse la RÉCUPÉRATION de page
+ * (`EGRESS_BLOCKED`, vérifié sur deux domaines). Aucune page tarifaire
+ * d'éditeur n'a été ouverte : tout est `secondaire` ou `fourchette`.
+ * `source-primaire` reste vide dans tout ce fichier, et c'est la vérité.
+ *
+ * Conversion USD→EUR : 0,92, le même taux que `lib/voice-costs.ts`. Il est
+ * RECOPIÉ ici et pas importé, délibérément : `voice-costs` porte nos marges et
+ * `tests/vitrine-fuite.test.ts` le tient hors du bundle client, alors que ce
+ * module-ci n'a aucune raison de devenir serveur. Un taux de change public
+ * n'est pas un secret — mais la recopie est notée pour qu'on sache qu'elle
+ * existe, et les montants sont écrits DÉJÀ CONVERTIS avec le montant d'origine
+ * dans la source.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const RELEVE_SEPT = "2026-09-12";
+
+/** ── AI SDR : la catégorie de l'Agent ALPHA. Facturée par COMPTE. ── */
+export const MARCHE_AGENT: RelevePrix[] = [
+  {
+    id: "ai-sdr-categorie",
+    acteur: "Catégorie « AI SDR »",
+    quoi: "Agent autonome qui prospecte, écrit et relance seul",
+    basEur: 230,
+    hautEur: 2_300,
+    unite: "€/mois par compte",
+    fiabilite: "fourchette",
+    source: "cleanlist.ai — index de prix AI SDR 2026 : 250 à 2 500 $/mois",
+    releveLe: RELEVE_SEPT,
+    brickId: "agent-alpha",
+    reserve:
+      "Une fourchette de catégorie dit où est le terrain de jeu, pas où viser. " +
+      "L'amplitude ×10 vient de ce que la moitié de ces produits sont vendus sur devis.",
+  },
+  {
+    id: "regie-ai",
+    acteur: "Regie.ai",
+    quoi: "Le seul du lot qui publie vraiment ses prix",
+    basEur: 1_656,
+    hautEur: 2_295,
+    unite: "€/mois par compte, au minimum de sièges imposé",
+    fiabilite: "secondaire",
+    source: "altitudebiz.dev — 180 $/siège avec 10 sièges minimum, ou 499 $/siège avec 5 minimum",
+    releveLe: RELEVE_SEPT,
+    brickId: "agent-alpha",
+    reserve:
+      "Publié PAR SIÈGE : converti en prix de compte au minimum imposé, sinon la comparaison ment. " +
+      "C'est le plancher réel d'entrée dans la catégorie, pas un prix d'appel.",
+  },
+  {
+    id: "artisan-ai",
+    acteur: "Artisan",
+    quoi: "Agent SDR, sur devis",
+    basEur: 258,
+    hautEur: 4_600,
+    unite: "€/mois par compte",
+    fiabilite: "fourchette",
+    source: "formanorden.com — 280 à 5 000 $/mois rapportés par des tiers",
+    releveLe: RELEVE_SEPT,
+    brickId: "agent-alpha",
+    reserve: "Amplitude ×18 : personne ne connaît le vrai prix, l'éditeur ne publie rien.",
+  },
+];
+
+/** ── COPILOTE D'APPEL ET DÉBRIEF : Alpha Live et le Closer OS. Par SIÈGE. ── */
+export const MARCHE_COPILOTE: RelevePrix[] = [
+  {
+    id: "clari-copilot",
+    acteur: "Clari Copilot (ex-Wingman)",
+    quoi: "Cartes de réponse EN DIRECT pendant l'appel",
+    basEur: 55,
+    hautEur: 147,
+    unite: "€/utilisateur/mois",
+    fiabilite: "secondaire",
+    source: "agenticsalescall.com — 60 à 160 $/utilisateur/mois en autonome",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "alpha-live",
+    reserve: "Le seul du lot à souffler vraiment pendant l'appel, comme nous. Le comparable le plus juste d'Alpha Live.",
+  },
+  {
+    id: "sybill",
+    acteur: "Sybill",
+    quoi: "Résumés d'appel, remplissage CRM, relances",
+    basEur: 28,
+    hautEur: 83,
+    unite: "€/utilisateur/mois",
+    fiabilite: "secondaire",
+    source: "tldv.io — Pro 30 $, Business 90 $/utilisateur/mois",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "closer",
+    reserve: "Travaille APRÈS l'appel, pas pendant. C'est le comparable du Closer OS, pas d'Alpha Live.",
+  },
+  {
+    id: "ringover-empower",
+    acteur: "Ringover Empower",
+    quoi: "Analyse d'appels et coaching, français",
+    basEur: 39,
+    hautEur: 99,
+    unite: "€/utilisateur/mois",
+    fiabilite: "secondaire",
+    source: "ringover.com/blog/modjo-vs-gong — 39 à 99 €/licence/mois",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "closer",
+    reserve:
+      "⚠ Chiffre publié par Ringover sur son propre produit : partie prenante. " +
+      "C'est aussi le comparable FRANÇAIS le plus proche du Closer OS, donc celui qu'un prospect d'ici citera.",
+  },
+];
+
+/** ── DÉLIVRABILITÉ : le tracking. Facturé à la BOÎTE, jamais au siège. ── */
+export const MARCHE_DELIVRABILITE: RelevePrix[] = [
+  {
+    id: "mailreach",
+    acteur: "MailReach",
+    quoi: "Chauffe et score de délivrabilité",
+    basEur: 18,
+    hautEur: 23,
+    unite: "€/boîte/mois",
+    fiabilite: "secondaire",
+    source: "coldemailkit.com — 19,50 à 25 $/boîte/mois",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "tracking",
+    reserve: "19,50 $ n'est atteint qu'au-delà de 50 boîtes ; le prix courant est 25 $. « Par siège » vaut ici « par boîte ».",
+  },
+  {
+    id: "lemwarm",
+    acteur: "lemwarm",
+    quoi: "Chauffe de boîte, autonome",
+    basEur: 22,
+    hautEur: 27,
+    unite: "€/boîte/mois",
+    fiabilite: "secondaire",
+    source: "mailflowauthority.com — 24 $ en annuel, 29 $ au mois",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "tracking",
+    reserve: "C'est la brique la plus facile à comparer du catalogue : le prospect ouvre les deux pages côte à côte.",
+  },
+];
+
+/** ── AUDIT DE SITE : la brique Audits. Au COMPTE, comme nous. ── */
+export const MARCHE_AUDIT: RelevePrix[] = [
+  {
+    id: "semrush",
+    acteur: "Semrush",
+    quoi: "Audit de site, mots-clés, position",
+    basEur: 129,
+    hautEur: 230,
+    unite: "€/mois par compte",
+    fiabilite: "secondaire",
+    source: "finom.co — Pro 139,95 $, Guru 249,95 $/mois",
+    releveLe: RELEVE_SEPT,
+    brickId: "audits",
+    reserve: "Périmètre bien plus large que le nôtre (backlinks, contenu). Nous auditons pour VENDRE, eux pour référencer.",
+  },
+  {
+    id: "ahrefs",
+    acteur: "Ahrefs",
+    quoi: "Audit de site et backlinks",
+    basEur: 108,
+    hautEur: 208,
+    unite: "€/mois par compte",
+    fiabilite: "secondaire",
+    source: "nugg.ad — Lite 108 €, Standard 208 €/mois",
+    releveLe: RELEVE_SEPT,
+    brickId: "audits",
+    reserve:
+      "Un abonnement Ahrefs s'utilise à la main, sur un site à la fois. Notre brique audite CHAQUE " +
+      "prospect à l'import et rend un document prêt à envoyer : même prix, deux usages qui n'ont rien à voir.",
+  },
+];
+
+/** ── ENABLEMENT : le comparable du Cerveau. Par SIÈGE. ── */
+export const MARCHE_ENABLEMENT: RelevePrix[] = [
+  {
+    id: "guru",
+    acteur: "Guru",
+    quoi: "Base de connaissance d'équipe",
+    basEur: 14,
+    hautEur: 14,
+    unite: "€/utilisateur/mois",
+    fiabilite: "secondaire",
+    source: "dock.us — 15 $/utilisateur/mois",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "cerveau",
+    reserve: "Base de connaissance seule : ne réinjecte rien dans les messages, contrairement au Cerveau.",
+  },
+  {
+    id: "seismic-highspot",
+    acteur: "Seismic / Highspot",
+    quoi: "Plateformes d'enablement, prix négociés",
+    basEur: 28,
+    hautEur: 74,
+    unite: "€/utilisateur/mois",
+    fiabilite: "fourchette",
+    source: "whatisbest.com, b2bsalestools.com — 30 à 80 $/utilisateur/mois",
+    releveLe: RELEVE_SEPT,
+    parSiege: true,
+    brickId: "cerveau",
+    reserve: "Aucun des deux ne publie ses prix : fourchettes rapportées par des tiers sur des contrats négociés.",
+  },
+];
+
 export const TOUS_RELEVES: RelevePrix[] = [
   ...MARCHE_VOIX,
   ...MARCHE_FRANCE,
   ...MARCHE_LOGICIEL,
   ...MARCHE_SETUP,
+  ...MARCHE_AGENT,
+  ...MARCHE_COPILOTE,
+  ...MARCHE_DELIVRABILITE,
+  ...MARCHE_AUDIT,
+  ...MARCHE_ENABLEMENT,
 ];
+
+/**
+ * ⚠⚠ COMBIEN DE SIÈGES NOTRE PRIX PAR COMPTE COUVRE — UNE DÉCISION, PAS UNE
+ * MESURE, et c'est le chiffre dont dépend la moitié des comparaisons.
+ *
+ * Notre catalogue ignore la notion de siège. Le marché de la vente facture par
+ * siège presque partout. Pour rapprocher les deux il faut poser un nombre —
+ * et ce nombre décide du verdict. À 5, un artisan seul paie cinq fois trop
+ * cher et une équipe de vingt paie quatre fois trop peu.
+ *
+ * ⚠ LE RELEVÉ NE CORRIGE PAS CE DÉFAUT, IL LE REND VISIBLE. Tant que le
+ * catalogue n'a pas de dimension « siège », la grille est juste pour une seule
+ * taille d'équipe et fausse pour toutes les autres. C'est le vrai chantier de
+ * tarification, et il est plus grand que n'importe quel montant écrit ici.
+ *
+ * 5 vient de nos propres segments (`lib/segments.ts` parle d'équipes de 3 à 50
+ * commerciaux) et d'aucune vente — il n'y en a aucune.
+ */
+export const SIEGES_REFERENCE = 5;
 
 export type Position = "sous-marche" | "dans-marche" | "au-dessus" | "hors-marche";
 
@@ -329,6 +604,37 @@ export function comparer(notreOffre: string, notrePrix: number, reference: Relev
             `À ce niveau, l'écart ne se justifie plus par le confort : il faut un argument que le prospect achète, ou baisser.`;
 
   return { notreOffre, notrePrix, unite: reference.unite, reference, ratioHaut, position, phrase };
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * COMPARER UN PRIX PAR COMPTE À UN RELEVÉ PAR SIÈGE.
+ *
+ * ⚠⚠ SANS CETTE FONCTION, `comparer()` MENT SUR LA MOITIÉ DU CATALOGUE — et il
+ * ment avec une phrase parfaitement construite, ce qui est le pire cas.
+ * Mesuré : notre CRM à 190 €/mois confronté au relevé Pipedrive (14–79
+ * €/UTILISATEUR/mois) rend « ×2,4 le haut de fourchette, HORS MARCHÉ ». Le
+ * calcul est juste, les deux nombres ne sont pas la même grandeur, et la
+ * conclusion est fausse dans le sens qui coûte cher : elle pousse à BAISSER un
+ * prix qui est en réalité au milieu de sa bande.
+ *
+ * On ramène donc le relevé par siège au prix d'un COMPTE, en le disant dans la
+ * phrase — tout le résultat dépend de `SIEGES_REFERENCE`, qui est une décision.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function comparerParCompte(notreOffre: string, notrePrixCompte: number, reference: RelevePrix): Comparaison {
+  if (!reference.parSiege) return comparer(notreOffre, notrePrixCompte, reference);
+
+  const ramene: RelevePrix = {
+    ...reference,
+    basEur: Math.round(reference.basEur * SIEGES_REFERENCE),
+    hautEur: Math.round(reference.hautEur * SIEGES_REFERENCE),
+    unite: `€/mois pour ${SIEGES_REFERENCE} sièges`,
+    reserve:
+      `Relevé par siège, ramené à ${SIEGES_REFERENCE} sièges — une HYPOTHÈSE, pas une mesure : ` +
+      `le verdict change entièrement avec la taille de l'équipe. ` + reference.reserve,
+  };
+  return comparer(notreOffre, notrePrixCompte, ramene);
 }
 
 /**

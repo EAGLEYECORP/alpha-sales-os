@@ -1,5 +1,5 @@
 import { OFFRES } from "./offres-publiques";
-import { TOUS_RELEVES, comparer, type Comparaison, type RelevePrix } from "./marche";
+import { TOUS_RELEVES, comparer, comparerParCompte, type Comparaison, type RelevePrix } from "./marche";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -96,6 +96,111 @@ export function positionnerOffres(releves: RelevePrix[] = TOUS_RELEVES): Positio
     }
 
     return { offreId: o.id, nom: o.nom, comparaison: comparer(o.nom, o.prixHT, reference), pourquoiPas: "" };
+  });
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES BRIQUES, SITUÉES FACE AU MARCHÉ — le même travail, un cran plus bas.
+ *
+ * ⚠⚠ CE QUI MANQUAIT, ET CE QUE ÇA COÛTAIT. `positionnerOffres` rapproche les
+ * OFFRES (les packs qu'on vend en ligne). Le CATALOGUE À LA CARTE — dix
+ * briques, `lib/bricks.ts` — n'était rapproché de rien. Or c'est lui qui sort
+ * dans un devis quand un client ne prend qu'un morceau, et c'est la doctrine
+ * du dépôt : « Prix à la carte par brique : un client peut ne prendre qu'Alpha
+ * Voice. »
+ *
+ * Résultat mesuré au premier passage : sur dix briques, quatre n'avaient
+ * AUCUN comparable dans le relevé d'août (l'Agent, Alpha Live, le Closer OS,
+ * le tracking), et l'Agent ALPHA était à 220 €/mois dans une catégorie dont le
+ * plancher d'entrée réel est vers 1 650 €. Personne ne pouvait le voir : rien
+ * ne posait la question.
+ *
+ * ⚠ ON GARDE LA MÊME DISCIPLINE QU'AU-DESSUS : `null` + un motif écrit vaut
+ * mieux qu'une comparaison bancale, parce qu'une comparaison bancale se cite
+ * en rendez-vous et s'y fait démonter.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const REFERENCE_PAR_BRIQUE: Record<string, string | null> = {
+  // Le comparable français que le prospect citera lui-même : une secrétaire
+  // IA. Pas Vapi, que personne en face ne connaît.
+  "alpha-voice": "secretaire-ia-fr",
+  // Le comparable direct, nommé comme tel dans le relevé d'août.
+  campagnes: "lemlist",
+  cerveau: "seismic-highspot",
+  // Le seul comparable au FORFAIT du lot : français, et il fait la facturation
+  // en plus. C'est celui qui nous met le plus en difficulté, donc le bon.
+  crm: "axonaut",
+  audits: "ahrefs",
+  tracking: "lemwarm",
+  // Clari Copilot est le seul du marché à souffler PENDANT l'appel.
+  "alpha-live": "clari-copilot",
+  closer: "ringover-empower",
+  "agent-alpha": "regie-ai",
+  /**
+   * ⚠ AUCUNE COMPARAISON DÉFENDABLE, et c'est une réponse, pas un trou.
+   * Le seul comparable trouvé est Clari Core — une plateforme de prévision
+   * d'entreprise américaine vendue à des directions commerciales de cent
+   * personnes, à 100–400 $/siège. Notre pilotage est un écran d'état. Le
+   * rapprochement ne dirait rien de vrai, et il rendrait « sous le marché de
+   * 340 € » — une phrase qui pousserait à quadrupler un prix sur la foi d'un
+   * seul point de comparaison hors catégorie.
+   */
+  pilotage: null,
+};
+
+const POURQUOI_PAS_BRIQUE: Record<string, string> = {
+  pilotage:
+    "Le seul comparable du marché est une plateforme de prévision d'entreprise américaine, vendue par siège à des " +
+    "directions de cent personnes. Notre pilotage est un écran d'état : les rapprocher produirait un verdict qui a " +
+    "l'air calculé et ne veut rien dire. Il faut un vrai relevé d'outils de pilotage PME avant de toucher à ce prix.",
+};
+
+export interface PositionBrique {
+  brickId: string;
+  label: string;
+  /** Notre prix mensuel affiché, par compte. */
+  notreMensuelEur: number;
+  /** `null` quand aucune comparaison n'est défendable. */
+  comparaison: Comparaison | null;
+  pourquoiPas: string;
+}
+
+/**
+ * Chaque brique du catalogue, face à son comparable.
+ *
+ * ⚠ Passe par `comparerParCompte`, jamais par `comparer` : nos prix sont par
+ * COMPTE et la moitié des relevés sont par SIÈGE. Appeler `comparer`
+ * directement ici rendrait « hors marché » sur des briques qui sont au milieu
+ * de leur bande — vérifié, c'est ce que faisait la première version.
+ */
+export function positionnerBriques(
+  briques: { id: string; label: string; monthlyHT: number }[],
+  releves: RelevePrix[] = TOUS_RELEVES
+): PositionBrique[] {
+  return briques.map((b) => {
+    const refId = REFERENCE_PAR_BRIQUE[b.id];
+    const reference = refId ? releves.find((r) => r.id === refId) : undefined;
+
+    if (!reference) {
+      return {
+        brickId: b.id,
+        label: b.label,
+        notreMensuelEur: b.monthlyHT,
+        comparaison: null,
+        pourquoiPas:
+          POURQUOI_PAS_BRIQUE[b.id] ??
+          "Aucune référence de marché rapprochée pour cette brique — mieux vaut un trou qu'une comparaison bancale.",
+      };
+    }
+
+    return {
+      brickId: b.id,
+      label: b.label,
+      notreMensuelEur: b.monthlyHT,
+      comparaison: comparerParCompte(b.label, b.monthlyHT, reference),
+      pourquoiPas: "",
+    };
   });
 }
 

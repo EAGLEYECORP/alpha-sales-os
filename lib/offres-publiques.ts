@@ -284,15 +284,40 @@ export function palierLifetime(vendus: number): PalierLifetime | null {
  * forfait — et cette conversation-là n'a plus de levier chiffré.
  *
  * ⚠ CE QUI EST MESURÉ ICI ET CE QUI NE L'EST PAS. Le coût à la minute est
- * relevé (27/08/2026). Le SETUP à 990 € et les deux prix mensuels sont des
+ * relevé (27/08/2026). Le SETUP et les deux prix mensuels sont des
  * DÉCISIONS — aucune vente ne les a encore validés. Le premier client qui
  * refuse en disant pourquoi vaudra plus que ce raisonnement.
  *
  * (Ces prix vivaient dans `lib/pipeline-juillet.ts`, un module qui porte de
  * VRAIES fiches prospects et qu'aucun composant client ne doit atteindre. Ce
  * qui est PUBLIC vit ici, et l'autre le réimporte.)
+ *
+ * ══ LE SETUP PASSE DE 990 € À 1 490 € — 12/09/2026 ══
+ *
+ * ⚠⚠ LE SEUL CHANGEMENT DE PRIX ICI DEPUIS LE 02/09, ET IL VIENT D'UN RELEVÉ,
+ * PAS D'UNE ENVIE (`lib/marche.ts` → `MARCHE_SETUP`).
+ *
+ * Le marché français de l'installation d'agent vocal, tel qu'il est publié :
+ * **1 500 à 5 000 €** de setup pour une agence, et un agent packagé à un seul
+ * canal **à partir de 2 999 €**. À 990 €, nous étions sous le PLANCHER de la
+ * fourchette, d'un tiers. Le forfait mensuel, lui, tombe pile : le même relevé
+ * donne 80 à 150 €/mois sous 500 appels (Essentiel est à 149) et 300 à 600 €
+ * en volume élevé (Intensif est à 349). Rien à y toucher — c'est le setup, et
+ * lui seul, qui était hors marché.
+ *
+ * ⚠ LA RÉSERVE, qui compte autant que le chiffre : ces fourchettes sont
+ * publiées PAR DES AGENCES QUI VENDENT CE SERVICE. Elles ont un intérêt direct
+ * à ancrer haut. On ne les suit donc pas jusqu'au plancher de 1 500 € — on
+ * s'arrête juste en dessous. 1 490 € reste l'installation la moins chère du
+ * marché relevé, et cesse d'être le prix qui fait douter du produit.
+ *
+ * ⚠⚠ CE QUE ÇA CHANGE POUR LA GARANTIE, et il faut le dire : « le setup ne se
+ * paie qu'au premier RDV » engage désormais 1 490 €, pas 990 €. Le risque réel
+ * n'a pas bougé (c'est une demi-journée d'installation à la main), mais la
+ * promesse, elle, pèse 50 % de plus. C'est ce qui la rend meilleure — et ce
+ * qui rend la rareté encore moins négociable.
  */
-export const ALPHA_VOICE_SETUP_HT = 990;
+export const ALPHA_VOICE_SETUP_HT = 1490;
 
 /** Le prix de la minute au-delà du forfait. Coût mesuré : 0,0563 €/min. */
 export const ALPHA_VOICE_MINUTE_SUP_HT = 0.2;

@@ -100,7 +100,7 @@ export const OUTBOUND_TIERS: OutboundTier[] = [
  *  2. **La garantie fait le travail, et mieux.** « L'installation ne se paie
  *     qu'au premier rendez-vous pris » renverse le risque SANS encaisser
  *     d'avance. À côté d'elle, un palier à 290 € vend une seconde fois, moins
- *     cher, ce que l'installation à 990 € vend déjà — deux prix pour la même
+ *     cher, ce que l'installation Alpha Voice vend déjà — deux prix pour la même
  *     chose sur le même devis, et c'est le client qui a raison de le relever.
  *
  * ⚠ `prixEssai()` était un EXPORT MORT : aucun composant, aucune route ne
@@ -221,7 +221,21 @@ export const BRICKS: Brick[] = [
     label: "Tracking & délivrabilité",
     what: "Ouvertures, clics, réponses, et la configuration DNS qui évite le dossier spam.",
     setupHT: 1500,
-    monthlyHT: 140,
+    /**
+     * ⚠⚠ 140 € → 120 €/mois. ELLE BAISSE, ET C'EST LA LIGNE QUI PROUVE QUE LE
+     * RELEVÉ N'A PAS ÉTÉ FAIT POUR JUSTIFIER UNE HAUSSE.
+     *
+     * C'est la seule brique du catalogue qui sortait AU-DESSUS de sa bande :
+     * la chauffe et la délivrabilité se facturent à la BOÎTE (MailReach 19,50
+     * à 25 $, lemwarm 24 à 29 $), soit 90 à 133 € pour cinq boîtes. Nous
+     * étions à 140 €, donc dehors — sur la brique la plus facile à comparer
+     * qui soit, puisque le client peut ouvrir les deux pages côte à côte.
+     *
+     * 120 € nous remet dans la bande haute. Un prix hors bande sur un produit
+     * trivialement comparable ne coûte pas une objection : il coûte la
+     * crédibilité de TOUTE la grille, y compris des lignes qui sont justes.
+     */
+    monthlyHT: 120,
     why: "Un email en spam est un deal perdu sans jamais le savoir. Cette brique rend visible ce qui, sinon, disparaît en silence.",
     unlocks: ["/tracking", "/deliverability"],
   },
@@ -257,7 +271,17 @@ export const BRICKS: Brick[] = [
     label: "Closer OS & débrief",
     what: "La préparation avant le rendez-vous et le débrief après : tournée, objectif d'étape, ce qui a marché, ce qui a coûté.",
     setupHT: 1500,
-    monthlyHT: 140,
+    /**
+     * ⚠ 140 € → 190 €/mois. Nous étions à 2 € au-dessus du plancher observé
+     * (138 €, soit Sybill Pro à 5 sièges) : au plancher, donc.
+     * 190 € = Ringover Empower (39 €/siège) × 5 — le comparable français le
+     * plus proche de ce que fait le Closer OS. Le haut de bande est à ~495 €.
+     *
+     * ⚠ Conviction plus faible que sur l'Agent : ici on se déplace du plancher
+     * vers le bas de la bande, pas d'un hors-jeu vers le terrain. Si un seul
+     * de ces deux prix doit être remis en cause, c'est celui-ci.
+     */
+    monthlyHT: 190,
     why:
       "Le closing se joue sur trois phrases. Les préparer avant et les corriger après est ce qui les rend " +
       "reproductibles — sinon chaque rendez-vous repart de l'intuition du jour.",
@@ -268,7 +292,27 @@ export const BRICKS: Brick[] = [
     label: "Agent ALPHA",
     what: "Le copilote conversationnel qui voit tout le pipeline : il prépare la journée, analyse un deal, écrit le message, et dit quoi faire ensuite.",
     setupHT: 2200,
-    monthlyHT: 220,
+    /**
+     * ⚠⚠ 220 € → 490 €/mois LE 12/09/2026, ET C'EST LE PLUS GROS ÉCART DU
+     * CATALOGUE. Relevé, pas deviné (`lib/marche.ts` → `MARCHE_AGENT`).
+     *
+     * Cette brique joue dans la catégorie « AI SDR », et cette catégorie
+     * facture PAR COMPTE — donc la comparaison est directe, sans hypothèse de
+     * sièges. Fourchette observée : 250 à 2 500 $/mois. Le concurrent le moins
+     * cher qui publie vraiment ses prix (Regie.ai) impose 10 sièges à 180 $,
+     * soit ~1 650 €/mois plancher. 11x se négocie autour de 5 000 $/mois.
+     *
+     * À 220 €, nous étions SOUS le plancher de la catégorie entière. Le
+     * problème n'est pas la marge perdue, il est pire : un prix huit fois
+     * sous le moins cher ne se lit pas « bonne affaire », il se lit « ce
+     * n'est pas le même produit ». On se disqualifiait à l'affichage.
+     *
+     * 490 € est une DÉCISION : le tiers bas de la fourchette, toujours de
+     * très loin le moins cher, sans être une aberration. Aucune vente ne l'a
+     * validé — le premier client qui refuse en disant pourquoi vaudra plus
+     * que ce raisonnement.
+     */
+    monthlyHT: 490,
     why:
       "Les autres briques produisent de la donnée ; celle-ci la lit à ta place. C'est la différence entre « avoir un CRM » et " +
       "« ouvrir l'app le matin et savoir quoi faire » — et c'est la seule brique qui remplace une conversation avec un directeur commercial.",

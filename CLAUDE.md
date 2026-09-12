@@ -284,7 +284,7 @@ une cible qu'on ne prospecte plus.**
 - **OS personnalisé** : un OS taillé sur le métier du client, pas une
   déclinaison du nôtre. Chiffré au cadrage.
 - **Alpha Voice** — grille DÉCIDÉE le 02/09/2026 (`lib/offres-publiques.ts`) :
-  **990 € HT** de setup, puis **deux** paliers — **Essentiel 149 €/mois**
+  **1 490 € HT** de setup (relevé le 12/09, voir plus bas), puis **deux** paliers — **Essentiel 149 €/mois**
   (500 min, ~200 appels) et **Intensif 349 €/mois** (1 500 min, ~600 appels).
   Au-delà : **0,20 €/min** (descendu de 0,25 le 04/09/2026), pas de
   coupure, pas de palier à revendre.
@@ -297,6 +297,75 @@ une cible qu'on ne prospecte plus.**
   > **Le coût/minute est mesuré ; les prix sont des DÉCISIONS** — aucune vente
   > ne les a validés. Le premier client qui refuse en disant pourquoi vaudra
   > plus que ce raisonnement.
+
+### LE PRIX S'ANCRE SUR TROIS CHOSES, ET IL N'EN UTILISAIT AUCUNE (12/09/2026)
+`lib/marche.ts` (le relevé) · `lib/positionnement.ts` (le rapprochement) ·
+`lib/pricing-briques.ts` (le coût) · `tests/marche-briques.test.ts`.
+
+Un prix s'appuie sur le **coût**, le **marché** ou la **vente**. État mesuré au
+12/09 : le coût ne mord pas sur du logiciel (`pricing-briques` rend lui-même
+`hors-regle` sur six briques), le marché n'était relevé pour aucune des dix
+briques du catalogue à la carte, et la vente n'existe pas. **Six prix sur dix
+ne venaient de rien.** `lib/marche.ts` existait depuis le 26/08 et
+`positionnement` rapprochait les OFFRES — les BRIQUES, jamais.
+
+- **⚠⚠ LE PIÈGE N°1 : le marché facture par SIÈGE, nous par COMPTE.** Passer
+  « CRM 190 €/mois » et « Pipedrive 14–79 €/utilisateur » dans le même
+  `comparer()` rend « ×2,4, HORS MARCHÉ » — une phrase juste sur deux
+  grandeurs qui n'ont pas la même unité, et qui pousse à BAISSER un prix situé
+  au milieu de sa bande. D'où `parSiege` + `comparerParCompte`.
+  > ⚠ `SIEGES_REFERENCE = 5` est une **DÉCISION**. Le vrai défaut qu'elle
+  > révèle est plus grand que n'importe quel montant : **le catalogue n'a pas
+  > de dimension « siège »**, donc la grille est juste pour une seule taille
+  > d'équipe et fausse pour toutes les autres. Le relevé ne le corrige pas, il
+  > le rend visible.
+- **Quatre prix ont bougé, et l'un BAISSE** — c'est ce qui prouve que le relevé
+  n'a pas été fait pour justifier une hausse : Agent ALPHA 220 → **490 €**
+  (il était sous le plancher d'une catégorie qui commence à 250 $, le premier
+  concurrent sérieux étant à ~1 650 €) · Closer OS 140 → **190 €** (il était
+  AU plancher) · tracking 140 → **120 €** (seul **au-dessus** de sa bande, sur
+  la brique la plus facile à comparer du catalogue) · setup Alpha Voice
+  990 → **1 490 €**.
+- **Six prix ne bougent pas**, et ne rien faire est un résultat : ils sont au
+  milieu de leur bande. Bouger un prix sans raison est du mouvement, pas du
+  travail.
+- **⚠⚠ DEUX ANCRAGES OPPOSÉS COHABITAIENT DANS LE DÉPÔT, à un facteur 15.**
+  Mise en service d'un télésecrétariat : 100–300 €. Installation par une agence
+  d'automatisation : 1 840–11 040 €. Les deux étaient dans `lib/marche.ts`
+  depuis le 26/08, et le setup vivait entre les deux sans raison écrite.
+  **Ce qui tranche est l'ACHETEUR, pas une moyenne** : l'artisan compare au
+  télésecrétariat (marché d'avant), le maître d'ouvrage compare à l'agence
+  (marché en cours depuis le 09/09). L'ancrage applicable a changé avec l'ICP,
+  le prix n'avait pas suivi.
+- **Niveau de preuve : aucune page tarifaire d'éditeur n'a été ouverte.** Le
+  proxy sortant autorise la RECHERCHE et refuse la RÉCUPÉRATION de page
+  (`EGRESS_BLOCKED`, vérifié). Tout est `secondaire` ou `fourchette` ;
+  `source-primaire` reste **vide**, et un test l'exige. Pire : les guides de
+  prix du marché français de l'agent vocal sont publiés **par des agences qui
+  vendent ce service** — la source la plus utile et la plus intéressée à la
+  fois. On ne les suit donc pas jusqu'en haut.
+- **`null` + un motif écrit vaut mieux qu'une comparaison bancale.** Le
+  pilotage n'a AUCUN comparable défendable (le seul trouvé est une plateforme
+  de prévision d'entreprise américaine à 100–400 $/siège) et le dit, au lieu
+  de rendre « sous le marché de 340 € » — un verdict qui a l'air calculé.
+
+> ⚠⚠ **LE CERVEAU PORTAIT LA GRILLE DU REVENDEUR MORT.** `sc-voix-tarifs`
+> (`lib/knowledge-seed.ts`) annonçait « Installation : 990 € HT » et les cinq
+> paliers 59/115/169/219/319 — remplacés le 02/09 — **et affirmait « le PRIX
+> n'a pas encore été décidé par nous »**, faux depuis dix jours. Son
+> `updatedAt` portait le 02/09 : quelqu'un avait touché la DATE le jour de la
+> décision sans toucher au CONTENU. Le Cerveau alimente les prompts, et les
+> prompts écrivent de VRAIS emails : c'est la seule source de prix que le
+> modèle peut citer. La note DÉRIVE désormais des constantes.
+> · Le garde a dû être écrit **deux fois** : la première cherchait le montant
+>   courant n'importe où dans la note, et la phrase de contexte (« passée de
+>   990 à 1 490 € ») le satisfaisait. Il vise maintenant la **ligne
+>   d'annonce** — celle que le modèle recopie.
+
+> ⚠ **Ne jamais recopier une grille dans une prose.** Trois fautes de rendu
+> trouvées en imprimant la note, aucune déductible du code : « 1490 € » sans
+> espace des milliers, « 0,2 €/min » au lieu de « 0,20 », et un « trois fois
+> sous le marché » qui était faux (990 contre 1 500, c'est 1,5×).
 
 ## Répartition du travail — ce qu'Alpha fait, ce que le client fait
 Doctrine de cadrage, à dire au client dès le premier rendez-vous : elle évite

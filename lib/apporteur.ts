@@ -40,11 +40,11 @@ import type { OffrePublique } from "./offres-publiques";
  *
  * ── CE QU'ON FAIT À LA PLACE, ET POURQUOI C'EST MIEUX POUR LES DEUX ──
  *
- * Le produit a des frais d'INSTALLATION significatifs (990 € Alpha Voice,
+ * Le produit a des frais d'INSTALLATION significatifs (1 490 € Alpha Voice,
  * 2 500 € omnicanale, 10 000 € Business). Ils sont encaissés une fois, ils ne
  * grèvent aucun récurrent, et ils font déjà une belle commission.
  *
- *   · 30 % du SETUP, une fois ....... 297 € sur Alpha Voice, 750 € omnicanale
+ *   · 30 % du SETUP, une fois ....... 447 € sur Alpha Voice, 750 € omnicanale
  *   · 10 % du MENSUEL, 12 mois ...... 14,90 €/mois × 12 = 178,80 € en plus
  *
  * Total sur un Essentiel : **475,80 € pour une mise en relation.** C'est
