@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { prospect, meeting, daysAgo } from "./fixtures";
 import type { TimelineEvent } from "../lib/types";
 import {
@@ -9,6 +11,7 @@ import {
   RHYTHM_DAYS,
   RHYTHM_MIN_TOUCHES,
   STEPS,
+  repartirParSurface,
   type PathContext,
 } from "../lib/onboarding-path";
 
@@ -226,4 +229,150 @@ test("chemin — les minutes restantes ne comptent que ce qui reste", () => {
   const all = buildPath(ctx()).minutesLeft;
   const withSmtp = buildPath(ctx({ health: { email: { configured: true } } })).minutesLeft;
   assert.equal(all - withSmtp, STEPS.find((s) => s.id === "smtp")!.minutes);
+});
+
+/* ────────────────────────────────────────────────────────────────────
+   LE PARCOURS S'ARRÊTAIT AU DEUXIÈME BARREAU SUR UN TÉLÉPHONE.
+
+   ⚠⚠ CE QUE ÇA COÛTAIT, et rien ne le disait. `/demarrage` déroule dix-huit
+   étapes dans l'ordre. La deuxième est « Brancher l'envoi email », dont le
+   premier geste est « colle-le dans .env.local ». Sur un téléphone, ce geste
+   n'existe pas.
+
+   Quelqu'un qui s'inscrit depuis son mobile voyait donc la marche 1 réussie,
+   la marche 2 impossible, et n'apprenait NULLE PART que les treize suivantes
+   se font très bien au pouce. Il reposait le téléphone en pensant que le
+   produit n'était pas pour lui. Le produit était déjà mobile ; c'est son
+   parcours d'installation qui ne le savait pas.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("⚠⚠ CHAQUE ÉTAPE DÉCLARE SA SURFACE — le champ est obligatoire", () => {
+  /**
+   * ⚠ Le compilateur l'impose déjà, et ce test tient l'autre moitié : un
+   * défaut implicite (« si rien n'est écrit, c'est faisable au téléphone »)
+   * ferait passer une étape de plomberie pour une étape de pouce au premier
+   * ajout distrait.
+   *
+   * Mesuré pendant l'écriture : le script qui a posé ces valeurs a SAUTÉ
+   * `n8n` — son identifiant contient un chiffre — et c'est `tsc` qui l'a
+   * rattrapé, pas une relecture.
+   */
+  for (const s of STEPS) {
+    assert.ok(
+      s.surface === "partout" || s.surface === "ordinateur",
+      `${s.id} : surface non déclarée`
+    );
+  }
+});
+
+test("⚠⚠ UNE ÉTAPE « ORDINATEUR » DIT POURQUOI, JAMAIS « pas sur mobile »", () => {
+  /**
+   * ⚠ « Pas faisable sur mobile » sans raison se lit comme une limite du
+   * PRODUIT, alors que c'est une limite du GESTE — écrire dans un fichier du
+   * serveur, publier chez un registrar. La nuance décide si la personne
+   * attend d'être devant son ordinateur, ou si elle abandonne.
+   */
+  for (const s of STEPS.filter((x) => x.surface === "ordinateur")) {
+    assert.ok(
+      (s.motifSurface ?? "").length > 40,
+      `${s.id} exige un ordinateur sans dire pourquoi — la limite paraît venir du produit`
+    );
+  }
+  // Et le contraire : un motif sur une étape faisable au pouce serait une
+  // contradiction affichée à l'écran.
+  for (const s of STEPS.filter((x) => x.surface === "partout")) {
+    assert.equal(s.motifSurface, undefined, `${s.id} est faisable partout et porte un motif d'ordinateur`);
+  }
+});
+
+test("⚠⚠ LA MAJORITÉ DU PARCOURS SE FAIT DEPUIS UN TÉLÉPHONE", () => {
+  /**
+   * C'est la mesure qui a motivé tout le reste, et elle doit rester vraie :
+   * si quelqu'un reclasse la moitié des étapes en « ordinateur », l'affirmation
+   * « on peut s'installer depuis son téléphone » devient un mensonge
+   * commercial, et ce test tombe avant qu'elle ne soit publiée.
+   */
+  const pouce = STEPS.filter((s) => s.surface === "partout").length;
+  const ordi = STEPS.filter((s) => s.surface === "ordinateur").length;
+  assert.ok(pouce > ordi * 2, `${pouce} étapes au pouce contre ${ordi} sur ordinateur — l'installation mobile n'est plus vraie`);
+});
+
+test("⚠⚠ LES ÉTAPES D'ORDINATEUR NE SONT PAS CACHÉES SUR MOBILE", () => {
+  /**
+   * ⚠⚠ LE POINT ENTIER. La tentation est de filtrer : écran propre, parcours
+   * qui avance, personne ne bute. Ce serait reproduire le défaut déjà payé sur
+   * le rail — masquer une porte n'apprend pas qu'elle existe, ça apprend que
+   * le produit est plus petit qu'il n'est.
+   *
+   * Pire ici : quelqu'un finirait son parcours mobile en croyant avoir tout
+   * installé, alors que ses emails ne peuvent pas partir.
+   */
+  const path = buildPath(ctx());
+  const r = repartirParSurface(path);
+
+  assert.ok(r.surOrdinateur.length > 0, "aucune étape d'ordinateur listée — elles ont été filtrées, pas séparées");
+  assert.ok(r.auPouce.length > 0, "aucune étape faisable au téléphone : la répartition ne sert à rien");
+
+  const total = path.phases.flatMap((p) => p.steps).filter((s) => !s.done).length;
+  assert.equal(
+    r.auPouce.length + r.surOrdinateur.length,
+    total,
+    "des étapes ont disparu de la répartition — un parcours incomplet se termine en croyant avoir tout fait"
+  );
+});
+
+test("⚠ la prochaine action au pouce respecte l'ORDRE du parcours", () => {
+  // Brancher avant de charger, charger avant d'envoyer. Un tri qui remonterait
+  // les étapes faisables casserait le raisonnement qui fait tenir la séquence.
+  const path = buildPath(ctx());
+  const r = repartirParSurface(path);
+  const ordre = path.phases.flatMap((p) => p.steps).map((s) => s.id);
+  const positions = r.auPouce.map((s) => ordre.indexOf(s.id));
+  assert.deepEqual(positions, [...positions].sort((a, b) => a - b), "les étapes au pouce ont été réordonnées");
+  assert.equal(r.prochaineAuPouce?.id, r.auPouce[0]?.id, "la prochaine action n'est pas la première de la liste");
+});
+
+test("⚠⚠ « RIEN À FAIRE ICI » ET « TU AS FINI » NE SE DISENT PAS PAREIL", () => {
+  /**
+   * Quand il ne reste que des étapes d'ordinateur, un écran vide se lirait
+   * « tu as terminé ». C'est le même mode de panne que le moniteur qui affiche
+   * du calme quand la base est injoignable : zéro parce que c'est fini et zéro
+   * parce qu'on est bloqué demandent deux gestes opposés.
+   */
+  const path = buildPath(ctx());
+  const toutes = path.phases.flatMap((p) => p.steps);
+
+  // On simule le cas : toutes les étapes de pouce faites, la plomberie non.
+  const bloque = repartirParSurface({
+    ...path,
+    phases: path.phases.map((ph) => ({
+      ...ph,
+      steps: ph.steps.map((s) => (s.surface === "partout" ? { ...s, done: true } : s)),
+    })),
+  });
+  assert.equal(bloque.auPouce.length, 0);
+  assert.ok(bloque.bloqueSurMobile, "le parcours est bloqué sur mobile et ne le dit pas — l'écran se lira « terminé »");
+
+  // Et le vrai « fini » : plus rien du tout, donc pas de blocage à annoncer.
+  const fini = repartirParSurface({
+    ...path,
+    phases: path.phases.map((ph) => ({ ...ph, steps: ph.steps.map((s) => ({ ...s, done: true })) })),
+  });
+  assert.equal(fini.bloqueSurMobile, false, "un parcours terminé ne doit pas annoncer un blocage");
+  assert.ok(toutes.length > 0, "le parcours est vide — le test ne mesure rien");
+});
+
+test("⚠⚠ L'ÉCRAN CONSOMME LA RÉPARTITION — sinon le module est mort", () => {
+  /**
+   * ⚠ LE DÉFAUT LE PLUS FRÉQUENT DE CE DÉPÔT : un mécanisme juste, testé,
+   * correct — branché nulle part. Tous les tests ci-dessus passeraient sur un
+   * `repartirParSurface` que `/demarrage` n'appelle pas, pendant qu'un
+   * téléphone continuerait de servir « colle-le dans .env.local » comme
+   * première action.
+   */
+  const page = readFileSync(join(process.cwd(), "app/(app)/demarrage/page.tsx"), "utf8");
+  assert.match(page, /repartirParSurface\(path\)/, "l'écran ne calcule pas la répartition");
+  assert.match(page, /mobile\.surOrdinateur/, "l'écran ne liste pas les étapes qui exigent une machine");
+  assert.match(page, /mobile\.bloqueSurMobile/, "l'écran ne distingue pas « bloqué ici » de « terminé »");
+  assert.match(page, /md:hidden/, "le bloc mobile s'afficherait aussi sur ordinateur, où il n'a rien à dire");
 });

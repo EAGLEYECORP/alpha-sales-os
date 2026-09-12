@@ -98,6 +98,44 @@ export interface StepDef {
    * montrée à tout le monde.
    */
   chemin?: string;
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * DEPUIS QUELLE SURFACE CETTE ÉTAPE SE FAIT VRAIMENT.
+   *
+   * ⚠⚠ CE CHAMP EXISTE PARCE QUE LE PARCOURS S'ARRÊTAIT AU DEUXIÈME
+   * BARREAU SUR UN TÉLÉPHONE, SANS LE DIRE.
+   *
+   * `/demarrage` déroule dix-huit étapes dans l'ordre. La deuxième est
+   * « Brancher l'envoi email », dont le premier geste est « colle-le dans
+   * .env.local ». Sur un téléphone, ce geste n'existe pas. Quelqu'un qui
+   * s'inscrit depuis son mobile — c'est-à-dire la majorité des inscriptions
+   * — voit donc la marche 1 réussie, la marche 2 impossible, et n'apprend
+   * NULLE PART que les treize suivantes, elles, se font très bien au pouce.
+   * Il repose le téléphone en pensant que le produit n'est pas pour lui.
+   *
+   * Mesuré : sur dix-huit étapes, CINQ exigent une machine. Les treize
+   * autres — l'identité, l'offre, la recette, le chargement des fiches, les
+   * premiers emails, les premiers appels, LinkedIn, les rendez-vous, le
+   * rythme — se font depuis un téléphone. Le produit était déjà mobile ;
+   * c'est son parcours d'installation qui ne le savait pas.
+   *
+   * ⚠ LE CHAMP EST OBLIGATOIRE, ET C'EST DÉLIBÉRÉ. Un défaut implicite
+   * (« si rien n'est écrit, c'est faisable au téléphone ») ferait passer
+   * une étape de plomberie pour une étape de pouce au premier ajout
+   * distrait. Le compilateur pose donc la question à chaque nouvelle étape.
+   * Mesuré aussi : le script qui a posé ces valeurs a sauté `n8n` — son
+   * identifiant contient un chiffre — et c'est `tsc` qui l'a rattrapé.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  surface: "partout" | "ordinateur";
+  /**
+   * Pourquoi une machine est nécessaire. OBLIGATOIRE quand
+   * `surface === "ordinateur"`, et un test l'exige : « pas faisable sur
+   * mobile » sans raison se lit comme une limite du produit, alors que
+   * c'est une limite du GESTE. La nuance décide si la personne attend
+   * d'être devant son ordinateur ou si elle abandonne.
+   */
+  motifSurface?: string;
 }
 
 export const STEPS: StepDef[] = [
@@ -126,6 +164,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir Réglages",
     minutes: 3,
     auto: true,
+    surface: "partout",
   },
   {
     id: "smtp",
@@ -141,6 +180,9 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir Réglages",
     minutes: 15,
     auto: true,
+    surface: "ordinateur",
+    motifSurface:
+      "Écrire dans `.env.local` et redémarrer le serveur. Un téléphone ne touche pas le système de fichiers du déploiement.",
     chemin: "/campaigns",
   },
   {
@@ -157,6 +199,9 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Voir la délivrabilité",
     minutes: 20,
     auto: true,
+    surface: "ordinateur",
+    motifSurface:
+      "Publier des enregistrements chez le registrar du domaine puis les vérifier. Possible sur mobile en théorie, ingérable en pratique : on recopie des chaînes de 200 caractères sans le droit à l'erreur.",
     chemin: "/campaigns",
   },
   {
@@ -173,6 +218,9 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Tester l'Agent",
     minutes: 20,
     auto: true,
+    surface: "ordinateur",
+    motifSurface:
+      "Clé d'API à poser dans `.env.local`, ou Ollama à installer sur la machine.",
     chemin: "/agent",
   },
   {
@@ -189,6 +237,9 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Connecter n8n",
     minutes: 30,
     auto: true,
+    surface: "ordinateur",
+    motifSurface:
+      "n8n tourne sur une machine, et on y importe des workflows depuis un dossier du dépôt.",
     chemin: "/activity",
   },
   {
@@ -205,6 +256,9 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Voir le webhook",
     minutes: 15,
     auto: true,
+    surface: "ordinateur",
+    motifSurface:
+      "`WEBHOOK_SECRET` dans `.env.local`, plus la configuration du fournisseur entrant.",
     chemin: "/activity",
   },
   {
@@ -221,6 +275,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Coller le lien",
     minutes: 15,
     auto: true,
+    surface: "partout",
     chemin: "/meetings",
   },
   {
@@ -237,6 +292,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Vérifier l'offre",
     minutes: 20,
     auto: false,
+    surface: "partout",
   },
   {
     id: "recette",
@@ -252,6 +308,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Lancer la recette",
     minutes: 30,
     auto: false,
+    surface: "partout",
     chemin: "/recette",
   },
 
@@ -270,6 +327,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Importer des fiches",
     minutes: 180,
     auto: true,
+    surface: "partout",
     chemin: "/pipeline",
   },
   {
@@ -286,6 +344,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le pipeline",
     minutes: 45,
     auto: false,
+    surface: "partout",
     chemin: "/pipeline",
   },
 
@@ -304,6 +363,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir la Newsletter",
     minutes: 30,
     auto: true,
+    surface: "partout",
     chemin: "/campaigns",
   },
   {
@@ -320,6 +380,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir les Appels",
     minutes: 45,
     auto: true,
+    surface: "partout",
     chemin: "/voice",
   },
   {
@@ -337,6 +398,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le sourcing",
     minutes: 25,
     auto: true,
+    surface: "partout",
     chemin: "/linkedin",
   },
   {
@@ -354,6 +416,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir LinkedIn",
     minutes: 30,
     auto: true,
+    surface: "partout",
     chemin: "/linkedin",
   },
   {
@@ -370,6 +433,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le Closer OS",
     minutes: 60,
     auto: true,
+    surface: "partout",
     chemin: "/meetings",
   },
 
@@ -388,6 +452,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Ouvrir le Pilote",
     minutes: 90,
     auto: true,
+    surface: "partout",
     chemin: "/aujourdhui",
   },
   {
@@ -404,6 +469,7 @@ export const STEPS: StepDef[] = [
     hrefLabel: "Voir les Preuves",
     minutes: 0,
     auto: true,
+    surface: "partout",
   },
 ];
 
@@ -522,6 +588,62 @@ export interface Path {
    * l'impression d'un produit minuscule.
    */
   verrouillees: number;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUI SE FAIT DEPUIS UN TÉLÉPHONE, ET CE QUI ATTEND UNE MACHINE.
+ *
+ * ⚠⚠ ON NE CACHE PAS LES ÉTAPES D'ORDINATEUR SUR MOBILE, ET C'EST LE POINT
+ * ENTIER. La tentation est de filtrer : écran propre, parcours qui avance,
+ * personne ne bute. Ce serait reproduire le défaut que ce dépôt a déjà payé
+ * sur le rail de navigation — masquer une porte n'apprend pas qu'elle
+ * existe, ça apprend que le produit est plus petit qu'il n'est. Pire ici :
+ * quelqu'un finirait son parcours mobile en croyant avoir tout installé,
+ * alors que ses emails ne peuvent pas partir.
+ *
+ * On SÉPARE donc, et on nomme les deux tas. « Voilà ce que tu peux faire
+ * maintenant, au pouce, tout de suite » et « voilà les cinq choses qui
+ * t'attendront devant un ordinateur, avec la raison de chacune ».
+ *
+ * ⚠ L'ORDRE DES ÉTAPES EST CONSERVÉ DANS CHAQUE TAS. Le parcours est écrit
+ * en séquence — brancher avant de charger, charger avant d'envoyer — et un
+ * tri qui remonterait les étapes faisables casserait le raisonnement qui
+ * fait tenir la séquence.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface RepartitionSurface {
+  /** Faisable tout de suite, depuis le téléphone, dans l'ordre du parcours. */
+  auPouce: PathStep[];
+  /** Exige une machine. Listé, jamais masqué, avec le motif de chacune. */
+  surOrdinateur: PathStep[];
+  /**
+   * La prochaine action FAISABLE ICI. `null` = tout ce qui reste demande une
+   * machine, et c'est une information, pas un écran vide.
+   */
+  prochaineAuPouce: PathStep | null;
+  /**
+   * Vrai quand le parcours est bloqué sur mobile : il reste des choses à
+   * faire, et aucune ne se fait au téléphone. L'écran doit alors dire d'aller
+   * sur un ordinateur au lieu d'afficher « rien à faire », qui se lirait
+   * comme « tu as fini ».
+   */
+  bloqueSurMobile: boolean;
+}
+
+export function repartirParSurface(path: Path): RepartitionSurface {
+  const toutes = path.phases.flatMap((ph) => ph.steps);
+  const restantes = toutes.filter((s) => !s.done);
+
+  const auPouce = restantes.filter((s) => s.surface === "partout");
+  const surOrdinateur = restantes.filter((s) => s.surface === "ordinateur");
+
+  return {
+    auPouce,
+    surOrdinateur,
+    prochaineAuPouce: auPouce[0] ?? null,
+    bloqueSurMobile: auPouce.length === 0 && surOrdinateur.length > 0,
+  };
 }
 
 /**

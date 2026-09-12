@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Circle,
   Clock,
+  Laptop,
   Hand,
   RefreshCw,
   RotateCcw,
@@ -17,7 +18,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { useDroits } from "@/lib/use-droits";
 import { n8nConnected } from "@/lib/n8n";
-import { buildPath, type PathStep } from "@/lib/onboarding-path";
+import { buildPath, repartirParSurface, type PathStep } from "@/lib/onboarding-path";
 import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
 import { SurfacePreuve } from "@/components/demarrage/surface-preuve";
 import { cn } from "@/lib/utils";
@@ -109,6 +110,9 @@ export default function DemarragePage() {
     [prospects, meetings, settings.bookingUrl, settings.agencyName, health, dns, n8n, manual, droits.bricks, droits.maitre]
   );
 
+  // Ce qui se fait d'ici, et ce qui attend une machine. Le calcul est pur
+  // et vit dans `lib/` : l'écran ne décide rien, il rend.
+  const mobile = repartirParSurface(path);
   const pct = Math.round((path.done / path.total) * 100);
   const hours = Math.round((path.minutesLeft / 60) * 10) / 10;
 
@@ -130,9 +134,97 @@ export default function DemarragePage() {
         }
       />
 
-      {/* ── LA PROCHAINE ACTION ── */}
+      {/* ──────────────────────────────────────────────────────────────
+          DEPUIS CE TÉLÉPHONE — le bloc qui manquait, et il passe AVANT
+          la prochaine action générale.
+
+          ⚠⚠ POURQUOI AVANT, et pas plus bas. La « prochaine action » est
+          la première étape non faite du parcours, dans l'ordre. Sur un
+          compte neuf, c'est « Brancher l'envoi email » — dont le premier
+          geste est « colle-le dans .env.local ». Sur un téléphone, ce
+          geste n'existe pas. Le grand encadré bronze en haut de l'écran
+          servait donc un mur à quiconque s'inscrivait depuis son mobile,
+          et rien ne lui apprenait que treize étapes sur dix-huit se font
+          très bien au pouce.
+
+          ⚠ Il est `md:hidden` : sur un ordinateur, toutes les étapes sont
+          faisables et ce bloc n'aurait rien à dire. Une section qui
+          répète l'évidence use la confiance du lecteur sur celles qui
+          disent quelque chose.
+          ────────────────────────────────────────────────────────────── */}
+      <section className="card p-4 md:hidden">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-bronze-400">
+          Depuis ce téléphone
+        </p>
+        {mobile.prochaineAuPouce ? (
+          <>
+            <h2 className="mt-1 font-display text-lg font-extrabold text-paper">
+              {mobile.prochaineAuPouce.title}
+            </h2>
+            <p className="mt-1 text-[13px] text-paper-dim">{mobile.prochaineAuPouce.why}</p>
+            <ol className="mt-3 space-y-1.5">
+              {mobile.prochaineAuPouce.how.map((h, i) => (
+                <li key={i} className="flex gap-2 text-[13px] text-paper">
+                  <span className="mt-0.5 font-mono text-[11px] text-bronze-400">{i + 1}.</span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {mobile.prochaineAuPouce.href && (
+                <Link href={mobile.prochaineAuPouce.href} className="btn-bronze px-4 py-2 text-[13px]">
+                  {mobile.prochaineAuPouce.hrefLabel ?? "Y aller"} <ArrowRight size={14} />
+                </Link>
+              )}
+              <span className="text-[11px] text-paper-faint">
+                {mobile.auPouce.length} étape{mobile.auPouce.length > 1 ? "s" : ""} faisable
+                {mobile.auPouce.length > 1 ? "s" : ""} d&apos;ici
+              </span>
+            </div>
+          </>
+        ) : (
+          /* ⚠⚠ « RIEN À FAIRE ICI » ET « TU AS FINI » NE SE DISENT PAS PAREIL.
+             Un écran vide se lirait « terminé » — le même mode de panne que le
+             moniteur qui affiche du calme quand la base est injoignable. */
+          <p className="mt-1 text-[13px] text-paper-dim">
+            {mobile.bloqueSurMobile
+              ? "Tout ce qui se fait au pouce est fait. Ce qui reste demande un ordinateur — la liste est juste en dessous, avec la raison de chacune."
+              : "Plus rien à installer, ni ici ni ailleurs."}
+          </p>
+        )}
+
+        {mobile.surOrdinateur.length > 0 && (
+          <div className="panel mt-4 p-3">
+            <p className="text-[11px] font-semibold text-paper-dim">
+              <Laptop size={12} className="mr-1 inline" />
+              {mobile.surOrdinateur.length} étape{mobile.surOrdinateur.length > 1 ? "s" : ""} t&apos;attend
+              {mobile.surOrdinateur.length > 1 ? "ent" : ""} devant un ordinateur
+            </p>
+            {/* ⚠ ON LES LISTE, ON NE LES CACHE PAS. Filtrer donnerait un écran
+                propre et un parcours qui se termine en croyant avoir tout
+                installé — alors que les emails ne peuvent pas partir. */}
+            <ul className="mt-2 space-y-2">
+              {mobile.surOrdinateur.map((s) => (
+                <li key={s.id} className="text-[12px]">
+                  <span className="text-paper">{s.title}</span>
+                  <span className="block text-[11px] leading-snug text-paper-faint">{s.motifSurface}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* ── LA PROCHAINE ACTION ──
+          ⚠ `hidden md:block` — VU AU RENDU, JAMAIS DÉDUIT. Sur un téléphone,
+          cet encadré et le bloc « Depuis ce téléphone » ci-dessus affichaient
+          LA MÊME ÉTAPE l'un sous l'autre dès que la prochaine action était
+          faisable au pouce, c'est-à-dire la plupart du temps. Deux cartes
+          identiques ne se lisent pas comme une redite : elles se lisent comme
+          un bug, et on cherche ce qui les distingue. Le bloc mobile couvre
+          déjà les deux cas — une action à faire, ou plus rien. */}
       {path.next ? (
-        <section className="card border-bronze-700 p-5">
+        <section className="card hidden border-bronze-700 p-5 md:block">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-bronze-400">
@@ -162,7 +254,7 @@ export default function DemarragePage() {
           </div>
         </section>
       ) : (
-        <section className="card flex items-center gap-3 border-signal-green/50 p-5">
+        <section className="card hidden items-center gap-3 border-signal-green/50 p-5 md:flex">
           <Trophy size={28} className="shrink-0 text-signal-green" />
           <div>
             <p className="font-display text-lg font-extrabold text-paper">Le chemin est terminé.</p>

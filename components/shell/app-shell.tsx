@@ -46,6 +46,7 @@ import {
   Trophy,
   UserCog,
   ChevronRight,
+  LayoutGrid,
 } from "lucide-react";
 import { Eagle } from "@/components/eagle";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,7 @@ import { SyncMoteur } from "@/components/sync-moteur";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
 import { useDroits } from "@/lib/use-droits";
 import { etatChemin } from "@/lib/verrous";
+import { CLE_MODE, modeActif, modesVisibles, type ModeMobile } from "@/lib/modes-mobile";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -204,9 +206,27 @@ const NAV = [...NAV_QUOTIDIEN, ...NAV_GROUPES.flatMap((g) => g.items)];
  * Les réglages ne disparaissent pas : la palette de l'en-tête mobile y va en
  * trois lettres, et un test refuse qu'une page devienne inatteignable.
  */
-const MOBILE_NAV = NAV.filter((n) =>
-  ["/aujourdhui", "/decisions", "/closer", "/moniteur", "/debrief"].includes(n.href)
-);
+/**
+ * ⚠⚠ CETTE LISTE FIGÉE A ÉTÉ REMPLACÉE PAR DES MODES (`lib/modes-mobile.ts`).
+ *
+ * Le raisonnement ci-dessus reste juste sur un point — une barre de pouce tient
+ * CINQ entrées — et faux sur l'autre. « On règle depuis un ordinateur, on
+ * regarde depuis un téléphone » était vrai quand l'autopilote avait besoin
+ * d'une machine allumée. Il tourne sur le serveur depuis le 09/09 : le
+ * téléphone n'est plus un écran de consultation, c'est le poste de travail.
+ *
+ * Conséquence mesurée : depuis la barre, on n'atteignait NI le pipeline, NI les
+ * campagnes, NI Alpha CEO. Trois des écrans les plus utilisés imposaient
+ * d'ouvrir la palette et de taper.
+ *
+ * On garde donc cinq entrées, et on change ce qu'elles DÉSIGNENT. Le mode
+ * « terrain » reprend cette liste à l'identique : personne ne perd ce qu'il
+ * savait déjà faire.
+ */
+const barreDuMode = (mode: ModeMobile) =>
+  mode.routes
+    .map((href) => NAV.find((n) => n.href === href))
+    .filter((n): n is (typeof NAV)[number] => Boolean(n));
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -299,8 +319,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return e.type === "verrouille" ? e.brique : undefined;
   };
 
+  /**
+   * Un mode est OUVERT dès qu'une de ses routes l'est. Exiger les cinq
+   * marquerait « non inclus » un mode dont quatre écrans sur cinq
+   * fonctionnent — et ce serait un mensonge dans le sens qui décourage.
+   */
+  const peutOuvrirMode = (m: ModeMobile) => m.routes.some((r) => etat(r).type === "ouvert");
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  /**
+   * ── LE MODE DU TÉLÉPHONE ──
+   *
+   * Mémorisé par navigateur, comme le repli du rail. Initialisé en LAZY : le
+   * shell rend un écran d'attente côté serveur, donc pas de risque
+   * d'hydratation — c'est le même schéma que `collapsed`, juste au-dessus.
+   *
+   * ⚠ `modeActif` REPLIE sur le mode par défaut si le mode mémorisé n'est plus
+   * visible. Le cas est réel : le propriétaire choisit « Alpha CEO », puis
+   * ouvre l'app avec un compte client dans le même navigateur. Sans repli, la
+   * barre du bas serait VIDE — et une barre vide ne ressemble pas à un droit
+   * manquant, elle ressemble à une panne.
+   */
+  const [modeMemorise, setModeMemorise] = useState<string | null>(
+    () => (typeof window === "undefined" ? null : localStorage.getItem(CLE_MODE))
+  );
+  const mode = modeActif(modeMemorise, droits.maitre);
+  const choisirMode = (id: string) => {
+    setModeMemorise(id);
+    if (typeof window !== "undefined") localStorage.setItem(CLE_MODE, id);
+    setSelecteurOuvert(false);
+  };
+  const [selecteurOuvert, setSelecteurOuvert] = useState(false);
 
   // L'écran de connexion (/gate) vit HORS du shell : pas de sidebar, pas
   // d'assistant, pas de visite guidée par-dessus le mot de passe.
@@ -489,6 +540,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <div className="flex items-center gap-2">
+            {/* ⚠ LE SÉLECTEUR DE MODE EST DANS L'EN-TÊTE, PAS DANS LA BARRE DU
+                BAS. Lui donner une des cinq places l'aurait payé avec un écran :
+                on aurait rendu le pipeline atteignable en retirant le débrief.
+                En haut, il ne coûte aucune destination. */}
+            <button
+              onClick={() => setSelecteurOuvert((v) => !v)}
+              className="flex h-9 items-center gap-1.5 rounded-full border border-ink-600 px-3 text-[11px] font-semibold text-paper-dim"
+              aria-haspopup="menu"
+              aria-expanded={selecteurOuvert}
+              aria-label={`Mode ${mode.label} — changer de mode`}
+            >
+              <LayoutGrid size={14} className="text-bronze-400" />
+              {mode.label}
+              <ChevronRight size={12} className={cn("transition-transform", selecteurOuvert && "rotate-90")} />
+            </button>
             <SessionCompte variant="icon" />
             <ThemeToggle variant="icon" className="h-9 w-9" />
             <button
@@ -500,6 +566,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+
+        {/* Le choix du mode — une liste, pas une grille d'icônes : chaque mode
+            dit CE QU'IL SERT, et un intitulé seul ne le dit pas. */}
+        {selecteurOuvert && (
+          <div className="glass-chrome sticky top-[52px] z-40 border-b border-ink-700 p-2 md:hidden" role="menu">
+            {modesVisibles(droits.maitre).map((m) => (
+              <button
+                key={m.id}
+                role="menuitemradio"
+                aria-checked={m.id === mode.id}
+                onClick={() => choisirMode(m.id)}
+                className={cn(
+                  "flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2.5 text-left",
+                  m.id === mode.id ? "bg-bronze-900/70" : "hover:bg-ink-800"
+                )}
+              >
+                <span className={cn("text-sm font-semibold", m.id === mode.id ? "text-bronze-300" : "text-paper")}>
+                  {m.label}
+                  {/* Un mode payant se GRISE et le dit — il ne disparaît pas. */}
+                  {m.brique && !peutOuvrirMode(m) && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-normal text-paper-faint">
+                      <Lock size={10} /> non inclus
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] leading-snug text-paper-faint">{m.quoi}</span>
+              </button>
+            ))}
+          </div>
+        )}
         {/* Avant tout le reste : quelqu'un qui arrive d'un email de
             confirmation doit savoir si ça a marché. En cas d'échec, Supabase
             redirige vers une app d'apparence normale et ne dit rien — c'est
@@ -522,20 +618,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* Bottom nav — mobile (safe-area : barre gestuelle Android/iOS en PWA) */}
-      <nav className="glass-chrome fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 md:hidden pb-[env(safe-area-inset-bottom)]">
-        {MOBILE_NAV.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px]",
-              isActive(href) ? "text-bronze-400" : "text-paper-faint"
-            )}
-          >
-            <Icon size={19} strokeWidth={isActive(href) ? 2.4 : 1.8} />
-            {label}
-          </Link>
-        ))}
+      <nav
+        className="glass-chrome fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 md:hidden pb-[env(safe-area-inset-bottom)]"
+        aria-label={`Navigation — mode ${mode.label}`}
+      >
+        {barreDuMode(mode).map(({ href, label, icon: Icon }) => {
+          /**
+           * ⚠ UNE ENTRÉE VERROUILLÉE RESTE UN LIEN, comme dans le rail : elle
+           * mène à l'explication, pas nulle part. Un `<button disabled>` aurait
+           * rendu la porte visible ET muette — et inatteignable au clavier au
+           * moment précis où elle a quelque chose à dire.
+           */
+          const verrou = verrouDe(href);
+          const cible = verrou
+            ? `/offre-brique?b=${encodeURIComponent(verrou)}&de=${encodeURIComponent(href)}`
+            : href;
+          return (
+            <Link
+              key={href}
+              href={cible}
+              aria-label={verrou ? `${label} — non inclus dans ton offre` : label}
+              aria-current={isActive(href) ? "page" : undefined}
+              className={cn(
+                "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px]",
+                isActive(href) ? "text-bronze-400" : verrou ? "text-paper-faint/60" : "text-paper-faint"
+              )}
+            >
+              <Icon size={19} strokeWidth={isActive(href) ? 2.4 : 1.8} />
+              {label}
+            </Link>
+          );
+        })}
       </nav>
     </div>
     </SyncMoteur>

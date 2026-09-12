@@ -907,6 +907,73 @@ définition de chacune** — c'est tout le sujet.
   **pastille d'état a sa propre entrée** et se rend HORS du `<h1>` : dedans, un
   lecteur d'écran annonce « titre : Machin Négociation » d'un bloc.
 
+## LE TÉLÉPHONE EST UN POSTE DE TRAVAIL, PLUS UN ÉCRAN DE CONSULTATION
+`lib/modes-mobile.ts` · `StepDef.surface` (`lib/onboarding-path.ts`) ·
+`tests/modes-mobile.test.ts` · décidé le 12/09/2026.
+
+La coquille portait une justification écrite : « on règle depuis un ordinateur,
+on regarde ce que la machine a fait depuis un téléphone ». Elle était vraie
+quand l'autopilote demandait une machine allumée. **Il tourne sur le serveur
+depuis le 09/09** — la phrase est morte le jour de cette bascule, et les deux
+défauts qu'elle couvrait sont restés.
+
+### 1. La barre du pouce n'atteignait ni le pipeline, ni les campagnes, ni le CEO
+Cinq entrées FIGÉES. Trois des écrans les plus utilisés imposaient d'ouvrir la
+palette et de taper.
+- **Cinq entrées, toujours** — la contrainte est physique, elle tient. On ne
+  rallonge pas la barre : on change ce qu'elle DÉSIGNE. Un **mode** = un moment
+  du métier (terrain · pipeline · campagnes · closer · Alpha CEO), mémorisé par
+  navigateur, sélecteur dans l'en-tête (lui donner une place dans la barre
+  l'aurait payé avec un écran).
+- **Le mode par défaut reprend l'ancienne barre à l'identique**, et c'est
+  testé : sur une barre de pouce on clique par mémoire musculaire, pas en
+  lisant. Une nouveauté qui déplace ce que les gens savent faire se paie en
+  désorientation.
+- **Les modes ne créent aucun écran et n'en cachent aucun** : ils réordonnent
+  l'accès. Un test exige que chaque route d'un mode existe dans la navigation —
+  sinon on aurait une deuxième navigation, qui divergerait.
+- **`maitreSeul` MASQUE, `brique` GRISE.** Alpha CEO disparaît chez un client
+  (griser, c'est annoncer notre économie) ; les campagnes restent visibles et
+  grisées chez un gratuit (on ne peut pas vouloir ce qu'on ne voit pas). C'est
+  la doctrine du rail, appliquée au pouce.
+  > ⚠ **Un mode mémorisé qui n'est plus visible ne doit pas vider la barre.**
+  > Cas réel : le propriétaire choisit « Alpha CEO », puis ouvre l'app avec un
+  > compte client dans le même navigateur. Sans repli, la barre n'a plus
+  > AUCUNE entrée — et une barre vide ne ressemble pas à un droit manquant,
+  > elle ressemble à une panne.
+
+### 2. Le parcours d'installation s'arrêtait au deuxième barreau sur un mobile
+`/demarrage` déroule ses étapes dans l'ordre. La deuxième est « Brancher
+l'envoi email », dont le premier geste est « colle-le dans `.env.local` ». Sur
+un téléphone, ce geste n'existe pas — et **rien ne disait que les treize
+suivantes se font très bien au pouce**. On repose le téléphone en pensant que
+le produit n'est pas pour soi.
+- **`StepDef.surface` est OBLIGATOIRE** (`"partout" | "ordinateur"`). Un défaut
+  implicite ferait passer une étape de plomberie pour une étape de pouce au
+  premier ajout distrait. Mesuré : le script qui a posé ces valeurs a **sauté
+  `n8n`** — identifiant avec un chiffre — et c'est `tsc` qui l'a rattrapé.
+- **Cinq étapes sur dix-huit exigent une machine** : SMTP, DNS, IA, n8n,
+  webhook entrant. Toutes les autres se font au téléphone. Le produit était
+  déjà mobile ; son parcours d'installation ne le savait pas.
+  > ⚠ Conséquence mesurée, et elle est forte : **un compte GRATUIT n'a aucune
+  > étape d'ordinateur** — les cinq servent des briques qu'il n'a pas, et le
+  > filtre par droits les retire déjà. Son installation est intégralement
+  > faisable depuis un téléphone.
+- **⚠⚠ ON NE CACHE PAS les étapes d'ordinateur sur mobile, on les SÉPARE**, avec
+  le motif de chacune. Filtrer donnerait un écran propre et un parcours qui se
+  termine en croyant avoir tout installé — alors que les emails ne peuvent pas
+  partir. Et « pas faisable sur mobile » sans raison se lit comme une limite du
+  PRODUIT, alors que c'est une limite du GESTE.
+- **« Rien à faire ici » et « tu as fini » ne se disent pas pareil**
+  (`bloqueSurMobile`). Même mode de panne que le moniteur qui affiche du calme
+  quand la base est injoignable.
+
+> ⚠ **Vu au RENDU, jamais déduit** : le bloc mobile et l'encadré « prochaine
+> action » affichaient LA MÊME ÉTAPE l'une sous l'autre dès qu'elle était
+> faisable au pouce — c'est-à-dire la plupart du temps. Deux cartes identiques
+> ne se lisent pas comme une redite, elles se lisent comme un bug. L'encadré
+> général est passé `hidden md:block`.
+
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il
 démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiants**.
