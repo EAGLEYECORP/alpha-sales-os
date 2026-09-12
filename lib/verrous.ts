@@ -74,8 +74,21 @@ export const POURQUOI_PAYANT: Record<string, string> = {
     "Chaque appel consomme de vraies minutes de téléphonie, facturées à nous. Un numéro composé coûte de l'argent au moment où il sonne.",
   "agent-alpha":
     "L'agent autonome brûle nos jetons d'IA à chaque tour de boucle, sans que personne regarde. C'est la seule brique dont la dépense n'a pas de plafond naturel.",
-  "alpha-live":
-    "Une session en direct fait tourner le modèle en continu pendant qu'elle dure — même mécanique que l'agent, sur une durée choisie par l'utilisateur.",
+  /**
+   * ⚠⚠ L'ENTRÉE `alpha-live` A ÉTÉ RETIRÉE LE 12/09/2026, ET SA RAISON ÉTAIT
+   * FAUSSE — pas seulement le classement.
+   *
+   * Elle affirmait au client : « une session en direct fait tourner le modèle
+   * en continu pendant qu'elle dure — même mécanique que l'agent ». C'est un
+   * raisonnement par ANALOGIE, jamais une mesure. Mesuré :
+   * `components/live/alpha-live.tsx` n'appelle AUCUN `/api/…`, aucune route
+   * n'est classée sur `/overlay`, et le copilote tourne entièrement dans le
+   * navigateur (store local, RAG hors-ligne, reconnaissance vocale native).
+   * Il ne fait tourner aucun modèle chez nous.
+   *
+   * Faire payer est légitime ; donner une raison inventée ne l'est pas — et
+   * celle-ci se vérifiait en ouvrant un fichier.
+   */
   audits:
     "L'audit va chercher les pages du prospect par notre infrastructure : c'est notre adresse IP qui frappe, et c'est elle qui se fait bloquer.",
   tracking:

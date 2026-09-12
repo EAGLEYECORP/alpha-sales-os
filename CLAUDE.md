@@ -844,8 +844,8 @@ démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiant
 
 | | Ce qu'on ouvre |
 |---|---|
-| **GRATUIT**, sans limite de durée (`BRIQUES_GRATUITES`) | `crm` · `closer` · `cerveau` · `pilotage` — **tes données, ton organisation** |
-| **PAYANT** | `campagnes` · `alpha-voice` · `agent-alpha` · `audits` · `tracking` · `alpha-live` — **la machine agit à ta place** |
+| **GRATUIT**, sans limite de durée (`BRIQUES_GRATUITES`) | `crm` · `closer` · `cerveau` · `pilotage` · `alpha-live` — **tout ce qui tourne chez TOI** |
+| **PAYANT** | `campagnes` · `alpha-voice` · `agent-alpha` · `audits` · `tracking` — **tout ce qui DÉPENSE chez nous** |
 | **MAÎTRE seul** | `/payouts`, `/offre`, `MAITRE_SEULEMENT` — notre économie |
 
 > ⚠ **Cette ligne n'est PAS un arbitrage commercial, elle est imposée par un
@@ -855,6 +855,24 @@ démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiant
 > gratuit revient à donner notre carte de crédit et notre nom de domaine à des
 > inconnus — et ça ne se voit que sur la facture, un mois plus tard. Le jour où
 > les identifiants deviennent par locataire, la ligne se rediscute. Pas avant.
+
+> ⚠⚠ **LE CRITÈRE EST LE COÛT, ET IL EST DÉSORMAIS EXÉCUTABLE** (12/09/2026).
+> La doctrine disait déjà « ce n'est pas un arbitrage commercial, c'est un fait
+> technique » — mais rien ne le vérifiait, et **une brique était classée par
+> FAMILLE** (« la machine agit à ta place ») au lieu de l'être par sa dépense.
+> · `alpha-live` — le copilote d'appel — ne garde que `/overlay`, **aucune
+>   route API ne sert ce chemin**, et `components/live/alpha-live.tsx` n'appelle
+>   aucun `/api/…` : store local, RAG maison hors-ligne, reconnaissance vocale
+>   du navigateur. Zéro jeton, zéro minute, zéro SMTP. Il est passé au gratuit.
+> · Pire que le classement : `POURQUOI_PAYANT["alpha-live"]` **disait au client
+>   une raison fausse** — « fait tourner le modèle en continu, même mécanique
+>   que l'agent ». Une ANALOGIE servie comme une mesure, démontable en ouvrant
+>   un fichier. Faire payer est légitime ; inventer le motif ne l'est pas.
+> · Le garde (`⚠⚠ UNE BRIQUE N'EST PAYANTE QUE SI ELLE COÛTE`) dérive les
+>   payantes de `BRIQUES_CONNUES \ BRIQUES_GRATUITES` et exige, pour chacune,
+>   un chemin servi par une API de `API_QUI_DEPENSENT`. Deux listes écrites à
+>   la main ont été supprimées le même jour : c'est la recopie qui laisse
+>   entrer la brique suivante sans contrôle.
 
 > ⚠⚠ **TROIS FUITES TROUVÉES EN ÉCRIVANT LA GARDE, aucune ne se voyait** :
 > `/api/ai` → `/pipeline`, `/api/sparring` → `/closer`, `/api/digest` →

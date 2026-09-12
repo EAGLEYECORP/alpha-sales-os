@@ -111,9 +111,29 @@ export const DROIT_REFUSE: Entitlement = {
  * données sans rien dépenser chez nous. C'est utilisable seul, tous les
  * jours, indéfiniment. Un gratuit qui ne sert à rien ne convertit personne.
  *
- * PAYANT = la machine agit à ta place. Envoyer, appeler, tracer, rédiger,
- * souffler en direct. C'est exactement la frontière du coût, donc elle est
- * facile à défendre en vente : « tant que ça reste chez toi, c'est gratuit ».
+ * PAYANT = la machine agit à ta place. Envoyer, appeler, tracer, rédiger.
+ * C'est exactement la frontière du coût, donc elle est facile à défendre en
+ * vente : « tant que ça reste chez toi, c'est gratuit ».
+ *
+ * ⚠⚠ CETTE PHRASE DISAIT AUSSI « SOUFFLER EN DIRECT », ET C'ÉTAIT LA SEULE
+ * BRIQUE CLASSÉE PAR CATÉGORIE AU LIEU DE L'ÊTRE PAR SON COÛT (12/09/2026).
+ *
+ * `alpha-live` — le copilote d'appel — garde un seul chemin, `/overlay`, et
+ * **aucune route API ne le sert**. Mesuré : `components/live/alpha-live.tsx`
+ * n'appelle aucun `/api/…`. Il tourne entièrement dans le navigateur — le
+ * store local, le RAG maison hors-ligne, les correspondances d'objections, et
+ * la reconnaissance vocale du navigateur. Il ne consomme ni nos jetons, ni nos
+ * minutes, ni notre SMTP, ni notre bande passante.
+ *
+ * Il était donc payant au titre de « la machine agit à ta place » — une
+ * FAMILLE — alors que le critère énoncé six lignes plus haut est le COÛT. Et
+ * il n'agit même pas à la place de l'opérateur : il lui souffle pendant qu'il
+ * parle, exactement comme le Closer OS, qui est gratuit.
+ *
+ * `tests/entitlements.test.ts` rend maintenant le critère EXÉCUTABLE : une
+ * brique ne peut être payante que si elle garde un chemin servi par une route
+ * qui dépense chez nous. La doctrine affirmait « ce n'est pas un arbitrage
+ * commercial, c'est un fait technique » — c'est vérifié, plus seulement écrit.
  *
  * ⚠ `/controle` s'ouvre au gratuit (il agrège CRM + pilotage) et affiche donc
  * le lanceur de campagnes. Le bouton existe, le serveur refuse (403
@@ -121,7 +141,7 @@ export const DROIT_REFUSE: Entitlement = {
  * pas savoir qu'elle existe — et la sécurité ne dépend pas de l'écran.
  * ─────────────────────────────────────────────────────────────────────
  */
-export const BRIQUES_GRATUITES: readonly BrickId[] = ["crm", "closer", "cerveau", "pilotage"];
+export const BRIQUES_GRATUITES: readonly BrickId[] = ["crm", "closer", "cerveau", "pilotage", "alpha-live"];
 
 /**
  * Le droit d'un compte créé librement, sans ligne en base et sans paiement.
@@ -294,8 +314,15 @@ export function autorise(ent: Entitlement, chemin: string, now: Date = new Date(
   return peutOuvrir(chemin, ent.bricks, ent.maitre);
 }
 
-/** Les briques connues — pour valider ce qui vient de la base. */
-const BRIQUES_CONNUES: readonly string[] = [
+/**
+ * Les briques connues — pour valider ce qui vient de la base.
+ *
+ * ⚠ EXPORTÉE parce qu'un test en dérive la liste des PAYANTES (tout ce qui
+ * n'est pas dans `BRIQUES_GRATUITES`). La recopier dans le test aurait créé
+ * une seconde définition du catalogue : on ajoute une brique, on oublie le
+ * test, et elle échappe au contrôle de coût sans que rien ne le dise.
+ */
+export const BRIQUES_CONNUES: readonly BrickId[] = [
   "alpha-voice", "campagnes", "cerveau", "crm", "audits",
   "tracking", "alpha-live", "closer", "agent-alpha", "pilotage",
 ];
@@ -303,7 +330,10 @@ const BRIQUES_CONNUES: readonly string[] = [
 /** Nettoie une liste venue de la base : on n'accorde jamais un droit inconnu. */
 export function normaliserBriques(brut: unknown): BrickId[] {
   if (!Array.isArray(brut)) return [];
-  return brut.filter((b): b is BrickId => typeof b === "string" && BRIQUES_CONNUES.includes(b));
+  // ⚠ L'élargissement en `string[]` est nécessaire ET sûr : `brut` vient de la
+  // BASE, donc de `unknown`. Un `includes` typé `BrickId` refuserait de
+  // comparer — or c'est précisément la comparaison qui fait le nettoyage.
+  return brut.filter((b): b is BrickId => typeof b === "string" && (BRIQUES_CONNUES as readonly string[]).includes(b));
 }
 
 /**

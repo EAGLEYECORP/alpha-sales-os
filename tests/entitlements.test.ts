@@ -6,7 +6,7 @@ import { ACCES_PAR_CHEMIN, CHEMINS_COMMUNS, briquesPourChemin, normaliser, peutO
 import { CHEMIN_PAR_API } from "../lib/api-access";
 import {
   autorise, BRIQUES_GRATUITES, deploiementSansSerrure, DROIT_REFUSE, DROIT_SOLO, droitGratuit, estMaitre,
-  normaliserBriques, statutEffectif,
+  normaliserBriques, statutEffectif, BRIQUES_CONNUES,
   type Entitlement,
 } from "../lib/entitlements";
 import { BRICKS } from "../lib/bricks";
@@ -134,8 +134,26 @@ test("⚠ gratuit — RIEN de ce qui dépense chez nous n'y est inclus", () => {
    * Le jour où les identifiants deviennent par locataire, cette liste pourra
    * se rediscuter. Pas avant, et pas sans changer ce test.
    */
+  /**
+   * ⚠⚠ CETTE LISTE ÉTAIT ÉCRITE À LA MAIN, ET ELLE A FINI PAR MENTIR.
+   *
+   * Elle contenait `/overlay` et affirmait donc « il dépense chez nous ».
+   * Mesuré le 12/09/2026 : AUCUNE route n'est classée sur `/overlay` et le
+   * composant n'appelle aucun `/api/…`. La liste n'avait pas mesuré — elle
+   * avait recopié l'ensemble PAYANT en le baptisant « coûteux », ce qui est
+   * une pétition de principe : le test prouvait ce qu'il supposait.
+   *
+   * Elle se DÉRIVE maintenant des deux tables qui portent le fait :
+   * `API_QUI_DEPENSENT` (ce qui coûte) × `CHEMIN_PAR_API` (où ça vit). Une
+   * route coûteuse ajoutée demain entre d'office ; un chemin qui cesse de
+   * coûter en sort sans qu'on ait à y penser.
+   */
   const g = droitGratuit("t-neuf");
-  for (const ferme of ["/campaigns", "/outbox", "/newsletter", "/linkedin", "/social", "/voice", "/appels", "/agent", "/audits", "/activity", "/overlay"]) {
+  const cheminsCouteux = [
+    ...new Set(Object.keys(API_QUI_DEPENSENT).map((api) => CHEMIN_PAR_API[api]).filter(Boolean)),
+  ];
+  assert.ok(cheminsCouteux.length >= 6, `extraction cassée : ${cheminsCouteux.length} chemin(s) coûteux`);
+  for (const ferme of cheminsCouteux) {
     assert.equal(autorise(g, ferme), false, `${ferme} dépense chez nous : il ne peut pas être gratuit`);
   }
   // Et notre économie reste hors d'atteinte, gratuit ou payant.
@@ -144,12 +162,27 @@ test("⚠ gratuit — RIEN de ce qui dépense chez nous n'y est inclus", () => {
 });
 
 test("gratuit — il ne contient que des briques connues, et jamais les payantes", () => {
-  // Une faute de frappe dans la liste n'accorderait rien (normaliserBriques
-  // filtre), mais elle RETIRERAIT un droit sans que rien ne le dise.
-  assert.deepEqual(normaliserBriques([...BRIQUES_GRATUITES]), [...BRIQUES_GRATUITES]);
-  for (const payante of ["campagnes", "alpha-voice", "agent-alpha", "audits", "tracking", "alpha-live"]) {
-    assert.ok(!BRIQUES_GRATUITES.includes(payante as never), `${payante} ne doit jamais être gratuite`);
+  /**
+   * ⚠ LA LISTE DES PAYANTES ÉTAIT ÉCRITE À LA MAIN ICI AUSSI, et elle a
+   * bloqué le passage d'`alpha-live` au gratuit en affirmant simplement
+   * « alpha-live ne doit jamais être gratuite ». Une assertion qui répète la
+   * décision qu'elle est censée contrôler ne contrôle rien.
+   *
+   * Ce qui reste vrai et vérifiable : le socle ne contient que des briques
+   * CONNUES (sinon on accorde un droit qui n'existe pas), et il ne recoupe
+   * pas les briques dont une route coûteuse dépend — mais ça, c'est le test
+   * au-dessus qui le tient, sur le FAIT plutôt que sur une liste.
+   */
+  for (const b of BRIQUES_GRATUITES) {
+    assert.ok(BRIQUES_CONNUES.includes(b), `${b} n'est pas une brique connue`);
   }
+  assert.equal(
+    new Set(BRIQUES_GRATUITES).size,
+    BRIQUES_GRATUITES.length,
+    "une brique est listée deux fois dans le socle gratuit"
+  );
+  // Non-vacuité : un socle vide passerait tout ce qui précède.
+  assert.ok(BRIQUES_GRATUITES.length >= 4, `socle gratuit à ${BRIQUES_GRATUITES.length} brique(s)`);
 });
 
 // ── LE CŒUR : un client ne voit QUE sa brique ──────────────────────────
@@ -613,4 +646,54 @@ test("⚠ l'assistant de configuration ne s'ouvre PAS tout seul chez un inscrit"
 
   const { chargerDroits } = await import("../lib/use-droits");
   assert.equal(typeof chargerDroits, "function", "la promesse partagée doit être exportée, pas réécrite sur place");
+});
+
+test("⚠⚠ UNE BRIQUE N'EST PAYANTE QUE SI ELLE COÛTE — le critère devient exécutable", () => {
+  /**
+   * ⚠⚠ LA DOCTRINE AFFIRMAIT CECI DEPUIS LE DÉBUT : « Cette ligne n'est PAS un
+   * arbitrage commercial, elle est imposée par un fait technique. » C'était
+   * écrit, jamais vérifié — et une brique y échappait.
+   *
+   * `alpha-live` était payante au titre de « la machine agit à ta place », une
+   * FAMILLE, alors que le critère énoncé est le COÛT. Mesuré : elle garde un
+   * seul chemin, `/overlay`, qu'AUCUNE route API ne sert ; le composant
+   * n'appelle aucun `/api/…` et tourne entièrement dans le navigateur. Elle ne
+   * consomme ni jetons, ni minutes, ni SMTP, ni bande passante.
+   *
+   * Le test croise les deux tables qui existaient déjà : les routes qui
+   * dépensent, et la carte chemin → brique. Une brique payante dont aucun
+   * chemin n'est servi par une route coûteuse est une brique payante SANS
+   * RAISON — et le gratuit est notre meilleur argument de vente.
+   *
+   * ⚠ Il ne dit PAS l'inverse (« toute brique coûteuse est payante ») : c'est
+   * l'autre test, `aucune API qui dépense chez nous n'est ouverte au gratuit`,
+   * qui tient ce sens-là. Les deux ensemble ferment la boucle ; séparément,
+   * chacun laisse passer la moitié.
+   */
+  const payantes = BRIQUES_CONNUES.filter((b) => !BRIQUES_GRATUITES.includes(b));
+  assert.ok(payantes.length >= 4, `extraction cassée : ${payantes.length} brique(s) payante(s)`);
+
+  // Les chemins servis par une route qui dépense chez nous.
+  const cheminsCouteux = new Set(
+    Object.keys(API_QUI_DEPENSENT).map((api) => CHEMIN_PAR_API[api]).filter(Boolean)
+  );
+  assert.ok(cheminsCouteux.size > 0, "aucun chemin coûteux — le test ne mesure rien");
+
+  const sansRaison: string[] = [];
+  for (const brique of payantes) {
+    // Un compte qui n'a QUE cette brique : ce qu'elle ouvre, et rien d'autre.
+    const seul = compte({ bricks: [brique] });
+    const ouvreUnCheminCouteux = [...cheminsCouteux].some(
+      (chemin) => autorise(seul, chemin) && !autorise(droitGratuit("t"), chemin)
+    );
+    if (!ouvreUnCheminCouteux) sansRaison.push(brique);
+  }
+
+  assert.deepEqual(
+    sansRaison,
+    [],
+    "ces briques sont PAYANTES sans garder la moindre route qui dépense chez nous — " +
+      "elles sont classées par famille, pas par coût, et le gratuit est notre meilleur " +
+      "argument de vente :\n  " + sansRaison.join("\n  ")
+  );
 });

@@ -87,6 +87,12 @@ export const SOCLE_GRATUIT: { id: string; label: string; what: string }[] = [
   { id: "closer", label: "Le Closer OS", what: "La tournée du jour, le débrief à la voix, les priorités de closing." },
   { id: "cerveau", label: "Le Cerveau", what: "Votre doctrine, vos scripts, vos objections — cherchables en une phrase." },
   { id: "pilotage", label: "Le pilotage", what: "Ce qui tourne, ce qui bloque, et les chiffres qui le disent." },
+  /**
+   * ⚠ Passée au gratuit le 12/09/2026 : elle n'appelle aucune de nos API et
+   * ne consomme rien chez nous. Elle était payante au titre de « la machine
+   * agit à ta place » — une famille — alors que le critère est le COÛT.
+   */
+  { id: "alpha-live", label: "Le copilote d'appel", what: "Pendant que vous parlez, vos objections et vos réponses s'affichent. Rien ne sort de votre navigateur." },
 ];
 
 /**
@@ -98,7 +104,7 @@ export const SOCLE_GRATUIT: { id: string; label: string; what: string }[] = [
  * Le dire franchement vaut mieux qu'un « premium » sans justification.
  */
 export const FRONTIERE_PAYANT =
-  "Tout ce qui AGIT à votre place se paie : l'envoi des campagnes, les appels, l'agent qui écrit, les audits automatiques. Ce qui vous ORGANISE est gratuit.";
+  "Tout ce qui DÉPENSE chez nous se paie : l'envoi des campagnes, les appels, l'agent qui écrit, les audits automatiques. Tout ce qui tourne chez VOUS est gratuit, y compris le copilote qui vous souffle pendant un appel.";
 
 /**
  * La grille Alpha Voice, décidée le 02/09/2026.
