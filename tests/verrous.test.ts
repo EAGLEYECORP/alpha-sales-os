@@ -6,6 +6,7 @@ import { briquesPayantes, etatChemin, offrePourBrique, POURQUOI_PAYANT } from ".
 import { signalAbonnement, MULTIPLE_SEUIL } from "../lib/peut-se-payer";
 import { BRIQUES_GRATUITES } from "../lib/entitlements";
 import { OFFRES } from "../lib/offres-publiques";
+import { SOCLE_GRATUIT } from "../lib/public-catalogue";
 import { prospectDefaults, PREFIXE_DEMO } from "../lib/seed";
 import type { Prospect } from "../lib/types";
 
@@ -271,6 +272,39 @@ test("⚠ SANS SESSION, LA RAISON N'EST PAS L'ARGENT — constaté en production
   assert.match(e.pourquoi, /créer ton compte|gratuit/i, "la raison doit parler d'inscription, pas de minutes de téléphonie");
   assert.doesNotMatch(e.pourquoi, /téléphonie|jetons|facturé/i, "on n'explique pas un prix à quelqu'un qui n'a pas de compte");
   assert.equal(e.offreId, null, "aucune offre proposée : la marche suivante est gratuite");
+});
+
+test("⚠⚠ LA PHRASE SANS COMPTE NOMME TOUT LE SOCLE, PAS LA MOITIÉ", () => {
+  /**
+   * ⚠⚠ TROUVÉ EN VÉRIFIANT QUE `/overlay` S'OUVRE BIEN AU GRATUIT — il
+   * s'ouvrait, et cette phrase-ci ne citait pas le copilote (12/09/2026).
+   *
+   * Elle énumérait quatre briques en dur : « Le CRM, le Closer OS, le Cerveau
+   * et le pilotage s'ouvrent immédiatement. » Le socle en a gagné une
+   * cinquième et la chaîne littérale n'a pas bougé — rien ne relie une phrase
+   * à la liste qu'elle prétend décrire. Le visiteur sans compte lisait donc,
+   * sur la porte même du copilote, que ce qui s'ouvre tout de suite est
+   * autre chose : on lui cachait une brique qu'on lui donne.
+   *
+   * ⚠ Le test ne cherche AUCUNE phrase. Il exige que chaque brique gratuite
+   * soit nommée par son libellé public dans la raison servie. Une réécriture
+   * du style reste libre ; une énumération recopiée à la main retombe.
+   */
+  const e = etatChemin("/overlay", [], false, false, false);
+  assert.equal(e.type, "verrouille", "/overlay doit être fermé à qui n'a PAS de compte");
+  if (e.type !== "verrouille") return;
+
+  for (const brique of BRIQUES_GRATUITES) {
+    const label = SOCLE_GRATUIT.find((s) => s.id === brique)?.label;
+    assert.ok(label, `${brique} est gratuite et n'a aucun libellé public — invisible sur la vitrine`);
+    // Insensible à la casse : le libellé s'écrit « Le CRM » en tête de phrase
+    // et « le CRM » au milieu, et c'est la seule différence permise.
+    assert.match(
+      e.pourquoi.toLowerCase(),
+      new RegExp(label.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+      `« ${label} » est gratuite et la phrase servie sans compte ne la nomme pas`
+    );
+  }
 });
 
 test("…et AVEC session, la raison redevient économique", () => {

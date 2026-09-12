@@ -10,6 +10,8 @@ import {
   type Entitlement,
 } from "../lib/entitlements";
 import { BRICKS } from "../lib/bricks";
+import { BRIQUES_CONSOMMATRICES } from "../lib/offres-publiques";
+import { COUTS_BRIQUES } from "../lib/pricing-briques";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -695,5 +697,67 @@ test("⚠⚠ UNE BRIQUE N'EST PAYANTE QUE SI ELLE COÛTE — le critère devient
     "ces briques sont PAYANTES sans garder la moindre route qui dépense chez nous — " +
       "elles sont classées par famille, pas par coût, et le gratuit est notre meilleur " +
       "argument de vente :\n  " + sansRaison.join("\n  ")
+  );
+});
+
+test("⚠⚠ UNE BRIQUE GRATUITE N'EST DÉCLARÉE COÛTEUSE NULLE PART AILLEURS", () => {
+  /**
+   * ⚠⚠ LE TEST CI-DESSUS A FERMÉ LE CONTRÔLE D'ACCÈS, ET LE RESTE DU DÉPÔT A
+   * CONTINUÉ D'AFFIRMER LE CONTRAIRE PENDANT LE MÊME COMMIT. C'est le défaut
+   * récurrent d'ici, dans sa forme exacte : la règle corrigée à UN endroit.
+   *
+   * Trois affirmations survivaient à la bascule d'`alpha-live` au gratuit, et
+   * toutes les trois venaient du même raisonnement par analogie (« une session
+   * en direct, même mécanique que l'agent ») :
+   *  · `COUTS_BRIQUES` la chiffrait `nature: "consommation"`, 5 €/mois de
+   *    « transcription en direct » — or l'écoute se fait par le moteur du
+   *    NAVIGATEUR ; la transcription serveur existe mais appartient à
+   *    `/voice`, où son coût est déjà compté. Deux fois le même euro ;
+   *  · `BRIQUES_CONSOMMATRICES` l'interdisait au lifetime — donc une capacité
+   *    retenue pour éviter une dépense inexistante ;
+   *  · le `passThrough` du catalogue annonçait au client des minutes
+   *    facturées au réel qui n'arrivent jamais.
+   *
+   * ⚠ CE TEST NE LIT AUCUNE SOURCE ET NE CHERCHE AUCUN MOT. Il croise trois
+   * tables écrites indépendamment, ce qui le rend insensible à la formulation :
+   * ce qui est gratuit ne peut pas être déclaré consommateur ailleurs.
+   *
+   * ⚠ Il vise la NATURE, pas le montant. `closer` est gratuite et porte 2 €
+   * de coût mensuel résiduel — un reste de transcription serveur, qui est de
+   * toute façon derrière `alpha-voice`. Exiger zéro euro ferait tomber une
+   * ligne honnête ; exiger qu'aucune brique gratuite ne soit rangée dans les
+   * CONSOMMATRICES attrape la faute réelle sans refuser la nuance.
+   */
+  const gratuites = [...BRIQUES_GRATUITES] as string[];
+  assert.ok(gratuites.length >= 4, "extraction cassée : le socle gratuit est vide");
+
+  // 1. La liste exécutable qui interdit la vente à vie.
+  const aVieInterdite = gratuites.filter((b) => BRIQUES_CONSOMMATRICES.includes(b));
+  assert.deepEqual(
+    aVieInterdite,
+    [],
+    "ces briques sont GRATUITES et pourtant rangées parmi celles qu'on ne vend jamais à vie " +
+      "parce qu'elles nous coûtent à chaque usage. Les deux ne peuvent pas être vraies :\n  " +
+      aVieInterdite.join("\n  ")
+  );
+
+  // 2. Le modèle de coût interne, écrit par une autre main, dans un autre fichier.
+  const consommatrices = gratuites.filter(
+    (b) => COUTS_BRIQUES.find((c) => c.brickId === b)?.nature === "consommation"
+  );
+  assert.deepEqual(
+    consommatrices,
+    [],
+    "ces briques sont GRATUITES et chiffrées « consommation » dans le modèle de coût — " +
+      "on les offre donc en croyant qu'elles nous coûtent à l'usage :\n  " + consommatrices.join("\n  ")
+  );
+
+  // 3. Ce qu'on ANNONCE au client sur le devis : un coût variable refacturé.
+  const avecPassThrough = gratuites.filter((b) => BRICKS.find((x) => x.id === b)?.passThrough);
+  assert.deepEqual(
+    avecPassThrough,
+    [],
+    "ces briques sont GRATUITES et annoncent au client des frais refacturés à l'usage :\n  " +
+      avecPassThrough.join("\n  ")
   );
 });

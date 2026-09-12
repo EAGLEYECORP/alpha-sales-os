@@ -646,11 +646,10 @@ export const OFFRES: OffrePublique[] = [
      * second : la grille se cannibalisait elle-même, et ça ne se voyait dans
      * aucun test — les deux offres étaient valides séparément.
      *
-     * ⚠⚠ ET LE DANGER RÉEL N'ÉTAIT PAS COMMERCIAL, IL ÉTAIT COMPTABLE. Trois
+     * ⚠⚠ ET LE DANGER RÉEL N'ÉTAIT PAS COMMERCIAL, IL ÉTAIT COMPTABLE. Deux
      * briques dépensent NOTRE argent à chaque usage, pour toujours :
      *  · `campagnes`  → envoie par NOTRE SMTP, sur NOTRE domaine (réputation) ;
-     *  · `agent-alpha`→ brûle NOS jetons IA à chaque tour ;
-     *  · `alpha-live` → session en direct, même mécanique.
+     *  · `agent-alpha`→ brûle NOS jetons IA à chaque tour.
      * `appelsInclus` plafonne les minutes — le reste n'avait AUCUN plafond. On
      * a écrit « un lifetime sans plafond d'appels est une dette ouverte sans
      * terme » et on a vendu à vie trois autres compteurs qui tournent.
@@ -659,7 +658,10 @@ export const OFFRES: OffrePublique[] = [
      * une voix BORNÉE. Les trois consommatrices restent sur abonnement, et
      * c'est ce qui laisse Business exister.
      */
-    capacites: ["alpha-voice", "cerveau", "crm", "audits", "tracking", "closer", "pilotage"],
+    // `alpha-live` y revient : elle ne consomme rien, donc rien ne s'oppose à
+    // ce qu'elle soit portée à vie — et l'omettre laisserait croire qu'on la
+    // retient, alors que le socle gratuit l'ouvre déjà à tout le monde.
+    capacites: ["alpha-voice", "cerveau", "crm", "audits", "tracking", "closer", "pilotage", "alpha-live"],
   },
 ];
 
@@ -667,8 +669,18 @@ export const OFFRES: OffrePublique[] = [
  * Les briques qu'on ne vend JAMAIS à vie : chaque usage nous coûte de l'argent
  * ou de la réputation, indéfiniment. `tests/offres-publiques.test.ts` interdit
  * qu'une offre de cadence « unique » en porte une.
+ *
+ * ⚠⚠ `alpha-live` EN A ÉTÉ RETIRÉE LE 12/09/2026, ET ELLE N'AURAIT JAMAIS DÛ
+ * Y FIGURER. Elle y était sur la foi d'un « même mécanique que l'agent » —
+ * une ANALOGIE, jamais une mesure. Le composant n'appelle aucune de nos API :
+ * il écoute par le moteur du navigateur. Nous ne dépensons rien.
+ *
+ * Ce que cette entrée fausse COÛTAIT, et c'est le point : cette liste est
+ * exécutable. Elle interdisait au lifetime de porter la brique, donc on
+ * retenait une capacité pour éviter une dépense qui n'existe pas. Une erreur
+ * de raisonnement rangée dans une constante devient une règle de vente.
  */
-export const BRIQUES_CONSOMMATRICES: readonly string[] = ["campagnes", "agent-alpha", "alpha-live"];
+export const BRIQUES_CONSOMMATRICES: readonly string[] = ["campagnes", "agent-alpha"];
 
 /**
  * ⚠ LES CTA POINTENT VERS `/souscrire`, PAS VERS `/compte`.

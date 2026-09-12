@@ -140,12 +140,27 @@ export const COUTS_BRIQUES: CoutBrique[] = [
   },
   {
     brickId: "alpha-live",
-    nature: "consommation",
-    // Transcription en direct pendant les rendez-vous écoutés.
-    consommationMensuelleEur: 5,
+    /**
+     * ⚠⚠ ELLE ÉTAIT CHIFFRÉE À 5 €/MOIS DE « TRANSCRIPTION EN DIRECT », ET
+     * CETTE TRANSCRIPTION N'EXISTE PAS CHEZ NOUS (12/09/2026).
+     *
+     * Mesuré, pas supposé : `components/live/alpha-live.tsx` ne contient
+     * aucun `fetch` et aucun `/api/…`. Il écoute par
+     * `window.SpeechRecognition` — le moteur du NAVIGATEUR, qui ne nous
+     * facture rien. La transcription serveur existe bien (`/api/transcribe`,
+     * Deepgram/Whisper), mais `lib/api-access.ts` la classe sur `/voice` :
+     * elle appartient à Alpha Voice, et son coût y est déjà compté. On le
+     * comptait donc DEUX FOIS, dont une sur une brique qui ne l'appelle pas.
+     *
+     * C'est ce chiffre inventé qui la faisait passer pour consommatrice, et
+     * de là pour payante. Une ligne de coût fabriquée ne reste pas un détail
+     * comptable : elle décide de ce qu'on facture.
+     */
+    nature: "logiciel",
+    consommationMensuelleEur: 0,
     heuresSetup: 4,
     heuresSupportMois: 1,
-    reserve: "5 € ≈ 10 h de rendez-vous écoutés par mois. Un closer à plein temps coûterait davantage.",
+    reserve: "Le coût marginal est nul : l'écoute se fait dans le navigateur du commercial. Ce qui reste à notre charge est l'installation et le support, comme pour toute brique logicielle.",
   },
   {
     brickId: "closer",

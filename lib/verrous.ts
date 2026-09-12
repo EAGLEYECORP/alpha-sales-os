@@ -1,6 +1,7 @@
 import { BRIQUES_GRATUITES } from "./entitlements";
 import { briquesPourChemin, type BrickId } from "./bricks-access";
 import { OFFRES, type OffrePublique } from "./offres-publiques";
+import { SOCLE_GRATUIT } from "./public-catalogue";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -131,8 +132,36 @@ export function offrePourBrique(brique: string): OffrePublique | null {
  *
  * On lui demande de payer avant de lui avoir donné ce qui est gratuit.
  */
+/**
+ * ⚠⚠ CETTE PHRASE ÉNUMÉRAIT QUATRE BRIQUES À LA MAIN, ET ELLE A MENTI LE JOUR
+ * OÙ LE SOCLE EN A GAGNÉ UNE CINQUIÈME (12/09/2026).
+ *
+ * Trouvé en vérifiant que `/overlay` s'ouvre bien au gratuit : il s'ouvre, et
+ * la phrase servie au visiteur SANS compte ne citait pas le copilote. Elle
+ * disait donc, sur la porte même du copilote, que ce qui s'ouvre
+ * immédiatement est autre chose. Rien ne tombait — une chaîne littérale n'a
+ * aucun lien avec la liste qu'elle prétend décrire.
+ *
+ * Elle se DÉRIVE maintenant de `BRIQUES_GRATUITES`, l'ordre inclus. Les
+ * libellés viennent de `SOCLE_GRATUIT`, écrits avec leur article parce qu'ils
+ * servent déjà à faire des phrases sur la vitrine ; une brique gratuite sans
+ * libellé retomberait sur son identifiant — visible, plutôt qu'absente.
+ */
+const enumereEnFrancais = (items: string[]): string =>
+  items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} et ${items[items.length - 1]}`;
+
+const libelleGratuit = (brique: string, premier: boolean): string => {
+  const label = SOCLE_GRATUIT.find((s) => s.id === brique)?.label ?? brique;
+  // « Le CRM » en tête de phrase, « le CRM » au milieu. On ne touche QUE la
+  // première lettre : « Le CRM » ne doit pas devenir « le crm ».
+  return premier ? label : label.charAt(0).toLowerCase() + label.slice(1);
+};
+
 const RAISON_SANS_COMPTE =
-  "Il faut d'abord créer ton compte — c'est gratuit et sans limite de durée. Le CRM, le Closer OS, le Cerveau et le pilotage s'ouvrent immédiatement.";
+  "Il faut d'abord créer ton compte — c'est gratuit et sans limite de durée. " +
+  `${enumereEnFrancais(BRIQUES_GRATUITES.map((b, i) => libelleGratuit(b, i === 0)))} s'ouvrent immédiatement.`;
 
 export function etatChemin(
   chemin: string,

@@ -238,7 +238,19 @@ export const BRICKS: Brick[] = [
       "entier, et personne ne s'en souvient assez précisément le soir pour la corriger. Là, la réponse arrive dans la " +
       "seconde — et un commercial junior tient une conversation de senior dès sa première semaine.",
     unlocks: ["/closer", "/overlay"],
-    passThrough: "Minutes de transcription facturées au réel pendant les rendez-vous écoutés.",
+    /**
+     * ⚠ LE `passThrough` ANNONÇAIT « minutes de transcription facturées au
+     * réel », ET RIEN NE LES FACTURE. L'écoute se fait par le moteur du
+     * navigateur (`window.SpeechRecognition`) : le composant n'appelle aucune
+     * de nos API. Annoncer un coût variable qui n'arrive jamais n'est pas une
+     * prudence — c'est un motif de refus qu'on se donne à soi-même, sur la
+     * seule ligne du devis que le client relit deux fois.
+     *
+     * ⚠ Le PRIX d'installation, lui, reste : il paie une demi-journée de
+     * paramétrage réelle. Rien à voir avec le socle gratuit de notre SaaS —
+     * `crm`, `closer`, `cerveau` et `pilotage` y sont gratuits ET tarifés ici
+     * depuis toujours, parce que ce catalogue-ci vend une INSTALLATION.
+     */
   },
   {
     id: "closer",
