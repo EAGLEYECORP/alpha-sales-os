@@ -2,8 +2,17 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { CaptureParrainage } from "@/components/capture-parrainage";
+import { baseMetadonnees } from "@/lib/url-publique";
 
 export const metadata: Metadata = {
+  // ⚠ POSÉE ICI ET NULLE PART AILLEURS. Next fait hériter `metadataBase` par
+  // tous les layouts enfants : les deux pages publiques (`/vitrine` et
+  // `/souscrire`) y prennent la base de leurs `og:image` et de leur
+  // `canonical`. Sans elle, le build résout contre `http://localhost:3000` et
+  // l'écrit dans le HTML livré — vérifié au rendu : la vignette annoncée à
+  // LinkedIn pointait vers la machine de celui qui regarde. Le motif complet
+  // est dans `lib/url-publique.ts`.
+  metadataBase: baseMetadonnees(),
   title: {
     default: "ALPHA SALES OS® — EAGLEYE CORP",
     template: "%s · ALPHA SALES OS®",

@@ -37,6 +37,20 @@ export const metadata: Metadata = {
     siteName: "EAGLEYE CORP",
     title: "Commencer avec Alpha Sales OS",
     description: "Essai terrain, abonnement mensuel, ou installation complète. Sans engagement.",
+    // ⚠ TROUVÉ AU RENDU, pas à la relecture : cette page déclarait des balises
+    // Open Graph SANS image. Partagée sur LinkedIn, la page où l'on ACHÈTE
+    // sortait en carte nue — un titre sur fond gris, à côté des liens
+    // concurrents qui ont tous une vignette. La vitrine avait la sienne ; la
+    // page de conversion, non. Même fichier image : c'est le même produit, et
+    // deux visuels différents pour un même lien partagé deux fois de suite
+    // ressemblent à deux produits.
+    images: [{ url: "/media/hero-poster.jpg", width: 1280, height: 720, alt: "Alpha Sales OS" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Commencer avec Alpha Sales OS",
+    description: "Essai terrain, abonnement mensuel, ou installation complète. Sans engagement.",
+    images: ["/media/hero-poster.jpg"],
   },
 };
 
