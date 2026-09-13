@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getTenant } from "./tenant";
 import { peutOuvrir, type BrickId } from "./bricks-access";
 import { serverAuthEnforced } from "./supabase-jwt";
+import { etatEssai } from "./essai";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -391,11 +392,16 @@ export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
 
   try {
     const r = await fetch(
-      `${url}/rest/v1/entitlements?select=bricks,statut,essai_jusqu_a&tenant_id=eq.${encodeURIComponent(tenant.id)}&limit=1`,
+      `${url}/rest/v1/entitlements?select=bricks,statut,essai_jusqu_a,cout_consomme_eur&tenant_id=eq.${encodeURIComponent(tenant.id)}&limit=1`,
       { headers: { apikey: key, authorization: `Bearer ${key}` }, cache: "no-store" }
     );
     if (!r.ok) return droitGratuit(tenant.id);
-    const lignes = (await r.json()) as { bricks?: unknown; statut?: string; essai_jusqu_a?: string }[];
+    const lignes = (await r.json()) as {
+      bricks?: unknown;
+      statut?: string;
+      essai_jusqu_a?: string;
+      cout_consomme_eur?: number | string | null;
+    }[];
     const l = lignes[0];
     // Aucune ligne = compte créé librement et jamais payé. C'est le cas
     // NORMAL depuis que l'inscription est ouverte, plus une anomalie : il
@@ -404,6 +410,30 @@ export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
 
     const statut: StatutCompte =
       l.statut === "actif" || l.statut === "essai" || l.statut === "suspendu" ? l.statut : "suspendu";
+
+    /**
+     * ⚠⚠ L'ESSAI A DEUX LIMITES, ET LA SECONDE EST LA SEULE QUI PROTÈGE.
+     *
+     * `statutEffectif` expire déjà l'essai sur la DATE. Mais les briques
+     * ouvertes pendant l'essai DÉPENSENT chez nous, et il n'existe aucun
+     * chemin d'identifiants par locataire : un compte motivé consomme en deux
+     * jours ce qu'on comptait donner en trente. `etatEssai` arbitre le COÛT.
+     *
+     * ⚠ `null` ⇒ inconnu ⇒ l'essai FERME (voir `lib/essai.ts`). PostgREST rend
+     * un `numeric` en CHAÎNE : le lire sans conversion donnerait `"12.50" >= 30`
+     * → `false`, c'est-à-dire un plafond qui ne mord jamais. Une comparaison
+     * de chaîne qui a l'air d'une comparaison de nombre ne fait rien tomber :
+     * elle laisse la porte ouverte en silence.
+     */
+    const brut = l.cout_consomme_eur;
+    const coutConsommeEur = brut === null || brut === undefined ? null : Number(brut);
+    const essai = etatEssai(
+      { jusquA: l.essai_jusqu_a ?? null, coutConsommeEur: Number.isFinite(coutConsommeEur) ? coutConsommeEur : null },
+    );
+
+    // Un essai dont le PLAFOND est atteint retombe au socle gratuit, jamais au
+    // néant : ses fiches lui appartiennent. C'est l'invariant du dépôt.
+    if (statut === "essai" && !essai.actif) return droitGratuit(tenant.id);
 
     return {
       tenantId: tenant.id,
