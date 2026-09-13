@@ -19,6 +19,7 @@ import { construireJournee, parQuadrant, pourEcran, QUADRANT_META, type Quadrant
 import { REGLES, regleFor } from "@/lib/conformite";
 import { cn, eur } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { BandeauTraction } from "@/components/traction/bandeau-traction";
 
 /**
  * Aujourd'hui — le calculateur urgent / important.
@@ -111,6 +112,8 @@ export default function AujourdhuiPage() {
           </div>
         }
       />
+
+      <BandeauTraction />
 
       {digestMsg && <p className="px-1 text-[12px] text-paper-dim">{digestMsg}</p>}
 
