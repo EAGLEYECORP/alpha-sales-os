@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   LOGEMENTS_MIN,
+  SATURATION_LOGEMENTS,
   SCORE_MIN_PERMIS,
   communeDansLaZone,
   VALIDITE_MOIS,
@@ -479,4 +480,84 @@ test("⚠ L'ICP ÉCRIT ET LE CODE QUI TRIE DISENT LA MÊME CHOSE", () => {
   // Et la zone annoncée est bien celle qui est implémentée.
   assert.match((eagleye!.icp!.geo ?? "").toLowerCase(), /lyon/);
   assert.match((eagleye!.icp!.geo ?? "").toLowerCase(), /villeurbanne/);
+});
+
+/* ────────────────────────────────────────────────────────────────────
+   L'ICP DOIT CROULER SOUS LA DEMANDE — la règle qui décide s'il peut payer.
+
+   ⚠⚠ ON VEND À QUI CROULE, PAS À QUI CHERCHE. Quelqu'un qui manque de demande
+   a besoin de CLIENTS : on serait son seul espoir, sur un budget qu'il n'a
+   pas, avec une promesse qu'on ne tient pas — Alpha ne crée pas de marché, il
+   empêche de perdre ce qui arrive déjà. C'est le pire client possible, et
+   c'est celui qui dit oui le plus vite.
+
+   ⚠ LA RÈGLE ÉTAIT DÉJÀ ÉCRITE, EN PROSE : `structuralPain` de la verticale
+   maîtrise d'ouvrage dit « des centaines de contacts acquéreurs, une ou deux
+   personnes dédiées ». Invisible pour le code — le défaut que `forbidden` a
+   payé dans `lib/playbook.ts`.
+   ──────────────────────────────────────────────────────────────────── */
+
+test("⚠⚠ LA SATURATION SE NOMME, elle ne se noie plus dans le score", () => {
+  /**
+   * ⚠ CE QUE LE SCORE CACHAIT. Le nombre de logements ajoutait 15, 25 ou 30
+   * points et disparaissait dans un total : une opération de huit lots et une
+   * de soixante pouvaient sortir au même score, pour des raisons opposées, et
+   * rien ne distinguait « petite opération » de « mauvaise phase ». Un score
+   * agrège ; une décision d'ICP se nomme.
+   */
+  const gros = lirePermis(promoteur({ logements: 68 }), MAINTENANT);
+  assert.equal(gros.demande, "saturee");
+  assert.ok(
+    gros.pourquoi.some((r) => /contacts acquéreurs/i.test(r)),
+    "la raison doit parler de contacts, pas de taille — c'est la douleur qu'on vend"
+  );
+
+  const petit = lirePermis(promoteur({ logements: 8 }), MAINTENANT);
+  assert.equal(petit.demande, "faible");
+  assert.ok(
+    petit.risques.some((r) => new RegExp(`sous ${SATURATION_LOGEMENTS}`).test(r)),
+    "le risque doit dire le seuil : « demande faible » sans le chiffre envoie chercher au hasard"
+  );
+});
+
+test("⚠⚠ « INCONNUE » N'EST PAS « FAIBLE »", () => {
+  /**
+   * Un export sans colonne « logements » ne dit pas que l'opération est
+   * petite — il ne dit RIEN. Les confondre écarterait des programmes
+   * d'envergure sur une colonne manquante, et personne ne saurait pourquoi la
+   * file a maigri. C'est la même règle que partout ici : zéro donnée → zéro
+   * verdict, jamais un verdict par défaut.
+   */
+  const sansLots = lirePermis(promoteur({ logements: undefined }), MAINTENANT);
+  assert.equal(sansLots.demande, "inconnue");
+  assert.notEqual(sansLots.demande, "faible");
+  assert.ok(
+    sansLots.manque.some((m) => /logements/i.test(m)),
+    "l'absence doit être DITE comme un manque, pas silencieuse"
+  );
+});
+
+test("⚠ les deux seuils répondent à DEUX questions différentes", () => {
+  /**
+   * ⚠⚠ ILS ÉTAIENT CONFONDUS PAR COMMODITÉ, et la confusion se voyait au
+   * résultat : une opération de dix lots passait le seuil de PRIX
+   * (`LOGEMENTS_MIN` = 6, « 10 k€ est proportionné ») et on lui vendait quand
+   * même la douleur des contacts non rappelés — qui n'existe pas à dix lots.
+   *
+   * · `LOGEMENTS_MIN` — le PRIX est-il proportionné ?
+   * · `SATURATION_LOGEMENTS` — y a-t-il plus de contacts que de bras ?
+   */
+  assert.ok(
+    SATURATION_LOGEMENTS > LOGEMENTS_MIN,
+    "le seuil de saturation doit être STRICTEMENT au-dessus du seuil de prix : " +
+      "sinon les deux questions n'en font plus qu'une, et on revend la confusion"
+  );
+
+  // La zone entre les deux : le prix tient, la douleur n'est pas là.
+  const entreDeux = lirePermis(promoteur({ logements: LOGEMENTS_MIN + 2 }), MAINTENANT);
+  assert.equal(entreDeux.demande, "faible");
+  assert.ok(
+    !entreDeux.risques.some((r) => new RegExp(`sous ${LOGEMENTS_MIN}`).test(r)),
+    "à huit lots, le reproche de PRIX ne doit pas se déclencher — c'est l'autre seuil"
+  );
 });

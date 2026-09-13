@@ -106,6 +106,16 @@ export interface LecturePermis {
   retenu: boolean;
   /** L'angle daté, en clair — ce qui se dit dans le premier message. */
   fenetre: string;
+  /**
+   * ⚠⚠ LA QUESTION D'ICP : croule-t-il sous la demande ?
+   *
+   * Elle était NOYÉE DANS LE SCORE. Le nombre de logements ajoutait 15, 25 ou
+   * 30 points et disparaissait dans un total — donc une opération de huit lots
+   * et une de soixante pouvaient sortir au même score, pour des raisons
+   * opposées, et rien à l'écran ne distinguait « petite opération » de
+   * « mauvaise phase ». Un score agrège ; une décision d'ICP se NOMME.
+   */
+  demande: DemandeMoa;
   pourquoi: string[];
   manque: string[];
   risques: string[];
@@ -252,6 +262,55 @@ export function communeDansLaZone(commune?: string): boolean | null {
  * l'écarte du score et on dit pourquoi.
  */
 export const LOGEMENTS_MIN = 6;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE SEUIL DE SATURATION — au-dessus, il y a plus de demande que de bras.
+ *
+ * ⚠⚠ LA RÈGLE D'ICP QUI COMMANDE TOUT LE RESTE, ET ELLE N'ÉTAIT ÉCRITE NULLE
+ * PART DANS LE CODE : **on vend à qui CROULE sous la demande, pas à qui en
+ * cherche.** Ce n'est pas une préférence commerciale, c'est ce qui décide si
+ * le client peut payer.
+ *
+ * Quelqu'un qui manque de demande a besoin de CLIENTS. On serait son seul
+ * espoir, sur un budget qu'il n'a pas, avec une promesse qu'on ne tient pas —
+ * Alpha ne crée pas de marché, il empêche de perdre ce qui arrive déjà. Le
+ * jour où ça ne marche pas, il n'a pas perdu un outil, il a perdu sa dernière
+ * chance : c'est le pire client possible, et c'est celui qui dit oui le plus
+ * vite.
+ *
+ * Quelqu'un qui croule, lui, a déjà l'argent, et sa douleur est datée : les
+ * contacts qu'il n'a pas rappelés existent, il peut les compter.
+ *
+ * ⚠ LA RÈGLE ÉTAIT DÉJÀ LÀ, EN PROSE. `structuralPain` de la verticale
+ * maîtrise d'ouvrage dit mot pour mot « des centaines de contacts acquéreurs,
+ * une ou deux personnes dédiées ». Invisible pour le code — exactement le
+ * défaut que `forbidden` a payé dans `lib/playbook.ts`.
+ *
+ * ⚠⚠ 20 EST UNE DÉCISION, PAS UNE MESURE, et il ne faut pas la confondre avec
+ * `LOGEMENTS_MIN`. Les deux nombres répondent à deux questions différentes
+ * qui utilisaient le même seuil par commodité :
+ *  · `LOGEMENTS_MIN` (6) : « le PRIX est-il proportionné ? » — 10 k€ sur trois
+ *    lots est indécent, quelle que soit la demande.
+ *  · `SATURATION_LOGEMENTS` (20) : « y a-t-il plus de contacts que de bras ? »
+ *    Sous vingt lots, une personne suit le flux dans sa tête et un tableur ;
+ *    la douleur qu'on vend n'existe pas encore. Au-dessus, les contacts
+ *    dépassent ce qu'une ou deux personnes rappellent.
+ * Aucune vente ne valide ce vingt. Le premier maître d'ouvrage qui dit « à
+ * douze lots je suis déjà noyé » vaudra plus que ce raisonnement.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const SATURATION_LOGEMENTS = 20;
+
+/**
+ * La demande dépasse-t-elle ce que l'équipe peut suivre ?
+ *
+ * ⚠ `"inconnue"` N'EST PAS `"faible"`. Un export sans colonne « logements »
+ * ne dit pas que l'opération est petite — il ne dit rien. Les confondre
+ * écarterait des programmes d'envergure sur une colonne manquante, et
+ * personne ne saurait pourquoi la file a maigri.
+ */
+export type DemandeMoa = "saturee" | "faible" | "inconnue";
 
 /** Sous ce score, la ligne ne mérite pas le temps d'un message écrit à la main. */
 export const SCORE_MIN_PERMIS = 55;
@@ -400,7 +459,23 @@ export function lirePermis(p: PermisConstruire, now = new Date()): LecturePermis
     manque.push("date d'arrêté absente ou illisible : l'opération n'est pas situable dans le temps");
   }
 
-  // ── La taille : elle décide si l'offre VIP est proportionnée. ──
+  // ── La taille : deux questions distinctes, longtemps confondues. ──
+  // 1) le PRIX est-il proportionné ? (LOGEMENTS_MIN)
+  // 2) y a-t-il plus de demande que de bras ? (SATURATION_LOGEMENTS)
+  const demande: DemandeMoa =
+    logements === null ? "inconnue" : logements >= SATURATION_LOGEMENTS ? "saturee" : "faible";
+
+  if (demande === "saturee") {
+    pourquoi.push(
+      `${logements} lots à commercialiser — plus de contacts acquéreurs qu'une ou deux personnes n'en rappellent`
+    );
+  } else if (demande === "faible") {
+    risques.push(
+      `${logements} lots : sous ${SATURATION_LOGEMENTS}, une personne suit le flux de tête. ` +
+        "La douleur qu'on vend — des acquéreurs chauds qu'on laisse refroidir — n'existe pas encore ici."
+    );
+  }
+
   if (logements === null) {
     manque.push("nombre de logements absent : impossible de dire si l'opération justifie l'offre");
   } else if (logements >= 50) {
@@ -456,6 +531,7 @@ export function lirePermis(p: PermisConstruire, now = new Date()): LecturePermis
     score,
     retenu: exclusions.length === 0 && score >= SCORE_MIN_PERMIS,
     fenetre: FENETRE[phase],
+    demande,
     pourquoi,
     manque,
     risques,
@@ -519,6 +595,39 @@ export function trierPermis(lignes: PermisConstruire[], now = new Date()): LotPe
   if (bloques) {
     resume.push(
       `${bloques} permis de plus d'un an sans chantier : le signal le plus fort du lot, et le plus ambigu — vérifier que l'opération est vivante avant d'écrire.`
+    );
+  }
+
+  /**
+   * ⚠⚠ LES RETENUS QUI N'ONT PAS LA DOULEUR QU'ON VEND.
+   *
+   * Mesuré sur le jeu de démonstration : 8 retenus, dont 2 sous le seuil de
+   * saturation. Le score les garde — la phase est bonne, le promoteur est
+   * identifié, la commune est la nôtre — mais à douze lots, personne ne
+   * laisse refroidir des acquéreurs : une personne suit le flux de tête.
+   * Leur servir « vos contacts chauds refroidissent » est le genre de phrase
+   * qui fait raccrocher, parce qu'elle décrit un problème qu'il n'a pas.
+   *
+   * ⚠ ON LES COMPTE, ON NE LES ÉCARTE PAS. Le seuil de 20 est une DÉCISION
+   * sans une seule vente derrière : exclure sur ce chiffre amputerait la file
+   * d'un quart sur une intuition. Le jour où un maître d'ouvrage dit « à
+   * douze lots je suis déjà noyé », ce compteur devient une exclusion — c'est
+   * une ligne à changer, et elle se verra dans un diff.
+   */
+  const sansSaturation = retenus.filter((r) => r.ciblage.demande === "faible").length;
+  if (sansSaturation) {
+    resume.push(
+      `${sansSaturation} retenu(s) sous ${SATURATION_LOGEMENTS} lots : la taille et la phase tiennent, ` +
+        "mais la douleur qu'on vend — des acquéreurs chauds qu'on laisse refroidir — n'existe pas encore chez eux. " +
+        "Leur parler de contacts non rappelés décrit un problème qu'ils n'ont pas."
+    );
+  }
+
+  const demandeInconnue = retenus.filter((r) => r.ciblage.demande === "inconnue").length;
+  if (demandeInconnue) {
+    resume.push(
+      `${demandeInconnue} retenu(s) sans nombre de lots : on ne sait PAS s'ils croulent sous la demande. ` +
+        "Ce n'est pas « demande faible » — c'est une colonne manquante, à relever avant d'écrire."
     );
   }
 

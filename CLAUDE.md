@@ -149,6 +149,50 @@ promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois pr�
 - **Zéro permis converti à ce jour.** 6 logements, score 55, les poids par
   phase : ce sont des **décisions**, pas des mesures.
 
+> ⚠⚠ **L'ICP DOIT CROULER SOUS LA DEMANDE — pas en chercher** (13/09/2026).
+> C'est la règle qui décide si le prospect peut **payer**, et elle n'était
+> écrite nulle part dans le code.
+> · Qui **manque** de demande a besoin de CLIENTS. On serait son seul espoir,
+>   sur un budget qu'il n'a pas, avec une promesse qu'on ne tient pas — **Alpha
+>   ne crée pas de marché, il empêche de perdre ce qui arrive déjà.** Le jour
+>   où ça ne marche pas, il n'a pas perdu un outil : il a perdu sa dernière
+>   chance. C'est le pire client possible, et c'est celui qui dit oui le plus
+>   vite.
+> · Qui **croule** a déjà l'argent, et sa douleur est datée : les contacts
+>   qu'il n'a pas rappelés existent, il peut les compter.
+> ⚠ **La règle était déjà là, EN PROSE** : `structuralPain` de la verticale
+> maîtrise d'ouvrage dit « des centaines de contacts acquéreurs, une ou deux
+> personnes dédiées ». Invisible pour le code — le défaut exact que `forbidden`
+> a payé dans `lib/playbook.ts`.
+
+- **`LecturePermis.demande`** (`saturee` · `faible` · `inconnue`) **nomme** la
+  question au lieu de la noyer dans le score. Le nombre de logements ajoutait
+  15, 25 ou 30 points et disparaissait dans un total : une opération de huit
+  lots et une de soixante sortaient au même score, pour des raisons opposées.
+  **Un score agrège ; une décision d'ICP se nomme.**
+  > ⚠⚠ **DEUX SEUILS, DEUX QUESTIONS**, longtemps confondus par commodité :
+  > `LOGEMENTS_MIN` (6) demande « le **PRIX** est-il proportionné ? » ;
+  > `SATURATION_LOGEMENTS` (20) demande « y a-t-il plus de **contacts que de
+  > bras** ? ». Entre les deux, le prix tient et la douleur n'existe pas — on
+  > vendait quand même « vos acquéreurs refroidissent » à dix lots.
+  > **20 est une DÉCISION**, aucune vente ne l'a validée.
+  > ⚠ **`inconnue` n'est PAS `faible`.** Une colonne manquante ne dit pas que
+  > l'opération est petite ; les confondre amputerait la file sans que
+  > personne sache pourquoi.
+- **On COMPTE, on n'exclut pas.** Mesuré sur le jeu de démonstration : 8
+  retenus, dont **2 sous le seuil**. Le résumé d'import le dit en clair. Exclure
+  sur un chiffre que personne n'a validé amputerait la file d'un quart sur une
+  intuition — le jour où un maître d'ouvrage dit « à douze lots je suis déjà
+  noyé », ce compteur devient une exclusion, en une ligne qui se voit au diff.
+
+> ⚠ **Ce que ça ne règle PAS, et il faut le savoir** : `demandEvidence`
+> (`lib/ladder.ts`) ne mesure la demande que par `missedCallsPerWeek` — le
+> cadrage « vous ratez des appels », que la doctrine **interdit** justement sur
+> la maîtrise d'ouvrage. Conséquence mesurée : sur une fiche issue d'un permis,
+> la marche Alpha Voice ne se déclenche **jamais** — le détecteur est aveugle à
+> notre marché en cours. Le nombre de lots ne survit que dans les **notes**, en
+> texte libre, et le lire par motif serait la devinette que ce dépôt refuse.
+
 ### LE SECTEUR NOMME LE MARCHÉ — et rien d'autre n'en dépend (11/09/2026)
 `Sector` (`lib/types.ts`) était resté au marché d'AVANT deux jours après la
 bascule. Faute de valeur pour le dire, `permisVersProspect` rangeait NOS fiches
