@@ -4,6 +4,7 @@ import { VERTICALS, type VerticalPlaybook } from "./playbook";
 // le libellé, l'accroche écrite et ce qui se dit au téléphone vivent ensemble.
 import { OFFRES, type EagleyeOffer } from "./offer-match";
 import { estPartenaire } from "./validation-partenaire";
+import { motifDuRefus, secteursInterditsDans } from "./secteurs-interdits";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -482,6 +483,24 @@ export function auditScript(
     for (const e of EXIGENCES_APPEL_FROID) if (!e.pattern.test(script)) manquantes.push(e.label);
     if (estPartenaire(contexte.compteId ?? "") && !EXIGENCE_MARQUE_PARTENAIRE.pattern.test(script))
       manquantes.push(EXIGENCE_MARQUE_PARTENAIRE.label);
+
+    /**
+     * ⚠⚠ LA QUESTION QU'AUCUNE MENTION NE POSAIT : A-T-ON LE DROIT D'APPELER ?
+     *
+     * Tout ce qui précède vérifie COMMENT on démarche — les mentions, la
+     * marque, l'article 50. Le décret n° 2022-1313 vérifie QUAND et COMBIEN.
+     * Personne ne vérifiait SI, et dans plusieurs secteurs français la réponse
+     * est non. Un script pour de la formation CPF passait ce garde en entier :
+     * toutes les mentions présentes, la cadence sous le plafond, et une
+     * infraction au bout du fil.
+     *
+     * ⚠ Le contrôle ne s'arme QUE sur `prospection-b2b`. Un rappel de lead
+     * consenti, un appel entrant ou une relance client ne sont pas du
+     * démarchage — les bloquer retirerait au client la seule chose qui lui
+     * reste de légal dans ces secteurs, et le garde se ferait débrancher dans
+     * la semaine.
+     */
+    for (const a of secteursInterditsDans(script)) manquantes.push(motifDuRefus(a));
   }
 
   return { ok: manquantes.length === 0, manquantes };
