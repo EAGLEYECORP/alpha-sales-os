@@ -1013,3 +1013,103 @@ test("⚠⚠ UN ÉCRAN QUI NE NOUS COÛTE RIEN EST GRATUIT — audit de TOUS les
     );
   }
 });
+
+test("⚠⚠ LA GARDE DE BRIQUES S'EXÉCUTE AUSSI SUR UN DÉPLOIEMENT SANS SERRURE", () => {
+  /**
+   * ══ LE FAIL-OPEN QUE CE TEST TIENT, ET COMMENT IL A ÉTÉ TROUVÉ ══
+   *
+   * Pas par une relecture : en frappant un `next start` de PRODUCTION avec
+   * la configuration exacte d'une prod fraîche — aucun compte, aucun
+   * `SITE_PASSWORD`. Relevé :
+   *
+   *   POST /api/send        → 400  (« champs to et body requis »)
+   *   POST /api/voice/call  → 400  (« Numéro inexploitable »)
+   *
+   * Autrement dit, la requête d'un inconnu était ACCEPTÉE et ne butait que
+   * sur la forme du corps. Avec `SITE_PASSWORD` posé, les deux rendaient 401 :
+   * le mot de passe était la seule serrure, et la doctrine a justement décidé
+   * qu'il ne murerait plus l'app.
+   *
+   * La cause n'était pas `resoudreDroits`, qui retombait correctement au
+   * socle GRATUIT (`deploiementSansSerrure`). C'est que le middleware ne
+   * l'appelait pas : TOUTE la garde vivait derrière `comptesActifs()` seul.
+   * Une règle juste, calculée, testée — et lue à un endroit de moins que
+   * nécessaire. Le défaut récurrent du dépôt, sur la porte la plus chère.
+   *
+   * ⚠ Ce test regarde la CONDITION, pas la présence du 403. Un `403` laissé
+   * en place sous un `if` qui ne s'évalue jamais passerait n'importe quelle
+   * assertion de présence — le piège déjà payé quatre fois ici.
+   */
+  /**
+   * ⚠⚠ CE GARDE A DÛ ÊTRE ÉCRIT DEUX FOIS, ET LA PREMIÈRE VERSION S'EST FAIT
+   * ATTRAPER PAR LA MUTATION — pas par la relecture.
+   *
+   * Elle capturait `[\s\S]*?` avant `&& !startsWithAny(...)`, donc à travers
+   * les lignes. Le commentaire ci-dessus nomme `comptesActifs()` ET
+   * `deploiementSansSerrure()` pour expliquer la règle : la capture avalait ce
+   * commentaire, et l'assertion était satisfaite PAR LA PROSE. Remis à l'état
+   * vulnérable, le test restait vert.
+   *
+   * C'est la famille de panne la plus coûteuse du dépôt — un garde qui échoue
+   * EN S'OUVRANT ne fait pas de bruit, il valide. On retire donc les
+   * commentaires AVANT de chercher, comme le fait déjà le test de
+   * `lib/auth.ts`, et on exige la condition sur UNE seule ligne de code.
+   */
+  const mw = readFileSync(join(process.cwd(), "middleware.ts"), "utf8").replace(
+    /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+    "",
+  );
+
+  const condition = mw.match(/if\s*\(([^\n]*?)&&\s*!startsWithAny\(pathname,\s*PUBLIC_PREFIXES\)\)/);
+  assert.ok(
+    condition,
+    "la garde de briques doit s'ouvrir sur DEUX cas — comptes actifs OU déploiement sans serrure",
+  );
+  assert.match(condition![1], /comptesActifs\(\)/, "le cas nominal (comptes configurés) doit rester");
+  assert.match(
+    condition![1],
+    /deploiementSansSerrure\(\)/,
+    "sans ce second cas, une prod sans compte et sans mot de passe n'exécute AUCUN contrôle de brique : /api/send envoie de vrais emails depuis notre domaine pour n'importe qui",
+  );
+  assert.match(
+    mw,
+    /import\s*\{[\s\S]*?deploiementSansSerrure[\s\S]*?\}\s*from\s*"@\/lib\/entitlements"/,
+    "le symbole vient de lib/entitlements — jamais une redéfinition locale de « l'app est-elle protégée ? »",
+  );
+});
+
+test("⚠ …et le socle gratuit reste OUVERT dans ce même état", () => {
+  /**
+   * Contre-test obligatoire. Refermer la faille en murant tout serait une
+   * panne déguisée en correctif : la doctrine dit « on ne coupe PAS le site,
+   * on retombe au socle gratuit ». Sans cette assertion, un middleware qui
+   * répond 403 à TOUT satisferait le test précédent.
+   *
+   * Vérifié aussi au rendu sur un serveur de production réel : /aujourdhui,
+   * /pipeline, /templates, /linkedin, /appels et /overlay rendent 200 pendant
+   * que /api/send et /api/voice/call rendent 403 brique_absente.
+   */
+  const gratuit = droitGratuit("t-sans-serrure");
+  for (const chemin of ["/aujourdhui", "/pipeline", "/templates", "/linkedin", "/appels", "/overlay"]) {
+    assert.ok(autorise(gratuit, chemin), `${chemin} doit rester ouvert au socle gratuit`);
+  }
+  // ⚠ On vise le chemin MÉTIER, pas l'URL de l'API. `CHEMIN_PAR_API` est une
+  // table de PRÉFIXES (`/api/voice` couvre `/api/voice/call`) et la fonction
+  // qui l'applique vit dans le middleware, non exportée. Recopier cette
+  // résolution ici créerait une deuxième définition de la traduction — celle
+  // que le test voisin (`API_QUI_DEPENSENT`) tient déjà.
+  for (const [api, chemin] of [
+    ["/api/send", "/campaigns"],
+    ["/api/voice/call", "/voice"],
+  ] as const) {
+    assert.equal(
+      CHEMIN_PAR_API[api] ?? CHEMIN_PAR_API[api.split("/").slice(0, 3).join("/")],
+      chemin,
+      `${api} doit se traduire en ${chemin} — sinon cette assertion mesure autre chose que ce qu'elle annonce`,
+    );
+    assert.ok(
+      !autorise(gratuit, chemin),
+      `${api} DÉPENSE chez nous : elle doit être refusée au socle gratuit`,
+    );
+  }
+});

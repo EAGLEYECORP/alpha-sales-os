@@ -6,7 +6,13 @@ import {
   serverAuthMisconfigured,
   verifySupabaseJwt,
 } from "@/lib/supabase-jwt";
-import { autorise, comptesActifs, resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
+import {
+  autorise,
+  comptesActifs,
+  deploiementSansSerrure,
+  resoudreDroits,
+  verrouDeComptesActif,
+} from "@/lib/entitlements";
 import { CHEMIN_PAR_API } from "@/lib/api-access";
 
 /**
@@ -386,7 +392,34 @@ export async function middleware(req: NextRequest) {
   // En mode solo (aucun système de comptes configuré), `resoudreDroits`
   // renvoie le droit SOLO et rien ne change — l'usage d'aujourd'hui reste
   // intact.
-  if (comptesActifs() && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
+  //
+  // ⚠⚠ LE SECOND CAS N'EST PAS UN CONFORT, IL REFERME UN FAIL-OPEN.
+  //
+  // `deploiementSansSerrure()` — production ET aucun compte ET aucun
+  // `SITE_PASSWORD` — fait déjà retomber `resoudreDroits` au socle GRATUIT.
+  // C'était juste, calculé, testé… et **le middleware ne le lisait pas** :
+  // toute cette garde était derrière `comptesActifs()` seul, donc dans cet
+  // état précis AUCUN contrôle de brique ne s'exécutait. Le défaut récurrent
+  // du dépôt, sur la porte la plus chère qui existe ici.
+  //
+  // Mesuré sur un `next start` de production, pas déduit :
+  //   · sans comptes et sans mot de passe → `/api/send` et `/api/voice/call`
+  //     répondaient 400 (validation du corps), c'est-à-dire qu'ils
+  //     ACCEPTAIENT la requête d'un inconnu et ne s'arrêtaient que sur la
+  //     forme du payload ;
+  //   · avec `SITE_PASSWORD` posé → 401 sur les deux. Le mur tenait, et c'est
+  //     lui SEUL qui tenait.
+  // La fenêtre dangereuse est donc réelle et datée : le jour où `SMTP_*` est
+  // posé sur Vercel mais où les comptes ne le sont pas encore. `/api/send`
+  // enverrait de vrais emails depuis notre domaine, pour n'importe qui —
+  // et ça ne se voit que sur la réputation du domaine, des semaines plus tard.
+  //
+  // ⚠ On ne coupe PAS le site pour autant, exactement comme le dit la
+  // doctrine du socle : les écrans gratuits restent ouverts, seules les
+  // briques qui DÉPENSENT chez nous répondent 403. Une page blanche sur une
+  // prod en ligne serait une panne, et on n'en crée pas une pour fermer une
+  // faille.
+  if ((comptesActifs() || deploiementSansSerrure()) && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
     const droits = await resoudreDroits(req);
 
     /**
