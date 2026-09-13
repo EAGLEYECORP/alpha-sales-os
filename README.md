@@ -201,7 +201,19 @@ largement le pack — c'est l'ancrage.
 | **Alpha Live** — le souffleur pendant le rendez-vous | 1 800 € | 180 € |
 | **Closer OS & débrief** | 1 500 € | 190 € |
 | **Salle de contrôle & KPIs** | 1 200 € | 120 € |
-| **PACK COMPLET** | **10 000 €** | **1 000 €** |
+| **PACK COMPLET** | **10 000 €** | **1 000 €** pour 5 utilisateurs |
+
+> ⚠ **Le pack se facture au SIÈGE depuis le 13/09/2026**, et les 1 000 € sont
+> le prix à la taille d'équipe de référence — pas un forfait.
+> `600 € de socle + 80 € par utilisateur` (`abonnementMensuel()`,
+> `lib/offres-publiques.ts`) : 680 € à une personne, 1 400 € à dix, 2 200 € à
+> vingt. Le socle couvre ce qui ne dépend pas du nombre de têtes — moteur de
+> conformité, Cerveau, autopilote. **Alpha Voice reste hors formule** : on ne
+> facture pas au siège ce qui remplace un siège. Détail : `docs/PRICING.md` §0.
+
+**Essai 30 jours, pleine capacité**, borné par DEUX limites : la durée *et*
+30 € de consommation réelle chez nous — la première atteinte ferme l'essai. À
+la fin, retour au socle gratuit, jamais au néant.
 
 Ou **30 % + frais d'installation** sur devis. **Cadrage obligatoire** avant
 tout chiffrage. Alpha Voice sortant se paie au volume, sans engagement :

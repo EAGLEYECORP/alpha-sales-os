@@ -7,6 +7,68 @@
 
 ---
 
+## 0. LA GRILLE EN VIGUEUR — au 13/09/2026
+
+> ⚠⚠ **CE DOCUMENT NE LA CONTENAIT PAS.** Il analyse en détail ce que les
+> choses nous COÛTENT, et ne disait nulle part ce qu'on FACTURE. Quelqu'un qui
+> l'ouvrait pour préparer un devis n'y trouvait pas le prix. Ajouté le
+> 13/09/2026, le jour où la grille est passée au siège.
+
+```
+Installation      10 000 € HT, une fois        PACK_SETUP_HT
+Socle plateforme     600 € HT/mois             SOCLE_PLATEFORME_HT
+Par utilisateur       80 € HT/mois             PRIX_SIEGE_HT
+Alpha Voice          à l'usage — 149 / 349 €/mois + 0,20 €/min au-delà
+```
+
+`abonnementMensuel(n)` (`lib/offres-publiques.ts`) est la SEULE source. Le prix
+de référence affiché partout — `PACK_MONTHLY_HT` — en dérive à la taille
+d'équipe de référence (5) et vaut donc 1 000 €/mois.
+
+| Sièges | Total/mois | €/siège | vs l'ancien forfait |
+|---|---|---|---|
+| 1 | 680 € | 680 | −32 % |
+| 5 | **1 000 €** | 200 | **0** |
+| 10 | 1 400 € | 140 | +40 % |
+| 20 | 2 200 € | 110 | +120 % |
+| 50 | 4 600 € | 92 | +360 % |
+
+**Pourquoi deux termes et pas un prix par siège nu.** Une partie de ce qu'on
+vend ne dépend pas du nombre de personnes : le moteur de conformité, le
+Cerveau, l'autopilote. C'est aussi l'actif le moins copiable du produit — le
+noyer dans un prix par tête le ferait disparaître de la négociation. Et un
+prix par siège seul aurait divisé le revenu par huit sur une petite équipe.
+
+**⚠ Alpha Voice n'entre PAS dans la formule**, et un test l'interdit : on ne
+facture jamais au siège ce qui REMPLACE un siège. Sa valeur se compare à un
+SALAIRE (~35–45 k€/an chargés), pas à un abonnement par utilisateur.
+
+**⚠ 600 et 80 sont des DÉCISIONS**, pas des mesures — zéro vente les a
+validées. Le seul élément mesuré à côté est la bande du marché par siège
+(14–79 €, `lib/marche.ts`) : 80 € se pose juste au-dessus, parce qu'Alpha
+embarque Agent ALPHA et Alpha Live, dont la catégorie relevée commence à 250 $.
+
+### L'essai 30 jours — DEUX limites, pas une
+
+```
+Durée    30 jours                    DUREE_ESSAI_JOURS
+Coût     30 € de NOTRE dépense       PLAFOND_ESSAI_COUT_EUR
+```
+
+La première atteinte ferme l'essai. **La durée seule serait une faute** : les
+briques d'essai dépensent chez nous (SMTP, minutes, jetons) et il n'existe
+aucun chemin d'identifiants par locataire — un compte motivé consomme en deux
+jours ce qu'on comptait donner en trente.
+
+Le plafond est **dérivé** : 500 min × 0,0563 €/min mesurées = 28,15 €, soit ce
+que le palier d'entrée nous coûte pour un mois, arrondi à 30. L'essai donne
+autant de matière que le premier abonnement en consomme.
+
+**Coût inconnu ⇒ essai fermé** (`lib/essai.ts`). À la fin : le socle **gratuit**,
+jamais le néant — ses fiches lui appartiennent.
+
+---
+
 ## 1. LE POINT LE PLUS IMPORTANT : « 360 € » n'est pas un coût
 
 Tu m'as dit : *« on est à 360 € par mois pour 1 000 appels… ce prix-là c'est

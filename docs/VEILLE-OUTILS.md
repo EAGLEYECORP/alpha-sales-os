@@ -3,7 +3,20 @@
 Analyse des outils vus dans la veille (carrousels syntaix.ai / coderss_world :
 Headroom, Graphify, LLMLingua, GPTCache, LiteLLM, Outlines, vLLM, tiktoken,
 Buzz…) confrontés à **notre** archi : Next.js local-first, store Zustand,
-cascade IA `Ollama → NVIDIA → Claude`, n8n, tracking maison, zéro dépendance.
+cascade IA `Ollama → NVIDIA → Claude`, n8n, tracking maison, et **aucune
+dépendance tierce sur les briques qui touchent la donnée MÉTIER**.
+
+> ⚠ La formule « zéro dépendance » était écrite ici et elle est FAUSSE :
+> `package.json` en déclare une quinzaine (Next, React, client Supabase,
+> nodemailer, recharts, SDK IA…). Elle se vérifie en trente secondes et
+> décrédibilise tout ce qui l'entoure. Ce qui est vrai, et suffisant : rien de
+> ce qui touche la donnée métier ne passe par un tiers.
+
+> ⚠ **À ne pas confondre avec `lib/veille.ts`.** Ce document-ci trie les
+> LIBRAIRIES qu'on adopte pour NOTRE architecture. Le module, lui, qualifie les
+> CAPACITÉS qu'on déploie chez un CLIENT et route le dossier (nous / partenaire)
+> sur la faisabilité et la taille. Deux veilles, deux usages — les fusionner
+> ferait router de vrais dossiers avec une liste de libs Python.
 
 Verdict en une ligne : **on n'ajoute pas ces libs (Python, lourdes) — on en
 reprend l'IDÉE, faite maison, là où elle rapporte.** Voici le tri.

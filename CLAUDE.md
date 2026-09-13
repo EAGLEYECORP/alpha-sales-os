@@ -1547,6 +1547,23 @@ titulaire change lui-même) est le compte Supabase, et l'écran existe déjà :
   > une page produit renvoie vers `/compte?bloque=…` (parcours client) et une
   > page admin vers `/gate` (mot de passe). Deux portes, deux publics.
 
+## CE QUI EST BLOQUÉ SUR ZAKARIA — `docs/A-FAIRE-ZAKARIA.md`
+Écrit le 13/09/2026, veille de lancement. **Une session qui ne sait pas quoi
+faire commence par là** : c'est la liste de ce qu'aucune session ne peut
+exécuter (Vercel, Supabase, registrar, export de fiches), avec l'ordre imposé
+et la RAISON de chaque dépendance.
+
+> ⚠ **La dépendance qui coûte cher si on l'inverse** : poser `SMTP_*` AVANT
+> les quatre variables de comptes rend `/api/send` joignable par n'importe qui
+> avec un SMTP qui marche — de vrais emails depuis notre domaine, pour des
+> inconnus, visibles seulement sur la réputation des semaines plus tard.
+
+> ⚠ **Le dépôt passe en privé.** Ça n'annule rien : l'historique git, les forks,
+> les clones et les caches d'indexation gardent tout. Et **les gardes ne se
+> retirent pas** (`tests/donnees-reelles`, `tests/noms-reels`, plages ARCEP) —
+> un dépôt privé se partage, se clone, et redevient public par accident. Ce
+> sont des données de tiers, pas un secret commercial.
+
 ## Contraintes d'environnement (sandbox)
 Le proxy sortant bloque : github.com, data.grandlyon.com, data.gouv, et les clés
 live NVIDIA/Supabase/Stripe. pypi passe. **Je ne peux pas tester un service live

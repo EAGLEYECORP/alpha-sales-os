@@ -1,3 +1,7 @@
+> 📌 **La liste courte de ce qui est bloqué sur toi vit dans
+> `docs/A-FAIRE-ZAKARIA.md`** — ordre imposé, avec la raison de chaque
+> dépendance. Ce document-ci est le détail ; celui-là est le chemin.
+
 # Checklist de lancement — ce qui BLOQUE, dans l'ordre
 
 > Ce document dit **quoi faire et dans quel ordre**. Le **comment** (setup
@@ -207,6 +211,14 @@ le SQL Editor annonce quand même « Success ». Passe les migrations.
       ⚠ À passer AVANT de poser `REQUIRE_AUTH` : dès que les comptes sont
       actifs, tout compte non provisionné est refusé — y compris le tien si
       `OWNER_EMAILS` n'est pas posé.
+- [ ] `supabase/migrations/003` à `007` — organisation, ordonnanceur,
+      présence de l'agent, rendez-vous cloisonnés, attribution apporteurs.
+- [ ] `supabase/migrations/008-essai-plafond-cout.sql` — **ajoutée le
+      13/09/2026**. Elle pose `cout_consomme_eur` sur `entitlements` : c'est la
+      SECONDE limite de l'essai 30 jours. Sans elle, `etatEssai()` lit `null`,
+      **ferme l'essai en permanence**, et tout essai retombe au socle gratuit
+      le premier jour. (Défaut `null` et non `0` : `0` affirmerait « rien
+      consommé » sur une colonne jamais alimentée.)
 - [ ] `prospects` — **c'est un RÉGLAGE, pas un chantier.**
       Aller dans **Réglages → Synchronisation Supabase** et l'activer.
       `settings.supabaseSync` vaut `false` par défaut ; tant qu'il est éteint,
