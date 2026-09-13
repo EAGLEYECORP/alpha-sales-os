@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { VERTICALS } from "../lib/playbook";
 import { buildVoiceScript } from "../lib/voice-script";
 import { OFFRES, type EagleyeOffer } from "../lib/offer-match";
+import { buildLadder } from "../lib/ladder";
+import { prospectDefaults } from "../lib/seed";
+import type { Prospect } from "../lib/types";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -264,4 +267,100 @@ test("⚠ le registre des offres est celui de la MAÎTRISE D'OUVRAGE, pas de l'a
       `${id} garde une tournure écrite pour le marché d'avant`
     );
   }
+});
+
+test("⚠⚠ LES PHRASES DE L'ESCALIER PASSENT LES INTERDITS — le sixième texte", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * ⚠⚠ IL N'ÉTAIT CROISÉ CONTRE AUCUN INTERDIT, ET IL PORTAIT DÉJÀ LA
+   * PHRASE REFUSÉE.
+   *
+   * Ce fichier auditait « les CINQ textes que l'offre fait dire », plus le
+   * script assemblé. L'escalier (`lib/ladder.ts`) en est un sixième : ses
+   * `pitch` sont écrits entre guillemets, ils se PRONONCENT, et la marche 2
+   * disait « chaque appel manqué est un client qui appelle le concurrent » —
+   * exactement ce que la verticale maîtrise d'ouvrage interdit.
+   *
+   * Il ne s'était jamais déclenché sur ce marché, pour une raison qui n'est
+   * pas rassurante : le détecteur ne lisait que `missedCallsPerWeek`, absent
+   * d'une fiche issue d'un permis. La phrase interdite était donc chargée,
+   * prête, et masquée par un bug. Réparer la détection sans réparer la
+   * phrase l'aurait mise en service.
+   *
+   * ⚠ Le test ne lit pas la source : il FAIT PRODUIRE l'escalier sur un
+   * prospect de chaque famille et confronte ce qui en sort aux motifs
+   * exécutables. Un `pitch` réécrit demain repasse par ici.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  const moa = VERTICALS.find((v) => v.id === "maitrise-ouvrage");
+  assert.ok(moa, "la verticale maîtrise d'ouvrage a disparu");
+  const motifs = moa!.forbidden.map((f) => f.motif).filter((m): m is RegExp => Boolean(m));
+  assert.ok(motifs.length > 0, "aucun motif exécutable — le test ne mesure rien");
+
+  /** Un maître d'ouvrage saturé : c'est la marche 2 qui doit se déclencher. */
+  const promoteur = {
+    ...prospectDefaults,
+    id: "p-moa",
+    name: "X",
+    company: "SCCV Démo",
+    sector: "maitrise-ouvrage",
+    deepAudit: { websiteState: "", socialState: "", lotsACommercialiser: 68 },
+  } as Prospect;
+
+  const marches = buildLadder(promoteur).rungs;
+  const volume = marches.find((r) => r.id === "alpha-voice");
+  assert.ok(
+    volume,
+    "la marche « volume de demandes » ne se déclenche PAS sur un maître d'ouvrage saturé — " +
+      "le détecteur est redevenu aveugle au marché en cours"
+  );
+
+  for (const motif of motifs) {
+    assert.doesNotMatch(
+      volume!.pitch,
+      motif,
+      `la phrase prononcée sur la marche 2 tombe sous un interdit de la verticale :\n  « ${volume!.pitch} »`
+    );
+  }
+
+  /**
+   * ⚠ ET L'AUTRE INTERDIT, celui qui n'a pas de motif exécutable : « citer son
+   * permis, son adresse ou son nombre de lots à froid ». Il relève du jugement,
+   * donc aucun motif ne le tient — mais ICI le cas est précis et vérifiable :
+   * le nombre de lots est dans la PREUVE, il ne doit pas être dans la PHRASE.
+   */
+  assert.ok(
+    volume!.evidence.some((e) => /68/.test(e)),
+    "la preuve doit porter le nombre de lots — c'est ce qui justifie la marche pour l'opérateur"
+  );
+  assert.doesNotMatch(
+    volume!.pitch,
+    /\b\d+\s*(lots?|logements?)\b/i,
+    "la phrase prononcée cite le nombre de lots : la verticale l'interdit à froid, « ça sonne fliqué »"
+  );
+});
+
+test("⚠ le commerce qui ne décroche pas garde SA phrase, elle est juste chez lui", () => {
+  /**
+   * Le contre-test, sans lequel le précédent serait satisfait en supprimant la
+   * phrase « appels manqués » partout. Elle n'est pas fausse dans l'absolu :
+   * elle est fausse SUR CETTE VERTICALE. Un garage qui ne décroche pas perd
+   * vraiment le client au profit du suivant.
+   */
+  const commerce = {
+    ...prospectDefaults,
+    id: "p-com",
+    name: "Y",
+    company: "Garage Démo",
+    sector: "artisan",
+    deepAudit: { websiteState: "", socialState: "", missedCallsPerWeek: 12 },
+  } as Prospect;
+
+  const volume = buildLadder(commerce).rungs.find((r) => r.id === "alpha-voice");
+  assert.ok(volume, "la marche ne se déclenche plus sur des appels manqués — la détection d'origine est cassée");
+  assert.match(
+    volume!.pitch,
+    /appel/i,
+    "sur un commerce, la phrase DOIT parler d'appels : c'est sa perte réelle"
+  );
 });

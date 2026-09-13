@@ -121,6 +121,33 @@ export interface DeepAudit {
   websiteState: string;
   socialState: string;
   missedCallsPerWeek?: number;
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * LOTS ENCORE À COMMERCIALISER — la saturation de demande, côté maîtrise
+   * d'ouvrage.
+   *
+   * ⚠⚠ IL MANQUAIT, ET SON ABSENCE RENDAIT L'ESCALIER AVEUGLE À NOTRE MARCHÉ.
+   * `demandEvidence` (`lib/ladder.ts`) ne détectait la saturation QUE par
+   * `missedCallsPerWeek`. Sur une fiche issue d'un permis, ce champ est vide :
+   * la marche « volume de demandes » ne se déclenchait donc JAMAIS sur le
+   * marché qu'on prospecte depuis le 09/09. Rien ne tombait, aucun log — le
+   * détecteur rendait simplement une liste vide, ce qui ressemble trait pour
+   * trait à « ce prospect n'a pas de problème de volume ».
+   *
+   * ⚠ POURQUOI ICI ET PAS DANS LES NOTES. Le nombre de lots y survivait déjà,
+   * mais en TEXTE LIBRE (« Logements : 68 »). Le lire par motif serait la
+   * devinette que ce dépôt refuse partout ailleurs — c'est la même règle que
+   * « la verticale se lit sur le tag, pas sur le texte ». `deepAudit` est le
+   * bon endroit : il porte déjà les nombres MESURÉS, importables par CSV, et
+   * c'est exactement ce qu'est un nombre de lots lu sur un arrêté public.
+   *
+   * ⚠ Ce nombre sert à CHOISIR qui on appelle, jamais à ouvrir l'appel — la
+   * verticale l'interdit explicitement : « citer son nombre de lots à froid
+   * sonne fliqué ». Il peut donc entrer dans la PREUVE (ce que l'opérateur
+   * lit) et jamais dans le PITCH (ce qui se prononce).
+   * ─────────────────────────────────────────────────────────────────
+   */
+  lotsACommercialiser?: number;
   /** average basket / ticket in € */
   avgTicket?: number;
   /** % of missed contacts that would have converted */

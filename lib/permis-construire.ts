@@ -739,6 +739,16 @@ export function permisVersProspect(p: PermisConstruire, l: LecturePermis, now = 
     city: (p.commune ?? "").trim(),
     stage: "prospect",
     preferredChannel: "linkedin",
+    /**
+     * ⚠ LA SATURATION DESCEND SUR LA FICHE, structurée. Sans elle, l'escalier
+     * ne voit rien : `demandEvidence` lit `deepAudit`, pas les notes. Le lot
+     * était déjà écrit dans `notes` en texte libre — donc illisible par le
+     * code sans deviner.
+     */
+    deepAudit:
+      p.logements !== undefined && Number.isFinite(p.logements)
+        ? { websiteState: "", socialState: "", lotsACommercialiser: Number(p.logements) }
+        : undefined,
     notes: notesDepuisPermis(p, l),
     tags: ["permis-construire", "maitrise-ouvrage", l.phase],
     createdAt: iso,

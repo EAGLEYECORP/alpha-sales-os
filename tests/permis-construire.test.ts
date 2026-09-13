@@ -10,6 +10,7 @@ import {
   VALIDITE_MOIS,
   importerPermis,
   lirePermis,
+  permisVersProspect,
   peremptionMois,
   phaseDuPermis,
   ressembleAuPermis,
@@ -18,6 +19,7 @@ import {
   type PermisConstruire,
 } from "../lib/permis-construire";
 import { verticalForText, verticalForProspect } from "../lib/playbook";
+import { buildLadder } from "../lib/ladder";
 import { qualifier } from "../lib/linkedin-ciblage";
 import { ACCOUNTS_COMMERCIAL } from "../lib/accounts-commercial";
 
@@ -559,5 +561,55 @@ test("⚠ les deux seuils répondent à DEUX questions différentes", () => {
   assert.ok(
     !entreDeux.risques.some((r) => new RegExp(`sous ${LOGEMENTS_MIN}`).test(r)),
     "à huit lots, le reproche de PRIX ne doit pas se déclencher — c'est l'autre seuil"
+  );
+});
+
+test("⚠⚠ LA CHAÎNE ENTIÈRE : un arrêté public déclenche la bonne marche, avec la bonne phrase", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * ⚠⚠ LE TEST QUI MANQUAIT, ET SON ABSENCE S'EST VUE PAR MUTATION.
+   *
+   * J'avais réparé l'escalier et testé chaque maillon séparément : la lecture
+   * du permis, la conversion en fiche, la détection de saturation, la phrase
+   * prononcée. Puis j'ai retiré `lotsACommercialiser` de la conversion —
+   * **aucun test n'est tombé**. La fiche ne portait plus la saturation, donc
+   * l'escalier redevenait aveugle, et trois tests verts l'affirmaient réparé.
+   *
+   * C'est le défaut récurrent du dépôt, dans sa forme la plus pure : chaque
+   * module rend la bonne réponse, et la chaîne ne boucle pas.
+   *
+   * Ce test part d'un ARRÊTÉ et va jusqu'à LA PHRASE. Retirer n'importe quel
+   * maillon le fait tomber.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  const arrete = promoteur({ logements: 68 });
+  const lu = lirePermis(arrete, MAINTENANT);
+  assert.equal(lu.demande, "saturee", "1/4 — l'arrêté doit être lu comme saturé");
+  assert.ok(lu.retenu, "1/4 — et retenu, sinon la suite ne se joue jamais");
+
+  const fiche = permisVersProspect(arrete, lu);
+  assert.equal(
+    fiche.deepAudit?.lotsACommercialiser,
+    68,
+    "2/4 — la fiche ne PORTE pas la saturation : l'escalier la lira dans deepAudit, jamais dans les notes"
+  );
+
+  const marches = buildLadder(fiche).rungs;
+  const volume = marches.find((r) => r.id === "alpha-voice");
+  assert.ok(
+    volume,
+    "3/4 — la marche « volume de demandes » ne se déclenche pas : le détecteur est aveugle au marché en cours"
+  );
+
+  assert.doesNotMatch(
+    volume!.pitch,
+    /appels?\b[^.?!]{0,60}(?:manqu|rat[ée]|perdus?)/i,
+    "4/4 — la phrase prononcée parle d'appels manqués à un maître d'ouvrage : " +
+      "la verticale l'interdit, et c'est ce qui prouve qu'on n'a pas compris le métier"
+  );
+  assert.match(
+    volume!.pitch,
+    /acquéreurs/i,
+    "4/4 — la phrase doit nommer SA perte : des acquéreurs intéressés que personne n'a relancés"
   );
 });

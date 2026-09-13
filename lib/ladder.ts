@@ -1,5 +1,6 @@
 import type { Prospect } from "./types";
 import { NUWACOM_THRESHOLD_HT } from "./accounts";
+import { SATURATION_LOGEMENTS } from "./permis-construire";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -40,6 +41,18 @@ export type RungId = "visibilite" | "alpha-voice" | "automatisation" | "gros-cha
  * commercial, pas une vérité — remonte-le si tu veux être plus sélectif.
  */
 export const HIGH_DEMAND_PER_WEEK = 5;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE SEUIL DE SATURATION CÔTÉ MAÎTRISE D'OUVRAGE — en lots à commercialiser.
+ *
+ * ⚠ IMPORTÉ, PAS RECOPIÉ. `SATURATION_LOGEMENTS` vit dans
+ * `lib/permis-construire.ts`, qui l'explique et le date. Le réécrire ici
+ * créerait deux définitions de « croule-t-il sous la demande ? » : l'import
+ * dirait « demande faible » pendant que l'escalier proposerait la marche, et
+ * c'est l'opérateur qui découvrirait la contradiction devant le prospect.
+ * ─────────────────────────────────────────────────────────────────────
+ */
 
 export interface Rung {
   id: RungId;
@@ -112,16 +125,78 @@ function visibilityEvidence(p: Prospect): string[] {
   return out;
 }
 
-/** Le prospect croule-t-il sous les demandes ? (le déclencheur Alpha Voice) */
-function demandEvidence(p: Prospect): string[] {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE PROSPECT CROULE-T-IL SOUS LES DEMANDES ? — deux FAMILLES, pas une.
+ *
+ * ⚠⚠ CE DÉTECTEUR ÉTAIT AVEUGLE AU MARCHÉ QU'ON PROSPECTE. Il ne lisait que
+ * `missedCallsPerWeek` : le cadrage « appels manqués », que la verticale
+ * maîtrise d'ouvrage **INTERDIT** explicitement (« Vous ratez des appels :
+ * faux ici, et ça prouve qu'on n'a pas compris le métier »). Sur une fiche
+ * issue d'un permis, ce champ est vide — la marche ne se déclenchait donc
+ * jamais, et le silence ressemblait à « ce prospect n'a pas de problème de
+ * volume ».
+ *
+ * ⚠⚠ ET LA PREUVE SEULE NE SUFFISAIT PAS. Le `pitch` de la marche était FIGÉ
+ * sur « chaque appel manqué est un client qui appelle le concurrent » — la
+ * phrase exacte que l'interdit refuse. Brancher la détection sans toucher au
+ * pitch aurait produit le pire résultat possible : la marche se déclenche à
+ * raison, et sert la phrase qui fait raccrocher. **La preuve et la phrase
+ * doivent venir de la même source**, sinon l'une des deux ment.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+type FamilleDemande = "appels" | "lots";
+
+interface SignalDemande {
+  famille: FamilleDemande;
+  evidence: string[];
+}
+
+function demandEvidence(p: Prospect): SignalDemande | null {
   const a = p.deepAudit ?? {};
+
+  /**
+   * Les lots d'abord : quand les deux signaux existent, c'est le métier du
+   * prospect qui tranche, et un maître d'ouvrage n'entend jamais parler
+   * d'appels manqués. L'ordre n'est pas une préférence, c'est un interdit.
+   */
+  const lots = a.lotsACommercialiser ?? 0;
+  if (lots >= SATURATION_LOGEMENTS) {
+    return {
+      famille: "lots",
+      // ⚠ La PREUVE peut citer les lots : elle est lue par l'opérateur.
+      // Le PITCH ne le peut pas — la verticale interdit de l'annoncer à froid.
+      evidence: [`${lots} lots à commercialiser — plus de contacts acquéreurs qu'une ou deux personnes n'en rappellent`],
+    };
+  }
+
   const out: string[] = [];
   const missed = a.missedCallsPerWeek ?? 0;
   if (missed >= HIGH_DEMAND_PER_WEEK) out.push(`${missed} appels manqués/semaine`);
   if (filled(a.currentProcess) && /d[ée]croche|standard|accueil|entre deux|seul/i.test(a.currentProcess))
     out.push(`process actuel : ${a.currentProcess}`);
-  return out;
+  return out.length ? { famille: "appels", evidence: out } : null;
 }
+
+/**
+ * Ce qui se PRONONCE sur la marche 2, selon ce qui l'a déclenchée.
+ *
+ * ⚠ La variante « lots » ne cite ni lot, ni permis, ni adresse : la verticale
+ * refuse de les annoncer à froid (« la donnée est publique, mais l'annoncer
+ * sonne fliqué »). Elle nomme la PERTE, qui est la sienne et qu'il reconnaît.
+ */
+const PITCH_DEMANDE: Record<FamilleDemande, { label: string; pitch: string }> = {
+  appels: {
+    label: "Alpha Voice (accueil & relance téléphone)",
+    pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
+  },
+  lots: {
+    label: "Alpha Voice (relance des contacts acquéreurs)",
+    pitch:
+      "« Entre deux points hebdo, personne ne peut dire quels acquéreurs intéressés n'ont pas été relancés " +
+      "depuis trois semaines. On tient cette liste à jour, et on les rappelle. »",
+  },
+};
 
 /**
  * L'escalier complet pour un prospect.
@@ -147,14 +222,15 @@ export function buildLadder(p: Prospect, opts: { automationWanted?: boolean } = 
 
   // ── Marche 2 : volume de demandes très élevé → Alpha Voice (EAGLEYE) ──
   const dem = demandEvidence(p);
-  if (dem.length) {
+  if (dem) {
+    const { label, pitch } = PITCH_DEMANDE[dem.famille];
     rungs.push({
       id: "alpha-voice",
-      label: "Alpha Voice (accueil & relance téléphone)",
+      label,
       accountId: "eagleye",
       accountName: "EAGLEYE CORP",
-      evidence: dem,
-      pitch: "« Chaque appel manqué est un client qui appelle le concurrent. On répond à votre place, 24/7. »",
+      evidence: dem.evidence,
+      pitch,
     });
   }
 

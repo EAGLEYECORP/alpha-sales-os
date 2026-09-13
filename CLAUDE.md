@@ -185,13 +185,53 @@ promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois pr�
   intuition — le jour où un maître d'ouvrage dit « à douze lots je suis déjà
   noyé », ce compteur devient une exclusion, en une ligne qui se voit au diff.
 
-> ⚠ **Ce que ça ne règle PAS, et il faut le savoir** : `demandEvidence`
-> (`lib/ladder.ts`) ne mesure la demande que par `missedCallsPerWeek` — le
-> cadrage « vous ratez des appels », que la doctrine **interdit** justement sur
-> la maîtrise d'ouvrage. Conséquence mesurée : sur une fiche issue d'un permis,
-> la marche Alpha Voice ne se déclenche **jamais** — le détecteur est aveugle à
-> notre marché en cours. Le nombre de lots ne survit que dans les **notes**, en
-> texte libre, et le lire par motif serait la devinette que ce dépôt refuse.
+### L'ESCALIER ÉTAIT AVEUGLE À NOTRE MARCHÉ — réparé le 13/09/2026
+`demandEvidence` (`lib/ladder.ts`) ne détectait la saturation **que** par
+`missedCallsPerWeek`. Sur une fiche issue d'un permis, ce champ est vide : la
+marche « volume de demandes » ne se déclenchait **jamais** sur le marché qu'on
+prospecte depuis le 09/09. Rien ne tombait — le détecteur rendait une liste
+vide, ce qui ressemble trait pour trait à « ce prospect n'a pas de problème ».
+
+- **`DeepAudit.lotsACommercialiser`** porte la saturation, **structurée**. Le
+  nombre de lots survivait déjà dans les **notes**, en texte libre : le lire par
+  motif aurait été la devinette que ce dépôt refuse partout (« la verticale se
+  lit sur le tag, pas sur le texte »). `deepAudit` porte déjà les nombres
+  MESURÉS et importables — un lot lu sur un arrêté public en est un.
+- **⚠⚠ LA PREUVE SEULE NE SUFFISAIT PAS.** Le `pitch` de la marche était FIGÉ
+  sur « chaque appel manqué est un client qui appelle le concurrent » — la
+  phrase exacte que la verticale INTERDIT. Brancher la détection sans toucher
+  au pitch aurait produit le pire résultat possible : **la marche se déclenche
+  à raison et sert la phrase qui fait raccrocher.** La preuve et la phrase
+  viennent désormais de la même source (`PITCH_DEMANDE`), sinon l'une des deux
+  ment.
+- **Le nombre de lots entre dans la PREUVE, jamais dans la PHRASE.** Le second
+  interdit de la verticale refuse de citer permis, adresse ou nombre de lots à
+  froid — « la donnée est publique, mais l'annoncer sonne fliqué. Elle sert à
+  CHOISIR qui on appelle, pas à ouvrir l'appel. »
+- **Le seuil est IMPORTÉ** de `permis-construire`, jamais recopié : deux
+  définitions de « croule-t-il ? » feraient dire « demande faible » à l'import
+  pendant que l'escalier proposerait la marche.
+
+> ⚠⚠ **LE SIXIÈME TEXTE QUE PERSONNE NE RELISAIT.**
+> `tests/playbook-interdits.test.ts` auditait « les CINQ textes que l'offre
+> fait dire » plus le script assemblé. Les `pitch` de l'escalier s'écrivent
+> entre guillemets et se PRONONCENT : c'est un sixième, et il portait déjà la
+> phrase refusée. Elle ne s'était jamais servie pour une raison qui n'est pas
+> rassurante — **un bug la masquait**. Elle est maintenant croisée contre les
+> motifs exécutables, sur un prospect de chaque famille.
+
+> ⚠⚠ **J'AI TESTÉ LES MAILLONS, PAS LA CHAÎNE — et la mutation l'a dit.**
+> Après avoir réparé l'escalier, j'ai retiré `lotsACommercialiser` de la
+> conversion d'import : **aucun test n'est tombé**. La fiche ne portait plus la
+> saturation, l'escalier redevenait aveugle, et trois tests verts l'affirmaient
+> réparé. Un test part désormais d'un **arrêté** et va jusqu'à **la phrase
+> prononcée** ; retirer n'importe quel maillon le fait tomber.
+> Mesuré sur le jeu de démonstration : **6 des 8 retenus** déclenchent la
+> marche, les 2 sous le seuil ne la déclenchent pas.
+
+> ⚠ **La phrase « appels manqués » n'est pas supprimée du produit**, et un
+> contre-test l'exige : elle est fausse SUR CETTE VERTICALE, pas dans l'absolu.
+> Un garage qui ne décroche pas perd vraiment le client au profit du suivant.
 
 ### LE SECTEUR NOMME LE MARCHÉ — et rien d'autre n'en dépend (11/09/2026)
 `Sector` (`lib/types.ts`) était resté au marché d'AVANT deux jours après la
