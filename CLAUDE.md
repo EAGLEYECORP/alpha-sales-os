@@ -417,6 +417,46 @@ Alpha Voice          à l'usage, INCHANGÉ   (149/349 + 0,20 €/min)
   > Mais corriger en silence ferait partir un devis avec un nombre que
   > personne n'a choisi.
 
+### TARIFER CHACUN SUR CE QU'ALPHA LUI A RAPPORTÉ (`lib/valeur-produite.ts`)
+Décidé le 13/09/2026. Le socle et le prix par siège sont des DÉCISIONS faute de
+vente ; une cohorte d'utilisateurs gratuits est le seul instrument capable d'en
+faire des mesures.
+
+> ⚠⚠ **ET LE SERVEUR NE VOIT RIEN D'UN COMPTE GRATUIT.** Mesuré : aucune
+> télémétrie, aucune table d'usage, et le CRM vit dans le `localStorage`
+> (`pipeServeur` est opt-in). Pas une fiche, pas un RDV, pas un euro.
+> **Ce n'est pas une lacune, c'est la promesse** — « rien de ce qui touche la
+> donnée métier ne passe par un tiers » est l'argument de souveraineté qui
+> tient la vitrine debout, celui qui a remplacé une affiliation inventée.
+> Mesurer une cohorte se DÉCIDE ; ça ne se code pas en douce.
+
+> ⚠⚠ **LE PIÈGE QUI DÉCIDE DE TOUT : indexer un prix sur un nombre que le
+> client TAPE lui donne une raison d'en taper un plus petit.** Aujourd'hui il
+> n'en a aucune. `part-resultat` le dit déjà pour la part au résultat (« celui
+> qui paie contrôle le dénominateur ») ; ici ce serait pire — on fabriquerait
+> l'incitation là où elle n'existe pas.
+> · **`mesure-infra`** (emails de `/api/send`, minutes de `/api/voice/call`) :
+>   compté chez nous, infalsifiable au bénéfice du client. **Seul facturable.**
+> · **`declare-client`** (montants, stades, RDV) : utile pour lui montrer SA
+>   performance, jamais une base de facture. Un test l'interdit, et un signal
+>   inconnu n'est pas facturable par défaut — on n'ouvre jamais par omission.
+
+- **Le partage porte des COMPTES, jamais du CONTENU**, et le garde vise le
+  **TYPE** : toute `string` est refusée dans `PartageCohorte`, sauf le
+  `tenantId`. Une liste de mots interdits avait mordu sur `emailsEnvoyes` (un
+  compteur) et aurait laissé passer un `notesLibres`. Mesuré par mutation : un
+  champ de contenu **optionnel** compile sans rien casser — c'est celui-là qui
+  serait passé.
+- **Rien ne sort aujourd'hui, et c'est le bon état.** `prixJustifie` est typé
+  `null` LITTÉRALEMENT : « aucun poids ne s'auto-corrige » appliqué au type.
+  Même sur 500 comptes, le module rend un verdict et l'humain change la
+  constante — un ajustement automatique apprendrait le bruit de quarante
+  comptes et le graverait dans la facture de tout le monde.
+- **`COHORTE_MIN = 20`**, et le seuil se dit AVEC sa valeur. Sous ce nombre, un
+  seul utilisateur très actif déplace la médiane.
+- **« Rien ne remonte » ≠ « personne n'utilise »** (`etatDuDispositif`) — même
+  mode de panne que le moniteur qui affiche du calme quand la base est morte.
+
 > ⚠ **Ce que la décision « full-stack seulement » laisse ouvert, et qu'il faut
 > trancher** : l'échelle du gratuit n'a plus de barreau intermédiaire. Un
 > opérateur qui gagne ses premiers euros avec le socle gratuit fait face à
