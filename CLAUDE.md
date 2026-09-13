@@ -82,6 +82,37 @@ change l'identité + l'offre + la commission, **pas** les données.
 **Règle de routage** : faisable par nous → EAGLEYE · > 40 k → Nuwacom.
 Il n'y a plus d'exception par OFFRE : c'est la TAILLE qui sous-traite.
 
+> ⚠⚠ **DEUX CRITÈRES, ET UN SEUL MORDAIT — réparé le 13/09/2026**
+> (`lib/veille.ts`). Le **PRIX** était exécutable (`NUWACOM_THRESHOLD_HT`, lu
+> par le calculateur). La **FAISABILITÉ** — « si un open-source ou nous-mêmes
+> pouvons le faire vite → on le fait nous » — vivait dans une **chaîne** de
+> `lib/accounts-commercial.ts`. Le défaut exact déjà payé par `forbidden` et
+> par `structuralPain` : une règle juste, en prose, que rien ne pose.
+> · **Les deux se contredisent.** Un chantier à 60 k qu'un outil libre règle en
+>   une semaine : le prix l'envoie à 15 %, la faisabilité dit 100 %. **51 000 €
+>   d'écart sur un seul dossier.**
+> · **On NOMME le conflit, on ne tranche pas** (`arbitrage-humain`). Précédent :
+>   `fit` vs `bloquant` dans `lib/opportunites.ts`. Un routage automatique
+>   aurait choisi le critère le plus facile à coder — le prix — et sous-traité
+>   à 15 % ce qu'on sait faire à 100 %.
+> · **Deux questions distinctes** : *peut-on le FAIRE ?* (non ⇒ Nuwacom, quel
+>   que soit le montant — aucun prix ne rend faisable ce qu'on ne sait pas
+>   livrer) et *doit-on le PRENDRE ?* (taille et risque).
+> · **L'effort cumule les bornes HAUTES.** Additionner les basses suppose le
+>   meilleur des cas sur chaque brique en même temps — le biais qui fait tenir
+>   un devis sur le papier et pas à la livraison. Et **une seule brique « à
+>   construire » sort du régime rapide**, même courte : ce n'est pas sa durée
+>   qui coûte, c'est son incertitude.
+> · **`EFFORT_RAPIDE_MAX_JOURS = 10`** est une DÉCISION — deux semaines pleines
+>   d'une seule personne, puisque l'installation se fait à la main et par une
+>   seule personne.
+> · **La table `CAPACITES` est VIDE, et c'est l'état honnête.** Une veille se
+>   remplit en regardant ce qui sort, pas en écrivant de mémoire : des entrées
+>   devinées qui ont l'air mesurées **routeraient de vrais dossiers**. Chaque
+>   entrée portera son niveau de preuve (`mesure-maison` seulement après une
+>   livraison réelle), et se décrira par sa **FONCTION** — un nom de produit
+>   périme la table et décrit notre stack dans un dépôt public.
+
 ### L'ESCALIER — le check de CHAQUE prospect (`lib/ladder.ts`)
 Cascade, pas aiguillage : un prospect peut déclencher plusieurs marches, et
 chacune revient à un compte. On monte **une marche à la fois**, jamais tout d'un
