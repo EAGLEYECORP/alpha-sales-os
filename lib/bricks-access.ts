@@ -163,10 +163,19 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
    *    « une invitation LinkedIn se copie à la main, aucun serveur ne la
    *    relit ». Elle ne nous coûte RIEN, et c'est le canal par défaut de
    *    notre propre ICP.
-   *  · `/templates` n'appelle que `/api/email/preview`, et `app/api/email/`
-   *    ne contient QUE `preview` — une route qui rend un aperçu et n'envoie
-   *    jamais (aucun `sendMail`, aucun transport). Elle ne nous coûte rien
-   *    non plus.
+   *  · `/templates` sert à ÉCRIRE. Son aperçu passe par `/api/email/preview`,
+   *    et `app/api/email/` ne contient QUE `preview` — une route qui rend
+   *    l'email et n'envoie jamais (aucun `sendMail`, aucun transport).
+   *    ⚠ CORRECTION DU 12/09, et elle compte : l'écran embarque aussi
+   *    `SendBar`, qui appelle `/api/send`. Le premier commentaire disait
+   *    « son seul appel est l'aperçu » — c'était faux, mesuré en suivant les
+   *    composants et pas seulement la page. Ça ne change PAS la décision :
+   *    `/api/send` reste classée sur `/campaigns`, donc le serveur refuse
+   *    (403 `brique_absente`) et le bouton d'envoi se heurte à la même porte
+   *    que partout ailleurs. C'est le schéma déjà assumé de `/controle` —
+   *    voir la porte fermée vaut mieux que ne pas savoir qu'elle existe, et
+   *    la sécurité ne dépend jamais de l'écran. Ce que le gratuit gagne ici,
+   *    c'est d'écrire son message et de le VOIR, au lieu d'écrire à l'aveugle.
    *
    * Les deux étaient payants au titre de la FAMILLE « campagnes », alors que
    * le critère du dépôt est le COÛT — le même défaut que `alpha-live`, à un

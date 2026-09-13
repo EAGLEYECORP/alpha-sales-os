@@ -1094,6 +1094,66 @@ on doit encore pouvoir entrer chez nous.
 > `brique_absente`). Délibéré : voir la porte fermée vaut mieux que ne pas
 > savoir qu'elle existe, et la sécurité ne dépend jamais de l'écran.
 
+## LA PART SUR LE RÉSULTAT — ce qu'on demande à qui a gagné avec Alpha
+`lib/part-resultat.ts` · `components/billing/part-resultat-panel.tsx` (sur
+`/compte`) · `tests/part-resultat.test.ts` · décidé le 13/09/2026.
+
+Le modèle qui ferme la boucle du gratuit : le produit est libre tant qu'il ne
+dépense rien chez nous, donc quelqu'un sans un euro prospecte pour de vrai et
+encaisse. Ce qu'on demande ensuite n'est pas un abonnement à l'aveugle, c'est
+une part de ce qu'on lui a fait gagner. **On ne gagne que s'il gagne.**
+
+> ⚠⚠ **« 10–30 % DES BÉNÉFICES » ET « 10–30 % DU CA » NE SONT PAS LA MÊME
+> CLAUSE, et la différence décide si on se fait payer.** Le CA, nous le voyons.
+> Le bénéfice dépend des coûts, des salaires et des amortissements du client,
+> que nous ne pouvons ni lire ni auditer : **celui qui paie contrôle le
+> dénominateur**. Chaque euro de charge imputé à l'affaire réduit notre
+> facture, légalement, sans qu'on ait un mot à dire.
+> **Un pourcentage plus petit sur une base qu'on mesure vaut mieux qu'un grand
+> pourcentage sur une base qu'on subit.** `BASE_REFUSEE` rend le refus
+> exécutable : le module ne chiffre rien sur une base qu'il ne mesure pas, et
+> un test interdit qu'une entrée « bénéfice » y revienne par la fenêtre.
+
+- **La base est l'argent RÉELLEMENT ENCAISSÉ** (`payments[].amount`, statut
+  `paye` seulement) — la même que `buildPayoutLedger`, donc pas une deuxième
+  définition. On ne prélève rien tant que le client n'a pas été payé : c'est
+  l'objection la plus légitime qui existe, et on la retire d'avance.
+  > ⚠⚠ **TROUVÉ AU RENDU, PAS À LA RELECTURE.** La première version facturait
+  > `monthlyValue`, et l'écran affichait « 30 % de 349 € = 105 € ». 349 € est
+  > un **mensuel** — on facturait 30 % d'UN MOIS en l'appelant « le CA de
+  > l'affaire ». Faux dans les deux sens à la fois.
+- **L'échelle 10 / 20 / 30 se DÉRIVE du travail fait**, pas d'une négociation
+  au cas par cas : suivi (l'affaire a vécu ici) · approche (un contact sortant
+  est consigné) · rendez-vous (une rencontre a eu lieu avant la signature). Un
+  taux unique force à défendre le même prix sur une affaire portée de bout en
+  bout et sur une autre où on a tenu le fil — c'est la seconde qui fait dire
+  « votre pourcentage est abusif », sur toutes les autres en même temps.
+  > ⚠ Le haut de l'échelle **importe `REV_SHARE`**, il ne le recopie pas.
+- **⚠⚠ CE QU'ON MESURE EST « L'AFFAIRE A ÉTÉ TRAVAILLÉE DANS ALPHA », PAS
+  « ALPHA A FAIT LE TRAVAIL ».** La première rédaction avait un échelon « Alpha
+  a SOURCÉ la fiche » — **`tsc` l'a fait tomber** : aucun `EventKind` ne
+  l'atteste, et l'échelon aurait été le plus fréquent des trois. C'était une
+  invention, et c'est le compilateur qui l'a dit.
+- **L'attribution se borne à AVANT la signature.** Sans cette borne, toute
+  fiche finirait au palier haut : il suffit de poser un rendez-vous de suivi
+  une fois le contrat signé.
+- **Une fiche sans aucune touche n'est pas à nous** — quelqu'un a collé une
+  affaire déjà signée pour l'archiver. `null`, pas 10 % par défaut.
+- **Zéro affaire facturable → `null`, jamais « 0 € ».**
+
+> ⚠⚠ **L'ÉCRAN DIT « SIMULATION » AVANT DE DIRE UN MONTANT**, et un test
+> l'exige. Aucun contrat de part n'est signé : afficher une somme dans la
+> section « Compte » se lit comme une dette. Le client découvrirait un dû
+> qu'il n'a jamais contracté — la façon la plus rapide de perdre quelqu'un
+> qu'on venait de convaincre. C'est aussi le seul argument de conversion
+> honnête qu'on ait : il est calculé sur SES chiffres, pas sur une étude de
+> cas inventée.
+
+> ⚠ **Ce que ce module ne réglera jamais : la sous-déclaration.** Tout repose
+> sur ce que le client saisit. Aucun code ne corrige ça — c'est une clause de
+> contrat (droit de regard sur les factures de l'affaire) ou un forfait.
+> L'écrire ici évite de croire qu'un calcul juste suffit à se faire payer.
+
 ## ⚠ AUCUNE DONNÉE RÉELLE DANS LE DÉPÔT (`tests/donnees-reelles.test.ts`)
 **Le dépôt a été rendu public le 09/09/2026, et il contenait des données
 personnelles de tiers** — seize fiches prospects réelles, dont une personne

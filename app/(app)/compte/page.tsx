@@ -10,6 +10,7 @@ import { MonOffre } from "@/components/billing/mon-offre";
 import { ChangePassword } from "@/components/security/change-password";
 import { ApresAchat } from "@/components/billing/apres-achat";
 import { PageHeader } from "@/components/ui/page-header";
+import { PartResultatPanel } from "@/components/billing/part-resultat-panel";
 
 /**
  * Compte — gestion de l'identité multi-locataire.
@@ -52,6 +53,10 @@ export default function ComptePage() {
       <Suspense fallback={null}>
         <ApresAchat />
       </Suspense>
+
+      {/* Ce que l'offre Performance représenterait sur SES affaires — calculé
+          sur ses chiffres, pas sur une étude de cas inventée. */}
+      <PartResultatPanel />
 
       {!available ? (
         <section className="card p-5">

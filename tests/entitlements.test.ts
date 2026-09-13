@@ -920,3 +920,96 @@ test("⚠ …et il s'arrête net quand ça part de CHEZ NOUS", () => {
       ouvertes.map(([c, quoi]) => `${c} — ${quoi}`).join("\n  ")
   );
 });
+
+test("⚠⚠ UN ÉCRAN QUI NE NOUS COÛTE RIEN EST GRATUIT — audit de TOUS les écrans", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * LE GARDE QUI REMPLACE MA RELECTURE.
+   *
+   * ⚠⚠ TROIS ÉCRANS PAYANTS SANS COÛT ONT ÉTÉ TROUVÉS À LA MAIN, UN PAR UN,
+   * SUR TROIS PASSES DIFFÉRENTES (`alpha-live`, puis `/linkedin` et
+   * `/templates`, puis `/appels`). Trouver le quatrième à la main est une
+   * question de temps, pas de méthode — et entre-temps il reste fermé à des
+   * gens qui n'ont rien pour payer.
+   *
+   * Le test pose donc la question à TOUS les écrans, et il la pose sur le
+   * FAIT : cet écran atteint-il, directement ou par ses composants, une route
+   * que `API_QUI_DEPENSENT` déclare coûteuse ?
+   *  · oui  → payant, légitime, rien à dire ;
+   *  · non  → il doit être gratuit, OU figurer ci-dessous avec son motif.
+   *
+   * ⚠ POURQUOI ON SUIT LES COMPOSANTS ET PAS SEULEMENT LA PAGE. Mesuré :
+   * `/templates` ne montre aucun `/api/send` dans sa page, et en embarque un
+   * par `SendBar`. Un audit qui ne lit que `page.tsx` rate la moitié des
+   * appels et rend un verdict faux avec l'air d'avoir mesuré.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  const PAYANT_SANS_COUT: Record<string, string> = {
+    "/moniteur":
+      "Il affiche ce que l'AUTOPILOTE a fait — une brique payante. Ouvert au gratuit, il montrerait " +
+      "un écran de zéros, ce qui se lit comme un produit cassé et non comme une porte fermée. " +
+      "L'entrée grisée du rail dit déjà qu'il existe, et c'est ce qu'on veut qu'elle dise.",
+    "/activity":
+      "Il affiche les ouvertures et les clics remontés par NOTRE infrastructure de tracking. " +
+      "Sans la brique, il n'y a littéralement aucune donnée à montrer : le même écran de zéros.",
+  };
+
+  const racine = join(process.cwd(), "app/(app)");
+  const lire = (f: string) => { try { return readFileSync(f, "utf8"); } catch { return ""; } };
+
+  /**
+   * ⚠⚠ ON CHERCHE UN `fetch(`, PAS UNE MENTION DE `/api/…`. LA PREMIÈRE
+   * RÉDACTION CHERCHAIT LA CHAÎNE, ET ELLE A ÉCHOUÉ EN S'OUVRANT.
+   *
+   * Mesuré : `/linkedin` ne fait aucun appel réseau, et sa page contient la
+   * phrase « Un email part par `/api/send`, qui refuse le libellé d'usine ».
+   * Le motif l'a comptée comme une dépense, donc le garde a conclu « cet
+   * écran coûte, il a le droit d'être payant » — et il n'aurait JAMAIS
+   * signalé `/linkedin` s'il était resté fermé. Un garde qui se trompe dans
+   * ce sens-là ne fait pas de bruit : il valide.
+   *
+   * ⚠ CE QUE CE MOTIF NE VOIT PAS, et c'est dit plutôt que tu : une URL
+   * construite (`fetch(url)`) lui échappe. Le dépôt n'en contient aucune sur
+   * ces écrans — vérifié — mais le jour où il y en a une, ce garde la rate.
+   * Il ne prétend pas mesurer plus que la forme qu'il reconnaît.
+   */
+  const apisAtteintes = (ecran: string): string[] => {
+    const src = lire(join(racine, ecran, "page.tsx"));
+    const composants = [...src.matchAll(/from "@\/components\/([a-z0-9/-]+)"/g)]
+      .map((m) => join(process.cwd(), "components", `${m[1]}.tsx`));
+    const tout = [src, ...composants.map(lire)].join("\n");
+    return [...tout.matchAll(/fetch\(\s*["'`](\/api\/[a-z0-9/-]+)/g)].map((m) => m[1]);
+  };
+
+  const gratuites = new Set<string>(BRIQUES_GRATUITES);
+  const manques: string[] = [];
+
+  for (const [chemin, briques] of Object.entries(ACCES_PAR_CHEMIN)) {
+    if (briques.length === 0) continue;                       // maître seul : notre économie
+    if (briques.some((b) => gratuites.has(b))) continue;      // déjà au socle
+    const coute = apisAtteintes(chemin.slice(1)).some((api) =>
+      Object.keys(API_QUI_DEPENSENT).some((d) => api === d || api.startsWith(d + "/"))
+    );
+    if (coute) continue;
+    const motif = PAYANT_SANS_COUT[chemin];
+    if (!motif || motif.length < 80) {
+      manques.push(
+        `${chemin} [${briques.join(",")}] — payant, et n'atteint AUCUNE route coûteuse. ` +
+          `Soit il passe au socle, soit son motif s'écrit dans PAYANT_SANS_COUT.`
+      );
+    }
+  }
+  assert.deepEqual(manques, [], "écrans payants sans coût mesuré :\n  " + manques.join("\n  "));
+
+  /**
+   * ⚠ LE CONTRE-SENS : une exception qui n'a plus lieu d'être. Une liste
+   * d'exceptions qu'on ne nettoie pas finit par tout couvrir.
+   */
+  for (const chemin of Object.keys(PAYANT_SANS_COUT)) {
+    assert.ok(ACCES_PAR_CHEMIN[chemin] !== undefined, `${chemin} est listé en exception et n'existe plus`);
+    assert.ok(
+      !(ACCES_PAR_CHEMIN[chemin] ?? []).some((b) => gratuites.has(b)),
+      `${chemin} est listé comme « payant sans coût » alors qu'il est devenu GRATUIT — l'exception ment`
+    );
+  }
+});
