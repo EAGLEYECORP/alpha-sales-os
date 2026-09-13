@@ -43,6 +43,71 @@ gestes ne peuvent pas se faire depuis le code :
 
 ---
 
+## BLOC 0 bis — CETTE SEMAINE : la campagne maîtrise d'ouvrage
+
+> Ajouté le 13/09/2026, et il passe AVANT les autres blocs parce qu'il ne
+> dépend d'aucun d'eux. La campagne en cours vise les **maîtres d'ouvrage à
+> permis actif**, dont le canal par défaut est **LinkedIn** — un export de
+> permis ne porte aucun numéro, et LinkedIn ne demande **ni SMTP, ni DNS, ni
+> clé d'API, ni Vercel**. Les messages se copient à la main.
+>
+> ⚠ **Conséquence à tenir** : tout ce qui suit peut tourner AUJOURD'HUI, sur
+> un déploiement qui n'a rien de configuré. Les blocs 1 à 3 restent nécessaires
+> pour l'email et pour la voix — ils ne bloquent pas cette campagne-ci.
+
+### Le seul vrai goulot : le carburant
+
+- [ ] **Extraire les permis de Lyon + Villeurbanne** (`data.grandlyon.com`).
+      Sans fiches, il n'y a pas de campagne — et c'est la seule étape que
+      personne ne peut faire à ma place depuis le sandbox (le proxy bloque ce
+      domaine). Voir `docs/PERMIS-LYON.md`.
+- [ ] **Importer**, puis lire le compte rendu de tri : `lirePermis` sépare les
+      **retenus**, les **hors zone** (« refiltre à la source ») et les « rien à
+      vendre » (particuliers, bailleurs, collectivités — fonctionnement normal).
+      Un lot qui sort majoritairement hors zone veut dire que l'export était
+      métropolitain, pas que le tri est cassé.
+- [ ] **Relever les téléphones à la main** — troisième colonne. Un export n'en
+      porte aucun, et poser « tel » sans numéro ferait entrer la fiche dans la
+      file d'appels où elle resterait muette.
+
+### Ce qui part cette semaine, et dans quel ordre
+
+- [ ] **LinkedIn d'abord** (`/linkedin`) : la file, le message, copié à la
+      main. Aucune dépendance serveur. ⚠ `/linkedin` porte le bandeau
+      d'identité d'usine — **vérifier que Réglages → Agence porte ta raison
+      sociale et ton nom**, sinon l'invitation part signée « Le Closer ».
+- [ ] **Les appels ensuite** (`/appels`, la liste du matin), depuis ton
+      téléphone. Chaque résultat consigne une touche réelle dans le CRM : c'est
+      cette trace qui rendra les chiffres de fin de semaine mesurables.
+- [ ] **L'email seulement si le BLOC 2 est fait.** Sans SMTP ni SPF/DKIM, les
+      messages partent et n'arrivent pas, sans qu'aucune alerte ne remonte.
+      Mieux vaut zéro email que des emails invisibles.
+
+### Ce qui décide de l'angle, et qu'on se trompe à ignorer
+
+- [ ] **Ne rien vendre à un permis en recours (< 2 mois)** : se faire connaître,
+      c'est tout. La fenêtre qui convertit est la **pré-commercialisation
+      (2–12 mois)**.
+- [ ] **Sous 6 logements : ne pas proposer l'OS.** 10 000 € sur trois lots est
+      une part indécente du budget de commercialisation — c'est **Alpha Voice
+      seul** qui se propose là.
+- [ ] **Ne jamais dire « vous ratez des appels »** à un maître d'ouvrage. C'est
+      faux sur ce métier et ça prouve qu'on ne l'a pas compris. Sa perte, ce
+      sont des **acquéreurs déjà rencontrés que personne n'a rappelés**.
+
+### Pour que les « résultats financiers » veuillent dire quelque chose
+
+- [ ] **Saisir le montant sur toute affaire signée**, et marquer les paiements
+      `payé` quand ils tombent. Sans ça, `/compte` et `/payouts` n'ont rien à
+      mesurer — et la part sur le résultat (`lib/part-resultat.ts`) rend `null`
+      plutôt qu'un chiffre inventé. C'est voulu, mais ça veut dire qu'un
+      encaissement non saisi est un encaissement invisible.
+- [ ] **Lire `/preuves` et `/kpis` en fin de semaine**, pas un tableur. Les taux
+      y sortent avec leur dénominateur et leur intervalle — un taux nu sur
+      douze touches ne dit rien.
+
+---
+
 ## BLOC 1 — L'appel qui prouve que ça existe
 
 Sans ça, Alpha Sales OS est un logiciel de gestion. Avec ça, c'est un produit.

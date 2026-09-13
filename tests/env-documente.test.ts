@@ -45,7 +45,23 @@ function sources(dirs: string[]): string[] {
       if (e.name.startsWith(".") || e.name === "node_modules") continue;
       const chemin = join(rel, e.name);
       if (e.isDirectory()) visiter(chemin);
-      else if (/\.tsx?$/.test(e.name)) out.push(chemin);
+      /**
+       * ⚠⚠ `.py` A ÉTÉ AJOUTÉ LE 13/09/2026, ET SON ABSENCE A COÛTÉ SEIZE
+       * VARIABLES INVISIBLES. Le balayage ne lisait que le TypeScript, donc
+       * tout `voice/agent.py` échappait au garde : `ALPHA_APP_URL`,
+       * `FISH_API_KEY`, `SIP_OUTBOUND_TRUNK_ID`, `VOICE_BRAND_NAME`… aucune
+       * n'était dans `.env.example`.
+       *
+       * Le test PASSAIT, et c'est le pire des cas : il affirmait « toute
+       * variable lue est documentée » en ne regardant qu'une moitié du code.
+       * Un garde dont le périmètre est plus petit que sa promesse ne protège
+       * pas — il rassure.
+       *
+       * ⚠ Ces variables-là ne vont PAS sur Vercel : l'agent vocal tourne en
+       * local. `.env.example` les documente quand même, parce que c'est le
+       * seul endroit où l'on cherche « qu'est-ce qu'il faut poser ».
+       */
+      else if (/\.tsx?$/.test(e.name) || /\.py$/.test(e.name)) out.push(chemin);
     }
   };
   for (const d of dirs) visiter(d);
@@ -55,7 +71,7 @@ function sources(dirs: string[]): string[] {
 /** Toutes les variables réellement lues, dans les deux syntaxes. */
 function variablesLues(): Map<string, string> {
   const trouvees = new Map<string, string>();
-  const fichiers = [...sources(["lib", "app", "components"]), "middleware.ts", "next.config.ts"];
+  const fichiers = [...sources(["lib", "app", "components", "voice"]), "middleware.ts", "next.config.ts"];
   for (const f of fichiers) {
     const src = readFileSync(join(racine, f), "utf8");
     for (const m of src.matchAll(/process\.env\.([A-Z_][A-Z0-9_]*)/g)) {
@@ -64,6 +80,13 @@ function variablesLues(): Map<string, string> {
     // `process.env[NOM]` — la forme que `priceIdFor` utilise, et qu'un
     // balayage naïf sur `process.env.` rate complètement.
     for (const m of src.matchAll(/process\.env\[["']([A-Z_][A-Z0-9_]*)["']\]/g)) {
+      if (!trouvees.has(m[1])) trouvees.set(m[1], f);
+    }
+    // Python : `os.getenv("NOM")` et `os.environ["NOM"]`.
+    for (const m of src.matchAll(/os\.getenv\(\s*["']([A-Z_][A-Z0-9_]*)["']/g)) {
+      if (!trouvees.has(m[1])) trouvees.set(m[1], f);
+    }
+    for (const m of src.matchAll(/os\.environ\[["']([A-Z_][A-Z0-9_]*)["']\]/g)) {
       if (!trouvees.has(m[1])) trouvees.set(m[1], f);
     }
   }

@@ -194,12 +194,12 @@ largement le pack — c'est l'ancrage.
 | **Alpha Voice** — agent vocal entrant/sortant, 24/7 | 3 500 € | 364 € (1 000 appels) |
 | **Campagnes & outreach** | 2 500 € | 290 € |
 | **Le Cerveau (RAG)** | 2 500 € | 240 € |
-| **Agent ALPHA** — le copilote qui lit le pipeline à ta place | 2 200 € | 220 € |
+| **Agent ALPHA** — le copilote qui lit le pipeline à ta place | 2 200 € | 490 € |
 | **CRM & Pipeline** | 2 000 € | 190 € |
 | **Audits automatisés** | 1 800 € | 150 € |
-| **Tracking & délivrabilité** | 1 500 € | 140 € |
+| **Tracking & délivrabilité** | 1 500 € | 120 € |
 | **Alpha Live** — le souffleur pendant le rendez-vous | 1 800 € | 180 € |
-| **Closer OS & débrief** | 1 500 € | 140 € |
+| **Closer OS & débrief** | 1 500 € | 190 € |
 | **Salle de contrôle & KPIs** | 1 200 € | 120 € |
 | **PACK COMPLET** | **10 000 €** | **1 000 €** |
 
@@ -224,8 +224,20 @@ démarre à zéro + le jeu de démonstration, avec ses propres identifiants.
 
 | | |
 |---|---|
-| **GRATUIT**, sans limite de durée | CRM & pipeline · Closer OS & débrief · le Cerveau · KPIs et pilotage — **tes données, ton organisation** |
-| **PAYANT** | Campagnes · Alpha Voice · Agent ALPHA · Audits · Tracking · Alpha Live — **la machine agit à ta place** |
+| **GRATUIT**, sans limite de durée | CRM & pipeline · Closer OS & débrief · le Cerveau · KPIs et pilotage · le copilote d'appel · **écrire ses messages, sa file LinkedIn, sa liste d'appels du matin** |
+| **PAYANT** | Campagnes · Alpha Voice · Agent ALPHA · Audits · Tracking |
+
+**Écrire est gratuit ; envoyer depuis notre infrastructure se paie.** Le
+parcours de prospection ENTIER tient dans le gratuit : cibler, écrire,
+approcher sur LinkedIn, appeler depuis son propre téléphone, débriefer, poser
+le rendez-vous, relancer, mesurer. Ce qui se paie, c'est le jour où la machine
+envoie à sa place — notre serveur d'emails, nos minutes d'appel, nos jetons.
+
+> Ce n'est pas de la générosité, c'est le modèle : un gratuit qui s'arrête
+> avant le premier rendez-vous ne convertit personne, il fabrique des comptes
+> morts. `tests/entitlements.test.ts` parcourt la chaîne entière et refuse
+> qu'elle soit coupée — et un audit interroge **tous** les écrans : celui qui
+> n'atteint aucune route coûteuse doit être gratuit, ou porter son motif.
 
 > ⚠ **Cette ligne n'est pas un arbitrage commercial : elle est imposée par un
 > fait technique.** `/api/send` lit `SMTP_*` dans l'environnement du serveur,
@@ -260,9 +272,11 @@ lui, et son problème est le **temps** — un bon vendeur passe sa journée à n
 pas vendre. Il s'inscrit, décrit sa cible, et l'outil se remplit de fiches qui
 ressemblent à SON marché. Un compte, pas de hiérarchie, rien à administrer.
 
-C'est le socle gratuit : CRM, Closer OS, Cerveau, pilotage. Il n'a rien à payer
-tant qu'il fait le travail lui-même — il paie le jour où il veut que la machine
-agisse à sa place (appels, campagnes, agent autonome).
+C'est le socle gratuit, et il va jusqu'au bout : CRM, Closer OS, Cerveau,
+pilotage, plus de quoi ÉCRIRE ses messages, tenir sa file LinkedIn et sa liste
+d'appels du matin. Il n'a rien à payer tant qu'il fait le travail lui-même — il
+paie le jour où il veut que la machine agisse à sa place (appels automatiques,
+campagnes envoyées, agent autonome).
 
 #### 2. Le responsable d'équipe commerciale
 

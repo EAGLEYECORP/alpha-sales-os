@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { computeCosts, defaultVolume } from "../lib/voice-costs";
 import { devisVoix, PRIX_PALIER_HT, VOLUME_PALIER } from "../lib/pricing-briques";
-import { outboundPrice } from "../lib/bricks";
+import { BRICKS, outboundPrice } from "../lib/bricks";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -123,4 +123,69 @@ test("la réserve sur Telnyx survit — c'est elle qui interdit de bouger le pri
    */
   assert.match(doc, /export CDR/i);
   assert.match(doc, /bouger deux fois|encore supposée|non vérifiée/i);
+});
+
+test("⚠⚠ LE TABLEAU DU README EST CELUI DU CATALOGUE, brique par brique", () => {
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * ⚠⚠ IL A DÉRIVÉ SUR TROIS LIGNES EN UNE JOURNÉE, ET RIEN NE L'A DIT.
+   *
+   * Le 12/09, trois prix ont bougé dans `lib/bricks.ts` après un relevé de
+   * marché : Agent ALPHA 220 → 490, Closer OS 140 → 190, tracking 140 → 120.
+   * Le tableau du README, recopié à la main, est resté sur les anciens. Il
+   * annonçait donc l'Agent à 220 € — moins de la moitié du prix réel — dans
+   * le premier fichier qu'un partenaire, un candidat ou un client ouvre.
+   *
+   * Un écart de prix dans un README ne casse rien et ne prévient personne :
+   * il se découvre au moment où quelqu'un le cite, c'est-à-dire dans une
+   * conversation commerciale, face à quelqu'un qui a le devis sous les yeux.
+   *
+   * ⚠ Le test ne compare pas des chaînes de mise en forme : il EXTRAIT les
+   * deux montants de chaque ligne du tableau et les confronte au catalogue.
+   * Reformuler un libellé reste libre ; changer un prix d'un seul côté, non.
+   * ─────────────────────────────────────────────────────────────────
+   */
+  /**
+   * ⚠ ON BORNE AU TABLEAU DES PRIX, et la première rédaction ne le faisait
+   * pas : elle cherchait le libellé dans TOUT le README. Or « **Alpha Voice** »
+   * apparaît aussi dans le tableau des segments et dans celui de la pile
+   * technique — le garde lisait donc la mauvaise ligne et rendait `null` sur
+   * deux briques, en accusant le catalogue. Un garde qui désigne le mauvais
+   * coupable est pire qu'un garde absent : on corrige ce qui était juste.
+   */
+  const readmeEntier = readFileSync(join(process.cwd(), "README.md"), "utf8");
+  const debut = readmeEntier.indexOf("### Les briques vendables");
+  assert.ok(debut > 0, "la section « Les briques vendables » a disparu du README");
+  const fin = readmeEntier.indexOf("\n### ", debut + 10);
+  const readme = readmeEntier.slice(debut, fin > 0 ? fin : undefined);
+
+  /** « 2 200 € » → 2200. L'espace insécable des milliers est la norme FR. */
+  const montant = (txt: string): number | null => {
+    const m = txt.match(/([\d\s  ]+)\s*€/);
+    return m ? Number(m[1].replace(/[\s  ]/g, "")) : null;
+  };
+
+  const ecarts: string[] = [];
+  for (const b of BRICKS) {
+    // La ligne du tableau qui porte le libellé de cette brique, en gras.
+    const ligne = readme
+      .split("\n")
+      .find((l) => l.startsWith("|") && l.includes(`**${b.label}**`));
+    if (!ligne) {
+      ecarts.push(`${b.id} — absente du tableau du README`);
+      continue;
+    }
+    const cellules = ligne.split("|").map((c) => c.trim());
+    const setup = montant(cellules[2] ?? "");
+    const mensuel = montant(cellules[3] ?? "");
+    if (setup !== b.setupHT) ecarts.push(`${b.id} — installation : README ${setup} ≠ catalogue ${b.setupHT}`);
+    if (mensuel !== b.monthlyHT) ecarts.push(`${b.id} — mensuel : README ${mensuel} ≠ catalogue ${b.monthlyHT}`);
+  }
+
+  assert.deepEqual(
+    ecarts,
+    [],
+    "le tableau du README a divergé du catalogue — c'est le chiffre qu'on cite en rendez-vous :\n  " +
+      ecarts.join("\n  ")
+  );
 });
