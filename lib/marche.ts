@@ -543,23 +543,28 @@ export const TOUS_RELEVES: RelevePrix[] = [
 ];
 
 /**
- * ⚠⚠ COMBIEN DE SIÈGES NOTRE PRIX PAR COMPTE COUVRE — UNE DÉCISION, PAS UNE
- * MESURE, et c'est le chiffre dont dépend la moitié des comparaisons.
+ * ⚠⚠ CE CHANTIER EST FAIT — 13/09/2026. Ce commentaire garde sa trace parce
+ * que la décision sans sa raison se fait défaire par la session suivante.
  *
- * Notre catalogue ignore la notion de siège. Le marché de la vente facture par
- * siège presque partout. Pour rapprocher les deux il faut poser un nombre —
- * et ce nombre décide du verdict. À 5, un artisan seul paie cinq fois trop
- * cher et une équipe de vingt paie quatre fois trop peu.
- *
- * ⚠ LE RELEVÉ NE CORRIGE PAS CE DÉFAUT, IL LE REND VISIBLE. Tant que le
- * catalogue n'a pas de dimension « siège », la grille est juste pour une seule
+ * Ici vivait `SIEGES_REFERENCE`, et le texte qui l'accompagnait disait :
+ * « le relevé ne corrige pas ce défaut, il le rend visible. Tant que le
+ * catalogue n'a pas de dimension siège, la grille est juste pour une seule
  * taille d'équipe et fausse pour toutes les autres. C'est le vrai chantier de
- * tarification, et il est plus grand que n'importe quel montant écrit ici.
+ * tarification. »
  *
- * 5 vient de nos propres segments (`lib/segments.ts` parle d'équipes de 3 à 50
- * commerciaux) et d'aucune vente — il n'y en a aucune.
+ * Le catalogue a désormais cette dimension : l'abonnement se facture
+ * `SOCLE_PLATEFORME_HT + PRIX_SIEGE_HT × sièges` (`lib/offres-publiques.ts`).
+ * La constante a donc CHANGÉ DE NATURE — d'hypothèse de comparaison, elle est
+ * devenue un paramètre de tarification — et elle a suivi le module qui décide
+ * des prix. On l'importe, on ne la redéclare pas : deux définitions feraient
+ * comparer notre grille à une taille d'équipe que la grille n'utilise pas.
+ *
+ * ⚠ Ce que ça ne corrige PAS : `comparerParCompte()` reste nécessaire tant
+ * qu'un relevé porte un prix par compte face à un concurrent par siège. Ce
+ * qui a disparu, c'est la raison pour laquelle NOTRE prix y entrait.
  */
-export const SIEGES_REFERENCE = 5;
+export { SIEGES_REFERENCE } from "./offres-publiques";
+import { SIEGES_REFERENCE } from "./offres-publiques";
 
 export type Position = "sous-marche" | "dans-marche" | "au-dessus" | "hors-marche";
 

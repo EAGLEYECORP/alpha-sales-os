@@ -56,7 +56,8 @@ signature des webhooks à la main** (HMAC-SHA256). Pas de SDK.
 
 > ⚠ **Business demande DEUX prix Stripe, pas un.** L'étalement est un
 > abonnement à 800 € qui doit s'**arrêter après 10 prélèvements** ; l'abonnement
-> à 1 000 €/mois prend le relais ensuite. Un abonnement Stripe sans date de fin
+> au siège prend le relais ensuite (1 000 €/mois pour l'équipe de référence de
+> 5 — voir `abonnementMensuel()` dans `lib/offres-publiques.ts`). Un abonnement Stripe sans date de fin
 > continuerait à prélever les 800 € indéfiniment, **en plus** du relais : le
 > client paierait 1 800 €/mois sans que rien ne le signale de notre côté.
 >

@@ -197,15 +197,36 @@ test("⚠ SIEGES_REFERENCE est une DÉCISION, et elle est dite comme telle", () 
    * mesure alors que c'est une hypothèse sur la taille de l'équipe cliente.
    */
   assert.ok(SIEGES_REFERENCE >= 1, "un nombre de sièges nul rendrait toutes les bandes plates");
-  const texte = readFileSync(join(process.cwd(), "lib/marche.ts"), "utf8");
-  const ou = texte.indexOf("SIEGES_REFERENCE =");
+
   /**
-   * ⚠ Le bloc est APLATI avant d'être cherché. Première rédaction : la phrase
-   * tombait sur un retour à la ligne (« UNE DÉCISION, PAS UNE\n * MESURE ») et
-   * le motif ne mordait pas — sur un commentaire parfaitement correct. Un
-   * garde qui refuse une phrase juste est un garde qu'on assouplira au mauvais
-   * endroit la fois suivante.
+   * ⚠ LA CIBLE A CHANGÉ DE FICHIER LE 13/09/2026, et c'est ce test qui l'a
+   * signalé en tombant. `SIEGES_REFERENCE` vivait dans `lib/marche.ts` tant
+   * qu'il n'était qu'une hypothèse de COMPARAISON ; depuis que l'abonnement se
+   * facture au siège, c'est un paramètre de TARIFICATION et il a suivi le
+   * module qui décide des prix.
+   *
+   * ⚠ Le garde est ÉTENDU plutôt que déplacé : les deux termes de la formule
+   * (`SOCLE_PLATEFORME_HT`, `PRIX_SIEGE_HT`) ne sont pas plus mesurés que lui,
+   * et ce sont eux qui portent désormais la facture. Un seul des trois gardé
+   * aurait laissé les deux autres devenir des constantes muettes — c'est-à-dire
+   * lues comme des mesures.
    */
-  const bloc = texte.slice(Math.max(0, ou - 1400), ou).replace(/\s*\n\s*\*\s*/g, " ");
-  assert.match(bloc, /DÉCISION, PAS UNE MESURE/, "SIEGES_REFERENCE doit porter, à côté de lui, qu'il n'est pas mesuré");
+  const texte = readFileSync(join(process.cwd(), "lib/offres-publiques.ts"), "utf8");
+  for (const nom of ["SIEGES_REFERENCE", "SOCLE_PLATEFORME_HT", "PRIX_SIEGE_HT"]) {
+    const ou = texte.indexOf(`export const ${nom} =`);
+    assert.ok(ou > 0, `${nom} doit être déclaré dans lib/offres-publiques.ts`);
+    /**
+     * ⚠ Le bloc est APLATI avant d'être cherché. Première rédaction : la phrase
+     * tombait sur un retour à la ligne (« UNE DÉCISION, PAS UNE\n * MESURE ») et
+     * le motif ne mordait pas — sur un commentaire parfaitement correct. Un
+     * garde qui refuse une phrase juste est un garde qu'on assouplira au mauvais
+     * endroit la fois suivante.
+     */
+    const bloc = texte.slice(Math.max(0, ou - 1400), ou).replace(/\s*\n\s*\*\s*/g, " ");
+    assert.match(
+      bloc,
+      /DÉCISION, PAS UNE MESURE/,
+      `${nom} doit porter, à côté de lui, qu'il n'est pas mesuré — sinon un prix décidé se lit comme un prix constaté`,
+    );
+  }
 });

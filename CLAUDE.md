@@ -357,10 +357,78 @@ une cible qu'on ne prospecte plus.**
 > · Ce qui remplace, et qui tient debout seul : l'ordre « émotion avant prix »
 >   est une **décision de méthode**, pas un résultat mesuré.
 
+## L'ICP EST LE CLIENT FULL-STACK, ET L'ABONNEMENT SE FACTURE AU SIÈGE (13/09/2026)
+`lib/offres-publiques.ts` → `abonnementMensuel()` · `tests/tarif-sieges.test.ts`.
+
+**Décision de Zakaria : on va chercher des clients qui prennent le PACK COMPLET.**
+L'à-la-carte n'est pas supprimé — il reste servi et testé, et une offre portée
+par une fiche signée ne s'efface pas — mais ce n'est plus ce qu'on va vendre.
+
+```
+Installation      10 000 € HT, une fois    (travail humain, fait à la main)
+Socle plateforme     600 € HT/mois         (indépendant du nombre de têtes)
+Par utilisateur       80 € HT/mois
+Alpha Voice          à l'usage, INCHANGÉ   (149/349 + 0,20 €/min)
+```
+
+- **Le défaut corrigé** : `PACK_MONTHLY_HT` était un FORFAIT de 1 000 €/mois.
+  Une société de trois personnes et une de trente payaient le même prix. Le
+  relevé de marché l'avait nommé le 12/09 sans pouvoir le réparer — « c'est le
+  vrai chantier de tarification, et il est plus grand que n'importe quel
+  montant écrit ici ». C'est ce chantier.
+- **⚠⚠ DEUX TERMES, ET LE SOCLE N'EST PAS UN ARRONDI.** Une partie de ce qu'on
+  vend **ne dépend pas du nombre de personnes** : le moteur de conformité
+  (art. 50, décret 2022-1313, fenêtres, mentions, palier d'envoi), le Cerveau,
+  l'autopilote. C'est aussi **l'actif le moins copiable du produit** — le noyer
+  dans un prix par tête le ferait disparaître de la négociation. Un prix par
+  siège NU aurait en plus divisé le revenu par huit sur une petite équipe.
+- **⚠⚠ ON NE FACTURE JAMAIS AU SIÈGE CE QUI REMPLACE UN SIÈGE.** Alpha Voice
+  est hors formule, et un test l'interdit : il augmenterait avec le nombre
+  d'humains alors qu'il sert à en avoir moins, et il perdrait son seul ancrage
+  gagnant — **un SALAIRE** (~35-45 k€/an chargés), jamais un abonnement par
+  utilisateur.
+- **Neutre à la référence, et c'est vérifié** : `600 + 5 × 80 = 1 000`, soit
+  exactement le forfait d'avant. Le passage au siège n'est pas une hausse
+  déguisée en changement d'unité — la manœuvre qu'un client repère.
+  Mesuré au rendu : `1 → 680 € (-32 %)` · `5 → 1 000 € (0)` ·
+  `10 → 1 400 € (+40 %)` · `20 → 2 200 € (+120 %)` · `50 → 4 600 € (+360 %)`.
+- **`PACK_MONTHLY_HT` est DÉRIVÉ**, jamais recopié : c'est la constante que les
+  écrans affichent et la formule ce que le client paie. Deux nombres écrits à
+  la main auraient divergé au premier ajustement, et c'est la vitrine — celle
+  qu'on ne recalcule pas — qui aurait menti.
+- **`SIEGES_REFERENCE` a DÉMÉNAGÉ** de `lib/marche.ts` vers les prix : tant
+  qu'il n'était qu'une hypothèse de COMPARAISON, sa place était dans le relevé ;
+  c'est devenu un paramètre de TARIFICATION. Un test refuse la redéclaration.
+- **600 et 80 sont des DÉCISIONS**, pas des mesures — `gagnes: 0`. Le seul
+  élément mesuré est la bande du marché par siège (14–79 €) : 80 € se pose
+  juste au-dessus, parce qu'Alpha embarque Agent ALPHA et Alpha Live, dont la
+  catégorie relevée commence à 250 $.
+  > ⚠ **Et la formule est BRANCHÉE à un écran**, curseur compris
+  > (`components/offre/calculateur-complet.tsx`). Sans ça elle aurait été un
+  > export que personne n'appelle — le défaut récurrent du dépôt, commis par la
+  > correction elle-même : une grille au siège inatteignable laisse le forfait
+  > en place dans les faits tout en donnant l'impression qu'il a disparu. Trois
+  > mutations le tiennent : curseur retiré · prix affiché figé à côté du
+  > curseur · chiffrage qui ignore le nombre saisi.
+  > ⚠ **Une saisie invalide ne fait pas tomber un chiffrage.**
+  > `abonnementMensuel` JETTE sur 0 / décimal / négatif — juste pour une
+  > facture. `chiffrer()` borne et **l'annonce dans les alertes** : l'écran sert
+  > quelqu'un qui tape, et un champ vidé une seconde ne doit pas vider la page.
+  > Mais corriger en silence ferait partir un devis avec un nombre que
+  > personne n'a choisi.
+
+> ⚠ **Ce que la décision « full-stack seulement » laisse ouvert, et qu'il faut
+> trancher** : l'échelle du gratuit n'a plus de barreau intermédiaire. Un
+> opérateur qui gagne ses premiers euros avec le socle gratuit fait face à
+> 10 000 € + 680 €/mois — il n'y a rien entre les deux. Le gratuit était conçu
+> pour « qu'il rapporte assez pour payer la suite » ; la suite vient de
+> s'éloigner. Aucune vente ne dit encore si c'est un problème.
+
 ## Tarifs Alpha Sales OS (à refléter sur le site)
-- **10 000 € VIP** (offre haute), OU **30 % + frais de setup** (local / cloud)
-  sur devis. Ces 30 %-là sont un **PRIX facturé au client** (part de SON CA
-  généré), pas une commission reversée — voir l'encadré plus haut.
+- **10 000 € d'installation + la grille au siège ci-dessus** (offre haute), OU
+  **30 % + frais de setup** (local / cloud) sur devis. Ces 30 %-là sont un
+  **PRIX facturé au client** (part de SON CA généré), pas une commission
+  reversée — voir l'encadré plus haut.
 - **Cadrage OBLIGATOIRE** avant devis : visio, appel ou SMS, avec **date + heure
   décidées** et validation de la suite côté Zakaria.
 - **Prix à la carte par brique** : un client peut ne prendre qu'Alpha Voice.

@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Building2, Coins, FileQuestion, Layers } from "lucide-react";
 import {
+  abonnementMensuel,
   ALPHA_VOICE_PALIERS,
   ALPHA_VOICE_SETUP_HT,
   OUTBOUND_UNIT_CALLS,
-  PACK_MONTHLY_HT,
   PACK_SETUP_HT,
+  PRIX_SIEGE_HT,
+  SIEGES_REFERENCE,
 } from "@/lib/offres-publiques";
 import {
   REV_SHARE_PCT,
@@ -51,7 +53,16 @@ interface Catalogue {
 }
 
 export function CalculateurComplet() {
-  const [sel, setSel] = useState<Selection>({ vip: true });
+  const [sel, setSel] = useState<Selection>({ vip: true, sieges: SIEGES_REFERENCE });
+
+  /**
+   * ⚠ Le prix affiché se RECALCULE avec la même fonction que le devis.
+   * Un composant qui recopierait `socle + n × siège` ferait diverger l'écran
+   * du chiffrage à la première retouche de la grille — et c'est l'écran que
+   * le prospect regarde pendant qu'on lui parle.
+   */
+  const sieges = sel.sieges ?? SIEGES_REFERENCE;
+  const packMensuel = useMemo(() => abonnementMensuel(sieges), [sieges]);
   const [cat, setCat] = useState<Catalogue | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -137,9 +148,31 @@ export function CalculateurComplet() {
             <Case
               actif={Boolean(sel.vip)}
               onClick={() => set({ vip: !sel.vip })}
-              titre="Alpha Sales OS — VIP"
-              droite={`${eur(PACK_SETUP_HT)} + ${eur(PACK_MONTHLY_HT)}/mois`}
+              titre="Alpha Sales OS — pack complet"
+              droite={`${eur(PACK_SETUP_HT)} + ${eur(packMensuel.totalEur)}/mois`}
             />
+
+            {/* ⚠ LE CURSEUR EXISTE POUR QUE LA GRILLE AU SIÈGE SOIT ATTEIGNABLE.
+                Sans lui, `abonnementMensuel()` serait un export que personne
+                n'appelle — juste, testé, et mort. Le prix de la case au-dessus
+                SUIT ce curseur : un tarif au siège affiché comme un forfait
+                figé, c'est le forfait qu'on vient de retirer. */}
+            {sel.vip && (
+              <Curseur
+                label="Utilisateurs nommés"
+                value={sieges}
+                min={1}
+                max={50}
+                step={1}
+                onChange={(v) => set({ sieges: v })}
+                fmt={(v) => `${v} ${v > 1 ? "personnes" : "personne"}`}
+                note={
+                  `${eur(packMensuel.socleEur)} de socle (conformité, Cerveau, autopilote — indépendant du nombre) ` +
+                  `+ ${sieges} × ${PRIX_SIEGE_HT} € = ${eur(packMensuel.parSiegeEur)}/utilisateur. ` +
+                  `Alpha Voice se facture à l'usage, jamais au siège : il en remplace.`
+                }
+              />
+            )}
 
             <Ligne label="À la carte — par brique">
               {!cat?.bricks?.length ? (

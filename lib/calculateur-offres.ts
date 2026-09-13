@@ -1,10 +1,12 @@
 import {
+  abonnementMensuel,
   ALPHA_VOICE_PALIERS,
   ALPHA_VOICE_SETUP_HT,
   OUTBOUND_UNIT_CALLS,
   OUTBOUND_UNIT_HT,
-  PACK_MONTHLY_HT,
   PACK_SETUP_HT,
+  PRIX_SIEGE_HT,
+  SIEGES_REFERENCE,
 } from "./offres-publiques";
 
 /**
@@ -120,6 +122,20 @@ export interface BriqueTarif {
 export interface Selection {
   /** Pack VIP complet. */
   vip?: boolean;
+  /**
+   * Le nombre d'utilisateurs nommés du pack.
+   *
+   * ⚠ C'EST LA SEULE ENTRÉE QUI FAIT EXISTER LA GRILLE AU SIÈGE. Sans elle,
+   * `abonnementMensuel()` serait un export que personne n'appelle — un module
+   * juste, testé, et mort. C'est le défaut le plus fréquent de ce dépôt, et
+   * il aurait été commis par la correction elle-même.
+   *
+   * Absent ⇒ `SIEGES_REFERENCE`. Un défaut est nécessaire parce que le
+   * chiffrage sert aussi à afficher un prix d'appel avant qu'on ait demandé la
+   * taille de l'équipe ; le reprendre sur la référence garantit que ce
+   * prix-là est exactement celui de la vitrine, et pas un troisième nombre.
+   */
+  sieges?: number;
   /** Ids de briques à la carte. */
   briques?: string[];
   /** Appels sortants par mois (0 ou absent = pas d'appels). */
@@ -281,14 +297,37 @@ export function chiffrer(sel: Selection, options: OptionsChiffrage = {}): Chiffr
     if (clientSetup === null && clientMensuel === null) aChiffrer.push(label);
   };
 
-  // ── EAGLEYE — le pack VIP ──
+  // ── EAGLEYE — le pack VIP, facturé au SIÈGE ──
   if (sel.vip) {
+    /**
+     * ⚠ Une saisie invalide ne doit pas faire TOMBER un chiffrage.
+     * `abonnementMensuel` jette sur 0, un décimal ou un négatif — c'est juste
+     * pour une facture, et faux ici : cette fonction sert un écran où
+     * quelqu'un tape, et un champ vidé une seconde ne doit pas vider la page.
+     * On borne, et on le DIT dans les alertes plutôt que de corriger en
+     * silence — sinon le devis part avec un nombre que personne n'a choisi.
+     */
+    const demandes = sel.sieges;
+    const sieges =
+      demandes === undefined || !Number.isInteger(demandes) || demandes < 1
+        ? SIEGES_REFERENCE
+        : demandes;
+    if (demandes !== undefined && sieges !== demandes) {
+      alertes.push(
+        `Nombre d'utilisateurs invalide (${demandes}) : le chiffrage retient ${SIEGES_REFERENCE} ` +
+          `par défaut. Corrige-le avant d'envoyer le devis.`
+      );
+    }
+    const a = abonnementMensuel(sieges);
     ajouter(
       "alpha-vip",
-      "Alpha Sales OS — VIP (pack complet)",
+      `Alpha Sales OS — pack complet (${a.sieges} utilisateur${a.sieges > 1 ? "s" : ""})`,
       PACK_SETUP_HT,
-      PACK_MONTHLY_HT,
-      `${PACK_SETUP_HT.toLocaleString("fr-FR")} € d'installation + ${PACK_MONTHLY_HT.toLocaleString("fr-FR")} €/mois, tout inclus.`
+      a.totalEur,
+      `${PACK_SETUP_HT.toLocaleString("fr-FR")} € d'installation, puis ` +
+        `${a.socleEur.toLocaleString("fr-FR")} € de socle + ${a.sieges} × ` +
+        `${PRIX_SIEGE_HT} € = ${a.totalEur.toLocaleString("fr-FR")} €/mois ` +
+        `(${a.parSiegeEur} €/utilisateur).`
     );
   }
 

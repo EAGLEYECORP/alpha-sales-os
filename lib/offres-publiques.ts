@@ -72,7 +72,151 @@ export const OUTBOUND_UNIT_HT = 364;
  */
 export const OUTBOUND_SETUP_HT = 3500;
 export const PACK_SETUP_HT = 10_000;
-export const PACK_MONTHLY_HT = 1_000;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'ABONNEMENT SE FACTURE AU SIÈGE — décidé le 13/09/2026.
+ *
+ * ══ LE DÉFAUT QUE ÇA CORRIGE, ET IL ÉTAIT ÉCRIT DEPUIS LE 12/09 ══
+ *
+ * `PACK_MONTHLY_HT` était un FORFAIT : 1 000 €/mois, quelle que soit la
+ * taille de l'équipe. Donc une société de trois personnes et une de trente
+ * payaient exactement le même prix, pour un usage dix fois différent. Le
+ * relevé de marché l'avait nommé sans pouvoir le réparer :
+ *
+ *   « Tant que le catalogue n'a pas de dimension siège, la grille est juste
+ *     pour une seule taille d'équipe et fausse pour toutes les autres.
+ *     C'est le vrai chantier de tarification, et il est plus grand que
+ *     n'importe quel montant écrit ici. »
+ *
+ * C'est ce chantier. Le marché de la vente facture au siège presque partout
+ * (Pipedrive, HubSpot : 14–79 €/utilisateur) : facturer au compte nous
+ * rendait incomparables, et `comparerParCompte()` n'existait que pour
+ * rattraper cette incompatibilité d'unité.
+ *
+ * ══ POURQUOI DEUX TERMES ET PAS UN SEUL PRIX PAR SIÈGE ══
+ *
+ * Un prix par siège NU aurait divisé le revenu par huit sur une petite
+ * équipe, et il aurait été faux pour une raison de fond : **une partie de ce
+ * qu'on vend ne dépend pas du nombre de personnes.** Le moteur de conformité
+ * (art. 50, décret 2022-1313, fenêtres d'appel, mentions, palier d'envoi),
+ * le Cerveau, l'autopilote serveur et le paramétrage coûtent la même chose
+ * pour trois utilisateurs que pour trente. C'est aussi l'actif le moins
+ * copiable du produit — le noyer dans un prix par tête le ferait disparaître
+ * de la négociation.
+ *
+ * D'où :
+ *   · `SOCLE_PLATEFORME_HT` — le moteur. Indépendant des têtes.
+ *   · `PRIX_SIEGE_HT`       — ce qu'un humain OUVRE : CRM, Closer OS,
+ *                             Alpha Live, Agent ALPHA.
+ *
+ * ⚠ Alpha Voice N'EST PAS dans cette formule, et c'est délibéré. **On ne
+ * facture jamais au siège ce qui REMPLACE un siège** — sa grille reste à
+ * l'usage (`ALPHA_VOICE_PALIERS` + la minute), parce que sa valeur se compare
+ * à un SALAIRE, pas à un abonnement par utilisateur.
+ *
+ * ══ LA CALIBRATION, ET CE QU'ELLE VAUT ══
+ *
+ * 600 + 5 × 80 = 1 000 — soit EXACTEMENT le forfait d'avant à la taille de
+ * référence. Le passage au siège n'est donc pas une hausse déguisée : il est
+ * neutre au centre et ne bouge qu'aux extrémités, là où le forfait mentait.
+ *
+ *     1 siège   680 €     ( -32 % )    10 sièges  1 400 €   ( +40 % )
+ *     5 sièges  1 000 €   (  = 0  )    20 sièges  2 200 €   (+120 % )
+ *                                      40 sièges  3 800 €   (+280 % )
+ *
+ * ⚠ 600 et 80 sont des **DÉCISIONS**, pas des mesures — aucune vente ne les a
+ * validées (`gagnes: 0`). Ce qui est mesuré, c'est la bande du marché par
+ * siège dans `lib/marche.ts` : 80 € se pose au HAUT de cette bande (14–79 €),
+ * et ce qui le justifie est qu'Alpha embarque Agent ALPHA et Alpha Live,
+ * dont la catégorie relevée commence à 250 $. Le premier client qui refuse en
+ * disant pourquoi vaudra plus que ce raisonnement.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * La taille d'équipe sur laquelle la grille se calibre.
+ *
+ * ⚠ ELLE VIVAIT DANS `lib/marche.ts`, ET ELLE N'Y AVAIT PLUS SA PLACE. Tant
+ * que le catalogue ignorait les sièges, c'était une HYPOTHÈSE de comparaison
+ * — « supposons cinq sièges pour rapprocher deux unités ». Depuis que le prix
+ * se facture au siège, c'est un **paramètre de tarification** : le relevé de
+ * marché l'importe désormais d'ici. Deux définitions auraient fait comparer
+ * la grille à une taille d'équipe que la grille elle-même n'utilise pas.
+ *
+ * C'est une DÉCISION, PAS UNE MESURE : 5 vient de nos propres segments
+ * (équipes de 3 à 50 commerciaux) et d'aucune vente — il n'y en a aucune.
+ */
+export const SIEGES_REFERENCE = 5;
+
+/**
+ * Le moteur : conformité, Cerveau, autopilote, campagnes, audits, pilotage,
+ * tracking. Ce qui coûte la même chose pour trois utilisateurs et pour trente.
+ *
+ * C'est une DÉCISION, PAS UNE MESURE. Aucune vente ne l'a validée. Ce qui la
+ * soutient est un raisonnement de coût — ces briques tournent que l'équipe
+ * soit grande ou petite — et la contrainte de neutralité à la référence.
+ */
+export const SOCLE_PLATEFORME_HT = 600;
+
+/**
+ * Par utilisateur nommé : CRM, Closer OS, Alpha Live, Agent ALPHA.
+ *
+ * C'est une DÉCISION, PAS UNE MESURE. Le seul élément mesuré à côté est la
+ * bande du marché par siège (`lib/marche.ts`, 14–79 €) : 80 € se pose juste
+ * au-dessus de son haut, et ce qui le justifie est qu'Alpha embarque Agent
+ * ALPHA et Alpha Live, dont la catégorie relevée commence à 250 $.
+ */
+export const PRIX_SIEGE_HT = 80;
+
+/** Le détail d'une facture mensuelle — jamais un total nu. */
+export interface AbonnementMensuel {
+  sieges: number;
+  socleEur: number;
+  siegesEur: number;
+  totalEur: number;
+  /** Ce que ça fait ramené au siège — le seul chiffre comparable au marché. */
+  parSiegeEur: number;
+}
+
+/**
+ * L'abonnement mensuel HT pour une équipe de `sieges` personnes.
+ *
+ * ⚠ Un siège au minimum, et c'est une garde, pas une politesse : `0` rendrait
+ * le socle seul, donc un abonnement actif sans aucun utilisateur — un état qui
+ * ne veut rien dire et qu'un formulaire vide produirait en une frappe.
+ * Les valeurs non entières sont refusées de la même façon : un demi-siège
+ * n'existe pas, et l'arrondi silencieux ferait diverger la facture de ce que
+ * le client a coché.
+ */
+export function abonnementMensuel(sieges: number): AbonnementMensuel {
+  if (!Number.isInteger(sieges) || sieges < 1) {
+    throw new RangeError(
+      `Nombre de sièges invalide : ${sieges}. Un abonnement compte au moins un utilisateur entier.`,
+    );
+  }
+  const socleEur = SOCLE_PLATEFORME_HT;
+  const siegesEur = PRIX_SIEGE_HT * sieges;
+  const totalEur = socleEur + siegesEur;
+  return {
+    sieges,
+    socleEur,
+    siegesEur,
+    totalEur,
+    parSiegeEur: Math.round(totalEur / sieges),
+  };
+}
+
+/**
+ * Le prix de référence — ce que paie une équipe de `SIEGES_REFERENCE`.
+ *
+ * ⚠ IL EST DÉRIVÉ, JAMAIS RECOPIÉ. Il valait `1_000` en dur ; le laisser en
+ * dur à côté de la formule aurait créé les deux sources que ce dépôt paie à
+ * chaque fois — et c'est la constante, pas la formule, que les écrans
+ * affichent. Changer `SOCLE_PLATEFORME_HT` ou `PRIX_SIEGE_HT` sans que ce
+ * nombre suive aurait fait mentir la vitrine en silence.
+ */
+export const PACK_MONTHLY_HT = abonnementMensuel(SIEGES_REFERENCE).totalEur;
 
 /**
  * ── L'OFFRE BUSINESS — 10 000 € ÉTALÉS, PUIS L'ABONNEMENT ──

@@ -124,7 +124,11 @@ messages, ni les quotas.
 **La preuve de concept : `10 000 € d'installation × 10 clients = 100 000 €`.**
 Du **cash encaissé**, avant même le récurrent.
 
-**Cas de base** : installation **10 000 €**, abonnement **dès 1 000 €/mois**,
+**Cas de base** : installation **10 000 €**, abonnement **1 000 €/mois pour une
+équipe de 5** (grille au siège depuis le 13/09/2026 : `600 € de socle + 80 €
+par utilisateur` — le plancher réel est **680 €** à une personne, et ça monte à
+**2 200 €** à vingt. « dès 1 000 € » était vrai du temps du forfait, et faux
+dans les deux sens depuis),
 rétention **12 mois**, cible **10 clients**. Coûts : ton temps **5 h/client
 à 50 €/h**, acquisition hors-temps **25 €/client**, infra fixe **120 €/mois**.
 
@@ -153,7 +157,7 @@ Le mensuel n'est pas au doigt mouillé : il tient sur le **coût réel des appel
 | **Coût direct total** | | **~770 €** |
 | Coût / prospect | | **0,77 €** |
 
-→ À **1 000 €/mois**, marge positive sur le coût direct **et** ça remplace un
+→ À **1 000 €/mois** (5 utilisateurs), marge positive sur le coût direct **et** ça remplace un
 commercial au téléphone (**~3 500 €/mois** chargé). Le paliers montent avec le
 volume (`lib/pricing.ts`) : Starter 1 000 € (≤ 1 000 prospects), Growth 2 500 €
 (≤ 5 000), Scale 5 000 € (≤ 20 000), Enterprise sur devis.
