@@ -532,7 +532,21 @@ export default function VitrinePage() {
                 10 000 <span className="text-[22px]" style={{ color: MUTED }}>€ HT</span>
               </p>
               <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
-                puis {PRIX_PUBLICS.packMensuelHT.toLocaleString("fr-FR")} € HT/mois
+                puis {PRIX_PUBLICS.packMensuelHT.toLocaleString("fr-FR")} € HT/mois pour{" "}
+                {PRIX_PUBLICS.packSiegesReference} utilisateurs
+              </p>
+              {/*
+                ⚠⚠ LE MENSUEL S'AFFICHAIT SEUL, COMME UN FORFAIT. Vrai mais
+                INCOMPLET — le pire état pour un prix. Un prospect à vingt
+                commerciaux lisait « 1 000 €/mois » et découvrait 2 200 € au
+                devis : l'écart exact qui tue une signature au dernier mètre.
+                On donne les deux termes, il fait le calcul lui-même, et le
+                devis ne surprend personne.
+              */}
+              <p className="mt-1 text-[14px]" style={{ color: MUTED }}>
+                {PRIX_PUBLICS.packSocleHT} € de socle + {PRIX_PUBLICS.packSiegeHT} € par utilisateur.
+                Le socle couvre ce qui ne dépend pas du nombre de personnes ; il ne double pas
+                quand votre équipe double.
               </p>
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                 Tout est posé, paramétré sur votre métier, vos équipes formées. C&apos;est l&apos;offre où
@@ -546,8 +560,8 @@ export default function VitrinePage() {
               */}
               <p className="mt-5 rounded-xl px-4 py-3 text-[15px] leading-[1.55]" style={{ background: CREAM, color: INK }}>
                 <strong>Ou étalé :</strong> {BUSINESS_PUBLIC.acompteHT.toLocaleString("fr-FR")} € HT à la signature,
-                puis {BUSINESS_PUBLIC.mensualites} × {BUSINESS_PUBLIC.mensualiteHT} € HT. L&apos;abonnement de{" "}
-                {BUSINESS_PUBLIC.abonnementHT.toLocaleString("fr-FR")} € HT/mois ne démarre qu&apos;après.
+                puis {BUSINESS_PUBLIC.mensualites} × {BUSINESS_PUBLIC.mensualiteHT} € HT. L&apos;abonnement au siège ne démarre qu&apos;après — {BUSINESS_PUBLIC.abonnementHT.toLocaleString("fr-FR")} € HT/mois
+                pour {PRIX_PUBLICS.packSiegesReference} utilisateurs.
               </p>
             </div>
 

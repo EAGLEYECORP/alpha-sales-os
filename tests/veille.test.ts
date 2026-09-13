@@ -10,6 +10,7 @@ import {
   type Capacite,
 } from "../lib/veille";
 import { NUWACOM_THRESHOLD_HT } from "../lib/accounts";
+import { chiffrer } from "../lib/calculateur-offres";
 
 const cap = (p: Partial<Capacite> = {}): Capacite => ({
   id: "c",
@@ -138,4 +139,40 @@ test("⚠ les capacités se décrivent par leur FONCTION, pas par un nom de prod
    */
   const src = readFileSync(join(process.cwd(), "lib/veille.ts"), "utf8");
   assert.match(src, /décrite? par sa FONCTION/i, "la règle doit être écrite à côté du champ");
+});
+
+test("⚠⚠ LA RÈGLE EST APPELABLE DEPUIS LE CHIFFRAGE — pas seulement exportée", () => {
+  /**
+   * Le défaut récurrent du dépôt, et je l'avais commis moi-même : `routerDossier`
+   * était juste, testé, et appelé par AUCUN écran. Le calculateur n'alertait
+   * que sur « sous le seuil » — donc un chantier à 60 k qu'un outil libre
+   * règle en une semaine partait chez le partenaire à 15 % SANS UN MOT.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/calculateur-offres.ts"), "utf8");
+  assert.match(src, /import \{ routerDossier \} from "\.\/veille"/, "le chiffrage doit consulter la règle");
+  assert.match(src, /routerDossier\(devis, \[/, "et l'appeler sur le montant réel du devis");
+
+  // Comportement : le conflit remonte dans les alertes du chiffrage.
+  const conflit = chiffrer({ chantierHT: 60_000, effortJours: 5 });
+  assert.ok(
+    conflit.alertes.some((a) => /se contredisent/.test(a)),
+    "un gros chantier qu'on sait faire vite doit produire une alerte d'arbitrage",
+  );
+});
+
+test("⚠ SANS ESTIMATION D'EFFORT, on ne prétend pas savoir", () => {
+  // Absent ⇒ le verdict de faisabilité n'est pas rendu. Inventer un effort par
+  // défaut ferait dire « on sait le faire » d'un dossier que personne n'a regardé.
+  const muet = chiffrer({ chantierHT: 60_000 });
+  assert.ok(!muet.alertes.some((a) => /se contredisent/.test(a)));
+  // Le seuil de prix, lui, continue de parler — les deux règles sont distinctes.
+  const petit = chiffrer({ chantierHT: 10_000 });
+  assert.ok(petit.alertes.some((a) => /sous le seuil/.test(a)));
+});
+
+test("⚠ un chantier LOURD ne produit pas d'alerte : c'est le cas normal", () => {
+  // Contre-test. Si toute saisie produisait une alerte, elles deviendraient du
+  // bruit et on cesserait de les lire — y compris celle qui vaut 51 000 €.
+  const lourd = chiffrer({ chantierHT: 60_000, effortJours: 40 });
+  assert.ok(!lourd.alertes.some((a) => /se contredisent/.test(a)));
 });

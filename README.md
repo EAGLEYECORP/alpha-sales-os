@@ -10,9 +10,78 @@ capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — 
 
 > La décision EST le produit. Émotion d'abord (démo avant le prix), logique ensuite.
 
+---
+
+## LE BUT
+
+**Qu'un bon vendeur arrête de passer sa journée à ne pas vendre.**
+
+Un commercial passe l'essentiel de son temps sur ce qui entoure la vente :
+qualifier, relancer, mettre à jour une fiche, préparer un rendez-vous, écrire
+le compte-rendu, relancer encore. Alpha Sales OS prend **tout ce qui est avant
+et autour**, et laisse à l'humain les deux choses qu'une machine ne fait pas.
+
+| | Qui |
+|---|---|
+| Prospection, qualification, relances, scripts, suivi, pipeline, mesure | **Alpha Sales OS** |
+| **La livraison** de la prestation vendue | **le client** |
+| **La réassurance humaine** — la présence, la voix, la poignée de main | **le client** |
+
+**Les humains closent. Alpha fait tourner la machine.**
+
+### Les trois règles qui en découlent
+
+**1. Écrire est gratuit ; envoyer depuis notre infrastructure se paie.**
+Le socle gratuit n'est pas un aperçu : c'est de quoi prospecter *pour de vrai*
+— cibler, écrire, approcher, appeler, décrocher des rendez-vous — sans limite
+de durée. Un gratuit qui s'arrête avant le premier rendez-vous ne convertit
+personne, il fabrique des comptes morts. Ce qui se paie, c'est ce qui **dépense
+chez nous** : nos minutes, notre SMTP, nos jetons.
+
+**2. Aucun chiffre inventé.** Zéro donnée rend `null`, jamais `0`. Un taux ne
+sort jamais sans son dénominateur ni son intervalle. Et tant qu'aucune affaire
+n'est gagnée, le produit **refuse de projeter un euro** — c'est écrit dans les
+types, pas dans une intention.
+
+**3. La conformité est dans le code, pas dans une note.** La phrase de l'article
+50 est prononcée par le code, le plafond du décret n° 2022-1313 est exécutable,
+et les secteurs où le démarchage est interdit font refuser le script. Une règle
+écrite en prose n'est pas une règle.
+
+### Où on en est, sans arrondir
+
+**Zéro vente à ce jour.** La seule mesure maison : juillet 2026, 78 prospects
+travaillés → 6 rendez-vous (**7,7 %**, fourchette réelle 3,6 %–15,8 %) → **0
+gagné**. Le taux rendez-vous → signature n'a jamais été observé : aucune
+projection de chiffre d'affaires n'est défendable, et le produit le dit au lieu
+de le combler.
+
+Le seul levier dont l'effet soit **constaté** : l'**audit écrit**. Là où une
+pièce écrite est partie, le taux monte ; 26 appels sans audit n'ont rien
+produit.
+
+---
+
 ## À qui ça s'adresse
 
-### 🎯 Qui EAGLEYE prospecte en ce moment (décidé le 09/09/2026)
+### 🎯 Qui EAGLEYE prospecte en ce moment (décidé le 13/09/2026)
+
+**Les sociétés de services B2B lyonnaises de 10 à 50 commerciaux qui reçoivent
+plus de demandes qu'elles n'en traitent** — intérim et recrutement d'abord,
+puis maintenance sous contrat B2B, propreté et sécurité.
+
+L'effet doit être **immédiat** : le retard existe déjà, il est comptable, et le
+premier rappel produit un résultat dans la journée. On ne crée pas un marché,
+on rattrape ce qui arrive déjà. Critères exécutables : `lib/plan-traction.ts`.
+
+> ⚠ **La maîtrise d'ouvrage reste le jeu de DÉMONSTRATION** (`lib/seed.ts`,
+> `lib/permis-construire.ts`) : un ICP à déclencheur, daté et vérifiable, qui
+> montre exactement ce que le tri sait faire. Ce n'est plus la cible
+> commerciale — son marché ne démarche pas au téléphone, et l'actif le plus
+> défendable du produit (le moteur de conformité) n'y vaut rien.
+
+<details>
+<summary>L'ancien ICP, gardé pour la démo — maître d'ouvrage à permis actif</summary>
 
 **Le maître d'ouvrage professionnel dont le permis de construire est actif, sur
 Lyon et Villeurbanne.** Promoteurs, SCCV, sociétés d'aménagement, constructeurs
@@ -32,6 +101,8 @@ appeler. L'arrêté est public, daté, vérifiable.
 Play opérationnel complet : [`docs/PERMIS-LYON.md`](./docs/PERMIS-LYON.md).
 **Zéro permis converti à ce jour** — les seuils sont des décisions, pas des
 mesures.
+
+</details>
 
 ### Ce que le PRODUIT sait servir
 

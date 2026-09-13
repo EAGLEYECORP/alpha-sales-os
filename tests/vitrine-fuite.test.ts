@@ -833,8 +833,27 @@ test("vitrine — Business et Lifetime affichés = ceux qui sont décidés", asy
   const { BUSINESS_PUBLIC, LIFETIME_PUBLIC } = await import("../lib/public-catalogue");
   const {
     PACK_SETUP_HT, PACK_ACOMPTE_HT, PACK_MENSUALITES, PACK_MENSUALITE_HT, PACK_MONTHLY_HT,
+    SOCLE_PLATEFORME_HT, PRIX_SIEGE_HT, SIEGES_REFERENCE,
     LIFETIME_PALIERS, LIFETIME_PLACES_TOTAL, LIFETIME_APPELS_INCLUS,
   } = await import("../lib/offres-publiques");
+
+  /**
+   * ⚠⚠ LES DEUX TERMES DE LA GRILLE AU SIÈGE. La vitrine annonçait le mensuel
+   * comme un FORFAIT : vrai mais INCOMPLET, et c'est le pire état pour un
+   * prix. Un prospect à vingt commerciaux lisait « 1 000 €/mois » et
+   * découvrait 2 200 € au devis — l'écart exact qui tue une signature au
+   * dernier mètre. Depuis qu'elle affiche `socle + n × siège`, ces nombres
+   * doivent suivre la formule : sinon le visiteur fait un calcul FAUX avec
+   * NOS chiffres, ce qui est pire que de ne rien afficher.
+   */
+  assert.equal(PRIX_PUBLICS.packSocleHT, SOCLE_PLATEFORME_HT);
+  assert.equal(PRIX_PUBLICS.packSiegeHT, PRIX_SIEGE_HT);
+  assert.equal(PRIX_PUBLICS.packSiegesReference, SIEGES_REFERENCE);
+  assert.equal(
+    PRIX_PUBLICS.packSocleHT + PRIX_PUBLICS.packSiegeHT * PRIX_PUBLICS.packSiegesReference,
+    PRIX_PUBLICS.packMensuelHT,
+    "le prix affiché doit être calculable depuis les deux termes affichés",
+  );
 
   assert.equal(BUSINESS_PUBLIC.prixHT, PACK_SETUP_HT);
   assert.equal(BUSINESS_PUBLIC.acompteHT, PACK_ACOMPTE_HT);

@@ -8,6 +8,8 @@ import {
   PRIX_SIEGE_HT,
   SIEGES_REFERENCE,
 } from "./offres-publiques";
+// ⚠ La règle de routage vit dans UN module. On l'appelle, on ne la recopie pas.
+import { routerDossier } from "./veille";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -159,6 +161,21 @@ export interface Selection {
   alphaVoiceMinutes?: number;
   /** Chantier Nuwacom : montant du devis, en €. */
   chantierHT?: number;
+  /**
+   * Estimation de l'effort de livraison, en jours-homme.
+   *
+   * ⚠⚠ CE CHAMP EXISTE POUR QUE `routerDossier` SOIT APPELABLE. Sans lui, la
+   * règle de routage par FAISABILITÉ était un module juste, testé, que rien
+   * n'appelait : le calculateur n'alertait que sur « sous le seuil », donc un
+   * chantier à 60 k qu'un outil libre règle en une semaine partait chez le
+   * partenaire à 15 % SANS UN MOT. 51 000 € perdus en silence.
+   *
+   * Absent ⇒ on ne sait pas, et on ne prétend pas savoir : le verdict de
+   * faisabilité n'est alors pas rendu (le seuil de prix continue de parler).
+   */
+  effortJours?: number;
+  /** Y a-t-il du NEUF à construire ? Une seule brique suffit à sortir du régime rapide. */
+  chantierADuNeuf?: boolean;
   /** Maintenance mensuelle qui suit le chantier — 100 % pour nous. */
   maintenanceMensuelleHT?: number;
   /** Les offres sur devis retenues, sans montant. */
@@ -472,6 +489,26 @@ export function chiffrer(sel: Selection, options: OptionsChiffrage = {}): Chiffr
         `Chantier à ${devis.toLocaleString("fr-FR")} €, sous le seuil de ${SEUIL_NUWACOM_HT.toLocaleString("fr-FR")} € : ` +
           `EAGLEYE le fait, et on garde 100 % au lieu de ${b.setupPct} %. Le passer à Nuwacom coûte de l'argent.`
       );
+    }
+
+    /**
+     * ⚠⚠ LA SECONDE QUESTION, celle que le seuil ne pose pas : SAIT-ON LE
+     * FAIRE ? Le prix dit « doit-on le prendre ? ». La faisabilité dit
+     * « peut-on le livrer ? ». Les deux se contredisent dès qu'un gros
+     * chantier est simple — et c'est le cas qui coûte le plus cher.
+     */
+    if (devis > 0 && typeof sel.effortJours === "number" && sel.effortJours > 0) {
+      const v = routerDossier(devis, [
+        {
+          id: "estimation-operateur",
+          fonction: "livraison du chantier, telle qu'estimée au cadrage",
+          origine: sel.chantierADuNeuf ? "a-construire" : "open-source",
+          effortJours: { bas: sel.effortJours, haut: sel.effortJours },
+          besoin: "chantier client",
+          preuve: "non-verifie",
+        },
+      ]);
+      if (v.routage !== "nuwacom") alertes.push(v.motif);
     }
     if (b.plancher) {
       alertes.push(

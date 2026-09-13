@@ -55,7 +55,19 @@ export const PALIERS_LABELS: Record<PalierPublic, string> = {
  */
 export const PRIX_PUBLICS = {
   packSetupHT: 10_000,
+  /**
+   * Le mensuel À LA TAILLE DE RÉFÉRENCE (5 utilisateurs), pas un forfait.
+   *
+   * ⚠⚠ LA VITRINE L'AFFICHAIT COMME UN FORFAIT, et c'était vrai mais
+   * INCOMPLET — le pire état pour un prix. Un prospect à vingt commerciaux
+   * lisait « 1 000 €/mois » et découvrait 2 200 € au devis : exactement
+   * l'écart qui tue une signature au dernier mètre. Les deux termes sont
+   * désormais annoncés, et le visiteur peut faire le calcul lui-même.
+   */
   packMensuelHT: 1_000,
+  packSocleHT: 600,
+  packSiegeHT: 80,
+  packSiegesReference: 5,
   sortantAppels: 1_000,
   sortantMensuelHT: 364,
 };
