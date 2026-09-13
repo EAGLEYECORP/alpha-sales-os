@@ -194,6 +194,24 @@ score 55, poids par phase) sont des **décisions**, pas des mesures.
       >   même ouverte depuis trois semaines demandent des gestes opposés.
       >   ⚠ Un relevé PARTIEL ne ferme jamais rien — sinon la panne disparaît
       >   de l'écran le jour où sa sonde tombe.
+      >   ⚠⚠ **ÉCRIT, TESTÉ, ET BRANCHÉ NULLE PART — relevé le 13/09/2026.**
+      >   Mesuré, pas supposé : c'est le SEUL module de `lib/` que zéro fichier
+      >   de `app/`, `lib/` ou `components/` importe. `/ceo` ne lit aucune
+      >   ancienneté ; l'écran affiche donc toujours une panne du matin et une
+      >   panne de trois semaines à l'identique, ce que ce module existe
+      >   précisément pour empêcher. C'est le défaut récurrent du dépôt, et il
+      >   s'était logé dans une case **cochée**.
+      >   · **Ce qui manque n'est pas une ligne d'import, c'est un ENDROIT OÙ
+      >     POSER L'HISTORIQUE.** `appliquerReleve` prend l'historique
+      >     précédent et rend le suivant : quelqu'un doit le garder entre deux
+      >     relevés. Le `localStorage` est exclu par la même raison qui interdit
+      >     au `/moniteur` de lire le store — un téléphone et un ordinateur
+      >     seraient deux historiques, et l'ancienneté d'une panne est
+      >     justement ce qui ne doit pas dépendre de l'appareil qui regarde.
+      >     Il faut donc une table serveur, donc une **migration 008**.
+      >   · Tant qu'elle n'existe pas : le module n'est pas « prêt », il est
+      >     **mort**. La case reste cochée pour les sondes, qui, elles, sont
+      >     bien branchées.
       > · **Deux sondes branchées sur des signaux RÉELS** : `agent-absent`
       >   (`/api/voice/presence`, la plus chère du relevé) et `plafond-decret`
       >   (comptage sur 30 j glissants).
