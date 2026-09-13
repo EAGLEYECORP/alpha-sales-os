@@ -817,6 +817,10 @@ export default function VitrinePage() {
                 t: "Ce qu'il ne sait pas encore faire",
                 d: "On le fait à la main, et on vous montre comment. Ce n'est pas un aveu : c'est ce qui nous permet de refuser d'embarquer dans le produit des choses qui n'y ont pas leur place.",
               },
+              {
+                t: "Qui vous parle",
+                d: "Quand c'est l'IA qui mène l'échange, elle le dit — au téléphone dès la première phrase, à l'écrit dans le message. Quand un humain a relu et envoyé, on ne l'écrit PAS : ce serait faux. C'est une règle du logiciel, pas une intention : elle refuse l'aveu manquant comme l'aveu de trop.",
+              },
             ].map((x) => (
               <div key={x.t}>
                 <p className="text-[15px] font-semibold">{x.t}</p>
