@@ -1,5 +1,11 @@
 import { ALPHA_VOICE_SETUP_HT, ALPHA_VOICE_PALIERS, ALPHA_VOICE_MINUTE_SUP_HT } from "./offres-publiques";
 import type { KnowledgeNote } from "./knowledge";
+// ⚠ Les deux modules sont SERVEUR (`tests/vitrine-fuite` → MODULES_SERVEUR) :
+// l'import ne descend dans aucun bundle. Et `pct` vient de `calibration`, la
+// seule définition du rendu d'un pourcentage — un second formateur ferait
+// s'afficher « 7.7% » ici et « 7,7 % » ailleurs pour la même mesure.
+import { JUILLET_REEL } from "./pipeline-juillet";
+import { pct } from "./calibration";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -99,9 +105,18 @@ export const seedTerrain: KnowledgeNote[] = [
     accountId: "eagleye",
     title: "Juillet 2026 — ce que le mois a réellement produit",
     body:
-      "78 prospects travaillés · 51 dans l'univers · 132 appels · 18 audits · 24 SMS.\n" +
-      "Résultat : 6 RDV obtenus, 7 opportunités, 5 940 € de pipeline installation, **0 gagné**.\n\n" +
-      "Taux travaillés → RDV : 11,8 %.\n\n" +
+      `${JUILLET_REEL.prospectsTravailles} prospects travaillés · ${JUILLET_REEL.univers} dans l'univers · ` +
+      `${JUILLET_REEL.appels} appels · ${JUILLET_REEL.audits} audits · ${JUILLET_REEL.sms} SMS.\n` +
+      `Résultat : ${JUILLET_REEL.rdvObtenus} RDV obtenus, ${JUILLET_REEL.opportunites} opportunités, ` +
+      `${JUILLET_REEL.pipelineInstall.toLocaleString("fr-FR")} € de pipeline installation, **${JUILLET_REEL.gagnes} gagné**.\n\n` +
+      // ⚠ DEUX taux, deux dénominateurs. La note annonçait « travaillés → RDV :
+      // 11,8 % » — or 11,8 % c'est 6/51, l'univers QUALIFIÉ, pas 6/78. Le
+      // Cerveau alimente les prompts, et les prompts écrivent de vrais emails :
+      // c'était la seule source de ce taux que le modèle pouvait citer.
+      `Sur fichier BRUT (travaillés) : ${pct(JUILLET_REEL.tauxBrutRdv)} → c'est le taux qui sert à ` +
+      `dimensionner un export.\n` +
+      `Sur fichier QUALIFIÉ (univers) : ${pct(JUILLET_REEL.tauxQualifieRdv)} → il suppose qu'un tri a ` +
+      `déjà eu lieu. Les confondre fait payer la qualification deux fois.\n\n` +
       "La lecture qui compte : voir [[Juillet 2026 — l'audit fait la différence]].",
     tags: ["terrain", "chiffres", "juillet-2026"],
     createdAt: "2026-08-01T00:00:00.000Z",

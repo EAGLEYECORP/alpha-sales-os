@@ -15,14 +15,22 @@ Juillet 2026, constaté sur nos propres affaires :
 | Prospects travaillés | **78** |
 | Appels | 132 · Audits envoyés : 18 · SMS : 24 |
 | **RDV obtenus** | **6** |
-| Taux travaillés → RDV | **11,8 %** |
+| **Taux BRUT** (78 travaillés → 6 RDV) | **7,7 %** |
+| Taux QUALIFIÉ (51 dans l'univers → 6 RDV) | 11,8 % |
 | **Gagnés** | **0** |
 
 **Deux conclusions opposées sortent du même tableau, et il faut tenir les deux.**
 
-1. **Le RDV est une mécanique.** 11,8 % est un taux mesuré, sur un
-   dénominateur connu. Travailler 300 fiches produit ~35 RDV, non pas parce
-   qu'on l'espère mais parce que c'est ce qui s'est produit sur 78.
+1. **Le RDV est une mécanique.** 7,7 % est un taux mesuré, sur un
+   dénominateur connu. Travailler 300 fiches d'un export brut produit ~23 RDV,
+   non pas parce qu'on l'espère mais parce que c'est ce qui s'est produit sur 78.
+   > ⚠⚠ **CE PARAGRAPHE DISAIT « 11,8 %, donc ~35 RDV » — corrigé le
+   > 13/09/2026.** 11,8 % est 6/51, l'univers QUALIFIÉ, pas 6/78. Le champ
+   > s'appelait `tauxTravaillesRdv` et valait 0,118 en dur : le nom désignait un
+   > dénominateur, la valeur en mesurait un autre. `FUEL_TARGET` compte des
+   > fiches CHARGÉES, donc brutes — le taux applicable est 7,7 %. **Un tiers
+   > d'écart, dans le document dont le seul but est de rendre les chiffres
+   > fiables.** Les deux taux sont désormais DÉRIVÉS des comptes.
 2. **L'euro n'est pas une mécanique.** `gagnes: 0`. Le taux RDV → signature
    n'a **jamais** été mesuré chez nous. Aucun raisonnement, aucune projection
    et aucun tableur ne peut le produire : il faut une signature.
@@ -38,8 +46,12 @@ Juillet 2026, constaté sur nos propres affaires :
 ### 1. Charger 300 fiches de l'ICP — et pas 50
 
 `FUEL_TARGET = 300`. C'est le seul chiffre qui rend le reste inévitable : à
-11,8 %, 300 fiches valent ~35 RDV et 50 fiches en valent 6. Un taux ne se
+7,7 %, 300 fiches valent ~23 RDV et 50 fiches en valent 4. Un taux ne se
 négocie pas, un dénominateur si.
+
+> ⚠ Et si les 300 fiches sont DÉJÀ triées (l'univers qualifié), le taux
+> applicable devient 11,8 % — soit ~35 RDV. La différence n'est pas gratuite :
+> elle se paie en travail de qualification AVANT la file d'appels.
 
 > ⚠ **C'est la seule étape que personne ne peut faire à ta place.** Le proxy de
 > développement n'atteint pas `data.grandlyon.com`. Sans carburant, tout ce qui

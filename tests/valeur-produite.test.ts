@@ -10,6 +10,7 @@ import {
   peutFacturerSur,
   type PartageCohorte,
 } from "../lib/valeur-produite";
+import { JUILLET_REEL } from "../lib/pipeline-juillet";
 
 const compte = (p: Partial<PartageCohorte> = {}): PartageCohorte => ({
   tenantId: "t",
@@ -165,4 +166,58 @@ test("⚠ « rien ne remonte » et « personne n'utilise » ne se disent pas par
   assert.equal(e.collecteActive, false, "état mesuré au 13/09/2026 : aucune télémétrie n'existe");
   assert.match(e.motif, /localStorage|navigateur/i, "le motif doit dire POURQUOI, pas seulement que c'est vide");
   assert.match(e.motif, /opt-in|OPT-IN/, "et nommer ce qu'il faudrait : un partage consenti");
+});
+
+test("⚠⚠ LES DEUX TAUX DE JUILLET SONT DÉRIVÉS, ET CHACUN DIVISE PAR SON PROPRE DÉNOMINATEUR", () => {
+  /**
+   * ══ L'ERREUR QUE CE TEST EMPÊCHE DE REVENIR ══
+   *
+   * Le champ s'appelait `tauxTravaillesRdv` et valait `0.118` EN DUR. Or
+   * 0,118 = 6/51 — l'univers QUALIFIÉ — pas 6/78, les travaillés que son nom
+   * annonçait. Le nom désignait un dénominateur, la valeur en mesurait un
+   * autre, et personne ne pouvait le voir : un taux écrit à la main à côté de
+   * son numérateur et de son dénominateur est une troisième source.
+   *
+   * Ce que ça coûtait : `docs/RENDRE-LES-CHIFFRES-INEVITABLES.md` en tirait
+   * « 300 fiches valent ~35 RDV ». À 7,7 %, elles en valent ~23. Un tiers
+   * d'écart dans le document de planification, et recopié dans le Cerveau qui
+   * alimente les prompts.
+   */
+  assert.equal(JUILLET_REEL.tauxBrutRdv, JUILLET_REEL.rdvObtenus / JUILLET_REEL.prospectsTravailles);
+  assert.equal(JUILLET_REEL.tauxQualifieRdv, JUILLET_REEL.rdvObtenus / JUILLET_REEL.univers);
+
+  // Les deux sont DISTINCTS — s'ils devenaient égaux, la distinction serait
+  // décorative et quelqu'un rerangerait tout sous un seul nom.
+  assert.notEqual(JUILLET_REEL.tauxBrutRdv, JUILLET_REEL.tauxQualifieRdv);
+  assert.ok(JUILLET_REEL.tauxQualifieRdv > JUILLET_REEL.tauxBrutRdv, "un fichier trié convertit mieux qu'un brut");
+
+  // Et aucun littéral de taux ne traîne à côté : c'est la recopie qui a créé
+  // le défaut, pas le calcul.
+  const src = readFileSync(join(process.cwd(), "lib/pipeline-juillet.ts"), "utf8");
+  assert.ok(
+    !/taux\w*:\s*0\.\d+/i.test(src),
+    "aucun taux ne doit être écrit en dur dans JUILLET_REEL — ils se dérivent des comptes",
+  );
+});
+
+test("⚠ LE CERVEAU SERT LES DEUX TAUX, dérivés — c'est la seule source que le modèle peut citer", () => {
+  // Les prompts écrivent de VRAIS emails. La note annonçait « travaillés →
+  // RDV : 11,8 % », c'est-à-dire le mauvais dénominateur sous le bon nom.
+  const brut = readFileSync(join(process.cwd(), "lib/knowledge-seed.ts"), "utf8");
+  assert.match(brut, /pct\(JUILLET_REEL\.tauxBrutRdv\)/, "le taux brut doit être dérivé, pas recopié");
+  assert.match(brut, /pct\(JUILLET_REEL\.tauxQualifieRdv\)/, "le taux qualifié aussi");
+
+  /**
+   * ⚠ LES COMMENTAIRES SONT RETIRÉS AVANT DE CHERCHER, et c'est la TROISIÈME
+   * fois de la session qu'un garde mord sur de la prose. Ici il tombait sur le
+   * commentaire qui EXPLIQUE la correction — lequel doit citer « 11,8 % » pour
+   * dire ce qui était faux. Effacer cette explication laisserait la décision
+   * sans sa raison, et la session suivante la déferait en croyant nettoyer.
+   * Ce qu'on interdit, c'est un taux dans ce qui est SERVI au modèle.
+   */
+  const servi = brut.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+  assert.ok(
+    !/11,8\s*%/.test(servi),
+    "aucun pourcentage de juillet écrit à la main dans le corps des notes — c'est ce qui avait divergé",
+  );
 });

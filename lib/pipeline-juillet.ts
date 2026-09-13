@@ -21,7 +21,8 @@ import type { Meeting, Prospect, Sector, Stage } from "./types";
  * jamais par défaut.
  *
  * Les chiffres à retenir, tirés de l'activité réelle et non d'un modèle :
- *   · 51 prospects dans l'univers → 6 RDV = 11,8 %
+ *   · 78 travaillés → 6 RDV = 7,7 %  ·  51 qualifiés → 6 RDV = 11,8 %
+ *     (le premier sert à planifier un export brut, le second un fichier trié)
  *   · auto-école : 3 prospects → 3 opportunités (le meilleur ratio, de loin)
  *   · immobilier : 8 prospects, 4 audits → 2 opportunités
  *   · garage : 18 prospects, 34 appels, 1 audit → 2 opportunités
@@ -242,7 +243,42 @@ export const JUILLET_REEL = {
   opportunites: 7,
   pipelineInstall: 5940,
   gagnes: 0,
-  tauxTravaillesRdv: 0.118,
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * ⚠⚠ DEUX TAUX, DEUX DÉNOMINATEURS — ET C'ÉTAIT LE MAUVAIS QUI SERVAIT
+   * À PLANIFIER (corrigé le 13/09/2026).
+   *
+   * Le champ s'appelait `tauxTravaillesRdv` et valait `0.118` en dur. Or
+   * 0,118 c'est 6/51 — l'UNIVERS, le sous-ensemble qualifié — pas 6/78, les
+   * prospects TRAVAILLÉS que son nom annonce. Le nom désignait un
+   * dénominateur, la valeur en mesurait un autre.
+   *
+   * Ce que ça coûtait, et ce n'est pas théorique :
+   * `docs/RENDRE-LES-CHIFFRES-INEVITABLES.md` en tirait « à 11,8 %, 300
+   * fiches valent ~35 RDV ». `FUEL_TARGET` compte des fiches CHARGÉES, donc
+   * brutes : le taux applicable est 7,7 %, et 300 fiches valent ~23 RDV.
+   * **Un tiers d'écart, dans le document dont le seul but est de rendre les
+   * chiffres fiables** — et recopié dans le Cerveau, qui alimente les prompts
+   * qui écrivent de vrais emails.
+   *
+   * Les deux taux RESTENT parce qu'ils répondent chacun à une vraie question :
+   *  · brut      — « je charge 300 fiches d'un export, combien de RDV ? »
+   *  · qualifié  — « je travaille 300 fiches DÉJÀ triées, combien de RDV ? »
+   * Le second est plus haut parce qu'un tri a eu lieu avant : le confondre
+   * avec le premier fait payer la qualification deux fois, une fois en
+   * travail et une fois en espoir.
+   *
+   * ⚠ Ils sont DÉRIVÉS, jamais écrits à la main. Un taux en dur à côté de son
+   * numérateur et de son dénominateur est une troisième source qui ne peut que
+   * diverger — c'est exactement ce qui vient de se produire.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  get tauxBrutRdv(): number {
+    return this.rdvObtenus / this.prospectsTravailles;
+  },
+  get tauxQualifieRdv(): number {
+    return this.rdvObtenus / this.univers;
+  },
   /** Par secteur : prospects · appels · audits · opportunités obtenues. */
   parSecteur: [
     { secteur: "Auto-école", prospects: 3, appels: 7, audits: 2, opportunites: 3 },

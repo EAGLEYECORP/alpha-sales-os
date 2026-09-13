@@ -97,7 +97,7 @@ export const SIGNAUX: DefinitionSignal[] = [
     id: "rdv-obtenus",
     label: "Rendez-vous obtenus",
     nature: "declare-client",
-    source: "Saisi dans la fiche. C'est le seul résultat que juillet ait mesuré (11,8 % sur 78).",
+    source: "Saisi dans la fiche. Seul résultat que juillet ait mesuré : 7,7 % sur 78 travaillés (11,8 % sur les 51 qualifiés).",
   },
   {
     id: "ca-encaisse",
