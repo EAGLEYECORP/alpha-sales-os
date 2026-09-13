@@ -6,6 +6,13 @@ import type { KnowledgeNote } from "./knowledge";
 // s'afficher « 7.7% » ici et « 7,7 % » ailleurs pour la même mesure.
 import { JUILLET_REEL } from "./pipeline-juillet";
 import { pct } from "./calibration";
+// ⚠ Ces trois modules sont la SOURCE des notes ci-dessous : rien n'est recopié.
+// La leçon de `sc-voix-tarifs` — une grille recopiée survit à la décision qui
+// l'a changée, et c'est la seule source que le modèle peut citer.
+import { INTERDICTIONS_SECTORIELLES } from "./secteurs-interdits";
+import { SEGMENTS, SEGMENT_PRINCIPAL } from "./plan-traction";
+import { EFFORT_RAPIDE_MAX_JOURS } from "./veille";
+import { NUWACOM_THRESHOLD_HT } from "./accounts";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -208,5 +215,91 @@ export const seedTerrain: KnowledgeNote[] = [
   },
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUE LE CERVEAU IGNORAIT, ET POURQUOI C'ÉTAIT DANGEREUX (13/09/2026).
+ *
+ * Mesuré en croisant les notes contre les modules : le socle ne connaissait ni
+ * les INTERDICTIONS SECTORIELLES, ni l'ICP en cours, ni la règle de routage
+ * par faisabilité. Or le Cerveau alimente les prompts, et les prompts écrivent
+ * de VRAIS emails et de VRAIS scripts d'appel.
+ *
+ * Conséquence concrète : un modèle à qui on demande « écris une approche pour
+ * un organisme de formation » aurait rédigé un démarchage CPF — interdit — en
+ * toute bonne foi, parce que rien dans sa mémoire ne disait le contraire.
+ * `auditScript` l'aurait refusé APRÈS coup ; le Cerveau, lui, l'aurait
+ * suggéré. Deux contrôles, et celui qui parle en premier était muet.
+ *
+ * ⚠ LES TROIS NOTES DÉRIVENT DES MODULES. La leçon de `sc-voix-tarifs` : une
+ * grille recopiée dans une prose survit à la décision qui l'a changée, et
+ * c'est la seule source de vérité que le modèle peut citer.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const seedOperationnel: KnowledgeNote[] = [
+  {
+    id: "sc-secteurs-interdits",
+    accountId: "eagleye",
+    title: "Secteurs où le démarchage est INTERDIT — à vérifier avant toute approche",
+    body:
+      "Avant d'écrire une approche à froid, vérifier le secteur. Dans ceux-ci, la prospection " +
+      "commerciale est interdite ou verrouillée en France :\n\n" +
+      INTERDICTIONS_SECTORIELLES.map(
+        (i) =>
+          `· **${i.label}** — ${i.texte} : ` +
+          `${i.portee === "interdiction" ? "prospection INTERDITE" : "accord PRÉALABLE et explicite exigé"}.\n` +
+          `  Ce qui reste possible : ${i.alternative}`,
+      ).join("\n") +
+      "\n\n⚠ Ces références ne sont PAS vérifiées par un juriste — à confirmer avant d'engager. " +
+      "Mais dans le doute on n'écrit pas : `auditScript` refusera le script, et le client prendrait l'amende.\n\n" +
+      "Le rappel d'un lead CONSENTI (formulaire, comparateur, demande entrante) n'est pas du démarchage : " +
+      "c'est là qu'est le volume dans ces secteurs, et c'est là qu'Alpha Voice sert le plus.",
+    tags: ["conformite", "interdits", "prospection"],
+    createdAt: "2026-09-13T00:00:00.000Z",
+    updatedAt: "2026-09-13T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "sc-icp-courant",
+    accountId: "eagleye",
+    title: `ICP en cours — ${SEGMENT_PRINCIPAL.label}`,
+    body:
+      `**${SEGMENT_PRINCIPAL.label}.** ${SEGMENT_PRINCIPAL.critere}\n\n` +
+      `Pourquoi l'effet est immédiat : ${SEGMENT_PRINCIPAL.pourquoiImmediat}\n\n` +
+      `Effectif visé : ${SEGMENT_PRINCIPAL.commerciaux.bas} à ${SEGMENT_PRINCIPAL.commerciaux.haut} commerciaux — ` +
+      "au-delà, c'est achats, InfoSec et neuf mois de cycle, et nous n'avons ni identifiants par locataire ni référence.\n" +
+      `Cycle attendu : ${SEGMENT_PRINCIPAL.cycleJours.bas} à ${SEGMENT_PRINCIPAL.cycleJours.haut} jours ` +
+      "(source SECONDAIRE — blogs d'agences qui vendent de la prospection. Notre propre cycle se mesurera au troisième deal.)\n" +
+      `Canal par défaut : ${SEGMENT_PRINCIPAL.canal}.\n\n` +
+      "Segments voisins, MÊME geste de vente, à ne PAS travailler en parallèle : " +
+      SEGMENTS.slice(1).map((s) => s.label).join(" · ") +
+      ".\n\n⚠ Un seul avatar à la fois. Trois avatars simultanés ont déjà coûté trois tours de travail à ce projet.",
+    tags: ["icp", "ciblage"],
+    createdAt: "2026-09-13T00:00:00.000Z",
+    updatedAt: "2026-09-13T00:00:00.000Z",
+    source: "playbook",
+  },
+  {
+    id: "sc-routage-faisabilite",
+    accountId: "eagleye",
+    title: "Routage d'un chantier — DEUX questions, pas une",
+    body:
+      "Un dossier se route sur deux critères distincts, et ils peuvent se contredire.\n\n" +
+      "1. **Peut-on le FAIRE ?** Si un outil libre ou nous-mêmes le livrons en " +
+      `${EFFORT_RAPIDE_MAX_JOURS} jours-homme ou moins, c'est pour nous (100 %). Sinon → plateforme partenaire, ` +
+      "**quel que soit le montant** : aucun prix ne rend faisable ce qu'on ne sait pas livrer.\n" +
+      `2. **Doit-on le PRENDRE ?** Au-delà de ${NUWACOM_THRESHOLD_HT.toLocaleString("fr-FR")} € HT, ` +
+      "c'est le seuil de sous-traitance (15 %, puis 100 % de la maintenance).\n\n" +
+      "⚠ Quand les deux se contredisent — faisable vite MAIS au-dessus du seuil — on ne tranche pas tout seul. " +
+      "C'est un arbitrage humain, et ce qui manque n'est pas un calcul : c'est de savoir si on a la CAPACITÉ de " +
+      "porter un chantier de cette taille en plus du reste.\n\n" +
+      "⚠ L'effort se compte sur les bornes HAUTES, et une seule brique à construire sort du régime rapide même " +
+      "courte : ce n'est pas sa durée qui coûte, c'est son incertitude.",
+    tags: ["routage", "partenaire", "chiffrage"],
+    createdAt: "2026-09-13T00:00:00.000Z",
+    updatedAt: "2026-09-13T00:00:00.000Z",
+    source: "playbook",
+  },
+];
+
 /** Le socle complet, dans l'ordre d'insertion. */
-export const SEED_NOTES: KnowledgeNote[] = [...seedKnowledge, ...seedTerrain];
+export const SEED_NOTES: KnowledgeNote[] = [...seedKnowledge, ...seedTerrain, ...seedOperationnel];

@@ -11,6 +11,10 @@ import {
   type PartageCohorte,
 } from "../lib/valeur-produite";
 import { JUILLET_REEL } from "../lib/pipeline-juillet";
+import { SEED_NOTES } from "../lib/knowledge-seed";
+import { INTERDICTIONS_SECTORIELLES } from "../lib/secteurs-interdits";
+import { SEGMENT_PRINCIPAL } from "../lib/plan-traction";
+import { EFFORT_RAPIDE_MAX_JOURS } from "../lib/veille";
 
 const compte = (p: Partial<PartageCohorte> = {}): PartageCohorte => ({
   tenantId: "t",
@@ -219,5 +223,60 @@ test("⚠ LE CERVEAU SERT LES DEUX TAUX, dérivés — c'est la seule source que
   assert.ok(
     !/11,8\s*%/.test(servi),
     "aucun pourcentage de juillet écrit à la main dans le corps des notes — c'est ce qui avait divergé",
+  );
+});
+
+test("⚠⚠ LE CERVEAU CONNAÎT CE QUE LE CODE APPLIQUE — sinon il suggère l'interdit", () => {
+  /**
+   * ══ LE RISQUE QUE CE TEST TIENT ══
+   *
+   * Le Cerveau alimente les prompts, et les prompts écrivent de VRAIS emails
+   * et de VRAIS scripts. Mesuré le 13/09/2026 : le socle ignorait les
+   * interdictions sectorielles, l'ICP en cours et la règle de routage.
+   *
+   * Un modèle à qui on demande « écris une approche pour un organisme de
+   * formation » aurait rédigé un démarchage CPF — interdit — en toute bonne
+   * foi. `auditScript` l'aurait refusé APRÈS coup ; le Cerveau, lui, l'aurait
+   * SUGGÉRÉ. Deux contrôles, et celui qui parle en premier était muet.
+   */
+  const corpus = SEED_NOTES.map((n) => `${n.title}\n${n.body}`).join("\n").toLowerCase();
+
+  // 1. Chaque interdiction sectorielle est connue du Cerveau, avec son texte.
+  for (const i of INTERDICTIONS_SECTORIELLES) {
+    assert.ok(
+      corpus.includes(i.label.toLowerCase()),
+      `le Cerveau ignore le secteur interdit « ${i.label} » : le modèle proposera de le démarcher`,
+    );
+    assert.ok(corpus.includes(i.texte.toLowerCase()), `${i.id} : le texte de loi doit être cité, pas « la loi »`);
+  }
+
+  // 2. L'ICP en cours. Sans lui, le modèle cible le marché d'avant.
+  assert.ok(
+    corpus.includes(SEGMENT_PRINCIPAL.label.toLowerCase()),
+    "le Cerveau doit connaître l'ICP en cours",
+  );
+
+  // 3. Le seuil de faisabilité, pour ne pas router au seul prix.
+  assert.ok(corpus.includes(`${EFFORT_RAPIDE_MAX_JOURS} jours-homme`), "la règle de routage par faisabilité doit y être");
+});
+
+test("⚠ LES NOTES DÉRIVENT DES MODULES — aucune grille recopiée à la main", () => {
+  /**
+   * La leçon de `sc-voix-tarifs` : il annonçait la grille d'un revendeur mort
+   * et « le prix n'a pas encore été décidé », faux depuis dix jours. Une prose
+   * recopiée survit à la décision qui l'a changée — et c'est la seule source
+   * de vérité que le modèle peut citer.
+   */
+  const src = readFileSync(join(process.cwd(), "lib/knowledge-seed.ts"), "utf8");
+  assert.match(src, /INTERDICTIONS_SECTORIELLES\.map\(/, "les interdits se dérivent du module");
+  assert.match(src, /SEGMENT_PRINCIPAL\./, "l'ICP se dérive du plan de traction");
+  assert.match(src, /\$\{EFFORT_RAPIDE_MAX_JOURS\}/, "le seuil se dérive de lib/veille");
+  assert.match(src, /NUWACOM_THRESHOLD_HT\.toLocaleString/, "le seuil de sous-traitance aussi");
+
+  // Et aucune loi recopiée en dur dans le corps d'une note.
+  const sansCommentaires = src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+  assert.ok(
+    !/2022-1587|2020-901|2021-402/.test(sansCommentaires),
+    "aucun numéro de loi écrit à la main : il vient de lib/secteurs-interdits",
   );
 });
