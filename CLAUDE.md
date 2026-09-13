@@ -1156,6 +1156,51 @@ personne : il fabrique des comptes morts.
 >   une serrure — d'où le `.trim()`, et un test qui le vérifie.
 > 📦 Pourquoi ce n'était pas une config manquante mais un défaut de conception :
 > `docs/ANGLES-MORTS.md`.
+>
+> ⚠⚠ **ET LE REPLI ÉTAIT CALCULÉ SANS ÊTRE APPLIQUÉ — 13/09/2026.**
+> `deploiementSansSerrure()` faisait bien retomber `resoudreDroits` au socle
+> gratuit. Mais **le middleware ne lisait que `comptesActifs()`** : dans cet
+> état précis, AUCUN contrôle de brique ne s'exécutait. Le défaut récurrent du
+> dépôt, sur la porte la plus chère qui existe ici.
+> · **Trouvé en frappant un `next start` de production**, pas en relisant :
+>   `/api/send` et `/api/voice/call` rendaient **400** (validation du corps) à
+>   un inconnu — donc ils ACCEPTAIENT la requête. Avec `SITE_PASSWORD` posé :
+>   401. Le mot de passe était la seule serrure, et la doctrine a décidé qu'il
+>   ne murerait plus l'app.
+> · **La fenêtre est datée** : le jour où `SMTP_*` est posé sur Vercel et où
+>   les comptes ne le sont pas encore. Ça ne se voit que sur la réputation du
+>   domaine, des semaines plus tard.
+> · La condition est désormais `comptesActifs() || deploiementSansSerrure()`.
+>   Vérifié sur serveur réel : 403 `brique_absente` sur les deux API, 200 sur
+>   `/aujourdhui`, `/templates`, `/vitrine`. **On ne coupe pas le site.**
+> · ⚠ **Le garde a dû être écrit deux fois, et c'est la MUTATION qui l'a dit.**
+>   Il capturait `[\s\S]*?` à travers les lignes et avalait le commentaire qui
+>   explique la règle — lequel nomme les deux fonctions. **L'assertion était
+>   satisfaite par la PROSE** : remis à l'état vulnérable, le test restait
+>   vert. Un garde qui échoue en s'ouvrant ne fait pas de bruit, il valide.
+>   On retire les commentaires avant de chercher (comme le test de `lib/auth.ts`).
+
+### L'AVERTISSEMENT DE BUILD EST UN ANGLE MORT À PART ENTIÈRE (13/09/2026)
+`lib/url-publique.ts` · `tests/url-publique.test.ts`.
+
+`metadataBase` n'était déclaré nulle part. Next résout alors toute URL
+relative de métadonnée contre `http://localhost:3000` **et l'écrit dans le
+HTML livré** — vérifié sur le build, pas déduit :
+`<meta property="og:image" content="http://localhost:3000/media/hero-poster.jpg">`.
+C'est l'adresse annoncée à LinkedIn quand on partage le lien : la carte sort
+**sans vignette**. Le layout de la vitrine porte lui-même la phrase qui chiffre
+la perte, et LinkedIn est le canal PAR DÉFAUT de notre ICP.
+- **`next build` le disait à chaque passage.** Les tests étaient verts, `tsc`
+  aussi : c'est le seul canal d'alerte du dépôt que rien n'oblige à lire.
+- **Le repli va jusqu'à `VERCEL_URL`**, que la plateforme pose seule — une
+  correction qui exige une action humaine n'est pas une correction, c'est une
+  ligne de checklist de plus.
+- **Posée à la RACINE uniquement** : Next la fait hériter. Un test refuse
+  qu'un layout enfant la redéclare.
+- **Le garde va jusqu'au FICHIER** : une base absolue pointant vers une image
+  supprimée donne la même carte vide, pour une autre cause. Trouvé comme ça :
+  `/souscrire` — la page où l'on **achète** — déclarait des balises Open Graph
+  **sans image**.
 
 **L'INVARIANT** : *on ne descend jamais sous le gratuit, on ne monte jamais
 au-dessus sans une ligne prouvée en base.*
