@@ -186,6 +186,11 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             channel: "email",
+            // ⚠ QUI PARLE. Un humain a relu et cliqué : la divulgation IA serait
+            // FAUSSE ici (`lib/signature-ia.ts`). Le champ est obligatoire côté
+            // serveur, et son ABSENCE vaut « autonome » — donc un envoi
+            // automatique qui l'oublie se fait refuser, jamais l'inverse.
+            modeProduction: "valide-par-humain",
             to: d.to,
             subject: d.subject,
             body: d.body,

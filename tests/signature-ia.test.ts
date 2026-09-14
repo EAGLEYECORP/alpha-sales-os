@@ -135,3 +135,69 @@ test("⚠ la divulgation écrite est déclarée à UN endroit", () => {
   assert.match(src, /export const DIVULGATION_ECRITE/);
   assert.match(DIVULGATION_ECRITE, /STOP/, "le moyen de refus voyage avec l'aveu");
 });
+
+test("⚠⚠ LA RÈGLE EST BRANCHÉE DANS /api/send — la vitrine la PROMETTAIT DÉJÀ", () => {
+  /**
+   * ══ LE DÉFAUT LE PLUS GRAVE DE LA SESSION, ET IL ÉTAIT DE MOI ══
+   *
+   * `lib/signature-ia.ts` était juste, testé, mutation-testé — et importé par
+   * PERSONNE. Pendant ce temps la vitrine affirmait « quand c'est l'IA qui
+   * mène l'échange, elle le dit ». Une promesse invérifiable sur une page
+   * publique : exactement ce que `tests/vitrine-fuite` refuse ailleurs, sauf
+   * que celle-ci venait d'être ajoutée par la correction elle-même.
+   *
+   * La garde vit dans `/api/send` — le SEUL endroit d'où un message part.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/send/route.ts"), "utf8");
+  assert.match(src, /from "@\/lib\/signature-ia"/, "la route doit consulter le module");
+  assert.match(src, /verifieDivulgation\(text, "email"/, "sur le texte RENDU, comme les mentions");
+  assert.match(src, /verifieDivulgation\(body\.body, "sms"/, "et sur le SMS, où rien ne s'ajoute");
+
+  /**
+   * ⚠⚠ ON ASSERTE LA CONDITION, PAS LA PRÉSENCE DU REFUS. Première rédaction :
+   * je vérifiais que `verifieDivulgation` était appelé — et la mutation
+   * `if (false)` laissait l'appel en place, donc le test au vert, avec le
+   * contrôle désarmé. C'est le piège que la doctrine nomme mot pour mot
+   * (« asserter la PRÉSENCE du refus au lieu de la CONDITION qui y mène ») et
+   * que ce dépôt a déjà payé quatre fois sur la validation partenaire.
+   */
+  assert.match(src, /if \(divulg\.length > 0\) \{/, "le refus doit dépendre du RÉSULTAT, pas d'une constante");
+  assert.match(src, /if \(divulgSms\.length > 0\) \{/, "idem pour le SMS");
+  assert.match(src, /modeProduction: ModeProduction;/, "le mode doit être REQUIS côté TypeScript");
+});
+
+test("⚠⚠ ABSENT ⇒ AUTONOME — le repli est celui qui REFUSE", () => {
+  /**
+   * Sens fail-closed, et il n'est pas symétrique : un expéditeur automatique
+   * qui oublie le champ se fait refuser (bruyant, immédiat, réparable) ;
+   * l'inverse le laisserait démarcher sans se déclarer — illégal, et invisible
+   * jusqu'à la plainte.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/send/route.ts"), "utf8");
+  assert.match(src, /body\.modeProduction \?\? "autonome"/, "le repli doit être le mode STRICT");
+  assert.ok(
+    !/body\.modeProduction \?\? "valide-par-humain"/.test(src),
+    "un repli permissif laisserait passer un envoi automatique non déclaré",
+  );
+});
+
+test("⚠ LES QUATRE APPELANTS DÉCLARENT LEUR MODE — sinon ils tombent tous en 422", () => {
+  /**
+   * Conséquence directe du repli strict : sans déclaration, chaque envoi
+   * HUMAIN serait refusé pour divulgation manquante. Les quatre appelants sont
+   * des gestes humains — quelqu'un clique — donc `valide-par-humain`.
+   *
+   * ⚠ Mesuré : aucun ne le déclarait après le branchement. Le type ne les
+   * force pas (ils construisent le JSON à la main), donc c'est ce test qui
+   * tient — et c'est lui qui attrapera le cinquième appelant.
+   */
+  for (const f of [
+    "components/send-bar.tsx",
+    "components/campaigns/campaign-review.tsx",
+    "app/(app)/newsletter/page.tsx",
+    "components/recette/go-live-checklist.tsx",
+  ]) {
+    const src = readFileSync(join(process.cwd(), f), "utf8");
+    assert.match(src, /modeProduction:/, `${f} doit déclarer qui parle`);
+  }
+});

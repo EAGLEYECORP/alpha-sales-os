@@ -12,6 +12,7 @@ import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
 import { habillageEnvoi } from "@/lib/expediteur";
 import { verifieMentions } from "@/lib/conformite";
+import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -33,6 +34,26 @@ export const maxDuration = 30;
 
 interface SendRequest {
   channel: "email" | "sms";
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * QUI PARLE — et c'est ce qui décide si la divulgation IA est due.
+   *
+   * ⚠⚠ CE CHAMP EXISTE PARCE QUE LA VITRINE PROMETTAIT DÉJÀ LA RÈGLE.
+   * « Quand c'est l'IA qui mène l'échange, elle le dit ; quand un humain a
+   * relu et envoyé, on ne l'écrit pas » — écrit sur la page publique, et
+   * appliqué par PERSONNE : `lib/signature-ia.ts` n'était importé nulle part.
+   * Une promesse invérifiable sur une page publique est exactement ce que
+   * `tests/vitrine-fuite` refuse ailleurs.
+   *
+   * ⚠ ABSENT ⇒ `autonome`, donc la divulgation est EXIGÉE. C'est le sens
+   * fail-closed : un expéditeur automatique qui oublie le champ se fait
+   * refuser (bruyant, immédiat, réparable), alors que l'inverse le laisserait
+   * démarcher sans se déclarer — illégal, et invisible jusqu'à la plainte.
+   * Le champ est REQUIS côté TypeScript pour que les appelants internes soient
+   * forcés de répondre ; le repli ne protège que les appels HTTP externes.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  modeProduction: ModeProduction;
   to: string;
   subject?: string;
   body: string;
@@ -418,6 +439,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /**
+     * ⚠⚠ QUI PARLE — vérifié sur le texte RENDU, comme les mentions.
+     *
+     * Deux refus possibles, et ils ne se confondent pas : une divulgation
+     * MANQUANTE sur un envoi autonome (illégal) et une divulgation EN TROP sur
+     * un message qu'un humain a relu (faux, et ça affaiblit le message).
+     * `lib/signature-ia.ts` tranche ; ici on applique.
+     */
+    const modeEmail: ModeProduction = body.modeProduction ?? "autonome";
+    const divulg = verifieDivulgation(text, "email", modeEmail);
+    if (divulg.length > 0) {
+      return NextResponse.json(
+        { error: "Divulgation IA non conforme — rien ne part.", manques: divulg, mode: modeEmail },
+        { status: 422 }
+      );
+    }
+
     // Lint anti-spam — ne compter que les VRAIS liens de contenu (uniques,
     // hors désinscription ; le bouton « bulletproof » duplique son href).
     const lint = lintForSpam(subject, body.body, true, countContentLinks(html));
@@ -500,6 +538,15 @@ export async function POST(request: NextRequest) {
      * fabrique juste la preuve qu'on savait.
      * ─────────────────────────────────────────────────────────────────────
      */
+    const modeSms: ModeProduction = body.modeProduction ?? "autonome";
+    const divulgSms = verifieDivulgation(body.body, "sms", modeSms);
+    if (divulgSms.length > 0) {
+      return NextResponse.json(
+        { error: "Divulgation IA non conforme dans le SMS — rien ne part.", manques: divulgSms, mode: modeSms },
+        { status: 422 }
+      );
+    }
+
     const manquesSms = verifieMentions(body.body, habillage.closerName, marque);
     if (manquesSms.length > 0) {
       return NextResponse.json(
