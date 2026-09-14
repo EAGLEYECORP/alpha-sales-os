@@ -129,3 +129,60 @@ test("⚠ ÉCHAPPEMENT : un nom d'entreprise ne peut pas injecter du HTML", () =
   assert.ok(!d.html.includes("<script>alert"), "le nom doit être échappé");
   assert.match(d.html, /&lt;script&gt;/);
 });
+
+test("⚠⚠ LA SORTIE VISIO EXISTE — un ordre de grandeur sans porte de sortie ne produit rien", () => {
+  /**
+   * C'est la moitié manquante d'un pré-devis. Un chiffre sans « et maintenant
+   * quoi ? » laisse le lecteur avec un montant et rien à en faire — donc il ne
+   * fait rien. Deux chemins, parce qu'il y a deux états après lecture : le
+   * chiffre passe, ou il reste des questions. Le second n'est pas un échec :
+   * c'est ce que le cadrage sert à traiter, et c'est lui qui débloque le devis.
+   */
+  const avecLien = { ...marque, bookingUrl: "https://cal.example/nuwacom" };
+  const d = renderPreDevis(cible, avecLien)!;
+  assert.match(d.html, /visio/i, "le document doit proposer la visio");
+  assert.match(d.html, /cal\.example/, "et porter le lien quand il existe");
+
+  const e = emailPreDevis(cible, avecLien);
+  assert.match(e.corps, /visio/i);
+  assert.match(e.corps, /cal\.example/);
+});
+
+test("⚠⚠ SANS LIEN DE RÉSERVATION, ON N'EN INVENTE PAS — on propose de répondre", () => {
+  /**
+   * Écrire « prenez rendez-vous ici » sans lien, ou fabriquer une URL, envoie
+   * le prospect dans le mur au moment précis où il était d'accord. C'est la
+   * façon la plus chère de perdre un oui. Idiome repris de
+   * `lib/linkedin-sequence.ts`.
+   */
+  const d = renderPreDevis(cible, marque)!; // marque SANS bookingUrl
+  assert.match(d.html, /visio/i, "la visio reste proposée");
+  assert.ok(!/href="[^"]*"/.test(d.html), "mais aucun lien fabriqué");
+  assert.match(d.html, /Répondez/i, "et on dit quoi faire à la place");
+
+  const e = emailPreDevis(cible, marque);
+  assert.ok(!/https?:\/\//.test(e.corps), `aucune URL inventée dans l'email`);
+  assert.match(e.corps, /deux créneaux/i);
+});
+
+test("⚠ LA VISIO SE PRÉSENTE COMME LE CADRAGE, pas comme une démo de plus", () => {
+  // Elle doit dire à quoi elle sert — arrêter le périmètre — sinon elle se lit
+  // comme un rendez-vous de courtoisie qu'on décale indéfiniment. Et c'est
+  // elle qui débloque le devis : le lien entre les deux doit être écrit.
+  const e = emailPreDevis(cible, { ...marque, bookingUrl: "https://cal.example/x" });
+
+  /**
+   * ⚠ ON VISE LA PHRASE DE LA VISIO, PAS L'EMAIL ENTIER. Première rédaction :
+   * je cherchais « périmètre » et « devis » n'importe où — et la réserve
+   * « ce n'est pas un devis : le périmètre se décide au cadrage » les contient
+   * DÉJÀ. La mutation qui retirait la raison d'être de la visio passait donc au
+   * vert. Un garde qui cherche un mot au lieu de son point d'usage ne garde
+   * rien : c'est la quatrième fois de la session.
+   */
+  const phrase = e.corps
+    .split(/\n/)
+    .find((l) => /visio/i.test(l));
+  assert.ok(phrase, "l'email doit porter une phrase sur la visio");
+  assert.match(phrase!, /périmètre/i, "elle doit dire à quoi sert la visio : arrêter le périmètre");
+  assert.match(phrase!, /devis/i, "et ce qu'elle débloque — sinon c'est un rendez-vous de courtoisie");
+});

@@ -41,6 +41,16 @@ export interface MarqueProposition {
   ville: string;
   /** Qui signe. Voir `lib/signature.ts` : on ne devine jamais un humain. */
   signataire: string;
+  /**
+   * Lien de réservation public (Cal.com, Calendly…), pour caler la visio.
+   *
+   * ⚠ ABSENT ⇒ ON N'INVENTE RIEN. L'idiome est celui de
+   * `lib/linkedin-sequence.ts` : présent, on l'ajoute ; vide, on omet la ligne
+   * et on propose de répondre à l'email. Écrire « prenez rendez-vous ici »
+   * sans lien, ou fabriquer une URL, envoie le prospect dans le mur au moment
+   * précis où il était d'accord — la façon la plus chère de perdre un oui.
+   */
+  bookingUrl?: string;
 }
 
 export interface CibleProposition {
@@ -104,6 +114,30 @@ function tableau(e: Estimation): string {
 }
 
 /**
+ * La sortie du document : que fait le prospect maintenant ?
+ *
+ * ⚠⚠ C'EST LA MOITIÉ MANQUANTE D'UN PRÉ-DEVIS. Un ordre de grandeur sans porte
+ * de sortie laisse le lecteur avec un chiffre et rien à en faire — et il ne
+ * fera rien. Deux chemins, parce qu'il y a deux états possibles après lecture :
+ * le chiffre passe (on avance), ou il reste des questions (on se parle). Le
+ * second n'est pas un échec : c'est exactement ce que le cadrage sert à traiter,
+ * et c'est lui qui débloque le devis.
+ *
+ * ⚠ Sans lien de réservation, on propose de RÉPONDRE. On n'écrit jamais
+ * « prenez rendez-vous ici » sans lien, et on n'en fabrique pas : envoyer le
+ * prospect dans le mur au moment où il était d'accord est la façon la plus
+ * chère de perdre un oui.
+ */
+function suiteVisio(marque: MarqueProposition): string {
+  const lien = marque.bookingUrl?.trim();
+  return `<div class="avert" style="border-left-color:#6B6862">
+  <strong>S'il reste des questions, on en parle de vive voix.</strong> Trente minutes en visio :
+  on regarde votre cas, on arrête le périmètre, et c'est seulement après ça qu'un devis a du sens.
+  ${lien ? `<br><a href="${ECHAP(lien)}">${ECHAP(lien)}</a>` : "Répondez simplement à cet email avec deux créneaux qui vous vont."}
+  </div>`;
+}
+
+/**
  * LE PRÉ-DEVIS — envoyable avant le cadrage, et qui ne peut pas passer pour
  * un devis.
  *
@@ -127,6 +161,7 @@ export function renderPreDevis(cible: CibleProposition, marque: MarquePropositio
   le prix — se décide au cadrage.</div>
   ${tableau(e)}
   <ul class="res">${e.reserves.map((r) => `<li>${ECHAP(r)}</li>`).join("")}</ul>
+  ${suiteVisio(marque)}
   <p class="pied">Établi par ${ECHAP(marque.signataire)} · ${ECHAP(marque.societe)}. Aucun engagement
   de part et d'autre.</p>`;
 
@@ -189,7 +224,11 @@ export function emailPreDevis(cible: CibleProposition, marque: MarqueProposition
       `Ce n'est pas un devis : le périmètre se décide au cadrage, et c'est lui qui fait le prix. ` +
       `Je préfère vous donner le chiffre maintenant plutôt que de vous faire prendre un rendez-vous ` +
       `pour le découvrir.\n\n` +
-      `Si l'ordre de grandeur vous va, on cale trente minutes et on regarde votre cas précis.\n\n` +
+      `Si l'ordre de grandeur vous va, on cale trente minutes en visio et on regarde votre cas ` +
+      `précis — c'est là qu'on arrête le périmètre, et c'est seulement après qu'un devis a du sens.\n` +
+      (marque.bookingUrl?.trim()
+        ? `Mon agenda est ouvert : ${marque.bookingUrl.trim()}\n\n`
+        : `Répondez-moi avec deux créneaux qui vous vont.\n\n`) +
       `${marque.signataire}\n${marque.societe} · ${marque.ville}`,
   };
 }
