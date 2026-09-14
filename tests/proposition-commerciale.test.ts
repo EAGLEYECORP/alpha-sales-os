@@ -186,3 +186,62 @@ test("⚠ LA VISIO SE PRÉSENTE COMME LE CADRAGE, pas comme une démo de plus", 
   assert.match(phrase!, /périmètre/i, "elle doit dire à quoi sert la visio : arrêter le périmètre");
   assert.match(phrase!, /devis/i, "et ce qu'elle débloque — sinon c'est un rendez-vous de courtoisie");
 });
+
+test("⚠⚠ LE PRÉ-DEVIS EST ATTEIGNABLE DEPUIS LA FICHE — dernier maillon", () => {
+  /**
+   * `renderPreDevis` et `emailPreDevis` étaient justes, testés, vérifiés au
+   * rendu — et appelés par AUCUN écran. Le défaut récurrent du dépôt, sur la
+   * chaîne qu'on venait précisément de construire pour obtenir des
+   * rendez-vous : elle s'arrêtait juste avant d'être utilisable.
+   */
+  const page = readFileSync(join(process.cwd(), "app/(app)/prospects/[id]/page.tsx"), "utf8");
+  assert.match(page, /<PreDevisPanel\b/, "la fiche doit monter le panneau");
+
+  /**
+   * ⚠ ET DANS L'ONGLET COMMERCIAL, PAS DANS L'AUDIT. Je l'avais d'abord posé à
+   * côté des outils de deep-dive — c'est là que vivent les autres documents
+   * imprimables, et c'était le mauvais critère : un audit se donne pour OUVRIR
+   * une conversation, un pré-devis la CONCLUT. Vu au rendu : l'onglet audit
+   * n'est pas celui qu'on ouvre quand on parle argent.
+   */
+  const commercial = page.slice(page.indexOf("function CommercialTab({"), page.indexOf("function CoachTab"));
+  assert.ok(commercial.includes("<PreDevisPanel"), "le panneau doit vivre dans l'onglet commercial");
+
+  const comp = readFileSync(join(process.cwd(), "components/prospects/pre-devis-panel.tsx"), "utf8");
+  assert.match(comp, /renderPreDevis\(/, "il doit appeler le module");
+  assert.match(comp, /emailPreDevis\(/);
+});
+
+test("⚠⚠ RIEN NE PART DE CET ÉCRAN — et c'est ce qui rend l'email honnête", () => {
+  /**
+   * Le document s'OUVRE, l'email se COPIE. Aucun chemin n'expédie un pré-devis
+   * tout seul depuis la fiche. C'est ce qui le range par construction dans
+   * `valide-par-humain` (`lib/signature-ia.ts`) — donc sans divulgation IA,
+   * donc sans mentir. Un bouton « envoyer » ici basculerait le message en
+   * `autonome` et rendrait l'absence de divulgation ILLÉGALE.
+   */
+  const comp = readFileSync(join(process.cwd(), "components/prospects/pre-devis-panel.tsx"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\/|\{\/\*[\s\S]*?\*\/\}|\/\/.*$/gm, "");
+  assert.ok(!/fetch\(/.test(comp), "aucun appel réseau : ce panneau n'envoie rien");
+  assert.ok(!/\/api\/send/.test(comp), "et surtout pas la route d'envoi");
+  assert.match(comp, /navigator\.clipboard/, "l'email se copie, il ne s'expédie pas");
+});
+
+test("⚠ PAS D'ÉMISSION SANS IDENTITÉ — le produit est white-label", () => {
+  /**
+   * Un document qui sort avec une raison sociale vide arrive chez un prospect
+   * signé par personne. Et aucun repli ne doit remettre NOTRE marque : c'est
+   * le défaut que `lib/signature.ts` a déjà payé quatre fois.
+   */
+  const comp = readFileSync(join(process.cwd(), "components/prospects/pre-devis-panel.tsx"), "utf8");
+  assert.match(comp, /identiteManquante/, "le panneau doit refuser d'émettre sans identité");
+  const sansCommentaires = comp.replace(/\/\*[\s\S]*?\*\/|\{\/\*[\s\S]*?\*\/\}|\/\/.*$/gm, "");
+  assert.ok(
+    !/["'`]EAGLEYE/i.test(sansCommentaires),
+    "aucun repli en dur vers notre marque : elle vient des réglages ou rien",
+  );
+  assert.ok(
+    !/["'`]Lyon["'`]/.test(sansCommentaires),
+    "ni notre ville — `lib/signature.ts` l'a déjà payé",
+  );
+});

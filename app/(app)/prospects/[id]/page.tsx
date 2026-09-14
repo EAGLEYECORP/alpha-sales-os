@@ -77,6 +77,7 @@ import { criticalGaps } from "@/lib/missing-info";
 import { ClientTrackingStats } from "@/components/tracking/tracking-stats";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { DeepdiveTools } from "@/components/prospects/deepdive-tools";
+import { PreDevisPanel } from "@/components/prospects/pre-devis-panel";
 import { RecoveryProjection } from "@/components/prospects/recovery-projection";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
@@ -843,6 +844,7 @@ function AuditTab({
       {/* Projette-toi — projection de récupération sur ses propres chiffres (RDV) */}
       <RecoveryProjection p={p} />
 
+
       {/* Structured deep audit — real, measured data */}
       <section className="card p-4 lg:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1156,6 +1158,17 @@ function CommercialTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      {/* ⚠ LE PRÉ-DEVIS VIT DANS L'ONGLET COMMERCIAL, PAS DANS L'AUDIT.
+          Je l'avais d'abord posé à côté des outils de deep-dive — c'est là que
+          vivent les autres documents imprimables, et c'était le mauvais
+          critère : un audit se donne pour ouvrir une conversation, un
+          pré-devis la conclut. Vu au rendu : l'onglet audit n'est pas celui
+          qu'on ouvre quand on parle argent.
+          Rien ne PART d'ici : le document s'ouvre pour impression, l'email se
+          copie. C'est ce qui en fait par construction un message relu par un
+          humain (`lib/signature-ia.ts`), donc sans divulgation IA. */}
+      <PreDevisPanel p={p} />
+
       <OnboardingPanel p={p} />
       <QuoteBuilder p={p} />
       <DeckButton p={p} />
