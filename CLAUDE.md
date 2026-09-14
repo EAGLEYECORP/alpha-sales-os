@@ -1564,6 +1564,40 @@ et la RAISON de chaque dépendance.
 > un dépôt privé se partage, se clone, et redevient public par accident. Ce
 > sont des données de tiers, pas un secret commercial.
 
+## CE QU'ON PROMET, ET CE QU'ON REFUSE DE DIRE (`lib/promesse.ts`)
+Décidé le 14/09/2026. Le positionnement vivait à **quatre endroits** — README,
+section mission, trois commentaires — et aucun ne faisait autorité.
+
+> **On ne fabrique pas l'intelligence. On fabrique ce qui permet de s'en servir
+> pour vendre — en France, sans se mettre hors la loi.**
+> Courte : *les humains closent, Alpha fait tourner la machine.*
+
+> ⚠⚠ **ON NE SE POSITIONNE PAS COMME « LE \<GRAND ACTEUR\> DE LA VENTE »**, et
+> ce n'est pas une question de goût :
+> · **ça contredit notre seul argument vérifiable** — la vitrine défend que
+>   l'automatisation des PME françaises ne devrait pas dépendre d'acteurs
+>   américains, et `tests/vitrine-fuite` EXIGE que cet angle reste. Emprunter
+>   le nom d'un de ces acteurs se contredit dans la même page ;
+> · **ça invite la question qu'on perd** : « quel modèle entraînez-vous ? » —
+>   aucun, on loue l'intelligence comme tout le monde ;
+> · **« le X de Y » signale DÉRIVÉ**, et à zéro vente ça rejoint la famille des
+>   affirmations invérifiables (superlatifs, affiliations) déjà refusée.
+> Un test cherche la **forme** ET une courte liste de noms — une liste seule
+> serait périmée au prochain acteur à la mode.
+
+- **Chaque preuve NOMME le fichier qui l'applique**, et un test l'ouvre. C'est
+  ce qui sépare une garantie d'un argument de vente : on peut la lire. Une
+  preuve dont le module disparaît fait **tomber le build** au lieu de continuer
+  à se dire sur une page publique.
+- **Aucune preuve n'est une performance.** Pas de pourcentage, pas de « X fois
+  plus » : zéro vente, donc aucune mesure à citer. Ce sont des RÈGLES que le
+  logiciel applique — vérifiables aujourd'hui, contrairement à un résultat.
+- **La promesse s'AJOUTE à l'angle de souveraineté, elle ne le remplace pas**
+  (l'ordre est testé) : l'un dit où vivent les données, l'autre pourquoi un
+  meilleur modèle ailleurs ne nous remplace pas.
+- **Elle n'est recopiée nulle part** — la vitrine l'importe. C'est la recopie
+  qui a fait dériver ce positionnement en quatre versions.
+
 ## Contraintes d'environnement (sandbox)
 Le proxy sortant bloque : github.com, data.grandlyon.com, data.gouv, et les clés
 live NVIDIA/Supabase/Stripe. pypi passe. **Je ne peux pas tester un service live

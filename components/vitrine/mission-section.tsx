@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { PREUVES, PROMESSE } from "@/lib/promesse";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -125,6 +126,28 @@ export function MissionSection() {
         d&apos;acteurs américains. Vos données peuvent rester en France, et la brique vocale
         s&apos;héberge chez vous si vous le voulez.
       </p>
+
+      {/* ⚠⚠ LA PROMESSE VIENT DE `lib/promesse.ts`, ELLE N'EST PAS RECOPIÉE ICI.
+          Elle vivait à quatre endroits — README, cette section, trois
+          commentaires — et aucun ne faisait autorité. C'est comme ça qu'une
+          doctrine part en morceaux, et c'est la version qu'on ne relit pas qui
+          finit chez un prospect. Un test refuse la recopie.
+
+          ⚠ Et chaque preuve NOMME le fichier qui l'applique. C'est ce qui la
+          sépare d'un argument de vente : on peut l'ouvrir. Un test vérifie que
+          chaque module existe — une garantie dont le code a disparu fait
+          tomber le build au lieu de continuer à se dire ici. */}
+      <p className="mt-10 max-w-2xl font-serif text-[22px] leading-[1.4]" style={{ color: INK }}>
+        {PROMESSE}
+      </p>
+      <ul className="mt-8 grid max-w-3xl gap-x-10 gap-y-4 sm:grid-cols-2">
+        {PREUVES.map((pr) => (
+          <li key={pr.module} className="text-[15px] leading-[1.55]" style={{ color: MUTED }}>
+            <span aria-hidden style={{ color: ACCENT }}>— </span>
+            {pr.affirmation}
+          </li>
+        ))}
+      </ul>
 
       {/* La barre : l'échelle est logarithmique, et c'est dit. */}
       <div className="mt-12">
