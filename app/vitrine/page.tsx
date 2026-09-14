@@ -18,6 +18,7 @@ import {
 } from "@/lib/public-catalogue";
 import { HeroVideo } from "@/components/vitrine/hero-video";
 import { MissionSection } from "@/components/vitrine/mission-section";
+import { EstimationPublique } from "@/components/vitrine/estimation-publique";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -765,6 +766,21 @@ export default function VitrinePage() {
               </div>
             )}
           </div>
+
+          {/*
+            ⚠⚠ L'ESTIMATION N'EST PAS UN DEVIS, ET LE CODE LE TIENT.
+            La doctrine dit « cadrage OBLIGATOIRE avant devis » — et elle a
+            raison : un montant annoncé sans avoir regardé le cas se renégocie
+            à la livraison. Mais interdire toute idée de prix ferait fuir la
+            moitié des visiteurs : personne ne prend un créneau pour découvrir
+            un ordre de grandeur.
+            La sortie n'est pas de relâcher la règle, c'est de séparer les deux
+            objets. `lib/cadrage.ts` type `estUnDevis` à `false` LITTÉRALEMENT
+            et impose des réserves non vides ; `peutEmettreDevis()` exige les
+            trois conditions du cadrage. La page ne fait que rendre ce que le
+            module décide.
+          */}
+          <EstimationPublique ink={INK} muted={MUTED} cream={CREAM} accent={ACCENT} line={LINE} />
         </section>
 
         <Rule />
