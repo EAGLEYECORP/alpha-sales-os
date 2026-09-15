@@ -101,19 +101,26 @@ dernier mètre, celui qui rapporte.
       8 h du matin le jour du lancement.
 
 ### Chez Amen — le DNS (c'est ici que ça se joue)
-- [ ] **Regarder le SPF EXISTANT** avant d'en ajouter un.
-      Domaine et DNS → Configuration DNS → *Gérer les paramètres avancés* →
-      chercher un TXT commençant par `v=spf1`.
-      ⚠⚠ **Deux SPF valent zéro SPF.** S'il y en a déjà un, tu le **modifies**.
-- [ ] **SPF** — TXT sur l'apex : `v=spf1 include:spf.webapps.net ~all`
-      (ou fusionné avec l'existant : un seul `v=spf1`, un seul `~all`, les
-      `include:` empilés au milieu).
-- [ ] **DKIM** — `eagleyecorp.fr` → **EMAIL** → bouton bleu **ACTION** →
-      **DKIM**. Amen publie l'enregistrement lui-même.
-- [ ] **DMARC** — TXT sur `_dmarc.eagleyecorp.fr` :
-      `v=DMARC1; p=none; rua=mailto:postmaster@eagleyecorp.fr`
-      ⚠ `p=none` d'abord. `p=reject` avec un SPF mal fusionné ferait rejeter
-      tes propres mails partout, d'un coup.
+
+> ⚠⚠ **RELEVÉ LE 15/09/2026, EN INTERROGEANT LE DNS PUBLIC — deux des trois
+> lignes ci-dessous étaient DÉJÀ FAITES, et ce document disait de les créer.**
+> Les appliquer telles qu'elles étaient écrites aurait posé un **second** SPF
+> et un **second** DMARC : la norme fait alors traiter le domaine comme s'il
+> n'en avait AUCUN. Le document se serait fait casser par son propre
+> avertissement. Détail et méthode de relevé : section 3.
+
+- [x] **SPF** — **déjà posé, et correct** : `v=spf1 include:spf.webapps.net ~all`,
+      un seul enregistrement. **Ne touche à rien.**
+- [ ] **DKIM** — **c'est la seule des trois qui manque, et c'est la plus
+      urgente.** `eagleyecorp.fr` → **EMAIL** → bouton bleu **ACTION** →
+      **DKIM**. Amen publie l'enregistrement lui-même (le DNS est chez lui :
+      `ns1/ns2.amenworld.com`).
+      ⚠ Vérifie ensuite que la signature porte `d=eagleyecorp.fr` et **non**
+      `d=securemail.pro` — voir l'encadré « alignement strict » en section 3.
+- [x] **DMARC** — **déjà posé, et PLUS STRICT que ce que ce document
+      prescrivait** : `p=quarantine`, `adkim=s`, `aspf=s`, `pct=100`.
+      **N'en crée pas un second.** Ce qu'il faut savoir avant d'envoyer quoi
+      que ce soit : section 3, encadré « alignement strict ».
 
 ### Chez Supabase — le SMTP
 - [ ] Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*
@@ -219,10 +226,27 @@ Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*.
 | **Password** | celui de la boîte |
 | Minimum interval per user | `60` (le défaut convient) |
 
-> ⚠ **Le port 465 est en SSL implicite**, pas en STARTTLS. Si Amen refuse la
-> connexion, essaie `587` — certaines offres Amen n'ouvrent que celui-là. Ne
-> touche jamais au **25** : il est bloqué par la quasi-totalité des
-> fournisseurs pour freiner le spam.
+> ⚠ **Le port 465 est en SSL implicite**, pas en STARTTLS. Ne touche jamais au
+> **25** : il est bloqué par la quasi-totalité des fournisseurs pour freiner le
+> spam.
+>
+> ⚠ **Le repli 587 n'est PAS documenté par Amen sur cette plateforme.** Seul le
+> **465** l'est. Le 587 apparaît sur l'**ancienne** plateforme Amen (celle où
+> les hôtes dérivent de ton domaine : `smtp.eagleyecorp.fr`) et chez des tiers.
+> Donc : si le 465 est refusé, essayer le 587 reste raisonnable, mais **ça ne
+> prouve rien et ça peut signifier que tu n'es pas sur la plateforme que ce
+> document décrit** — auquel cas ce sont TOUS les paramètres qu'il faut revoir,
+> pas seulement le port.
+>
+> **Le marqueur de plateforme, et il se lit en dix secondes** : regarde l'hôte
+> **entrant** de la boîte dans l'espace Amen.
+> · `mail-fr.securemail.pro` (IMAP 993 / POP 995) → tu es bien sur la
+>   plateforme décrite ici, et `smtp-fr.securemail.pro`:465 est le bon couple.
+> · `pop.eagleyecorp.fr` / `imap.eagleyecorp.fr` → ancienne plateforme, **rien
+>   de ce document ne s'applique**.
+> Le MX public dit déjà `mail-fr.securemail.pro` (relevé le 15/09), ce qui rend
+> la première hypothèse très probable — mais le MX décrit la réception, pas la
+> boîte : c'est la fiche de la boîte qui tranche.
 
 > ⚠ **`Sender email address` doit être EXACTEMENT la boîte authentifiée.**
 > Expédier depuis une adresse et s'authentifier avec une autre fait rejeter le
@@ -232,54 +256,154 @@ Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*.
 
 ---
 
-## 3. Les trois enregistrements DNS — sans eux, tout part en indésirables
+## 3. Les trois enregistrements DNS — l'état RELEVÉ, pas l'état supposé
 
 Espace client Amen → **eagleyecorp.fr** → **Domaine et DNS** → *Configuration
-DNS* → **Gérer les paramètres avancés**.
+DNS* → **Gestion avancée** (et valider l'avertissement).
 
-### SPF — dit quels serveurs ont le droit d'envoyer pour toi
+> ⚠ Ce document disait « Gérer les paramètres avancés ». Le libellé servi par
+> Amen est **« Gestion avancée »**. Amen distingue deux niveaux : la
+> *Configuration DNS* standard, avec des assistants guidés — dont un assistant
+> SPF, qu'il ne faut PAS utiliser ici puisque le SPF est déjà correct — et la
+> *Gestion avancée* de la zone, seule à permettre d'ajouter et de supprimer
+> des entrées.
 
-| | |
-|---|---|
-| Nom | `eagleyecorp.fr` (l'apex) |
-| Type | `TXT` |
-| TTL | `900` |
-| Valeur | `v=spf1 include:spf.webapps.net ~all` |
-
-> ⚠⚠ **TU AS DÉJÀ UN SPF, ET DEUX SPF VALENT ZÉRO SPF.**
->
-> `contact@eagleyecorp.fr` fonctionne, donc un enregistrement existe
-> probablement déjà. La norme (RFC 7208) impose **un seul** enregistrement
-> `v=spf1` par domaine : un domaine qui en a deux est traité comme un domaine
-> qui n'en a **aucun**. Tu casserais l'existant en croyant l'améliorer.
->
-> **Regarde d'abord.** S'il y en a un, tu le **fusionnes** — tu n'en ajoutes
-> pas un second :
+> **Relevé le 15/09/2026** en interrogeant le DNS public depuis la session
+> (module `node:dns`, pas un service tiers — la réponse vient des serveurs
+> faisant autorité). C'est reproductible en dix secondes :
+> ```bash
+> node -e "const d=require('node:dns').promises;(async()=>{
+>   console.log(await d.resolveTxt('eagleyecorp.fr'));
+>   console.log(await d.resolveTxt('_dmarc.eagleyecorp.fr'));
+>   console.log(await d.resolveMx('eagleyecorp.fr'));})()"
 > ```
-> v=spf1 include:spf.webapps.net include:autre-truc.com ~all
-> ```
-> Un seul `v=spf1` au début, un seul `~all` à la fin, les `include:` empilés
-> entre les deux.
+> ⚠ **Refais-le après chaque modification chez Amen.** L'interface du
+> registrar affiche ce que tu as SAISI ; le DNS public rend ce qui est
+> effectivement SERVI. Entre les deux il y a la propagation, et parfois une
+> faute de frappe que seul le second révèle.
 
-### DKIM — signe cryptographiquement tes messages
+| Enregistrement | État au 15/09/2026 | À faire |
+|---|---|---|
+| **SPF** (apex, TXT) | `v=spf1 include:spf.webapps.net ~all` — un seul | **rien** |
+| **MX** | `mail-fr.securemail.pro` | rien — confirme la plateforme |
+| **DMARC** (`_dmarc`, TXT) | `p=quarantine; adkim=s; aspf=s; pct=100` | **rien**, mais lire l'encadré ci-dessous |
+| **DKIM** | **absent** — 16 sélecteurs courants sondés, zéro réponse | **l'activer** |
+
+### SPF — déjà bon, et c'est le piège inverse qui menace
+
+La valeur servie est exactement celle que ce document prescrivait. **Il n'y a
+donc rien à ajouter** — et y ajouter quoi que ce soit serait le défaut que la
+version précédente de ce paragraphe avertissait d'éviter : la norme (RFC 7208)
+impose **un seul** `v=spf1` par domaine, et un domaine qui en porte deux est
+traité comme un domaine qui n'en a **aucun**.
+
+Le jour où un autre expéditeur doit être autorisé, on **fusionne** — un seul
+`v=spf1` au début, un seul `~all` à la fin, les `include:` empilés entre les
+deux :
+```
+v=spf1 include:spf.webapps.net include:autre-truc.com ~all
+```
+
+> ⚠ Le sondage de sélecteurs DKIM ne **prouve** pas l'absence : un sélecteur
+> est une chaîne arbitraire, et on ne peut pas énumérer le DNS. Seize
+> sélecteurs courants sans réponse rendent l'absence très probable, pas
+> certaine. Ce qui tranche en dix secondes : l'écran EMAIL de l'espace Amen.
+
+### DKIM — la seule des trois qui manque, et celle qui porte tout
 
 Espace client Amen → **eagleyecorp.fr** → **EMAIL** → bouton bleu **ACTION** →
-**DKIM**. Amen publie l'enregistrement lui-même.
+**DKIM**. Le DNS du domaine est géré chez Amen (`ns1`/`ns2.amenworld.com`),
+donc Amen publie l'enregistrement lui-même — il n'y a pas de TXT à recopier à
+la main.
 
-### DMARC — dit quoi faire quand SPF ou DKIM échoue
+### ⚠⚠ ALIGNEMENT STRICT — ce que le DMARC déjà en place implique
 
-| | |
-|---|---|
-| Nom | `_dmarc.eagleyecorp.fr` |
-| Type | `TXT` |
-| Valeur | `v=DMARC1; p=none; rua=mailto:postmaster@eagleyecorp.fr` |
+L'enregistrement servi n'est pas celui d'un domaine qui débute :
 
-> `p=none` = on **observe** sans rien rejeter. C'est le bon départ : passer
-> directement à `p=reject` avec un SPF mal fusionné ferait rejeter tes propres
-> mails par tout le monde, d'un coup. On durcit après avoir lu les rapports.
+```
+v=DMARC1; p=quarantine; rua=…; ruf=…; adkim=s; aspf=s; pct=100; ri=86400
+```
+
+Trois choses à comprendre **avant** le premier envoi, parce qu'elles ne
+produisent aucune erreur visible :
+
+1. **`p=quarantine` ne rejette pas — il range en indésirables.** Un message qui
+   échoue part dans le dossier spam du destinataire. Personne ne te prévient,
+   et l'expéditeur voit un envoi « réussi ».
+2. **DMARC passe si SPF **ou** DKIM passe ET s'aligne.** Sans DKIM, il ne reste
+   qu'une jambe : **tout repose sur SPF seul**. C'est ce qui rend l'activation
+   DKIM urgente, et pas cosmétique.
+3. **`adkim=s` / `aspf=s` = alignement STRICT.** Le domaine authentifié doit
+   être **exactement** `eagleyecorp.fr`. En relâché (le défaut de la norme), un
+   sous-domaine suffirait ; ici, non.
+
+### ⚠⚠ ET SPF NE POURRAIT DE TOUTE FAÇON PAS S'ALIGNER ICI
+
+C'est le point qui change l'ordre des gestes de la journée, et il ne vient pas
+d'une intuition.
+
+> Sur l'hébergement mail Register.it / Amen, **l'adresse de retour (Return-Path)
+> porte un domaine du PRESTATAIRE**, pas le tien — et le fournisseur n'expose
+> **aucun mécanisme** pour la faire porter ton domaine.
+> `[SECONDAIRE — fiche MXToolbox « Register.it Email Hosting », recoupée par
+> deux recherches indépendantes. NON TESTÉ ICI : le proxy de développement
+> refuse la récupération de page, et aucun message n'a encore été envoyé.]`
+
+Si c'est exact, SPF authentifie `securemail.pro` et non `eagleyecorp.fr` :
+en **alignement strict**, ça n'aligne pas — et en relâché non plus, parce que
+`securemail.pro` n'est même pas un sous-domaine de `eagleyecorp.fr`.
+**SPF ne peut alors JAMAIS contribuer à faire passer DMARC, quelle que soit la
+valeur d'`aspf`.**
+
+Additionné à l'état relevé, ça donne la situation exacte d'aujourd'hui :
+
+```
+SPF   : passe, mais ne peut pas s'aligner   → ne compte pas pour DMARC
+DKIM  : absent                              → ne compte pas pour DMARC
+────────────────────────────────────────────────────────────────────
+DMARC : échoue sur CHAQUE message
+p=quarantine                                → dossier indésirables
+```
+
+**Donc : tant que DKIM n'est pas actif, il ne faut rien envoyer.** Pas parce
+que c'est risqué — parce que c'est probablement déjà cassé, en silence, avec
+des envois qui s'affichent « réussis ».
+
+> ⚠ **`aspf=s` ne coûte rien à relâcher et ne rapporte rien à garder** : si
+> l'alignement SPF est structurellement impossible ici, strict et relâché
+> donnent le même résultat. Ce n'est donc **pas** le levier. Le levier est
+> DKIM, et lui seul.
+> `adkim=s`, en revanche, mord pour de bon : il exigera que la signature porte
+> **exactement** `d=eagleyecorp.fr`. Si Amen signe avec `d=securemail.pro`,
+> DKIM passera et **n'alignera pas** — même résultat qu'aucun DKIM.
+
+### L'ORDRE DES GESTES, ET IL N'EST PAS NÉGOCIABLE
+
+1. **Activer DKIM** chez Amen (EMAIL → ACTION → DKIM).
+2. **Relever le sélecteur publié** dans la zone, puis vérifier que la signature
+   porte bien `d=eagleyecorp.fr` :
+   ```bash
+   node -e "require('node:dns').promises.resolveTxt('<sélecteur>._domainkey.eagleyecorp.fr').then(console.log)"
+   ```
+3. **Un seul message de test vers Gmail**, et lire `Authentication-Results`
+   (section 4). C'est **le seul endroit** où tout ce qui précède devient
+   visible — ni l'espace Amen ni `/api/health` ne peuvent le dire.
+4. **Lire quel domaine apparaît** derrière `spf=`, `dkim=` et `d=`. C'est lui
+   qui distingue « l'authentification échoue » de « elle réussit mais n'aligne
+   pas » — deux pannes qui se ressemblent et ne se corrigent pas pareil.
+5. **Seulement ensuite**, brancher `SMTP_*` et envoyer quoi que ce soit.
+
+> ⚠ **Ne descends pas à `p=none` pour « débloquer ».** Ça n'améliorerait rien
+> de mesurable — ça rendrait juste la panne invisible en laissant les messages
+> arriver, tout en retirant la seule protection du domaine contre
+> l'usurpation. Le défaut d'alignement, lui, resterait entier et reviendrait
+> au premier durcissement. **Corrige l'alignement, pas la politique.**
 >
-> ⚠ **Même piège que SPF : plusieurs DMARC valent zéro.** La norme impose au
-> résolveur d'ignorer le domaine entier s'il en trouve plus d'un.
+> Ce que `p=none` apporterait en revanche, et c'est le seul argument sérieux
+> en sa faveur : les rapports `rua=` arrivent dans les deux cas, mais sous
+> `p=none` on les lit **sans que le courrier soit déjà en train de partir en
+> indésirables** pendant qu'on apprend. C'est un arbitrage à faire en
+> connaissance de cause, pas un contournement à prendre par défaut.
 
 ---
 
@@ -323,7 +447,7 @@ Authentication → Providers → Email → **Confirm email** : ✅
 | Où | Combien | Comment le changer |
 |---|---|---|
 | **Supabase** | 30 emails/heure après activation du SMTP custom | Authentication → **Rate Limits** |
-| **Amen** | selon l'offre (souvent quelques centaines/jour) | non réglable — c'est le plafond dur |
+| **Amen** | **selon l'offre — 500, 1 000 ou 5 000/jour** (voir ci-dessous) | non réglable en l'état — c'est le plafond dur |
 
 > ⚠ Sur un lancement à 400 personnes, 30/heure peut suffire (elles ne
 > s'inscrivent pas toutes dans la même heure) — mais si ça bouchonne, l'inscrit
@@ -333,6 +457,123 @@ Authentication → Providers → Email → **Confirm email** : ✅
 > ⚠⚠ **Ne monte pas Supabase au-dessus du plafond d'Amen.** Supabase accepterait
 > d'envoyer, Amen refuserait, et Supabase compterait quand même l'essai contre
 > ton quota. Le plafond le plus bas est le seul vrai.
+
+### Le plafond d'Amen : trois chiffres publiés, et il faut savoir lequel est le tien
+
+Relevé le 15/09/2026. Amen publie des valeurs **par offre**, et elles ne
+concordent pas entre les pages :
+
+| Offre | Envois/jour | Preuve |
+|---|---|---|
+| Email **Personal** | **500** | page produit `[SOURCE-PRIMAIRE]` |
+| Email **Professional** | **5 000** | page produit `[SOURCE-PRIMAIRE]` |
+| **Webmail PRO** | **1 000** (et **100 destinataires** par envoi) | FAQ `[SOURCE-PRIMAIRE]` |
+
+**Aucun de ces chiffres n'est utilisable tant que le nom exact de l'offre
+souscrite n'est pas relevé dans l'espace client.** C'est la première ligne à
+lire, et c'est elle qui conditionne tout le reste — y compris, probablement,
+l'accès au bouton DKIM.
+
+> ⚠⚠ **Deux règles de comptage qui changent le calcul**, tirées des Conditions
+> Particulières `[SOURCE-PRIMAIRE]` :
+> · **un message à N destinataires compte pour N envois** — le plafond est en
+>   destinataires, pas en messages composés ;
+> · **quand le plafond du jour est atteint, ça REFUSE** — il n'y a pas de file
+>   d'attente, rien ne repart tout seul le lendemain.
+>
+> Le second est celui qui compte pour nous : `/api/send` recevrait une erreur
+> SMTP, pas un différé. À 5-40 envois/jour (`lib/email-ramp.ts`) on est très
+> loin du plancher de 500, donc **ce plafond ne nous borne pas** — c'est le
+> nôtre qui borne. Mais une newsletter mal cadrée, elle, pourrait y arriver.
+
+> ⚠ **Les CGU email d'Amen ont changé le 08/01/2025** (Amen publie encore la
+> version précédente à côté de l'actuelle). Toute valeur de plafond lue dans un
+> document antérieur à cette date est suspecte par construction.
+
+### Deux pannes documentées par Amen lui-même, à connaître avant de les vivre
+
+- **Quand le SMTP d'Amen tombe, le webmail continue** (canal de trafic
+  différent — Amen l'écrit dans sa page d'incident). Traduction : tu enverras
+  très bien tes mails à la main en croyant que tout va bien, pendant que
+  `/api/send` échoue. Le webmail n'est **pas** un test de l'envoi applicatif.
+- **Un renouvellement de certificat SSL côté Amen a déjà cassé des connexions.**
+  Sur un client graphique, ça se présente comme une boîte de dialogue qu'on
+  accepte. Sur un envoi programmatique, ça se présente comme un **échec TLS** —
+  donc comme une panne obscure de `/api/send`, sans rapport apparent avec Amen.
+
+---
+
+## 7. CE QUI S'APPLIQUE VRAIMENT À 5-40 EMAILS/JOUR
+
+Relevé le 15/09/2026 dans la documentation des fournisseurs de boîtes. **La
+ligne de partage est 5 000 messages/jour vers Gmail** — nous en sommes à deux
+ordres de grandeur, et ça change ce qu'il faut faire.
+
+### Ce qu'on croyait devoir, et qu'on ne doit pas à ce volume
+
+`[SOURCE-PRIMAIRE — Google, « Email sender guidelines »]`
+
+| Exigence | Qui la doit |
+|---|---|
+| SPF **et** DKIM (les deux) | bulk seulement — sous le seuil, **l'un OU l'autre** suffit |
+| Publier un **DMARC** | bulk seulement |
+| **Alignement** DMARC | bulk seulement |
+| **Désabonnement en un clic** (RFC 8058) | bulk seulement, et uniquement sur le marketing — le transactionnel en est explicitement exclu |
+| Exigences **Microsoft** (rejet `550 5.7.515`) | 5 000+/jour vers outlook/hotmail/live **grand public** uniquement |
+
+> Autrement dit : **le DMARC strict déjà publié sur `eagleyecorp.fr` est un
+> choix volontaire, pas une obligation.** On a pris tous les modes de panne du
+> régime strict sans en avoir l'obligation. C'est défendable — c'est la bonne
+> hygiène — mais il faut le savoir : personne ne nous l'impose, et la panne
+> qu'il provoque, elle, est bien réelle.
+
+### Ce qui s'applique bel et bien, quel que soit le volume
+
+`[SOURCE-PRIMAIRE — Google, liste « tous les expéditeurs »]` : SPF **ou** DKIM ·
+DNS direct et **inverse (PTR)** valides · **TLS** · format RFC 5322 · **taux de
+plainte < 0,3 %**.
+
+> ⚠⚠ **LE TAUX DE PLAINTE EST UNE OBLIGATION SANS INSTRUMENT, ET C'EST LE
+> PIÈGE PROPRE AUX PETITS VOLUMES.**
+> · La règle des 0,3 % s'applique à nous `[SOURCE-PRIMAIRE]`.
+> · Postmaster Tools **n'affiche rien** sous un volume quotidien élevé
+>   `[SECONDAIRE]` — donc nous ne la mesurerons jamais.
+> · **À 40 envois/jour, UNE seule plainte vaut 2,5 %** — plus de huit fois le
+>   plafond. Le petit volume ne protège pas : il rend chaque plainte énorme en
+>   proportion, et invisible en instrumentation.
+>
+> C'est la justification la plus solide qu'ait `lib/email-ramp.ts`, et elle
+> n'est pas celle qu'on croyait. Le palier ne sert pas à « chauffer le
+> domaine » — il sert à ce qu'**aucune journée ne soit assez petite pour
+> qu'une plainte unique la fasse basculer**, sur un compteur que personne ne
+> peut lire.
+
+> ⚠ **Le PTR ne nous appartient pas.** Relevé le 15/09 :
+> `smtp-fr.securemail.pro` (81.88.58.196) **n'a aucun PTR** ;
+> `mail-fr.securemail.pro` (81.88.48.101) en a un — `massenet.register.it`.
+> ⚠ **Ça ne prouve rien sur nos envois** : l'IP de *soumission* (celle où le
+> client SMTP se connecte) n'est pas forcément l'IP de *sortie* (celle qui
+> remet le message à Gmail). Seul l'en-tête `Received` d'un message réellement
+> reçu dit quelle IP a livré. C'est encore la même vérification qui tranche.
+
+### Le réchauffement de domaine : presque tout est du folklore
+
+Cherché spécifiquement. **Aucun fournisseur de boîtes ne publie de plan de
+warm-up chiffré.** Les calendriers « jour 1 : 20 mails, semaine 4 : 200/jour »
+viennent presque tous de sociétés qui vendent l'outil de warm-up — la source
+la plus intéressée qui soit. `[FOLKLORE]`
+
+Ce qui existe en source primaire, et c'est tout : Google écrit de commencer
+avec un **volume faible vers des destinataires engagés**, d'augmenter
+**lentement**, d'éviter les **pics**, et qu'un volume **constant** importe
+particulièrement pour un domaine neuf. Le seul chiffre trouvé — **+25 % à
++100 % par jour** — est donné dans un contexte de **reprise après rejet**, pas
+comme un plan de démarrage. Ne pas le transformer en calendrier.
+
+> **Conséquence directe** : à 5-40/jour nous sommes déjà, en permanence, au
+> niveau que ces plans cherchent à atteindre en semaine 1 ou 2. La question du
+> warm-up ne se pose quasiment pas pour nous. Ce qui nous protège est la
+> **régularité** et la **pertinence du destinataire**, pas une rampe.
 
 ---
 

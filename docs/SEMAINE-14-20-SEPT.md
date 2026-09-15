@@ -66,7 +66,17 @@ Setup Alpha Voice ........  1 490 €
 
 - [ ] **SMTP `contact@eagleyecorp.fr`** — *après* les comptes, jamais avant.
       Avant, `/api/send` est joignable par n'importe qui.
-- [ ] **SPF · DKIM · DMARC** chez le registrar.
+- [ ] **DKIM chez Amen** — et lui seul. Relevé dans le DNS public le 15/09 :
+      **SPF et DMARC sont déjà posés**, en créer un second de l'un ou l'autre
+      revient à n'en avoir aucun. Amen → `eagleyecorp.fr` → EMAIL → ACTION →
+      DKIM.
+      ⚠ Le DMARC en place est `p=quarantine` en **alignement strict** : sans
+      DKIM, tout tient sur SPF seul, et un défaut d'alignement range **chaque
+      message** en indésirables sans rien signaler. `docs/SMTP-SUPABASE-AMEN.md` §3.
+- [ ] **Les trois `pass`** (`spf` · `dkim` · `dmarc`) lus dans l'en-tête d'un
+      message reçu chez Gmail. C'est le seul endroit où le défaut ci-dessus
+      devient visible — donc ça se fait **avant** le premier envoi commercial,
+      pas après.
 - [ ] **Les 3 `demo` → `offre`.** Ils ont vu le produit ; il leur manque un
       devis, pas une démo de plus. Le cadrage est la porte : pas de devis sans
       lui, et c'est le code qui le tient.

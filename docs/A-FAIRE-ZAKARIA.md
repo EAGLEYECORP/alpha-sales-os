@@ -97,12 +97,29 @@ Procédure complète : `docs/SMTP-SUPABASE-AMEN.md`.
 > confirmation **en même temps**. Ce qui rend ça tenable : le palier d'envoi
 > (5/jour la première semaine, +5 par semaine, 40 au plafond), et rien d'autre.
 
-### 5. SPF · DKIM · DMARC
+### 5. SPF · DKIM · DMARC — **il n'en manque qu'UN**
 
-Chez ton registrar. Sans eux, les campagnes partent en spam et le domaine se
-grille en une semaine. `/api/health` → `capabilities.email` te dit ce qui
-manque côté serveur, mais **pas** l'état DNS : ça se vérifie chez le
-registrar.
+> **Relevé le 15/09/2026 dans le DNS public**, pas supposé. Cette ligne était
+> écrite comme si les trois étaient à faire : **deux étaient déjà posées.**
+
+| | État | À faire |
+|---|---|---|
+| **SPF** | `v=spf1 include:spf.webapps.net ~all`, un seul | **rien — n'y touche pas** |
+| **DMARC** | `p=quarantine; adkim=s; aspf=s` | **rien — n'en crée pas un second** |
+| **DKIM** | absent (16 sélecteurs sondés, zéro) | **l'activer chez Amen** |
+
+⚠⚠ **Le DKIM n'est pas le troisième confort de la liste, c'est la jambe qui
+manque.** Ton DMARC est en `p=quarantine` avec **alignement strict** : sans
+DKIM, toute l'authentification repose sur SPF seul, et le moindre défaut
+d'alignement envoie **chaque message** en indésirables — sans erreur, sans
+signal, avec un envoi qui s'affiche « réussi ».
+
+Le geste : Amen → `eagleyecorp.fr` → **EMAIL** → **ACTION** → **DKIM**.
+Le reste — ce qu'implique l'alignement strict, comment le lire, et quoi faire
+si un `pass` manque : `docs/SMTP-SUPABASE-AMEN.md` §3.
+
+`/api/health` → `capabilities.email` dit ce qui manque **côté serveur**, jamais
+l'état DNS. Celui-là se relève en dix secondes, et la commande est dans le doc.
 
 ### 6. `CRON_SECRET`
 
@@ -170,6 +187,48 @@ aucun outil de suppression.
 | **La table de veille** (`lib/veille.ts`) | Vide, exprès. Des entrées devinées **routeraient de vrais dossiers**. Donne-moi trois ou quatre dépôts que tu as en tête et je les qualifie. |
 | **`currentProcess`** — l'opérationnel du prospect | Ta méthode dit « comprendre de l'intérieur **sans les déranger** ». Rien ne remplit ce champ sans un échange. Dis-moi comment tu le fais en vrai et je le code. |
 | **Le prix au siège** | Critère d'abandon écrit : *si tes trois premiers prospects discutent le comptage des utilisateurs au lieu du prix, c'est raté.* |
+| **D'où vient l'adresse — la mention qui manque** | Voir ci-dessous. Je ne l'ai **pas** posée seul : elle bloquerait tous les envois de la semaine. |
+
+### ⚠⚠ LA MENTION QU'ON NE MET PAS, ET POURQUOI C'EST UNE DÉCISION
+
+Trouvé le 15/09 en vérifiant la doctrine CNIL, pas par un test.
+
+La CNIL écrit que lorsque les adresses sont **acquises auprès de tiers ou déjà
+en possession**, il faut **s'assurer que la personne a bien été informée** de
+l'usage possible de son adresse à des fins de prospection, et qu'elle peut s'y
+opposer. `[SOURCE-PRIMAIRE — CNIL, prospection commerciale]`
+
+**Ça vise exactement notre sourcing** : arrêtés de permis, LinkedIn, feuilles
+Google. Personne, dans ces fichiers, n'a jamais été informé de quoi que ce
+soit — et l'obligation ne disparaît pas parce qu'on n'a pas collecté soi-même.
+En pratique, le premier email EST la première communication : c'est là que
+l'information se donne (une phrase disant d'où vient l'adresse).
+
+**Ce que `lib/conformite.ts` exige aujourd'hui sur l'email** : identité ·
+objet en rapport avec la fonction · moyen de refus dans chaque message ·
+traitement immédiat d'une opposition. **Les quatre sont là. La provenance de
+l'adresse, non.**
+
+> **Pourquoi je ne l'ai pas ajoutée** : `verifieMentions` **refuse** un message
+> auquel il manque une mention obligatoire, et `force` ne passe pas outre —
+> c'est la doctrine, et elle est juste. Ajouter une cinquième exigence
+> aujourd'hui ferait donc **échouer chaque gabarit existant**, donc chaque
+> envoi, le jour où tu lances. Un garde qui bloque tout le jour J n'est pas
+> une protection, c'est une panne que j'aurais créée.
+
+**Trois options, et c'est à toi de trancher :**
+1. **Une phrase dans le pied de chaque email de prospection** (« votre adresse
+   provient de … ; vous pouvez vous y opposer en répondant STOP »). Le plus
+   propre, et le plus coûteux : tous les gabarits sont à relire.
+2. **La mention seulement sur le PREMIER message** à une adresse donnée. C'est
+   ce que demande le texte, mais ça exige de savoir si on a déjà écrit — le
+   CRM le sait, donc c'est faisable.
+3. **Ne rien changer** en assumant le risque, le temps de la semaine de
+   lancement, et le faire ensuite.
+
+Dis lequel et je le câble — avec le garde qui va avec. Sans ta réponse, c'est
+l'option 3 qui s'applique **par défaut et sans avoir été choisie**, ce qui est
+la pire des trois.
 
 ---
 
