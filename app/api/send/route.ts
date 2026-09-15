@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
-import { createTrackedEmail, countRecentSends, contactedEmails, firstSendAt, aDejaEcrit } from "@/lib/tracking";
+import {
+  createTrackedEmail,
+  countRecentSends,
+  contactedEmails,
+  firstSendAt,
+  aDejaEcrit,
+  tracerEnvoiSms,
+  supprimerTrace,
+} from "@/lib/tracking";
 import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
 import { getTenant } from "@/lib/tenant";
@@ -437,7 +445,7 @@ export async function POST(request: NextRequest) {
      * disant — la garde deviendrait déclarative, donc nulle. Le tracking est
      * la seule source, et son repli mène à « premier » (voir `aDejaEcrit`).
      */
-    const rang: RangMessage = (await aDejaEcrit(to, tenantId)) ? "suivant" : "premier";
+    const rang: RangMessage = (await aDejaEcrit("email", to, tenantId)) ? "suivant" : "premier";
     const manques = verifieMentions(text, habillage.closerName, marque, rang);
     if (manques.length > 0) {
       return NextResponse.json(
@@ -506,6 +514,19 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ ok: true, id: info.messageId, trackingId, lint });
     } catch (e) {
+      /**
+       * ⚠⚠ L'ENVOI A ÉCHOUÉ : LA TRACE NE DOIT PAS SURVIVRE.
+       *
+       * `createTrackedEmail` s'exécute forcément AVANT l'envoi — c'est elle
+       * qui réécrit les liens et injecte le pixel. Un SMTP en échec laissait
+       * donc une ligne derrière lui. Tant qu'elle ne servait qu'à compter des
+       * ouvertures, ça ne coûtait rien ; depuis qu'elle répond à « lui a-t-on
+       * déjà écrit ? », elle dispenserait le message SUIVANT de la mention de
+       * provenance alors que le premier n'est JAMAIS arrivé.
+       *
+       * L'invariant restauré : une ligne = un message effectivement parti.
+       */
+      await supprimerTrace(trackingId);
       return NextResponse.json(
         { error: `Envoi email échoué : ${e instanceof Error ? e.message : "erreur inconnue"}` },
         { status: 502 }
@@ -571,7 +592,8 @@ export async function POST(request: NextRequest) {
      *
      * 📌 Suivi ouvert : `docs/A-FAIRE-ZAKARIA.md`.
      */
-    const manquesSms = verifieMentions(body.body, habillage.closerName, marque, "premier");
+    const rangSms: RangMessage = (await aDejaEcrit("sms", body.to, tenantId)) ? "suivant" : "premier";
+    const manquesSms = verifieMentions(body.body, habillage.closerName, marque, rangSms);
     if (manquesSms.length > 0) {
       return NextResponse.json(
         { error: "Mentions obligatoires manquantes dans le SMS — rien ne part.", manques: manquesSms, quoiFaire: QUOI_FAIRE_MENTIONS },
@@ -590,7 +612,18 @@ export async function POST(request: NextRequest) {
       if (!data.success) {
         return NextResponse.json({ error: `SMS refusé : ${data.error ?? "erreur inconnue"}` }, { status: 502 });
       }
-      return NextResponse.json({ ok: true, id: data.textId });
+      /**
+       * ⚠ LA TRACE S'ÉCRIT ICI, APRÈS l'acceptation — jamais avant. Une trace
+       * posée sur un envoi refusé ferait croire qu'on a informé quelqu'un
+       * qu'on n'a jamais joint, et le SMS suivant partirait sans la mention.
+       */
+      const { id: traceSms } = await tracerEnvoiSms({
+        destinataire: body.to,
+        prospectId: body.prospectId,
+        campaignId: body.campaignId,
+        userId: tenantId ?? undefined,
+      });
+      return NextResponse.json({ ok: true, id: data.textId, trackingId: traceSms });
     } catch (e) {
       return NextResponse.json(
         { error: `Envoi SMS échoué : ${e instanceof Error ? e.message : "erreur inconnue"}` },

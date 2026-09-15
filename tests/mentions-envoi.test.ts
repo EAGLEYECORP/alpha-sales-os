@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { verifieMentions, MENTION_PROVENANCE } from "../lib/conformite";
+import { cleDestinataire } from "../lib/tracking";
 import { signataire, CLOSER_USINE } from "../lib/signature";
 import { identiteEnvoi, habillageEnvoi } from "../lib/expediteur";
 
@@ -167,7 +168,7 @@ test("⚠ /api/send refuse un message sans mentions obligatoires — email ET sm
    */
   assert.match(
     code,
-    /const manquesSms = verifieMentions\(body\.body, habillage\.closerName, marque, "premier"\)/,
+    /const manquesSms = verifieMentions\(body\.body, habillage\.closerName, marque, rangSms\)/,
     "le SMS se vérifie sur le corps exact, celui qui part"
   );
   assert.match(code, /if \(manquesSms\.length > 0\)[\s\S]{0,240}status: 422/);
@@ -332,8 +333,13 @@ test("⚠⚠ LE RANG VIENT DU SERVEUR, JAMAIS DE L'APPELANT", () => {
    */
   assert.match(
     code,
-    /const rang: RangMessage = \(await aDejaEcrit\(to, tenantId\)\) \? "suivant" : "premier"/,
-    "le rang se calcule depuis le tracking, pas depuis la requête"
+    /const rang: RangMessage = \(await aDejaEcrit\("email", to, tenantId\)\) \? "suivant" : "premier"/,
+    "le rang email se calcule depuis le tracking, pas depuis la requête"
+  );
+  assert.match(
+    code,
+    /const rangSms: RangMessage = \(await aDejaEcrit\("sms", body\.to, tenantId\)\) \? "suivant" : "premier"/,
+    "le rang SMS aussi — depuis le 15/09 la branche SMS écrit une trace, donc la question a une réponse"
   );
   const iRang = code.indexOf("const rang: RangMessage");
   const iMentions = code.indexOf("const manques = verifieMentions");
@@ -348,15 +354,29 @@ test("⚠⚠ LE RANG VIENT DU SERVEUR, JAMAIS DE L'APPELANT", () => {
   assert.ok(!/body\.force/.test(blocRang), "et `force` encore moins");
 
   /**
-   * ⚠ Le SMS n'est PAS tracé — la question n'a donc pas de réponse, et
-   * l'inconnu vaut « premier ». Écrire "suivant" ici dispenserait chaque SMS
-   * de la mention sur la foi d'une donnée qui n'existe pas.
+   * ⚠⚠ ET LA TRACE SMS S'ÉCRIT APRÈS L'ACCEPTATION, JAMAIS AVANT.
+   *
+   * Une trace posée sur un envoi refusé ferait croire qu'on a informé
+   * quelqu'un qu'on n'a jamais joint — et le SMS suivant partirait sans la
+   * mention de provenance, pour une raison strictement invisible.
    */
-  assert.match(
-    code,
-    /verifieMentions\(body\.body, habillage\.closerName, marque, "premier"\)/,
-    "faute de trace SMS, l'inconnu doit valoir « premier »"
-  );
+  const iSucces = code.indexOf("data.success");
+  const iTrace = code.indexOf("tracerEnvoiSms(");
+  assert.ok(iTrace > 0, "la branche SMS doit écrire une trace");
+  assert.ok(iSucces > 0 && iTrace > iSucces, "la trace SMS s'écrit APRÈS le contrôle d'acceptation");
+
+  /**
+   * ⚠⚠ ET SYMÉTRIQUEMENT, L'EMAIL EFFACE LA SIENNE QUAND L'ENVOI ÉCHOUE.
+   *
+   * `createTrackedEmail` s'exécute forcément AVANT l'envoi — c'est elle qui
+   * réécrit les liens. Un SMTP en échec laissait donc une ligne, qui
+   * dispenserait le message suivant de la mention alors que le premier n'est
+   * jamais arrivé. L'invariant : une ligne = un message effectivement parti.
+   */
+  assert.match(code, /await supprimerTrace\(trackingId\)/, "un envoi email échoué ne laisse pas de trace");
+  const iEnvoiRate = code.indexOf("Envoi email échoué");
+  const iSuppr = code.indexOf("supprimerTrace(trackingId)");
+  assert.ok(iSuppr > 0 && iSuppr < iEnvoiRate, "la trace s'efface AVANT de répondre l'erreur");
 });
 
 test("⚠⚠ aDejaEcrit REND « premier » SUR TOUTE PANNE — le repli n'est pas symétrique", () => {
@@ -376,4 +396,81 @@ test("⚠⚠ aDejaEcrit REND « premier » SUR TOUTE PANNE — le repli n'est pa
     !/if \(error\) return true/.test(corps),
     "rendre `true` sur une panne dispenserait de la mention au moment précis où l'on ne sait plus rien"
   );
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ LA NORMALISATION EST LA FONCTIONNALITÉ — le reste n'est que plomberie.
+ *
+ * « 04 51 22 21 82 », « +33451222182 » et « 0451 22 21 82 » sont la même
+ * personne. Comparés bruts, ce sont trois personnes : `aDejaEcrit` rendrait
+ * toujours `false`, la mention serait exigée à chaque SMS, et tout aurait
+ * l'air correctement branché. Une panne déguisée en fonctionnement normal —
+ * exactement ce que ce dépôt paie le plus souvent.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠⚠ UN NUMÉRO ÉCRIT DE TROIS FAÇONS EST UNE SEULE PERSONNE", () => {
+  // ⚠ Plage ARCEP réservée à la fiction (décision 2018-0881) — un dépôt se
+  // clone, et un numéro de test qui sonne chez quelqu'un est une vraie faute.
+  const ecritures = ["04 65 71 34 56", "+33465713456", "0465713456", "+33 4 65 71 34 56"];
+  const cles = ecritures.map((e) => cleDestinataire("sms", e));
+  assert.equal(
+    new Set(cles).size,
+    1,
+    `quatre écritures du même numéro doivent donner UNE clé. Obtenu : ${JSON.stringify(cles)}`
+  );
+  assert.equal(cles[0], "+33465713456", "la clé est le format E.164");
+
+  // Et deux numéros DIFFÉRENTS ne doivent pas se confondre — sinon on
+  // dispenserait de la mention quelqu'un à qui on n'a jamais écrit.
+  assert.notEqual(cleDestinataire("sms", "0465713456"), cleDestinataire("sms", "0465713457"));
+});
+
+test("⚠ l'email se normalise aussi, et un numéro illisible vaut « je ne sais pas »", () => {
+  assert.equal(cleDestinataire("email", "  Contact@Exemple.FR "), "contact@exemple.fr");
+
+  /**
+   * ⚠ `null` n'est pas un détail : l'appelant le traite comme « inconnu »,
+   * donc comme « premier message », donc en EXIGEANT la mention. Rendre une
+   * chaîne bancale ferait matcher deux inconnus entre eux.
+   */
+  for (const illisible of ["", "   ", "allo", "12"]) {
+    assert.equal(cleDestinataire("sms", illisible), null, `« ${illisible} » ne doit pas produire de clé`);
+  }
+});
+
+test("⚠ la clé ne redéfinit PAS la normalisation — elle importe toE164", () => {
+  /**
+   * Le dépôt porte déjà deux définitions du « même numéro » (`toE164` côté
+   * serveur, `normTel` côté store pour la fusion de fiches). Une troisième,
+   * écrite ici, finirait par diverger des deux autres — et c'est le canal
+   * d'envoi qui trancherait à sa façon, sans que personne le voie.
+   */
+  const src = lire("lib/tracking.ts");
+  assert.match(src, /import \{ toE164 \} from "\.\/voice-script"/, "toE164 s'importe");
+  const i = src.indexOf("export function cleDestinataire");
+  const corps = src.slice(i, i + 600);
+  assert.match(corps, /toE164\(/, "la clé délègue au normalisateur existant");
+  assert.ok(
+    !/\+33\$\{|slice\(-9\)|replace\(\/\\D\//.test(corps),
+    "aucune arithmétique de numéro recopiée ici : ce serait la troisième définition"
+  );
+});
+
+test("⚠⚠ LA COLONNE EST PERSISTÉE — sinon rien ne survit au serverless", () => {
+  /**
+   * Le défaut récurrent du dépôt, appliqué à une colonne : la calculer, la
+   * porter en mémoire, et ne jamais l'écrire. Tout marcherait en dev
+   * mono-instance et rien en production.
+   */
+  const src = lire("lib/tracking.ts");
+  const i = src.indexOf('.upsert({');
+  const bloc = src.slice(i, i + 600);
+  assert.match(bloc, /destinataire: rec\.destinataire \?\? null/, "la colonne doit partir dans l'upsert");
+
+  // Et la migration doit exister, sinon la colonne n'est nulle part.
+  const mig = lire("supabase/migrations/009-trace-destinataire.sql");
+  assert.match(mig, /add column if not exists destinataire/i);
+  assert.match(mig, /create index if not exists/i, "la requête d'existence mérite son index");
+  assert.match(lire("supabase/schema.sql"), /add column if not exists destinataire/i, "schema.sql doit suivre");
 });

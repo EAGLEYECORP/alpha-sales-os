@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { toE164 } from "./voice-script";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -32,6 +33,12 @@ export interface TrackingRecord {
   prospectId?: string;
   campaignId?: string;
   email?: string;
+  /**
+   * Destinataire NORMALISÉ — email en minuscules, téléphone en E.164.
+   * C'est la clé qui répond à « lui a-t-on déjà écrit ? » (`aDejaEcrit`), et
+   * la seule qui reconnaisse la même personne d'une saisie à l'autre.
+   */
+  destinataire?: string | null;
   subject?: string;
   createdAt: string;
   opens: number;
@@ -46,6 +53,8 @@ export interface TrackingMeta {
   prospectId?: string;
   campaignId?: string;
   email?: string;
+  /** Destinataire brut ; il est normalisé à l'écriture (`cleDestinataire`). */
+  destinataire?: string;
   subject?: string;
   /** Locataire (user_id) qui envoie — estampillé pour l'isolation multi-compte. */
   userId?: string;
@@ -179,7 +188,37 @@ export async function contactedEmails(
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * A-T-ON DÉJÀ ÉCRIT À CETTE ADRESSE — un jour, pas « récemment ».
+ * LA CLÉ DU DESTINATAIRE — ce qui fait que c'est « la même personne ».
+ *
+ * ⚠⚠ C'EST ICI QUE LA FONCTIONNALITÉ SE JOUE, PAS DANS LA REQUÊTE. Comparer
+ * les saisies brutes ferait de « 04 51 22 21 82 » et « +33451222182 » deux
+ * personnes distinctes : `aDejaEcrit` rendrait toujours `false`, la mention
+ * serait exigée à chaque message, et tout aurait l'air correctement branché.
+ * Une panne qui se présente comme un fonctionnement normal.
+ *
+ * ⚠ Le téléphone passe par `toE164` — IMPORTÉ, jamais recopié. Le dépôt en
+ * porte déjà deux définitions (`toE164` côté serveur, `normTel` côté store
+ * pour la fusion de fiches) ; une troisième, ici, finirait par diverger des
+ * deux autres, et c'est le canal d'envoi qui trancherait à sa façon.
+ *
+ * ⚠ `null` quand le numéro est inexploitable : on ne devine pas. L'appelant
+ * traite `null` comme « je ne sais pas », donc comme « premier message »,
+ * donc en EXIGEANT la mention.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function cleDestinataire(
+  channel: "email" | "sms",
+  brut: string | null | undefined
+): string | null {
+  const v = (brut ?? "").trim();
+  if (!v) return null;
+  if (channel === "email") return v.toLowerCase();
+  return toE164(v);
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * A-T-ON DÉJÀ ÉCRIT À CETTE PERSONNE — un jour, pas « récemment ».
  *
  * Sert UNIQUEMENT à décider du `rang` passé à `verifieMentions` : la mention
  * de provenance n'est due qu'au PREMIER message (`lib/conformite.ts`).
@@ -205,27 +244,97 @@ export async function contactedEmails(
  * ─────────────────────────────────────────────────────────────────────
  */
 export async function aDejaEcrit(
-  email: string,
+  channel: "email" | "sms",
+  destinataireBrut: string | null | undefined,
   userId?: string | null
 ): Promise<boolean> {
-  const cible = email.toLowerCase().trim();
+  const cible = cleDestinataire(channel, destinataireBrut);
+  // Numéro illisible ou champ vide ⇒ on ne sait pas ⇒ « premier ».
   if (!cible) return false;
   const sb = serviceClient();
   if (sb) {
     // `limit(1)` : on demande l'existence, pas un compte. Compter ferait
     // parcourir tout l'historique d'une adresse relancée dix fois.
-    let q = sb.from("tracking_messages").select("id").eq("email", cible).limit(1);
+    let q = sb
+      .from("tracking_messages")
+      .select("id")
+      .eq("channel", channel)
+      .eq("destinataire", cible)
+      .limit(1);
     if (userId) q = q.eq("user_id", userId);
     const { data, error } = await q;
     // ⚠ Une erreur ne se distingue pas d'un vide côté appelant : on tranche
-    // ici, et on tranche vers « premier ».
+    // ici, et on tranche vers « premier ». Ça couvre aussi le cas où la
+    // migration 009 n'a pas été passée : la colonne manque, la requête
+    // échoue, et on retombe sur le comportement d'avant — exiger la mention.
     if (error) return false;
     return (data ?? []).length > 0;
   }
   for (const r of memory.values()) {
-    if (r.email?.toLowerCase() === cible && (!userId || r.userId === userId)) return true;
+    if (r.channel === channel && r.destinataire === cible && (!userId || r.userId === userId)) return true;
   }
   return false;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * TRACER UN SMS — la branche qui n'écrivait rien.
+ *
+ * Pas d'ouvertures, pas de clics, pas de pixel : un SMS ne se track pas, il
+ * se COMPTE. La ligne existe pour trois consommateurs qui en avaient déjà
+ * besoin et se débrouillaient sans : le plafond horaire (`countRecentSends`),
+ * le palier du jour, et « lui a-t-on déjà écrit ? ».
+ *
+ * ⚠⚠ À N'APPELER QU'APRÈS UN ENVOI RÉELLEMENT ACCEPTÉ. Une trace écrite sur
+ * un envoi qui a échoué ferait croire qu'on a informé quelqu'un qu'on n'a
+ * jamais joint — et le message suivant partirait sans la mention de
+ * provenance, pour une raison invisible.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export async function tracerEnvoiSms(meta: TrackingMeta = {}): Promise<{ id: string }> {
+  const id = newId();
+  const rec: TrackingRecord = {
+    id,
+    userId: meta.userId,
+    channel: "sms",
+    prospectId: meta.prospectId,
+    campaignId: meta.campaignId,
+    destinataire: cleDestinataire("sms", meta.destinataire),
+    createdAt: new Date().toISOString(),
+    opens: 0,
+    clicks: 0,
+    links: [],
+  };
+  await persist(rec);
+  return { id };
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * EFFACER UNE TRACE — quand l'envoi a échoué après l'avoir créée.
+ *
+ * ⚠⚠ L'ORDRE DES OPÉRATIONS L'IMPOSE, et c'est un défaut qu'on ne voyait pas.
+ * `createTrackedEmail` doit s'exécuter AVANT l'envoi : c'est elle qui réécrit
+ * les liens et injecte le pixel. Donc un SMTP qui échoue laissait une ligne
+ * derrière lui.
+ *
+ * Tant que cette ligne ne servait qu'à compter des ouvertures, ça ne coûtait
+ * rien. Depuis qu'elle répond aussi à « lui a-t-on déjà écrit ? », elle
+ * dispenserait le message SUIVANT de la mention de provenance — alors que le
+ * premier n'est jamais arrivé.
+ *
+ * L'invariant qu'on restaure : **une ligne = un message effectivement parti.**
+ * Corollaire assumé : un envoi échoué ne compte plus non plus dans le palier
+ * du jour ni dans le plafond horaire. C'est cohérent — ces deux bornes
+ * protègent la réputation du domaine, et un message qui n'est jamais parti ne
+ * peut pas l'abîmer.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export async function supprimerTrace(id: string): Promise<void> {
+  memory.delete(id);
+  const sb = serviceClient();
+  if (!sb) return;
+  await sb.from("tracking_messages").delete().eq("id", id);
 }
 
 async function persist(rec: TrackingRecord): Promise<void> {
@@ -244,6 +353,7 @@ async function persist(rec: TrackingRecord): Promise<void> {
     prospect_id: rec.prospectId ?? null,
     campaign_id: rec.campaignId ?? null,
     email: rec.email ?? null,
+    destinataire: rec.destinataire ?? null,
     subject: rec.subject ?? null,
     created_at: rec.createdAt,
     opens: rec.opens,
@@ -326,6 +436,9 @@ export async function createTrackedEmail(
     prospectId: meta.prospectId,
     campaignId: meta.campaignId,
     email: meta.email?.toLowerCase().trim(),
+    // Le destinataire normalisé double `email` : c'est LUI qu'interroge
+    // `aDejaEcrit`, pour que les deux canaux passent par la même colonne.
+    destinataire: cleDestinataire(meta.channel ?? "email", meta.destinataire ?? meta.email),
     subject: meta.subject,
     createdAt: new Date().toISOString(),
     opens: 0,

@@ -263,6 +263,11 @@ create table if not exists public.tracking_messages (
   links jsonb not null default '[]'::jsonb
 );
 alter table public.tracking_messages add column if not exists user_id uuid references auth.users (id) on delete cascade;
+-- Destinataire NORMALISÉ (email en minuscules, téléphone en E.164) — sert à
+-- répondre « lui a-t-on déjà écrit ? », donc à n'exiger la mention de
+-- provenance qu'au PREMIER message. Voir migrations/009-trace-destinataire.sql.
+alter table public.tracking_messages add column if not exists destinataire text;
+create index if not exists tracking_destinataire_idx on public.tracking_messages (user_id, channel, destinataire);
 create index if not exists tracking_prospect_idx on public.tracking_messages (prospect_id, created_at desc);
 create index if not exists tracking_campaign_idx on public.tracking_messages (campaign_id, created_at desc);
 -- rate-limit durable (comptage par canal sur la dernière heure), scopé locataire

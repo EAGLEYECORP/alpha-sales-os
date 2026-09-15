@@ -42,7 +42,7 @@ et `proprietaire.coherent` (les deux listes `OWNER_EMAILS` concordent-elles).
 > Si tu déploies avant de poser les variables, garde `SITE_PASSWORD` : il
 > mure tout tant que les comptes ne sont pas actifs.
 
-### 2. Les migrations, 002 → 008
+### 2. Les migrations, 002 → 009
 
 Dans le SQL editor Supabase, **dans l'ordre**. Toutes vérifiées rejouables :
 aucun DDL non protégé, tu ne casses rien en repassant une migration.
@@ -54,8 +54,14 @@ aucun DDL non protégé, tu ne casses rien en repassant une migration.
 005-presence-agent.sql          battement de l'agent vocal
 006-rendez-vous-cloisonnes.sql
 007-attribution-apporteurs.sql
-008-essai-plafond-cout.sql      ← NOUVELLE : le plafond de dépense de l'essai
+008-essai-plafond-cout.sql      le plafond de dépense de l'essai
+009-trace-destinataire.sql      ← NOUVELLE : le destinataire normalisé
 ```
+
+> ⚠ La **009** est ce qui fait marcher « n'exiger la mention de provenance
+> qu'au premier message ». Sans elle, la colonne n'existe pas, la requête
+> échoue, et on retombe sur le comportement d'avant — la mention exigée à
+> chaque fois. Ça ne casse rien, mais ça ne sert à rien non plus.
 
 > ⚠ Le secret du cron vit dans le **Vault** Supabase, jamais dans le SQL
 > versionné. `CRON_SECRET` sur Vercel doit valoir exactement la même chose.
@@ -213,15 +219,25 @@ et ce que ça ne fait pas encore.
 > mettrait cette phrase sur une adresse prise ailleurs — une information
 > **fausse**, donc pire que pas d'information.
 
-**🔴 CE QUI RESTE DÛ, ET C'EST TOI QUI ARBITRES : le SMS.**
-La branche SMS **n'écrit aucune trace** — mesuré. « Lui a-t-on déjà envoyé un
-SMS ? » n'a donc pas de réponse, et l'inconnu vaut « premier » : **chaque SMS
-exige aujourd'hui la mention**, ce qui va au-delà de l'option que tu as
-choisie. Un SMS se paie au segment, donc ça a un coût réel.
+**✅ LE SMS EST TRACÉ** (15/09, à ta demande). La branche SMS écrit désormais
+une ligne — après acceptation seulement — et le rang se calcule comme pour
+l'email. Un SMS de relance ne porte plus la mention.
 
-La vraie correction est de **tracer les SMS** comme on trace les emails, pas
-d'assouplir la garde. Dis-moi si je le fais — c'est une colonne et un point
-d'écriture, pas un chantier.
+> ⚠⚠ **Ce qui fait marcher ça n'est pas la colonne, c'est la NORMALISATION.**
+> « 04 65 71 34 56 » et « +33465713456 » sont la même personne ; comparés
+> bruts, ce sont deux personnes, et la mention repartirait à chaque SMS **en
+> ayant l'air parfaitement branchée**. La clé passe par `toE164` — importé,
+> pas recopié : le dépôt porte déjà deux définitions du « même numéro », une
+> troisième aurait divergé.
+
+> ⚠ **Effet de bord trouvé en faisant ça, et corrigé** : `createTrackedEmail`
+> s'exécute forcément AVANT l'envoi (c'est elle qui réécrit les liens). Un
+> SMTP en échec laissait donc une trace — et le message suivant se serait
+> dispensé de la mention alors que le premier n'était **jamais arrivé**.
+> L'invariant est désormais : **une ligne = un message effectivement parti**.
+> Corollaire assumé : un envoi échoué ne compte plus dans le palier du jour
+> ni dans le plafond horaire. C'est cohérent — ces bornes protègent la
+> réputation du domaine, et un message jamais parti ne peut pas l'abîmer.
 
 ### ⚠⚠ L'ANCIENNE QUESTION, GARDÉE POUR SA RAISON
 
