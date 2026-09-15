@@ -105,7 +105,7 @@ test("conformité — les DEUX chemins d'envoi portent le moyen de refus", () =>
 
   const manuel = emailBody(prospect({ company: "Test SARL" }), { closerName: closer, agencyName: agence });
   assert.deepEqual(
-    verifieMentions(manuel, closer, agence),
+    verifieMentions(manuel, closer, agence, "suivant"),
     [],
     "le chemin MANUEL (Gmail / presse-papier) perd ses mentions obligatoires"
   );
@@ -114,8 +114,40 @@ test("conformité — les DEUX chemins d'envoi portent le moyen de refus", () =>
   // parce que le rendu dépend de trop de réglages pour être reconstitué ici.
   const html = readFileSync(join(process.cwd(), "lib/email-html.ts"), "utf8");
   assert.match(html, /STOP/, "le gabarit HTML a perdu son moyen de refus");
+  /**
+   * ⚠ CE GARDE A MORDU LE 15/09/2026, et il avait raison de mordre : une
+   * quatrième mention est entrée (la provenance de l'adresse, au PREMIER
+   * message). Il demandait « vérifier que les gabarits suivent » — voici la
+   * vérification, et sa réponse n'est pas celle qu'on attendait.
+   *
+   * ⚠⚠ **LA QUATRIÈME NE PEUT PAS VIVRE DANS UN GABARIT**, et ce n'est pas un
+   * oubli. Les trois premières sont invariantes (qui écrit, sur quel sujet,
+   * comment refuser) : un gabarit les porte une fois pour toutes. La
+   * provenance, elle, CHANGE d'une fiche à l'autre — écrire « registre
+   * public » en dur dans le gabarit mettrait cette phrase sur une adresse
+   * prise ailleurs, c'est-à-dire une information FAUSSE. Or informer faux est
+   * pire que ne pas informer : ça fabrique la preuve qu'on a menti.
+   *
+   * Elle se vérifie donc au RUNTIME, dans `/api/send`, sur le message réel —
+   * pas ici sur un gabarit. Les gardes sont dans `tests/mentions-envoi`.
+   */
   assert.ok(
-    MENTIONS_OBLIGATOIRES.length === 3,
+    MENTIONS_OBLIGATOIRES.length === 4,
     "la liste des mentions a changé — vérifier que les gabarits suivent avant de toucher à ce test"
+  );
+  assert.ok(
+    MENTIONS_OBLIGATOIRES.some((m) => /PREMIER message/.test(m)),
+    "la mention de provenance doit rester annoncée comme CONDITIONNELLE : rendue inconditionnelle, elle refuserait toute relance licite"
+  );
+  /**
+   * Et le contre-test qui protège les trois autres : elles restent
+   * inconditionnelles. Si l'une d'elles devenait « premier message
+   * seulement », un message de relance pourrait partir sans moyen de refus —
+   * la seule mention qui n'est jamais négociable.
+   */
+  assert.equal(
+    MENTIONS_OBLIGATOIRES.filter((m) => /PREMIER message/.test(m)).length,
+    1,
+    "une seule mention est conditionnelle ; les trois autres valent dans CHAQUE message"
   );
 });

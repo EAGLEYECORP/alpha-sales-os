@@ -164,10 +164,83 @@ export const MENTIONS_OBLIGATOIRES = [
   "Identité de l'expéditeur (nom + société)",
   "Objet en rapport avec la fonction du destinataire",
   "Moyen de refus simple et gratuit (« répondez STOP »)",
+  "D'où vient l'adresse — PREMIER message seulement (voir MENTION_PROVENANCE)",
 ];
 
-/** Le message écrit porte-t-il ses mentions obligatoires ? */
-export function verifieMentions(body: string, closerName: string, agencyName: string): string[] {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * D'OÙ VIENT L'ADRESSE — la mention du PREMIER message (15/09/2026)
+ *
+ * La CNIL écrit que lorsque les coordonnées sont **acquises auprès de tiers**
+ * ou déjà en possession, il faut s'assurer que la personne a été **informée**
+ * de l'usage possible de son adresse à des fins de prospection, et qu'elle
+ * peut s'y opposer. Ça vise exactement notre sourcing — arrêtés de permis,
+ * profils, feuilles de calcul : personne n'y a jamais été informé de rien, et
+ * l'obligation ne disparaît pas parce qu'on n'a pas collecté soi-même.
+ *
+ * ══ POURQUOI AU PREMIER MESSAGE, ET PAS À TOUS ══
+ *
+ * L'obligation est d'INFORMER, pas de répéter. Informer une fois remplit le
+ * texte ; le répéter à chaque relance alourdit le message sans rien ajouter
+ * en droit — et sur un SMS, se paie au segment. Décision de Zakaria, prise en
+ * connaissance des trois options écrites dans `docs/A-FAIRE-ZAKARIA.md`.
+ *
+ * ══ ⚠ LA RÈGLE PORTE SON MOTIF, DANS LA MÊME ENTRÉE ══
+ *
+ * C'est la doctrine payée par `InterditFroid` : une règle écrite en prose
+ * n'est pas une règle, et deux listes séparées divergent — c'est celle qu'on
+ * ne relit pas qui cesse de mordre.
+ *
+ * ⚠ Le motif exige DEUX moitiés présentes ensemble : on parle bien des
+ * coordonnées DU DESTINATAIRE, et on dit D'OÙ elles viennent. « votre
+ * adresse » seul n'informe de rien ; « registre public » seul peut parler de
+ * tout autre chose. Aucune des deux moitiés ne suffit, et c'est ce couplage
+ * qui évite le faux positif sur une phrase de vente ordinaire.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const MENTION_PROVENANCE = {
+  /** La règle, lisible — celle qu'on discute avec un juriste. */
+  regle:
+    "Au PREMIER message à une adresse, dire d'où elle vient. L'obligation naît de la collecte indirecte : la personne n'a jamais été informée par nous.",
+  /** Le motif, exécutable — celui qui mord. */
+  motif:
+    /(?=.*\b(?:votre|vos)\s+(?:adresse|coordonn[ée]es|e-?mail|courriel|profil|num[ée]ro))(?=.*(?:public|publi[ée]|registre|annuaire|r[ée]pertoire|site|profil|trouv|obtenu|issue?s?\s+de|provien|recueilli|consult))/is,
+  /**
+   * Une formulation qui satisfait le motif, à donner à l'opérateur quand on
+   * refuse. Un garde qui refuse sans dire quoi écrire se fait désarmer.
+   *
+   * ⚠ Elle est un EXEMPLE, pas un gabarit imposé : la provenance réelle change
+   * d'une fiche à l'autre, et écrire « registre public » sur une adresse prise
+   * ailleurs serait une information fausse — donc pire que pas d'information.
+   */
+  exemple:
+    "Votre adresse professionnelle provient d'un registre public ; répondez STOP et je ne vous écris plus.",
+} as const;
+
+/**
+ * Est-ce le premier message qu'on adresse à ce destinataire ?
+ *
+ * ⚠ Un booléen nu au point d'appel (`verifieMentions(t, c, m, true)`) ne se
+ * relit pas. On nomme la décision — même motif que `LecturePermis.demande` :
+ * un score agrège, une décision se nomme.
+ */
+export type RangMessage = "premier" | "suivant";
+
+/**
+ * Le message écrit porte-t-il ses mentions obligatoires ?
+ *
+ * ⚠ `rang` est OBLIGATOIRE, sans valeur par défaut. Un défaut implicite
+ * ferait passer un premier contact pour une relance au premier ajout
+ * distrait — et le manquement serait silencieux, puisqu'il consiste à ne PAS
+ * exiger quelque chose. `tsc` force chaque appelant à répondre ; c'est le
+ * mécanisme qui a déjà rattrapé `StepDef.surface`.
+ */
+export function verifieMentions(
+  body: string,
+  closerName: string,
+  agencyName: string,
+  rang: RangMessage
+): string[] {
   const manques: string[] = [];
   const t = body.toLowerCase();
   /**
@@ -184,5 +257,14 @@ export function verifieMentions(body: string, closerName: string, agencyName: st
   if (agencyName && !t.includes(agencyName.toLowerCase())) manques.push("Société de l'expéditeur absente");
   if (!/stop|désinscri|desinscri|ne plus recevoir|opposition/i.test(body))
     manques.push("Moyen de refus absent — obligatoire dans CHAQUE message");
+  /**
+   * ⚠ Celle-ci ne vaut QUE sur le premier message. Sur une relance, l'exiger
+   * serait refuser un message parfaitement licite — et un garde qui refuse
+   * une phrase juste est un garde qu'on assouplit au mauvais endroit.
+   */
+  if (rang === "premier" && !MENTION_PROVENANCE.motif.test(body))
+    manques.push(
+      `Provenance de l'adresse absente — obligatoire au PREMIER message. Exemple : « ${MENTION_PROVENANCE.exemple} »`
+    );
   return manques;
 }

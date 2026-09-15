@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
-import { createTrackedEmail, countRecentSends, contactedEmails, firstSendAt } from "@/lib/tracking";
+import { createTrackedEmail, countRecentSends, contactedEmails, firstSendAt, aDejaEcrit } from "@/lib/tracking";
 import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
 import { getTenant } from "@/lib/tenant";
@@ -11,7 +11,7 @@ import { estPartenaire } from "@/lib/validation-partenaire";
 import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
 import { habillageEnvoi } from "@/lib/expediteur";
-import { verifieMentions } from "@/lib/conformite";
+import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
 
 export const runtime = "nodejs";
@@ -431,7 +431,14 @@ export async function POST(request: NextRequest) {
      * STOP », la signature et l'adresse légale sont ajoutés par le rendu.
      * Contrôler `body.body` refuserait tous les emails du produit.
      */
-    const manques = verifieMentions(text, habillage.closerName, marque);
+    /**
+     * ⚠ Le RANG se demande au serveur, jamais au client. Un appelant qui
+     * annoncerait « c'est une relance » se dispenserait de la mention en le
+     * disant — la garde deviendrait déclarative, donc nulle. Le tracking est
+     * la seule source, et son repli mène à « premier » (voir `aDejaEcrit`).
+     */
+    const rang: RangMessage = (await aDejaEcrit(to, tenantId)) ? "suivant" : "premier";
+    const manques = verifieMentions(text, habillage.closerName, marque, rang);
     if (manques.length > 0) {
       return NextResponse.json(
         { error: "Mentions obligatoires manquantes — rien ne part.", manques, quoiFaire: QUOI_FAIRE_MENTIONS },
@@ -547,7 +554,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const manquesSms = verifieMentions(body.body, habillage.closerName, marque);
+    /**
+     * ⚠⚠ LE SMS EST TOUJOURS « PREMIER », ET CE N'EST PAS UN CHOIX.
+     *
+     * Mesuré : la branche SMS n'écrit AUCUNE trace — pas de `tracking_messages`,
+     * rien. La question « lui a-t-on déjà envoyé un SMS ? » n'a donc pas de
+     * réponse ici, et `aDejaEcrit` ne s'applique pas (elle interroge une
+     * colonne `email`, pas un numéro : l'appeler avec un téléphone rendrait
+     * « jamais écrit » pour une raison fausse — pire qu'un aveu).
+     *
+     * L'inconnu vaut « premier » : la mention de provenance est donc exigée
+     * sur CHAQUE SMS, ce qui va au-delà de l'option retenue. C'est assumé —
+     * un SMS de trop porte une phrase inutile, un SMS de moins est le
+     * manquement. Mais ça se paie au segment, et la vraie correction est de
+     * TRACER les SMS, pas d'assouplir la garde.
+     *
+     * 📌 Suivi ouvert : `docs/A-FAIRE-ZAKARIA.md`.
+     */
+    const manquesSms = verifieMentions(body.body, habillage.closerName, marque, "premier");
     if (manquesSms.length > 0) {
       return NextResponse.json(
         { error: "Mentions obligatoires manquantes dans le SMS — rien ne part.", manques: manquesSms, quoiFaire: QUOI_FAIRE_MENTIONS },

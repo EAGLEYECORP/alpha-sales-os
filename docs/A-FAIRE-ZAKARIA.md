@@ -187,9 +187,43 @@ aucun outil de suppression.
 | **La table de veille** (`lib/veille.ts`) | Vide, exprès. Des entrées devinées **routeraient de vrais dossiers**. Donne-moi trois ou quatre dépôts que tu as en tête et je les qualifie. |
 | **`currentProcess`** — l'opérationnel du prospect | Ta méthode dit « comprendre de l'intérieur **sans les déranger** ». Rien ne remplit ce champ sans un échange. Dis-moi comment tu le fais en vrai et je le code. |
 | **Le prix au siège** | Critère d'abandon écrit : *si tes trois premiers prospects discutent le comptage des utilisateurs au lieu du prix, c'est raté.* |
-| **D'où vient l'adresse — la mention qui manque** | Voir ci-dessous. Je ne l'ai **pas** posée seul : elle bloquerait tous les envois de la semaine. |
 
-### ⚠⚠ LA MENTION QU'ON NE MET PAS, ET POURQUOI C'EST UNE DÉCISION
+### ✅ TRANCHÉ LE 15/09 — la provenance, au PREMIER message seulement
+
+**Option 2 retenue par Zakaria, et câblée.** Ce qui suit dit ce que ça fait,
+et ce que ça ne fait pas encore.
+
+**Ce qui est en place** (`lib/conformite.ts` · `lib/tracking.ts` · `/api/send`) :
+- Au **premier** message à une adresse, `/api/send` exige une phrase disant
+  d'où vient l'adresse — et le refus **donne une formulation utilisable**, un
+  garde qui refuse sans dire quoi écrire se fait désarmer.
+- Sur une **relance**, rien n'est exigé de plus : l'exiger refuserait un
+  message parfaitement licite.
+- Le **rang se calcule côté serveur** (`aDejaEcrit`), jamais depuis la
+  requête. Un appelant qui pourrait annoncer « c'est une relance » se
+  dispenserait de la mention en le disant.
+- **Toute panne mène à « premier »**, donc à exiger la mention. Les deux
+  erreurs ne coûtent pas pareil : une phrase de trop contre un manquement.
+- Six mutations vérifiées une par une — retirer le contrôle, le rendre
+  inconditionnel, figer le rang, le faire venir du client, ouvrir sur panne,
+  affaiblir le motif. Les six font tomber un test.
+
+> ⚠ **La mention ne vit PAS dans un gabarit, et c'est délibéré.** La
+> provenance change d'une fiche à l'autre : écrire « registre public » en dur
+> mettrait cette phrase sur une adresse prise ailleurs — une information
+> **fausse**, donc pire que pas d'information.
+
+**🔴 CE QUI RESTE DÛ, ET C'EST TOI QUI ARBITRES : le SMS.**
+La branche SMS **n'écrit aucune trace** — mesuré. « Lui a-t-on déjà envoyé un
+SMS ? » n'a donc pas de réponse, et l'inconnu vaut « premier » : **chaque SMS
+exige aujourd'hui la mention**, ce qui va au-delà de l'option que tu as
+choisie. Un SMS se paie au segment, donc ça a un coût réel.
+
+La vraie correction est de **tracer les SMS** comme on trace les emails, pas
+d'assouplir la garde. Dis-moi si je le fais — c'est une colonne et un point
+d'écriture, pas un chantier.
+
+### ⚠⚠ L'ANCIENNE QUESTION, GARDÉE POUR SA RAISON
 
 Trouvé le 15/09 en vérifiant la doctrine CNIL, pas par un test.
 
@@ -226,9 +260,9 @@ l'adresse, non.**
 3. **Ne rien changer** en assumant le risque, le temps de la semaine de
    lancement, et le faire ensuite.
 
-Dis lequel et je le câble — avec le garde qui va avec. Sans ta réponse, c'est
-l'option 3 qui s'applique **par défaut et sans avoir été choisie**, ce qui est
-la pire des trois.
+> C'était l'**option 2** qui a été retenue. Les deux autres restent écrites
+> au-dessus : une décision dont on efface les branches écartées se fait
+> réexaminer à l'envers par la session suivante, qui croit corriger un oubli.
 
 ---
 

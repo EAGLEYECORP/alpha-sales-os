@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { verifieMentions } from "../lib/conformite";
+import { verifieMentions, MENTION_PROVENANCE } from "../lib/conformite";
 import { signataire, CLOSER_USINE } from "../lib/signature";
 import { identiteEnvoi, habillageEnvoi } from "../lib/expediteur";
 
@@ -39,7 +39,7 @@ const sansCommentaires = (s: string) =>
 
 test("verifieMentions attrape ce qui manque vraiment dans un SMS", () => {
   const nu = "Bonjour, on peut vous faire gagner du temps. Rappelez-moi.";
-  const manques = verifieMentions(nu, "Camille", "Vaubex");
+  const manques = verifieMentions(nu, "Camille", "Vaubex", "suivant");
   assert.ok(
     manques.some((m) => /refus/i.test(m)),
     "un SMS sans moyen de refus doit être signalé"
@@ -48,7 +48,7 @@ test("verifieMentions attrape ce qui manque vraiment dans un SMS", () => {
   assert.ok(manques.some((m) => /Société/i.test(m)));
 
   const complet = "Camille de Vaubex : 2 min pour vos appels manqués ? Répondez STOP pour ne plus être contacté.";
-  assert.deepEqual(verifieMentions(complet, "Camille", "Vaubex"), []);
+  assert.deepEqual(verifieMentions(complet, "Camille", "Vaubex", "suivant"), []);
 });
 
 /**
@@ -57,7 +57,7 @@ test("verifieMentions attrape ce qui manque vraiment dans un SMS", () => {
  */
 test("verifieMentions ne se contente pas d'un placeholder", () => {
   const texte = `Le Closer de EAGLEYE CORP. Répondez STOP.`;
-  const manques = verifieMentions(texte, CLOSER_USINE, "EAGLEYE CORP");
+  const manques = verifieMentions(texte, CLOSER_USINE, "EAGLEYE CORP", "suivant");
   assert.ok(
     manques.some((m) => m.includes(CLOSER_USINE)),
     "le libellé d'usine est PRÉSENT dans le texte : c'est justement ce qui doit être refusé"
@@ -156,7 +156,7 @@ test("⚠ /api/send refuse un message sans mentions obligatoires — email ET sm
    */
   assert.match(
     code,
-    /const manques = verifieMentions\(text, habillage\.closerName, marque\)/,
+    /const manques = verifieMentions\(text, habillage\.closerName, marque, rang\)/,
     "l'email se vérifie sur le texte rendu"
   );
   assert.match(code, /if \(manques\.length > 0\)[\s\S]{0,220}status: 422/);
@@ -167,7 +167,7 @@ test("⚠ /api/send refuse un message sans mentions obligatoires — email ET sm
    */
   assert.match(
     code,
-    /const manquesSms = verifieMentions\(body\.body, habillage\.closerName, marque\)/,
+    /const manquesSms = verifieMentions\(body\.body, habillage\.closerName, marque, "premier"\)/,
     "le SMS se vérifie sur le corps exact, celui qui part"
   );
   assert.match(code, /if \(manquesSms\.length > 0\)[\s\S]{0,240}status: 422/);
@@ -250,4 +250,130 @@ test("⚠ le rendu d'email ne contient plus notre marque en dur", () => {
   // L'en-tête se déduit de l'expéditeur, il n'est plus écrit à la main.
   assert.match(code, /const \[enTeteMarque, enTeteLieu\]/);
   assert.ok(!/Sales OS — Lyon/.test(code), "le sous-titre du papier à en-tête était le nôtre, en dur");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * D'OÙ VIENT L'ADRESSE — la mention du PREMIER message (15/09/2026)
+ *
+ * La CNIL impose d'informer la personne quand ses coordonnées viennent d'un
+ * tiers. Notre sourcing est intégralement indirect (arrêtés, profils,
+ * feuilles) : l'obligation nous vise en plein, et rien ne la posait.
+ *
+ * Décision de Zakaria : au PREMIER message seulement. Informer une fois
+ * remplit le texte ; le répéter à chaque relance alourdit sans rien ajouter
+ * en droit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠⚠ LA PROVENANCE EST EXIGÉE AU PREMIER MESSAGE, ET SEULEMENT LÀ", () => {
+  const sansProvenance =
+    "Camille de Vaubex : deux minutes pour vos acquéreurs ? Répondez STOP pour ne plus être contacté.";
+
+  // Sur un PREMIER message : refusé, et le refus dit quoi écrire.
+  const premier = verifieMentions(sansProvenance, "Camille", "Vaubex", "premier");
+  assert.ok(
+    premier.some((m) => /provenance/i.test(m)),
+    `un premier message sans provenance doit être refusé. Manques : ${JSON.stringify(premier)}`
+  );
+  assert.ok(
+    premier.some((m) => m.includes(MENTION_PROVENANCE.exemple)),
+    "le refus doit porter une formulation utilisable — un garde qui refuse sans dire quoi écrire se fait désarmer"
+  );
+
+  /**
+   * ⚠ LE CONTRE-TEST, ET IL EST OBLIGATOIRE. Sans lui, une règle qui
+   * exigerait la provenance sur TOUS les messages passerait au vert — c'est
+   * exactement l'option que Zakaria n'a PAS retenue.
+   */
+  assert.deepEqual(
+    verifieMentions(sansProvenance, "Camille", "Vaubex", "suivant"),
+    [],
+    "une relance sans provenance est parfaitement licite : l'exiger refuserait un message juste"
+  );
+});
+
+test("⚠ le motif de provenance exige les DEUX moitiés — sinon il n'informe de rien", () => {
+  const dire = (corps: string) =>
+    verifieMentions(
+      `Camille de Vaubex. ${corps} Répondez STOP pour ne plus être contacté.`,
+      "Camille",
+      "Vaubex",
+      "premier"
+    ).some((m) => /provenance/i.test(m));
+
+  // La formulation d'exemple passe — sinon on refuserait ce qu'on recommande.
+  assert.equal(dire(MENTION_PROVENANCE.exemple), false, "l'exemple fourni doit satisfaire le motif");
+  assert.equal(dire("J'ai trouvé vos coordonnées sur votre profil professionnel."), false);
+  assert.equal(dire("Vos coordonnées sont issues de l'annuaire de la fédération."), false);
+
+  /**
+   * ⚠ Une moitié seule ne suffit pas, et c'est tout l'intérêt du couplage :
+   *  · parler des coordonnées sans dire d'où elles viennent n'informe de rien ;
+   *  · parler d'une source sans dire qu'il s'agit de SES coordonnées non plus.
+   */
+  assert.equal(dire("Votre adresse est la bonne, j'espère ?"), true, "possessif seul : pas une information de provenance");
+  assert.equal(
+    dire("Nos tarifs sont publiés sur notre site."),
+    true,
+    "source seule : « publié » et « site » parlent de NOUS, pas de la façon dont on l'a trouvé"
+  );
+
+  // Et le vocabulaire de vente ordinaire ne doit pas satisfaire le motif par accident.
+  assert.equal(dire("Je peux vous trouver des acquéreurs."), true);
+});
+
+test("⚠⚠ LE RANG VIENT DU SERVEUR, JAMAIS DE L'APPELANT", () => {
+  const code = sansCommentaires(lire("app/api/send/route.ts"));
+
+  /**
+   * Le point entier. Si le rang venait du corps de la requête, n'importe quel
+   * appelant se dispenserait de la mention en annonçant « c'est une relance ».
+   * La garde deviendrait déclarative — donc nulle.
+   */
+  assert.match(
+    code,
+    /const rang: RangMessage = \(await aDejaEcrit\(to, tenantId\)\) \? "suivant" : "premier"/,
+    "le rang se calcule depuis le tracking, pas depuis la requête"
+  );
+  const iRang = code.indexOf("const rang: RangMessage");
+  const iMentions = code.indexOf("const manques = verifieMentions");
+  assert.ok(iRang > 0 && iRang < iMentions, "le rang se calcule AVANT le contrôle qui s'en sert");
+
+  // Aucun champ de la requête ne doit pouvoir décider du rang.
+  const blocRang = code.slice(iRang, iRang + 200);
+  assert.ok(
+    !/body\./.test(blocRang),
+    "aucun champ du corps de requête ne doit entrer dans le calcul du rang"
+  );
+  assert.ok(!/body\.force/.test(blocRang), "et `force` encore moins");
+
+  /**
+   * ⚠ Le SMS n'est PAS tracé — la question n'a donc pas de réponse, et
+   * l'inconnu vaut « premier ». Écrire "suivant" ici dispenserait chaque SMS
+   * de la mention sur la foi d'une donnée qui n'existe pas.
+   */
+  assert.match(
+    code,
+    /verifieMentions\(body\.body, habillage\.closerName, marque, "premier"\)/,
+    "faute de trace SMS, l'inconnu doit valoir « premier »"
+  );
+});
+
+test("⚠⚠ aDejaEcrit REND « premier » SUR TOUTE PANNE — le repli n'est pas symétrique", () => {
+  const src = lire("lib/tracking.ts");
+  const i = src.indexOf("export async function aDejaEcrit");
+  assert.ok(i > 0, "aDejaEcrit doit exister dans lib/tracking");
+  const corps = src.slice(i, i + 1200);
+
+  /**
+   * Mettre la mention à quelqu'un qui l'a déjà lue coûte une phrase ;
+   * l'omettre à quelqu'un qui ne l'a jamais lue est le manquement qu'on
+   * corrige. Les deux erreurs ne coûtent pas pareil — donc une erreur de base
+   * doit rendre `false` (= « premier » = mention exigée), jamais `true`.
+   */
+  assert.match(corps, /if \(error\) return false/, "une erreur de base doit mener à « premier »");
+  assert.ok(
+    !/if \(error\) return true/.test(corps),
+    "rendre `true` sur une panne dispenserait de la mention au moment précis où l'on ne sait plus rien"
+  );
 });

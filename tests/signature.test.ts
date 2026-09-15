@@ -101,7 +101,7 @@ test("verifieMentions refuse le nom d'usine comme identité d'expéditeur", () =
     closerName: CLOSER_USINE,
     agencyName: "EAGLEYE CORP",
   });
-  const manques = verifieMentions(corps, CLOSER_USINE, "EAGLEYE CORP");
+  const manques = verifieMentions(corps, CLOSER_USINE, "EAGLEYE CORP", "suivant");
   assert.ok(
     manques.some((m) => /non renseigné/.test(m)),
     `Le nom d'usine passe encore le contrôle de conformité. Manques relevés : ${JSON.stringify(manques)}`
@@ -112,7 +112,7 @@ test("verifieMentions refuse le nom d'usine comme identité d'expéditeur", () =
     closerName: "Marc Perrin",
     agencyName: "EAGLEYE CORP",
   });
-  assert.deepEqual(verifieMentions(vrai, "Marc Perrin", "EAGLEYE CORP"), []);
+  assert.deepEqual(verifieMentions(vrai, "Marc Perrin", "EAGLEYE CORP", "suivant"), []);
 });
 
 /**

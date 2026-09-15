@@ -177,6 +177,57 @@ export async function contactedEmails(
   return set;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * A-T-ON DÉJÀ ÉCRIT À CETTE ADRESSE — un jour, pas « récemment ».
+ *
+ * Sert UNIQUEMENT à décider du `rang` passé à `verifieMentions` : la mention
+ * de provenance n'est due qu'au PREMIER message (`lib/conformite.ts`).
+ *
+ * ══ ⚠⚠ POURQUOI CE N'EST PAS `contactedEmails` AVEC UNE GRANDE FENÊTRE ══
+ *
+ * Les deux questions se ressemblent et ont des sens OPPOSÉS en cas de panne :
+ *
+ *  · `contactedEmails` sert la fenêtre de recontact. Base muette ⇒ ensemble
+ *    vide ⇒ « jamais contacté » ⇒ **l'envoi passe**. Panne permissive.
+ *  · ici, base muette ⇒ `false` ⇒ « premier message » ⇒ **la mention est
+ *    EXIGÉE**. Panne restrictive.
+ *
+ * C'est le même repli technique qui produit les deux, et c'est exactement
+ * pour ça qu'il faut deux fonctions : le jour où quelqu'un « réparera »
+ * `contactedEmails` pour qu'elle lève au lieu de rendre vide — ce qui serait
+ * défendable pour la fenêtre — il casserait cette règle-ci sans le voir.
+ *
+ * ⚠ **L'inconnu vaut « premier », et c'est le bon sens du repli.** Mettre la
+ * mention à quelqu'un qui l'a déjà lue coûte une phrase ; l'omettre à
+ * quelqu'un qui ne l'a jamais lue est le manquement qu'on corrige ici. Les
+ * deux erreurs ne coûtent pas pareil, donc le repli n'est pas symétrique.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export async function aDejaEcrit(
+  email: string,
+  userId?: string | null
+): Promise<boolean> {
+  const cible = email.toLowerCase().trim();
+  if (!cible) return false;
+  const sb = serviceClient();
+  if (sb) {
+    // `limit(1)` : on demande l'existence, pas un compte. Compter ferait
+    // parcourir tout l'historique d'une adresse relancée dix fois.
+    let q = sb.from("tracking_messages").select("id").eq("email", cible).limit(1);
+    if (userId) q = q.eq("user_id", userId);
+    const { data, error } = await q;
+    // ⚠ Une erreur ne se distingue pas d'un vide côté appelant : on tranche
+    // ici, et on tranche vers « premier ».
+    if (error) return false;
+    return (data ?? []).length > 0;
+  }
+  for (const r of memory.values()) {
+    if (r.email?.toLowerCase() === cible && (!userId || r.userId === userId)) return true;
+  }
+  return false;
+}
+
 async function persist(rec: TrackingRecord): Promise<void> {
   memory.set(rec.id, rec);
   if (memory.size > 5000) {
