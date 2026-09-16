@@ -208,6 +208,18 @@ export const CHEMIN_PAR_API: Record<string, string> = {
  *   une seule personne ; en multi-locataire elle la retourne — un tiers
  *   l'appelle, et le SMS part sur NOTRE téléphone, à NOS frais. Le défaut
  *   préexistait ; le BYOK le rendait atteignable.
+ * · `/api/notion` — ⚠⚠ AJOUTÉE LE 16/09, trouvée en BALAYANT la famille que
+ *   `/api/digest` venait de révéler : « quelles autres routes ont une
+ *   destination qui vient de NOTRE environnement ? ». Celle-ci ÉCRIT dans
+ *   `NOTION_DATABASE_ID` — une base précise, la nôtre — et elle était servie
+ *   par `/pipeline`, chemin GRATUIT. N'importe quel inscrit poussait donc ses
+ *   fiches dans NOTRE espace de travail.
+ *   Deux torts, et le premier est pour LUI : ses prospects sont des données
+ *   de tiers, et elles atterrissaient chez nous — on devenait responsable
+ *   d'un traitement qu'on n'a jamais demandé. Le second est pour nous : notre
+ *   base se remplissait des fiches d'inconnus.
+ *   ⚠ Le jour où un locataire pourra apporter SON jeton Notion (aucun chemin
+ *   ne le permet aujourd'hui, vérifié), cette entrée se rediscute — pas avant.
  * ─────────────────────────────────────────────────────────────────────
  */
 export const MAITRE_SEULEMENT: readonly string[] = [
@@ -216,4 +228,5 @@ export const MAITRE_SEULEMENT: readonly string[] = [
   "/api/knowledge",
   "/api/references",
   "/api/digest",
+  "/api/notion",
 ];

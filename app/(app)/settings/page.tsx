@@ -549,7 +549,14 @@ export default function SettingsPage() {
 
         <PushToggle />
 
-        <NotionPush />
+        {/* ⚠ Notre espace de travail Notion, pas celui du client : un seul
+            jeton, une seule base, tous deux dans NOTRE environnement. Masqué
+            ici — et REFUSÉ par le middleware (`MAITRE_SEULEMENT`), qui est la
+            vraie barrière : cacher un bouton ne fait que déplacer le problème
+            dans les devtools. */}
+        <PanneauOperateur titre="Notion">
+          <NotionPush />
+        </PanneauOperateur>
 
         {/* API keys vault */}
         <section className="card p-4">

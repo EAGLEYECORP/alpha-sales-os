@@ -18,11 +18,15 @@ import { useDroits } from "@/lib/use-droits";
  *     gabarit d'environnement, le chargement de NOS fiches réelles.
  *
  * ⚠ CE COMPOSANT NE SÉCURISE RIEN, et c'est important de l'écrire ici.
- * Il masque. La vraie barrière est le middleware : `MAITRE_SEULEMENT` refuse
- * `/api/pipeline`, `/api/voice-costs`, `/api/knowledge` et `/api/references`
- * à tout compte non maître, côté serveur, sur l'email du JETON. Sans cette
- * barrière-là, cacher un bouton ne fait que déplacer le problème dans les
- * devtools.
+ * Il masque. La vraie barrière est le middleware : `MAITRE_SEULEMENT`
+ * (`lib/api-access.ts`) refuse ces routes à tout compte non maître, côté
+ * serveur, sur l'email du JETON. Sans cette barrière-là, cacher un bouton ne
+ * fait que déplacer le problème dans les devtools.
+ *
+ * ⚠ La liste n'est PAS recopiée ici — elle en portait quatre alors qu'il y en
+ * a six depuis le 16/09 (`/api/digest` et `/api/notion` s'y sont ajoutées).
+ * Une prose qui dérive du code ne casse rien : elle ment, à l'endroit précis
+ * où quelqu'un vient chercher la règle.
  *
  * Par défaut, `useDroits` est OPTIMISTE (tout ouvert tant qu'on ne sait pas).
  * C'est le bon choix pour un menu — un écran qui clignote fait croire à une

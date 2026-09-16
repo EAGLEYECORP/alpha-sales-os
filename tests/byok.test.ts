@@ -17,7 +17,8 @@ import {
   moteurDepuisValeurs,
   resoudreMoteurIA,
 } from "../lib/credentials-secret";
-import { DROIT_SOLO, droitGratuit } from "../lib/entitlements";
+import { autorise, DROIT_SOLO, droitGratuit } from "../lib/entitlements";
+import { CHEMIN_PAR_API, MAITRE_SEULEMENT } from "../lib/api-access";
 
 const racine = process.cwd();
 const lire = (f: string) => readFileSync(join(racine, f), "utf8");
@@ -579,4 +580,62 @@ test("⚠ le contrôle DNS analyse le domaine DE L'EXPÉDITEUR", () => {
   const iSmtp = src.indexOf("domaineDepuis(smtp.from)");
   const iEnv = src.indexOf("domainFromEnv()", iSmtp);
   assert.ok(iSmtp > 0 && iEnv > iSmtp, "notre domaine n'est que le DERNIER repli");
+});
+
+// ══════════ LA FAMILLE « DESTINATION DANS NOTRE ENVIRONNEMENT » ══════════
+
+test("⚠⚠ AUCUNE ROUTE À DESTINATION GLOBALE N'EST OUVERTE À UN LOCATAIRE", () => {
+  /**
+   * ⚠⚠ UNE FAMILLE DE DÉFAUTS, PAS UN CAS ISOLÉ — balayée le 16/09.
+   *
+   * `/api/digest` l'a révélée : son en-tête vantait une propriété de sécurité
+   * — « le destinataire n'est JAMAIS pris dans la requête, toujours dans
+   * l'environnement » — qui la rendait sûre pour UN opérateur et la retourne
+   * dès qu'il y en a deux. La question suivante était donc obligatoire :
+   * **quelles AUTRES routes ont une destination qui vient de chez nous ?**
+   *
+   * Le balayage a rendu trois réponses, et elles ne se valent pas :
+   *  · `/api/notion` — ÉCRIT dans `NOTION_DATABASE_ID`, notre base, et elle
+   *    était servie par `/pipeline`, chemin GRATUIT. Vrai défaut, fermé.
+   *  · `/api/calendar` — porte sa PROPRE serrure (`?k=CALENDAR_TOKEN`) et se
+   *    ferme sans elle. Une autre porte, pas un trou : même schéma que les
+   *    routes de cron.
+   *  · `/api/push` — scopée par `user_id` (`getTenantId`). Correcte.
+   *
+   * Ce test tient la conclusion : ce qui écrit ou envoie vers une destination
+   * tirée de NOTRE environnement ne s'ouvre pas à un locataire.
+   */
+  const g = droitGratuit("locataire-lambda");
+  for (const api of ["/api/notion", "/api/digest", "/api/pipeline", "/api/voice-costs"]) {
+    assert.ok(
+      MAITRE_SEULEMENT.includes(api),
+      `${api} dirige vers NOTRE environnement : elle doit être réservée au maître`
+    );
+    const chemin = CHEMIN_PAR_API[api];
+    if (chemin) {
+      /**
+       * ⚠ Le chemin métier peut rester GRATUIT — `/api/notion` est servie par
+       * `/pipeline`, qu'on n'a aucune raison de fermer. C'est la garde MAÎTRE
+       * qui protège, et elle passe AVANT celle des droits dans le middleware.
+       * Confondre les deux ferait fermer un écran entier pour une seule route.
+       */
+      assert.ok(chemin.length > 0);
+    }
+    assert.equal(autorise(g, api), false, `${api} ne doit jamais s'ouvrir sur son propre chemin`);
+  }
+});
+
+test("⚠ le panneau Notion est MASQUÉ, et le serveur refuse quand même", () => {
+  /**
+   * Masquer ne sécurise rien — le composant le dit lui-même. Les deux vont
+   * ensemble : le middleware refuse (la barrière), l'écran cache (pour ne pas
+   * proposer une porte murée). Le test exige les DEUX, parce que retirer l'un
+   * des deux se voit moins qu'on ne croit.
+   */
+  const page = lire("app/(app)/settings/page.tsx");
+  const i = page.indexOf("<NotionPush />");
+  assert.ok(i > 0, "le panneau doit rester monté");
+  const avant = page.slice(Math.max(0, i - 400), i);
+  assert.match(avant, /<PanneauOperateur/, "il doit être dans un panneau opérateur");
+  assert.ok(MAITRE_SEULEMENT.includes("/api/notion"), "et la route refusée côté serveur");
 });

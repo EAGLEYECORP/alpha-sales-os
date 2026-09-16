@@ -236,6 +236,7 @@ pas une panne** — c'est ce qui évite de griller le domaine en un envoi.
 | Ce qu'il tente | Attendu |
 |---|---|
 | `/payouts`, `/offre` | **refusé** — notre économie |
+| Réglages → le panneau **Notion** | **absent** — c'est NOTRE base, un seul jeton pour tout le monde |
 | `/agent` | **fermé** tant qu'il n'a pas de clé |
 | Les campagnes dans la barre | **visibles mais grisées** — on ne peut pas vouloir ce qu'on ne voit pas |
 | Alpha CEO | **absent** — griser, c'est annoncer |
