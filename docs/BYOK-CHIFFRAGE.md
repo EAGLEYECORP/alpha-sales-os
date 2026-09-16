@@ -390,6 +390,55 @@ développement refuse les clés live. La vérification de clé (`/api/credential
 → appel réel) n'a jamais tourné pour de bon : c'est le premier geste à faire
 côté serveur, avec une vraie clé.
 
+### ✅ VÉRIFIÉ SUR SERVEUR RÉEL — 16/09/2026
+
+Relevé en frappant un serveur de **production** (`.next/standalone/server.js`,
+l'artefact qui part réellement — `next start` avertit lui-même qu'il ne
+correspond pas à la configuration `output: standalone`). Les deux se
+comportent à l'identique, vérifié.
+
+**Scénario 1 — production, aucun compte, aucun mot de passe** (le cas que le
+correctif du 13/09 a fermé) :
+
+| Route | Réponse |
+|---|---|
+| `/api/ai` `/api/agent` `/api/sparring` `/api/icp` | **403** `brique_absente` |
+| `/api/send` (email **et** sms) | **403** `brique_absente` |
+| `/api/audit/generate` `/api/social/draft` `/api/transcribe` `/api/voice/call` | **403** `brique_absente` |
+| `/api/digest` | **403** `maitre_requis` ← la reclassification du 16/09 |
+| `/api/pipeline` `/api/voice-costs` `/api/knowledge` `/api/references` | **403** `maitre_requis` |
+| `/api/credentials` **GET** | **200** `{"cles":{}}` — joignable par un gratuit, c'est le point |
+| `/api/credentials` **POST / DELETE** | **401** — le locataire vient du jeton, et rien ne part avant |
+| `/aujourdhui` `/pipeline` `/closer` `/cerveau` `/linkedin` `/templates` `/settings` `/vitrine` | **200** |
+| `/api/brain` `/api/email/preview` `/api/crm/patch` en GET | **405** — méthode refusée, donc la route est ATTEINTE (pas 403) |
+
+**Scénario 2 — `SMTP_*` et `ANTHROPIC_API_KEY` posés, toujours aucun compte.**
+C'est « poser le SMTP avant les comptes », que `docs/A-FAIRE-ZAKARIA.md`
+appelle la dépendance la plus chère du dépôt. `/api/send` répond toujours
+**403** : le correctif du 13/09 survit au refactor L2.
+
+Et `/api/health` rend désormais, pour un appelant anonyme :
+```json
+{ "configured": false, "model": "moteur de templates (hors-ligne)",
+  "engines": [], "origine": "aucune" }
+```
+**Avant le BYOK, il aurait annoncé `configured: true`** en lisant
+l'environnement global. Il répond maintenant « qu'est-ce qui te répondrait, à
+TOI » — un diagnostic qui rassure à tort étant pire qu'aucun.
+
+**Scénario 3 — `SITE_PASSWORD` posé, toujours aucun compte.** Tout rend
+**401** et les pages admin redirigent vers `/gate`. Conforme à
+`exigeMotDePasse` : préfixes admin toujours, et **tout le reste tant
+qu'aucun compte n'existe** — le mur ne se lève que lorsque la serrure de
+remplacement est en place.
+
+> ⚠⚠ **CE QUE CE RELEVÉ NE PROUVE PAS, ET C'EST LA MOITIÉ QUI MANQUE.**
+> **J'ai vérifié tous les REFUS. Je n'ai pu vérifier AUCUNE acceptation.**
+> Ouvrir un chemin par une clé apportée demande un compte, une base et une
+> vraie clé — les trois hors de portée d'ici. Donc : on sait que rien ne
+> s'ouvre par erreur ; on ne sait pas encore que quelque chose s'ouvre quand
+> ça doit. Les deux comptent, et seule la première est acquise.
+
 ### Ce qu'il reste à poser côté Zakaria
 
 1. **migration 010** dans le SQL editor ;
