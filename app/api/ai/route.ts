@@ -3,6 +3,7 @@ import { audiencePrompt } from "@/lib/audience";
 import { doctrineOrDefault } from "@/lib/business-rules";
 import type { Prospect } from "@/lib/types";
 import { runAI } from "@/lib/ai-engine";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { playbookPrompt } from "@/lib/playbook";
 import { prescripteurPrompt } from "@/lib/prescripteurs";
 import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
@@ -254,6 +255,7 @@ export async function POST(request: NextRequest) {
         { role: "system", content: system },
         { role: "user", content: buildPrompt(body) },
       ],
+      await moteurIADeLaRequete(request),
       { temperature: 0.3, maxTokens: 2000 }
     );
     return NextResponse.json({ text, engine });

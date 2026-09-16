@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractDebrief, parseFrenchDate, type DebriefDraft } from "@/lib/debrief";
 import { aiAvailable, runAIJson } from "@/lib/ai-engine";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { SYSTEME_DEBRIEF } from "@/lib/prompts-textes";
 
 export const runtime = "nodejs";
@@ -85,7 +86,11 @@ export async function POST(request: NextRequest) {
 
   const base = extractDebrief(transcript);
 
-  if (!aiAvailable()) {
+  // ⚠ Résolu UNE fois et réutilisé : deux appels à `moteurIADeLaRequete`
+  // poseraient deux fois la question « qui paie ? » et pourraient répondre
+  // différemment si la clé change entre les deux.
+  const moteur = await moteurIADeLaRequete(request);
+  if (!aiAvailable(moteur)) {
     return NextResponse.json({ draft: base, engine: "déterministe (hors-ligne)" });
   }
 
@@ -95,6 +100,7 @@ export async function POST(request: NextRequest) {
         { role: "system", content: SYSTEM },
         { role: "user", content: transcript },
       ],
+      moteur,
       { temperature: 0.1, maxTokens: 500 }
     );
     // JSON invalide → on garde l'extraction déterministe, qui a déjà

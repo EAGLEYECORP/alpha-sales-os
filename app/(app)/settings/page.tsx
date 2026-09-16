@@ -30,6 +30,7 @@ import { PricingEditor } from "@/components/settings/pricing-editor";
 import { OffresEditor } from "@/components/settings/offres-editor";
 import { IcpGenerator } from "@/components/settings/icp-generator";
 import { AccountSwitcher } from "@/components/settings/account-switcher";
+import { CleIA } from "@/components/settings/cle-ia";
 import { ImportTriagePanel } from "@/components/settings/import-triage";
 import { triageImport, type ImportTriage } from "@/lib/import-triage";
 import { PanneauOperateur } from "@/components/settings/panneau-operateur";
@@ -871,6 +872,11 @@ export default function SettingsPage() {
             toutes les autres cartes ont. Sans grille, il ne sert plus à rien :
             remis au même niveau que le reste, ils reçoivent le rythme commun. */}
         <SyncProspects />
+        {/* ⚠ HORS PanneauOperateur, et c'est le point : ce panneau s'adresse à
+            quelqu'un qui n'a RIEN acheté. Le ranger avec les réglages
+            d'infrastructure le rendrait invisible à ceux à qui il est
+            destiné — le BYOK existe précisément pour eux. */}
+        <CleIA />
         {/* Ce qui sort au nom d'un partenaire passe devant lui d'abord. */}
         <ValidationPartenairePanel />
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { doctrineOrDefault } from "@/lib/business-rules";
-import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
-import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
+import { aiAvailable, runAI } from "@/lib/ai-engine";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { verticalById, verticalForSector } from "@/lib/playbook";
 import { clipDoctrine } from "@/lib/identity";
 import type { Sector } from "@/lib/types";
@@ -52,7 +52,22 @@ export async function POST(request: NextRequest) {
   // entraîne à mal vendre, et ça ne se voit pas dans la réponse.
   body.businessRules = doctrineOrDefault(body.businessRules);
 
-  if (!ollamaConfigured() && !nvidiaConfigured() && !process.env.ANTHROPIC_API_KEY) {
+  /**
+   * ⚠⚠ CETTE ROUTE REFAISAIT SA PROPRE CASCADE — supprimée le 16/09/2026.
+   *
+   * Elle enchaînait ollamaConfigured → nvidiaConfigured →
+   * process.env.ANTHROPIC_API_KEY, en dupliquant `runAI` ligne pour ligne,
+   * repli local compris. Avec `/api/agent` qui faisait pareil, ça faisait
+   * TROIS définitions de « comment on joint le modèle ».
+   *
+   * Tant que la clé était la nôtre, ça ne coûtait que de la dette. Avec le
+   * BYOK, un chemin qui lit encore l'environnement facture à NOUS l'appel
+   * d'un locataire qui a collé sa clé. Contrairement à `/api/agent`, cette
+   * route ne streame pas : elle peut donc repasser par `runAI`, et la
+   * cascade dupliquée disparaît au lieu d'être rustinée.
+   */
+  const moteur = await moteurIADeLaRequete(request);
+  if (!aiAvailable(moteur)) {
     return NextResponse.json({ ...localEngine(body), engine: "local" });
   }
 
@@ -85,49 +100,21 @@ Réponds UNIQUEMENT en JSON strict, rien d'autre :
 {"prospect":"ta réplique en personnage (1-2 phrases, ton parlé, français)","coach":"1 conseil bref et concret au commercial sur sa DERNIÈRE réponse","status":"continue|gagne|perdu"}
 status="gagne" si le commercial vient d'obtenir un RDV d'audit daté ; "perdu" si après 5+ échanges il n'y arrive toujours pas ; sinon "continue".`;
 
-  // IA locale d'abord (format JSON natif d'Ollama : fiable même sur un 3B)
-  if (ollamaConfigured()) {
-    try {
-      const text = await ollamaChat([{ role: "user", content: prompt }], { temperature: 0.5, maxTokens: 400, json: true });
-      const a = text.indexOf("{");
-      const b = text.lastIndexOf("}");
-      const parsed = JSON.parse(text.slice(a, b + 1)) as SparringReply;
-      if (!parsed.prospect) throw new Error("réponse vide");
-      return NextResponse.json({ ...parsed, engine: `ollama (${ollamaModel()})` });
-    } catch (e) {
-      console.error("sparring ollama fallback:", e);
-      if (!nvidiaConfigured() && !process.env.ANTHROPIC_API_KEY) return NextResponse.json({ ...localEngine(body), engine: "local" });
-    }
-  }
-
-  // NVIDIA NIM avant Anthropic : gratuit, et un 70B tient très bien le rôle.
-  if (nvidiaConfigured()) {
-    try {
-      const text = await nvidiaChat([{ role: "user", content: prompt }], { temperature: 0.5, maxTokens: 400 });
-      const a = text.indexOf("{");
-      const b = text.lastIndexOf("}");
-      const parsed = JSON.parse(text.slice(a, b + 1)) as SparringReply;
-      if (!parsed.prospect) throw new Error("réponse vide");
-      return NextResponse.json({ ...parsed, engine: `nvidia (${nvidiaModel()})` });
-    } catch (e) {
-      console.error("sparring nvidia fallback:", e);
-      if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ ...localEngine(body), engine: "local" });
-    }
-  }
-
   try {
-    const { generateText } = await import("ai");
-    const { anthropic } = await import("@ai-sdk/anthropic");
-    const { text } = await generateText({
-      model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
-      prompt,
+    // ⚠ Le parsing reste CELUI DE CETTE ROUTE (premier `{` → dernier `}`) et
+    // non `runAIJson` : changer la tolérance du parseur en même temps que la
+    // cascade mêlerait deux corrections, et on ne saurait pas laquelle a
+    // cassé le sparring si quelque chose cassait.
+    const { text, engine } = await runAI([{ role: "user", content: prompt }], moteur, {
+      temperature: 0.5,
       maxTokens: 500,
+      json: true,
     });
     const a = text.indexOf("{");
     const b = text.lastIndexOf("}");
     const parsed = JSON.parse(text.slice(a, b + 1)) as SparringReply;
     if (!parsed.prospect) throw new Error("réponse vide");
-    return NextResponse.json({ ...parsed, engine: "claude" });
+    return NextResponse.json({ ...parsed, engine });
   } catch (e) {
     console.error("sparring fallback:", e);
     return NextResponse.json({ ...localEngine(body), engine: "local" });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 import { verifierProprietaire } from "@/lib/proprietaire-coherence";
@@ -52,17 +53,28 @@ export async function GET(req: NextRequest) {
   const email = has("SMTP_HOST") && has("SMTP_USER") && has("SMTP_PASS");
   const supabasePublic = has("NEXT_PUBLIC_SUPABASE_URL") && has("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
+  const moteurIA = await moteurIADeLaRequete(req);
+
   return NextResponse.json({
     ok: true,
     checkedAt: new Date().toISOString(),
     runtime: `node ${process.version}`,
     capabilities: {
       ai: {
-        configured: aiAvailable(),
+        /**
+         * ⚠ Depuis le BYOK, cet état est PAR DEMANDEUR, plus par serveur.
+         * Il répond « qu'est-ce qui te répondrait, à TOI, maintenant » — ce
+         * qui est la seule question utile ici. Un état global dirait « IA
+         * configurée » à un locataire dont la clé est absente ou non
+         * vérifiée : un diagnostic qui rassure à tort est pire qu'aucun.
+         */
+        configured: aiAvailable(moteurIA),
         // Le moteur qui répondra RÉELLEMENT, pas celui qu'on espère.
-        model: aiEngineName(),
+        model: aiEngineName(moteurIA),
         /** Tous les moteurs branchés, dans l'ordre d'essai. */
-        engines: aiEngines(),
+        engines: aiEngines(moteurIA),
+        /** Qui paie ces appels — « locataire », « maison », ou personne. */
+        origine: moteurIA.origine,
       },
       email: {
         configured: email,

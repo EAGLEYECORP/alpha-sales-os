@@ -42,7 +42,7 @@ et `proprietaire.coherent` (les deux listes `OWNER_EMAILS` concordent-elles).
 > Si tu déploies avant de poser les variables, garde `SITE_PASSWORD` : il
 > mure tout tant que les comptes ne sont pas actifs.
 
-### 2. Les migrations, 002 → 009
+### 2. Les migrations, 002 → 010
 
 Dans le SQL editor Supabase, **dans l'ordre**. Toutes vérifiées rejouables :
 aucun DDL non protégé, tu ne casses rien en repassant une migration.
@@ -55,8 +55,20 @@ aucun DDL non protégé, tu ne casses rien en repassant une migration.
 006-rendez-vous-cloisonnes.sql
 007-attribution-apporteurs.sql
 008-essai-plafond-cout.sql      le plafond de dépense de l'essai
-009-trace-destinataire.sql      ← NOUVELLE : le destinataire normalisé
+009-trace-destinataire.sql      le destinataire normalisé
+010-byok-identifiants.sql       ← NOUVELLE : les clés apportées (BYOK)
 ```
+
+> ⚠ La **010** va avec une variable Vercel : **`CREDENTIALS_MASTER_KEY`**,
+> 32 octets, qui chiffre les clés que les locataires collent. Sans elle,
+> aucune clé ne peut être enregistrée — et c'est un refus franc, jamais un
+> stockage en clair « en attendant ». Pour la générer :
+> `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`
+>
+> ⚠⚠ **À essayer en vrai dès qu'elle est posée** : Réglages → « Ta clé IA » →
+> coller une vraie clé → « Vérifier et enregistrer ». Le serveur fait un VRAI
+> appel avant d'accepter. Je n'ai pas pu le faire d'ici (le proxy refuse les
+> clés live), donc **ce chemin n'a jamais tourné pour de bon**.
 
 > ⚠ La **009** est ce qui fait marcher « n'exiger la mention de provenance
 > qu'au premier message ». Sans elle, la colonne n'existe pas, la requête

@@ -30,13 +30,14 @@ export interface OllamaMessage {
  */
 export async function ollamaChat(
   messages: OllamaMessage[],
+  cfg: { url: string; model: string },
   opts: { temperature?: number; maxTokens?: number; json?: boolean } = {}
 ): Promise<string> {
-  const res = await fetch(`${baseUrl()}/api/chat`, {
+  const res = await fetch(`${cfg.url.replace(/\/+$/, "")}/api/chat`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      model: ollamaModel(),
+      model: cfg.model,
       messages,
       stream: false,
       ...(opts.json ? { format: "json" } : {}),

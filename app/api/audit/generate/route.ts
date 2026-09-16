@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { fetchSiteText, safePublicUrl } from "@/lib/site-fetch";
 import { extractAudit } from "@/lib/audit-extract";
 
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { data, engine } = await extractAudit(site.text, body);
+    const { data, engine } = await extractAudit(site.text, body, await moteurIADeLaRequete(req));
     if (data) return NextResponse.json({ data, engine, source: site.source });
     return NextResponse.json({ error: "L'IA n'a pas pu structurer le contenu du site." }, { status: 422 });
   } catch {

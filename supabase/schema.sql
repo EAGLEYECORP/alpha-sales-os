@@ -395,3 +395,21 @@ create table if not exists public.journal_acces_support (
 );
 create index if not exists journal_acces_tenant_idx on public.journal_acces_support (tenant_id, le desc);
 alter table public.journal_acces_support enable row level security;
+
+-- ── BYOK : identifiants apportés par le locataire ─────────────────────
+-- Détail et motifs : supabase/migrations/010-byok-identifiants.sql
+-- ⚠ RLS actif et AUCUNE policy : personne ne lit cette table depuis un JWT
+-- client, pas même le propriétaire de la ligne. On écrit, on ne relit pas.
+create table if not exists public.tenant_credentials (
+  tenant_id       uuid        not null references auth.users (id) on delete cascade,
+  capacite        text        not null check (capacite in ('ia')),
+  secret_chiffre  text        not null,
+  nonce           text        not null,
+  cle_version     integer     not null default 1,
+  empreinte       text        not null,
+  cree_le         timestamptz not null default now(),
+  verifie_le      timestamptz,
+  dernier_echec   text,
+  primary key (tenant_id, capacite)
+);
+alter table public.tenant_credentials enable row level security;

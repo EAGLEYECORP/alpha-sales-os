@@ -1,6 +1,10 @@
 # BYOK — apporter sa propre clé : ce que ça coûte, exactement
 
-> Chiffrage demandé le 16/09/2026. **Rien n'est décidé, rien n'est codé.**
+> Chiffrage demandé le 16/09/2026.
+>
+> ✅ **L0 + L1 + L6 + L7 (l'IA seule) ONT ÉTÉ FAITS le 16/09** — voir la
+> section « CE QUI A ÉTÉ LIVRÉ » en fin de document. Le reste (email, SMS,
+> transcription, téléphonie) n'est ni décidé ni codé.
 >
 > Tout ce qui est marqué `[MESURÉ]` vient du dépôt, relevé en l'ouvrant.
 > Tout ce qui est marqué `[DÉCISION]` est un choix que je propose et qui
@@ -337,3 +341,58 @@ repenser) et la responsabilité la plus lourde (détenir le SMTP d'un client).
   aient une clé IA, ni qu'ils acceptent de la coller, ni qu'ils préfèrent
   payer pour ne pas le faire. **Le premier prospect qui dit « je n'ai pas de
   clé et je n'en veux pas » vaut plus que ce document entier.**
+
+
+---
+
+## 9. CE QUI A ÉTÉ LIVRÉ — 16/09/2026
+
+Périmètre **L0 + L1 + L6 + L7**, l'IA seule. `tsc` propre, 1931 tests verts,
+`next build` sans un avertissement.
+
+| Lot | Ce qui existe |
+|---|---|
+| **L0** | `lib/credentials.ts` (Edge) + `lib/credentials-secret.ts` (Node) · migration 010 · AES-256-GCM · `CREDENTIALS_MASTER_KEY` documentée |
+| **L1** | `runAI` reçoit son moteur ; `/api/agent` et `/api/sparring` ne lisent plus la clé ; la cascade dupliquée de `sparring` a disparu |
+| **L6** | `components/settings/cle-ia.tsx` + `/api/credentials` (GET/POST/DELETE) |
+| **L7** | seconde porte dans `middleware.ts` : brique achetée **OU** clé apportée |
+
+### Ce que le chiffrage n'avait pas vu
+
+**Le module devait être coupé en deux, et c'est `next build` qui l'a dit.**
+Le middleware tourne en **Edge**, où `node:crypto` n'existe pas : `tsc`
+compilait, les tests passaient, le build échouait. La séparation qui en
+résulte est meilleure que le plan d'origine — **la porte d'entrée n'a aucune
+raison de savoir déchiffrer une clé**, elle a seulement besoin de savoir
+qu'il en existe une, vérifiée.
+
+**Le défaut le plus coûteux du lot ne produit aucune erreur** :
+`anthropic(model)` du SDK lit `ANTHROPIC_API_KEY` dans l'environnement. Écrit
+ainsi, l'appel d'un locataire — clé collée, vérifiée, affichée comme active —
+serait facturé sur NOTRE compte, et tout aurait l'air de marcher.
+`createAnthropic({ apiKey })` est la seule forme qui prend la clé qu'on lui
+donne ; un test refuse l'autre.
+
+**`MODELE_ANTHROPIC_DEFAUT` était recopié quatre fois** et n'existait pas dans
+`lib/modeles.ts`, où vivent pourtant les modèles morts. Corrigé au passage.
+
+### Ce qui n'est PAS couvert, et qu'il faut savoir
+
+⚠ **Deux replis ne sont gardés que sur la SOURCE.** Faire rendre une capacité
+à `capacitesDu` sur une erreur de base, ou retirer le filtre `verifie_le` :
+les deux mutations sont passées au vert, parce que sans Supabase configuré
+ces branches sont **inatteignables** ici. Les gardes vérifient donc la FORME
+du code, pas ce qu'il fait — ils tiennent jusqu'au jour où quelqu'un écrira
+la même faute autrement. **Une base de test reste à faire.**
+
+⚠ **Rien n'a été essayé contre un vrai fournisseur.** Le proxy de
+développement refuse les clés live. La vérification de clé (`/api/credentials`
+→ appel réel) n'a jamais tourné pour de bon : c'est le premier geste à faire
+côté serveur, avec une vraie clé.
+
+### Ce qu'il reste à poser côté Zakaria
+
+1. **migration 010** dans le SQL editor ;
+2. **`CREDENTIALS_MASTER_KEY`** sur Vercel — sans elle, aucune clé ne peut
+   être enregistrée (et c'est un refus franc, pas un stockage en clair) :
+   `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`

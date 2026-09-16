@@ -28,6 +28,12 @@
 
 import { MODELE_NIM_DEFAUT, expliquerModele } from "./modeles";
 
+/**
+ * ⚠ CONSERVÉE POUR L'ENVIRONNEMENT SERVEUR UNIQUEMENT — elle répond « la
+ * MAISON a-t-elle une clé NVIDIA ? », jamais « ce locataire en a-t-il une ».
+ * La seconde question se pose à `resoudreMoteurIA` (lib/credentials.ts), et
+ * nulle part ailleurs.
+ */
 export function nvidiaConfigured(): boolean {
   return Boolean(process.env.NVIDIA_API_KEY?.trim());
 }
@@ -66,19 +72,20 @@ export interface NvidiaMessage {
  */
 export async function nvidiaChat(
   messages: NvidiaMessage[],
+  cfg: { key: string; baseUrl: string; model: string },
   opts: { temperature?: number; maxTokens?: number } = {}
 ): Promise<string> {
-  const key = process.env.NVIDIA_API_KEY?.trim();
-  if (!key) throw new Error("NVIDIA_API_KEY absente");
+  const key = cfg.key.trim();
+  if (!key) throw new Error("clé NVIDIA absente");
 
-  const res = await fetch(`${baseUrl()}/chat/completions`, {
+  const res = await fetch(`${cfg.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: nvidiaModel(),
+      model: cfg.model,
       messages,
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.maxTokens ?? 1200,

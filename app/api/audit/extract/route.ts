@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { extractAudit } from "@/lib/audit-extract";
 
 export const runtime = "nodejs";
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { data, engine } = await extractAudit(research, body);
+    const { data, engine } = await extractAudit(research, body, await moteurIADeLaRequete(request));
     if (data) return NextResponse.json({ data, engine });
     return NextResponse.json(
       { error: "L'IA n'a pas renvoyé de structure exploitable — utilise « Joindre en brut »." },

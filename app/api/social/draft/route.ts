@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAIJson } from "@/lib/ai-engine";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { PLATFORMS, fitPlatform, type Platform } from "@/lib/social";
 import { audienceBrief, audienceText, type AudienceBrief, type AudienceInput } from "@/lib/audience";
 
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
         { role: "system", content: systemPrompt(agency, body.offerLine, audience) },
         { role: "user", content: userPrompt(topic, body.angle, audience) },
       ],
+      await moteurIADeLaRequete(req),
       { temperature: 0.7, maxTokens: 1400, json: true, compress: { maxChars: 6000, headRatio: 0.8 } }
     );
     if (data && (data.linkedin || data.x || data.meta)) {

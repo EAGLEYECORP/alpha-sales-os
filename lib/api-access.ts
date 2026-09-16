@@ -45,6 +45,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   "/api/prompts": "/prompts",
   "/api/compte": "/compte",
   /**
+   * ⚠ Rangée sur `/settings`, un chemin GRATUIT, et c'est tout le point : la
+   * route par laquelle un locataire apporte SA clé doit être joignable par
+   * quelqu'un qui n'a encore rien acheté. La ranger derrière une brique
+   * payante rendrait le BYOK inatteignable par ceux à qui il est destiné.
+   * Elle ne dépense rien chez nous — sauf l'appel de VÉRIFICATION, qui est
+   * fait avec la clé du locataire, donc à ses frais.
+   */
+  "/api/credentials": "/settings",
+  /**
    * Mon équipe : qui m'est rattaché. Chemin COMMUN, comme `/compte`.
    *
    * ⚠ Elle ne rend que de l'EXPLOITATION — des compteurs et des états, jamais

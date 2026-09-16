@@ -1,6 +1,7 @@
 import { doctrineOrDefault } from "@/lib/business-rules";
 import { NextRequest, NextResponse } from "next/server";
 import { runAIJson } from "@/lib/ai-engine";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { deriveICP, mergeICP, icpSystemPrompt, icpUserPrompt, type ICP, type OfferInput } from "@/lib/icp";
 import { clipDoctrine } from "@/lib/identity";
 
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
         { role: "system", content: system },
         { role: "user", content: icpUserPrompt(offer) },
       ],
+      await moteurIADeLaRequete(request),
       { temperature: 0.4, json: true }
     );
     if (data) return NextResponse.json({ icp: mergeICP(offer, data), engine });

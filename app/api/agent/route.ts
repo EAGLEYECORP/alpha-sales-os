@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { doctrineOrDefault } from "@/lib/business-rules";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
@@ -91,32 +92,53 @@ export async function POST(request: NextRequest) {
   );
   const system = assemblage.texte;
 
-  if (ollamaConfigured()) {
+  /**
+   * ⚠⚠ CETTE ROUTE LISAIT LA CLÉ ELLE-MÊME — corrigé le 16/09/2026.
+   *
+   * Elle refaisait sa propre cascade (ollamaConfigured → nvidiaConfigured →
+   * process.env.ANTHROPIC_API_KEY) au lieu de passer par `runAI`. Avec
+   * `/api/sparring` qui faisait pareil, ça faisait TROIS définitions de
+   * « comment on joint le modèle ».
+   *
+   * Tant que la clé était la nôtre, ça ne coûtait que de la dette. Avec le
+   * BYOK, un chemin qui lit encore l'environnement facture à NOUS l'appel
+   * d'un locataire qui a pourtant collé sa clé — et ça ne se voit que sur la
+   * facture, un mois plus tard.
+   *
+   * Le streaming empêche de passer par `runAI` (qui ne rend qu'un texte
+   * complet), donc la cascade reste ici — mais elle lit le MOTEUR RÉSOLU,
+   * plus jamais l'environnement.
+   */
+  const moteur = await moteurIADeLaRequete(request);
+
+  if (moteur.ollama) {
     try {
       const text = await ollamaChat(
         [{ role: "system" as const, content: system }, ...body.messages.map((m) => ({ role: m.role, content: m.content }))],
+        moteur.ollama,
         { temperature: 0.4, maxTokens: 1500 }
       );
-      return NextResponse.json({ text, engine: `ollama (${ollamaModel()})`, jetons: assemblage.jetons, coupes: assemblage.coupes });
+      return NextResponse.json({ text, engine: `ollama (${moteur.ollama.model})`, jetons: assemblage.jetons, coupes: assemblage.coupes });
     } catch (e) {
       console.error("Ollama agent error, falling back:", e);
     }
   }
 
   // NVIDIA NIM — gratuit, 70B, avant Anthropic qui est payant.
-  if (nvidiaConfigured()) {
+  if (moteur.nvidia) {
     try {
       const text = await nvidiaChat(
         [{ role: "system" as const, content: system }, ...body.messages.map((m) => ({ role: m.role, content: m.content }))],
+        moteur.nvidia,
         { temperature: 0.4, maxTokens: 1500 }
       );
-      return NextResponse.json({ text, engine: `nvidia (${nvidiaModel()})`, jetons: assemblage.jetons, coupes: assemblage.coupes });
+      return NextResponse.json({ text, engine: `nvidia (${moteur.nvidia.model})`, jetons: assemblage.jetons, coupes: assemblage.coupes });
     } catch (e) {
       console.error("NVIDIA agent error, falling back:", e);
     }
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!moteur.anthropic) {
     return NextResponse.json({
       text: fallbackBriefing(body),
       engine: "template",
@@ -125,9 +147,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const { streamText } = await import("ai");
-    const { anthropic } = await import("@ai-sdk/anthropic");
+    const { createAnthropic } = await import("@ai-sdk/anthropic");
+    // ⚠ `createAnthropic({ apiKey })`, jamais `anthropic(...)` : le second lit
+    // ANTHROPIC_API_KEY dans l'environnement — donc NOTRE clé, quoi qu'ait
+    // collé le locataire.
+    const fournisseur = createAnthropic({ apiKey: moteur.anthropic.key });
     const result = streamText({
-      model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
+      model: fournisseur(moteur.anthropic.model),
       system,
       messages: body.messages.map((m) => ({ role: m.role, content: m.content })),
       maxTokens: 2500,

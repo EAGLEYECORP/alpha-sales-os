@@ -1,4 +1,5 @@
 import { runAI } from "./ai-engine";
+import type { MoteurIA } from "./credentials";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -82,13 +83,15 @@ export function parseAudit(text: string): ExtractedAudit | null {
  */
 export async function extractAudit(
   research: string,
-  meta: { company?: string; city?: string; sector?: string }
+  meta: { company?: string; city?: string; sector?: string },
+  moteur: MoteurIA
 ): Promise<{ data: ExtractedAudit | null; engine: string }> {
   const { text, engine } = await runAI(
     [
       { role: "system", content: EXTRACT_SYSTEM },
       { role: "user", content: extractPrompt(research, meta.company, meta.city, meta.sector) },
     ],
+    moteur,
     { temperature: 0.2, maxTokens: 1200, json: true }
   );
   return { data: parseAudit(text), engine };

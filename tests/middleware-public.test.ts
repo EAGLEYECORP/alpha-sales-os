@@ -345,7 +345,13 @@ test("la garde maître est POSÉE AVANT le contrôle par brique", () => {
    * l'identité.
    */
   const iMaitre = mw.indexOf("MAITRE_SEULEMENT) && !droits.maitre");
-  const iBrique = mw.indexOf("if (!autorise(droits, chemin))");
+  /**
+   * ⚠ L'ancre a bougé le 16/09/2026 avec le BYOK : le contrôle par brique
+   * n'est plus `if (!autorise(...))` mais une ligne qui combine DEUX portes —
+   * la brique achetée OU la clé apportée. L'invariant mesuré ici, lui, n'a pas
+   * changé d'un pouce : l'identité se vérifie AVANT les droits.
+   */
+  const iBrique = mw.indexOf("const ouvert = autorise(droits, chemin)");
   assert.ok(iMaitre > 0 && iBrique > 0, "les deux contrôles doivent exister");
   assert.ok(iMaitre < iBrique, "l'identité doit être vérifiée avant la brique");
 });

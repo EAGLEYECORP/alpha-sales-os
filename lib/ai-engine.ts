@@ -1,6 +1,7 @@
-import { ollamaChat, ollamaConfigured, ollamaModel } from "./ollama";
-import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "./nvidia";
+import { ollamaChat } from "./ollama";
+import { nvidiaChat } from "./nvidia";
 import { compressMessages, estimateTokens, type CompressOptions } from "./ai-context";
+import { moteurUtilisable, type MoteurIA } from "./credentials";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -26,6 +27,22 @@ import { compressMessages, estimateTokens, type CompressOptions } from "./ai-con
  *
  * Un moteur qui échoue ne bloque pas : on passe au suivant et on le dit
  * dans `engine`, pour que l'écran affiche ce qui a RÉELLEMENT répondu.
+ *
+ * ══ ⚠⚠ CE FICHIER NE LIT PLUS L'ENVIRONNEMENT — 16/09/2026 ══
+ *
+ * Il lisait `process.env.ANTHROPIC_API_KEY` lui-même, et il n'était pas seul :
+ * `/api/agent` et `/api/sparring` le CONTOURNAIENT et lisaient la même
+ * variable de leur côté, en appelant `streamText` en direct. Trois
+ * définitions de « comment on joint le modèle », dont deux invisibles depuis
+ * ici — le défaut récurrent du dépôt, à l'endroit le plus cher.
+ *
+ * Tant que la clé était la nôtre, ça ne coûtait que de la dette. Avec le BYOK
+ * (`lib/credentials.ts`), ça deviendrait une FUITE : un chemin qui lit encore
+ * l'environnement facture à NOUS un appel qu'un locataire devait payer, et
+ * ça ne se voit que sur la facture, un mois plus tard.
+ *
+ * Le moteur est donc REÇU, jamais deviné. `MoteurIA` porte les clés ET
+ * `origine` — qui paie. Un test interdit `process.env` dans ce fichier.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -55,25 +72,25 @@ export interface AiOptions {
   compress?: CompressOptions;
 }
 
-/** Au moins un moteur est-il configuré ? */
-export function aiAvailable(): boolean {
-  return ollamaConfigured() || nvidiaConfigured() || Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+/** Au moins un moteur est-il joignable pour CE demandeur ? */
+export function aiAvailable(moteur: MoteurIA): boolean {
+  return moteurUtilisable(moteur);
 }
 
 /** Nom du moteur qui répondra en premier — pour l'affichage d'état. */
-export function aiEngineName(): string {
-  if (ollamaConfigured()) return `ollama (${ollamaModel()})`;
-  if (nvidiaConfigured()) return `nvidia (${nvidiaModel()})`;
-  if (process.env.ANTHROPIC_API_KEY?.trim()) return `claude (${process.env.AI_MODEL ?? "claude-opus-4-8"})`;
+export function aiEngineName(moteur: MoteurIA): string {
+  if (moteur.ollama) return `ollama (${moteur.ollama.model})`;
+  if (moteur.nvidia) return `nvidia (${moteur.nvidia.model})`;
+  if (moteur.anthropic) return `claude (${moteur.anthropic.model})`;
   return "moteur de templates (hors-ligne)";
 }
 
 /** Tous les moteurs disponibles, dans l'ordre d'essai. */
-export function aiEngines(): string[] {
+export function aiEngines(moteur: MoteurIA): string[] {
   const out: string[] = [];
-  if (ollamaConfigured()) out.push(`ollama (${ollamaModel()})`);
-  if (nvidiaConfigured()) out.push(`nvidia (${nvidiaModel()})`);
-  if (process.env.ANTHROPIC_API_KEY?.trim()) out.push("claude");
+  if (moteur.ollama) out.push(`ollama (${moteur.ollama.model})`);
+  if (moteur.nvidia) out.push(`nvidia (${moteur.nvidia.model})`);
+  if (moteur.anthropic) out.push("claude");
   return out;
 }
 
@@ -81,7 +98,11 @@ export function aiEngines(): string[] {
  * Exécute la cascade. Lève seulement si AUCUN moteur n'a répondu —
  * l'appelant retombe alors sur ses templates.
  */
-export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promise<AiResult> {
+export async function runAI(
+  messages: AiMessage[],
+  moteur: MoteurIA,
+  opts: AiOptions = {}
+): Promise<AiResult> {
   const errors: string[] = [];
 
   // Compression opt-in du contexte AVANT tout appel (économie de tokens). Sans
@@ -89,33 +110,41 @@ export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promis
   const msgs = opts.compress ? compressMessages(messages, opts.compress) : messages;
   const promptTokens = msgs.reduce((n, m) => n + estimateTokens(m.content), 0);
 
-  if (ollamaConfigured()) {
+  if (moteur.ollama) {
     try {
-      const text = await ollamaChat(msgs, opts);
-      return { text, engine: `ollama (${ollamaModel()})`, promptTokens };
+      const text = await ollamaChat(msgs, moteur.ollama, opts);
+      return { text, engine: `ollama (${moteur.ollama.model})`, promptTokens };
     } catch (e) {
       errors.push(`ollama: ${e instanceof Error ? e.message : e}`);
     }
   }
 
-  if (nvidiaConfigured()) {
+  if (moteur.nvidia) {
     try {
-      const text = await nvidiaChat(msgs, { temperature: opts.temperature, maxTokens: opts.maxTokens });
-      return { text, engine: `nvidia (${nvidiaModel()})`, promptTokens };
+      const text = await nvidiaChat(msgs, moteur.nvidia, {
+        temperature: opts.temperature,
+        maxTokens: opts.maxTokens,
+      });
+      return { text, engine: `nvidia (${moteur.nvidia.model})`, promptTokens };
     } catch (e) {
       errors.push(`nvidia: ${e instanceof Error ? e.message : e}`);
     }
   }
 
-  if (process.env.ANTHROPIC_API_KEY?.trim()) {
+  if (moteur.anthropic) {
     try {
       const { generateText } = await import("ai");
-      const { anthropic } = await import("@ai-sdk/anthropic");
+      const { createAnthropic } = await import("@ai-sdk/anthropic");
+      // ⚠ `createAnthropic({ apiKey })` et non `anthropic(...)` : le second
+      // lit ANTHROPIC_API_KEY dans l'environnement, donc il facturerait à NOUS
+      // l'appel d'un locataire qui a pourtant collé sa clé. C'est la fuite
+      // exacte que ce refactor existe pour fermer.
+      const fournisseur = createAnthropic({ apiKey: moteur.anthropic.key });
       // L'API Anthropic sépare le message système du reste.
       const system = msgs.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
       const prompt = msgs.filter((m) => m.role !== "system").map((m) => m.content).join("\n\n");
       const { text } = await generateText({
-        model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
+        model: fournisseur(moteur.anthropic.model),
         system: system || undefined,
         prompt,
         maxTokens: opts.maxTokens ?? 2000,
@@ -135,8 +164,12 @@ export async function runAI(messages: AiMessage[], opts: AiOptions = {}): Promis
  * JSON invalide ne doit pas casser l'appelant — il reçoit null et
  * retombe sur son moteur déterministe.
  */
-export async function runAIJson<T>(messages: AiMessage[], opts: AiOptions = {}): Promise<{ data: T | null; engine: string }> {
-  const { text, engine } = await runAI(messages, { ...opts, json: true });
+export async function runAIJson<T>(
+  messages: AiMessage[],
+  moteur: MoteurIA,
+  opts: AiOptions = {}
+): Promise<{ data: T | null; engine: string }> {
+  const { text, engine } = await runAI(messages, moteur, { ...opts, json: true });
   try {
     // Certains modèles encadrent le JSON de texte ou de balises ```json.
     const cleaned = text.replace(/^[\s\S]*?```(?:json)?\s*/i, "").replace(/```[\s\S]*$/, "").trim();

@@ -51,6 +51,19 @@ export const MODELE_NIM_DEFAUT = "openai/gpt-oss-20b";
 /** Le défaut quand la base_url est celle d'OpenAI (pas de namespace). */
 export const MODELE_OPENAI_DEFAUT = "gpt-4o-mini";
 
+/**
+ * Le défaut côté Anthropic.
+ *
+ * ⚠ **Il était recopié à QUATRE endroits** — `lib/ai-engine.ts` (deux fois),
+ * `/api/agent`, `/api/sparring` — chacun avec son propre `?? "…"`. C'est
+ * exactement ce que ce fichier existe pour empêcher : le défaut NIM avait
+ * déjà survécu à la mort du modèle qu'il nommait, et toute l'IA de l'app
+ * rendait 410 sans qu'aucun test ne puisse le voir. Un modèle tiers meurt à
+ * une date que le dépôt ne connaît pas ; ce qu'on maîtrise, c'est de n'avoir
+ * qu'UN endroit à corriger ce jour-là.
+ */
+export const MODELE_ANTHROPIC_DEFAUT = "claude-opus-4-8";
+
 export interface ModeleMort {
   id: string;
   /** Date de fin de vie annoncée par le fournisseur (ISO). */

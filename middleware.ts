@@ -6,6 +6,7 @@ import {
   serverAuthMisconfigured,
   verifySupabaseJwt,
 } from "@/lib/supabase-jwt";
+import { cleOuvreLeChemin } from "@/lib/credentials";
 import {
   autorise,
   comptesActifs,
@@ -457,7 +458,25 @@ export async function middleware(req: NextRequest) {
     // Une route API est jugée sur le chemin de la FONCTIONNALITÉ qu'elle sert,
     // pas sur son propre chemin : /api/voice/call appartient à Alpha Voice.
     const chemin = pathname.startsWith("/api/") ? cheminMetierDeLApi(pathname) : pathname;
-    if (!autorise(droits, chemin)) {
+    /**
+     * ─────────────────────────────────────────────────────────────────
+     * ⚠⚠ BYOK — LA SECONDE PORTE, ET ELLE EST DE LA BONNE FORME.
+     *
+     * Deux chemins ACCORDENT l'accès : la brique achetée, ou la clé que le
+     * locataire apporte et paie lui-même. Le refus exige donc que les DEUX
+     * échouent.
+     *
+     * ⚠ Ne jamais transformer ce `||` en `&&` : l'écran de connexion a déjà
+     * payé exactement l'inverse — un `&&` là où il fallait un `||` avait
+     * rendu la serrure dépendante du trousseau de celui qui entre.
+     *
+     * ⚠ `cleOuvreLeChemin` rend `false` sur TOUTE panne (base injoignable,
+     * clé maître absente, capacité non vérifiée). Une panne ne doit jamais
+     * accorder : ce qui est en jeu ici est notre facture.
+     * ─────────────────────────────────────────────────────────────────
+     */
+    const ouvert = autorise(droits, chemin) || (await cleOuvreLeChemin(droits, chemin));
+    if (!ouvert) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
           { error: "Cette fonctionnalité n'est pas incluse dans ton offre.", code: "brique_absente" },
