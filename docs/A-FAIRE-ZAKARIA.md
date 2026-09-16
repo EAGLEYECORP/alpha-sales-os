@@ -10,6 +10,12 @@
 
 ---
 
+> 📌 **Quand tu auras fait tout ça : `docs/VERIFIER-QUE-CA-MARCHE.md`.**
+> Ce document-ci dit quoi faire ; celui-là dit comment SAVOIR que c'est fait.
+> Les deux ne se remplacent pas — j'ai vérifié tous les REFUS sur un serveur
+> de production le 16/09, mais **aucune acceptation** : ça demande un compte,
+> une base et de vraies clés. Cette moitié-là ne se délègue pas.
+
 ## 🔴 BLOQUANT — sans ça, rien ne part
 
 ### 1. Les quatre variables Vercel, **dans cet ordre**
