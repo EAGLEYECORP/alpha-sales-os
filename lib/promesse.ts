@@ -37,6 +37,75 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA CATÉGORIE — ce qu'Alpha EST, quand tout le monde fait la même chose.
+ *
+ * Écrit le 16/09/2026, en regardant le marché plutôt que le dépôt.
+ *
+ * ══ CE QUE LE MARCHÉ FAIT, ET POURQUOI ÇA CHANGE LA QUESTION ══
+ *
+ * 2026 a consolidé : les équipes revenus ont coupé ~38 % de leurs outils,
+ * HubSpot a racheté Warmly, Zoom a racheté Common Room, Apollo a racheté
+ * Pocus, Salesloft a fusionné avec Clari. La pile qui gagne tient en quatre
+ * briques, et l'argument de vente universel est devenu « des agents qui
+ * EXÉCUTENT à une échelle qu'un humain n'atteint pas ».
+ *
+ * Conséquence directe, et elle est désagréable : **« l'OS complet » est une
+ * promesse de SURFACE, et la surface est le seul axe où une équipe financée
+ * bat toujours une personne seule.** Se positionner là, c'est choisir le
+ * terrain de l'adversaire, à zéro vente, avec le moins d'heures disponibles.
+ *
+ * ══ ⚠⚠ CE QU'ALPHA EST RÉELLEMENT, ET QUI N'EST PAS UNE FONCTIONNALITÉ ══
+ *
+ * Regarde `PREUVES` ci-dessous : aucune n'ajoute une capacité. **Toutes
+ * retirent une possibilité.** Le script est REFUSÉ s'il n'annonce pas l'IA.
+ * L'envoi est REFUSÉ sans mentions. La cadence s'ARRÊTE au plafond légal.
+ * Le devis est REFUSÉ sans cadrage. L'écran REFUSE d'afficher un zéro qui
+ * ressemble à un résultat. Le forçage ne passe outre NULLE PART.
+ *
+ * Ce dépôt n'est pas un assistant commercial avec des garde-fous. C'est,
+ * structurellement, **une machine à refuser** — et c'est la seule identité
+ * disponible qui soit (1) vraie aujourd'hui, (2) vérifiable en ouvrant un
+ * fichier, (3) à contre-courant exact de ce que tout le monde annonce.
+ *
+ * ══ ET C'EST LE SEUL AVANTAGE QUI NE SE PÉRIME PAS SANS NOUS ══
+ *
+ * Un avantage de FONCTIONNALITÉ se dégrade dès qu'on arrête d'expédier : la
+ * concurrence rattrape en semaines. Un avantage de CONFORMITÉ ENCODÉE se
+ * dégrade au rythme où la loi bouge — c'est-à-dire lentement, sur des dates
+ * annoncées des années à l'avance. C'est le seul actif de ce dépôt qui vaut
+ * encore quelque chose après trois mois sans commit, et ça décide de tout
+ * quand le temps disponible se réduit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const CATEGORIE =
+  "Tout le monde vend un agent qui en fait plus. Alpha est celui qui refuse.";
+
+/**
+ * ⚠⚠ POURQUOI ON N'EMPRUNTE LE NOM D'AUCUNE MARQUE — Y COMPRIS HORS DU
+ * LOGICIEL DE VENTE.
+ *
+ * La tentation change de nom, jamais de forme : « le \<grand acteur\> de la
+ * vente » hier, « le \<marque grand public\> du GTM » aujourd'hui. Les trois
+ * raisons écrites plus haut tiennent toutes les deux fois, et il y en a une
+ * quatrième, propre à celle-ci :
+ *
+ * **Une marque d'intégration verticale désigne une stratégie de SURFACE —
+ * tout maîtriser, tout polir, tout livrer d'un bloc.** C'est la stratégie qui
+ * coûte le plus d'heures par unité de temps. L'adopter comme identité, c'est
+ * s'engager publiquement sur le seul jeu qu'on ne peut pas jouer, et le dire
+ * aux gens qui vérifieront.
+ *
+ * Ce qu'on garde de l'intention — le soin, le refus de livrer du bâclé, le
+ * produit qui se tient d'un seul bloc — n'a besoin d'aucun nom emprunté : ça
+ * se DÉMONTRE en ouvrant l'app, et un nom emprunté le remplacerait par une
+ * comparaison qu'on perd.
+ */
+export const IDENTITE_REFUSEE =
+  "Aucun positionnement par emprunt de marque : la forme « le X de Y » signale DÉRIVÉ, " +
+  "et à zéro vente elle rejoint les affirmations invérifiables que ce dépôt refuse partout.";
+
 /** La phrase longue — celle qui explique POURQUOI un meilleur modèle ne nous remplace pas. */
 export const PROMESSE =
   "On ne fabrique pas l'intelligence. On fabrique ce qui permet de s'en servir pour vendre — en France, sans se mettre hors la loi.";

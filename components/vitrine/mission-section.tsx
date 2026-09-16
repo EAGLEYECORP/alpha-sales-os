@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PREUVES, PROMESSE } from "@/lib/promesse";
+import { CATEGORIE, PREUVES, PROMESSE } from "@/lib/promesse";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -140,7 +140,16 @@ export function MissionSection() {
       <p className="mt-10 max-w-2xl font-serif text-[22px] leading-[1.4]" style={{ color: INK }}>
         {PROMESSE}
       </p>
-      <ul className="mt-8 grid max-w-3xl gap-x-10 gap-y-4 sm:grid-cols-2">
+      {/* ⚠ LA CATÉGORIE SE POSE JUSTE AVANT LES PREUVES, ET C'EST SA PLACE.
+          Elle affirme qu'Alpha est « celui qui refuse » ; la liste qui suit
+          est la démonstration, ligne par ligne, chacune avec son fichier. Mise
+          ailleurs, ce serait un slogan — ici, c'est une phrase suivie de ses
+          pièces. Un test exige d'ailleurs que la majorité des preuves énonce
+          bien une interdiction, sinon la phrase cesse d'être vraie. */}
+      <p className="mt-8 max-w-2xl text-[17px] font-semibold leading-[1.45]" style={{ color: INK }}>
+        {CATEGORIE}
+      </p>
+      <ul className="mt-6 grid max-w-3xl gap-x-10 gap-y-4 sm:grid-cols-2">
         {PREUVES.map((pr) => (
           <li key={pr.module} className="text-[15px] leading-[1.55]" style={{ color: MUTED }}>
             <span aria-hidden style={{ color: ACCENT }}>— </span>

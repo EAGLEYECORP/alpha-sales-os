@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PARTAGE, PREUVES, PROMESSE, PROMESSE_COURTE } from "../lib/promesse";
+import { CATEGORIE, PARTAGE, PREUVES, PROMESSE, PROMESSE_COURTE } from "../lib/promesse";
 
 test("⚠⚠ CHAQUE PREUVE NOMME UN MODULE QUI EXISTE — c'est ça qui en fait un fait", () => {
   /**
@@ -48,15 +48,64 @@ test("⚠⚠ ON N'EMPRUNTE LE NOM D'AUCUN ACTEUR — ça contredirait notre prop
    * liste de noms de labos, parce que c'est précisément la tentation du jour.
    * Une liste seule serait périmée au prochain acteur à la mode.
    */
-  const textes = [PROMESSE, PROMESSE_COURTE, ...PREUVES.map((p) => p.affirmation)].join(" ");
+  const textes = [PROMESSE, PROMESSE_COURTE, CATEGORIE, ...PREUVES.map((p) => p.affirmation)].join(" ");
+  /**
+   * ⚠⚠ LE GARDE AVAIT UN TROU, ET LA TENTATION SUIVANTE PASSAIT DEDANS.
+   *
+   * Il cherchait « le X **de la vente** » et une liste de LABOS. Demandé le
+   * 16/09 : « le Apple du GTM ». Deux échappatoires d'un coup — un nom hors
+   * de la liste (ce n'est pas un labo, c'est une marque grand public) et un
+   * nom commun hors du motif (« du GTM », pas « de la vente »).
+   *
+   * Le garde ne vise donc plus un domaine : il vise la FORME, quel que soit
+   * ce qui suit. C'est la leçon déjà payée ailleurs ici — « une liste seule
+   * serait périmée au prochain acteur à la mode », et elle l'était en trois
+   * semaines.
+   */
   assert.ok(
-    !/\b(openai|anthropic|mistral|google|microsoft|salesforce|hubspot)\b/i.test(textes),
-    "aucun nom d'acteur tiers dans la promesse",
+    !/\b(openai|anthropic|mistral|google|microsoft|salesforce|hubspot|apple|tesla|netflix|uber|stripe|amazon|nvidia)\b/i.test(
+      textes,
+    ),
+    "aucun nom de marque tiers dans la promesse",
+  );
+  assert.ok(
+    !/\bl[ea']?\s+[A-ZÉÈ]\w+\s+(?:de|du|des|de\s+la)\s+\w+/.test(textes),
+    "la forme « le <Marque> de <domaine> » signale DÉRIVÉ, quel que soit le domaine",
   );
   assert.ok(
     !/\bl[ea']?\s+\w+\s+(?:de|du|des)\s+la\s+vente\b/i.test(textes),
     "la forme « le X de la vente » signale DÉRIVÉ — et invite la comparaison qu'on perd",
   );
+});
+
+test("⚠⚠ LA CATÉGORIE SE DÉRIVE DES PREUVES — ce n'est pas une phrase posée à côté", () => {
+  /**
+   * L'identité affirme qu'Alpha est « celui qui refuse ». Si les garanties
+   * n'étaient pas, elles aussi, des refus, ce serait un slogan collé sur un
+   * produit qui fait autre chose — la définition d'un positionnement inventé,
+   * et le dépôt en refuse déjà trois familles.
+   *
+   * On exige donc que la majorité des preuves énoncent une INTERDICTION, pas
+   * une capacité. Le jour où quelqu'un ajoute cinq garanties du type « Alpha
+   * rédige aussi vos… », la catégorie cesse d'être vraie et ce test le dit
+   * AVANT que la phrase parte sur une page publique.
+   */
+  const refus = PREUVES.filter((p) =>
+    /refus|interdi|aucun|jamais|ne (?:l'|le |la )?(?:écrit|produit)|s'arrête|ne passe outre|plafond|sans (?:elle|cadrage)|tiret/i.test(
+      p.affirmation,
+    ),
+  );
+  assert.ok(
+    refus.length > PREUVES.length / 2,
+    `la catégorie dit « celui qui refuse » : il faut que les preuves refusent (${refus.length}/${PREUVES.length})`,
+  );
+  assert.match(CATEGORIE, /refuse/, "et la phrase doit le dire");
+});
+
+test("⚠ LA CATÉGORIE NE PROMET AUCUNE PERFORMANCE", () => {
+  // Même règle que les preuves : zéro vente, donc aucune mesure à citer. Un
+  // pourcentage dans une phrase d'identité serait la première chose vérifiée.
+  assert.ok(!/\d+\s*(?:%|x\b|fois)/i.test(CATEGORIE), "pas de chiffre de performance dans l'identité");
 });
 
 test("la promesse dit ce qu'on NE fait pas avant ce qu'on fait", () => {
@@ -104,6 +153,13 @@ test("⚠⚠ LA PROMESSE EST SERVIE SUR LA PAGE PUBLIQUE — pas seulement expor
   assert.match(src, /from "@\/lib\/promesse"/, "la vitrine doit importer la source");
   assert.match(src, /\{PROMESSE\}/, "et rendre la phrase, pas une paraphrase");
   assert.match(src, /PREUVES\.map\(/, "les preuves aussi : c'est ce qui la rend vérifiable");
+  /**
+   * ⚠ LA CATÉGORIE AUSSI, et il aurait été ironique de l'oublier : un export
+   * de `lib/` que rien ne consomme est MORT, pas « prêt » — c'est le défaut
+   * récurrent du dépôt, et ce module existe précisément pour empêcher qu'une
+   * doctrine reste écrite sans atteindre personne.
+   */
+  assert.match(src, /\{CATEGORIE\}/, "l'identité doit ATTEINDRE le visiteur, pas seulement être exportée");
 });
 
 test("⚠ L'ANGLE DE SOUVERAINETÉ RESTE — la promesse s'ajoute, elle ne remplace pas", () => {
