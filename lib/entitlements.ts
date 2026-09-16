@@ -2,7 +2,8 @@ import type { NextRequest } from "next/server";
 import { getTenant } from "./tenant";
 import { peutOuvrir, type BrickId } from "./bricks-access";
 import { serverAuthEnforced } from "./supabase-jwt";
-import { etatEssai } from "./essai";
+import { etatEssai, HORS_ESSAI } from "./essai";
+import { coutGlobalEssais } from "./compteur-essai";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -328,6 +329,28 @@ export const BRIQUES_CONNUES: readonly BrickId[] = [
   "tracking", "alpha-live", "closer", "agent-alpha", "pilotage",
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUE L'ESSAI OUVRE — tout le catalogue, moins la téléphonie.
+ *
+ * ⚠⚠ DÉRIVÉ, JAMAIS ÉCRIT À LA MAIN, et c'est la garantie centrale de
+ * l'ouverture : une brique ajoutée demain au catalogue entre AUTOMATIQUEMENT
+ * dans l'essai, sauf si quelqu'un l'inscrit dans `HORS_ESSAI` — un geste qui
+ * se voit au diff et qui exige d'écrire pourquoi. Une liste recopiée aurait
+ * l'effet inverse : la brique suivante serait absente de l'essai par oubli, et
+ * personne ne saurait dire si c'était une décision.
+ *
+ * ⚠⚠ ET C'EST LE CODE QUI TIENT LE PÉRIMÈTRE, PAS LA COLONNE `bricks`.
+ * `resoudreDroits` IGNORE ce que la ligne d'essai porte et substitue cette
+ * liste. Sans ça, le périmètre de l'essai vivrait dans des lignes SQL écrites
+ * à la main ou par une migration : une ligne `{alpha-voice}` posée un soir de
+ * démonstration ouvrirait nos minutes, et rien dans le dépôt ne le
+ * contredirait. La migration 012 pose donc `bricks = '{}'` et ne connaît
+ * aucun nom de brique.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const BRIQUES_ESSAI: readonly BrickId[] = BRIQUES_CONNUES.filter((b) => !HORS_ESSAI.includes(b));
+
 /** Nettoie une liste venue de la base : on n'accorde jamais un droit inconnu. */
 export function normaliserBriques(brut: unknown): BrickId[] {
   if (!Array.isArray(brut)) return [];
@@ -425,15 +448,41 @@ export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
      * de chaîne qui a l'air d'une comparaison de nombre ne fait rien tomber :
      * elle laisse la porte ouverte en silence.
      */
-    const brut = l.cout_consomme_eur;
-    const coutConsommeEur = brut === null || brut === undefined ? null : Number(brut);
-    const essai = etatEssai(
-      { jusquA: l.essai_jusqu_a ?? null, coutConsommeEur: Number.isFinite(coutConsommeEur) ? coutConsommeEur : null },
-    );
+    if (statut === "essai") {
+      const brut = l.cout_consomme_eur;
+      const coutConsommeEur = brut === null || brut === undefined ? null : Number(brut);
+      /**
+       * ⚠ La somme globale n'est lue QUE pour un compte en essai. Un client
+       * qui paie n'a rien à voir avec l'enveloppe d'acquisition, et lui faire
+       * payer une requête d'agrégat à chaque navigation serait du coût pour
+       * rien.
+       */
+      const essai = etatEssai({
+        jusquA: l.essai_jusqu_a ?? null,
+        coutConsommeEur: Number.isFinite(coutConsommeEur) ? coutConsommeEur : null,
+        coutGlobalEur: await coutGlobalEssais(),
+      });
 
-    // Un essai dont le PLAFOND est atteint retombe au socle gratuit, jamais au
-    // néant : ses fiches lui appartiennent. C'est l'invariant du dépôt.
-    if (statut === "essai" && !essai.actif) return droitGratuit(tenant.id);
+      // Un essai fermé — durée, plafond, enveloppe ou compteur illisible —
+      // retombe au socle gratuit, jamais au néant : ses fiches lui
+      // appartiennent. C'est l'invariant du dépôt.
+      if (!essai.actif) return droitGratuit(tenant.id);
+
+      /**
+       * ⚠⚠ `BRIQUES_ESSAI`, PAS `l.bricks`. Le périmètre de l'essai se dérive
+       * du catalogue moins `HORS_ESSAI` ; ce que porte la colonne est ignoré.
+       * C'est ce qui rend « la téléphonie est grisée » vrai quoi qu'il arrive
+       * en base — une ligne posée à la main ne peut pas ouvrir nos minutes.
+       */
+      return {
+        tenantId: tenant.id,
+        bricks: [...BRIQUES_ESSAI],
+        statut,
+        essaiJusquA: l.essai_jusqu_a,
+        maitre: false,
+        solo: false,
+      };
+    }
 
     return {
       tenantId: tenant.id,

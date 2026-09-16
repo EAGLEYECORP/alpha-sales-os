@@ -53,7 +53,11 @@ export async function GET(req: NextRequest) {
   const email = has("SMTP_HOST") && has("SMTP_USER") && has("SMTP_PASS");
   const supabasePublic = has("NEXT_PUBLIC_SUPABASE_URL") && has("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
-  const moteurIA = await moteurIADeLaRequete(req);
+  // ⚠ `depense: false` : cette route RAPPORTE l'état du moteur, elle ne
+  // l'appelle pas. Sans cette sortie, un écran de diagnostic consommerait le
+  // plafond d'essai à chaque rafraîchissement — et `/api/health` est
+  // précisément ce qu'on rafraîchit quand quelque chose ne va pas.
+  const moteurIA = await moteurIADeLaRequete(req, { depense: false });
 
   return NextResponse.json({
     ok: true,

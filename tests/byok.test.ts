@@ -575,7 +575,11 @@ test("⚠ le contrôle DNS analyse le domaine DE L'EXPÉDITEUR", () => {
    * rassure.
    */
   const src = sansCommentaires(lire("app/api/deliverability/dns/route.ts"));
-  assert.match(src, /resoudreSmtp\(tenant\?\.id \?\? null, droits\)/);
+  // ⚠ Le motif accepte un 3ᵉ argument (`{ depense: false }`, ajouté le
+  // 16/09 pour que cet écran de diagnostic ne consomme pas le plafond
+  // d'essai) mais EXIGE toujours que le locataire et ses droits soient
+  // passés : c'est ça qui fait auditer SON domaine plutôt que le nôtre.
+  assert.match(src, /resoudreSmtp\(tenant\?\.id \?\? null, droits[,)]/);
   assert.match(src, /smtpUtilisable\(smtp\) \? domaineDepuis\(smtp\.from\) : null/);
   const iSmtp = src.indexOf("domaineDepuis(smtp.from)");
   const iEnv = src.indexOf("domainFromEnv()", iSmtp);

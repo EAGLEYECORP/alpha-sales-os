@@ -49,8 +49,51 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import type { BrickId } from "./bricks-access";
+
 /** La durée. Elle existe déjà en base (`entitlements.essai_jusqu_a`). */
 export const DUREE_ESSAI_JOURS = 30;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUE L'ESSAI N'OUVRE PAS — la téléphonie, et elle seule.
+ *
+ * Décidé le 16/09/2026, en ouvrant l'alpha à trente jours.
+ *
+ * ══ POURQUOI CELLE-LÀ, ET AUCUNE AUTRE ══
+ *
+ * Le critère n'est pas « c'est cher » — sinon on grise au feeling. C'est le
+ * croisement de DEUX propriétés qu'aucune autre brique ne réunit :
+ *
+ *  1. **Aucun chemin d'identifiants par locataire.** `Capacite` (lib/credentials)
+ *     vaut `"ia" | "email"` : celui qui apporte sa clé paie son IA et son envoi
+ *     lui-même, et l'essai ne nous coûte alors RIEN. La téléphonie n'a pas ce
+ *     chemin — `telephonie` est nommée dans le chiffrage et n'est pas servie.
+ *     Elle est donc la seule brique dont la dépense nous revient TOUJOURS.
+ *  2. **Le coût est à la MINUTE et il n'a pas de plafond naturel.** Un jeton
+ *     rendu coûte une fraction de centime et s'arrête avec la réponse ; une
+ *     ligne ouverte facture tant que quelqu'un parle. `voice-costs` mesure
+ *     0,0563 €/min : un seul compte motivé consomme en un après-midi ce que
+ *     l'essai entier prévoit.
+ *
+ * ══ ⚠ ET IL Y A UN TROISIÈME MOTIF, QUI N'EST PAS UN COÛT ══
+ *
+ * `voice/agent.py` tourne EN LOCAL chez nous. Un appel composé sans agent
+ * vivant sonne dans le vide — `lib/presence-agent.ts` referme ça côté cron,
+ * mais donner la brique à trente inconnus revient à faire dépendre leur
+ * première impression d'un processus lancé à la main sur une machine. Même à
+ * coût nul, on ne l'ouvrirait pas.
+ *
+ * ══ ELLE SE GRISE, ELLE NE SE MASQUE PAS ══
+ *
+ * Doctrine du rail, inchangée : `maitreSeul` MASQUE (`/ceo` — notre économie),
+ * `brique` GRISE (on ne peut pas vouloir ce qu'on ne voit pas). `/voice` reste
+ * donc visible et fermé pendant l'essai, et le serveur refuse — voir la porte
+ * fermée vaut mieux que ne pas savoir qu'elle existe.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const HORS_ESSAI: readonly BrickId[] = ["alpha-voice"];
+
 
 /**
  * Ce qu'on accepte de DÉPENSER pour un essai, en euros de coût réel.
@@ -66,8 +109,60 @@ export const DUREE_ESSAI_JOURS = 30;
  */
 export const PLAFOND_ESSAI_COUT_EUR = 30;
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ LE PLAFOND PAR COMPTE NE BORNE PAS LA FACTURE — IL BORNE UN COMPTE.
+ *
+ * Trouvé le 16/09/2026 en cherchant comment ouvrir l'alpha « sans que ça nous
+ * coûte ». C'est l'erreur de raisonnement qui rendait la phrase fausse, et
+ * elle tient en une multiplication :
+ *
+ *     ce que ça nous coûte = (nombre d'essais) × PLAFOND_ESSAI_COUT_EUR
+ *
+ * Or le nombre d'essais est exactement ce qu'une ouverture cherche à faire
+ * monter. **Le seul terme borné était celui qu'on ne veut pas borner.** Vingt
+ * inscrits motivés = 600 €, sans qu'aucune garde ne se déclenche et sans
+ * qu'aucune ligne de code ne soit fausse : les trente comptes sont chacun
+ * parfaitement dans les clous.
+ *
+ * ══ CE QUE CE SECOND PLAFOND ACHÈTE, ET CE QU'IL COÛTE ══
+ *
+ * Il achète une phrase vraie : la dépense totale de l'ouverture est connue
+ * D'AVANCE, quel que soit le succès. C'est la seule forme sous laquelle « ça
+ * ne nous coûte pas » se dit sans mentir — ça nous coûte AU PLUS ce nombre.
+ *
+ * Il coûte ceci, et il faut le savoir avant de l'écrire : **le compte qui
+ * arrive après l'épuisement reçoit un essai dégradé**, sans avoir rien fait de
+ * mal. C'est injuste et c'est assumé — l'inverse (facture ouverte) ne se
+ * découvre qu'un mois plus tard et ne se répare pas.
+ * ⚠ Il retombe au SOCLE GRATUIT, jamais au néant : l'invariant du dépôt vaut
+ * ici comme ailleurs, et un arrivant accueilli par un mur ne revient pas.
+ *
+ * ══ ⚠ ET LA SORTIE N'EST PAS D'AUGMENTER LE NOMBRE ══
+ *
+ * C'est le BYOK. Un locataire qui apporte sa clé ne consomme NI l'un NI
+ * l'autre plafond (`origine: "locataire"` ⇒ zéro débit) : son essai est
+ * illimité et nous coûte zéro, pour de vrai. Le plafond ne borne donc que les
+ * comptes qui dépensent sur NOTRE clé — et c'est exactement la population
+ * qu'on veut convertir au BYOK ou à l'abonnement.
+ *
+ * ⚠ **300 € est une DÉCISION, pas une mesure** — comme les 30 € par compte.
+ * Ce qui est mesuré, c'est le coût/minute et le prix des jetons. Le premier
+ * mois d'ouverture dira ce qu'un essai consomme VRAIMENT, et ce chiffre-là
+ * vaudra plus que ce raisonnement.
+ *
+ * ⚠ **Ce nombre ne descend PAS dans la phrase servie au locataire**, et un
+ * test l'exige. Le plafond personnel, si : c'est SA consommation, il a le
+ * droit de la voir. L'enveloppe est le budget que NOTRE société consacre à
+ * son acquisition — même famille que `/offre` et `voice-costs`, réservés au
+ * maître. Le lui annoncer l'inviterait à calculer combien d'inscrits nous
+ * avons, ce qui n'est ni son affaire ni flatteur à zéro vente.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const ENVELOPPE_OUVERTURE_EUR = 300;
+
 /** Pourquoi un essai s'est arrêté. `null` tant qu'il tourne. */
-export type FinEssai = "duree-atteinte" | "plafond-atteint" | "cout-inconnu";
+export type FinEssai = "duree-atteinte" | "plafond-atteint" | "cout-inconnu" | "enveloppe-epuisee";
 
 export interface EtatEssai {
   actif: boolean;
@@ -93,6 +188,20 @@ export interface EntreeEssai {
    * aveugle coûte une facture qu'on découvre trente jours plus tard.
    */
   coutConsommeEur: number | null;
+  /**
+   * Ce que TOUS les essais en cours nous ont déjà coûté, en euros.
+   *
+   * ⚠ **Ce champ est OBLIGATOIRE, et c'est délibéré.** L'optionnel aurait été
+   * plus commode et aurait reproduit exactement le défaut qu'on répare : un
+   * appelant distrait l'omet, l'enveloppe ne mord plus, et rien ne le dit. En
+   * l'exigeant, `tsc` refuse de compiler tout appelant qui ne l'a pas lu —
+   * c'est le compilateur qui tient la règle, pas la mémoire du relecteur.
+   *
+   * ⚠ `null` = on n'a pas su lire la somme ⇒ **l'essai ferme**, même dimension
+   * que `coutConsommeEur`. Ne pas ouvrir coûte une démonstration ; ouvrir en
+   * aveugle coûte une facture qu'on découvre trente jours plus tard.
+   */
+  coutGlobalEur: number | null;
 }
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
@@ -112,8 +221,8 @@ export function etatEssai(e: EntreeEssai, now: Date = new Date()): EtatEssai {
   const joursRestants =
     e.jusquA === null ? null : Math.max(0, Math.ceil((new Date(e.jusquA).getTime() - now.getTime()) / JOUR_MS));
 
-  // ── L'inconnu ferme, et il se dit. ──
-  if (e.coutConsommeEur === null) {
+  // ── L'inconnu ferme, et il se dit. Les DEUX inconnus. ──
+  if (e.coutConsommeEur === null || e.coutGlobalEur === null) {
     return {
       actif: false,
       joursRestants,
@@ -135,6 +244,28 @@ export function etatEssai(e: EntreeEssai, now: Date = new Date()): EtatEssai {
         `Essai terminé : le plafond de ${PLAFOND_ESSAI_COUT_EUR} € de consommation est atteint` +
         `${joursRestants !== null && joursRestants > 0 ? ` (il restait ${joursRestants} jour(s))` : ""}. ` +
         "Tout ce qui tourne chez toi reste ouvert — seules les briques qui passent par notre infrastructure s'arrêtent.",
+    };
+  }
+
+  /**
+   * ⚠ L'ORDRE : le plafond PERSONNEL d'abord, l'enveloppe ensuite.
+   *
+   * Les deux ferment, mais ils ne disent pas la même chose à celui qui les
+   * lit. « Tu as consommé ton essai » est actionnable — il sait ce qu'il a
+   * fait et il peut acheter. « L'ouverture est pleine » ne l'est pas, et
+   * l'annoncer à quelqu'un qui a d'abord épuisé SON quota serait un demi-
+   * mensonge poli. Celui qui a dépensé l'entend en premier.
+   */
+  if (e.coutGlobalEur >= ENVELOPPE_OUVERTURE_EUR) {
+    return {
+      actif: false,
+      joursRestants,
+      coutRestantEur,
+      fin: "enveloppe-epuisee",
+      phrase:
+        "Essai en pause : l'ouverture a atteint l'enveloppe qu'on lui avait fixée — ce n'est pas toi, " +
+        "c'est nous. Tout ce qui tourne chez toi reste ouvert, et apporter ta propre clé dans les " +
+        "Réglages rouvre tout immédiatement, sans limite.",
     };
   }
 

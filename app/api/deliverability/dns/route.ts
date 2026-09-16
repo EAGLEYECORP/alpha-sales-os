@@ -96,7 +96,11 @@ export async function GET(request: NextRequest) {
    */
   const droits = await resoudreDroits(request);
   const tenant = await getTenant(request);
-  const smtp = await resoudreSmtp(tenant?.id ?? null, droits);
+  // ⚠ `depense: false` : on résout le SMTP pour savoir QUEL DOMAINE
+  // interroger, aucun message ne part. Débiter ici ferait consommer l'essai à
+  // l'ouverture d'un écran qui ne fait que lire des enregistrements DNS
+  // publics — la même raison qui met cette route dans `API_SANS_COUT`.
+  const smtp = await resoudreSmtp(tenant?.id ?? null, droits, { depense: false });
   const domain =
     (asked && DOMAIN_RE.test(asked) ? asked : null) ??
     (smtpUtilisable(smtp) ? domaineDepuis(smtp.from) : null) ??

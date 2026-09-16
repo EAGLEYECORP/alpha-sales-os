@@ -1,7 +1,8 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
-import { autorise, resoudreDroits, type Entitlement } from "./entitlements";
+import { autorise, resoudreDroits, statutEffectif, type Entitlement } from "./entitlements";
+import { debiter, montantADebiter } from "./compteur-essai";
 import { AUCUN_MOTEUR, type Capacite, type MoteurIA, type Origine } from "./credentials";
 import { MODELE_ANTHROPIC_DEFAUT, MODELE_NIM_DEFAUT } from "./modeles";
 
@@ -223,9 +224,52 @@ export function moteurDepuisValeurs(v: Record<string, string>): MoteurIA {
  * endroits où l'ordre « clé du locataire d'abord, la nôtre ensuite »
  * pourrait s'écrire à l'envers. On en veut UN.
  */
-export async function moteurIADeLaRequete(req: NextRequest): Promise<MoteurIA> {
+export async function moteurIADeLaRequete(
+  req: NextRequest,
+  opts: { depense?: boolean } = {}
+): Promise<MoteurIA> {
   const droits = await resoudreDroits(req);
-  return resoudreMoteurIA(droits.tenantId, droits);
+  const moteur = await resoudreMoteurIA(droits.tenantId, droits);
+  /**
+   * ⚠ `depense: false` est une SORTIE EXPLICITE, et le défaut débite.
+   *
+   * L'inverse — ne débiter que si l'appelant le demande — aurait la même
+   * forme et la propriété opposée : la route ajoutée demain dépenserait sans
+   * compter, et rien ne le dirait. Ici, une route qui oublie l'option débite
+   * pour rien (un essai se ferme un peu trop tôt, ça se répare) ; une route
+   * qui l'utilise à tort dépense sans compter, ce qui ne se répare pas. Le
+   * défaut va donc du côté qui pardonne.
+   *
+   * Le seul appelant légitime de `false` est `/api/health`, qui RÉSOUT sans
+   * APPELER : il rapporte l'état du moteur. Le débiter ferait consommer
+   * l'essai à un écran de diagnostic.
+   */
+  if (opts.depense === false) return moteur;
+  const ok = await facturerEssai(droits, montantADebiter("ia", moteur.origine, req.nextUrl.pathname));
+  return ok ? moteur : AUCUN_MOTEUR;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE DÉBIT, POSÉ À UN SEUL ENDROIT POUR CHAQUE CANAL.
+ *
+ * ⚠ Le compteur est celui de l'ESSAI, donc on ne débite QUE pendant un essai.
+ * Un client qui paie a acheté sa consommation ; un compte maître ou solo,
+ * c'est nous. Débiter tout le monde remplirait la colonne de nombres qui ne
+ * gouvernent rien, et le premier lecteur croirait à un suivi de coûts — ce
+ * que ce module n'est pas.
+ *
+ * ⚠⚠ **UN DÉBIT QUI ÉCHOUE REFUSE LA DÉPENSE.** C'est la moitié qui fait que
+ * le plafond existe. Si on ne sait pas enregistrer ce qu'on s'apprête à
+ * dépenser, on ne le dépense pas : sans ça, il suffit que l'écriture échoue
+ * en boucle — base saturée, RPC absente — pour consommer sans aucune limite,
+ * et c'est précisément la panne qu'un usage intensif provoque.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+async function facturerEssai(droits: Entitlement, montantEur: number): Promise<boolean> {
+  if (montantEur <= 0) return true;
+  if (statutEffectif(droits) !== "essai") return true;
+  return debiter(droits.tenantId, montantEur);
 }
 
 // ── EMAIL : qui envoie, et depuis quelle boîte ─────────────────────────
@@ -290,7 +334,8 @@ function smtpDepuis(v: Record<string, string | undefined>, origine: Origine): Re
  */
 export async function resoudreSmtp(
   tenantId: string | null,
-  droits: Entitlement
+  droits: Entitlement,
+  opts: { depense?: boolean } = {}
 ): Promise<ResolutionSmtp> {
   const siens = await identifiantsDu(tenantId, "email");
   if (siens) {
@@ -299,7 +344,21 @@ export async function resoudreSmtp(
     return s;
   }
   if (!autorise(droits, "/campaigns")) return AUCUN_SMTP;
-  return smtpDepuis(process.env, "maison");
+  const maison = smtpDepuis(process.env, "maison");
+  /**
+   * ⚠ Même sortie explicite que pour l'IA, et un seul appelant légitime :
+   * `/api/deliverability/dns`, qui résout le SMTP pour savoir QUEL DOMAINE
+   * interroger. Il n'envoie rien — le débiter ferait consommer l'essai à
+   * chaque ouverture d'un écran de diagnostic DNS.
+   *
+   * ⚠ Le débit porte sur UN message, parce que `/api/send` n'accepte qu'un
+   * destinataire par appel (`body.to`, une chaîne). Le jour où une route
+   * enverrait un lot, elle devra débiter le lot — sans quoi mille envois
+   * coûteraient un centime au compteur.
+   */
+  if (opts.depense === false) return maison;
+  const ok = await facturerEssai(droits, montantADebiter("email", maison.origine, "/api/send"));
+  return ok ? maison : AUCUN_SMTP;
 }
 
 /**

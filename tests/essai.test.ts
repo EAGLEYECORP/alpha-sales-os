@@ -21,13 +21,13 @@ test("⚠⚠ DEUX LIMITES INDÉPENDANTES — la durée seule serait notre carte 
    * qu'on comptait donner en trente.
    */
   // Jour 1, mais le plafond est déjà consommé → l'essai ferme.
-  const creve = etatEssai({ jusquA: dans(29), coutConsommeEur: PLAFOND_ESSAI_COUT_EUR }, new Date());
+  const creve = etatEssai({ jusquA: dans(29), coutConsommeEur: PLAFOND_ESSAI_COUT_EUR, coutGlobalEur: 0 }, new Date());
   assert.equal(creve.actif, false);
   assert.equal(creve.fin, "plafond-atteint");
   assert.match(creve.phrase, /il restait 29 jour/, "le motif doit dire que c'est le COÛT et pas la durée");
 
   // Inversement : plafond intact, mais les 30 jours sont passés.
-  const perime = etatEssai({ jusquA: dans(-1), coutConsommeEur: 0 }, new Date());
+  const perime = etatEssai({ jusquA: dans(-1), coutConsommeEur: 0, coutGlobalEur: 0 }, new Date());
   assert.equal(perime.actif, false);
   assert.equal(perime.fin, "duree-atteinte");
 });
@@ -38,7 +38,7 @@ test("⚠⚠ COÛT INCONNU = ESSAI FERMÉ — l'inverse du réflexe des écrans 
    * pas de se dire, il BLOQUE. Ne pas ouvrir coûte une démonstration ; ouvrir
    * en aveugle coûte une facture qu'on découvre trente jours plus tard.
    */
-  const r = etatEssai({ jusquA: dans(20), coutConsommeEur: null }, new Date());
+  const r = etatEssai({ jusquA: dans(20), coutConsommeEur: null, coutGlobalEur: 0 }, new Date());
   assert.equal(r.actif, false);
   assert.equal(r.fin, "cout-inconnu");
   assert.match(r.phrase, /pas pu être lue/, "la panne se DIT, elle ne se déguise pas en fin d'essai normale");
@@ -48,7 +48,7 @@ test("⚠⚠ COÛT INCONNU = ESSAI FERMÉ — l'inverse du réflexe des écrans 
 });
 
 test("un essai qui tourne dit ses DEUX restes, jamais un booléen nu", () => {
-  const r = etatEssai({ jusquA: dans(12), coutConsommeEur: 10 }, new Date());
+  const r = etatEssai({ jusquA: dans(12), coutConsommeEur: 10, coutGlobalEur: 0 }, new Date());
   assert.equal(r.actif, true);
   assert.equal(r.joursRestants, 12);
   assert.equal(r.coutRestantEur, PLAFOND_ESSAI_COUT_EUR - 10);
@@ -60,7 +60,7 @@ test("⚠ LES DEUX LIMITES SE CALCULENT TOUJOURS, même quand l'une a déjà mor
   // Savoir qu'un compte a été coupé au plafond le jour 3 change la
   // conversation de vente : c'est un prospect qui a consommé, pas un compte
   // qui n'a rien fait.
-  const r = etatEssai({ jusquA: dans(27), coutConsommeEur: 40 }, new Date());
+  const r = etatEssai({ jusquA: dans(27), coutConsommeEur: 40, coutGlobalEur: 0 }, new Date());
   assert.equal(r.fin, "plafond-atteint");
   assert.equal(r.joursRestants, 27, "les jours restants restent lisibles après la coupure au coût");
 });
@@ -108,10 +108,10 @@ test("finDEssai pose exactement la durée annoncée", () => {
 
 test("⚠ SANS DATE DE FIN, l'essai ne devient pas ÉTERNEL — le plafond tient encore", () => {
   // Cas réel : une ligne créée à la main, `essai_jusqu_a` laissé NULL.
-  const ouvert = etatEssai({ jusquA: null, coutConsommeEur: 5 }, new Date());
+  const ouvert = etatEssai({ jusquA: null, coutConsommeEur: 5, coutGlobalEur: 0 }, new Date());
   assert.equal(ouvert.actif, true);
   assert.equal(ouvert.joursRestants, null, "on ne fabrique pas une échéance qu'on n'a pas");
-  const ferme = etatEssai({ jusquA: null, coutConsommeEur: PLAFOND_ESSAI_COUT_EUR + 1 }, new Date());
+  const ferme = etatEssai({ jusquA: null, coutConsommeEur: PLAFOND_ESSAI_COUT_EUR + 1, coutGlobalEur: 0 }, new Date());
   assert.equal(ferme.actif, false, "le plafond ferme même sans date : deux limites INDÉPENDANTES");
   assert.equal(ferme.fin, "plafond-atteint");
 });
@@ -132,7 +132,7 @@ test("⚠⚠ LE PLAFOND EST BRANCHÉ DANS resoudreDroits — pas seulement expor
    * l'essai tourner jusqu'à J+30 quoi qu'il consomme — et il a l'air fait.
    */
   const src = readFileSync(join(process.cwd(), "lib/entitlements.ts"), "utf8");
-  assert.match(src, /import \{ etatEssai \} from "\.\/essai"/, "la résolution doit consulter le module");
+  assert.match(src, /import \{ etatEssai[^}]*\} from "\.\/essai"/, "la résolution doit consulter le module");
   assert.match(src, /etatEssai\(/, "et l'appeler, pas seulement l'importer");
   /**
    * ⚠ ON VISE LE `select=`, PAS LE FICHIER. Première rédaction : je cherchais
@@ -148,9 +148,17 @@ test("⚠⚠ LE PLAFOND EST BRANCHÉ DANS resoudreDroits — pas seulement expor
     select.split(",").includes("cout_consomme_eur"),
     `la colonne doit être dans le select (vu : « ${select} ») — un plafond calculé sur une valeur jamais lue ne mord jamais`,
   );
+  /**
+   * ⚠ La condition s'écrivait sur une ligne (`statut === "essai" && !actif`)
+   * ; elle est devenue un bloc le 16/09, quand l'essai s'est mis à SUBSTITUER
+   * ses briques au lieu de lire la colonne. Les deux moitiés sont vérifiées
+   * séparément, et c'est plus solide que l'ancienne ligne unique : la seconde
+   * ne doit pas pouvoir se perdre en réécrivant la première.
+   */
+  assert.match(src, /if \(statut === "essai"\)/, "la branche essai doit exister");
   assert.match(
     src,
-    /if \(statut === "essai" && !essai\.actif\) return droitGratuit\(/,
+    /if \(!essai\.actif\) return droitGratuit\(/,
     "un essai fermé retombe au socle GRATUIT, jamais au néant — ses fiches lui appartiennent",
   );
 });

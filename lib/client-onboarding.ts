@@ -1,6 +1,10 @@
 // Seuls les identifiants sont utiles ici, et ce module est rendu côté client :
 // `lib/bricks` y embarquerait toute la grille tarifaire.
 import { CAPACITES } from "./public-catalogue";
+// ⚠ Import de VALEUR, pas de type : c'est tout l'objet de la correction plus
+// bas. `lib/essai.ts` n'importe que des types côté `bricks-access`, donc rien
+// de lourd ne descend dans le bundle client avec cette constante.
+import { DUREE_ESSAI_JOURS } from "./essai";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -177,8 +181,26 @@ export interface Parcours {
   message: string;
 }
 
-/** Durée d'essai par défaut, en jours. */
-export const ESSAI_JOURS = 14;
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ IL Y AVAIT DEUX DURÉES D'ESSAI, ET C'EST LA FAUSSE QUI S'AFFICHAIT.
+ *
+ * Trouvé le 16/09/2026. `DUREE_ESSAI_JOURS` (lib/essai.ts) vaut 30 et c'est
+ * celle que le SERVEUR applique — `etatEssai` expire sur cette date-là.
+ * Cette constante-ci valait **14**, et elle est servie par `/souscrire`, la
+ * page où l'on ACHÈTE, et par l'écran d'après-achat.
+ *
+ * Donc : on annonçait quatorze jours à quelqu'un qui en recevait trente. Rien
+ * ne tombait, aucun test ne les croisait, et la divergence était exactement
+ * dans le sens qui se paie — la promesse commerciale plus petite que le
+ * produit. Un prospect qui compare ce qu'il lit à ce qu'il obtient ne conclut
+ * pas « bonne surprise », il conclut que le site n'est pas à jour.
+ *
+ * Une seule définition désormais, et elle appartient au module qui l'APPLIQUE.
+ * Un test refuse la réapparition d'un second littéral.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const ESSAI_JOURS = DUREE_ESSAI_JOURS;
 
 /**
  * Le parcours d'un client, daté et filtré sur ce qu'il a acheté.
