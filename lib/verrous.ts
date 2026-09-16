@@ -74,7 +74,18 @@ export const POURQUOI_PAYANT: Record<string, string> = {
   "alpha-voice":
     "Chaque appel consomme de vraies minutes de téléphonie, facturées à nous. Un numéro composé coûte de l'argent au moment où il sonne.",
   "agent-alpha":
-    "L'agent autonome brûle nos jetons d'IA à chaque tour de boucle, sans que personne regarde. C'est la seule brique dont la dépense n'a pas de plafond naturel.",
+    /**
+     * ⚠ « C'est la SEULE brique dont la dépense n'a pas de plafond naturel »
+     * — retiré le 16/09/2026, parce que c'était devenu faux et que cette
+     * phrase est SERVIE au client. Alpha Voice non plus n'en a pas : une
+     * ligne ouverte facture tant que quelqu'un parle, et `HORS_ESSAI`
+     * (lib/essai.ts) l'exclut de l'ouverture pour exactement cette raison.
+     * Deux prose qui se contredisent dans le même dépôt, et c'est celle qui
+     * s'affiche qui aurait menti. Ce qui reste vrai — et ce qui distingue
+     * vraiment cette brique — c'est que la boucle tourne SANS QUE PERSONNE
+     * REGARDE : le volume ne dépend d'aucun geste humain.
+     */
+    "L'agent autonome brûle nos jetons d'IA à chaque tour de boucle, sans que personne regarde : sa consommation ne dépend d'aucun geste humain.",
   /**
    * ⚠⚠ L'ENTRÉE `alpha-live` A ÉTÉ RETIRÉE LE 12/09/2026, ET SA RAISON ÉTAIT
    * FAUSSE — pas seulement le classement.
