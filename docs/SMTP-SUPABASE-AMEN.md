@@ -111,19 +111,26 @@ dernier mètre, celui qui rapporte.
 
 - [x] **SPF** — **déjà posé, et correct** : `v=spf1 include:spf.webapps.net ~all`,
       un seul enregistrement. **Ne touche à rien.**
-- [ ] **DKIM** — **c'est la seule des trois qui manque, et c'est la plus
-      urgente.** `eagleyecorp.fr` → **EMAIL** → bouton bleu **ACTION** →
-      **DKIM**. Amen publie l'enregistrement lui-même (le DNS est chez lui :
-      `ns1/ns2.amenworld.com`).
-      ⚠ Vérifie ensuite que la signature porte `d=eagleyecorp.fr` et **non**
-      `d=securemail.pro` — voir l'encadré « alignement strict » en section 3.
+- [x] **DKIM** — **activé le 16/09/2026.** `eagleyecorp.fr` → **EMAIL** →
+      bouton bleu **ACTION** → **DKIM**.
+- [ ] **Relever le sélecteur et le domaine signé** — le seul point encore
+      ouvert, et il prend vingt secondes. Dans l'en-tête `DKIM-Signature`
+      d'un message reçu : **`s=`** et **`d=`**.
+      ⚠ `d=` doit valoir **exactement `eagleyecorp.fr`** et non
+      `securemail.pro` : avec `adkim=s`, une signature qui ne porte pas le bon
+      domaine passe le contrôle DKIM et **ne s'aligne pas** — voir l'encadré
+      « alignement strict » en section 3.
 - [x] **DMARC** — **déjà posé, et PLUS STRICT que ce que ce document
       prescrivait** : `p=quarantine`, `adkim=s`, `aspf=s`, `pct=100`.
       **N'en crée pas un second.** Ce qu'il faut savoir avant d'envoyer quoi
       que ce soit : section 3, encadré « alignement strict ».
 
 ### Chez Supabase — le SMTP
-- [ ] Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*
+
+> ✅ **FAIT le 16/09/2026 : les mails de confirmation d'inscription partent et
+> arrivent.** C'était le bloquant n°1 — personne ne pouvait créer de compte.
+
+- [x] Authentication → **Emails → SMTP Settings** → *Enable custom SMTP*
 - [ ] Sender email : `contact@eagleyecorp.fr` — **exactement** la boîte
       authentifiée. Une adresse d'expédition différente de l'adresse
       authentifiée fait rejeter le message, ou pire : ça part et c'est classé
@@ -136,7 +143,15 @@ dernier mètre, celui qui rapporte.
 - [ ] **Save changes**
 
 ### La vérification — et elle ne se fait PAS sur « le mail est arrivé »
-- [ ] Authentication → **Users** → *Invite user* vers une adresse **Gmail**
+
+> ⚠ **CETTE SECTION RESTE OUVERTE, ET CE N'EST PAS DE LA PRUDENCE DE CONFORT.**
+> Que les mails arrivent prouve beaucoup — sous `p=quarantine`, un échec part
+> en indésirables, donc **DMARC passe**. Mais ça ne dit pas LEQUEL des deux
+> leviers tient : DKIM aligné, ou SPF. Le jour où l'un des deux bouge (un
+> changement de plateforme chez Amen, un sous-domaine d'envoi), on saura
+> quoi regarder — ou pas.
+
+- [x] Authentication → **Users** → *Invite user* vers une adresse **Gmail**
       que tu possèdes.
 - [ ] Ouvrir le mail → **⋮ → Afficher l'original**
 - [ ] Lire les **trois** lignes :
@@ -287,7 +302,7 @@ DNS* → **Gestion avancée** (et valider l'avertissement).
 | **SPF** (apex, TXT) | `v=spf1 include:spf.webapps.net ~all` — un seul | **rien** |
 | **MX** | `mail-fr.securemail.pro` | rien — confirme la plateforme |
 | **DMARC** (`_dmarc`, TXT) | `p=quarantine; adkim=s; aspf=s; pct=100` | **rien**, mais lire l'encadré ci-dessous |
-| **DKIM** | **absent** — 16 sélecteurs courants sondés, zéro réponse | **l'activer** |
+| **DKIM** | **activé le 16/09** (rapporté) — sélecteur non relevé | **relever `s=`** dans un en-tête reçu |
 
 ### SPF — déjà bon, et c'est le piège inverse qui menace
 
@@ -358,16 +373,37 @@ valeur d'`aspf`.**
 Additionné à l'état relevé, ça donne la situation exacte d'aujourd'hui :
 
 ```
+état au 15/09 (avant activation) :
 SPF   : passe, mais ne peut pas s'aligner   → ne compte pas pour DMARC
 DKIM  : absent                              → ne compte pas pour DMARC
 ────────────────────────────────────────────────────────────────────
-DMARC : échoue sur CHAQUE message
+DMARC : échouait sur CHAQUE message
 p=quarantine                                → dossier indésirables
 ```
 
-**Donc : tant que DKIM n'est pas actif, il ne faut rien envoyer.** Pas parce
-que c'est risqué — parce que c'est probablement déjà cassé, en silence, avec
-des envois qui s'affichent « réussis ».
+> ✅ **16/09 — DKIM activé, et les mails d'inscription Supabase arrivent en
+> boîte de réception.** Ce fait vaut mieux qu'un simple « c'est arrivé » : sous
+> **`p=quarantine`**, un message qui échoue part en indésirables. Arriver au
+> bon endroit signifie donc que **DMARC passe** — c'est une politique
+> appliquée, pas de la tolérance.
+>
+> ⚠ **Ce qui reste inconnu, et qui compte** : lequel des deux leviers passe.
+> Un sondage DNS n'a trouvé aucun sélecteur parmi 22 courants — ce qui ne
+> prouve rien, un sélecteur étant arbitraire. Deux lectures possibles, et
+> elles ne demandent pas les mêmes gestes ensuite :
+> · **DKIM signe avec `d=eagleyecorp.fr`** → le domaine a ses deux jambes, et
+>   l'hypothèse « le Return-Path est réécrit » (secondaire, jamais testée)
+>   reste sans conséquence ;
+> · **c'est SPF qui aligne** → cette hypothèse était simplement fausse chez
+>   Amen, et DKIM n'est pas encore un filet.
+>
+> **La réponse tient dans l'en-tête `DKIM-Signature` d'un message reçu : `s=`
+> (le sélecteur) et `d=` (le domaine signé).** Relève ces deux valeurs — et
+> elles seules, `b=` étant la signature. Avec `s=`, la vérification devient
+> reproductible :
+> ```bash
+> node -e "require('node:dns').promises.resolveTxt('<s>._domainkey.eagleyecorp.fr').then(r=>console.log(r.flat().join('')))"
+> ```
 
 > ⚠ **`aspf=s` ne coûte rien à relâcher et ne rapporte rien à garder** : si
 > l'alignement SPF est structurellement impossible ici, strict et relâché

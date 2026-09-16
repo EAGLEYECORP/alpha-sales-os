@@ -52,7 +52,7 @@ Setup Alpha Voice ........  1 490 €
 - [ ] **Les 4 variables Vercel, dans l'ordre.** Dix minutes. Sans elles,
       `estMaitre("contact@eagleyecorp.fr")` rend `false` et tu es au socle
       gratuit. Détail : `docs/A-FAIRE-ZAKARIA.md`.
-- [ ] **Migrations 002 → 008** dans le SQL editor.
+- [ ] **Migrations 002 → 011** dans le SQL editor (010 et 011 : le BYOK).
 - [ ] `GET /api/health` une fois connecté → vérifier `auth.serverEnforced` et
       `proprietaire.coherent`.
 - [ ] **Les 3 fiches `offre` : une relance chacune, aujourd'hui.** Pas un
@@ -62,21 +62,24 @@ Setup Alpha Voice ........  1 490 €
       laissée ouverte. Un deal en zone rouge qui traîne pollue le compteur et
       la tête.
 
-## MARDI 15 — le canal qui envoie
+## MARDI 15 / MERCREDI 16 — ✅ LE CANAL QUI ENVOIE EST OUVERT
 
-- [ ] **SMTP `contact@eagleyecorp.fr`** — *après* les comptes, jamais avant.
-      Avant, `/api/send` est joignable par n'importe qui.
-- [ ] **DKIM chez Amen** — et lui seul. Relevé dans le DNS public le 15/09 :
-      **SPF et DMARC sont déjà posés**, en créer un second de l'un ou l'autre
-      revient à n'en avoir aucun. Amen → `eagleyecorp.fr` → EMAIL → ACTION →
-      DKIM.
-      ⚠ Le DMARC en place est `p=quarantine` en **alignement strict** : sans
-      DKIM, tout tient sur SPF seul, et un défaut d'alignement range **chaque
-      message** en indésirables sans rien signaler. `docs/SMTP-SUPABASE-AMEN.md` §3.
-- [ ] **Les trois `pass`** (`spf` · `dkim` · `dmarc`) lus dans l'en-tête d'un
-      message reçu chez Gmail. C'est le seul endroit où le défaut ci-dessus
-      devient visible — donc ça se fait **avant** le premier envoi commercial,
-      pas après.
+> **Le bloquant n°1 de la semaine est levé.** DKIM activé chez Amen, SMTP
+> Supabase branché, **les mails de confirmation d'inscription arrivent**. Tout
+> le produit était derrière cette porte : un inscrit qui ne reçoit pas son lien
+> ne devient jamais client.
+
+- [x] **SMTP `contact@eagleyecorp.fr`** branché côté Supabase.
+- [x] **DKIM chez Amen.** SPF et DMARC étaient déjà posés (relevé DNS du 15/09) —
+      en créer un second de l'un ou l'autre revenait à n'en avoir aucun.
+- [ ] **Relever `s=` et `d=`** dans l'en-tête `DKIM-Signature` d'un message
+      reçu. Vingt secondes, et c'est le seul geste qui dise **lequel des deux
+      leviers tient** : DKIM aligné, ou SPF.
+      ⚠ Le DMARC est en `p=quarantine` avec **alignement strict**. Que les mails
+      arrivent en boîte de réception prouve que DMARC **passe** — un échec
+      partirait en indésirables. Mais on ne sait pas encore par quelle jambe,
+      et le jour où l'une bouge (changement de plateforme, sous-domaine
+      d'envoi), on voudra le savoir. `docs/SMTP-SUPABASE-AMEN.md` §3.
 - [ ] **Les 3 `demo` → `offre`.** Ils ont vu le produit ; il leur manque un
       devis, pas une démo de plus. Le cadrage est la porte : pas de devis sans
       lui, et c'est le code qui le tient.

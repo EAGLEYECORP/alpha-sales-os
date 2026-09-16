@@ -125,17 +125,42 @@ Procédure complète : `docs/SMTP-SUPABASE-AMEN.md`.
 |---|---|---|
 | **SPF** | `v=spf1 include:spf.webapps.net ~all`, un seul | **rien — n'y touche pas** |
 | **DMARC** | `p=quarantine; adkim=s; aspf=s` | **rien — n'en crée pas un second** |
-| **DKIM** | absent (16 sélecteurs sondés, zéro) | **l'activer chez Amen** |
+| **DKIM** | **activé** (rapporté le 16/09) — non confirmé par sondage DNS | **relever le sélecteur**, voir ci-dessous |
 
-⚠⚠ **Le DKIM n'est pas le troisième confort de la liste, c'est la jambe qui
-manque.** Ton DMARC est en `p=quarantine` avec **alignement strict** : sans
-DKIM, toute l'authentification repose sur SPF seul, et le moindre défaut
-d'alignement envoie **chaque message** en indésirables — sans erreur, sans
-signal, avec un envoi qui s'affiche « réussi ».
+### ✅ 16/09 — DKIM activé, et les inscriptions Supabase arrivent
 
-Le geste : Amen → `eagleyecorp.fr` → **EMAIL** → **ACTION** → **DKIM**.
-Le reste — ce qu'implique l'alignement strict, comment le lire, et quoi faire
-si un `pass` manque : `docs/SMTP-SUPABASE-AMEN.md` §3.
+**C'était le bloquant n°1 de toute la semaine.** Un inscrit qui ne reçoit pas
+son mail de confirmation ne devient jamais client : tout le reste du produit
+était derrière cette porte.
+
+> ⚠⚠ **ET C'EST UNE MEILLEURE NOUVELLE QUE « LE MAIL EST ARRIVÉ ».** Le DMARC
+> du domaine est en **`p=quarantine`** : un message qui échoue à
+> l'authentification part en **indésirables**, il n'arrive pas en boîte de
+> réception. Qu'il arrive au bon endroit veut donc dire que **DMARC passe** —
+> ce n'est pas de la tolérance du destinataire, c'est une politique appliquée.
+
+**Ce qui reste à relever, et ça prend vingt secondes** — parce que ça décide
+de ce qui tient le domaine debout :
+
+1. Ouvre un mail reçu chez Gmail → **⋮ → Afficher l'original**.
+2. Dans l'en-tête `DKIM-Signature`, relève **`s=`** (le sélecteur) et **`d=`**
+   (le domaine signé). **Ne copie pas le reste** — la valeur `b=` est la
+   signature elle-même.
+3. `d=` doit valoir **exactement `eagleyecorp.fr`**. S'il vaut
+   `securemail.pro` ou autre chose, DKIM passe mais **ne s'aligne pas** avec
+   `adkim=s` — et c'est alors SPF qui porte tout, sans filet.
+
+> ⚠ Un sondage DNS depuis la session n'a trouvé **aucun** sélecteur parmi 22
+> courants. **Ça ne prouve rien** — un sélecteur est une chaîne arbitraire et
+> le DNS ne s'énumère pas — mais ça veut dire qu'on ne peut pas le vérifier
+> d'ici tant que tu ne l'as pas nommé. Une fois `s=` connu, la vérification
+> devient une commande :
+> ```bash
+> node -e "require('node:dns').promises.resolveTxt('<s>._domainkey.eagleyecorp.fr').then(r=>console.log(r.flat().join('')))"
+> ```
+
+Le reste — ce qu'implique l'alignement strict et quoi faire si un `pass`
+manque : `docs/SMTP-SUPABASE-AMEN.md` §3.
 
 `/api/health` → `capabilities.email` dit ce qui manque **côté serveur**, jamais
 l'état DNS. Celui-là se relève en dix secondes, et la commande est dans le doc.
