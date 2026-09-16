@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import { MAITRE_SEULEMENT } from "../lib/api-access";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -329,13 +330,36 @@ test("les pages du PRODUIT ne sont pas classées comme administration", () => {
  */
 
 test("les routes qui servent NOTRE patrimoine exigent le compte maître", () => {
-  const bloc = mw.slice(mw.indexOf("const MAITRE_SEULEMENT"), mw.indexOf("function verrouDeComptesActif"));
+  /**
+   * ⚠ LA LISTE A DÉMÉNAGÉ le 16/09/2026, de `middleware.ts` vers
+   * `lib/api-access.ts`. Le BYOK a besoin de la MÊME liste — une API réservée
+   * au maître n'est jamais atteignable par un locataire, donc elle ne doit
+   * pas empêcher une clé apportée d'ouvrir un chemin. Deux copies auraient
+   * divergé, et c'est celle qu'on ne relit pas qui aurait décidé.
+   *
+   * On importe donc la valeur au lieu de la chercher dans le texte du
+   * middleware : un test qui lit une liste à l'endroit où elle n'est plus ne
+   * mesure rien.
+   */
   for (const p of ["/api/pipeline", "/api/voice-costs", "/api/knowledge", "/api/references"]) {
-    assert.ok(bloc.includes(`"${p}"`), `${p} sert notre patrimoine : il doit être réservé au maître`);
+    assert.ok(MAITRE_SEULEMENT.includes(p), `${p} sert notre patrimoine : il doit être réservé au maître`);
   }
+  /**
+   * ⚠ `/api/digest` AJOUTÉE le 16/09, et pour une raison qui n'existait pas
+   * avant : son destinataire n'est JAMAIS pris dans la requête — il vient de
+   * `ALERT_PHONE` / `DIGEST_EMAIL`, donc de NOTRE environnement. Cette
+   * propriété la rendait sûre quand l'app servait une seule personne ; en
+   * multi-locataire elle la retourne — un tiers l'appelle, et le SMS part sur
+   * NOTRE téléphone, à NOS frais.
+   */
+  assert.ok(MAITRE_SEULEMENT.includes("/api/digest"), "le récap part sur NOTRE téléphone : personne d'autre ne l'appelle");
+
   // Et la garde doit exister VRAIMENT, pas seulement la liste.
   assert.match(mw, /startsWithAny\(pathname, MAITRE_SEULEMENT\) && !droits\.maitre/);
   assert.match(mw, /code: "maitre_requis"/);
+  // La liste n'est plus REDÉCLARÉE dans le middleware : il l'importe.
+  assert.ok(!/const MAITRE_SEULEMENT\s*=/.test(mw), "une seconde définition finirait par diverger");
+  assert.match(mw, /import \{ MAITRE_SEULEMENT \} from "@\/lib\/api-access"/);
 });
 
 test("la garde maître est POSÉE AVANT le contrôle par brique", () => {

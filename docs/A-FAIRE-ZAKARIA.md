@@ -42,7 +42,7 @@ et `proprietaire.coherent` (les deux listes `OWNER_EMAILS` concordent-elles).
 > Si tu déploies avant de poser les variables, garde `SITE_PASSWORD` : il
 > mure tout tant que les comptes ne sont pas actifs.
 
-### 2. Les migrations, 002 → 010
+### 2. Les migrations, 002 → 011
 
 Dans le SQL editor Supabase, **dans l'ordre**. Toutes vérifiées rejouables :
 aucun DDL non protégé, tu ne casses rien en repassant une migration.
@@ -56,7 +56,8 @@ aucun DDL non protégé, tu ne casses rien en repassant une migration.
 007-attribution-apporteurs.sql
 008-essai-plafond-cout.sql      le plafond de dépense de l'essai
 009-trace-destinataire.sql      le destinataire normalisé
-010-byok-identifiants.sql       ← NOUVELLE : les clés apportées (BYOK)
+010-byok-identifiants.sql       les clés apportées (BYOK)
+011-byok-email.sql              ← NOUVELLE : la capacité « email »
 ```
 
 > ⚠ La **010** va avec une variable Vercel : **`CREDENTIALS_MASTER_KEY`**,

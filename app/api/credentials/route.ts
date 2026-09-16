@@ -39,6 +39,7 @@ export const maxDuration = 60;
 /** Ce que l'opérateur a le droit de nous confier, par capacité. */
 const CHAMPS_ATTENDUS: Record<Capacite, readonly string[]> = {
   ia: ["ANTHROPIC_API_KEY", "AI_MODEL", "NVIDIA_API_KEY", "NVIDIA_BASE_URL", "NVIDIA_MODEL"],
+  email: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"],
 };
 
 function estCapacite(v: unknown): v is Capacite {
@@ -110,29 +111,67 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Aucune valeur exploitable." }, { status: 400 });
   }
 
-  const candidat = moteurDepuisValeurs(valeurs);
-  if (!moteurUtilisable(candidat)) {
-    return NextResponse.json(
-      { error: "Il manque une clé : renseigne au moins ANTHROPIC_API_KEY ou NVIDIA_API_KEY." },
-      { status: 400 }
-    );
-  }
-
-  // ── La vérification : un VRAI appel, court, avant de croire la clé ──
+  /**
+   * ── La vérification : un VRAI essai, avant de croire quoi que ce soit ──
+   *
+   * ⚠ Elle est PROPRE À LA CAPACITÉ. Une clé IA se prouve par un appel de
+   * modèle ; un SMTP se prouve par une connexion authentifiée. Vérifier l'un
+   * avec la méthode de l'autre ne prouverait rien, et `verifie_le` — qui
+   * OUVRE la capacité — vaudrait alors une signature sans lecture.
+   */
   let echec: string | null = null;
-  try {
-    const { text } = await runAI(
-      [{ role: "user", content: "Réponds exactement : OK" }],
-      candidat,
-      { maxTokens: 8, temperature: 0 }
-    );
-    if (!text.trim()) echec = "Le fournisseur a répondu, mais vide.";
-  } catch (e) {
-    echec = e instanceof Error ? e.message : "appel refusé";
+
+  if (capacite === "ia") {
+    const candidat = moteurDepuisValeurs(valeurs);
+    if (!moteurUtilisable(candidat)) {
+      return NextResponse.json(
+        { error: "Il manque une clé : renseigne au moins ANTHROPIC_API_KEY ou NVIDIA_API_KEY." },
+        { status: 400 }
+      );
+    }
+    try {
+      const { text } = await runAI(
+        [{ role: "user", content: "Réponds exactement : OK" }],
+        candidat,
+        { maxTokens: 8, temperature: 0 }
+      );
+      if (!text.trim()) echec = "Le fournisseur a répondu, mais vide.";
+    } catch (e) {
+      echec = e instanceof Error ? e.message : "appel refusé";
+    }
+  } else {
+    if (!valeurs.SMTP_HOST || !valeurs.SMTP_USER || !valeurs.SMTP_PASS) {
+      return NextResponse.json(
+        { error: "Il manque l'hôte, l'identifiant ou le mot de passe SMTP — les trois ensemble, ou rien." },
+        { status: 400 }
+      );
+    }
+    try {
+      /**
+       * ⚠ `transporter.verify()` ouvre la connexion et s'AUTHENTIFIE — il ne
+       * se contente pas de résoudre l'hôte. C'est ce qui attrape le mot de
+       * passe faux, le port fermé et le certificat refusé, c'est-à-dire les
+       * trois pannes que `docs/SMTP-SUPABASE-AMEN.md` décrit comme
+       * silencieuses en production.
+       */
+      const nodemailer = (await import("nodemailer")).default;
+      const port = Number(valeurs.SMTP_PORT ?? 587) || 587;
+      await nodemailer
+        .createTransport({
+          host: valeurs.SMTP_HOST,
+          port,
+          secure: port === 465,
+          auth: { user: valeurs.SMTP_USER, pass: valeurs.SMTP_PASS },
+          connectionTimeout: 15_000,
+        })
+        .verify();
+    } catch (e) {
+      echec = e instanceof Error ? e.message : "connexion refusée";
+    }
   }
   if (echec) {
     return NextResponse.json(
-      { error: `La clé n'a pas répondu — rien n'est enregistré. Détail : ${echec}` },
+      { error: `Rien n'est enregistré — l'essai a échoué. Détail : ${echec}` },
       { status: 422 }
     );
   }
@@ -153,7 +192,8 @@ export async function POST(req: NextRequest) {
   const sb = serviceClient();
   if (!sb) return NextResponse.json({ error: "Base indisponible." }, { status: 503 });
 
-  const secretPrincipal = valeurs.ANTHROPIC_API_KEY ?? valeurs.NVIDIA_API_KEY ?? "";
+  const secretPrincipal =
+    valeurs.ANTHROPIC_API_KEY ?? valeurs.NVIDIA_API_KEY ?? valeurs.SMTP_USER ?? "";
   const { error } = await sb.from("tenant_credentials").upsert({
     tenant_id: droits.tenantId,
     capacite,

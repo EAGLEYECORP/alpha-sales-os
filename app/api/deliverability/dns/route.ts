@@ -6,6 +6,9 @@ import {
   DOMAIN_RE,
   type Lookup,
 } from "@/lib/deliverability-dns";
+import { resoudreDroits } from "@/lib/entitlements";
+import { getTenant } from "@/lib/tenant";
+import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +43,23 @@ async function lookup<T>(run: () => Promise<T[]>): Promise<Lookup<T>> {
 const txt = (name: string): Promise<Lookup<string>> =>
   lookup(async () => (await resolver.resolveTxt(name)).map((chunks) => chunks.join("")));
 
+/**
+ * ⚠⚠ LE DOMAINE ANALYSÉ DOIT ÊTRE CELUI QUI ENVOIE — 16/09/2026.
+ *
+ * Cette fonction lisait `SMTP_FROM` dans NOTRE environnement. Depuis que le
+ * BYOK permet à un locataire d'envoyer depuis SA boîte, deux défauts d'un
+ * coup : il auditait un domaine qui n'est pas le sien — donc un rapport
+ * inutile qui a l'air juste — et il lui affichait NOTRE adresse d'expédition.
+ *
+ * `domaineDeLExpediteur` prend le SMTP RÉSOLU, donc celui qui partira
+ * vraiment.
+ */
+function domaineDepuis(raw: string): string | null {
+  const addr = raw.match(/<([^>]+)>/)?.[1] ?? raw;
+  const d = addr.split("@")[1]?.trim().toLowerCase();
+  return d && DOMAIN_RE.test(d) ? d : null;
+}
+
 function domainFromEnv(): string | null {
   const raw = process.env.SMTP_FROM || process.env.SMTP_USER || "";
   const addr = raw.match(/<([^>]+)>/)?.[1] ?? raw;
@@ -68,7 +88,19 @@ async function findDkim(domain: string) {
 
 export async function GET(request: NextRequest) {
   const asked = request.nextUrl.searchParams.get("domain")?.trim().toLowerCase();
-  const domain = asked && DOMAIN_RE.test(asked) ? asked : domainFromEnv();
+  /**
+   * ⚠ Le repli passe par le SMTP RÉSOLU, plus par notre environnement : sur
+   * un compte qui apporte sa boîte, c'est SON domaine qu'il faut auditer.
+   * Analyser le nôtre produirait un rapport parfaitement vert et parfaitement
+   * inutile — le pire des deux, puisqu'il rassure.
+   */
+  const droits = await resoudreDroits(request);
+  const tenant = await getTenant(request);
+  const smtp = await resoudreSmtp(tenant?.id ?? null, droits);
+  const domain =
+    (asked && DOMAIN_RE.test(asked) ? asked : null) ??
+    (smtpUtilisable(smtp) ? domaineDepuis(smtp.from) : null) ??
+    domainFromEnv();
 
   if (!domain) {
     /**

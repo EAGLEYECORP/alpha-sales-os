@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Entitlement } from "./entitlements";
-import { CHEMIN_PAR_API } from "./api-access";
+import { CHEMIN_PAR_API, MAITRE_SEULEMENT } from "./api-access";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -58,16 +58,16 @@ import { CHEMIN_PAR_API } from "./api-access";
 /**
  * Les capacités qu'un locataire peut apporter.
  *
- * ⚠ **Une seule valeur aujourd'hui, et c'est volontaire.** Le chiffrage
- * (`docs/BYOK-CHIFFRAGE.md`) en identifie cinq — email, sms, transcription,
- * téléphonie suivront avec leur lot. Les déclarer maintenant créerait quatre
+ * ⚠ **On n'en déclare que ce qu'on sait servir.** Le chiffrage
+ * (`docs/BYOK-CHIFFRAGE.md`) en identifie cinq ; `sms`, `transcription` et
+ * `telephonie` viendront avec leur lot. Les déclarer d'avance créerait des
  * valeurs mortes qu'un lecteur croirait branchées : le défaut le plus fréquent
- * de ce dépôt, commis d'avance. Chaque lot ajoutera SA valeur ici ET dans la
+ * de ce dépôt, commis exprès. Chaque lot ajoute SA valeur ici ET dans la
  * contrainte SQL, dans le même diff — un test croise les deux.
  */
-export type Capacite = "ia";
+export type Capacite = "ia" | "email";
 
-export const CAPACITES: readonly Capacite[] = ["ia"];
+export const CAPACITES: readonly Capacite[] = ["ia", "email"];
 
 /** Qui paie l'appel qui va suivre. Toujours rendu, jamais deviné. */
 export type Origine = "locataire" | "maison" | "aucune";
@@ -113,15 +113,60 @@ function serviceClient(): SupabaseClient | null {
  * défaut exact que le freemium a déjà payé : classer par FAMILLE au lieu de
  * classer par DÉPENSE.
  */
-export const CAPACITE_PAR_API: Readonly<Record<string, Capacite>> = {
-  "/api/ai": "ia",
-  "/api/agent": "ia",
-  "/api/sparring": "ia",
-  "/api/icp": "ia",
-  "/api/brain": "ia",
-  "/api/debrief": "ia",
-  "/api/social": "ia",
+export const CAPACITES_PAR_API: Readonly<Record<string, readonly Capacite[]>> = {
+  "/api/ai": ["ia"],
+  "/api/agent": ["ia"],
+  "/api/sparring": ["ia"],
+  "/api/icp": ["ia"],
+  "/api/brain": ["ia"],
+  "/api/debrief": ["ia"],
+  "/api/social": ["ia"],
+  /**
+   * ⚠⚠ `/api/send` SERT DEUX CANAUX — email ET SMS — et c'est ce qui rend la
+   * porte forcément GROSSIÈRE : le canal vit dans le CORPS de la requête, que
+   * le middleware ne lit pas (et ne doit pas lire).
+   *
+   * Conséquence assumée : apporter un SMTP ouvre le chemin, donc rend la
+   * branche SMS ATTEIGNABLE. Ce qui empêche un gratuit d'y dépenser NOS
+   * crédits Textbelt n'est donc pas cette liste — c'est la résolution au
+   * runtime, dans la route, qui refuse le canal qu'il ne peut pas payer.
+   *
+   * Précédent assumé dans ce dépôt : `/controle` est ouvert au gratuit et
+   * affiche le lanceur de campagnes ; le bouton existe, le serveur refuse.
+   * « Voir la porte fermée vaut mieux que ne pas savoir qu'elle existe, et la
+   * sécurité ne dépend jamais de l'écran. » Ici : jamais de la porte non plus.
+   */
+  "/api/send": ["email"],
+  "/api/digest": ["email"],
+  /**
+   * ⚠ `/api/gmail` est VOLONTAIREMENT ABSENTE, alors qu'elle appartient à la
+   * même famille : elle écrit un brouillon via **notre IMAP**, et la capacité
+   * `email` n'apporte qu'un SMTP. L'inscrire ici affirmerait qu'une clé
+   * d'envoi la couvre — c'est faux, et ça ouvrirait notre boîte de réception
+   * le jour où `/api/compose` serait classée à son tour.
+   *
+   * Aujourd'hui `/outbox` reste fermé de toute façon (`/api/compose` n'est pas
+   * classée non plus), donc l'inscrire ne changerait rien de VISIBLE — c'est
+   * exactement ce qui rend le piège dangereux : il ne se déclencherait que
+   * plus tard, pour quelqu'un d'autre.
+   */
 };
+
+/**
+ * Les API qui ne nous coûtent RIEN, et qui ne bloquent donc pas l'ouverture
+ * d'un chemin par ailleurs entièrement couvert.
+ *
+ * ⚠⚠ CETTE LISTE EST UN TROU PAR CONSTRUCTION : tout ce qu'on y met échappe
+ * au contrôle de coût. Elle doit rester minuscule, et chaque entrée porter sa
+ * raison MESURÉE — pas « ça a l'air gratuit ».
+ *
+ * · `/api/deliverability` — mesuré en ouvrant le fichier : il n'interroge que
+ *   des enregistrements DNS **publics** via le résolveur système. Aucune
+ *   requête vers un hôte arbitraire (donc aucune surface SSRF), aucun jeton,
+ *   aucune minute. Sans cette entrée, `/campaigns` resterait fermé à un
+ *   locataire qui apporte pourtant tout ce qui coûte.
+ */
+export const API_SANS_COUT: readonly string[] = ["/api/deliverability"];
 
 /**
  * Ce chemin est-il entièrement payé par les capacités apportées ?
@@ -142,9 +187,21 @@ export function cheminOuvertParCle(chemin: string, capacites: readonly Capacite[
     .filter(([, c]) => c === chemin)
     .map(([api]) => api);
   if (servantes.length === 0) return false;
+  if (capacites.length === 0) return false;
   return servantes.every((api) => {
-    const cap = CAPACITE_PAR_API[api];
-    return cap !== undefined && capacites.includes(cap);
+    /**
+     * ⚠ Une API réservée au maître n'est JAMAIS atteignable par un locataire :
+     * la garde d'identité passe AVANT celle des droits, dans le middleware.
+     * La compter comme « non couverte » fermerait un chemin pour une porte
+     * que l'intéressé ne peut de toute façon pas pousser.
+     */
+    if (MAITRE_SEULEMENT.includes(api)) return true;
+    if (API_SANS_COUT.includes(api)) return true;
+    const requises = CAPACITES_PAR_API[api];
+    // ⚠ `some` DANS une API (elle peut dépenser plusieurs choses, le runtime
+    // tranche le canal), `every` ENTRE les API (aucune ne doit rester à notre
+    // charge). Inverser l'un des deux ouvre ce qu'on ne paie pas.
+    return requises !== undefined && requises.some((c) => capacites.includes(c));
   });
 }
 

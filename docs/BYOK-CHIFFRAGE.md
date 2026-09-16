@@ -2,9 +2,9 @@
 
 > Chiffrage demandé le 16/09/2026.
 >
-> ✅ **L0 + L1 + L6 + L7 (l'IA seule) ONT ÉTÉ FAITS le 16/09** — voir la
-> section « CE QUI A ÉTÉ LIVRÉ » en fin de document. Le reste (email, SMS,
-> transcription, téléphonie) n'est ni décidé ni codé.
+> ✅ **L0 + L1 + L6 + L7 (IA) et L2 (email) ONT ÉTÉ FAITS le 16/09** — voir
+> « CE QUI A ÉTÉ LIVRÉ » en fin de document. Restent L3 (SMS), L4
+> (transcription) et L5 (téléphonie), ni décidés ni codés.
 >
 > Tout ce qui est marqué `[MESURÉ]` vient du dépôt, relevé en l'ouvrant.
 > Tout ce qui est marqué `[DÉCISION]` est un choix que je propose et qui
@@ -396,3 +396,61 @@ côté serveur, avec une vraie clé.
 2. **`CREDENTIALS_MASTER_KEY`** sur Vercel — sans elle, aucune clé ne peut
    être enregistrée (et c'est un refus franc, pas un stockage en clair) :
    `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`
+
+
+---
+
+## 10. L2 — L'EMAIL, LIVRÉ LE 16/09/2026
+
+Un locataire branche son SMTP dans **Réglages → « Ta boîte d'envoi »** ; le
+serveur **se connecte et s'authentifie** avant d'accepter, puis ses emails
+partent de SON domaine, sous SA réputation. `/campaigns` s'ouvre à lui.
+
+### Ce que le chiffrage avait vu trop noir
+
+**Le palier d'envoi était DÉJÀ par locataire.** Le chiffrage annonçait « une
+révision de la règle » ; mesuré, `firstSendAt("email", tenantId)` et
+`countRecentSends(…, tenantId)` sont scopés depuis toujours. Ce qui change
+n'est donc pas le calcul mais sa RAISON : le palier ne protège plus notre
+domaine, il protège **celui qui envoie** — et l'argument du taux de plainte
+(§7 : une seule plainte vaut 2,5 % à 40 envois/jour) vaut pour lui aussi.
+
+### Ce que le chiffrage n'avait pas vu, et qui était plus grave
+
+**⚠⚠ `/api/send` sert DEUX canaux, et le canal vit dans le CORPS de la
+requête.** Le middleware ne le lit pas — et ne doit pas. Ouvrir `/campaigns` à
+qui apporte un SMTP rendait donc la branche **SMS** atteignable : un locataire
+aurait dépensé NOS crédits Textbelt. La porte est grossière par nécessité ;
+c'est la ROUTE qui est l'autorité, via `resoudreSms`. Précédent assumé dans ce
+dépôt : `/controle` montre le bouton, le serveur refuse.
+
+**⚠⚠ `/api/digest` est devenue MAÎTRE-SEUL.** Son en-tête vante une propriété
+de sécurité — « le destinataire n'est JAMAIS pris dans la requête, toujours
+dans l'environnement » — qui la rendait sûre pour **un** opérateur et la
+retourne en multi-locataire : un tiers l'appelle, et le SMS part sur NOTRE
+téléphone, à NOS frais. Le défaut préexistait ; le BYOK le rendait atteignable.
+
+**`/api/deliverability/dns` auditait NOTRE domaine.** Sur un compte qui
+apporte sa boîte, il rendait un rapport parfaitement vert et parfaitement
+inutile — le pire des deux, puisqu'il rassure.
+
+**Le lien STOP pointait vers notre boîte.** Un refus qui arrive chez nous
+n'est jamais traité par celui qui doit le traiter, et le prospect continue de
+recevoir ses messages après avoir dit non.
+
+**`/api/gmail` a été volontairement laissée de côté** : elle écrit via NOTRE
+IMAP, et la capacité `email` n'apporte qu'un SMTP. L'inscrire ne changerait
+rien de visible aujourd'hui — et c'est exactement ce qui rend le piège
+dangereux : il ne se déclencherait que plus tard.
+
+### Les gardes
+
+Dix mutations, toutes mordent. **L'une a dû être réécrite** : elle cherchait
+`return s;` par position, et la mutation qui la fait tomber
+(`if (smtpUtilisable(s)) return s;`) **contient** cette sous-chaîne — le garde
+était satisfait par un fragment de la faute qu'il devait refuser.
+
+### À poser côté Zakaria
+
+**Migration 011.** Rien d'autre : `CREDENTIALS_MASTER_KEY` sert déjà aux deux
+capacités.

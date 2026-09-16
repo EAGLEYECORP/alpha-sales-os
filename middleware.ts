@@ -195,7 +195,7 @@ function cheminMetierDeLApi(pathname: string): string {
   return pathname;
 }
 
-function startsWithAny(path: string, prefixes: string[]): boolean {
+function startsWithAny(path: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => path === p || path.startsWith(p + "/"));
 }
 
@@ -291,7 +291,8 @@ const ADMIN_PREFIXES = ["/payouts", "/offre", "/api/sync"];
  * et se la verrait refuser. Un test le vérifie dans les deux sens.
  * ─────────────────────────────────────────────────────────────────────
  */
-const MAITRE_SEULEMENT = ["/api/pipeline", "/api/voice-costs", "/api/knowledge", "/api/references"];
+// La liste vit dans lib/api-access.ts : le BYOK la lit aussi.
+import { MAITRE_SEULEMENT } from "@/lib/api-access";
 
 /**
  * ⚠ LA GARDE QUI EMPÊCHE D'OUVRIR L'APP PAR INADVERTANCE.

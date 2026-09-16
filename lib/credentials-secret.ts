@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import { autorise, resoudreDroits, type Entitlement } from "./entitlements";
-import { AUCUN_MOTEUR, type Capacite, type MoteurIA } from "./credentials";
+import { AUCUN_MOTEUR, type Capacite, type MoteurIA, type Origine } from "./credentials";
 import { MODELE_ANTHROPIC_DEFAUT, MODELE_NIM_DEFAUT } from "./modeles";
 
 /**
@@ -226,4 +226,110 @@ export function moteurDepuisValeurs(v: Record<string, string>): MoteurIA {
 export async function moteurIADeLaRequete(req: NextRequest): Promise<MoteurIA> {
   const droits = await resoudreDroits(req);
   return resoudreMoteurIA(droits.tenantId, droits);
+}
+
+// ── EMAIL : qui envoie, et depuis quelle boîte ─────────────────────────
+
+/**
+ * Les identifiants d'envoi, et qui les paie.
+ *
+ * ⚠ `from` est SÉPARÉ de `user` parce que ce n'est pas la même chose, et que
+ * les confondre coûte cher : l'adresse d'expédition doit correspondre à la
+ * boîte authentifiée, sinon le message est rejeté — ou pire, il part et se
+ * fait classer en usurpation à l'arrivée, sans aucune erreur visible.
+ * `docs/SMTP-SUPABASE-AMEN.md` le documente pour notre propre boîte ; un
+ * locataire tombera dans le même piège avec la sienne.
+ */
+export interface Smtp {
+  origine: Origine;
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from: string;
+}
+
+export const AUCUN_SMTP = { origine: "aucune" as const };
+export type ResolutionSmtp = Smtp | typeof AUCUN_SMTP;
+
+/** Un SMTP résolu peut-il effectivement envoyer ? */
+export function smtpUtilisable(s: ResolutionSmtp): s is Smtp {
+  return s.origine !== "aucune";
+}
+
+function smtpDepuis(v: Record<string, string | undefined>, origine: Origine): ResolutionSmtp {
+  const host = v.SMTP_HOST?.trim();
+  const user = v.SMTP_USER?.trim();
+  const pass = v.SMTP_PASS?.trim();
+  // ⚠ Les trois ensemble, jamais moins. Un hôte sans mot de passe est l'état
+  // où l'on croit avoir branché et où rien ne part — la raison pour laquelle
+  // une capacité est une LIGNE et pas cinq.
+  if (!host || !user || !pass) return AUCUN_SMTP;
+  const port = Number(v.SMTP_PORT ?? 587);
+  return {
+    origine,
+    host,
+    port: Number.isFinite(port) && port > 0 ? port : 587,
+    user,
+    pass,
+    from: v.SMTP_FROM?.trim() || user,
+  };
+}
+
+/**
+ * ⚠⚠ MÊME ORDRE QUE L'IA, ET POUR LA MÊME RAISON.
+ *
+ * 1. le locataire apporte son SMTP → il envoie de CHEZ LUI, sous SON domaine
+ * 2. sinon, la brique `campagnes` lui est due → notre SMTP, notre réputation
+ * 3. sinon → refus
+ *
+ * Écrit à l'envers, le point 2 fait partir de vrais emails depuis NOTRE
+ * domaine pour le compte d'inconnus — et ça ne se voit que sur la réputation,
+ * des semaines plus tard. C'est le scénario que `docs/A-FAIRE-ZAKARIA.md`
+ * décrit déjà comme le plus cher du dépôt.
+ */
+export async function resoudreSmtp(
+  tenantId: string | null,
+  droits: Entitlement
+): Promise<ResolutionSmtp> {
+  const siens = await identifiantsDu(tenantId, "email");
+  if (siens) {
+    const s = smtpDepuis(siens, "locataire");
+    // Une ligne présente mais incomplète ne fait PAS retomber sur la maison.
+    return s;
+  }
+  if (!autorise(droits, "/campaigns")) return AUCUN_SMTP;
+  return smtpDepuis(process.env, "maison");
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * SMS — RÉSOLU, MAIS PAS ENCORE APPORTABLE.
+ *
+ * ⚠⚠ CETTE FONCTION EXISTE POUR FERMER UNE FUITE, PAS POUR OFFRIR UNE OPTION.
+ *
+ * `/api/send` sert deux canaux. Depuis que la capacité `email` ouvre le
+ * chemin `/campaigns`, un locataire qui apporte son SMTP rend la branche SMS
+ * ATTEIGNABLE — et sans ce contrôle, elle dépenserait NOS crédits Textbelt.
+ *
+ * Il n'y a donc pas de capacité `sms` à apporter aujourd'hui (elle viendra
+ * avec le lot L3) : la seule question posée ici est « a-t-il DROIT à ce que
+ * nous payions ? ». Non ⇒ refus, même si son email fonctionne.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface Sms {
+  origine: Origine;
+  url: string;
+  key: string;
+}
+
+export function resoudreSms(droits: Entitlement): Sms | null {
+  if (!autorise(droits, "/campaigns")) return null;
+  const key = process.env.TEXTBELT_KEY?.trim();
+  if (!key) return null;
+  return {
+    origine: "maison",
+    url: process.env.TEXTBELT_URL?.trim() || "https://textbelt.com/text",
+    key,
+  };
 }

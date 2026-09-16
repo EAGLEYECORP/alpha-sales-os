@@ -402,7 +402,7 @@ alter table public.journal_acces_support enable row level security;
 -- client, pas même le propriétaire de la ligne. On écrit, on ne relit pas.
 create table if not exists public.tenant_credentials (
   tenant_id       uuid        not null references auth.users (id) on delete cascade,
-  capacite        text        not null check (capacite in ('ia')),
+  capacite        text        not null check (capacite in ('ia', 'email')),
   secret_chiffre  text        not null,
   nonce           text        not null,
   cle_version     integer     not null default 1,

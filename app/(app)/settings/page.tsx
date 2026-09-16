@@ -30,7 +30,7 @@ import { PricingEditor } from "@/components/settings/pricing-editor";
 import { OffresEditor } from "@/components/settings/offres-editor";
 import { IcpGenerator } from "@/components/settings/icp-generator";
 import { AccountSwitcher } from "@/components/settings/account-switcher";
-import { CleIA } from "@/components/settings/cle-ia";
+import { BoiteEnvoi, CleIA } from "@/components/settings/cle-ia";
 import { ImportTriagePanel } from "@/components/settings/import-triage";
 import { triageImport, type ImportTriage } from "@/lib/import-triage";
 import { PanneauOperateur } from "@/components/settings/panneau-operateur";
@@ -877,6 +877,7 @@ export default function SettingsPage() {
             d'infrastructure le rendrait invisible à ceux à qui il est
             destiné — le BYOK existe précisément pour eux. */}
         <CleIA />
+        <BoiteEnvoi />
         {/* Ce qui sort au nom d'un partenaire passe devant lui d'abord. */}
         <ValidationPartenairePanel />
 

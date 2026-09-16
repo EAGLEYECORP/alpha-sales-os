@@ -188,3 +188,32 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   "/api/v1": "/",
   "/api/mcp": "/",
 };
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUI PARLE DE NOTRE EXPLOITATION — jamais de celle du client.
+ *
+ * ⚠ DÉPLACÉE DEPUIS `middleware.ts` LE 16/09/2026. Elle y était seule, et le
+ * BYOK a besoin de la même liste : une API réservée au maître n'est JAMAIS
+ * atteignable par un locataire, donc elle ne doit pas empêcher une clé
+ * apportée d'ouvrir un chemin. Deux copies de cette liste divergeraient, et
+ * c'est celle qu'on ne relit pas qui déciderait.
+ *
+ * · `/api/pipeline` — nos fiches de prospection (données de tiers).
+ * · `/api/voice-costs` — notre modèle de coût et nos marges.
+ * · `/api/knowledge` · `/api/references` — le playbook maison.
+ * · `/api/digest` — ⚠ AJOUTÉE LE 16/09. Son destinataire n'est JAMAIS pris
+ *   dans la requête : il vient de `ALERT_PHONE` / `DIGEST_EMAIL`, donc de
+ *   NOTRE environnement. Cette propriété la rendait sûre quand l'app servait
+ *   une seule personne ; en multi-locataire elle la retourne — un tiers
+ *   l'appelle, et le SMS part sur NOTRE téléphone, à NOS frais. Le défaut
+ *   préexistait ; le BYOK le rendait atteignable.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const MAITRE_SEULEMENT: readonly string[] = [
+  "/api/pipeline",
+  "/api/voice-costs",
+  "/api/knowledge",
+  "/api/references",
+  "/api/digest",
+];

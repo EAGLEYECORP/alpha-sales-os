@@ -20,6 +20,8 @@ import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
 import { habillageEnvoi } from "@/lib/expediteur";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
+import { resoudreDroits } from "@/lib/entitlements";
+import { resoudreSmtp, resoudreSms, smtpUtilisable } from "@/lib/credentials-secret";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
 
 export const runtime = "nodejs";
@@ -295,6 +297,9 @@ export async function POST(request: NextRequest) {
   // Locataire courant (multi-compte) : identité + accès. Résolu une fois, réutilisé.
   const tenant = await getTenant(request);
   const tenantId = tenant?.id ?? null;
+  // Les droits servent à trancher QUI PAIE l'envoi (`resoudreSmtp`), jamais à
+  // décider seul de l'accès — ça, c'est le middleware, en amont.
+  const droits = await resoudreDroits(request);
 
   // Freemium (opt-in REQUIRE_SUBSCRIPTION). Envoyer est l'action à valeur :
   //  · unmetered/owner/active → illimité (usage loyal) ;
@@ -323,10 +328,29 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.channel === "email") {
-    const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
-    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    /**
+     * ─────────────────────────────────────────────────────────────────
+     * ⚠⚠ D'OÙ PART CE MESSAGE — et qui en porte la réputation.
+     *
+     * Cette route lisait `SMTP_*` dans NOTRE environnement. C'était la
+     * phrase exacte de la doctrine : « il n'existe aucun chemin
+     * d'identifiants par locataire », donc ouvrir l'envoi au gratuit
+     * revenait à faire partir de vrais emails depuis notre domaine pour le
+     * compte d'inconnus — visible seulement sur la réputation, des semaines
+     * plus tard.
+     *
+     * `resoudreSmtp` tranche, et lui seul : son SMTP s'il en apporte un,
+     * sinon le nôtre s'il a la brique, sinon rien.
+     * ─────────────────────────────────────────────────────────────────
+     */
+    const smtp = await resoudreSmtp(tenantId, droits);
+    if (!smtpUtilisable(smtp)) {
       return NextResponse.json(
-        { error: "SMTP non configuré — renseigne SMTP_HOST / SMTP_USER / SMTP_PASS dans .env.local (n'importe quel fournisseur SMTP fonctionne)." },
+        {
+          error:
+            "Aucune boîte d'envoi disponible. Ajoute ton SMTP dans Réglages → « Ta boîte d'envoi », ou prends la brique Campagnes.",
+          code: "smtp_absent",
+        },
         { status: 503 }
       );
     }
@@ -493,18 +517,23 @@ export async function POST(request: NextRequest) {
 
     try {
       const nodemailer = (await import("nodemailer")).default;
-      const port = Number(process.env.SMTP_PORT ?? 587);
       const transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port,
-        secure: port === 465,
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.port === 465,
+        auth: { user: smtp.user, pass: smtp.pass },
       });
       // List-Unsubscribe en mailto : le clic natif envoie un email STOP,
       // traité par le même flux entrant que « Répondez STOP ».
-      const stopMailto = (SMTP_FROM ?? SMTP_USER)?.match(/<([^>]+)>/)?.[1] ?? SMTP_FROM ?? SMTP_USER;
+      /**
+       * ⚠ Le lien de désinscription pointe vers la boîte QUI ENVOIE, pas vers
+       * la nôtre. Sur un envoi de locataire, un STOP qui arriverait chez nous
+       * ne serait jamais traité par celui qui doit le traiter — et le
+       * prospect continuerait de recevoir ses messages après avoir refusé.
+       */
+      const stopMailto = smtp.from.match(/<([^>]+)>/)?.[1] ?? smtp.from;
       const info = await transporter.sendMail({
-        from: SMTP_FROM ?? SMTP_USER,
+        from: smtp.from,
         to,
         subject,
         text,
@@ -535,8 +564,19 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.channel === "sms") {
-    const url = process.env.TEXTBELT_URL ?? "https://textbelt.com/text";
-    const key = process.env.TEXTBELT_KEY;
+    /**
+     * ⚠⚠ LA BRANCHE QUE LE BYOK EMAIL REND ATTEIGNABLE.
+     *
+     * Le chemin `/campaigns` s'ouvre désormais à qui apporte son SMTP — et
+     * cette route sert DEUX canaux. Sans ce contrôle, un locataire qui a
+     * collé son SMTP enverrait des SMS sur NOS crédits Textbelt.
+     *
+     * Il n'y a pas encore de capacité `sms` à apporter (lot L3) : la seule
+     * question posée est donc « a-t-il droit à ce que NOUS payions ? ».
+     */
+    const sms = resoudreSms(droits);
+    const url = sms?.url ?? "";
+    const key = sms?.key;
     if (!key) {
       return NextResponse.json(
         { error: "SMS non configuré — renseigne TEXTBELT_KEY (et TEXTBELT_URL si auto-hébergé)." },

@@ -2,7 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { AUCUN_MOTEUR, CAPACITE_PAR_API, CAPACITES, cheminOuvertParCle, moteurUtilisable } from "../lib/credentials";
+import {
+  API_SANS_COUT,
+  AUCUN_MOTEUR,
+  CAPACITES_PAR_API,
+  CAPACITES,
+  cheminOuvertParCle,
+  moteurUtilisable,
+} from "../lib/credentials";
 import {
   chiffrer,
   dechiffrer,
@@ -182,14 +189,30 @@ test("⚠ `/api/audit` est ABSENTE de la table des capacités, et ce n'est pas u
    * notre serveur. La ranger ici « parce qu'elle fait de l'IA » serait
    * classer par FAMILLE au lieu de classer par DÉPENSE.
    */
-  assert.equal(CAPACITE_PAR_API["/api/audit"], undefined);
-  assert.equal(CAPACITE_PAR_API["/api/video"], undefined);
-  assert.equal(CAPACITE_PAR_API["/api/send"], undefined);
-  assert.equal(CAPACITE_PAR_API["/api/voice"], undefined);
-  assert.equal(CAPACITE_PAR_API["/api/transcribe"], undefined);
+  assert.equal(CAPACITES_PAR_API["/api/audit"], undefined);
+  assert.equal(CAPACITES_PAR_API["/api/video"], undefined);
+  assert.equal(CAPACITES_PAR_API["/api/voice"], undefined);
+  assert.equal(CAPACITES_PAR_API["/api/transcribe"], undefined);
+  /**
+   * ⚠ `/api/gmail` reste absente alors qu'elle est de la MÊME FAMILLE que
+   * l'envoi : elle écrit un brouillon via NOTRE IMAP, et la capacité `email`
+   * n'apporte qu'un SMTP. L'inscrire affirmerait qu'une clé d'envoi la
+   * couvre — c'est faux. Aujourd'hui ça ne changerait rien de visible
+   * (`/outbox` reste fermé par `/api/compose`), et c'est ce qui rend le piège
+   * dangereux : il ne se déclencherait que plus tard, pour quelqu'un d'autre.
+   */
+  assert.equal(CAPACITES_PAR_API["/api/gmail"], undefined);
+  /**
+   * ⚠⚠ `/api/send` EST couverte par `email` — mais elle sert DEUX canaux.
+   * Ce que cette liste dit, c'est « une clé SMTP paie ce que cette route
+   * dépense en EMAIL ». Le SMS, lui, est refusé au runtime : la porte est
+   * grossière par nécessité (le canal vit dans le corps de la requête), la
+   * route est l'autorité.
+   */
+  assert.deepEqual(CAPACITES_PAR_API["/api/send"], ["email"]);
   // Et celles qui y sont le sont pour de bon.
-  assert.equal(CAPACITE_PAR_API["/api/ai"], "ia");
-  assert.equal(CAPACITE_PAR_API["/api/sparring"], "ia");
+  assert.deepEqual(CAPACITES_PAR_API["/api/ai"], ["ia"]);
+  assert.deepEqual(CAPACITES_PAR_API["/api/sparring"], ["ia"]);
 });
 
 test("⚠ le type Capacite et la contrainte SQL déclarent les MÊMES valeurs", () => {
@@ -198,9 +221,15 @@ test("⚠ le type Capacite et la contrainte SQL déclarent les MÊMES valeurs", 
    * refuse d'écrire, soit une valeur en base que le code ne sait pas servir.
    * Les deux listes grandissent dans le même diff, ou pas du tout.
    */
-  const sql = lire("supabase/migrations/010-byok-identifiants.sql");
-  const m = sql.match(/check \(capacite in \(([^)]*)\)\)/);
-  assert.ok(m, "la contrainte de capacité a disparu du SQL");
+  /**
+   * ⚠ On lit le SCHÉMA, pas une migration : les migrations s'empilent (010
+   * crée la contrainte, 011 l'élargit), et viser la première ferait échouer
+   * le test à chaque lot suivant — donc le ferait assouplir. `schema.sql`
+   * porte toujours l'état courant.
+   */
+  const sql = lire("supabase/schema.sql");
+  const m = sql.match(/capacite\s+text\s+not null check \(capacite in \(([^)]*)\)\)/);
+  assert.ok(m, "la contrainte de capacité a disparu du schéma");
   const duSql = m[1].split(",").map((v) => v.trim().replace(/'/g, "")).sort();
   assert.deepEqual(duSql, [...CAPACITES].sort());
 });
@@ -415,4 +444,139 @@ test("⚠⚠ LE MODULE LU PAR LE MIDDLEWARE NE TOUCHE PAS À node: — l'Edge n'
   // Non-vacuité : la moitié secrète, elle, contient bien le chiffrement.
   const secret = sansCommentaires(lire("lib/credentials-secret.ts"));
   assert.match(secret, /from "node:crypto"/);
+});
+
+// ══════════ L2 — L'EMAIL ══════════
+
+test("⚠⚠ UNE CLÉ SMTP OUVRE /campaigns, ET RIEN D'AUTRE", () => {
+  assert.equal(cheminOuvertParCle("/campaigns", ["email"]), true);
+  assert.equal(cheminOuvertParCle("/agent", ["email"]), false, "l'email ne paie pas les jetons");
+  assert.equal(cheminOuvertParCle("/voice", ["email"]), false, "ni les minutes");
+  assert.equal(cheminOuvertParCle("/audits", ["email"]), false);
+  assert.equal(cheminOuvertParCle("/outbox", ["email"]), false, "notre IMAP n'est pas un SMTP apporté");
+  // Et réciproquement : une clé IA n'ouvre pas les envois.
+  assert.equal(cheminOuvertParCle("/campaigns", ["ia"]), false);
+});
+
+test("⚠ la liste des API SANS COÛT reste minuscule et justifiée", () => {
+  /**
+   * ⚠⚠ CETTE LISTE EST UN TROU PAR CONSTRUCTION : tout ce qu'on y met échappe
+   * au contrôle de coût. Elle existe pour UNE raison mesurée —
+   * `/api/deliverability` n'interroge que des enregistrements DNS publics —
+   * et chaque entrée ajoutée devrait l'être avec la même preuve.
+   */
+  assert.ok(API_SANS_COUT.length <= 2, `${API_SANS_COUT.length} entrées : la liste enfle`);
+  for (const chere of ["/api/send", "/api/ai", "/api/voice", "/api/transcribe", "/api/video", "/api/audit"]) {
+    assert.ok(!API_SANS_COUT.includes(chere), `${chere} dépense chez nous : elle ne peut pas être « sans coût »`);
+  }
+});
+
+test("⚠⚠ /api/send NE LIT PLUS SMTP_* — il reçoit la boîte résolue", () => {
+  /**
+   * La route lisait `SMTP_*` dans NOTRE environnement. C'était la phrase
+   * exacte de la doctrine : ouvrir l'envoi au gratuit faisait partir de vrais
+   * emails depuis notre domaine pour des inconnus — visible seulement sur la
+   * réputation, des semaines plus tard.
+   */
+  const src = sansCommentaires(lire("app/api/send/route.ts"));
+  const iPost = src.indexOf("export async function POST");
+  const corps = src.slice(iPost);
+  assert.ok(
+    !/process\.env\.SMTP_/.test(corps),
+    "l'envoi ne doit plus lire notre SMTP dans l'environnement"
+  );
+  assert.match(corps, /const smtp = await resoudreSmtp\(tenantId, droits\)/);
+  assert.match(corps, /if \(!smtpUtilisable\(smtp\)\)/, "sans boîte résolue, on refuse");
+  assert.match(corps, /host: smtp\.host/);
+  assert.match(corps, /from: smtp\.from/);
+});
+
+test("⚠⚠ LE LIEN STOP POINTE VERS LA BOÎTE QUI ENVOIE", () => {
+  /**
+   * Sur un envoi de locataire, un STOP qui arriverait chez NOUS ne serait
+   * jamais traité par celui qui doit le traiter — et le prospect continuerait
+   * de recevoir ses messages après avoir refusé. C'est une faute de fond, pas
+   * un détail d'implémentation.
+   */
+  const src = sansCommentaires(lire("app/api/send/route.ts"));
+  assert.match(src, /const stopMailto = smtp\.from\.match/);
+  assert.ok(!/stopMailto = \(SMTP_FROM/.test(src));
+});
+
+test("⚠⚠ LA BRANCHE SMS QUE LE BYOK EMAIL REND ATTEIGNABLE EST FERMÉE", () => {
+  /**
+   * LE DÉFAUT QUE CE LOT A CRÉÉ, ET QU'IL DOIT REFERMER LUI-MÊME.
+   *
+   * `/api/send` sert deux canaux, et le chemin `/campaigns` s'ouvre désormais
+   * à qui apporte son SMTP. Sans ce contrôle, un locataire qui a collé sa
+   * boîte enverrait des SMS sur NOS crédits Textbelt — et la facture le
+   * dirait un mois plus tard.
+   */
+  const src = sansCommentaires(lire("app/api/send/route.ts"));
+  assert.match(src, /const sms = resoudreSms\(droits\)/, "le SMS se résout, il ne se lit pas");
+  assert.ok(
+    !/process\.env\.TEXTBELT_KEY/.test(src.slice(src.indexOf("export async function POST"))),
+    "la clé SMS ne se lit plus directement dans la branche d'envoi"
+  );
+
+  const secret = sansCommentaires(lire("lib/credentials-secret.ts"));
+  const i = secret.indexOf("export function resoudreSms");
+  const corps = secret.slice(i, i + 400);
+  assert.match(corps, /if \(!autorise\(droits, "\/campaigns"\)\) return null;/, "sans droit, pas de SMS");
+});
+
+test("⚠⚠ L'ORDRE SMTP EST LE MÊME QUE CELUI DE L'IA — et pour la même raison", () => {
+  const secret = sansCommentaires(lire("lib/credentials-secret.ts"));
+  const i = secret.indexOf("export async function resoudreSmtp");
+  const corps = secret.slice(i, i + 600);
+  const iSiens = corps.indexOf('identifiantsDu(tenantId, "email")');
+  const iDroit = corps.indexOf('autorise(droits, "/campaigns")');
+  const iMaison = corps.indexOf('smtpDepuis(process.env, "maison")');
+  assert.ok(iSiens > 0 && iDroit > iSiens, "la clé du locataire se lit AVANT le droit");
+  assert.ok(iMaison > iDroit, "notre boîte n'est atteinte qu'APRÈS la vérification du droit");
+  assert.match(corps, /if \(!autorise\(droits, "\/campaigns"\)\) return AUCUN_SMTP;/);
+});
+
+test("⚠ un SMTP à moitié saisi n'envoie pas, et ne retombe pas sur le nôtre", () => {
+  const secret = sansCommentaires(lire("lib/credentials-secret.ts"));
+  const i = secret.indexOf("function smtpDepuis");
+  const corps = secret.slice(i, i + 500);
+  assert.match(corps, /if \(!host \|\| !user \|\| !pass\) return AUCUN_SMTP;/, "les trois ensemble, ou rien");
+
+  /**
+   * Et la résolution ne doit PAS enchaîner sur la maison quand la ligne
+   * existe mais est incomplète.
+   *
+   * ⚠⚠ CE GARDE A ÉTÉ ÉCRIT DEUX FOIS. Le premier cherchait la position de
+   * `return s;` avant celle d'`autorise` — et la mutation qui l'a fait
+   * tomber, `if (smtpUtilisable(s)) return s;`, CONTIENT cette sous-chaîne.
+   * Le garde était donc satisfait par un fragment de la faute qu'il devait
+   * refuser. C'est le même défaut que le motif qui matche sa propre prose,
+   * commis une ligne plus bas.
+   *
+   * On exige maintenant le retour INCONDITIONNEL, et on refuse explicitement
+   * la forme conditionnelle.
+   */
+  const j = secret.indexOf("export async function resoudreSmtp");
+  const res = secret.slice(j, j + 600);
+  assert.match(res, /\n    return s;\n/, "le retour doit être inconditionnel");
+  assert.ok(
+    !/if \([^)]*\)\s*return s;/.test(res),
+    "un retour conditionnel ferait retomber un SMTP incomplet sur NOTRE boîte"
+  );
+});
+
+test("⚠ le contrôle DNS analyse le domaine DE L'EXPÉDITEUR", () => {
+  /**
+   * Il dérivait le domaine de NOTRE `SMTP_FROM`. Sur un compte qui apporte sa
+   * boîte, il auditait donc un domaine qui n'est pas le sien — un rapport
+   * parfaitement vert et parfaitement inutile. Le pire des deux, puisqu'il
+   * rassure.
+   */
+  const src = sansCommentaires(lire("app/api/deliverability/dns/route.ts"));
+  assert.match(src, /resoudreSmtp\(tenant\?\.id \?\? null, droits\)/);
+  assert.match(src, /smtpUtilisable\(smtp\) \? domaineDepuis\(smtp\.from\) : null/);
+  const iSmtp = src.indexOf("domaineDepuis(smtp.from)");
+  const iEnv = src.indexOf("domainFromEnv()", iSmtp);
+  assert.ok(iSmtp > 0 && iEnv > iSmtp, "notre domaine n'est que le DERNIER repli");
 });
