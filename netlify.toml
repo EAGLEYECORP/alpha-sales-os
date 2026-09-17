@@ -1,38 +1,49 @@
 # ─────────────────────────────────────────────────────────────────────
-# NETLIFY, À LA RACINE — et son seul rôle est d'INTERDIRE la racine.
+# NETLIFY, À LA RACINE — ce fichier construit désormais L'APP ALPHA.
 #
-# ⚠⚠ POURQUOI CE FICHIER EXISTE, ET CE QU'IL EMPÊCHE.
+# ══ CE QUI A CHANGÉ LE 17/09/2026, ET POURQUOI ══
 #
-# `eagleyecorp.fr` est servi depuis `site/`, un dossier statique de 20
-# fichiers. Le jour où ce dépôt est relié à Netlify — ce qui est demandé, pour
-# que le site cesse de dépendre d'un envoi manuel — la question « quel dossier
-# publie-t-on ? » se pose une fois, automatiquement, à chaque push.
+# Avant, ce fichier ne servait qu'à INTERDIRE la racine : il posait
+# `base = "site"` pour que le dépôt, relié à Netlify, ne publie que le site
+# vitrine statique et jamais la racine (où vit `donnees-privees/`, 78 fiches
+# RÉELLES). Décision de Zakaria : Alpha Sales OS — l'app Next.js — passe elle
+# aussi sur Netlify, à côté de `eagleyecorp.fr` qui y est déjà.
 #
-# Sans `base`, la réponse par défaut est **la racine du dépôt**. C'est-à-dire :
-#   · `donnees-privees/` — 78 fiches prospects RÉELLES, dont une personne
-#     physique identifiée avec son mobile personnel. Le dossier est ignoré par
-#     git, mais il est PRÉSENT sur le disque de qui construit ;
-#   · le code source entier, les tests, la doctrine commerciale, les prompts ;
-#   · tout `.env.local` qui traînerait sur la machine de build.
+# Une app Next.js ne se PUBLIE pas comme un dossier statique : elle se
+# CONSTRUIT. Le runtime `@netlify/plugin-nextjs` lance `next build` et sert la
+# sortie du build (`public/` + les fonctions générées), **jamais l'arbre du
+# dépôt**. C'est le fait qui rend cette bascule sûre, et il a été vérifié :
+# `donnees-privees/` est à la racine, hors de `public/` — aucun build Next ne
+# le sert. Le danger d'exposition était propre à une PUBLICATION STATIQUE de la
+# racine (`publish = "."`), pas à un build. Ce fichier n'en déclare aucune.
 #
-# Ce n'est pas un risque théorique : ce dépôt a DÉJÀ publié des données
-# personnelles de tiers une fois, et `tests/donnees-reelles.test.ts` existe à
-# cause de ça. Le modèle de menace était alors « un attaquant qui passe par le
-# produit » — insuffisant, puisqu'un dépôt public se clone. Un déploiement mal
-# cadré est la troisième porte : personne ne clone, personne n'attaque, le
-# fichier est simplement SERVI en HTTP.
+# ══ ⚠⚠ LA GARDE N'A PAS DISPARU, ELLE A CHANGÉ DE MÉCANISME ══
 #
-# ⚠ `base = "site"` fait deux choses d'un coup : Netlify se place dans `site/`
-# et y lit `site/netlify.toml`, qui reste la seule source des en-têtes et de la
-# configuration du site. On ne recopie donc RIEN ici — pas de `publish`, pas de
-# `command`, pas de headers. Deux définitions de ce qu'on publie finiraient par
-# diverger, et c'est celle qu'on ne relit pas qui s'exécuterait.
+# `tests/site-vitrine.test.ts` n'exige plus `base = "site"` ici — il exige
+# maintenant que ce fichier CONSTRUISE (présence du runtime Next, preuve qu'on
+# ne sert pas l'arbre) et ne déclare AUCUN `publish` statique de la racine. Le
+# mode de panne s'en trouve adouci, pas aggravé : un site mal configuré
+# déploierait la mauvaise APP, il n'exposerait pas des données.
 #
-# ⚠ Ce fichier ne déploie rien par lui-même. Tant que le site Netlify n'est pas
-# relié au dépôt, il ne sert qu'à rendre ce branchement sûr le jour où il se
-# fait. `tests/site-vitrine.test.ts` vérifie qu'il ne peut pas publier la
-# racine.
+# ══ LE SITE VITRINE, LUI, N'A PAS BOUGÉ ══
+#
+# `eagleyecorp.fr` reste un site Netlify DISTINCT, dont le « base directory »
+# est réglé sur `site/` dans SES réglages Netlify — il lit alors
+# `site/netlify.toml` (publish confiné à `site/`, en-têtes) et ne lit JAMAIS ce
+# fichier-ci. Deux sites, un dépôt, deux bases. Le dépôt n'a aucun lien CI
+# Netlify aujourd'hui (envoi manuel), donc ce changement ne casse rien de
+# vivant : il prépare le branchement, il ne le déclenche pas.
+#
+# ⚠ Le build Netlify lui-même n'a PAS pu être vérifié depuis la sandbox
+# (réseau bloqué, `next build` local OK mais pas l'adaptateur Netlify). Le
+# premier déploiement Netlify est le test — voir `docs/DEPLOIEMENT-NETLIFY.md`.
 # ─────────────────────────────────────────────────────────────────────
 
 [build]
-  base = "site"
+  command = "npm run build"
+  # ⚠ AUCUN `publish` ici. Le runtime Next pose la sienne (`.next` via
+  # l'adaptateur). Écrire `publish = "."` servirait la racine du dépôt en
+  # statique — exactement le trou que ce fichier existe pour fermer.
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

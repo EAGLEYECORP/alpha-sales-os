@@ -171,28 +171,51 @@ test("⚠⚠ AUCUNE CONFIG NETLIFY NE PEUT PUBLIER LA RACINE DU DÉPÔT", () => 
    * LA GARDE LA PLUS CHÈRE DE CE FICHIER, et elle ne parle pas de marketing.
    *
    * Le jour où ce dépôt est relié à Netlify, « quel dossier publie-t-on ? » se
-   * répond automatiquement à chaque push. Sans `base`, la réponse est la
-   * RACINE : `donnees-privees/` (78 fiches réelles, dont une personne physique
+   * répond automatiquement à chaque push. Une publication STATIQUE de la racine
+   * servirait `donnees-privees/` (78 fiches réelles, dont une personne physique
    * avec son mobile), le code, la doctrine, et tout `.env.local` présent sur la
-   * machine de build. Servi en HTTP, sans que personne clone ni attaque.
+   * machine de build — en HTTP, sans que personne clone ni attaque.
    *
    * Ce dépôt a déjà publié des données personnelles de tiers une fois. Le
    * modèle de menace d'alors — « un attaquant qui passe par le produit » —
    * ratait le clone ; celui-ci rate le DÉPLOIEMENT. C'est la troisième porte.
    *
-   * ⚠ MUTATIONS JOUÉES : retirer `base = "site"`, et le passer à `base = "."`.
-   * Les deux font tomber ce test.
+   * ══ ⚠⚠ LA GARDE A CHANGÉ DE MÉCANISME LE 17/09 — MÊME INTENTION ══
+   *
+   * La racine ne confine plus à `site/` (`base = "site"`) : elle CONSTRUIT
+   * l'app Alpha. Un build Next.js ne sert JAMAIS l'arbre du dépôt — il sert la
+   * sortie du build (`public/` + fonctions). Le danger n'a jamais été « la
+   * racine est la base », c'était « la racine est publiée EN STATIQUE ». La
+   * garde vise donc désormais la vraie cause :
+   *   1. la racine CONSTRUIT (runtime Next présent = preuve qu'on ne sert pas
+   *      l'arbre) ;
+   *   2. aucune config ne déclare un `publish` statique de la racine.
+   *
+   * ⚠ MUTATIONS JOUÉES : mettre `publish = "."` à la racine, et retirer le
+   * runtime Next. Les deux font tomber ce test.
    */
   const racine = readFileSync(join(process.cwd(), "netlify.toml"), "utf8").replace(/^\s*#.*$/gm, "");
-  assert.match(racine, /base\s*=\s*"site"/, "la racine doit confiner le build à site/");
-  assert.ok(
-    !/publish\s*=\s*"\.?"/.test(racine),
-    "la config racine ne déclare PAS de publish : site/netlify.toml reste la seule source",
+
+  // 1. La racine construit l'app — c'est ce qui garantit que l'arbre n'est
+  //    jamais servi tel quel.
+  assert.match(
+    racine,
+    /@netlify\/plugin-nextjs/,
+    "la config racine doit déclarer le runtime Next : un build ne sert pas l'arbre du dépôt, une publication statique si",
   );
+
+  // 2. Et elle ne publie RIEN en statique — ni la racine (`.`), ni un parent,
+  //    ni un `publish` vide qui vaut la racine.
+  assert.ok(
+    !/publish\s*=\s*"\.?\.?"/.test(racine),
+    "la racine ne déclare aucun `publish` statique — le runtime Next pose la sienne (`.next`)",
+  );
+
   /**
-   * ⚠ Et le fichier du site ne doit pas se mettre à publier au-dessus de
-   * lui-même. `publish = ".."` depuis `site/` ramènerait exactement le trou
-   * que `base` vient de fermer, par l'autre bout.
+   * ⚠ Et le fichier du site vitrine ne doit pas se mettre à publier au-dessus
+   * de lui-même. `publish = ".."` depuis `site/` ramènerait exactement le trou
+   * qu'on vient de fermer, par l'autre bout — indépendamment de ce que fait la
+   * racine.
    */
   const dusite = readFileSync(join(process.cwd(), "site/netlify.toml"), "utf8").replace(/^\s*#.*$/gm, "");
   assert.match(dusite, /publish\s*=\s*"\."/, "le site publie SON dossier");
