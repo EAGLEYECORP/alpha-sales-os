@@ -4,7 +4,9 @@ import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 import { verifierProprietaire } from "@/lib/proprietaire-coherence";
 import { serverAuthEnforced, serverAuthMisconfigured } from "@/lib/supabase-jwt";
-import { verrouDeComptesActif } from "@/lib/entitlements";
+import { resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
+import { etatEnveloppe } from "@/lib/essai";
+import { coutGlobalEssais } from "@/lib/compteur-essai";
 import { OFFRES } from "@/lib/offres-publiques";
 
 export const runtime = "nodejs";
@@ -58,6 +60,9 @@ export async function GET(req: NextRequest) {
   // plafond d'essai à chaque rafraîchissement — et `/api/health` est
   // précisément ce qu'on rafraîchit quand quelque chose ne va pas.
   const moteurIA = await moteurIADeLaRequete(req, { depense: false });
+  // ⚠ Résolu UNE fois : deux appels poseraient deux fois la même question à la
+  // base, et rien ne garantirait qu'ils répondent pareil.
+  const droits = await resoudreDroits(req);
 
   return NextResponse.json({
     ok: true,
@@ -198,5 +203,26 @@ export async function GET(req: NextRequest) {
         publicHost: has("VERCEL") || has("VERCEL_URL"),
       },
     },
+    /**
+     * ─────────────────────────────────────────────────────────────────
+     * L'ENVELOPPE D'OUVERTURE — MAÎTRE SEUL, et pas derrière le cookie.
+     *
+     * ⚠⚠ POURQUOI PAS `detailAutorise`, qui garde déjà tout le reste de cette
+     * charge. Parce qu'il rend `true` QUAND `SITE_PASSWORD` EST ABSENT — c'est
+     * voulu pour le développement local, et c'est exactement le cas que la
+     * doctrine appelle `deploiementSansSerrure` : une production en ligne sans
+     * mot de passe. Y poser notre budget d'acquisition l'exposerait
+     * publiquement, et ça ne se verrait jamais.
+     *
+     * Ce nombre appartient à la même famille que `/payouts`, `/offre` et
+     * `voice-costs` : notre économie, jamais celle du client. Il suit donc
+     * l'IDENTITÉ, pas une porte d'accès — et la question « suis-je le
+     * maître ? » se pose là où elle se pose partout ailleurs.
+     *
+     * ⚠ `null` pour tout le monde sauf nous, et `null` veut dire « non
+     * mesuré », pas « zéro ». `etatEnveloppe` s'en charge et le DIT.
+     * ─────────────────────────────────────────────────────────────────
+     */
+    enveloppe: droits.maitre ? etatEnveloppe(await coutGlobalEssais()) : null,
   });
 }

@@ -121,7 +121,23 @@ test("mesuré et FAUX alerte bien — la sonde n'est pas inerte", () => {
   assert.ok(mm.some((p) => /pipe serveur/i.test(p)), "le pipe non plus");
   assert.ok(mm.some((p) => /autopilote/i.test(p)), "l'autopilote non plus");
   assert.ok(mm.some((p) => /agent vocal/i.test(p)), "ni l'agent vocal — la sonde la plus chère du relevé");
-  assert.equal(mm.length, 4);
+  assert.ok(mm.some((p) => /enveloppe/i.test(p)), "ni l'enveloppe d'ouverture — on ne sait pas si les essais partent dégradés");
+  /**
+   * ⚠ LE COMPTE FIGÉ A SAUTÉ, ET LE COMMENTAIRE JUSTE AU-DESSUS DISAIT DÉJÀ
+   * POURQUOI. Ce test portait `assert.equal(mm.length, 4)` pendant que sa
+   * propre prose expliquait, à propos de `diagnostiquer`, qu'« un compte figé
+   * transforme chaque ajout légitime en échec illisible, et pousse à le
+   * rehausser sans regarder ». La leçon avait été appliquée à une moitié du
+   * test et pas à l'autre.
+   *
+   * Brancher la sonde d'enveloppe l'a fait tomber sur « 5 !== 4 » — un message
+   * qui ne dit ni laquelle est apparue, ni si c'est voulu. Exactement ce que
+   * le commentaire annonçait.
+   *
+   * Ce qu'on garde : chaque angle mort attendu est nommé, un par un. Ce qu'on
+   * abandonne : l'idée qu'il faille en avoir un nombre précis.
+   */
+  assert.ok(mm.length >= 5, `on attend au moins les cinq angles morts nommés ci-dessus (vu : ${mm.length})`);
 
   // Et l'inverse : configuré ne dit rien et n'aveugle rien.
   const bon = etatDepuisSondes({

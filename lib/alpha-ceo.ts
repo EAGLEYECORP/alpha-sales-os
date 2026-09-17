@@ -60,6 +60,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import type { EtatEnveloppe } from "./essai";
+
 export type NaturePoint = "automatisable" | "humain-par-decision" | "humain-par-contrainte";
 
 /** Ce qu'on fait quand le point demande attention. */
@@ -260,6 +262,17 @@ export interface PanneCEO {
 
 export const PANNES: PanneCEO[] = [
   {
+    id: "enveloppe-ouverture-pleine",
+    symptome:
+      "Les nouveaux inscrits reçoivent un essai dégradé : le produit s'ouvre, mais rien de ce qui part de notre infrastructure ne fonctionne.",
+    pourquoiInvisible:
+      "Tout est NORMAL. Le compte se crée, l'app s'ouvre, les écrans répondent, le locataire lit « ce n'est pas toi » sur /compte — et il est le seul à le lire. Chez nous, l'enveloppe se referme sans un mot : aucun journal, aucune erreur, aucune facture anormale puisque justement on a cessé de dépenser. Le signal de succès et le signal de fermeture sont le même silence.",
+    detection:
+      "`GET /api/health` (compte maître) → `enveloppe.niveau` vaut « pleine », ou « bientot-pleine » tant qu'on peut encore décider.",
+    gravite: "a-traiter",
+    module: "lib/essai.ts",
+  },
+  {
     id: "smtp-absent",
     symptome: "Personne ne peut créer de compte : le mail de confirmation n'arrive jamais.",
     pourquoiInvisible:
@@ -387,6 +400,19 @@ export const PANNES: PanneCEO[] = [
 
 /** Ce qu'Alpha CEO sait de l'installation, à un instant donné. */
 export interface EtatSysteme {
+  /**
+   * L'enveloppe d'ouverture — CE QUE LES ESSAIS NOUS ONT DÉJÀ COÛTÉ.
+   *
+   * ⚠⚠ DEUX `null`, DEUX SENS, et il faut les tenir séparés.
+   *  · le champ à `null` : la sonde n'est pas revenue (comme `sante`) ;
+   *  · `enveloppe.niveau` à `null` : elle est revenue et n'a PAS su lire la
+   *    somme — base injoignable, service role absent.
+   * Les deux mènent à un angle mort, aucun ne déclenche d'alerte. Une console
+   * qui crierait « enveloppe pleine » parce qu'elle n'a rien lu serait le
+   * moniteur qui affiche du calme, à l'envers.
+   */
+  enveloppe: EtatEnveloppe | null;
+
   /** `null` = on n'a pas regardé. Distinct de `false`. */
   smtpConfigure: boolean | null;
   prixStripeConfigures: boolean | null;
@@ -470,6 +496,18 @@ export function diagnostiquer(etat: EtatSysteme): Alerte[] {
       humain,
     });
   };
+
+  /**
+   * ⚠ DEUX NIVEAUX, DEUX GESTES — et « bientôt pleine » est le seul utile.
+   * À l'épuisement, les essais suivants sont DÉJÀ dégradés et les comptes
+   * concernés déjà partis avec une mauvaise première impression. L'alerte ne
+   * sert que là où l'on peut encore décider, d'où `humain: true` : relever
+   * l'enveloppe, pousser le BYOK ou assumer la fermeture est un arbitrage,
+   * pas une tâche.
+   */
+  if (etat.enveloppe?.niveau === "pleine" || etat.enveloppe?.niveau === "bientot-pleine") {
+    pousser(parId(PANNES, "enveloppe-ouverture-pleine"), etat.enveloppe.phrase, true);
+  }
 
   if (etat.smtpConfigure === false) {
     pousser(parId(PANNES, "smtp-absent"), "Branche un SMTP personnalisé : sans lui, aucune inscription n'aboutit.");
@@ -583,6 +621,8 @@ export function anglesMorts(etat: EtatSysteme): string[] {
   if (etat.autopilote === null) out.push("On ne sait pas si l'autopilote tourne — donc pas si la machine appelle.");
   if (etat.agentVocal === null) out.push("On ne sait pas si l'agent vocal écoute — donc pas si un appel composé aboutirait à une voix.");
   if (etat.ciblesAuPlafond === null) out.push("Les sollicitations sur 30 jours glissants n'ont pas été comptées (décret n° 2022-1313).");
+  if (etat.enveloppe === null || etat.enveloppe.niveau === null)
+    out.push("On ne sait pas où en est l'enveloppe d'ouverture — donc pas si les nouveaux essais partent déjà dégradés.");
 
   return out;
 }

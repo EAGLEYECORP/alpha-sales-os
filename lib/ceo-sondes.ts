@@ -1,4 +1,5 @@
 import type { EtatSysteme } from "./alpha-ceo";
+import type { EtatEnveloppe } from "./essai";
 import type { EtatHydratation } from "./hydratation";
 import { peutSynchroniser } from "./hydratation";
 import type { StorageLevel } from "./storage-health";
@@ -49,6 +50,16 @@ export interface ReponseSante {
     email?: { configured?: boolean };
     billing?: { prices?: boolean };
   };
+  /**
+   * L'enveloppe d'ouverture. `null` ou absente pour tout le monde SAUF le
+   * compte maître : c'est notre budget d'acquisition, même famille que
+   * `/payouts` et `voice-costs`.
+   *
+   * ⚠ Optionnelle comme le reste, et pour la même raison : la route rend
+   * deux formes. Un type qui la promettrait mentirait au premier appel
+   * non-maître.
+   */
+  enveloppe?: EtatEnveloppe | null;
 }
 
 /** La part de `/api/voice/presence` dont Alpha CEO a besoin. */
@@ -119,6 +130,15 @@ export function etatDepuisSondes(e: EntreeSondes): EtatSysteme {
   const caps = e.sante?.capabilities;
 
   return {
+    /**
+     * ⚠ `?? null` ET RIEN D'AUTRE. Les deux absences se confondent ici
+     * volontairement — sonde pas revenue, ou revenue sans enveloppe parce que
+     * le demandeur n'est pas maître — parce qu'elles produisent la même
+     * conséquence : on ne sait pas, donc on ne dit rien et on l'inscrit en
+     * angle mort. Fabriquer un état « ouverte » par défaut serait le voyant
+     * vert sur une question jamais posée.
+     */
+    enveloppe: e.sante?.enveloppe ?? null,
     smtpConfigure: lireBool(caps?.email?.configured),
     prixStripeConfigures: lireBool(caps?.billing?.prices),
     stockage: e.stockage,

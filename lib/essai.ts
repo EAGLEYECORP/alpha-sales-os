@@ -161,6 +161,108 @@ export const PLAFOND_ESSAI_COUT_EUR = 30;
  */
 export const ENVELOPPE_OUVERTURE_EUR = 300;
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ L'ENVELOPPE FERME POUR LE LOCATAIRE, ET PERSONNE NE NOUS PRÉVIENT.
+ *
+ * Écrit le 17/09/2026, après avoir branché l'écran côté locataire.
+ *
+ * Le compte qui arrive après l'épuisement voit désormais « ce n'est pas toi »
+ * sur `/compte`. **Nous, non.** L'enveloppe se referme en silence, et le seul
+ * moyen de l'apprendre est une requête écrite à la main. C'est exactement
+ * l'angle mort que le compteur avait avant d'exister : un mécanisme qui décide
+ * et que personne ne lit.
+ *
+ * ══ POURQUOI ALERTER AVANT, ET PAS À 100 % ══
+ *
+ * Une alerte à l'épuisement n'a aucune valeur : quand elle se déclenche, les
+ * essais suivants sont **déjà** dégradés, et les comptes concernés sont déjà
+ * partis avec une mauvaise première impression. Le seul moment où l'alerte
+ * sert à quelque chose est celui où l'on peut encore décider — relever
+ * l'enveloppe, pousser le BYOK, ou assumer et fermer.
+ *
+ * ⚠ **80 % est une DÉCISION**, pas une mesure. Ce qui est mesuré n'existe pas
+ * encore : personne n'a jamais vu un essai consommer quoi que ce soit. Le
+ * premier mois d'ouverture dira à quelle vitesse l'enveloppe descend, et ce
+ * rythme-là vaudra plus que ce seuil.
+ *
+ * ══ ⚠ `null` NE DÉCLENCHE RIEN, ET SE DIT ══
+ *
+ * Même discipline que les sondes d'Alpha CEO : `false` alerte, `null` est un
+ * angle mort. Une base injoignable ou un service role absent rend `null` — et
+ * une console qui crierait « enveloppe pleine » parce qu'elle n'a pas su lire
+ * serait exactement le moniteur qui affiche du calme, à l'envers.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const ENVELOPPE_ALERTE_PART = 0.8;
+
+/** Ce que l'ouverture a déjà coûté, et ce qu'il faut en penser. */
+export interface EtatEnveloppe {
+  /** Euros consommés par TOUS les essais en cours. `null` = pas su lire. */
+  consommeEur: number | null;
+  /** Ce qu'il reste. `null` quand la lecture a échoué. */
+  resteEur: number | null;
+  /** Part consommée, 0 à 1. `null` quand la lecture a échoué. */
+  part: number | null;
+  /**
+   * `null` = angle mort, AUCUNE alerte. C'est la distinction qui fait toute
+   * la valeur du diagnostic : ne pas savoir n'est pas une panne.
+   */
+  niveau: "ouverte" | "bientot-pleine" | "pleine" | null;
+  phrase: string;
+}
+
+/**
+ * L'état de l'enveloppe d'ouverture. Pur — il ne lit ni base ni requête, ce
+ * qui permet de le vérifier sans monter quoi que ce soit.
+ */
+export function etatEnveloppe(consommeEur: number | null): EtatEnveloppe {
+  if (consommeEur === null || !Number.isFinite(consommeEur)) {
+    return {
+      consommeEur: null,
+      resteEur: null,
+      part: null,
+      niveau: null,
+      phrase:
+        "Enveloppe d'ouverture : non mesurée. La somme des essais n'a pas pu être lue — " +
+        "ce n'est pas « zéro consommé », c'est « on ne sait pas ».",
+    };
+  }
+  const consomme = Math.max(0, arrondi(consommeEur));
+  const reste = arrondi(Math.max(0, ENVELOPPE_OUVERTURE_EUR - consomme));
+  const part = ENVELOPPE_OUVERTURE_EUR > 0 ? Math.min(1, consomme / ENVELOPPE_OUVERTURE_EUR) : 1;
+
+  if (consomme >= ENVELOPPE_OUVERTURE_EUR) {
+    return {
+      consommeEur: consomme,
+      resteEur: 0,
+      part: 1,
+      niveau: "pleine",
+      phrase:
+        `Enveloppe d'ouverture ÉPUISÉE (${consomme} € sur ${ENVELOPPE_OUVERTURE_EUR} €). ` +
+        "Les nouveaux essais retombent au socle gratuit — ils fonctionnent, mais sans ce qui dépense chez nous.",
+    };
+  }
+  if (part >= ENVELOPPE_ALERTE_PART) {
+    return {
+      consommeEur: consomme,
+      resteEur: reste,
+      part,
+      niveau: "bientot-pleine",
+      phrase:
+        `Enveloppe d'ouverture à ${Math.round(part * 100)} % (${reste} € restants). ` +
+        "À décider maintenant, pas à l'épuisement : relever l'enveloppe, pousser le BYOK, ou assumer la fermeture.",
+    };
+  }
+  return {
+    consommeEur: consomme,
+    resteEur: reste,
+    part,
+    niveau: "ouverte",
+    phrase: `Enveloppe d'ouverture : ${consomme} € consommés, ${reste} € restants.`,
+  };
+}
+
 /** Pourquoi un essai s'est arrêté. `null` tant qu'il tourne. */
 export type FinEssai = "duree-atteinte" | "plafond-atteint" | "cout-inconnu" | "enveloppe-epuisee";
 

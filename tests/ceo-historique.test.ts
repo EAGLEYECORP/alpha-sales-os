@@ -145,6 +145,7 @@ const ETAT_MUET: EtatSysteme = {
   autopilote: null,
   agentVocal: null,
   ciblesAuPlafond: null,
+    enveloppe: null,
 };
 
 test("⚠⚠ agent-absent n'alerte QUE si l'autopilote est armé", () => {
@@ -290,6 +291,7 @@ test("⚠ SANS_SONDE_POSSIBLE nomme de VRAIES pannes, et dit comment les vérifi
       autopilote: "arme",
       agentVocal: "inconnu",
       ciblesAuPlafond: 3,
+    enveloppe: null,
     }).map((a) => a.id)
   );
   for (const s of SANS_SONDE_POSSIBLE) {
