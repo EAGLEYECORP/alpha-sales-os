@@ -269,6 +269,7 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
     <nav class="links">
       <a href="#metier">Ce qu'on fait</a>
       <a href="#limites">Ce qu'on ne fait pas</a>
+      <a href="#conformite">Conformité</a>
       <a href="#produit">Alpha Sales OS</a>
       <a href="#methode">La méthode</a>
       <button class="themetgl" id="tgl" aria-label="Changer le thème">◐</button>
@@ -286,6 +287,18 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
     <span class="eyebrow">Systèmes de vente pour PME · Lyon</span>
     <h1 class="reveal">On installe la machine.<br/>Vous gardez <em>la poignée de main</em>.</h1>
     <p class="lede reveal">EAGLEYE CORP conçoit et installe ce qui se trouve <em>avant</em> et <em>autour</em> de la vente : trouver les bons interlocuteurs, qualifier, relancer, suivre, mesurer. Le travail répétitif qui fait qu'un bon vendeur passe sa journée à ne pas vendre. La livraison de votre prestation et la présence humaine au moment de signer restent chez vous — c'est là que vous êtes irremplaçable.</p>
+    <!-- ⚠⚠ LA CATÉGORIE — phrase RECOPIÉE depuis `CATEGORIE` (lib/promesse.ts).
+         Ce site est du HTML statique : il ne peut pas importer la constante,
+         donc cette ligne est une SECONDE définition, exactement ce que le dépôt
+         refuse partout ailleurs. Elle est tenue par `tests/site-vitrine.test.ts`,
+         qui compare les deux caractère par caractère et tombe si elles
+         divergent. Changer la constante SANS changer cette ligne casse le
+         build — c'est le seul moyen honnête de recopier une doctrine.
+
+         ⚠ Elle est posée APRÈS la promesse et AVANT sa démonstration : la
+         section « ce qu'on ne fait pas » est la liste des refus. Une
+         revendication sans sa liste juste en dessous serait un slogan. -->
+    <p class="lede reveal"><strong>Tout le monde vend un agent qui en fait plus. Alpha est celui qui refuse.</strong> <a href="#limites">La liste est juste en dessous</a> — et chaque refus est une règle que le logiciel applique, pas une intention affichée.</p>
     <div class="cta reveal">
       <a class="btn accent" href="#demo">Demander un cadrage</a>
       <a class="btn ghost" href="#metier">Ce qu'on fait exactement</a>
@@ -371,6 +384,51 @@ footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
         <p>Aspirer un annuaire ou une session LinkedIn, c'est faire porter un risque juridique à quelqu'un qui ne l'a pas choisi. La collecte reste dehors, sous votre responsabilité, et l'outil trie ce que vous lui donnez.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── LA CONFORMITÉ ──
+     ⚠⚠ CE QUI NE DOIT JAMAIS ÊTRE ÉCRIT ICI : « vous serez conforme ».
+     La conformité d'une entreprise dépend de ce qu'elle fait, pas de l'outil
+     qu'elle achète — le promettre serait un conseil juridique qu'on n'a pas
+     le droit de donner, et une promesse qu'on ne peut pas tenir. Chaque
+     phrase ci-dessous décrit ce que LE LOGICIEL applique, à la première
+     personne, et rien d'autre.
+
+     ⚠ Aucun montant d'amende. Le règlement en prévoit, ils sont publics, et
+     les citer sur une page de vente transforme un argument vrai en argument
+     de peur — le contraire exact de la voix de ce site. Qui veut le chiffre
+     le trouve en une recherche.
+
+     ⚠ Aucun label, aucune certification, aucun organisme cité. C'est la
+     famille d'affirmations la plus dangereuse : elle se vérifie auprès d'un
+     tiers, sans nous prévenir. -->
+<section class="band" id="conformite">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">La contrainte légale</span>
+      <h2>Depuis le 2 août 2026, un agent qui appelle doit annoncer qu'il est une IA. Chez nous, c'est le code qui le dit.</h2>
+      <p>Les obligations de transparence du règlement européen sur l'IA sont entrées en application. La plupart des outils traitent ça comme un réglage : une case à cocher, une phrase à écrire dans un script, qu'un utilisateur pressé retire. Nous avons fait l'inverse — ce sont des règles que le logiciel applique, et qu'on ne peut pas désactiver depuis l'écran.</p>
+    </div>
+    <div class="doctrine">
+      <div class="d reveal">
+        <h3>La divulgation est prononcée, pas configurée</h3>
+        <p>Sur un appel mené par l'agent vocal, la première phrase dit qu'il s'agit d'une intelligence artificielle, pour le compte de qui elle appelle, et elle ne peut pas être interrompue. Elle n'est pas dans le script : elle est dans le programme. Un script qui ne la contient pas est refusé avant d'être utilisé.</p>
+      </div>
+      <div class="d reveal">
+        <h3>Le plafond de relances s'arrête tout seul</h3>
+        <p>Le démarchage téléphonique est plafonné à quatre sollicitations par personne sur trente jours glissants. Chez nous, la cadence s'arrête d'elle-même à ce nombre — elle ne compte pas sur la mémoire de celui qui appelle, et un forçage ne passe pas outre.</p>
+      </div>
+      <div class="d reveal">
+        <h3>Les secteurs interdits sont refusés</h3>
+        <p>Là où la prospection est interdite, l'outil ne produit pas de script. Il refuse, il nomme le texte qui l'interdit, et il dit ce qui reste possible. Un refus qui n'explique rien se contourne ; un refus qui cite sa raison se comprend.</p>
+      </div>
+      <div class="d reveal">
+        <h3>Rien ne part sans savoir qui écrit</h3>
+        <p>Chaque message sortant porte qui l'envoie et comment refuser d'en recevoir d'autres. Sans ces deux mentions, l'envoi est bloqué — on ne les ajoute pas discrètement à votre place, parce qu'un trou masqué ne se voit plus jamais.</p>
+      </div>
+    </div>
+    <p class="lede reveal" style="margin-top:26px">Aucune de ces phrases n'est une promesse de résultat, et aucune ne vous rend conforme à notre place : votre conformité dépend de ce que vous faites. Ce sont des règles vérifiables aujourd'hui — au cadrage, on vous les montre en fonctionnement.</p>
   </div>
 </section>
 
