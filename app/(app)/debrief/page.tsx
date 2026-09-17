@@ -23,6 +23,7 @@ import { leconDeDebrief } from "@/lib/apprentissage";
 import { stageById } from "@/lib/hormozi";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { lireEtatTranscription, phraseTranscription, type EtatTranscription } from "@/lib/etat-transcription";
 
 /**
  * Débriefing vocal post-terrain.
@@ -41,14 +42,35 @@ export default function DebriefPage() {
   const speech = useSpeech({ lang: "fr-FR", continuous: true });
   const recorder = useRecorder();
 
-  // La transcription serveur (marche sur TOUS les navigateurs) est-elle branchée ?
-  const [serverASR, setServerASR] = useState<boolean | null>(null);
+  /**
+   * ⚠⚠ CET ÉCRAN DISAIT « PAS CONFIGURÉ » À QUELQU'UN QUI N'AVAIT PAS LE DROIT.
+   *
+   * `/debrief` est gardé par la brique `closer`, **gratuite**. `/api/transcribe`
+   * est classée sur `/voice`, donc sur `alpha-voice`, **payante et exclue de
+   * l'essai**. Un compte gratuit recevait donc un 403 `brique_absente`, et
+   * l'ancienne lecture — `Boolean(d.configured)` sur un corps qui n'a pas ce
+   * champ — le traduisait en `false`, c'est-à-dire « la transcription serveur
+   * n'est pas branchée ».
+   *
+   * La conséquence n'est pas cosmétique : on envoyait l'opérateur poser
+   * `DEEPGRAM_API_KEY`, une variable de NOTRE environnement serveur à laquelle
+   * il n'a aucun accès. Il aurait cherché un réglage qui n'existe pas pour lui.
+   *
+   * ⚠ On garde le statut HTTP, pas seulement le corps : c'est lui qui porte
+   * l'information que le JSON ne porte pas.
+   */
+  const [etatASR, setEtatASR] = useState<EtatTranscription | null>(null);
   useEffect(() => {
+    let vivant = true;
     fetch("/api/transcribe")
-      .then((r) => r.json())
-      .then((d) => setServerASR(Boolean(d.configured)))
-      .catch(() => setServerASR(false));
+      .then(async (r) => lireEtatTranscription(r.status, await r.json().catch(() => null)))
+      .catch(() => "illisible" as const)
+      .then((e) => vivant && setEtatASR(e));
+    return () => {
+      vivant = false;
+    };
   }, []);
+  const serverASR = etatASR === null ? null : etatASR === "prete";
 
   // Enregistrer → transcrire côté serveur → ajouter au texte (même champ que la voix).
   const dicterServeur = async () => {
@@ -247,9 +269,16 @@ export default function DebriefPage() {
         {speech.supported === false && !typing && (
           <p className="mt-2 flex items-start gap-1.5 text-[12px] text-signal-amber">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-            {serverASR
+            {/* ⚠ On ne redit PAS ici pourquoi la dictée serveur manque : la
+                raison est servie plus bas par `phraseTranscription`, qui la
+                connaît (droit absent ? fournisseur absent ? illisible ?).
+                L'ancienne rédaction tranchait pour elle — « ou branche la
+                transcription serveur (docs) » — c'est-à-dire le conseil que
+                seuls NOUS pouvons suivre, servi à un opérateur qui n'a pas
+                accès à notre environnement. */}
+            {serverASR === true
               ? "La dictée du navigateur n'est pas dispo ici — utilise « Dicter (serveur) », ça marche partout."
-              : "Ce navigateur ne sait pas transcrire (Chrome et Edge le savent, pas Firefox). Écris ton débrief, ou branche la transcription serveur (docs)."}
+              : "Ce navigateur ne sait pas transcrire (Chrome et Edge le savent, pas Firefox). Écris ton débrief au clavier : l'extraction marche pareil."}
           </p>
         )}
         {recorder.error && <p className="mt-2 text-[12px] text-signal-red">{recorder.error}</p>}
@@ -473,9 +502,17 @@ export default function DebriefPage() {
         </section>
       )}
 
+      {/* ⚠ LA PHRASE SUIT L'ÉTAT RÉEL, plus un booléen à deux valeurs. « Branche
+          la transcription serveur » est un conseil que seul NOUS pouvons
+          suivre : le dire à quelqu'un qui n'a pas la brique l'envoie chercher
+          un réglage qui n'existe pas pour lui. `phraseTranscription` porte les
+          quatre formulations, à un seul endroit. */}
+      {etatASR !== null && etatASR !== "prete" && (
+        <p className="px-1 text-[11px] text-paper-faint">{phraseTranscription(etatASR)}</p>
+      )}
       <p className="px-1 text-[11px] text-paper-faint">
         Le micro du navigateur marche sur Chrome, Edge et Safari. Sur les autres (Chromium, Brave, Firefox),{" "}
-        {serverASR ? "« Dicter (serveur) » prend le relais et marche partout." : "branche la transcription serveur (docs/VOIX.md) ou écris ton débrief."}{" "}
+        {serverASR ? "« Dicter (serveur) » prend le relais et marche partout." : "écris ton débrief — l'extraction fonctionne aussi bien au clavier."}{" "}
         L&apos;extraction tourne d&apos;abord sans IA — déterministe, hors-ligne, elle ne peut pas inventer de date.
       </p>
     </div>
