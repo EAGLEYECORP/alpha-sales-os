@@ -1079,6 +1079,34 @@ Règles dures :
 - La fréquence suit la **réactivité**, jamais le calendrier. Prêt → tous les
   jours ; saturé → silence de 7-21 j puis **raison NEUVE** (jamais « je me
   permets de relancer »).
+  > ⚠⚠ **CETTE RÈGLE ÉTAIT ÉNONCÉE CINQ FOIS ET PRODUITE ZÉRO FOIS** —
+  > mesuré le 17/09/2026. Elle vit dans `master-rappel`, `priorites`,
+  > `reactivite`, `vital-signs` et `business-rules` ; **aucun des cinq n'en
+  > fabrique une.** `master-rappel` en liste les formes EN PROSE et s'arrête.
+  > Résultat sur l'écran du matin : « Revenir avec une raison NEUVE » s'affiche
+  > à quelqu'un qui n'en a aucune — **et qui écrira « je me permets de
+  > relancer », la phrase même que la règle interdit, produite PAR la règle
+  > faute d'alternative.**
+  > · `lib/raison-neuve.ts` la PRODUIT, et **n'invente rien** : zéro fait daté
+  >   → `null`, et `AUCUNE_RAISON` dit alors de **ne pas relancer**. Une raison
+  >   fabriquée est pire que pas de raison — un prétexte ne se rejoue pas.
+  > · **Deux sources seulement, parce qu'il n'existe que deux faits datés** :
+  >   le **prix honoré** (`grille-perimee`) et une **ouverture/clic récente**
+  >   (`reactivite`). « Une actualité de son métier » serait une INVENTION tant
+  >   qu'aucune source ne l'alimente : elle n'est pas écrite.
+  > · **Le prix passe devant l'ouverture** : il APPORTE quelque chose, quand
+  >   « vous avez ouvert mon message » n'apprend rien au prospect et le met en
+  >   position de se justifier. On ouvre sur ce qu'on donne.
+  > · **Le fait se dit, l'observation NON.** « J'ai vu que vous aviez ouvert »
+  >   est vrai et sonne fliqué — même interdit que citer son permis à froid.
+  >   Le fait sert à choisir le MOMENT, jamais à ouvrir la conversation.
+  > · **Aucun montant dans la phrase** : un prix écrit se transfère et se cite
+  >   hors de son périmètre. Il se redit de vive voix.
+  > · Les phrases sont croisées contre les **motifs exécutables** des
+  >   verticales — c'est un texte qui se prononce, donc un « sixième texte ».
+  > ⚠ Le garde « aucun montant » a dû être resserré le jour même : écrit
+  > `\d{3,}`, il faisait tomber ma propre phrase sur « jusqu'au 17/10/**2026** »
+  > — une DATE, qui est justement ce qui rend la raison défendable.
 - Le compteur de saturation **repart à zéro dès qu'il répond**.
 - 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré)…
   **sauf s'il OUVRE** (`lib/reactivite.ts`) : là le canal passe, c'est la
@@ -1742,10 +1770,30 @@ section mission, trois commentaires — et aucun ne faisait autorité.
   qui a fait dériver ce positionnement en quatre versions.
 
 ## Contraintes d'environnement (sandbox)
-Le proxy sortant bloque : github.com, data.grandlyon.com, data.gouv, et les clés
-live NVIDIA/Supabase/Stripe. pypi passe. **Je ne peux pas tester un service live
-depuis ici** — tout ce qui touche Telnyx/LiveKit/Vercel se vérifie côté Zakaria.
-Ne pas prétendre avoir testé ce qui ne l'a pas été.
+**Re-mesuré le 17/09/2026** — cette liste avait dérivé, et une contrainte fausse
+coûte plus cher qu'une contrainte absente : elle fait renoncer sans essayer.
+
+| | État mesuré |
+|---|---|
+| `git` vers **github.com** | **PASSE** (`git ls-remote` sur deux dépôts publics) |
+| `data.grandlyon.com` · `data.gouv.fr` · API adresse · API Sirene | **BLOQUÉS** (`000`, refus du proxy) |
+| Hôtes **Supabase** (5432 · 6543 · 443) | **BLOQUÉS** — 403 au CONNECT, politique |
+| Clés live NVIDIA / Stripe · récupération de page tarifaire | bloquées |
+| pypi | passe |
+
+- **La ligne « github.com bloqué » était FAUSSE.** Elle a survécu à un
+  changement de politique du proxy, et personne ne la retestait — on ne teste
+  pas ce qu'on croit savoir. Ce qui reste vrai : **aucune source open-data
+  française n'est joignable**, donc **aucun lead ne se produit d'ici**.
+- **Postgres 16 est installé en local** (`/usr/lib/postgresql/16/bin`) : une
+  migration se joue pour de vrai sur une base jetable, avec un décor `auth`/
+  `storage` imité. C'est comme ça que `LOT-A-COLLER.sql` a été éprouvé.
+- **Chromium est là** (`/opt/pw-browsers`) et se pilote en CDP avec le
+  `WebSocket` natif de Node — **aucune dépendance à ajouter**. « Vu au RENDU »
+  est donc faisable d'ici, et deux défauts d'aujourd'hui ne se voyaient que là.
+- **Je ne peux pas tester un service live** (Telnyx, LiveKit, Vercel,
+  Supabase) : ça se vérifie côté Zakaria. Ne pas prétendre avoir testé ce qui
+  ne l'a pas été.
 
 ## LE DÉFAUT RÉCURRENT DU DÉPÔT — le brancher, pas seulement l'écrire
 C'est de LOIN la panne la plus fréquente ici, et elle ne ressemble pas à un

@@ -4,6 +4,7 @@ import { fenetreOuverte, type Canal } from "./conformite";
 import { vitalSigns } from "./vital-signs";
 import { masterRappel, type Channel } from "./master-rappel";
 import { aRefuseTouteRelance } from "./voice-script";
+import { AUCUNE_RAISON, raisonNeuve } from "./raison-neuve";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -354,7 +355,19 @@ export function construireJournee({ prospects, meetings, now = new Date() }: Pri
           prospectId: p.id,
           action: `${neuve ? "Revenir avec une raison NEUVE" : "Relancer"} — ${p.company}`,
           why: neuve
-            ? `${age} jours sans contact, et ${s.unansweredTouches} touche(s) déjà ignorée(s). ${s.bestWindow.why} Une relance sans raison neuve brûle la fiche.`
+            ? /**
+               * ⚠⚠ LA RÈGLE ÉTAIT ÉNONCÉE ICI ET PRODUITE NULLE PART. « Revenir
+               * avec une raison NEUVE » s'affichait sur l'écran du matin à
+               * quelqu'un qui n'en avait aucune — et qui allait écrire « je me
+               * permets de relancer », précisément la phrase interdite.
+               *
+               * `raisonNeuve` n'en invente pas : elle rend `null` quand aucun
+               * fait daté ne la porte, et `AUCUNE_RAISON` dit alors de ne PAS
+               * relancer. Une raison fabriquée est pire que pas de raison : un
+               * prétexte ne se rejoue pas une deuxième fois.
+               */
+              `${age} jours sans contact, et ${s.unansweredTouches} touche(s) déjà ignorée(s). ${s.bestWindow.why} ` +
+              (raisonNeuve(p, now.getTime()) ?? { fait: AUCUNE_RAISON }).fait
             : `${age} jours sans contact${avance ? ", et le deal est avancé. C'est là que le silence coûte le plus cher." : "."}`,
           urgence: Math.round(urgence),
           importance: imp,
