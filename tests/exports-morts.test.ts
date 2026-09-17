@@ -70,6 +70,22 @@ function fichiers(): string[] {
       /* dossier absent : rien à parcourir */
     }
   }
+  /**
+   * ⚠ LES FICHIERS DE PRODUCTION À LA RACINE, sinon leur appel est invisible.
+   * `next.config.ts` et `middleware.ts` ne sont dans aucun dossier balayé, mais
+   * ils EXÉCUTENT du code : `next.config` appelle `modeSortie`, `middleware`
+   * appelle la résolution de droits. Sans eux, une fonction qu'ils sont seuls à
+   * appeler passait pour morte — le garde inventait un faux positif, la panne
+   * exacte qu'il existe pour empêcher, à l'envers.
+   */
+  for (const f of ["next.config.ts", "middleware.ts"]) {
+    try {
+      readFileSync(join(R, f));
+      out.push(f);
+    } catch {
+      /* absent : rien à ajouter */
+    }
+  }
   return out;
 }
 
@@ -109,7 +125,6 @@ const TOLEREES: Record<string, string> = {
   "lib/offres-publiques.ts:validerOffres": "audit de cohérence de la grille publique, joué par son test",
 
   // ── Helpers exposés pour être testés unitairement ──
-  "lib/credentials.ts:cleOuvreLeChemin": "BYOK : dit si une clé apportée ouvre un chemin ; le serveur tranche via credentials-secret",
   "lib/offres-publiques.ts:palierLifetime": "palier à vie : offre non ouverte, aucune place en vente aujourd'hui",
   "lib/ai-context.ts:estimateCostEUR": "estimation de coût jetons, lue par aucun écran aujourd'hui",
   "lib/alpha-ceo.ts:parNature": "regroupement de sondes, utilisé par le test de forme",

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { modeSortie } from "./lib/build-output";
 
 // Dev mode needs 'unsafe-eval' (webpack/react-refresh run through eval);
 // production stays strict.
@@ -6,8 +7,10 @@ const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Build autonome (dossier .next/standalone) — requis par le Dockerfile.
-  output: "standalone",
+  // Sortie du build : `standalone` pour le self-host Docker (le Dockerfile en
+  // dépend), sortie par défaut sur Netlify (son runtime la gère). Décision
+  // isolée et testée dans `lib/build-output.ts`.
+  output: modeSortie(),
   // Ne pas révéler la stack (fingerprinting)
   poweredByHeader: false,
   eslint: { ignoreDuringBuilds: true },
