@@ -749,6 +749,67 @@ Se tromper de rituel = perdre le deal au dernier mètre.
 - **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
   **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
 
+### LE CADRAGE EST EXÉCUTABLE SUR LE CHEMIN VIVANT — 17/09/2026
+`lib/cadrage.ts` · `Prospect.cadrage` · `components/prospects/cadrage-panel.tsx` ·
+`app/api/catalogue/route.ts` · `tests/cadrage-devis.test.ts`.
+
+« Cadrage OBLIGATOIRE avant devis » était écrit ici, et `peutEmettreDevis`
+l'exécutait correctement. Son seul appelant applicatif était **`renderDevis`,
+que personne n'importe**. Le devis qui PART réellement — `quoteText`, titré
+`DEVIS — <client>`, daté, quinze jours de validité, servi par `/api/catalogue`
+et copié depuis la fiche — ne posait la question à personne.
+- **Le défaut récurrent, avec une aggravation** : la règle n'était pas branchée
+  à un endroit sur deux — **l'endroit branché était le MORT**. Qui lisait
+  `lib/cadrage.ts` en concluait que la porte tenait.
+- **`EtatCadrage` n'avait aucun PRODUCTEUR.** Même en appelant la règle, il n'y
+  avait rien à lui donner : aucun champ de la fiche ne la portait. D'où
+  `Prospect.cadrage`, **structuré** — un événement `meeting` dit qu'une
+  rencontre a eu lieu, pas qui a validé la suite. Le déduire d'un résumé libre
+  serait la devinette que ce dépôt refuse (précédent : `lotsACommercialiser`).
+- **⚠⚠ ON REFUSE LE DOCUMENT, PAS LE CHIFFRAGE.** Le `texte` ne se fabrique pas
+  sans cadrage ; `quote` et `pack` sortent quand même. Ce sont SES prix sur SON
+  dossier, et chiffrer pour soi n'est pas émettre. Couper les nombres ferait
+  d'une discipline commerciale une **panne d'outil** — et devant un outil en
+  panne on recopie la grille à la main, c'est-à-dire on se trompe de montant au
+  dernier mètre. Mesuré : deux autres écrans (calculateur `/offre`, prix du
+  deck) n'appellent ce POST **que** pour les nombres.
+- **Le verdict voyage AUSSI quand c'est bon** : sinon l'appelant ne distingue
+  pas « autorisé » de « cette route ne connaît pas la règle ».
+- **⚠⚠ ON NE PRÉ-REMPLIT PAS CE QU'ON VÉRIFIE.** Mettre `settings.closerName`
+  dans « validé par » aurait satisfait la 3ᵉ condition par **configuration** et
+  non par un **acte** : deux conditions sur trois cochées au premier créneau
+  saisi. Et « la visio s'est tenue » ne se déclare pas sur un créneau à venir
+  (`creneauPasse`, horloge **injectée**) — un point déclaratif ne s'offre pas
+  tant que sa condition n'existe pas.
+- **Reprogrammer le créneau remet « tenu » à faux** : un drapeau qui survit à
+  la réécriture atteste d'une rencontre qui n'a pas eu lieu. Même défaut que
+  `perimee` dans `validation-partenaire`.
+- **`lireCadrage` fail-closed** : `{ reelementTenu: "non" }` passerait pour vrai
+  avec un `Boolean()`. L'inconnu **bloque** ici, il ne se contente pas de se
+  dire.
+
+> ⚠ Ce qui reste ouvert : **`renderDevis` est toujours mort**, et il y a donc
+> deux rendus de devis dont un seul est atteignable. Il est sûr (il appelle la
+> règle lui-même), mais un export que rien ne consomme se fait rebrancher par
+> une session future — sans garantie qu'elle repasse par la porte. À trancher :
+> l'enrichir pour qu'il vaille mieux que le texte, ou le supprimer.
+
+### UNE ROUTE PEUT ENFIN S'EXÉCUTER DANS UN TEST (`tests/resolution-alias.mjs`)
+`npm test` compile avec `tsc` puis lance `node --test`. `tsc` **ne réécrit pas
+les alias `paths`** : le fichier compilé garde `require("@/lib/…")`, que Node ne
+résout pas. Conséquence mesurée : **aucune des ~45 routes `app/api/**` n'était
+exécutable depuis un test**, et toutes étaient donc gardées par des assertions
+sur le TEXTE SOURCE.
+- **C'est la famille de garde qui a le plus souvent échoué ici** — « l'assertion
+  était satisfaite par la PROSE », « asserter la PRÉSENCE du refus au lieu de la
+  CONDITION ». Un import inutilisé, un `if (false)`, un commentaire bien écrit :
+  tout ça passe un `grep`. Mesuré sur la garde du cadrage : la mutation qui
+  garde l'import et rend la condition inerte (`verdict !== null`) est la
+  seule qu'un test de source n'aurait pas vue.
+- Le crochet (`node:module`, **aucune dépendance**) ne fait qu'une chose :
+  remplacer `@/` par la racine de `.test-build`. Il ne transforme aucun code.
+- **Écrire désormais un test de route en l'APPELANT**, pas en la lisant.
+
 ## VALIDATION PARTENAIRE (`lib/validation-partenaire.ts`)
 Sur un compte revendeur, le prospect n'entend pas « Alpha pour le compte
 d'Untel » : il entend **Untel**. Ce qui se dit là engage une réputation qui

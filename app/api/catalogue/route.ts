@@ -3,6 +3,7 @@ import { BRICKS, OUTBOUND_TIERS, PACK_SETUP_HT, PACK_MONTHLY_HT, quoteBricks, qu
 import { ACCOUNTS_COMMERCIAL, baremesPourCalculateur } from "@/lib/accounts-commercial";
 import { getAccount } from "@/lib/accounts";
 import { resoudreDroits } from "@/lib/entitlements";
+import { lireCadrage, peutEmettreDevis } from "@/lib/cadrage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -87,11 +88,44 @@ interface DevisRequete {
   issuer?: string;
   /** Volume d'appels sortants à chiffrer, indépendamment des briques. */
   calls?: number;
+  /**
+   * L'état du cadrage sur CE dossier. Transmis par la fiche, arbitré ici.
+   *
+   * ⚠ Le client ne tranche rien : il TRANSMET, le serveur ARBITRE. C'est
+   * l'idiome de `/api/send` (`identiteEnvoi`), pour la même raison — le CRM vit
+   * dans le `localStorage`, le serveur ne peut pas aller le lire. Ce n'est donc
+   * pas une frontière de sécurité, et ça n'a pas à l'être : ce qu'on empêche,
+   * c'est un opérateur qui s'envoie un devis à lui-même sans avoir cadré, pas
+   * un attaquant. Ce qui compte est qu'il n'existe qu'UN endroit qui fabrique,
+   * donc qu'un seul endroit qui pose la question.
+   */
+  cadrage?: unknown;
 }
 
 /**
  * Le chiffrage. Il se fait ICI plutôt que dans le navigateur pour la même
  * raison : calculer côté client suppose d'y avoir la grille.
+ *
+ * ══ ⚠⚠ LA PORTE DU CADRAGE EST ICI, ET ELLE NE L'ÉTAIT NULLE PART ══
+ *
+ * « Cadrage OBLIGATOIRE avant devis » est dans la doctrine depuis des semaines.
+ * `peutEmettreDevis` l'exécute. Et le seul appelant de cette règle était
+ * `renderDevis`, que **personne n'importe**. Le devis qui PART réellement,
+ * c'est `quoteText` — titré `DEVIS — <client>`, daté, avec quinze jours de
+ * validité — servi par cette route et copié depuis la fiche. Il ne posait la
+ * question à personne.
+ *
+ * La règle était donc branchée à un endroit sur deux, et l'endroit branché
+ * était le mort. Le défaut récurrent du dépôt, sur la porte d'où part un
+ * engagement.
+ *
+ * ⚠ CE QU'ON REFUSE, ET CE QU'ON NE REFUSE PAS. Le `texte` est refusé : c'est
+ * le document qui part. Le `quote` est rendu quand même : ce sont SES prix,
+ * appliqués à SON dossier, et chiffrer pour soi n'est pas émettre. Couper les
+ * nombres aussi transformerait une discipline commerciale en panne d'outil,
+ * et la première chose qu'on fait devant un outil en panne est de le
+ * contourner — ici, en recopiant la grille à la main, c'est-à-dire en se
+ * trompant de montant au dernier mètre.
  */
 export async function POST(req: Request) {
   let body: DevisRequete;
@@ -103,11 +137,20 @@ export async function POST(req: Request) {
 
   const ids = Array.isArray(body.bricks) ? body.bricks : [];
   const quote = quoteBricks(ids);
-  const texte = ids.length ? quoteText(quote, body.client?.trim() || "(client)", { issuer: body.issuer }) : "";
+  const verdict = peutEmettreDevis(lireCadrage(body.cadrage));
+  const texte =
+    ids.length && verdict.autorise ? quoteText(quote, body.client?.trim() || "(client)", { issuer: body.issuer }) : "";
 
   return NextResponse.json({
     quote,
     texte,
+    /**
+     * Le verdict voyage AVEC le chiffrage, toujours — pas seulement sur refus.
+     * Un appelant qui ne reçoit rien quand c'est bon n'a aucun moyen de
+     * distinguer « autorisé » de « cette route ne connaît pas la règle », et
+     * c'est comme ça qu'on réintroduit un second chemin sans garde.
+     */
+    cadrage: verdict,
     // Le pack sert d'ANCRE en face du chiffrage : il voyage avec, pour que
     // l'appelant n'ait pas à faire un second aller-retour.
     pack: { setupHT: PACK_SETUP_HT, monthlyHT: PACK_MONTHLY_HT },

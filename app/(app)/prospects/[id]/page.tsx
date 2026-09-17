@@ -78,6 +78,7 @@ import { ClientTrackingStats } from "@/components/tracking/tracking-stats";
 import { ClosingMode } from "@/components/training/closing-mode";
 import { DeepdiveTools } from "@/components/prospects/deepdive-tools";
 import { PreDevisPanel } from "@/components/prospects/pre-devis-panel";
+import { CadragePanel } from "@/components/prospects/cadrage-panel";
 import { RecoveryProjection } from "@/components/prospects/recovery-projection";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
@@ -1026,6 +1027,13 @@ function QuoteBuilder({ p }: { p: Prospect }) {
   const [bricks, setBricks] = useState<Brick[]>([]);
   const [devis, setDevis] = useState<{ setupHT: number; monthlyHT: number; firstYearHT: number; recommendation: string } | null>(null);
   const [texte, setTexte] = useState("");
+  /**
+   * ⚠ LE VERDICT VIENT DU SERVEUR, ON NE LE RECALCULE PAS ICI. Deux réponses à
+   * « peut-on émettre ? » finiraient par diverger, et c'est celle de l'écran —
+   * la plus facile à assouplir — qui gagnerait. `null` = on n'a pas encore
+   * demandé.
+   */
+  const [verdict, setVerdict] = useState<{ autorise: boolean; manquants: string[]; motif: string } | null>(null);
 
   // Le catalogue vient du serveur : c'est ce qui garde les prix hors des
   // fichiers JavaScript téléchargeables par n'importe qui.
@@ -1054,19 +1062,23 @@ function QuoteBuilder({ p }: { p: Prospect }) {
     if (picked.length === 0) {
       setDevis(null);
       setTexte("");
+      setVerdict(null);
       return;
     }
     let vivant = true;
     fetch("/api/catalogue", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ bricks: picked, client: p.company, issuer }),
+      // Le cadrage voyage avec la demande : c'est le serveur qui décide si le
+      // texte se fabrique. L'écran ne fait que transmettre ce que la fiche sait.
+      body: JSON.stringify({ bricks: picked, client: p.company, issuer, cadrage: p.cadrage ?? null }),
     })
       .then((r) => r.json())
-      .then((d: { quote?: typeof devis; texte?: string }) => {
+      .then((d: { quote?: typeof devis; texte?: string; cadrage?: typeof verdict }) => {
         if (!vivant) return;
         setDevis(d.quote ?? null);
         setTexte(d.texte ?? "");
+        setVerdict(d.cadrage ?? null);
       })
       .catch(() => {
         /* le devis reste vide plutôt que faux */
@@ -1074,7 +1086,7 @@ function QuoteBuilder({ p }: { p: Prospect }) {
     return () => {
       vivant = false;
     };
-  }, [picked, p.company, issuer]);
+  }, [picked, p.company, issuer, p.cadrage]);
 
   const toggle = (id: string) => setPicked((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
@@ -1119,24 +1131,47 @@ function QuoteBuilder({ p }: { p: Prospect }) {
           <p className="mt-2 rounded-lg border border-bronze-700/50 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper">
             {devis.recommendation}
           </p>
-          <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-ink-600 bg-ink-850 p-3 text-[12px] text-paper">
-            {texte}
-          </pre>
-          <button
-            className="btn-ghost mt-2 px-3 py-1.5 text-[12px]"
-            onClick={() => {
-              navigator.clipboard.writeText(texte);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            {copied ? "Copié ✓" : "Copier le devis"}
-          </button>
-          {/* Le rituel de closing dépend du compte : se tromper de rituel perd
-              le deal au dernier mètre. Il est rappelé dans le panneau maître. */}
-          <p className="mt-2 text-[11px] text-paper-faint">
-            Vérifie le rituel de closing du compte avant d&apos;envoyer — devis EAGLEYE, ou RDV de cadrage Nuwacom.
-          </p>
+          {/* ⚠⚠ LE REFUS NOMME CE QUI MANQUE, ET IL EST RÉPARABLE SANS QUITTER
+              L'ÉCRAN : le panneau « Cadrage » est juste au-dessus. Un mur qui
+              dit seulement « non » se contourne — on recopie la grille à la
+              main, et on se trompe de montant au dernier mètre.
+              Les CHIFFRES restent affichés : ce sont ses prix sur son dossier.
+              Chiffrer pour soi n'est pas émettre. */}
+          {verdict && !verdict.autorise ? (
+            <div className="panel mt-3 p-3 text-[12px] leading-snug text-signal-amber">
+              <p className="font-medium">Pas de devis tant que le cadrage n&apos;est pas fait.</p>
+              <ul className="mt-1.5 space-y-0.5">
+                {verdict.manquants.map((m) => (
+                  <li key={m}>— {m}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-paper-faint">
+                Le chiffrage ci-dessus reste lisible : il est à toi. C&apos;est le document qui part
+                qui attend. Renseigne-le dans le panneau <strong>Cadrage</strong> de cet onglet.
+              </p>
+            </div>
+          ) : (
+            <>
+              <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-ink-600 bg-ink-850 p-3 text-[12px] text-paper">
+                {texte}
+              </pre>
+              <button
+                className="btn-ghost mt-2 px-3 py-1.5 text-[12px]"
+                onClick={() => {
+                  navigator.clipboard.writeText(texte);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                {copied ? "Copié ✓" : "Copier le devis"}
+              </button>
+              {/* Le rituel de closing dépend du compte : se tromper de rituel perd
+                  le deal au dernier mètre. Il est rappelé dans le panneau maître. */}
+              <p className="mt-2 text-[11px] text-paper-faint">
+                Vérifie le rituel de closing du compte avant d&apos;envoyer — devis EAGLEYE, ou RDV de cadrage Nuwacom.
+              </p>
+            </>
+          )}
         </>
       )}
     </section>
@@ -1168,6 +1203,13 @@ function CommercialTab({
           copie. C'est ce qui en fait par construction un message relu par un
           humain (`lib/signature-ia.ts`), donc sans divulgation IA. */}
       <PreDevisPanel p={p} />
+
+      {/* ⚠ LE CADRAGE VIT À CÔTÉ DU DEVIS, PAS DANS L'ONGLET « RELATION ».
+          C'est un fait sur la relation, mais sa seule CONSÉQUENCE est ici :
+          il décide si le devis peut partir. Le ranger ailleurs obligerait à
+          changer d'onglet au moment précis où l'outil vient de refuser —
+          c'est-à-dire au moment où on contourne. */}
+      <CadragePanel p={p} patch={patch} />
 
       <OnboardingPanel p={p} />
       <QuoteBuilder p={p} />

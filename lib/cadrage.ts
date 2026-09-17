@@ -50,6 +50,67 @@ export interface EtatCadrage {
   validePar: string | null;
 }
 
+/**
+ * L'état de départ : aucun cadrage. Il REFUSE le devis, et c'est voulu.
+ *
+ * ⚠ Il existe pour que « absent » et « vide » soient le même objet. Deux façons
+ * de dire « on ne sait rien » finissent par recevoir deux traitements, et c'est
+ * la plus permissive qui gagne.
+ */
+export const CADRAGE_VIDE: EtatCadrage = { creneauIso: null, reelementTenu: false, validePar: null };
+
+/**
+ * Lit un cadrage venu de l'EXTÉRIEUR (corps JSON, fiche réhydratée d'un vieux
+ * `localStorage`, import) et le ramène à un `EtatCadrage` sûr.
+ *
+ * ⚠⚠ L'INCONNU VAUT REFUS. Chaque champ illisible retombe sur la valeur qui
+ * BLOQUE, jamais sur celle qui laisse passer. C'est le même arbitrage que
+ * `presence-agent` : ne pas émettre coûte dix secondes de saisie, émettre un
+ * devis non cadré coûte une renégociation à la livraison.
+ *
+ * ⚠ `JSON.parse` rend `any` : sans ce filtre, `{ reelementTenu: "non" }`
+ * passerait pour vrai (chaîne non vide). Le dépôt a déjà payé cette famille
+ * avec « undefined enregistrement(s) DNS manquant(s) » et avec le 403 de
+ * transcription lu comme « pas configuré ».
+ */
+export function lireCadrage(recu: unknown): EtatCadrage {
+  if (typeof recu !== "object" || recu === null) return CADRAGE_VIDE;
+  const o = recu as Record<string, unknown>;
+
+  // Un créneau doit être une date PARSABLE. « bientôt », « jeudi », "" ne sont
+  // pas des créneaux décidés — et la règle dit « date ET heure ».
+  const brut = typeof o.creneauIso === "string" ? o.creneauIso.trim() : "";
+  const creneauIso = brut && !Number.isNaN(Date.parse(brut)) ? brut : null;
+
+  return {
+    creneauIso,
+    reelementTenu: o.reelementTenu === true,
+    validePar: typeof o.validePar === "string" && o.validePar.trim() ? o.validePar.trim() : null,
+  };
+}
+
+/**
+ * Le créneau est-il PASSÉ ? `maintenant` est injecté, jamais lu de l'horloge
+ * ici : une fonction qui lit `Date.now()` rend un test qui devient vert tout
+ * seul le jour où la date fixe est dépassée.
+ *
+ * ⚠⚠ À QUOI ÇA SERT. « Le cadrage a eu lieu » est un point DÉCLARATIF, et la
+ * doctrine des paliers est nette : un point déclaratif ne s'offre pas tant que
+ * sa condition n'existe pas. Cocher « la visio s'est tenue » sur un créneau de
+ * mardi prochain fabrique la preuve — et trois cases cochées en dix secondes
+ * rendent la règle décorative, ce qui est pire que pas de règle du tout.
+ *
+ * ⚠ Elle n'entre PAS dans `peutEmettreDevis` : un devis part légitimement le
+ * jour même du cadrage, et y mêler l'horloge ferait répondre différemment à la
+ * même question selon l'heure d'exécution. Ici on borne la SAISIE, là-bas on
+ * arbitre l'ÉMISSION.
+ */
+export function creneauPasse(c: EtatCadrage, maintenant: number): boolean {
+  if (!c.creneauIso) return false;
+  const t = Date.parse(c.creneauIso);
+  return !Number.isNaN(t) && t <= maintenant;
+}
+
 export interface VerdictDevis {
   autorise: boolean;
   /** Ce qui manque, nommé. Vide quand c'est bon. */

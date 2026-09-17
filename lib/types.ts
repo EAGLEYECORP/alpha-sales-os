@@ -3,6 +3,7 @@
 // Hormozi-native: the decision IS the product. Emotion first, logic second.
 // ─────────────────────────────────────────────────────────────────────
 import type { ProfilOperateur } from "./profil-operateur";
+import type { EtatCadrage } from "./cadrage";
 
 export type { ProfilOperateur };
 
@@ -273,6 +274,26 @@ export interface Prospect {
     /** Confirmé par le prospect, ou simple supposition de notre part ? */
     confirmed?: boolean;
   };
+  /**
+   * ⚠⚠ LE CADRAGE — la condition d'émission d'un devis, ENFIN STRUCTURÉE.
+   *
+   * `lib/cadrage.ts` porte la règle (`peutEmettreDevis`) depuis des semaines et
+   * `EtatCadrage` n'avait AUCUN producteur dans l'application : la seule
+   * fonction qui l'interrogeait était `renderDevis`, que personne n'appelle.
+   * Pendant ce temps le devis qui part réellement — `quoteText`, servi par
+   * `/api/catalogue` et copié depuis la fiche — ne posait la question à
+   * personne.
+   *
+   * ⚠ POURQUOI UN CHAMP, ET PAS UNE LECTURE DE LA TIMELINE. Un événement
+   * `meeting` dit qu'une rencontre a eu lieu ; il ne dit pas QUI a validé la
+   * suite, ni que le périmètre a été arrêté. Le déduire d'un résumé libre
+   * serait la devinette que ce dépôt refuse partout (« la verticale se lit sur
+   * le tag, pas sur le texte »). Précédent exact : `lotsACommercialiser`, sorti
+   * des notes pour devenir un nombre.
+   *
+   * Absent = aucun cadrage. C'est l'état de départ, et il REFUSE le devis.
+   */
+  cadrage?: EtatCadrage;
   /** Suivi de satisfaction 0–100 (post-livraison). */
   satisfaction?: number;
   /** Témoignage / avis obtenu. */
