@@ -21,9 +21,49 @@
 > liaison git. Une session peut préparer, tester et vérifier la source ; elle ne
 > peut pas publier.
 > ⚠ Une session qui tenterait quand même doit d'abord sortir `donnees-privees/`
-> de l'arborescence — la commande téléverse le RÉPERTOIRE DE TRAVAIL, pas
-> `site/`, et c'est `netlify.toml` (`base = "site"`) qui décide ensuite de ce
-> qui est publié. Le dossier a été déplacé puis **restauré** lors de l'essai.
+> de l'arborescence — la commande téléverse le RÉPERTOIRE DE TRAVAIL, et c'est
+> lui qui part en entier. Le dossier a été déplacé puis **restauré** lors de
+> l'essai.
+
+---
+
+## ⚠⚠ LA COMMANDE SE LANCE DEPUIS `site/`, PAS DEPUIS LA RACINE
+
+**C'est la ligne qui a coûté une heure le 17/09, et trois téléversements ratés
+en données mobiles, pendant un salon.**
+
+`deploy-site` affiche « run the following command **within the source/repo
+directory** ». C'est faux pour ce dépôt, et je l'ai cru au lieu de raisonner sur
+ce que la commande envoie réellement : **le répertoire courant, en entier.**
+
+Depuis la racine, le répertoire courant contient `node_modules` (≈630 Mo) et
+`.next` (le cache de `npm run dev`). Mesuré : **315 Mo même après avoir sorti
+`node_modules`.** Netlify refuse le paquet et rend un `500 Internal Server
+Error` **au téléversement** — pas au build, donc aucun journal de construction
+n'existe pour l'expliquer, et on cherche la cause du mauvais côté.
+
+Depuis `site/`, le répertoire courant pèse **468 Ko**. Le déploiement passe en
+65 secondes.
+
+```shell
+cd ~/alpha-sales-os/site && npx -y @netlify/mcp@latest --site-id <SITE_ID> --proxy-path "<...>"
+```
+
+> ⚠ **Et ça règle un second problème en même temps.** Depuis `site/`, c'est
+> `site/netlify.toml` qui fait foi : son `publish = "."` désigne la racine du
+> paquet, qui EST `site/`. Correct par construction. Le `netlify.toml` de la
+> racine (`base = "site"`) n'est pas embarqué — il ne sert donc qu'à la
+> liaison git, où il reste indispensable.
+>
+> ⚠ **Rien à nettoyer non plus** : `node_modules` et `.next` peuvent rester en
+> place, ils sont hors du paquet. Le ménage avant chaque déploiement, c'était
+> le symptôme, pas la cause.
+
+**Symptôme à reconnaître** : `Failed to deploy site: 500 Internal Server Error
+at zipAndBuild`. Traduction : le paquet est trop lourd. Vérifier d'où la
+commande est lancée AVANT de chercher ailleurs.
+
+---
 
 ## Les repères
 
@@ -34,7 +74,14 @@
 | Dépôt | `EAGLEYECORP/alpha-sales-os` |
 | Branche à choisir | `claude/crm-n8n-email-tracking-4qxtwr` ⚠ **il n'y a pas de `main`** |
 | Dossier à publier | `site/` — jamais la racine |
-| Déploiement de repli | `6a9b667fec9f71a8e86609df` (5 septembre) |
+| Où lancer `npx` | **`~/alpha-sales-os/site`** — jamais la racine |
+| Déploiement de repli | `6aabcae55948e6ebb254af51` (17 septembre, 13:12) |
+
+> ⚠ Le repli a changé : il pointait sur le déploiement du 5 septembre. Depuis
+> le 17/09 à 13:12, la version en ligne est à jour (identité dans le héros,
+> section conformité, capture produit, correctifs de mise en page). Revenir au
+> 5 septembre annulerait tout ça — le bon point de retour est le plus récent
+> déploiement **vérifié**, pas le plus ancien connu.
 
 ---
 
@@ -44,28 +91,42 @@
    Netlify doit y être autorisée. Si tu n'es pas propriétaire de
    l'organisation, GitHub affichera une demande d'approbation **en attente** et
    la liaison ne se terminera pas. À vérifier avant, pas au milieu.
-2. **Ça se fait mal au téléphone.** L'écran de configuration de build est dense
-   et les champs sont faciles à rater. Si tu es au salon : fais la **voie A**
-   maintenant (deux minutes, le contenu est en ligne), et la **voie B** ce soir
-   sur un ordinateur.
+2. **La configuration de build se fait mal au téléphone.** L'écran est dense et
+   les champs sont faciles à rater. Si tu es en déplacement : fais la **voie A**
+   (une commande, prouvée), et la **voie B** au calme sur un ordinateur.
 
 ---
 
-## VOIE A — publier le contenu aujourd'hui, sans rien relier
+## VOIE A — publier maintenant, sans rien relier
 
-À faire si tu veux juste que la nouvelle page soit en ligne tout de suite.
+**Prouvé le 17/09 à 13:12** : déploiement `6aabcae5…`, publié en 65 secondes,
+depuis un téléphone en données mobiles.
 
-1. Récupère le dossier `site/` du dépôt sur ta machine (branche
-   `claude/crm-n8n-email-tracking-4qxtwr`, à jour).
-2. Va sur `https://app.netlify.com/projects/eagleyecorpfr` → onglet **Deploys**.
-3. Glisse le dossier **`site`** sur la zone de dépôt en bas de la page
-   (« Drag and drop your site output folder here »).
-4. ⚠⚠ **Glisse le dossier `site`, PAS le dossier du dépôt.** Si tu déposes
-   `alpha-sales-os/`, tu publies `donnees-privees/` — 78 fiches réelles, dont
-   une personne physique avec son numéro. Sur un domaine public. Regarde le nom
-   du dossier avant de lâcher.
+```shell
+cd ~/alpha-sales-os && git pull
+cd site && npx -y @netlify/mcp@latest --site-id 3a677fe0-8882-4fc7-b9a2-c5387ee7ace8 --proxy-path "<jeton frais>"
+```
 
-Le déploiement prend ~1 minute. Passe ensuite à la **vérification** plus bas.
+Le `--proxy-path` se regénère à chaque fois : appeler `deploy-site` sur le MCP
+Netlify rend la commande complète, jeton compris.
+
+> ⚠ **Le `git pull` AVANT, et ce n'est pas une politesse.** Le 17/09, un
+> déploiement a été lancé depuis une copie du dépôt antérieure de sept minutes
+> aux commits : il a parfaitement réussi et remis **l'ancien contenu** en
+> ligne. Le journal disait « All files already uploaded by a previous deploy »,
+> ce qui ressemble à un succès. Rien n'annonce cette erreur.
+
+> ⚠ **LE GLISSER-DÉPOSER NE MARCHE PAS DEPUIS UN TÉLÉPHONE**, et c'est le
+> premier piège de cette page. La zone de dépôt de Netlify attend un DOSSIER ;
+> un navigateur Android ne sait pas en envoyer un — son sélecteur ne propose
+> que des fichiers. Sur ordinateur, glisser le dossier `site` marche très bien.
+>
+> ⚠⚠ Et sur ordinateur, **glisse `site`, JAMAIS le dossier du dépôt.** Déposer
+> `alpha-sales-os/` publie `donnees-privees/` — 78 fiches réelles, dont une
+> personne physique avec son numéro, sur un domaine public. Regarde le nom du
+> dossier avant de lâcher.
+
+Passe ensuite à la **vérification** plus bas.
 
 ---
 
