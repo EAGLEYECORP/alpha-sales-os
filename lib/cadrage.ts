@@ -111,6 +111,42 @@ export function creneauPasse(c: EtatCadrage, maintenant: number): boolean {
   return !Number.isNaN(t) && t <= maintenant;
 }
 
+/**
+ * ⚠⚠ `datetime-local` PARLE EN HEURE LOCALE, `toISOString()` EN UTC — et
+ * confondre les deux ne se voit pas, ça DÉRIVE.
+ *
+ * ══ LE DÉFAUT, MESURÉ LE 17/09/2026 (le jour même où je l'ai écrit) ══
+ *
+ * Le panneau de cadrage réaffichait le créneau ainsi :
+ *
+ *     new Date(c.creneauIso).toISOString().slice(0, 16)
+ *
+ * `toISOString()` rend de l'UTC, qu'on reposait dans un champ qui l'interprète
+ * comme de l'heure LOCALE. À Paris en septembre, deux heures de perdues à
+ * chaque lecture — et comme l'enregistrement suivant reconvertit local → UTC,
+ * **l'erreur se cumule** :
+ *
+ *     tapé 14:00 → relu 12:00 → réenregistré → relu 10:00 → …
+ *
+ * Trois ouvertures et le cadrage a changé de jour. Ce n'est pas cosmétique :
+ * cette date part sur un DEVIS (« établi après le cadrage du … »), un document
+ * engageant, et elle est ce qui prouve que le cadrage a eu lieu avant.
+ *
+ * ⚠ Le sens de l'écriture, lui, était JUSTE : `new Date("2026-09-15T14:00")`
+ * sans `Z` est parsé en heure locale par le moteur, avec le bon décalage
+ * d'été. On ne corrige donc QUE la lecture — « réparer » les deux aurait
+ * réintroduit le décalage dans l'autre sens.
+ *
+ * Le décalage est INJECTÉ, comme l'horloge de `creneauPasse` : un test qui lit
+ * le fuseau de la machine passe à Lyon et tombe sur un serveur en UTC.
+ */
+export function isoVersChampLocal(iso: string, decalageMinutes: number): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  // `getTimezoneOffset()` rend UTC − local. On le RETIRE pour revenir au local.
+  return new Date(t - decalageMinutes * 60_000).toISOString().slice(0, 16);
+}
+
 export interface VerdictDevis {
   autorise: boolean;
   /** Ce qui manque, nommé. Vide quand c'est bon. */

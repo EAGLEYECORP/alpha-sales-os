@@ -813,6 +813,28 @@ et copié depuis la fiche — ne posait la question à personne.
   avec un `Boolean()`. L'inconnu **bloque** ici, il ne se contente pas de se
   dire.
 
+> ⚠⚠ **ET LA DATE DÉRIVAIT — défaut trouvé le jour même où je l'ai écrit.**
+> Le panneau réaffichait le créneau avec `toISOString().slice(0, 16)` : de
+> l'**UTC** reposé dans un `datetime-local`, qui l'interprète en heure
+> **LOCALE**. Deux heures perdues à chaque lecture — et comme l'enregistrement
+> suivant reconvertit local → UTC, **l'erreur se CUMULE** :
+> `tapé 14:00 → relu 12:00 → réenregistré → relu 10:00`. Trois ouvertures et le
+> cadrage change de jour.
+> · **Ce n'est pas cosmétique** : cette date part sur un DEVIS (« établi après
+>   le cadrage du … »), le document engageant, et elle est ce qui prouve que le
+>   cadrage a précédé.
+> · **Seule la LECTURE était fausse** : `new Date("2026-09-15T14:00")` sans `Z`
+>   est parsé en heure locale par le moteur, avec le bon décalage d'été.
+>   « Réparer » les deux sens aurait réintroduit le décalage à l'envers.
+> · **Le décalage est celui de LA DATE stockée**, pas celui d'aujourd'hui : un
+>   cadrage d'août relu en novembre bougerait d'une heure.
+> · ⚠⚠ **C'est l'ALLER-RETOUR qui l'attrape, pas la conversion.** Tester
+>   `isoVersChampLocal` seule aurait demandé d'écrire la valeur attendue — et je
+>   l'aurais écrite AVEC mon erreur, puisque je ne la voyais pas. Le test juste
+>   ne connaît **aucune valeur** : il exige qu'écrire puis relire rende ce qu'on
+>   a tapé, sur quatre fuseaux. Même leçon que « j'ai testé les maillons, pas la
+>   chaîne ».
+
 > ⚠ Ce qui reste ouvert : **`renderDevis` est toujours mort**, et il y a donc
 > deux rendus de devis dont un seul est atteignable. Il est sûr (il appelle la
 > règle lui-même), mais un export que rien ne consomme se fait rebrancher par

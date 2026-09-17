@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { CADRAGE_VIDE, creneauPasse, lireCadrage, peutEmettreDevis, type EtatCadrage } from "../lib/cadrage";
+import { CADRAGE_VIDE, creneauPasse, isoVersChampLocal, lireCadrage, peutEmettreDevis, type EtatCadrage } from "../lib/cadrage";
 import { POST } from "../app/api/catalogue/route";
 
 /**
@@ -170,6 +170,49 @@ test("⚠⚠ ON NE DÉCLARE PAS TENUE UNE VISIO À VENIR", () => {
    */
   const src = readFileSync(join(process.cwd(), "lib/cadrage.ts"), "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
   assert.ok(!/Date\.now\(\)/.test(src), "lib/cadrage.ts ne lit jamais l'horloge : elle se reçoit");
+});
+
+test("⚠⚠ LE CRÉNEAU NE DÉRIVE PAS D'UN ALLER-RETOUR À L'AUTRE", () => {
+  /**
+   * ══ LE DÉFAUT, TROUVÉ LE JOUR MÊME OÙ JE L'AI ÉCRIT ══
+   *
+   * Le panneau réaffichait le créneau avec `toISOString().slice(0, 16)` — de
+   * l'UTC reposé dans un champ qui l'interprète en heure LOCALE. À Paris en
+   * septembre : deux heures perdues à chaque lecture. Et comme l'enregistrement
+   * suivant reconvertit local → UTC, **l'erreur se CUMULE** :
+   *
+   *     tapé 14:00 → relu 12:00 → réenregistré → relu 10:00 → …
+   *
+   * Trois ouvertures et le cadrage change de jour. Ce n'est pas cosmétique :
+   * cette date part sur un DEVIS (« établi après le cadrage du … »), le
+   * document engageant, et elle est ce qui prouve que le cadrage a précédé.
+   *
+   * ⚠⚠ ET C'EST L'ALLER-RETOUR QUI L'ATTRAPE, PAS LA CONVERSION. Tester
+   * `isoVersChampLocal` seule aurait demandé d'écrire la valeur attendue — et
+   * je l'aurais écrite AVEC mon erreur, puisque je ne la voyais pas. Le test
+   * juste ne connaît aucune valeur : il exige qu'écrire puis relire rende ce
+   * qu'on a tapé. Même leçon que « j'ai testé les maillons, pas la chaîne ».
+   */
+  const DECALAGES = [
+    { nom: "Paris été (UTC+2)", min: -120 },
+    { nom: "Paris hiver (UTC+1)", min: -60 },
+    { nom: "UTC (le serveur)", min: 0 },
+    { nom: "à l'ouest de Greenwich", min: 240 },
+  ];
+
+  for (const { nom, min } of DECALAGES) {
+    // L'ÉCRITURE, telle que le panneau la fait : le champ local devient de l'UTC.
+    const saisie = "2026-09-15T14:00";
+    const stocke = new Date(Date.parse(`${saisie}:00Z`) + min * 60_000).toISOString();
+    // La LECTURE, par la fonction du module.
+    assert.equal(isoVersChampLocal(stocke, min), saisie, `${nom} : le créneau relu doit être celui tapé`);
+    // Et le deuxième tour, celui qui faisait dériver.
+    const stocke2 = new Date(Date.parse(`${isoVersChampLocal(stocke, min)}:00Z`) + min * 60_000).toISOString();
+    assert.equal(stocke2, stocke, `${nom} : réenregistrer sans rien changer ne doit RIEN changer`);
+  }
+
+  // ⚠ Une valeur illisible rend un champ VIDE, jamais « Invalid Date » à l'écran.
+  assert.equal(isoVersChampLocal("jeudi", 0), "");
 });
 
 test("⚠⚠ IL N'EXISTE QU'UN SEUL FABRICANT DE DEVIS", () => {

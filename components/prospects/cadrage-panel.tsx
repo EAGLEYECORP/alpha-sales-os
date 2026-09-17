@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { CalendarCheck, Lock, ShieldCheck } from "lucide-react";
 import type { Prospect } from "@/lib/types";
-import { CADRAGE_VIDE, creneauPasse, peutEmettreDevis } from "@/lib/cadrage";
+import { CADRAGE_VIDE, creneauPasse, isoVersChampLocal, peutEmettreDevis } from "@/lib/cadrage";
 import { cn } from "@/lib/utils";
 
 /**
@@ -56,8 +56,14 @@ export function CadragePanel({
 
   const maj = (patchCadrage: Partial<typeof c>) => patch(p.id, { cadrage: { ...c, ...patchCadrage } });
 
-  /** `datetime-local` ne parle pas ISO : on convertit dans les deux sens. */
-  const pourInput = c.creneauIso ? new Date(c.creneauIso).toISOString().slice(0, 16) : "";
+  /**
+   * `datetime-local` ne parle pas ISO. ⚠ Le décalage est celui de LA DATE
+   * stockée, pas celui d'aujourd'hui : un cadrage tenu en août relu en
+   * novembre change d'heure d'une heure si on prend le décalage courant.
+   */
+  const pourInput = c.creneauIso
+    ? isoVersChampLocal(c.creneauIso, new Date(c.creneauIso).getTimezoneOffset())
+    : "";
 
   return (
     <section className="card p-4">
