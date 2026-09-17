@@ -1,7 +1,8 @@
 "use client";
-import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
 import type { Prospect } from "@/lib/types";
-import { phrasePrixPerime, prixPerime } from "@/lib/grille-perimee";
+import { PRIX_HONORE_JUSQU_AU, phrasePrixPerime, prixPerime } from "@/lib/grille-perimee";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,24 +21,38 @@ import { cn } from "@/lib/utils";
  * ─────────────────────────────────────────────────────────────────────
  */
 export function AlertePrixPerime({ p }: { p: Prospect }) {
+  /** ⚠ Lue une fois au montage, comme l'horloge du cadrage : une carte qui
+      change de ton pendant qu'on lit n'a aucune raison visible de le faire. */
+  const [maintenant] = useState(() => Date.now());
   const derniere = p.events?.length ? p.events[p.events.length - 1].date : null;
   const verdict = prixPerime(p, derniere);
   if (!verdict) return null;
 
-  const dur = verdict.certitude === "datee";
+  /**
+   * ⚠⚠ TROIS TONS, PAS DEUX — la décision du 17/09 a créé un état qui n'existait
+   * pas : « le prix tient, et c'est une bonne nouvelle ». Le peindre en ambre
+   * comme un problème ferait lire une FAVEUR comme une alerte, et l'opérateur
+   * corrigerait le prix par réflexe — exactement l'inverse de la décision.
+   */
+  const honore = verdict.certitude === "datee" && Date.parse(PRIX_HONORE_JUSQU_AU) >= maintenant;
+  const dur = verdict.certitude === "datee" && !honore;
   return (
     <section
       className={cn(
         "card flex items-start gap-2.5 p-4 lg:col-span-2",
-        dur ? "text-signal-amber" : "text-paper-dim",
+        honore ? "text-signal-green" : dur ? "text-signal-amber" : "text-paper-dim",
       )}
     >
-      <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+      {honore ? (
+        <ShieldCheck size={15} className="mt-0.5 shrink-0" />
+      ) : (
+        <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+      )}
       <div>
         <p className="text-sm font-medium">
-          {dur ? "Prix à re-chiffrer" : "Prix à vérifier"}
+          {honore ? "Prix honoré — ta raison de rappeler" : dur ? "Prix à re-chiffrer" : "Prix à vérifier"}
         </p>
-        <p className="mt-1 text-[12px] leading-relaxed">{phrasePrixPerime(verdict)}</p>
+        <p className="mt-1 text-[12px] leading-relaxed">{phrasePrixPerime(verdict, maintenant)}</p>
         {/* ⚠ Le MOTIF du changement voyage avec l'alerte. Sans lui, « la grille
             a changé » se lit comme une hausse arbitraire — et c'est la première
             chose qu'un commercial a envie de contourner pour ne pas perdre son

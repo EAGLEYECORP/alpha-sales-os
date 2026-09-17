@@ -77,6 +77,49 @@ export const GRILLES_PERIMEES: GrillePerimee[] = [
   },
 ];
 
+/**
+ * ══════════════════════════════════════════════════════════════════════
+ * LA DÉCISION DU 17/09/2026 — déléguée par Zakaria, prise ici.
+ *
+ * **On HONORE le prix annoncé sur les dossiers ouverts avant le changement.
+ * Tout ce qui est neuf part au tarif en vigueur. Sans exception.**
+ *
+ * ══ POURQUOI HONORER, ET NON RE-CHIFFRER ══
+ *
+ * · **Le prix a été ANNONCÉ.** Le remonter deux mois après, sur un dossier
+ *   qu'on n'a pas relancé entre-temps, c'est exactement ce que le cadrage
+ *   existe pour empêcher : un montant qui bouge après coup. Le client a
+ *   raison de le reprocher, et il le reprochera au moment du closing.
+ * · **La hausse a été décidée pour un AUTRE acheteur.** Le passage de 990 à
+ *   1 490 € vient du changement d'ICP du 09/09 : le maître d'ouvrage compare à
+ *   une agence d'automatisation (1 840–11 040 €), pas au télésecrétariat. Ces
+ *   trois dossiers datent de l'ICP d'AVANT. Leur appliquer un ancrage qui ne
+ *   les concerne pas n'est pas défendable en conversation.
+ * · **À zéro vente, la première signature ne vaut pas sa marge.** Elle vaut ce
+ *   qu'elle débloque : un coût d'installation MESURÉ au lieu d'estimé, une
+ *   livraison réelle, et `gagnes > 0` — le seuil qui lève tout un pan de ce que
+ *   les gardes interdisent aujourd'hui de dire. 1 500 € d'écart ne pèsent rien
+ *   contre ça.
+ * · **Le mensuel annoncé le plus bas (115 €) couvre le socle fixe (~57 €/mois).**
+ *   C'est 59 € qui ne le couvrait pas — le motif de la refonte ne vise pas ces
+ *   dossiers.
+ *
+ * ══ ⚠⚠ ET POURQUOI IL Y A UNE DATE LIMITE ══
+ *
+ * Un prix honoré sans échéance devient une **seconde grille** : deux tarifs en
+ * vigueur, celui qu'on affiche et celui qu'on pratique. C'est le défaut que ce
+ * dépôt traque partout ailleurs. La faveur est donc bornée, et la borne est ce
+ * qui la rend crédible en conversation — « votre tarif tient jusqu'au X » est
+ * une raison de rappeler ; « on vous fait un prix » est une remise.
+ *
+ * ⚠ C'est aussi la RAISON NEUVE qu'exige la cadence de relance : ces fiches
+ * dorment depuis juillet, et « je me permets de relancer » est interdit. Le
+ * changement de tarif est un fait daté, vrai, et qui n'appartient pas au
+ * prospect — exactement ce qu'il faut pour rouvrir sans mendier.
+ * ══════════════════════════════════════════════════════════════════════
+ */
+export const PRIX_HONORE_JUSQU_AU = "2026-10-17";
+
 export type Certitude =
   /** La fiche n'a pas bougé depuis le remplacement : le montant vient de l'ancienne grille. */
   | "datee"
@@ -145,12 +188,27 @@ export function prixPerime(
  * vécu depuis la décision, le montant peut être un choix assumé, et donner un
  * ordre là-dessus ferait renégocier un prix déjà annoncé.
  */
-export function phrasePrixPerime(p: PrixPerime): string {
+export function phrasePrixPerime(p: PrixPerime, maintenant: number): string {
   const quoi = p.reconnus.join(" et ");
   const jour = new Date(p.grille.remplaceeLe).toLocaleDateString("fr-FR");
-  return p.certitude === "datee"
-    ? `Cette fiche porte ${quoi} — la grille remplacée le ${jour}, et elle n'a plus bougé depuis. ` +
-        `En vigueur : ${p.enVigueur.join(", ")}. À re-chiffrer avant d'envoyer quoi que ce soit.`
-    : `${quoi} : c'est exactement la grille remplacée le ${jour}. La fiche a vécu depuis, donc c'est ` +
-        `peut-être un choix — à vérifier. En vigueur : ${p.enVigueur.join(", ")}.`;
+  const limite = new Date(PRIX_HONORE_JUSQU_AU).toLocaleDateString("fr-FR");
+
+  if (p.certitude !== "datee") {
+    return (
+      `${quoi} : c'est exactement la grille remplacée le ${jour}. La fiche a vécu depuis, donc c'est ` +
+      `peut-être un choix — à vérifier. En vigueur : ${p.enVigueur.join(", ")}.`
+    );
+  }
+
+  /**
+   * ⚠ L'ÉCHÉANCE PASSÉE NE DIT PAS LA MÊME CHOSE, et c'est tout l'intérêt
+   * d'avoir posé une date : sans elle, la phrase d'avant (« honoré ») se
+   * serait servie indéfiniment et la faveur serait devenue la grille.
+   */
+  return Date.parse(PRIX_HONORE_JUSQU_AU) >= maintenant
+    ? `${quoi} : la grille a été remplacée le ${jour}, mais ce prix a été ANNONCÉ avant — on l'honore ` +
+        `jusqu'au ${limite}. C'est ta raison de rappeler, et elle est vraie. En vigueur ensuite : ` +
+        `${p.enVigueur.join(", ")}.`
+    : `${quoi} : grille remplacée le ${jour}, et le délai d'honneur a expiré le ${limite}. ` +
+        `À re-chiffrer avant d'envoyer quoi que ce soit — en vigueur : ${p.enVigueur.join(", ")}.`;
 }

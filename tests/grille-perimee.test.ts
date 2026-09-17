@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { GRILLES_PERIMEES, phrasePrixPerime, prixPerime } from "../lib/grille-perimee";
+import { GRILLES_PERIMEES, PRIX_HONORE_JUSQU_AU, phrasePrixPerime, prixPerime } from "../lib/grille-perimee";
 import { ALPHA_VOICE_PALIERS, ALPHA_VOICE_SETUP_HT } from "../lib/offres-publiques";
 
 /**
@@ -29,6 +29,10 @@ import { ALPHA_VOICE_PALIERS, ALPHA_VOICE_SETUP_HT } from "../lib/offres-publiqu
 
 const FICHE = { monthlyValue: 115, setupValue: 990 };
 
+/** Deux instants qui encadrent la décision du 17/09 — injectés, jamais lus. */
+const AVANT_ECHEANCE = Date.parse("2026-09-20T09:00:00.000Z");
+const APRES_ECHEANCE = Date.parse("2026-11-02T09:00:00.000Z");
+
 test("⚠⚠ UNE FICHE FIGÉE AVANT LE REMPLACEMENT EST `datee`, pas une coïncidence", () => {
   /**
    * C'est la distinction qui rend l'alerte utilisable. Une fiche qui n'a pas
@@ -50,8 +54,11 @@ test("⚠⚠ UNE FICHE QUI A VÉCU DEPUIS N'EST QU'UNE COÏNCIDENCE", () => {
    */
   const v = prixPerime(FICHE, "2026-09-16T10:00:00.000Z");
   assert.equal(v?.certitude, "coincidence");
-  assert.match(phrasePrixPerime(v!), /peut-être un choix/);
-  assert.ok(!/à re-chiffrer/i.test(phrasePrixPerime(v!)), "on n'ordonne pas de corriger un choix assumé");
+  assert.match(phrasePrixPerime(v!, AVANT_ECHEANCE), /peut-être un choix/);
+  assert.ok(
+    !/à re-chiffrer/i.test(phrasePrixPerime(v!, AVANT_ECHEANCE)),
+    "on n'ordonne pas de corriger un choix assumé",
+  );
 });
 
 test("⚠ UNE FICHE SANS AUCUNE TOUCHE PENCHE VERS L'ALERTE", () => {
@@ -94,7 +101,7 @@ test("⚠⚠ LES PRIX EN VIGUEUR SONT IMPORTÉS, JAMAIS RECOPIÉS", () => {
   }
 
   // Et la phrase servie porte bien les vrais montants courants.
-  const phrase = phrasePrixPerime(prixPerime(FICHE, null)!);
+  const phrase = phrasePrixPerime(prixPerime(FICHE, null)!, AVANT_ECHEANCE);
   assert.ok(phrase.includes(String(ALPHA_VOICE_SETUP_HT)), "la phrase annonce le setup en vigueur");
   for (const p of ALPHA_VOICE_PALIERS) assert.ok(phrase.includes(String(p.prixHT)), "…et les paliers en vigueur");
 });
@@ -131,4 +138,49 @@ test("⚠⚠ LA DATE VIENT DES ÉVÉNEMENTS, PAS D'UN « MODIFIÉ LE »", () => 
   );
   assert.match(ecran, /p\.events/, "la dernière touche se lit sur la timeline");
   assert.ok(!/updatedAt|modifieLe/.test(ecran), "jamais un horodatage de modification");
+});
+
+test("⚠⚠ LA DÉCISION DU 17/09 : LE PRIX ANNONCÉ EST HONORÉ, ET L'HONNEUR A UNE DATE", () => {
+  /**
+   * Zakaria a délégué l'arbitrage. Décision : on honore le prix ANNONCÉ sur les
+   * dossiers ouverts avant le changement, tout ce qui est neuf part au tarif en
+   * vigueur. Les motifs vivent dans `lib/grille-perimee.ts` — ici on vérifie
+   * que la décision est EXÉCUTABLE, pas qu'elle est écrite.
+   *
+   * ⚠⚠ ET LA DATE LIMITE EST LA MOITIÉ QUI COMPTE. Un prix honoré sans échéance
+   * devient une SECONDE GRILLE : deux tarifs en vigueur, celui qu'on affiche et
+   * celui qu'on pratique. C'est le défaut que ce dépôt traque partout ailleurs.
+   * Sans ce test, la phrase « on l'honore » se servirait indéfiniment.
+   */
+  const v = prixPerime(FICHE, "2026-07-09T10:00:00.000Z")!;
+  assert.equal(v.certitude, "datee");
+
+  const avant = phrasePrixPerime(v, AVANT_ECHEANCE);
+  assert.match(avant, /honore|honorе|on l.honore/i, "avant l'échéance : on honore");
+  assert.match(avant, /raison de rappeler/, "…et la phrase sert la relance, qui est le vrai livrable");
+  assert.ok(!/à re-chiffrer/i.test(avant), "on n'ordonne pas de corriger ce qu'on a décidé d'honorer");
+
+  const apres = phrasePrixPerime(v, APRES_ECHEANCE);
+  assert.match(apres, /expiré/, "après l'échéance : la faveur est finie, et la phrase le dit");
+  assert.match(apres, /à re-chiffrer/i);
+
+  // L'échéance est une DATE lisible, pas un « bientôt ».
+  assert.ok(!Number.isNaN(Date.parse(PRIX_HONORE_JUSQU_AU)));
+  assert.ok(
+    Date.parse(PRIX_HONORE_JUSQU_AU) > Date.parse(GRILLES_PERIMEES[0].remplaceeLe),
+    "honorer un prix jusqu'à une date ANTÉRIEURE au changement ne veut rien dire",
+  );
+});
+
+test("⚠⚠ L'ÉCRAN NE PEINT PAS UNE FAVEUR COMME UNE ALERTE", () => {
+  /**
+   * La décision a créé un état qui n'existait pas ce matin : « le prix tient,
+   * et c'est une bonne nouvelle ». Le laisser en ambre ferait lire une faveur
+   * comme un problème — et l'opérateur corrigerait le prix par réflexe, soit
+   * exactement l'inverse de ce qui a été décidé.
+   */
+  const ecran = readFileSync(join(process.cwd(), "components/prospects/alerte-prix-perime.tsx"), "utf8");
+  assert.match(ecran, /signal-green/, "l'état honoré a son propre ton");
+  assert.match(ecran, /PRIX_HONORE_JUSQU_AU/, "…et il est borné par la même date que le module");
+  assert.ok(!/onClick|patch\(/.test(ecran), "toujours aucun bouton qui corrige un prix annoncé");
 });
