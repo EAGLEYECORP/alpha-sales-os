@@ -100,9 +100,35 @@ test("⚠ ni dans la doctrine, qui est ce que la session suivante recopiera", ()
    * une offre que `validerOffre` refuse.
    *
    * On distingue les deux par la forme : `code entre accents graves`.
+   *
+   * ══ ⚠⚠ LES BLOCS CLÔTURÉS SE RETIRENT D'ABORD — 17/09/2026 ══
+   *
+   * Le garde lisait `/`([^`]+)`/g` sur le document ENTIER. Un bloc clôturé
+   * ouvre avec TROIS accents graves : l'expression en apparie deux, et le
+   * troisième reste pendant. Il ouvre alors une capture qui court jusqu'au
+   * prochain accent grave du document — en avalant la PROSE qui sépare les
+   * deux. Chaque bloc ajouté décale ce que le garde croit lire.
+   *
+   * Mesuré : ajouter un bloc dans la section « Ton » a fait capturer tout le
+   * paragraphe du portefeuille, marque morte comprise, et le test a désigné
+   * un « identifiant prescrit » qui était un tableau markdown. **Un faux
+   * positif sur une phrase juste est un garde qu'on assouplit au mauvais
+   * endroit la fois suivante** — la doctrine le dit déjà deux fois.
+   *
+   * ⚠ On ne se contente PAS de les ignorer : un bloc clôturé peut prescrire
+   * pour de bon (la liste des variables Vercel en est un). Il est donc scanné
+   * ENTIER, comme un seul texte. Retirer sans remplacer aurait ouvert un trou
+   * là où la recopie est la plus probable — c'est ce qu'on copie-colle.
    */
   const doctrine = readFileSync(join(R, "CLAUDE.md"), "utf8");
-  const identifiants = [...doctrine.matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((c) => MORTES.test(c));
+
+  const blocs = [...doctrine.matchAll(/^```[^\n]*\n([\s\S]*?)^```/gm)].map((m) => m[1]);
+  const horsBlocs = doctrine.replace(/^```[^\n]*\n[\s\S]*?^```/gm, "\n");
+
+  const identifiants = [
+    ...[...horsBlocs.matchAll(/`([^`\n]+)`/g)].map((m) => m[1]),
+    ...blocs,
+  ].filter((c) => MORTES.test(c));
 
   // Le seul acceptable : la phrase qui interdit le nom doit pouvoir le citer.
   const attendus = new Set(["Callflow"]);

@@ -27,6 +27,31 @@ Brutalement honnête. Pas de flatterie, pas de « tu as raison ». Si un chiffre
 est faux, une idée irréaliste ou un truc pas testé — le dire net. L'utilisateur
 demande explicitement ça et il a besoin de **ventes réelles**, pas de démos.
 
+### FIN DE CHAQUE RÉPONSE — deux blocs, rien d'autre (demandé le 17/09/2026)
+Toute réponse se termine par :
+
+```
+## À FAIRE
+- les actions qui sont sur LUI, une ligne chacune, la plus bloquante d'abord
+
+## ÉTAPE SUIVANTE
+- UNE seule action, la prochaine
+```
+
+- **« À faire » ne contient que ce qui est sur LUI.** Ce que j'ai fait moi va
+  au-dessus, dans le corps de la réponse. Mélanger les deux fabrique une liste
+  où il ne trouve plus sa part — c'est-à-dire une liste qu'on ne lit pas.
+- **« Étape suivante » est UNE action, jamais deux.** Une liste de priorités
+  n'est pas une priorité. S'il y a un ordre imposé (les 4 variables Vercel
+  AVANT le SMTP, les secrets Vault AVANT la 004), c'est cet ordre qui décide
+  laquelle est la prochaine — pas ce qui est le plus rapide à faire.
+- **Zéro action sur lui ⇒ on l'écrit** (« rien sur toi »), on ne supprime pas
+  le bloc. Un bloc absent et un bloc vide ne se lisent pas pareil : le premier
+  ressemble à un oubli. Même mode de panne que le moniteur qui affiche du
+  calme quand la base est morte.
+- Il lit ça **au salon, sur un téléphone**, entre deux conversations. C'est ce
+  qui impose la brièveté, pas une préférence de style.
+
 ## Les 2 comptes (portefeuille white-label) — `lib/accounts.ts`
 Le compte MAÎTRE (EAGLEYE) est l'interface qui pilote tout. Basculer de compte
 change l'identité + l'offre + la commission, **pas** les données.
