@@ -29,8 +29,9 @@ import { join } from "node:path";
  * · **Le SYMBOLE, sans distinguer l'usage interne** : 141 résultats, presque
  *   tous faux. Un helper appelé par sa propre fonction publique n'est pas mort.
  * · **La FONCTION exportée qu'AUCUN fichier de production n'appelle — pas même
- *   son propre module** : 43. C'est l'unité juste, et c'est celle qui attrape
- *   `renderDevis`.
+ *   son propre module** : 43. C'est l'unité juste, et c'est celle qui a attrapé
+ *   `renderDevis` (depuis TRANCHÉ : supprimé le 17/09, le devis vivant partant
+ *   par `quoteText`). L'exemple reste : c'est lui qui a motivé cette échelle.
  *
  * ══ CE QUE LE TEST FAIT, ET CE QU'IL NE FAIT PAS ══
  *
@@ -143,10 +144,9 @@ const TOLEREES: Record<string, string> = {
   "lib/vital-signs.ts:triageByReadiness": "tri par état vital, l'écran trie lui-même",
 
   // ── ⚠ CEUX-LÀ SONT DE VRAIS RESTES, ET ILS SONT NOMMÉS COMME TELS ──
-  "lib/proposition-commerciale.ts:renderDevis":
-    "⚠ RESTE. Deuxième rendu de devis, inatteignable. Sûr (il appelle la règle), mais à trancher : l'enrichir ou le supprimer.",
-  "lib/proposition-commerciale.ts:estRefus":
-    "⚠ RESTE. Discriminant du précédent : il meurt ou vit avec lui.",
+  // (`renderDevis` + `estRefus` ont été SUPPRIMÉS le 17/09/2026 — le doublon
+  //  mort de rendu de devis. Le devis vivant part par `quoteText`, gardé et
+  //  testé sur `/api/catalogue`. Deux ⚠ RESTE de moins, pas tolérés : effacés.)
   "lib/essai.ts:finDEssai":
     "⚠ RESTE. L'état de fin d'essai se calcule dans `etatEssai` ; celui-ci n'a jamais eu d'appelant.",
   "lib/secteurs-interdits.ts:interdictionPour":

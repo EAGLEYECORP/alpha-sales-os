@@ -279,7 +279,8 @@ export interface Prospect {
    *
    * `lib/cadrage.ts` porte la règle (`peutEmettreDevis`) depuis des semaines et
    * `EtatCadrage` n'avait AUCUN producteur dans l'application : la seule
-   * fonction qui l'interrogeait était `renderDevis`, que personne n'appelle.
+   * fonction qui l'interrogeait était `renderDevis` — que personne n'appelait,
+   * et qui a depuis été supprimé (le doublon mort de rendu de devis).
    * Pendant ce temps le devis qui part réellement — `quoteText`, servi par
    * `/api/catalogue` et copié depuis la fiche — ne posait la question à
    * personne.

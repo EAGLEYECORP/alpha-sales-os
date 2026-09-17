@@ -4,52 +4,22 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   emailPreDevis,
-  estRefus,
-  renderDevis,
   renderPreDevis,
   type CibleProposition,
   type MarqueProposition,
 } from "../lib/proposition-commerciale";
-import { SIEGES_MAX_ESTIMATION, type EtatCadrage } from "../lib/cadrage";
+import { SIEGES_MAX_ESTIMATION } from "../lib/cadrage";
 
 const marque: MarqueProposition = { societe: "Nuwacom", ville: "Luxembourg", signataire: "Camille" };
 const cible: CibleProposition = { entreprise: "Agence Exemple", sieges: 12 };
-const cadrageOk: EtatCadrage = {
-  creneauIso: "2026-09-20T10:00:00.000Z",
-  reelementTenu: true,
-  validePar: "Zakaria",
-};
 
-test("⚠⚠ PAS DE DEVIS SANS CADRAGE — et la fonction ne rend PAS de document", () => {
-  /**
-   * La garde rend un REFUS plutôt qu'un document accompagné d'un drapeau.
-   * Un `{ html, autorise: false }` aurait laissé le drapeau se faire ignorer :
-   * l'appelant aurait eu un HTML sous la main, et un HTML sous la main finit
-   * toujours par partir.
-   */
-  for (const manque of [
-    { creneauIso: null },
-    { reelementTenu: false },
-    { validePar: null },
-  ] as Partial<EtatCadrage>[]) {
-    const d = renderDevis(cible, marque, { ...cadrageOk, ...manque }, 22_000);
-    assert.ok(estRefus(d), `${JSON.stringify(manque)} : aucun document ne doit être produit`);
-    assert.ok((d as { manquants: string[] }).manquants.length > 0, "et le refus doit NOMMER ce qui manque");
-  }
-});
-
-test("cadrage tenu et validé → le devis se rend, daté et engageant", () => {
-  const d = renderDevis(cible, marque, cadrageOk, 22_000);
-  assert.ok(!estRefus(d));
-  const doc = d as { html: string; engageant: boolean; titre: string };
-  assert.equal(doc.engageant, true);
-  assert.match(doc.html, /Devis/);
-  assert.match(doc.html, /validé par Zakaria/, "le devis dit QUI a validé — sinon la garde est invisible");
-  // ⚠ U+202F : `toLocaleString("fr-FR")` sépare les milliers avec une espace
-  // insécable ÉTROITE, pas une espace. Troisième fois que ce piège fait
-  // échouer une assertion sur un rendu parfaitement correct.
-  assert.match(doc.html, /22[\s\u202f\u00a0]000 €/);
-});
+/**
+ * ⚠ LE DEVIS ENGAGEANT NE SE TESTE PLUS ICI — `renderDevis` a été supprimé le
+ * 17/09/2026 (doublon mort). La garde du cadrage sur le devis qui PART
+ * réellement (`quoteText` via `POST /api/catalogue`) est testée dans
+ * `tests/cadrage-devis.test.ts`, sur la vraie route. Ce fichier ne garde donc
+ * que la voie VIVANTE de ce module : le pré-devis et son email.
+ */
 
 test("⚠⚠ LE PRÉ-DEVIS NE PEUT PAS PASSER POUR UN DEVIS", () => {
   const d = renderPreDevis(cible, marque)!;

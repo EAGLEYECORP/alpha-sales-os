@@ -110,7 +110,8 @@ interface DevisRequete {
  *
  * « Cadrage OBLIGATOIRE avant devis » est dans la doctrine depuis des semaines.
  * `peutEmettreDevis` l'exécute. Et le seul appelant de cette règle était
- * `renderDevis`, que **personne n'importe**. Le devis qui PART réellement,
+ * `renderDevis`, que **personne n'importait** (depuis supprimé, doublon mort).
+ * Le devis qui PART réellement,
  * c'est `quoteText` — titré `DEVIS — <client>`, daté, avec quinze jours de
  * validité — servi par cette route et copié depuis la fiche. Il ne posait la
  * question à personne.

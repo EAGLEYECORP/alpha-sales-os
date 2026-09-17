@@ -1,4 +1,4 @@
-import { estimationPublique, peutEmettreDevis, type EtatCadrage, type Estimation } from "./cadrage";
+import { estimationPublique, type Estimation } from "./cadrage";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -65,12 +65,6 @@ export interface Document {
   html: string;
   /** Le document engage-t-il ? Un pré-devis : jamais. */
   engageant: boolean;
-}
-
-/** Ce qui empêche un devis de partir. Vide = il peut partir. */
-export interface RefusDevis {
-  manquants: string[];
-  motif: string;
 }
 
 const ECHAP = (s: string) =>
@@ -169,39 +163,24 @@ export function renderPreDevis(cible: CibleProposition, marque: MarquePropositio
 }
 
 /**
- * LE DEVIS — engageant, et il exige le cadrage.
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠ LE DEVIS ENGAGEANT NE SE REND PLUS ICI — supprimé le 17/09/2026.
  *
- * ⚠⚠ C'EST ICI QUE LA RÈGLE MORD. Elle rend un `RefusDevis` plutôt qu'un
- * document : l'appelant ne peut pas « oublier » de vérifier, il n'a pas de
- * document à envoyer tant que les trois conditions ne sont pas remplies.
- * Rendre un document ET un drapeau `autorise` aurait laissé le drapeau se
- * faire ignorer.
+ * Ce module a longtemps porté un `renderDevis(cible, marque, cadrage, montant)`
+ * qui rendait un HTML engageant après avoir vérifié `peutEmettreDevis`. Il
+ * était SÛR (il appelait la règle) mais MORT : personne ne l'importait, et le
+ * devis qui PART réellement est `quoteText` (`app/api/catalogue/route.ts`),
+ * gardé par le même cadrage sur la route vivante et testé là
+ * (`tests/cadrage-devis.test.ts`).
+ *
+ * Deux rendus de devis étaient donc deux définitions de la même chose, dont
+ * une inatteignable — exactement ce que ce dépôt refuse partout. Le risque
+ * n'était pas qu'il soit dangereux, c'est qu'une session future le rebranche
+ * sans garantie de repasser par le câblage vivant. La doctrine le laissait « à
+ * trancher » ; tranché : supprimé. Un devis HTML imprimable, si on en veut un,
+ * se construira SUR la voie vivante — pas en ressuscitant un mort.
+ * ─────────────────────────────────────────────────────────────────────
  */
-export function renderDevis(
-  cible: CibleProposition,
-  marque: MarqueProposition,
-  cadrage: EtatCadrage,
-  montantHT: number,
-): Document | RefusDevis {
-  const v = peutEmettreDevis(cadrage);
-  if (!v.autorise) return { manquants: v.manquants, motif: v.motif };
-
-  const titre = `Devis — ${cible.entreprise}`;
-  const corps = `
-  <p class="brand">${ECHAP(marque.societe)} · ${ECHAP(marque.ville)}</p>
-  <h1>Devis — ${ECHAP(cible.entreprise)}</h1>
-  <div class="avert">Établi après le cadrage du ${ECHAP(new Date(cadrage.creneauIso!).toLocaleDateString("fr-FR"))},
-  validé par ${ECHAP(cadrage.validePar!)}. Périmètre arrêté d'un commun accord.</div>
-  <table><tr class="total"><td>Montant</td><td class="n">${eur(montantHT)} HT</td></tr></table>
-  <p class="pied">Établi par ${ECHAP(marque.signataire)} · ${ECHAP(marque.societe)}.</p>`;
-
-  return { titre, html: enveloppe(titre, corps), engageant: true };
-}
-
-/** Un document est-il un refus ? Discriminant, pour que l'appelant soit forcé de choisir. */
-export function estRefus(d: Document | RefusDevis): d is RefusDevis {
-  return "manquants" in d;
-}
 
 /**
  * L'email qui accompagne le PRÉ-DEVIS.

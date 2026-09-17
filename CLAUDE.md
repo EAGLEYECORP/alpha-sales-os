@@ -933,11 +933,15 @@ et copié depuis la fiche — ne posait la question à personne.
 >   a tapé, sur quatre fuseaux. Même leçon que « j'ai testé les maillons, pas la
 >   chaîne ».
 
-> ⚠ Ce qui reste ouvert : **`renderDevis` est toujours mort**, et il y a donc
-> deux rendus de devis dont un seul est atteignable. Il est sûr (il appelle la
-> règle lui-même), mais un export que rien ne consomme se fait rebrancher par
-> une session future — sans garantie qu'elle repasse par la porte. À trancher :
-> l'enrichir pour qu'il vaille mieux que le texte, ou le supprimer.
+> ⚠ **TRANCHÉ le 17/09/2026 : `renderDevis` + `estRefus` SUPPRIMÉS** (avec le
+> type `RefusDevis`). Il y avait deux rendus de devis dont un seul atteignable ;
+> le mort était sûr (il appelait la règle) mais c'était un second endroit où se
+> décidait « comment rend-on un devis ? », qu'une session future aurait
+> rebranché sans garantie de repasser par la porte. Le devis vivant part par
+> `quoteText`, gardé par le cadrage sur `/api/catalogue` et testé là. Un devis
+> HTML imprimable, si on en veut un, se construira SUR cette voie — pas en
+> ressuscitant un mort. Le module ne garde que sa voie vivante : `renderPreDevis`
+> et `emailPreDevis` (le pré-devis).
 
 ### UNE ROUTE PEUT ENFIN S'EXÉCUTER DANS UN TEST (`tests/resolution-alias.mjs`)
 `npm test` compile avec `tsc` puis lance `node --test`. `tsc` **ne réécrit pas
@@ -1893,8 +1897,9 @@ la panne la plus fréquente du dépôt souffrait elle-même de cette panne.
   inscrit une fonction plutôt que de la brancher. Un second test refuse une
   entrée **périmée** : sans lui, l'inventaire ment à la session suivante.
 - **Les VRAIS restes sont marqués `⚠ RESTE` et PLAFONNÉS à 6.** Au-delà, on
-  n'est plus en train de tolérer, on accumule. Aujourd'hui : `renderDevis` +
-  `estRefus` (second rendu de devis inatteignable), `finDEssai` (jamais eu
+  n'est plus en train de tolérer, on accumule. Aujourd'hui, après la
+  suppression de `renderDevis` + `estRefus` (le doublon mort de devis, TRANCHÉ
+  le 17/09) : `finDEssai` (jamais eu
   d'appelant), `interdictionPour` — **inatteignable par construction** : il
   s'indexe sur `formation-cpf` / `renovation-energetique` / `assurance`, des
   identifiants qui n'existent ni dans `Sector` ni dans les verticales. Lui
