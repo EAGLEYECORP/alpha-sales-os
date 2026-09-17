@@ -199,6 +199,93 @@ test("⚠⚠ AUCUNE CONFIG NETLIFY NE PEUT PUBLIER LA RACINE DU DÉPÔT", () => 
   assert.ok(!/publish\s*=\s*"\.\./.test(dusite), "et jamais un dossier parent");
 });
 
+test("⚠⚠ AUCUN SÉLECTEUR CSS ORPHELIN — le défaut qui a écrasé la carte noire", () => {
+  /**
+   * ⚠⚠ LE GARDE LE PLUS UTILE DE CE FICHIER, et il vient d'un vrai bug servi
+   * en public pendant deux semaines.
+   *
+   * Le 04/09, le HTML a été réécrit (« eagleyecorp.fr devient la SOCIÉTÉ »)
+   * sans nettoyer la feuille de style. Environ un tiers du CSS décrivait
+   * alors une page disparue : `.dlist`, `.num`, `.feat`, `.f`, `.tier`,
+   * `.pricing`, `.shot`, `.badge`, `.price`, `.psub`, `.ic`, `.tag`.
+   *
+   * Ce n'est pas du poids mort inoffensif. `.dlist` portait la grille à deux
+   * colonnes du bloc « ce qu'on refuse » ET son repli mobile. Les deux morts,
+   * il restait `.d{display:flex}` avec un `<h3>` et un `<p>` en enfants
+   * directs : titre et texte côte à côte, en deux colonnes étroites, sur tous
+   * les écrans. « On ne livre pas votre prestation » tombait sur quatre
+   * lignes dans 90 pixels.
+   *
+   * **Un sélecteur orphelin ne fait rien tomber.** Il laisse la mise en page
+   * se rabattre sur des valeurs par défaut qui ont l'air volontaires, et il
+   * fait croire au lecteur suivant que la structure existe. C'est la forme
+   * CSS du défaut récurrent de ce dépôt : un mécanisme juste, branché nulle
+   * part.
+   */
+  const html = readFileSync(join(process.cwd(), "site/index.html"), "utf8");
+  const style = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+  // Les classes réellement posées dans le markup.
+  const posees = new Set<string>();
+  for (const m of html.matchAll(/class="([^"]+)"/g)) {
+    for (const c of m[1].split(/\s+/)) if (c) posees.add(c);
+  }
+  /**
+   * ⚠ On retire les COMMENTAIRES du CSS avant de chercher : ils citent des
+   * noms de classes retirées pour expliquer pourquoi elles l'ont été. Même
+   * leçon que le garde de conformité plus haut — la prose déclenchait le
+   * contrôle qu'elle servait à documenter.
+   */
+  const regles = style.replace(/\/\*[\s\S]*?\*\//g, "");
+  const orphelins = new Set<string>();
+  for (const m of regles.matchAll(/\.([a-zA-Z][\w-]*)/g)) {
+    const c = m[1];
+    if (!posees.has(c)) orphelins.add(c);
+  }
+  assert.deepEqual(
+    [...orphelins].sort(),
+    [],
+    `du CSS décrit un markup qui n'existe pas : .${[...orphelins].sort().join(", .")}`,
+  );
+});
+
+test("⚠ LA CAPTURE PRODUIT EST SERVIE — pas seulement déployée", () => {
+  /**
+   * `assets/produit-pipeline.{webp,jpg}` est en ligne depuis le 04/09 et
+   * n'était référencé NULLE PART : 264 Ko dans le déploiement que personne ne
+   * voyait. Et la page vendait un logiciel sans jamais le montrer.
+   *
+   * ⚠ Les dimensions sont EXIGÉES et doivent être les vraies (2200x1375,
+   * relevées dans le fichier). Sans elles, l'arrivée de l'image décale tout
+   * ce qui suit ; fausses, elles produisent le même décalage en prétendant
+   * l'éviter.
+   */
+  const html = readFileSync(join(process.cwd(), "site/index.html"), "utf8");
+  assert.match(html, /produit-pipeline\.webp/, "la version webp doit être proposée en premier");
+  assert.match(html, /produit-pipeline\.jpg/, "et le jpg servir de repli");
+  assert.match(html, /width="2200" height="1375"/, "les dimensions réelles réservent la place");
+  assert.match(html, /loading="lazy"/, "elle est sous la ligne de flottaison");
+  const alt = /<img[^>]*alt="([^"]+)"/.exec(html)?.[1] ?? "";
+  assert.ok(alt.length > 40, `l'alt doit décrire ce qu'on voit, pas nommer le fichier (vu : « ${alt} »)`);
+});
+
+test("⚠ LE BOUTON DU HAUT NE SE COUPE PAS — il raccourcit", () => {
+  /**
+   * « Demander un cadrag », coupé net par le bord droit du téléphone, sur
+   * quatre captures. Le bouton porte `white-space:nowrap` : il ne peut pas se
+   * réduire, donc il sortait de l'écran et entraînait le body dans un
+   * défilement horizontal.
+   *
+   * Deux libellés dans le markup, pas un `text-overflow` : un bouton tronqué
+   * par des points de suspension n'est pas un bouton, c'est un bug qui a
+   * l'air volontaire.
+   */
+  const html = readFileSync(join(process.cwd(), "site/index.html"), "utf8");
+  assert.match(html, /<span class="long">Demander un cadrage<\/span><span class="court">/);
+  const style = html.slice(html.indexOf("<style>"), html.indexOf("</style>")).replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.match(style, /\.btn \.long\{display:none\}/, "le libellé long disparaît sous le point de rupture");
+  assert.match(style, /overflow-x:clip/, "et un filet empêche un débordement futur de casser la page");
+});
+
 test("⚠ LA DATE D'ENTRÉE EN APPLICATION EST CELLE DU RÈGLEMENT", () => {
   /**
    * Le 2 août 2026. Une date fausse sur une page publique, à propos d'un texte
