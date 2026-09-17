@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────
+# NETLIFY, À LA RACINE — et son seul rôle est d'INTERDIRE la racine.
+#
+# ⚠⚠ POURQUOI CE FICHIER EXISTE, ET CE QU'IL EMPÊCHE.
+#
+# `eagleyecorp.fr` est servi depuis `site/`, un dossier statique de 20
+# fichiers. Le jour où ce dépôt est relié à Netlify — ce qui est demandé, pour
+# que le site cesse de dépendre d'un envoi manuel — la question « quel dossier
+# publie-t-on ? » se pose une fois, automatiquement, à chaque push.
+#
+# Sans `base`, la réponse par défaut est **la racine du dépôt**. C'est-à-dire :
+#   · `donnees-privees/` — 78 fiches prospects RÉELLES, dont une personne
+#     physique identifiée avec son mobile personnel. Le dossier est ignoré par
+#     git, mais il est PRÉSENT sur le disque de qui construit ;
+#   · le code source entier, les tests, la doctrine commerciale, les prompts ;
+#   · tout `.env.local` qui traînerait sur la machine de build.
+#
+# Ce n'est pas un risque théorique : ce dépôt a DÉJÀ publié des données
+# personnelles de tiers une fois, et `tests/donnees-reelles.test.ts` existe à
+# cause de ça. Le modèle de menace était alors « un attaquant qui passe par le
+# produit » — insuffisant, puisqu'un dépôt public se clone. Un déploiement mal
+# cadré est la troisième porte : personne ne clone, personne n'attaque, le
+# fichier est simplement SERVI en HTTP.
+#
+# ⚠ `base = "site"` fait deux choses d'un coup : Netlify se place dans `site/`
+# et y lit `site/netlify.toml`, qui reste la seule source des en-têtes et de la
+# configuration du site. On ne recopie donc RIEN ici — pas de `publish`, pas de
+# `command`, pas de headers. Deux définitions de ce qu'on publie finiraient par
+# diverger, et c'est celle qu'on ne relit pas qui s'exécuterait.
+#
+# ⚠ Ce fichier ne déploie rien par lui-même. Tant que le site Netlify n'est pas
+# relié au dépôt, il ne sert qu'à rendre ce branchement sûr le jour où il se
+# fait. `tests/site-vitrine.test.ts` vérifie qu'il ne peut pas publier la
+# racine.
+# ─────────────────────────────────────────────────────────────────────
+
+[build]
+  base = "site"
