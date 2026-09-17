@@ -134,8 +134,23 @@ test("TOUT écran qui lit la route DNS distingue « pas configuré » de « en p
    * La liste est donc DÉDUITE : on cherche qui appelle la route. Le quatrième
    * écran qui la lira sera couvert le jour où il sera écrit.
    */
+  /**
+   * ⚠⚠ ON RETIRE LES COMMENTAIRES AVANT DE CHERCHER — troisième fois que ce
+   * défaut se paie dans ce dépôt, et la première dans ce fichier.
+   *
+   * Le 17/09, un commentaire de `app/api/video/render/route.ts` a cité
+   * `/api/deliverability/dns` pour EXPLIQUER un raisonnement analogue (« ces
+   * routes lisent un état, elles ne le créent pas »). Le fichier a aussitôt été
+   * compté comme un lecteur de la route DNS, et ce test a exigé qu'il traite
+   * `configure === false` — une réponse qu'il ne reçoit jamais.
+   *
+   * Un garde qui lit la prose attrape les fichiers qui PARLENT du sujet au lieu
+   * de ceux qui le FONT. Et le réflexe de réparation est le pire : effacer
+   * l'explication pour faire passer le build.
+   */
+  const sansCommentaires = (s: string) => s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
   const lecteurs = fichiersSources(["app", "components"]).filter((f) =>
-    readFileSync(f, "utf8").includes("/api/deliverability/dns")
+    sansCommentaires(readFileSync(f, "utf8")).includes("/api/deliverability/dns")
   );
   assert.ok(lecteurs.length >= 3, `attendu au moins 3 lecteurs de la route DNS, trouvé ${lecteurs.length}`);
 

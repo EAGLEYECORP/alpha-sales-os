@@ -55,8 +55,74 @@ import type { Origine } from "./credentials";
  * ─────────────────────────────────────────────────────────────────────
  */
 
-/** Ce que le compteur sait débiter. Un canal de plus = une entrée ici. */
-export type Depense = "ia" | "email";
+/**
+ * Ce que le compteur sait débiter. Un canal de plus = une entrée ici.
+ *
+ * ⚠⚠ `ia` ET `email` ONT UN CHEMIN BYOK, `egress` ET `video` N'EN ONT PAS.
+ * C'est la distinction qui décide du montant : pour les deux premiers,
+ * `origine` peut valoir `locataire` et le débit tombe à zéro. Pour les deux
+ * autres, **la dépense nous revient toujours** — il n'existe aucun moyen
+ * qu'un locataire apporte notre bande passante ou nos crédits de rendu.
+ */
+export type Depense = "ia" | "email" | "egress" | "video";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ DEUX ROUTES DÉPENSAIENT SANS RIEN DÉBITER — et ça rendait l'enveloppe
+ * partiellement fausse.
+ *
+ * Trouvé le 17/09 en relisant `API_QUI_DEPENSENT` après avoir branché
+ * l'alerte d'enveloppe : le compteur ne connaissait que l'IA et l'email. Or
+ * `lib/credentials.ts` dit déjà, noir sur blanc, que `/api/audit` « récupère
+ * des sites tiers DEPUIS NOTRE SERVEUR, donc notre egress et notre exposition
+ * à l'abus — une clé IA ne paie pas ça ». La phrase était écrite ; le
+ * compteur ne la connaissait pas.
+ *
+ * ── EGRESS (`/api/audit/generate`) ──
+ *
+ * Ce qui coûte n'est pas la bande passante — quelques kilo-octets. C'est
+ * **notre IP qui va frapper chez des tiers** : un essai qui balaie deux cents
+ * sites nous fait passer pour un aspirateur, et c'est notre adresse qui se
+ * fait bloquer, pas la sienne. Un débit nul rendrait ça invisible, donc
+ * illimité.
+ *
+ * ⚠ Cette route débite DEUX FOIS, et ce n'est pas un doublon : elle appelle
+ * `moteurIADeLaRequete` (qui débite l'IA) **et** récupère un site. Deux
+ * dépenses distinctes, deux débits. Les confondre sous-compterait l'une des
+ * deux.
+ *
+ * ⚠ `/api/audit/extract` NE DÉBITE PAS d'egress, et c'est volontaire : elle
+ * reçoit le texte déjà collé par l'opérateur, elle ne va frapper nulle part.
+ * Lui ajouter un débit au motif qu'elle est « dans la famille audit » serait
+ * le défaut que ce dépôt a déjà payé trois fois — classer par FAMILLE au lieu
+ * de classer par DÉPENSE.
+ *
+ * ── VIDÉO (`/api/video/render`) ──
+ *
+ * La vraie fuite : deux voies, aucune ne débitait. `textToVideo` frappe un
+ * endpoint GPU, `renderJson2Video` consomme nos crédits. Un rendu coûte
+ * l'ordre de grandeur d'une centaine d'emails, pas d'un.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Le coût estimé d'une récupération de site tiers, en euros.
+ *
+ * ⚠ **DÉCISION, pas mesure.** Ce qu'on tarife n'est pas des octets : c'est le
+ * droit d'envoyer notre IP frapper chez quelqu'un. Le nombre est arbitraire et
+ * le dit ; ce qui ne l'est pas, c'est qu'il ne soit pas nul.
+ */
+export const COUT_EGRESS_EUR = 0.02;
+
+/**
+ * Le coût estimé d'un rendu vidéo, en euros.
+ *
+ * ⚠ **DÉCISION, pas mesure** — aucune facture de rendu n'a jamais été lue ici.
+ * Posé à cent fois l'email parce qu'un rendu GPU ou un crédit json2video n'est
+ * pas du même ordre qu'un message : le mettre au même prix laisserait un essai
+ * produire trente vidéos sans que l'enveloppe bouge d'un centime.
+ */
+export const COUT_VIDEO_EUR = 1;
 
 /**
  * Le coût estimé d'un envoi d'email, en euros.
@@ -108,7 +174,25 @@ export function montantADebiter(depense: Depense, origine: Origine, route: strin
   // multiplier par 0 — marcherait aujourd'hui et se ferait perdre au premier
   // refactor qui déplace le calcul ailleurs.
   if (origine !== "maison") return 0;
-  return depense === "email" ? COUT_EMAIL_EUR : coutEstimeIaEur(route);
+  /**
+   * ⚠ UN `switch` EXHAUSTIF, PAS UNE CHAÎNE DE TERNAIRES AVEC UN DÉFAUT.
+   *
+   * La version précédente s'écrivait `depense === "email" ? … : coutIa(…)` :
+   * tout ce qui n'était pas « email » retombait sur le calcul IA. Ajouter
+   * `egress` aujourd'hui l'aurait donc facturé au prix d'un appel de modèle,
+   * en silence et sans que rien ne tombe. Ici, `tsc` refuse une valeur non
+   * traitée — le compilateur tient l'exhaustivité, pas la relecture.
+   */
+  switch (depense) {
+    case "email":
+      return COUT_EMAIL_EUR;
+    case "egress":
+      return COUT_EGRESS_EUR;
+    case "video":
+      return COUT_VIDEO_EUR;
+    case "ia":
+      return coutEstimeIaEur(route);
+  }
 }
 
 // ── La base ────────────────────────────────────────────────────────────

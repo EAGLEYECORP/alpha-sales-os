@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import { autorise, resoudreDroits, statutEffectif, type Entitlement } from "./entitlements";
-import { debiter, montantADebiter } from "./compteur-essai";
+import { debiter, montantADebiter, type Depense } from "./compteur-essai";
 import { AUCUN_MOTEUR, type Capacite, type MoteurIA, type Origine } from "./credentials";
 import { MODELE_ANTHROPIC_DEFAUT, MODELE_NIM_DEFAUT } from "./modeles";
 
@@ -270,6 +270,36 @@ async function facturerEssai(droits: Entitlement, montantEur: number): Promise<b
   if (montantEur <= 0) return true;
   if (statutEffectif(droits) !== "essai") return true;
   return debiter(droits.tenantId, montantEur);
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE DÉBIT POUR UNE DÉPENSE QUI N'A PAS DE RÉSOLVEUR.
+ *
+ * L'IA et l'email ont chacun une fonction qui décide QUI PAIE
+ * (`resoudreMoteurIA`, `resoudreSmtp`) : le débit s'y pose naturellement, à un
+ * seul endroit. L'egress et le rendu vidéo n'ont pas d'équivalent — il n'y a
+ * rien à résoudre, puisqu'il n'existe aucun chemin par lequel un locataire
+ * apporterait notre bande passante ou nos crédits de rendu.
+ *
+ * ⚠ D'où cette fonction plutôt qu'un `debiter()` recopié dans chaque route.
+ * Le dépôt a déjà payé la dispersion : « combien d'endroits posent la règle,
+ * et répondent-ils tous pareil ? ». Un seul, ici.
+ *
+ * ⚠ `origine: "maison"` est CODÉ EN DUR, et c'est exact : ces deux dépenses
+ * nous reviennent toujours. Le jour où un locataire pourra apporter son propre
+ * endpoint de rendu, cette ligne se rediscute — pas avant, et elle sera le
+ * seul endroit à changer.
+ *
+ * ⚠⚠ RENDRE `false` VEUT DIRE « NE DÉPENSE PAS ». Comme partout ailleurs ici :
+ * si on ne sait pas enregistrer ce qu'on s'apprête à dépenser, on ne le
+ * dépense pas. L'appelant DOIT traiter le `false`, sinon le plafond redevient
+ * un journal facultatif.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export async function debiterLaRequete(req: NextRequest, depense: Depense): Promise<boolean> {
+  const droits = await resoudreDroits(req);
+  return facturerEssai(droits, montantADebiter(depense, "maison", req.nextUrl.pathname));
 }
 
 // ── EMAIL : qui envoie, et depuis quelle boîte ─────────────────────────

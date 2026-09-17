@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   DUREE_ESSAI_JOURS,
@@ -219,10 +219,34 @@ test("⚠⚠ LE DÉBIT EST POSÉ AUX DEUX SEULS POINTS QUI DÉCIDENT QUI PAIE", 
   const src = sansCommentaires(lire("lib/credentials-secret.ts"));
   assert.match(src, /montantADebiter\("ia", moteur\.origine/, "l'IA débite à la résolution du moteur");
   assert.match(src, /montantADebiter\("email", maison\.origine/, "l'email débite à la résolution du SMTP");
-  assert.equal(
-    (src.match(/facturerEssai\(/g) ?? []).length,
-    3,
-    "deux appels + la définition : un canal de plus doit ajouter le sien ici, pas ailleurs",
+  assert.match(src, /montantADebiter\("video"|debiterLaRequete/, "les dépenses sans résolveur passent par un point unique");
+  /**
+   * ⚠⚠ LE COMPTE FIGÉ A SAUTÉ — et c'est la DEUXIÈME fois aujourd'hui que ce
+   * motif se paie (l'autre était `anglesMorts().length === 4`).
+   *
+   * Ce test exigeait `facturerEssai(` exactement 3 fois : deux appels plus la
+   * définition. Brancher l'egress et la vidéo a ajouté `debiterLaRequete`, qui
+   * l'appelle légitimement — et le test est tombé sur « 4 !== 3 », un message
+   * qui ne dit ni ce qui a été ajouté, ni si c'est voulu.
+   *
+   * L'INTENTION, elle, ne bouge pas et se vérifie mieux autrement : le débit
+   * ne doit pas se disperser dans les routes. On l'exprime donc directement —
+   * aucun fichier de route n'appelle `debiter()`, tout passe par ce module.
+   */
+  /**
+   * ⚠ `readdirSync({ recursive: true })` plutôt qu'une TROISIÈME copie de
+   * `fichiersSources`, qui est déjà dupliquée dans deux fichiers de test. Ce
+   * dépôt refuse les secondes définitions ; en ajouter une ici, dans le test
+   * qui garde justement l'unicité du point de débit, serait mal venu.
+   */
+  const routes = readdirSync(join(process.cwd(), "app/api"), { recursive: true, encoding: "utf8" })
+    .filter((f) => f.endsWith("route.ts"))
+    .map((f) => join("app/api", f));
+  const dispersees = routes.filter((f) => /\bdebiter\(/.test(sansCommentaires(lire(f))));
+  assert.deepEqual(
+    dispersees,
+    [],
+    "aucune route ne débite en direct : le point de débit est `lib/credentials-secret.ts`, et lui seul",
   );
 });
 

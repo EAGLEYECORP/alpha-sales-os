@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { moteurIADeLaRequete } from "@/lib/credentials-secret";
+import { debiterLaRequete, moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { fetchSiteText, safePublicUrl } from "@/lib/site-fetch";
 import { extractAudit } from "@/lib/audit-extract";
 
@@ -29,6 +29,35 @@ export async function POST(req: NextRequest) {
   const safe = safePublicUrl(body.url ?? "");
   if (!safe) {
     return NextResponse.json({ error: "Donne l'URL du site du prospect (ex. https://…)." }, { status: 400 });
+  }
+
+  /**
+   * ⚠⚠ LE DÉBIT PASSE AVANT LE `fetch`, PAS APRÈS.
+   *
+   * Ce qui coûte ici n'est pas la bande passante — quelques kilo-octets. C'est
+   * **notre IP qui va frapper chez un tiers**. Un essai qui balaie deux cents
+   * sites nous fait passer pour un aspirateur, et c'est notre adresse qui se
+   * fait bloquer, pas la sienne. Débiter après coup laisserait passer le
+   * balayage entier avant de constater le dépassement.
+   *
+   * ⚠ Cette route débite DEUX FOIS, et ce n'est pas un doublon : l'IA est
+   * débitée plus bas par `moteurIADeLaRequete`. Deux dépenses distinctes, deux
+   * débits — les confondre sous-compterait l'une des deux.
+   *
+   * ⚠ `/api/audit/extract` ne débite PAS d'egress : elle reçoit le texte déjà
+   * collé par l'opérateur, elle ne va frapper nulle part. Lui en ajouter un au
+   * motif qu'elle est « dans la famille audit » serait classer par FAMILLE au
+   * lieu de classer par DÉPENSE — le défaut que ce dépôt a déjà payé trois fois.
+   */
+  if (!(await debiterLaRequete(req, "egress"))) {
+    return NextResponse.json(
+      {
+        error:
+          "Plafond d'essai atteint — l'audit ne récupère pas le site. Apporte ta clé dans Réglages, ou passe à l'abonnement.",
+        code: "plafond_essai",
+      },
+      { status: 402 }
+    );
   }
 
   let site: { text: string; source: string };
