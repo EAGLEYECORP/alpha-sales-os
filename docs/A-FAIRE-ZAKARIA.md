@@ -18,19 +18,43 @@
 
 ## 🔴 BLOQUANT — sans ça, rien ne part
 
-### 1. Les quatre variables Vercel, **dans cet ordre**
+### 1. Les variables Vercel, **dans cet ordre**
 
 C'est le seul écart entre aujourd'hui et « `contact@eagleyecorp.fr` en pleine
 capacité ». Mesuré : sans `OWNER_EMAILS`, `estMaitre("contact@eagleyecorp.fr")`
 rend **`false`**, et tu restes au socle gratuit comme n'importe quel inscrit.
 
 ```
-1. NEXT_PUBLIC_SUPABASE_URL   = https://<projet>.supabase.co
-2. SUPABASE_JWT_SECRET        = (Supabase → Settings → API → JWT Secret)
-3. OWNER_EMAILS               = contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com
-   NEXT_PUBLIC_OWNER_EMAILS   = (EXACTEMENT la même liste)
-4. REQUIRE_AUTH               = 1        ← EN DERNIER, jamais avant
+1. NEXT_PUBLIC_SUPABASE_URL       = https://<projet>.supabase.co
+2. NEXT_PUBLIC_SUPABASE_ANON_KEY  = (Supabase → Settings → API → anon public)
+3. SUPABASE_SERVICE_ROLE_KEY      = (Supabase → Settings → API → service_role)
+4. SUPABASE_JWT_SECRET            = (Supabase → Settings → API → JWT Secret)
+5. OWNER_EMAILS                   = contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com
+   NEXT_PUBLIC_OWNER_EMAILS       = (EXACTEMENT la même liste)
+6. REQUIRE_AUTH                   = 1     ← EN DERNIER, jamais avant
 ```
+
+> ⚠⚠ **CETTE LISTE EN OMETTAIT DEUX, ET SUIVRE LA DOC TE MURAIT DEHORS DE TA
+> PROPRE PRODUCTION** — mesuré le 17/09/2026, en croisant la doc avec ce que le
+> code lit réellement.
+> · **`NEXT_PUBLIC_SUPABASE_ANON_KEY` est ce avec quoi on SE CONNECTE.**
+>   `getSupabaseConfig()` rend `null` sans elle, donc `signIn` n'existe pas.
+>   Poser les quatre d'avant, puis `REQUIRE_AUTH=1`, donnait : le serveur exige
+>   un compte, et le navigateur n'a pas de quoi en ouvrir un.
+> · L'app avait déjà **un écran dédié à cette impasse** (« Connexion
+>   impossible », `auth-gate.tsx`) — quelqu'un l'avait anticipée dans
+>   l'interface sans jamais l'ajouter ici. Le défaut de signature du dépôt,
+>   sur la porte d'entrée.
+> · **`SUPABASE_SERVICE_ROLE_KEY`** lit les droits côté serveur. Sans elle,
+>   l'invariant fait retomber **tout le monde au socle gratuit** — toi compris
+>   pour les briques payantes (ton statut maître, lui, survit : `estMaitre`
+>   lit l'email du JETON et court-circuite la base, exprès).
+> · ⚠ Les deux `NEXT_PUBLIC_*` doivent exister **au moment du BUILD**, pas
+>   seulement à l'exécution : elles sont inlinées dans le bundle. Après les
+>   avoir posées, **redéploie** — sinon rien ne change.
+> · `tests/variables-lancement.test.ts` croise désormais cette liste avec les
+>   `process.env` du chemin d'authentification. Une variable que le code exige
+>   et que la doc tait refait tomber le build.
 
 > ⚠ **Les trois premières ne changent RIEN tant que la quatrième n'est pas
 > posée** — vérifié sur serveur réel. Et `REQUIRE_AUTH=1` sans
@@ -363,7 +387,7 @@ l'adresse, non.**
 ## L'ORDRE, SI TU NE DEVAIS RETENIR QU'UNE CHOSE
 
 ```
-1. Les 4 variables Vercel          → tu as ton accès complet
+1. Les variables Vercel (6)        → tu as ton accès complet
 2. LOT-A-COLLER.sql, un seul Run   → la base suit  (004 à part, après)
 3. SMTP + DNS                      → tu peux envoyer  (JAMAIS avant 1)
 4. L'export de fiches              → la machine a de quoi mordre

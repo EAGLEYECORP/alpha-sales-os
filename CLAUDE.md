@@ -27,18 +27,27 @@ Brutalement honnête. Pas de flatterie, pas de « tu as raison ». Si un chiffre
 est faux, une idée irréaliste ou un truc pas testé — le dire net. L'utilisateur
 demande explicitement ça et il a besoin de **ventes réelles**, pas de démos.
 
-### FIN DE CHAQUE RÉPONSE — deux blocs, rien d'autre (demandé le 17/09/2026)
+### FIN DE CHAQUE RÉPONSE — trois blocs, rien d'autre (17/09/2026)
 Toute réponse se termine par :
 
 ```
-## À FAIRE
-- les actions qui sont sur LUI, une ligne chacune, la plus bloquante d'abord
+## CE QUE J'AI FAIT
+- une ligne par chose livrée, le résultat d'abord
+
+## À FAIRE — TOI
+- les actions qui sont sur LUI, la plus bloquante d'abord
 
 ## ÉTAPE SUIVANTE
 - UNE seule action, la prochaine
 ```
 
-- **« À faire » ne contient que ce qui est sur LUI.** Ce que j'ai fait moi va
+> ⚠ **Le premier bloc a été ajouté à sa demande**, et il ne dispense pas du
+> corps de la réponse : le corps porte le RAISONNEMENT (ce qui a été mesuré,
+> ce qui a été écarté et pourquoi), le bloc n'en porte que le RÉSULTAT. Les
+> confondre donnerait soit un résumé qui ne prouve rien, soit un bloc aussi
+> long que le texte — et dans les deux cas on ne lit plus ni l'un ni l'autre.
+
+- **« À faire — toi » ne contient que ce qui est sur LUI.** Ce que j'ai fait moi va
   au-dessus, dans le corps de la réponse. Mélanger les deux fabrique une liste
   où il ne trouve plus sa part — c'est-à-dire une liste qu'on ne lit pas.
 - **« Étape suivante » est UNE action, jamais deux.** Une liste de priorités
