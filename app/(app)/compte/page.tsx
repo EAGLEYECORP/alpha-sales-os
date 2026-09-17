@@ -11,6 +11,7 @@ import { ChangePassword } from "@/components/security/change-password";
 import { ApresAchat } from "@/components/billing/apres-achat";
 import { PageHeader } from "@/components/ui/page-header";
 import { PartResultatPanel } from "@/components/billing/part-resultat-panel";
+import { EtatEssaiPanel } from "@/components/billing/etat-essai-panel";
 
 /**
  * Compte — gestion de l'identité multi-locataire.
@@ -53,6 +54,15 @@ export default function ComptePage() {
       <Suspense fallback={null}>
         <ApresAchat />
       </Suspense>
+
+      {/* ⚠ L'ÉTAT DE L'ESSAI PASSE AVANT LA PART AU RÉSULTAT, et l'ordre
+          compte : l'un dit ce qui est ouvert AUJOURD'HUI, l'autre simule ce
+          qu'une offre représenterait. Un locataire dont l'essai vient de
+          fermer doit lire la cause avant une projection — sinon il découvre
+          une simulation de facture en cherchant pourquoi ses envois ne
+          partent plus.
+          Le composant ne rend RIEN quand le compte n'a pas d'essai. */}
+      <EtatEssaiPanel />
 
       {/* Ce que l'offre Performance représenterait sur SES affaires — calculé
           sur ses chiffres, pas sur une étude de cas inventée. */}

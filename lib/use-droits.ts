@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// ⚠ Import de TYPE seulement : `lib/essai.ts` reste hors du bundle client,
+// seule sa forme descend. L'écran affiche ce que le serveur a calculé, il ne
+// recalcule jamais l'état d'un essai — deux définitions de « l'essai est-il
+// ouvert ? » finiraient par diverger, et c'est celle du navigateur qui ment.
+import type { EtatEssai } from "./essai";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -36,10 +41,19 @@ export interface Droits {
   essaiJusquA?: string;
   maitre: boolean;
   solo: boolean;
+  /**
+   * L'état de l'essai, `null` quand ce compte n'en a pas.
+   *
+   * ⚠ `null` ≠ « essai fermé ». Un essai FERMÉ descend quand même, avec sa
+   * raison : sans ça l'écran ne peut pas distinguer « ton essai vient de se
+   * terminer » de « tu n'as jamais eu d'essai », et le locataire perd trois
+   * briques en silence. `null` veut dire qu'il n'y a rien à raconter.
+   */
+  essai: EtatEssai | null;
 }
 
 /** Optimiste : tout ouvert tant qu'on ne sait pas. */
-const OPTIMISTE: Droits = { session: true, bricks: [], statut: "actif", maitre: true, solo: true };
+const OPTIMISTE: Droits = { session: true, bricks: [], statut: "actif", maitre: true, solo: true, essai: null };
 
 let cache: Droits | null = null;
 let enCours: Promise<Droits> | null = null;

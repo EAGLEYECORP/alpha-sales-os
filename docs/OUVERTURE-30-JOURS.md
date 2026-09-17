@@ -170,13 +170,34 @@ Règles qui tiennent l'ensemble :
    l'enveloppe tient 150 comptes et le plafond par compte est trop bas pour
    gêner qui que ce soit. Si elle est à 25 €, il faut trancher autrement.
 
+### ✅ Fait depuis — l'essai se dit à celui qui le vit (17/09)
+
+`components/billing/etat-essai-panel.tsx`, monté sur `/compte`.
+
+Ce document annonçait ici que personne n'affichait la `phrase` d'`etatEssai`.
+Le trou était **pire que ça** : un essai fermé retombe au socle gratuit, qui
+porte `statut: "actif"`. Vu de l'écran, **un essai terminé était donc
+indistinguable d'un compte qui n'en a jamais eu** — le locataire perdait
+`/campaigns`, `/agent` et `/audits` du jour au lendemain et en déduisait une
+panne.
+
+- L'état d'essai **traverse maintenant la chaîne entière** (droit → route →
+  hook → composant → page), et un test suit la chaîne plutôt que les maillons.
+- Il repart **même quand l'essai est fermé**, avec sa raison.
+- **Trois états, jamais deux** : pas d'essai ⇒ rien à l'écran ; en cours ⇒ les
+  **deux** limites affichées ensemble (27 jours restants et 1 € restant est un
+  cas réel) ; terminé ⇒ la cause, et « ce n'est pas toi » quand la fermeture
+  vient de notre enveloppe.
+- **L'enveloppe ne descend jamais** jusqu'au locataire, et un test l'interdit
+  dans la route comme dans le composant.
+- Le panneau **n'autorise rien** : `autorise()` ne lit pas `essai`, et c'est
+  testé.
+
 ### Ce qui n'est PAS fait, et qu'il faut savoir
 
-- **Aucun écran ne montre l'état de l'essai au locataire.** `etatEssai` rend
-  une `phrase` prête à afficher, et personne ne l'affiche. Il découvre donc la
-  fermeture en butant dessus. C'est le prochain lot, et c'est petit.
-- **L'enveloppe n'alerte personne.** Elle ferme, silencieusement. Savoir
-  qu'elle s'est fermée demande aujourd'hui une requête à la main.
+- **L'enveloppe n'alerte personne.** Elle ferme, silencieusement. Le locataire
+  l'apprend maintenant sur `/compte` ; NOUS, non — savoir qu'elle s'est fermée
+  demande toujours une requête à la main.
 - **Rien ne mesure ce que l'ouverture RAPPORTE.** Le compteur dit ce qu'elle
   coûte. Le taux de conversion d'un essai vers une vente reste `null`, comme
   tout le reste : `gagnes: 0`.

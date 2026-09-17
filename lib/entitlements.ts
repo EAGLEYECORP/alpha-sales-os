@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getTenant } from "./tenant";
 import { peutOuvrir, type BrickId } from "./bricks-access";
 import { serverAuthEnforced } from "./supabase-jwt";
-import { etatEssai, HORS_ESSAI } from "./essai";
+import { etatEssai, HORS_ESSAI, type EtatEssai } from "./essai";
 import { coutGlobalEssais } from "./compteur-essai";
 
 /**
@@ -65,6 +65,35 @@ export interface Entitlement {
    * Distinct de `maitre` : l'un est un mode, l'autre est un rôle.
    */
   solo: boolean;
+  /**
+   * ─────────────────────────────────────────────────────────────────────
+   * L'ÉTAT DE L'ESSAI — présent MÊME QUAND L'ESSAI EST FERMÉ.
+   *
+   * ⚠⚠ C'EST TOUT L'INTÉRÊT DE CE CHAMP, et il répare un trou que le lot du
+   * 17/09 a créé lui-même.
+   *
+   * Un essai qui se ferme retombe au socle gratuit — invariant du dépôt, il
+   * ne bouge pas. Mais le socle gratuit porte `statut: "actif"`. Donc, vu de
+   * l'écran, **un essai terminé était indistinguable d'un compte qui n'en a
+   * jamais eu** : le locataire perdait `/campaigns`, `/agent` et `/audits`
+   * du jour au lendemain, et rien nulle part ne disait pourquoi.
+   *
+   * Pire : `etatEssai` produit déjà une `phrase` écrite pour être lue par un
+   * humain, et personne ne la lisait. Un mécanisme juste, testé, branché
+   * nulle part — le défaut récurrent de ce dépôt, commis sur la brique qu'on
+   * venait d'ouvrir.
+   *
+   * ⚠ `undefined` ≠ « essai fermé ». `undefined` veut dire **ce compte n'a
+   * pas d'essai du tout** (client payant, compte maître, mode solo, gratuit
+   * de toujours). La distinction gouverne ce que l'écran a le droit de dire :
+   * on ne raconte pas la fin d'un essai à quelqu'un qui n'en a jamais ouvert.
+   *
+   * ⚠ Ce champ est DESCRIPTIF, jamais décisionnel. Les droits restent ceux
+   * de `bricks` ; `autorise()` ne le lit pas et ne doit jamais le lire —
+   * sinon on aurait deux définitions de ce qui est ouvert.
+   * ─────────────────────────────────────────────────────────────────────
+   */
+  essai?: EtatEssai;
 }
 
 /** Le droit du mode solo : tout ouvert, parce qu'il n'y a personne d'autre. */
@@ -463,10 +492,17 @@ export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
         coutGlobalEur: await coutGlobalEssais(),
       });
 
-      // Un essai fermé — durée, plafond, enveloppe ou compteur illisible —
-      // retombe au socle gratuit, jamais au néant : ses fiches lui
-      // appartiennent. C'est l'invariant du dépôt.
-      if (!essai.actif) return droitGratuit(tenant.id);
+      /**
+       * Un essai fermé — durée, plafond, enveloppe ou compteur illisible —
+       * retombe au socle gratuit, jamais au néant : ses fiches lui
+       * appartiennent. C'est l'invariant du dépôt, il ne bouge pas.
+       *
+       * ⚠ Mais il repart AVEC son état d'essai. Sans ça, l'écran voit un
+       * compte gratuit `statut: "actif"` et ne peut pas distinguer « ton
+       * essai vient de finir, voici pourquoi » de « tu n'as jamais eu
+       * d'essai ». Le locataire perdrait trois briques en silence.
+       */
+      if (!essai.actif) return { ...droitGratuit(tenant.id), essai };
 
       /**
        * ⚠⚠ `BRIQUES_ESSAI`, PAS `l.bricks`. Le périmètre de l'essai se dérive
@@ -481,6 +517,7 @@ export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
         essaiJusquA: l.essai_jusqu_a,
         maitre: false,
         solo: false,
+        essai,
       };
     }
 

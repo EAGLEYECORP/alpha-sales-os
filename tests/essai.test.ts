@@ -156,10 +156,28 @@ test("⚠⚠ LE PLAFOND EST BRANCHÉ DANS resoudreDroits — pas seulement expor
    * ne doit pas pouvoir se perdre en réécrivant la première.
    */
   assert.match(src, /if \(statut === "essai"\)/, "la branche essai doit exister");
+  /**
+   * ⚠ LA FORME A CHANGÉ LE 17/09, PAS LA CONTRAINTE. Le repli rendait
+   * `droitGratuit(tenant.id)` nu ; il rend désormais ce même socle **plus
+   * l'état de l'essai** (`{ ...droitGratuit(id), essai }`), pour que l'écran
+   * puisse dire POURQUOI l'essai s'est fermé. Sans ça, un essai terminé était
+   * indistinguable d'un compte qui n'en a jamais eu — le socle gratuit porte
+   * `statut: "actif"`, et le locataire perdait trois briques en silence.
+   *
+   * Ce qui est exigé reste le même : le repli passe par `droitGratuit`, donc
+   * par le SOCLE, jamais par un refus. Le garde vise les deux moitiés
+   * séparément pour qu'aucune ne se perde en réécrivant l'autre.
+   */
+  const branche = src.slice(src.indexOf("if (!essai.actif)"));
+  assert.match(branche.slice(0, 120), /droitGratuit\(/, "le repli passe par le SOCLE gratuit");
+  assert.ok(
+    !/if \(!essai\.actif\) return DROIT_REFUSE/.test(src),
+    "un essai fermé ne retombe JAMAIS au néant — ses fiches lui appartiennent",
+  );
   assert.match(
-    src,
-    /if \(!essai\.actif\) return droitGratuit\(/,
-    "un essai fermé retombe au socle GRATUIT, jamais au néant — ses fiches lui appartiennent",
+    branche.slice(0, 120),
+    /essai/,
+    "et il repart AVEC son état : l'écran doit pouvoir dire pourquoi l'essai s'est fermé",
   );
 });
 
