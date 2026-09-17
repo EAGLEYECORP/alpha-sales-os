@@ -79,6 +79,7 @@ import { ClosingMode } from "@/components/training/closing-mode";
 import { DeepdiveTools } from "@/components/prospects/deepdive-tools";
 import { PreDevisPanel } from "@/components/prospects/pre-devis-panel";
 import { CadragePanel } from "@/components/prospects/cadrage-panel";
+import { AlertePrixPerime } from "@/components/prospects/alerte-prix-perime";
 import { RecoveryProjection } from "@/components/prospects/recovery-projection";
 import { Sparring } from "@/components/training/sparring";
 import { fireSignedConfetti } from "@/lib/confetti";
@@ -1202,6 +1203,16 @@ function CommercialTab({
           Rien ne PART d'ici : le document s'ouvre pour impression, l'email se
           copie. C'est ce qui en fait par construction un message relu par un
           humain (`lib/signature-ia.ts`), donc sans divulgation IA. */}
+      {/* ⚠⚠ LE PRIX DE LA FICHE PEUT DATER D'UNE GRILLE MORTE, et ça ne se
+          voit nulle part ailleurs. Mesuré sur le pipeline réel le 17/09 :
+          SEIZE fiches sur seize portaient les montants remplacés le 02/09,
+          dont les trois offres encore sur la table. Une décision de doctrine
+          qui n'atteint jamais la donnée — et c'est la fiche, pas le Cerveau,
+          qui alimente un devis.
+          Il ALERTE, il ne corrige pas : un prix annoncé au prospect ne se
+          réécrit pas en douce. */}
+      <AlertePrixPerime p={p} />
+
       <PreDevisPanel p={p} />
 
       {/* ⚠ LE CADRAGE VIT À CÔTÉ DU DEVIS, PAS DANS L'ONGLET « RELATION ».

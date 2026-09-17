@@ -546,6 +546,41 @@ faire des mesures.
   > ne les a validés. Le premier client qui refuse en disant pourquoi vaudra
   > plus que ce raisonnement.
 
+### ⚠⚠ LE PIPELINE ENTIER ÉTAIT CHIFFRÉ SUR LA GRILLE MORTE (17/09/2026)
+`lib/grille-perimee.ts` · `components/prospects/alerte-prix-perime.tsx` ·
+`tests/grille-perimee.test.ts`.
+
+Mesuré sur le pipeline réel : **16 fiches sur 16** portent `setupValue = 990`
+et un mensuel pris dans `59 / 115 / 169 / 219 / 319`. C'est exactement la
+grille remplacée le 02/09, puis réajustée le 12/09 — **les trois offres encore
+sur la table comprises**. Écart sur le seul setup : 990 → 1 490, soit
+**1 500 € sur trois dossiers**.
+- **Le défaut de signature du dépôt, appliqué à l'argent** : une DÉCISION prise
+  dans la doctrine qui n'atteint jamais la DONNÉE. Le Cerveau l'avait déjà payé
+  (`sc-voix-tarifs`). Ici c'est pire — le Cerveau alimente un prompt, une fiche
+  alimente un **devis**.
+- **⚠⚠ ET LA DOCTRINE RÉPÉTAIT LE PRIX MORT.** « 3 fiches en offre (2 970 €) »
+  revenait dans chaque compte rendu : 2 970 = **3 × 990**. Le chiffre qui
+  servait à décider de la priorité était celui de la grille disparue. Une prose
+  qui recopie un montant se périme sans bruit — la règle « ne jamais recopier
+  une grille dans une prose » existait, et c'est le suivi qui l'a violée.
+- **ON SIGNALE, ON NE CORRIGE PAS — l'inverse du cadrage.** Le cadrage BLOQUE
+  un document ; ici on ne bloque rien et **aucun bouton ne propose de
+  corriger** : un prix ANNONCÉ au prospect ne se réécrit pas en douce, ce
+  serait renégocier sans le dire. « Aucun poids ne s'auto-corrige », appliqué
+  à une facture.
+- **⚠⚠ DEUX CERTITUDES, ET C'EST LA DATE QUI TRANCHE.** `datee` = la fiche n'a
+  pas bougé depuis le remplacement, le montant vient de l'ancienne grille.
+  `coincidence` = elle a vécu depuis, 115 €/mois peut être un choix assumé — on
+  le dit, on ne l'affirme pas, et la phrase n'ordonne rien. Un garde qui crie
+  sur une fiche juste est un garde qu'on désarme.
+- **La dernière touche se lit sur les ÉVÉNEMENTS**, jamais sur un « modifié
+  le » : ce dernier bouge au moindre clic, et une fiche figée depuis juillet
+  passerait pour vivante — l'alerte perdrait sa force là où elle compte.
+- **Les montants PÉRIMÉS se recopient dans ce module** (ils n'existent plus
+  ailleurs, c'est le seul endroit légitime) ; les montants **EN VIGUEUR sont
+  IMPORTÉS**, et un test refuse qu'ils soient écrits en dur ici.
+
 ### LE PRIX S'ANCRE SUR TROIS CHOSES, ET IL N'EN UTILISAIT AUCUNE (12/09/2026)
 `lib/marche.ts` (le relevé) · `lib/positionnement.ts` (le rapprochement) ·
 `lib/pricing-briques.ts` (le coût) · `tests/marche-briques.test.ts`.

@@ -22,7 +22,7 @@ Setup Alpha Voice ........  1 490 €
 
 | Stade | Nombre | Ce que ça vaut |
 |---|---|---|
-| `offre` | **3** | **2 970 €** de setup cumulé |
+| `offre` | **3** | **2 970 €** annoncés · **4 470 €** au tarif en vigueur |
 | `demo` | 3 | — |
 | `redzone` | 1 | — |
 | `audit` | 6 | — |
@@ -31,6 +31,18 @@ Setup Alpha Voice ........  1 490 €
 > ⚠⚠ **LES TROIS OFFRES NE FONT PAS 10 000 €.** Ce sont des deals Alpha Voice,
 > pas des packs : 2 970 € au total. Les fermer toutes les trois — ce qui serait
 > déjà un excellent résultat — laisse **7 030 € d'écart**.
+>
+> ⚠⚠ **ET CES 2 970 € SONT UN PRIX MORT** (constaté le 17/09/2026). C'est
+> 3 × 990, le setup remplacé par **1 490 €** le 12/09 : les trois fiches — et
+> les treize autres, soit **16 sur 16** — portent la grille disparue. Au tarif
+> en vigueur, les mêmes trois dossiers valent **4 470 €**, et l'écart à
+> combler tombe à **5 530 €**.
+>
+> **Les deux chiffres restent écrits, et c'est voulu** : 2 970 € est ce qui a
+> été ANNONCÉ au prospect, 4 470 € ce que la grille dit aujourd'hui. Choisir
+> lequel s'applique est une décision commerciale — honorer le prix annoncé, ou
+> re-chiffrer en l'expliquant. Ce qui n'est pas acceptable, c'est de la
+> découvrir en signant. `lib/grille-perimee.ts` le dit désormais sur la fiche.
 >
 > **10 000 € cette semaine exige donc une vente qui n'est pas dans le pipe
 > aujourd'hui.** Ce n'est pas impossible ; ce n'est pas une mécanique. Et la
