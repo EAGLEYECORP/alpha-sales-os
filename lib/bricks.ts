@@ -168,8 +168,30 @@ export function outboundPrice(calls: number): OutboundQuote {
 export const BRICKS: Brick[] = [
   {
     id: "alpha-voice",
-    label: "Alpha Voice",
-    what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant et sortant, 24/7.",
+    /**
+     * ⚠⚠ LE NOM PORTE LE PÉRIMÈTRE, ET CE N'EST PAS DU CONFORT — trouvé au
+     * RENDU le 17/09/2026, en lisant le devis que l'app fait copier.
+     *
+     * Il y a TROIS offres publiques dont le nom commence par « Alpha Voice » :
+     * Essentiel et Intensif (1 490 € de setup, entrant) et « 1 000 appels »
+     * (3 500 €, volume sortant). Cette brique chiffre la TROISIÈME — et elle
+     * s'appelait « Alpha Voice » tout court.
+     *
+     * Conséquence mesurée sur le texte qui PART : « Alpha Voice — 3 500 € HT
+     * d'installation, puis 364 €/mois », reçu par un prospect qui vient de lire
+     * « Alpha Voice — 1 490 € » sur la vitrine. Deux fois et demie l'écart, sur
+     * ce qui ressemble au même produit. Ce n'est pas un prix faux : c'est un
+     * nom ambigu, et au dernier mètre ça se lit comme de l'improvisation.
+     *
+     * ⚠ Le nom ne porte AUCUN CHIFFRE : ce libellé est recopié dans le
+     * catalogue PUBLIC, qui descend dans le navigateur, et
+     * `tests/vitrine-fuite` y refuse tout montant — volume compris. La
+     * première rédaction disait « 1 000 appels » et ce garde l'a
+     * refusée, à raison : un volume est une information de grille.
+     */
+    label: "Alpha Voice — volume sortant",
+    what:
+      "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant ET sortant, 24/7. Périmètre VOLUME : le sortant à la cadence est inclus. L'accueil seul se prend en Essentiel ou Intensif, moins cher.",
     setupHT: OUTBOUND_SETUP_HT,
     // Palier d'entrée du sortant : 1 000 appels/mois. Au-delà, voir
     // OUTBOUND_TIERS — le prix suit le volume, sans engagement.

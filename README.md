@@ -262,7 +262,7 @@ largement le pack — c'est l'ancrage.
 
 | Brique | Installation | Mensuel |
 |---|---|---|
-| **Alpha Voice** — agent vocal entrant/sortant, 24/7 | 3 500 € | 364 € (1 000 appels) |
+| **Alpha Voice — volume sortant** — agent vocal entrant/sortant, 24/7 | 3 500 € | 364 € (1 000 appels) |
 | **Campagnes & outreach** | 2 500 € | 290 € |
 | **Le Cerveau (RAG)** | 2 500 € | 240 € |
 | **Agent ALPHA** — le copilote qui lit le pipeline à ta place | 2 200 € | 490 € |

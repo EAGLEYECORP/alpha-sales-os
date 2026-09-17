@@ -184,3 +184,37 @@ test("⚠⚠ L'ÉCRAN NE PEINT PAS UNE FAVEUR COMME UNE ALERTE", () => {
   assert.match(ecran, /PRIX_HONORE_JUSQU_AU/, "…et il est borné par la même date que le module");
   assert.ok(!/onClick|patch\(/.test(ecran), "toujours aucun bouton qui corrige un prix annoncé");
 });
+
+test("⚠⚠ AUCUN LIBELLÉ DE BRIQUE N'EST AMBIGU ENTRE DEUX OFFRES PUBLIQUES", async () => {
+  /**
+   * ══ TROUVÉ AU RENDU, PAS À LA RELECTURE — 17/09/2026 ══
+   *
+   * En lisant le devis que l'app fait copier : « Alpha Voice — 3 500 € HT
+   * d'installation, puis 364 €/mois ». Or la vitrine annonce « Alpha Voice »
+   * à 1 490 €. Deux fois et demie l'écart sur ce qui ressemble au même produit.
+   *
+   * Ce n'était PAS un prix faux — vérifié avant de crier : « Alpha Voice —
+   * 1 000 appels » est une offre publique déclarée, à 3 500 €. Le défaut était
+   * le NOM : la brique s'appelait « Alpha Voice » tout court, alors que trois
+   * offres publiques commencent par ces deux mots.
+   *
+   * ⚠ Un nom ambigu ne casse rien et ne fait tomber aucun test. Il se paie au
+   * dernier mètre, quand le prospect compare la vitrine au devis et conclut
+   * qu'on improvise nos prix.
+   */
+  const { BRICKS } = await import("../lib/bricks");
+  const { OFFRES } = (await import("../lib/offres-publiques")) as unknown as {
+    OFFRES: { id: string; nom: string; setupHT: number | null }[];
+  };
+
+  const ambigus: string[] = [];
+  for (const b of BRICKS) {
+    const commencentPar = OFFRES.filter((o) => o.nom.startsWith(b.label));
+    // Le libellé d'une brique doit désigner UNE offre, ou aucune — jamais
+    // plusieurs. « Alpha Voice » en désignait trois.
+    if (commencentPar.length > 1) {
+      ambigus.push(`${b.id} → « ${b.label} » désigne ${commencentPar.length} offres : ${commencentPar.map((o) => o.nom).join(", ")}`);
+    }
+  }
+  assert.deepEqual(ambigus, [], "un libellé qui désigne deux offres fait lire deux prix pour un produit :\n  " + ambigus.join("\n  "));
+});

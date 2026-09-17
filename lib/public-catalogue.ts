@@ -196,8 +196,11 @@ export const GARANTIE = {
 export const CAPACITES: CapacitePublique[] = [
   {
     id: "alpha-voice",
-    label: "Alpha Voice",
-    what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant et sortant, 24/7.",
+    // ⚠ Le nom porte le PÉRIMÈTRE : trois offres publiques commencent par
+    // « Alpha Voice », et celle-ci est la plus chère des trois. Un nom nu
+    // faisait lire 3 500 € là où la vitrine annonce 1 490 €.
+    label: "Alpha Voice — volume sortant",
+    what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant ET sortant, 24/7. Périmètre VOLUME : le sortant à la cadence est inclus. L'accueil seul se prend en Essentiel ou Intensif, moins cher.",
     palier: "coeur",
   },
   {
