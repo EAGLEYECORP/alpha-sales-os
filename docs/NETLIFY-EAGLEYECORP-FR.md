@@ -10,6 +10,21 @@
 > L'ÉCRAN FAIT, pas seulement comment il s'appelle. Si le mot diffère, suis la
 > description.
 
+> ⚠⚠ **NE PAS REESSAYER DE DÉPLOYER DEPUIS UNE SESSION — testé le 17/09, ça ne
+> passe pas.** Le MCP Netlify ne déploie rien lui-même : `deploy-site` rend une
+> commande `npx @netlify/mcp … --proxy-path …` qui téléverse le dépôt et lance
+> un build chez Netlify. La commande s'installe correctement (npm est autorisé),
+> puis **le téléversement échoue en `403 Forbidden`** — le proxy sortant de
+> l'environnement ne laisse pas passer l'hôte de dépôt. Même famille de blocage
+> que `curl eagleyecorp.fr`, qui rend 403 lui aussi.
+> Conséquence : **toute mise en ligne passe par un humain**, à la main ou par la
+> liaison git. Une session peut préparer, tester et vérifier la source ; elle ne
+> peut pas publier.
+> ⚠ Une session qui tenterait quand même doit d'abord sortir `donnees-privees/`
+> de l'arborescence — la commande téléverse le RÉPERTOIRE DE TRAVAIL, pas
+> `site/`, et c'est `netlify.toml` (`base = "site"`) qui décide ensuite de ce
+> qui est publié. Le dossier a été déplacé puis **restauré** lors de l'essai.
+
 ## Les repères
 
 | | |
