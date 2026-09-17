@@ -23,6 +23,7 @@
     "node": ">=18.18"
   },
   "scripts": {
+    "sql:lot": "node scripts/bundle-migrations.mjs",
     "test": "node -e \"require('fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --import ./tests/resolution-alias.mjs --test \".test-build/tests/*.test.js\"",
     "dev": "next dev",
     "build": "next build",

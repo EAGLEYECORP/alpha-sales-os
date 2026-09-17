@@ -48,23 +48,43 @@ et `proprietaire.coherent` (les deux listes `OWNER_EMAILS` concordent-elles).
 > Si tu déploies avant de poser les variables, garde `SITE_PASSWORD` : il
 > mure tout tant que les comptes ne sont pas actifs.
 
-### 2. Les migrations, 002 → 011
+### 2. Les migrations — UN SEUL COPIER-COLLER
 
-Dans le SQL editor Supabase, **dans l'ordre**. Toutes vérifiées rejouables :
-aucun DDL non protégé, tu ne casses rien en repassant une migration.
+Ouvre **`supabase/migrations/LOT-A-COLLER.sql`**, tout sélectionner, coller
+dans Supabase → SQL Editor → **Run**. Une fois. Ça se fait depuis un
+téléphone.
 
-```
-002-entitlements.sql            droits par compte
-003-organisation.sql            multi-utilisateur
-004-ordonnanceur.sql            pg_cron + pg_net (⚠ secret dans le VAULT)
-005-presence-agent.sql          battement de l'agent vocal
-006-rendez-vous-cloisonnes.sql
-007-attribution-apporteurs.sql
-008-essai-plafond-cout.sql      le plafond de dépense de l'essai
-009-trace-destinataire.sql      le destinataire normalisé
-010-byok-identifiants.sql       les clés apportées (BYOK)
-011-byok-email.sql              ← NOUVELLE : la capacité « email »
-```
+Le fichier se termine par un **tableau de vérification** : sept lignes, une
+colonne `etat`. Tout `OK` = c'est fait. Tu n'as rien d'autre à interpréter.
+
+> ⚠⚠ **Ce lot a été EXÉCUTÉ, pas seulement relu** (17/09/2026, Postgres 16
+> local avec un décor `auth`/`storage` imité). Trois passages d'affilée sur la
+> même base : zéro erreur, sept `OK` sur sept à chaque fois. Le déclencheur
+> d'inscription a été éprouvé pour de bon — un compte créé obtient
+> `statut = essai`, **30 jours**, `cout_consomme_eur = 0.00` ; `debiter_essai`
+> cumule bien (0,25 € puis 1,25 €) ; rejouer le déclencheur sur un compte
+> existant n'écrase pas son compteur.
+>
+> ⚠ **Ce que ça ne prouve PAS** : ça n'a pas tourné sur TA base, avec tes
+> données et le vrai `auth.users` de Supabase. Le décor local imite le
+> nécessaire, il ne remplace pas la production.
+
+> ⚠⚠ **L'ancienne rédaction de cette section disait « 002 → 011 », et elle
+> était FAUSSE de trois fichiers** : ni `schema.sql`, ni `001`, ni `012`.
+> Trouvé en exécutant, pas en relisant — sur une base neuve, `001` s'arrête
+> net (« relation "public.prospects" does not exist ») parce qu'il ALTÈRE des
+> tables que `schema.sql` crée. Le lot les met dans le bon ordre.
+
+> ⚠⚠ **`004-ordonnanceur.sql` N'EST PAS DANS LE LOT, et c'est délibéré.** Il
+> lit deux secrets dans le Vault et **lève une exception** s'ils manquent —
+> plutôt que d'appeler la route sans en-tête d'authentification. Dans un lot
+> « colle et oublie », il planifierait un cron qui échoue toutes les dix
+> minutes, en silence, sur ta production. Il se pose **à part, après** avoir
+> renseigné les deux secrets (la marche à suivre est en tête du fichier).
+
+> ⚠ Le lot est **engendré** par `npm run sql:lot`, jamais écrit à la main, et
+> `tests/migrations-lot.test.ts` refuse qu'il dérive de ses migrations. Une
+> retouche manuelle fait tomber le build — vérifié par mutation.
 
 > ⚠ La **010** va avec une variable Vercel : **`CREDENTIALS_MASTER_KEY`**,
 > 32 octets, qui chiffre les clés que les locataires collent. Sans elle,
@@ -344,7 +364,7 @@ l'adresse, non.**
 
 ```
 1. Les 4 variables Vercel          → tu as ton accès complet
-2. Les migrations 002 → 008        → la base suit
+2. LOT-A-COLLER.sql, un seul Run   → la base suit  (004 à part, après)
 3. SMTP + DNS                      → tu peux envoyer  (JAMAIS avant 1)
 4. L'export de fiches              → la machine a de quoi mordre
 5. python voice/agent.py           → l'agent peut parler
