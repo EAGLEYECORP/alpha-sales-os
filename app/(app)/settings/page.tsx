@@ -34,6 +34,7 @@ import { BoiteEnvoi, CleIA } from "@/components/settings/cle-ia";
 import { ImportTriagePanel } from "@/components/settings/import-triage";
 import { triageImport, type ImportTriage } from "@/lib/import-triage";
 import { PanneauOperateur } from "@/components/settings/panneau-operateur";
+import { CharteMarque } from "@/components/settings/charte-marque";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
 import { getN8nConfig, setN8nConfig, clearN8nConfig, testN8n, syncFromN8n } from "@/lib/n8n";
@@ -540,6 +541,13 @@ export default function SettingsPage() {
         {/* Ce que le TITULAIRE du compte vend à SES prospects : ça lui
             appartient, white-label oblige. Reste côté client. */}
         <OffresEditor />
+
+        {/* ── La charte de marque. Elle reste CÔTÉ CLIENT et n'est pas réservée
+            au maître : elle décrit le matériau de l'outil (que tout le monde
+            voit) et surtout la frontière « ce qui est à l'outil / ce qui suit
+            ton compte ». C'est exactement ce qu'un opérateur white-label doit
+            pouvoir lire avant de fabriquer une plaquette à son nom. ── */}
+        <CharteMarque />
 
         {/* ── OPÉRATEUR. La grille tarifaire d'Alpha Sales OS — nos prix, nos
             paliers. Le client achète l'outil ; il n'édite pas son prix. ── */}
