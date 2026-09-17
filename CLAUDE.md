@@ -298,6 +298,43 @@ vide, ce qui ressemble trait pour trait à « ce prospect n'a pas de problème �
 > contre-test l'exige : elle est fausse SUR CETTE VERTICALE, pas dans l'absolu.
 > Un garage qui ne décroche pas perd vraiment le client au profit du suivant.
 
+### ⚠⚠ NOS 8 FICHES ICP SUR 8 PARTAIENT SUR LA MAUVAISE OFFRE (17/09/2026)
+`lib/mesure-champ.ts` · `lib/offer-match.ts` · `tests/routage-offre-verticale.test.ts`.
+
+Mesuré de l'arrêté jusqu'à l'aimant servi : les huit permis retenus recevaient
+**Visibilité / Growth**, alors que la verticale `maitrise-ouvrage` sert l'OS de
+vente. Le message d'approche s'ouvrait donc sur « quelqu'un qui cherche du neuf
+dans le quartier tombe sur votre programme » — un sujet qu'on n'avait relevé
+sur aucune de ces fiches.
+- **UN GARDE ÉCRIT SUR UN ÉTAT QUE LE TYPE REND IMPOSSIBLE.** `matchOffer`
+  testait `websiteState !== undefined`, avec en commentaire l'intention exacte
+  (« on ne score que ce qui est mesuré »). Mais `DeepAudit` déclare ce champ
+  `string` OBLIGATOIRE et **`prospectDefaults.deepAudit` — le socle de TOUS les
+  imports — écrit `""`**. Le champ est donc toujours défini, et `weakWebsite("")`
+  rendait `true` : +3 « site absent ou obsolète » sur chaque fiche importée.
+  Même famille que `AngleKey = Exclude<Sector, "autre">` : un type qui rend
+  fausse la garde écrite à côté de lui.
+- **ET L'ESCALIER RÉPONDAIT JUSTE SUR LES MÊMES FICHES** (`filled()` avant de
+  conclure). Deux définitions de « son site est-il un problème ? », deux
+  réponses opposées, même produit, même fiche. `estMesure` n'en laisse qu'une ;
+  les deux copies faibles qui survivent (`master-rappel`, `checkpoints`) sont
+  **nommées avec leur motif**, parce que les basculer changerait des écrans que
+  je n'ai pas mesurés.
+- **⚠⚠ LA RÈGLE EST DISSYMÉTRIQUE EXPRÈS : un signal MESURÉ peut contredire la
+  verticale ; un vide ne le peut pas.** Un maître d'ouvrage dont on a CONSTATÉ
+  l'absence de site part sur la visibilité — 1re marche de l'escalier, même
+  compte. Sans rien de mesuré, c'est `offreDeLaVerticale` qui tranche, au lieu
+  d'un ordre de départage écrit en dur. `sansSignal` dit à l'appelant si le
+  routage vient d'une observation ou d'un défaut : un angle mort se DIT.
+- **⚠⚠ UNE MUTATION N'A PAS MORDU, ET C'EST LA LEÇON.** Débrancher la verticale
+  du deep-dive laissait six tests verts : la maîtrise d'ouvrage sert
+  `alpha-sales-os`, qui est AUSSI le défaut en dur — **l'assertion était
+  satisfaite par une coïncidence du code existant**. Le test se joue désormais
+  sur une verticale qui sert une autre offre.
+- Mesuré : ICP réel **8/8 → 0/8**. Jeu de démonstration 5/8 → 4/8, et les 4
+  restants sont des routages MESURÉS (31/18/14 appels relevés en audit sur
+  place, un site constaté absent) — ils doivent rester, c'est la règle.
+
 ### LE SECTEUR NOMME LE MARCHÉ — et rien d'autre n'en dépend (11/09/2026)
 `Sector` (`lib/types.ts`) était resté au marché d'AVANT deux jours après la
 bascule. Faute de valeur pour le dire, `permisVersProspect` rangeait NOS fiches
@@ -684,6 +721,23 @@ C'est ce qui permet de refuser d'embarquer un collecteur dans le produit
 (scraping d'annuaire, session LinkedIn, aspiration de Maps) sans perdre le
 service : la collecte reste dehors, remplaçable, et sous la responsabilité de
 celui qui la fait.
+
+> 📦 **La règle appliquée à des dépôts précis** : `docs/COLLECTEURS-EXTERIEURS.md`.
+> Deux ponts existent (`scripts/permis-lyon.mjs`, `scripts/maps-vers-alpha.mjs`),
+> et deux tests refusent qu'un fichier de `lib/`, `components/` ou `app/` les
+> importe — en visant un **chemin d'import**, jamais le nom du fichier.
+> · **Maps ne source PAS notre ICP** et il faut le dire avant de le lancer : une
+>   SCCV n'a pas de fiche Maps, et « promoteurs à Lyon » est un ciblage par
+>   SECTEUR — QUI, jamais OÙ EN EST l'affaire. Ce qu'il apporte vraiment, c'est
+>   **la troisième colonne** : le téléphone que l'arrêté ne porte pas.
+> · **Le rapprochement est EXACT ou n'a pas lieu**, et un nom ambigu est écarté :
+>   un faux rapprochement pose le numéro d'une société sur la fiche d'une autre,
+>   et ce numéro part dans une file d'appels.
+> · **Le secteur se DÉCLARE**, il ne se devine pas sur la catégorie Google — le
+>   défaut du moniteur d'auto-école servi à des directeurs de programmes.
+> · `ScrapeGraphAI` est **refusé**, avec ses trois motifs écrits (23 dépendances
+>   Python, coût par page, et `undetected-playwright` — un contournement de
+>   détection, dans un produit dont l'argument est la conformité).
 
 > ⚠ La contrepartie, à cadrer AVANT de la promettre. « On montre au client
 > comment faire » est du **service**, pas du logiciel : ça ne s'automatise pas,
