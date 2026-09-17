@@ -17,6 +17,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import { estMesure } from "./mesure-champ";
+
 export type EagleyeOffer = "alpha-sales-os" | "alpha-voice" | "visibilite-growth";
 
 export interface OfferSignals {
@@ -38,6 +40,17 @@ export interface OfferMatch {
   reasons: Record<EagleyeOffer, string[]>;
   /** Accroche d'ouverture pour l'offre primaire. */
   pitch: string;
+  /**
+   * ⚠ VRAI QUAND AUCUN SIGNAL N'A ÉTÉ MESURÉ — le routage vient alors d'un
+   * défaut, pas d'une observation.
+   *
+   * Sans ce drapeau, l'appelant ne distingue pas « on a constaté un site
+   * absent » de « on n'a rien regardé et il a fallu choisir ». C'est la même
+   * discipline que partout ici : un angle mort se DIT, il ne se déguise pas en
+   * résultat. Il sert aussi de garde — on ne laisse un défaut contredire la
+   * verticale d'un prospect qu'en le sachant.
+   */
+  sansSignal: boolean;
 }
 
 /**
@@ -299,16 +312,36 @@ const hit = (s: string | undefined, needles: string[]) => {
   return needles.some((n) => t.includes(n));
 };
 
-/** Site absent / obsolète → trou de visibilité. */
+/**
+ * Site absent / obsolète → trou de visibilité.
+ *
+ * ⚠⚠ CES DEUX FONCTIONS RENDAIENT `true` SUR UNE CHAÎNE VIDE, ET C'EST CE QUI
+ * ROUTAIT TOUT LE MONDE VERS LA VISIBILITÉ — 17/09/2026.
+ *
+ * `!t` était en tête de chaque test : « pas de valeur » y valait « pas de
+ * site ». Or `prospectDefaults.deepAudit` — le socle de TOUS les imports —
+ * écrit `websiteState: ""`, parce que le type `DeepAudit` déclare ce champ
+ * `string` OBLIGATOIRE. Chaque fiche importée arrivait donc avec un « site
+ * absent » que personne n'avait jamais constaté.
+ *
+ * Mesuré sur le chemin ICP réel : **8 fiches sur 8** partaient sur l'offre
+ * Visibilité / Growth, dont la verticale `maitrise-ouvrage` n'est pas
+ * porteuse — un arrêté de permis ne dit rien d'un site ni de réseaux.
+ *
+ * « aucun » RESTE un signal, et c'est même le plus fort : quelqu'un est allé
+ * voir. Ce qui disparaît, c'est le vide — voir `lib/mesure-champ.ts`.
+ */
 function weakWebsite(state?: string): boolean {
+  if (!estMesure(state)) return false;
   const t = (state ?? "").toLowerCase().trim();
-  if (!t || t === "aucun" || t === "aucune" || t === "non") return true;
+  if (t === "aucun" || t === "aucune" || t === "non") return true;
   return t.includes("obsol") || t.includes("2014") || t.includes("vieux") || t.includes("datant");
 }
 
 function weakSocial(state?: string): boolean {
+  if (!estMesure(state)) return false;
   const t = (state ?? "").toLowerCase().trim();
-  return !t || t === "aucun" || t === "aucune" || t.includes("faible") || t.includes("inactif") || t.includes("abandon");
+  return t === "aucun" || t === "aucune" || t.includes("faible") || t.includes("inactif") || t.includes("abandon");
 }
 
 /**
@@ -316,8 +349,15 @@ function weakSocial(state?: string): boolean {
  *   Un compte mono-offre ne doit JAMAIS se voir
  *   proposer autre chose, même si l'audit pointe ailleurs. Absent/vide = les
  *   trois (compte maître). Un `allowed` d'une seule offre force cette offre.
+ * @param defautSansSignal  L'offre à retenir quand RIEN n'est mesuré — en
+ *   pratique celle que sert la verticale du prospect. Voir le commentaire du
+ *   repli, plus bas : ce paramètre ne peut jamais renverser un signal.
  */
-export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMatch {
+export function matchOffer(
+  sig: OfferSignals,
+  allowed?: EagleyeOffer[],
+  defautSansSignal?: EagleyeOffer
+): OfferMatch {
   const scores: Record<EagleyeOffer, number> = { "alpha-sales-os": 0, "alpha-voice": 0, "visibilite-growth": 0 };
   const reasons: Record<EagleyeOffer, string[]> = { "alpha-sales-os": [], "alpha-voice": [], "visibilite-growth": [] };
 
@@ -334,11 +374,18 @@ export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMa
   else if (value >= 800) { scores["alpha-sales-os"] += 1; reasons["alpha-sales-os"].push("valeur de deal significative"); }
 
   // ── Visibilité / Growth : invisible en ligne ──
-  // Donnée ABSENTE (undefined) ≠ signal : on ne score que ce qui est mesuré.
-  if (sig.websiteState !== undefined && weakWebsite(sig.websiteState)) { scores["visibilite-growth"] += 3; reasons["visibilite-growth"].push("site absent ou obsolète"); }
+  /**
+   * ⚠ LE GARDE ÉTAIT ÉCRIT SUR UN ÉTAT QUE LE TYPE REND IMPOSSIBLE. Il disait
+   * « Donnée ABSENTE (undefined) ≠ signal : on ne score que ce qui est
+   * mesuré » — l'intention exacte — et testait `!== undefined` sur un champ
+   * que `DeepAudit` déclare `string` obligatoire. Il ne s'est jamais
+   * déclenché. La question se pose désormais là où elle se pose pour de vrai,
+   * dans `weakWebsite` / `weakSocial`, sur « est-ce mesuré ? ».
+   */
+  if (weakWebsite(sig.websiteState)) { scores["visibilite-growth"] += 3; reasons["visibilite-growth"].push("site absent ou obsolète"); }
   if (sig.googleRating !== undefined && sig.googleRating < 4) { scores["visibilite-growth"] += 1; reasons["visibilite-growth"].push(`note Google faible (${sig.googleRating}/5)`); }
   if (sig.googleReviews !== undefined && sig.googleReviews < 10) { scores["visibilite-growth"] += 1; reasons["visibilite-growth"].push("peu d'avis Google — faible preuve sociale"); }
-  if (sig.socialState !== undefined && weakSocial(sig.socialState)) { scores["visibilite-growth"] += 1; reasons["visibilite-growth"].push("réseaux sociaux inexistants ou inactifs"); }
+  if (weakSocial(sig.socialState)) { scores["visibilite-growth"] += 1; reasons["visibilite-growth"].push("réseaux sociaux inexistants ou inactifs"); }
 
   // Classement. Départage stable : alpha-voice > visibilité > alpha (le plus
   // « proximité » d'abord, cohérent avec le pipe terrain), à score égal.
@@ -354,9 +401,38 @@ export function matchOffer(sig: OfferSignals, allowed?: EagleyeOffer[]): OfferMa
   for (const o of ranking) {
     if (scores[o] > best) { best = scores[o]; primary = o; }
   }
-  // Aucun signal → défaut = 1re offre autorisée (Alpha Sales OS pour le maître,
-  // alpha-voice pour un compte mono-offre : jamais une offre interdite).
-  if (best <= 0) primary = ranking.includes("alpha-sales-os") ? "alpha-sales-os" : ranking[0];
+  /**
+   * ══ AUCUN SIGNAL MESURÉ : C'EST LA VERTICALE QUI TRANCHE, PAS UN ORDRE ══
+   *
+   * ⚠⚠ LA RÈGLE, ET ELLE EST DISSYMÉTRIQUE EXPRÈS : **un signal MESURÉ a le
+   * droit de contredire la verticale ; un départage à score nul ne l'a pas.**
+   *
+   * Un maître d'ouvrage dont on a CONSTATÉ qu'il n'a pas de site part sur la
+   * visibilité, et c'est juste — c'est la première marche de l'escalier, et
+   * elle revient au même compte. Mais un maître d'ouvrage sur lequel on n'a
+   * RIEN relevé partait, lui aussi, sur une offre choisie par un ordre écrit
+   * en dur ici. Deux définitions de « qu'est-ce qu'on lui vend ? » dans le
+   * même produit, dont une qui ne repose sur rien.
+   *
+   * Le défaut codé en dur (`alpha-sales-os`) tombait juste pour la maîtrise
+   * d'ouvrage par COÏNCIDENCE — c'est bien l'offre que sa verticale sert. Sur
+   * les neuf verticales qui servent Alpha Voice, il tombe faux, et personne ne
+   * l'aurait vu : rien n'échoue quand un routage se trompe, on s'en aperçoit
+   * en lisant le message qu'on s'apprête à envoyer.
+   *
+   * ⚠ Le défaut ne s'applique QUE s'il est autorisé sur le compte : un compte
+   * partenaire mono-offre ne se voit jamais proposer autre chose, quelle que
+   * soit la verticale de la fiche.
+   */
+  const sansSignal = best <= 0;
+  if (sansSignal) {
+    primary =
+      defautSansSignal && ranking.includes(defautSansSignal)
+        ? defautSansSignal
+        : ranking.includes("alpha-sales-os")
+          ? "alpha-sales-os"
+          : ranking[0];
+  }
 
-  return { primary, label: OFFER_LABELS[primary], scores, reasons, pitch: OFFER_PITCH[primary] };
+  return { primary, label: OFFER_LABELS[primary], scores, reasons, pitch: OFFER_PITCH[primary], sansSignal };
 }

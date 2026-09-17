@@ -1,5 +1,5 @@
 import type { Prospect } from "./types";
-import { verticalForProspect } from "./playbook";
+import { offreDeLaVerticale, verticalForProspect } from "./playbook";
 import { pickMagnet } from "./lead-magnet";
 import { OFFRES } from "./offer-match";
 
@@ -109,7 +109,7 @@ export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcri
    * une verticale sans `offre` dont le critère ne parle pas du téléphone —
    * c'est ce qui empêche le défaut de mentir la prochaine fois.
    */
-  const offreVerticale = v?.offre ?? "alpha-voice";
+  const offreVerticale = offreDeLaVerticale(v) ?? "alpha-voice";
   const verticaleColle = offre !== null && offre === offreVerticale;
 
   return {

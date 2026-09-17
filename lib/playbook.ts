@@ -818,6 +818,26 @@ export const VERTICALS: VerticalPlaybook[] = [
 
 export const verticalById = (id: string) => VERTICALS.find((v) => v.id === id) ?? null;
 
+/**
+ * L'offre que sert une verticale, repli documenté compris.
+ *
+ * ⚠ CE REPLI ÉTAIT RECOPIÉ. `approcheEcrite` écrivait `v?.offre ?? "alpha-voice"`
+ * dans son coin, avec le commentaire qui l'explique. Au moment de poser la
+ * même question dans le routage d'offre, la recopier une deuxième fois aurait
+ * créé exactement ce que ce dépôt paie le plus cher : deux endroits qui posent
+ * la même règle, dont un qui cessera de répondre pareil au premier ajustement.
+ *
+ * `undefined` sur une fiche SANS verticale : il n'y a alors rien à demander,
+ * et rendre `"alpha-voice"` par commodité inventerait une réponse. Le repli ne
+ * vaut que pour une verticale RÉELLE dont le champ n'est pas déclaré —
+ * l'hypothèse historique, celle qu'un test protège en exigeant que son critère
+ * parle bien du téléphone.
+ */
+export function offreDeLaVerticale(v: VerticalPlaybook | null): EagleyeOffer | undefined {
+  if (!v) return undefined;
+  return v.offre ?? "alpha-voice";
+}
+
 /** Verticale par défaut d'un secteur de l'app (repli : la plus proche). */
 export function verticalForSector(sector: Sector): VerticalPlaybook | null {
   return VERTICALS.find((v) => v.sectors.includes(sector)) ?? null;

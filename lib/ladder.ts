@@ -1,6 +1,7 @@
 import type { Prospect } from "./types";
 import { NUWACOM_THRESHOLD_HT } from "./accounts";
 import { SATURATION_LOGEMENTS } from "./permis-construire";
+import { estMesure } from "./mesure-champ";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -104,10 +105,14 @@ export interface LadderResult {
   summary: string;
 }
 
-const filled = (v: string | undefined | null): boolean => {
-  const t = (v ?? "").trim().toLowerCase();
-  return t.length > 0 && t !== "n/a" && t !== "na" && t !== "-" && t !== "inconnu";
-};
+/**
+ * ⚠ C'est CETTE définition qui avait raison. `offer-match` posait la même
+ * question en testant `!== undefined`, et concluait « site absent ou obsolète »
+ * sur la chaîne vide que tous les imports écrivent — pendant que l'escalier,
+ * ici, ne trouvait aucun trou de visibilité sur la même fiche. Une seule
+ * source désormais : `lib/mesure-champ.ts`.
+ */
+const filled = estMesure;
 
 /** Site absent / obsolète, peu d'avis, réseaux morts → trou de visibilité. */
 function visibilityEvidence(p: Prospect): string[] {

@@ -2,6 +2,8 @@ import type { Prospect } from "./types";
 import { getAccount, routeAccount } from "./accounts";
 import { matchOffer, type EagleyeOffer, OFFER_LABELS, OFFRES } from "./offer-match";
 import { buildLadder, ladderPitch, type LadderResult } from "./ladder";
+import { estMesure } from "./mesure-champ";
+import { offreDeLaVerticale, verticalForProspect } from "./playbook";
 import { wrapUntrusted } from "./untrusted";
 
 /**
@@ -59,11 +61,15 @@ export interface DeepDive {
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 
-/** Un champ est-il réellement renseigné ? (« », « aucun », « n/a » = non) */
-function filled(v: string | undefined | null): boolean {
-  const t = (v ?? "").trim().toLowerCase();
-  return t.length > 0 && t !== "n/a" && t !== "na" && t !== "-" && t !== "inconnu";
-}
+/**
+ * Un champ porte-t-il une observation ?
+ *
+ * ⚠ C'ÉTAIT UNE COPIE LOCALE, et elle répondait juste — contrairement à celle
+ * d'`offer-match`, qui sur la même valeur (`""`, ce que tous les imports
+ * écrivent) concluait « site absent ». Deux réponses opposées à la même
+ * question sur la même fiche : on n'en garde qu'une.
+ */
+const filled = estMesure;
 
 /**
  * Le brief déterministe d'un prospect, pour le compte ACTIF.
@@ -80,6 +86,19 @@ export function deepDive(
   const ladder = buildLadder(p, opts);
 
   // ── 1. Quelle offre ? (contrainte aux offres autorisées du compte) ──
+  /**
+   * ⚠⚠ LA VERTICALE ENTRE DANS LE ROUTAGE — et seulement comme DÉFAUT.
+   *
+   * `matchOffer` ne voit qu'un secteur et des nombres : il ne peut pas savoir
+   * que la maîtrise d'ouvrage sert l'OS de vente. En l'absence de tout signal
+   * mesuré, il repliait donc sur un ordre écrit en dur — juste pour notre
+   * marché par coïncidence, faux pour les neuf verticales qui servent Alpha
+   * Voice. Le deep-dive, lui, tient la FICHE, donc la verticale : c'est ici
+   * que la question se pose.
+   *
+   * Un signal mesuré continue de primer. Voir le repli de `matchOffer` : la
+   * dissymétrie est le cœur de la règle.
+   */
   const m = matchOffer(
     {
       sector: String(p.sector),
@@ -91,7 +110,8 @@ export function deepDive(
       monthlyValue: p.monthlyValue,
       avgTicket: a.avgTicket,
     },
-    account.offers
+    account.offers,
+    offreDeLaVerticale(verticalForProspect(p))
   );
 
   // ── 2. Qui encaisse ? (> 40 k → Nuwacom · le reste → nous) ──
