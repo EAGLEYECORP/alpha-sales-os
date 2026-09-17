@@ -1706,6 +1706,41 @@ trois endroits dont deux répondaient faux.
   doctrinaire soit cité quelque part — sinon la session suivante le réécrit
   à côté.
 
+### ET C'EST DÉSORMAIS EXÉCUTABLE (`tests/exports-morts.test.ts`, 17/09/2026)
+La règle ci-dessus vivait **en prose** — c'est-à-dire que la règle qui décrit
+la panne la plus fréquente du dépôt souffrait elle-même de cette panne.
+- **L'unité juste est la FONCTION, pas le module.** Mesuré aux trois échelles :
+  au niveau MODULE, 2 sur 199 sont morts (`valeur-produite`, `ceo-historique`,
+  tous deux documentés) — à cette échelle le dépôt est sain, et `renderDevis`
+  serait passé, puisqu'il vit dans un module parfaitement branché. Au niveau
+  SYMBOLE sans distinguer l'usage interne : 141 résultats, presque tous faux.
+  **Fonction exportée qu'aucun fichier de production n'appelle, pas même son
+  propre module : 43.** C'est celle-là qui attrape le vrai défaut.
+- **Le test GÈLE l'inventaire, il ne répare pas les 43.** Beaucoup sont
+  légitimes (inertes par décision, en attente d'une brique, audits de
+  cohérence). Ce qu'il empêche, c'est la **44ᵉ** — écrire une règle juste, la
+  tester, et la croire livrée.
+- **Chaque tolérance porte son MOTIF**, et un test refuse un motif trop court
+  pour dire quoi que ce soit — sinon la liste devient la décharge où l'on
+  inscrit une fonction plutôt que de la brancher. Un second test refuse une
+  entrée **périmée** : sans lui, l'inventaire ment à la session suivante.
+- **Les VRAIS restes sont marqués `⚠ RESTE` et PLAFONNÉS à 6.** Au-delà, on
+  n'est plus en train de tolérer, on accumule. Aujourd'hui : `renderDevis` +
+  `estRefus` (second rendu de devis inatteignable), `finDEssai` (jamais eu
+  d'appelant), `interdictionPour` — **inatteignable par construction** : il
+  s'indexe sur `formation-cpf` / `renovation-energetique` / `assurance`, des
+  identifiants qui n'existent ni dans `Sector` ni dans les verticales. Lui
+  trouver un appelant demanderait d'inventer un vocabulaire de plus.
+  > ⚠ Les interdictions sectorielles, elles, SONT branchées — par
+  > `secteursInterditsDans` (motif sur le texte du script), dans `auditScript`
+  > et dans le Cerveau. La doctrine ne ment pas sur ce point. Ce qui manque est
+  > le pendant DÉTERMINISTE : un script bien écrit qui évite les mots
+  > déclencheurs passe. Le combler suppose que la fiche porte le secteur
+  > réglementé, ce qu'aucun champ ne fait — à trancher, pas à bricoler.
+- ⚠ **La limite, écrite plutôt que tue** : le test regarde UN niveau. Une
+  fonction appelée seulement par une autre fonction elle-même morte passe au
+  travers. L'accessibilité transitive demanderait un graphe d'appels.
+
 ## Conventions de code
 - Commentaires en français, denses, qui expliquent le POURQUOI (le style du repo).
 - Modules purs et testables dans `lib/`, testés dans `tests/*.test.ts`.
