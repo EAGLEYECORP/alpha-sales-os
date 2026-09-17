@@ -32,11 +32,32 @@
  * une origine de requête réelle est une INFORMATION, pas une supposition.
  * Leur retirer serait dégrader ce qui marche pour faire joli.
  *
- * ⚠ `VERCEL_URL` est le repli qui rend la correction AUTO-SUFFISANTE. Vercel
- * la pose seul à chaque build, sans rien configurer : même si personne ne
- * touche aux réglages, la vignette pointera vers un hôte joignable au lieu
- * de localhost. Une correction qui exige une action humaine pour marcher
- * n'est pas une correction — c'est une ligne de plus sur une checklist.
+ * ⚠ LE REPLI DE PLATEFORME REND LA CORRECTION AUTO-SUFFISANTE. L'hébergeur
+ * pose seul, à chaque build, une variable qui porte l'adresse du déploiement :
+ * même si personne ne touche aux réglages, la vignette pointe vers un hôte
+ * joignable au lieu de localhost. Une correction qui exige une action humaine
+ * pour marcher n'est pas une correction — c'est une ligne de plus sur une
+ * checklist.
+ *
+ * ⚠⚠ ET IL Y A DEUX HÉBERGEURS, PAS UN — sinon la correction ne vaut que sur
+ * l'un d'eux. Chaque plateforme nomme SA variable, et l'autre ne la pose
+ * jamais :
+ *   · Vercel  → `VERCEL_URL` (sans protocole, `mon-app.vercel.app`) ;
+ *   · Netlify → `URL` (l'adresse canonique de production) et
+ *               `DEPLOY_PRIME_URL` (l'aperçu d'une branche).
+ * Le repli les essaie toutes. Ne garder que `VERCEL_URL` faisait retomber
+ * l'app sur `localhost` **le jour où elle passe sur Netlify** — c'est-à-dire
+ * exactement la panne que ce module existe pour empêcher, ressuscitée par un
+ * changement d'hébergeur. Mesuré : `eagleyecorp.fr` est déjà sur Netlify, et
+ * Alpha l'y rejoint ; sans ce repli, la carte LinkedIn de l'app y sortirait
+ * sans vignette.
+ *
+ * ⚠ `URL` passe devant `DEPLOY_PRIME_URL` : sur un aperçu de branche, on veut
+ * l'adresse de PRODUCTION dans une balise Open Graph (canonique), pas l'URL
+ * éphémère du preview — sinon un lien partagé depuis un aperçu pointe vers un
+ * déploiement qui disparaîtra. Et les deux restent DERRIÈRE les variables
+ * explicites : une adresse qu'un humain a posée à la main l'emporte toujours
+ * sur celle que la plateforme devine.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -82,7 +103,12 @@ function normaliser(valeur: string | undefined): string | null {
 export type EnvUrl = {
   APP_BASE_URL?: string;
   NEXT_PUBLIC_APP_URL?: string;
+  /** Posée par Vercel, sans protocole. */
   VERCEL_URL?: string;
+  /** Posée par Netlify : l'adresse canonique de production. */
+  URL?: string;
+  /** Posée par Netlify : l'URL d'un déploiement d'aperçu (branche). */
+  DEPLOY_PRIME_URL?: string;
   // ⚠ La signature d'index n'est pas une facilité : sans elle, TypeScript
   // applique sa détection de « type faible » (toutes propriétés optionnelles)
   // et REFUSE `process.env`, qui est un dictionnaire. Elle dit la vérité — un
@@ -95,14 +121,18 @@ export type EnvUrl = {
  * L'origine publique de ce déploiement, absolue et sans `/` final.
  *
  * Ordre : `APP_BASE_URL` (celle des routes d'API) → `NEXT_PUBLIC_APP_URL`
- * (déjà lue par `/api/calendar`) → `VERCEL_URL` (posée par la plateforme) →
- * localhost.
+ * (déjà lue par `/api/calendar`) → la variable de plateforme (Vercel PUIS
+ * Netlify) → localhost. Les deux hébergeurs ne sont jamais posés en même
+ * temps, donc l'ordre entre eux ne tranche rien — il ne fait qu'assurer que
+ * l'app est correcte quel que soit celui qui construit.
  */
 export function urlPublique(env: EnvUrl = process.env): string {
   return (
     normaliser(env.APP_BASE_URL) ??
     normaliser(env.NEXT_PUBLIC_APP_URL) ??
     normaliser(env.VERCEL_URL) ??
+    normaliser(env.URL) ??
+    normaliser(env.DEPLOY_PRIME_URL) ??
     URL_DEV
   );
 }

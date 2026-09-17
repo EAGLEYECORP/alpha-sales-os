@@ -97,6 +97,28 @@ test("l'ordre de repli reprend celui des routes d'API : APP_BASE_URL d'abord", (
   assert.equal(urlPublique({ VERCEL_URL: "c.example" }), "https://c.example");
 });
 
+test("⚠⚠ NETLIFY POSE `URL`, PAS `VERCEL_URL` — sinon l'app y retombe sur localhost", () => {
+  // Le défaut que ce module existe pour empêcher, ressuscité par un changement
+  // d'hébergeur. `eagleyecorp.fr` est déjà sur Netlify, Alpha l'y rejoint : un
+  // repli qui ne connaît que Vercel rendrait la carte LinkedIn nue le jour de
+  // la bascule, sans que rien ne le signale.
+  assert.equal(urlPublique({ URL: "https://alpha.netlify.app" }), "https://alpha.netlify.app");
+  assert.equal(urlPublique({ DEPLOY_PRIME_URL: "https://deploy-preview.netlify.app" }), "https://deploy-preview.netlify.app");
+
+  // Production AVANT aperçu : une balise Open Graph doit porter l'adresse
+  // canonique, pas l'URL éphémère d'un preview qui disparaîtra.
+  assert.equal(
+    urlPublique({ URL: "https://alpha.netlify.app", DEPLOY_PRIME_URL: "https://deploy-preview.netlify.app" }),
+    "https://alpha.netlify.app",
+  );
+
+  // Et une variable explicite l'emporte toujours sur celle de la plateforme.
+  assert.equal(
+    urlPublique({ APP_BASE_URL: "https://choisi.example", URL: "https://alpha.netlify.app" }),
+    "https://choisi.example",
+  );
+});
+
 test("⚠ VERCEL_URL arrive SANS protocole — la passer nue ferait tomber le build", () => {
   // `new URL("mon-app.vercel.app")` jette. Une métadonnée qui jette ne dégrade
   // pas l'affichage : elle casse `next build` en entier.
@@ -135,5 +157,15 @@ test("sans aucune variable, on retombe sur le dev — et JAMAIS ailleurs", () =>
   // est white-label ; remettre notre domaine dans le HTML d'un client serait
   // exactement le défaut que `lib/signature.ts` a déjà payé quatre fois.
   assert.equal(urlPublique({}), URL_DEV);
-  assert.ok(!/eagleye/i.test(readFileSync(join(process.cwd(), "lib/url-publique.ts"), "utf8")), "aucun domaine maison en repli : le produit est white-label");
+  // ⚠ On vise le CODE, pas la prose : un commentaire a le droit de nommer
+  // `eagleyecorp.fr` pour expliquer le contexte Netlify, ce qui compte est
+  // qu'aucun domaine maison ne soit une VALEUR de repli. Retirer les
+  // commentaires avant de chercher est le motif établi ici (cf. `lib/auth.ts`,
+  // `brand-kit`) — un garde qui refuse une phrase juste s'assouplit au mauvais
+  // endroit la fois suivante.
+  const codeSeul = readFileSync(join(process.cwd(), "lib/url-publique.ts"), "utf8").replace(
+    /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+    "",
+  );
+  assert.ok(!/eagleye/i.test(codeSeul), "aucun domaine maison en repli DANS LE CODE : le produit est white-label");
 });
