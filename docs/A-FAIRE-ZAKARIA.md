@@ -10,6 +10,56 @@
 
 ---
 
+## 📍 ÉTAT AU 18/09/2026 — L'HÉBERGEUR EST **NETLIFY**, PAS VERCEL
+
+Cette page a été écrite pour Vercel. On a basculé sur **Netlify** (site
+`alphasalesos`, id `a8a40591-b8b1-4cb6-98cf-61b2f29092ab`). Raison mesurée : le
+sandbox ne peut PAS piloter Vercel (aucun jeton, aucun outil, hôtes bloqués) et
+PEUT piloter Netlify (MCP `manage-env-vars`, `get-project`). Le mécanisme est
+identique — Vercel Cron n'était de toute façon jamais l'ordonnanceur (c'est
+`pg_cron`). Les sections « Vercel » ci-dessous se lisent « Netlify ».
+
+**FAIT ET PROUVÉ SUR SERVEUR RÉEL (login effectué le 18/09) :**
+- Les 6 variables de comptes + `REQUIRE_AUTH=1` sont posées ; **la connexion
+  fonctionne** avec `contact@eagleyecorp.fr`. C'est la première fois que la
+  bascule auth est prouvée en vrai (avant, aucune ACCEPTATION n'avait été
+  testée, seulement les refus).
+- ⚠ **Un piège traversé** : `SUPABASE_JWT_SECRET` avait d'abord reçu un **UUID**
+  collé par erreur (un identifiant, pas le secret). Le code vérifie en **HS256 strict**
+  (`lib/supabase-jwt.ts`) → tout jeton échouait **en silence** (`/api/health`
+  affichait « sain »). Remplacé par le vrai JWT Secret → login OK. Leçon : le
+  seul juge d'un secret de signature est un **login réel**, pas `/api/health`.
+
+**FAIT — L'ENVOI EST CÂBLÉ (Amen `contact@eagleyecorp.fr`) :**
+- `SMTP_HOST=smtp-fr.securemail.pro`, `SMTP_PORT=465`, `SMTP_USER` + `SMTP_FROM`
+  = `contact@eagleyecorp.fr`, `SMTP_PASS` posé en secret. Deploy **Published**.
+- ⚠ **Le scan de secrets Netlify a cassé le build** en prenant l'hôte, l'email
+  et le port (présents dans `docs/SMTP-SUPABASE-AMEN.md`) pour des secrets.
+  Désarmé par `SECRETS_SCAN_OMIT_KEYS=SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_FROM`
+  — **sur ces 4 clés seulement**. Les vrais secrets (`SMTP_PASS`,
+  `SUPABASE_JWT_SECRET`, `SERVICE_ROLE`) **restent scannés**. Ne JAMAIS mettre
+  `SECRETS_SCAN_ENABLED=false` : ça éteindrait l'alarme le jour d'une vraie fuite.
+
+## 🔴 CE QUI RESTE — dans l'ordre
+
+1. **PROUVER L'ENVOI** (2 min, toi) : `/recette` → adresse test
+   `eagleyecorp.ad@gmail.com` → bouton d'envoi. `/api/send` se dit « configured »
+   mais ça ne prouve PAS le mot de passe ; **seul un email qui arrive** le prouve.
+   Erreur `EAUTH`/`535` → mot de passe faux ; timeout → port.
+2. **DÉLIVRABILITÉ DNS chez Amen** — LE prochain bloquant des VENTES. Sans ça,
+   la prospection tombe en spam, **et la même boîte porte les devis ET les mails
+   d'inscription Supabase** (une seule adresse). À poser : **SPF** (un seul
+   `v=spf1` incluant `securemail.pro`), **DKIM** (activé le 16/09 — relever le
+   sélecteur `s=` dans un en-tête reçu pour vérifier), **DMARC**. Procédure :
+   `docs/SMTP-SUPABASE-AMEN.md`. La vérif DNS se fait depuis le sandbox (requête
+   DNS publique NON bloquée) — une prochaine session peut la diagnostiquer.
+3. **DOMAINE `alphasalesos.eagleyecorp.fr`** → le brancher sur Netlify, PUIS
+   poser `APP_BASE_URL=https://alphasalesos.eagleyecorp.fr`. Aujourd'hui le code
+   retombe proprement sur l'URL Netlify (`lib/url-publique.ts`) — ça marche,
+   mais les métadonnées Open Graph pointent vers le sous-domaine `.netlify.app`.
+
+---
+
 > 📌 **Quand tu auras fait tout ça : `docs/VERIFIER-QUE-CA-MARCHE.md`.**
 > Ce document-ci dit quoi faire ; celui-là dit comment SAVOIR que c'est fait.
 > Les deux ne se remplacent pas — j'ai vérifié tous les REFUS sur un serveur
