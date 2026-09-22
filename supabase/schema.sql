@@ -413,3 +413,18 @@ create table if not exists public.tenant_credentials (
   primary key (tenant_id, capacite)
 );
 alter table public.tenant_credentials enable row level security;
+
+-- ── File de commandes « dis à Alpha quoi faire » (pont Telegram) ──────
+-- Détail et motifs : supabase/migrations/013-commandes-alpha.sql
+-- ⚠ RLS actif, AUCUNE policy : le service role écrit, personne ne lit depuis
+-- un JWT client. Boîte de RÉCEPTION, pas moteur : la note est stockée, pas
+-- exécutée.
+create table if not exists public.commandes_alpha (
+  id       bigint generated always as identity primary key,
+  chat_id  text        not null,
+  texte    text        not null,
+  source   text        not null default 'telegram',
+  traitee  boolean     not null default false,
+  cree_le  timestamptz not null default now()
+);
+alter table public.commandes_alpha enable row level security;

@@ -187,6 +187,14 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // sont hors session.
   "/api/v1": "/",
   "/api/mcp": "/",
+  /**
+   * Webhook Telegram du propriétaire : appelé par Telegram (aucune session),
+   * gardé par son secret d'en-tête + l'id de l'expéditeur. Comme `/api/v1` et
+   * `/api/mcp`, il porte sa propre serrure et n'est pas gouverné par une
+   * brique — d'où le chemin commun. Il est AUSSI dans `PUBLIC_PREFIXES`
+   * (middleware), sinon la porte d'accès le fermerait à Telegram.
+   */
+  "/api/telegram": "/",
 };
 
 /**

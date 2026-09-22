@@ -64,6 +64,9 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
     "/api/calendar",
     "/api/webhooks/inbound",
     "/api/webhooks/stripe",
+    // Webhook Telegram du propriétaire : porte son secret d'en-tête + l'id de
+    // l'expéditeur, et refuse tout (404) sans secret. Vérifié en source plus bas.
+    "/api/telegram",
     // Serveur MCP : porte sa propre clé À PORTÉES et refuse tout sans clé
     // configurée. Vérifié pour de vrai plus bas — l'inscrire ici ne suffit pas.
     "/api/mcp",
@@ -100,6 +103,8 @@ test("les routes à clé la vérifient VRAIMENT, pas seulement sur la liste", ()
     ["app/api/v1/etat/route.ts", /autoriserApi\(/],
     ["app/api/v1/propositions/route.ts", /autoriserApi\(/],
     ["app/api/billing/checkout/route.ts", /getTenant\(req\)/],
+    // Le webhook Telegram compare le secret d'en-tête à temps constant.
+    ["app/api/telegram/route.ts", /safeEqual\(/],
   ] as const) {
     const src = readFileSync(join(process.cwd(), f), "utf8");
     assert.match(src, motif, `${f} est déclarée « porteuse de clé » mais ne la vérifie pas`);

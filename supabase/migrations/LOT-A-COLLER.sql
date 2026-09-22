@@ -15,7 +15,7 @@
 -- minutes, en silence. Elle se pose à part, après — la fin de ce fichier dit
 -- comment la vérifier une fois qu'elle sera passée.
 --
--- Migrations incluses (12) :
+-- Migrations incluses (13) :
 --   · schema.sql
 --   · 001-proprietaire-et-tables-serveur.sql
 --   · 002-entitlements.sql
@@ -28,6 +28,7 @@
 --   · 010-byok-identifiants.sql
 --   · 011-byok-email.sql
 --   · 012-ouverture-30-jours.sql
+--   · 013-commandes-alpha.sql
 -- ══════════════════════════════════════════════════════════════════════
 
 -- ┌────────────────────────────────────────────────────────────────────
@@ -448,6 +449,21 @@ create table if not exists public.tenant_credentials (
   primary key (tenant_id, capacite)
 );
 alter table public.tenant_credentials enable row level security;
+
+-- ── File de commandes « dis à Alpha quoi faire » (pont Telegram) ──────
+-- Détail et motifs : supabase/migrations/013-commandes-alpha.sql
+-- ⚠ RLS actif, AUCUNE policy : le service role écrit, personne ne lit depuis
+-- un JWT client. Boîte de RÉCEPTION, pas moteur : la note est stockée, pas
+-- exécutée.
+create table if not exists public.commandes_alpha (
+  id       bigint generated always as identity primary key,
+  chat_id  text        not null,
+  texte    text        not null,
+  source   text        not null default 'telegram',
+  traitee  boolean     not null default false,
+  cree_le  timestamptz not null default now()
+);
+alter table public.commandes_alpha enable row level security;
 
 -- ┌────────────────────────────────────────────────────────────────────
 -- │ 001-proprietaire-et-tables-serveur.sql
@@ -1529,6 +1545,38 @@ create index if not exists entitlements_essai_statut_idx
 comment on function public.debiter_essai(uuid, numeric) is
   'Incremente atomiquement le cout consomme d''un essai. Service role seul. '
   'Voir lib/compteur-essai.ts : un debit qui echoue doit REFUSER la depense.';
+
+-- ┌────────────────────────────────────────────────────────────────────
+-- │ 013-commandes-alpha.sql
+-- └────────────────────────────────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────
+-- 013 — LA FILE DE COMMANDES « dis à Alpha quoi faire » (pont Telegram).
+--
+-- `/api/telegram` range ici les `/note <texte>` du propriétaire. C'est une
+-- boîte de RÉCEPTION, pas un moteur : Alpha (l'app) n'exécute pas encore ces
+-- consignes tout seul. Elles se relisent depuis un écran ou une session Claude
+-- qui les traite. Garder ça honnête : la note est STOCKÉE, pas EXÉCUTÉE.
+--
+-- ⚠ Table interne au propriétaire : le service role écrit, personne d'autre ne
+-- lit. RLS activée et AUCUNE policy → tout accès anon/authenticated est refusé
+-- par défaut. Même posture que les autres tables serveur.
+-- ─────────────────────────────────────────────────────────────────────
+
+create table if not exists public.commandes_alpha (
+  id          bigint generated always as identity primary key,
+  chat_id     text not null,
+  texte       text not null,
+  source      text not null default 'telegram',
+  traitee     boolean not null default false,
+  cree_le     timestamptz not null default now()
+);
+
+alter table public.commandes_alpha enable row level security;
+
+-- Lecture rapide des consignes non traitées, les plus récentes d'abord.
+create index if not exists commandes_alpha_a_traiter
+  on public.commandes_alpha (cree_le desc)
+  where traitee = false;
 
 
 -- ══════════════════════════════════════════════════════════════════════

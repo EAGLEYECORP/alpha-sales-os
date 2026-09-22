@@ -113,6 +113,9 @@ const PUBLIC_PREFIXES = [
   "/api/webhooks/inbound",
   // Webhook Stripe : appelé par Stripe (aucune session), protégé par signature.
   "/api/webhooks/stripe",
+  // Webhook Telegram : appelé par Telegram (aucune session), protégé par son
+  // secret d'en-tête + l'id de l'expéditeur. Fail-closed sans secret (404).
+  "/api/telegram",
   "/api/health",
   "/gate",
   "/api/gate",
