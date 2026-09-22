@@ -623,3 +623,32 @@ l'application, c'est le sous-domaine qu'il faut là, pas la boîte d'envoi.
 ⚠ Ces variables sont des **secrets de serveur**. Jamais de préfixe
 `NEXT_PUBLIC_` : il rendrait le mot de passe de ta boîte lisible dans le
 navigateur de n'importe quel visiteur.
+
+---
+
+## 📡 MESURÉ LE 22/09/2026 — délivrabilité DNS (résolveur système, DoH bloqué)
+
+Relevé réel de `eagleyecorp.fr` (Node `dns.resolve` sur 8.8.8.8/1.1.1.1 ; le
+sandbox bloque le DNS-over-HTTPS mais pas l'UDP 53 — corrige la note du handoff
+qui disait « DNS non bloqué » sans distinguer).
+
+- **MX** : `mail-fr.securemail.pro` (prio 10) → plateforme securemail confirmée,
+  `smtp-fr.securemail.pro:465` est le bon couple.
+- **SPF** : `v=spf1 include:spf.webapps.net ~all` — **un seul**, et
+  `spf.webapps.net` (→ `spf1/spf2.webapps.net`) autorise les envois securemail.
+  **RIEN À CHANGER.**
+- **DMARC** : `p=quarantine; adkim=s; aspf=s; pct=100` — **alignement STRICT**,
+  le point faible. Sur relais hébergé, DKIM `d=securemail.pro` ou un Return-Path
+  réécrit désaligne → quarantine. **À relâcher le temps du rodage :**
+  `v=DMARC1; p=none; rua=mailto:contact@eagleyecorp.fr; adkim=r; aspf=r; pct=100`
+  puis resserrer à `p=quarantine` quand les rapports `rua` montrent PASS.
+- **DKIM** : **INTROUVABLE** — 15 sélecteurs probables testés (securemail, amen,
+  default, selector1/2, mail, dkim, k1, dates…), aucun publié. Soit sélecteur
+  exotique, soit le DKIM « activé le 16/09 » n'est pas réellement en DNS.
+  **Preuve par en-tête** : envoi test → Gmail → « Afficher l'original » →
+  lire `DKIM-Signature: d= s=` + les verdicts SPF/DKIM/DMARC. C'est le seul
+  moyen fiable de connaître le sélecteur et de vérifier `d=eagleyecorp.fr`.
+
+> ⚠ Ce test d'en-tête est LE MÊME geste que la preuve d'envoi attendue depuis
+> le 18/09 : un envoi `/recette` vers `eagleyecorp.ad@gmail.com` prouve le SMTP
+> ET révèle l'état DKIM/DMARC. Deux blocages levés d'un seul envoi.
