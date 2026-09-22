@@ -60,6 +60,9 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
   const porteurDeCle = new Set([
     "/api/v1",
     "/api/campaign/tick",
+    // Tri des réponses entrantes : cron, CRON_SECRET, refuse tout sans secret.
+    // Vérifié en source dans le bloc des crons plus bas.
+    "/api/campaign/reply-tick",
     "/api/push/tick",
     "/api/calendar",
     "/api/webhooks/inbound",
@@ -132,7 +135,7 @@ test("MCP — aucun outil ne peut agir, seulement lire et proposer", () => {
 test("les routes de cron exigent leur secret, et refusent tout sans lui", () => {
   // Être public ne veut pas dire ouvert : ces deux routes déclenchent des
   // appels téléphoniques et font vibrer des téléphones.
-  for (const f of ["app/api/campaign/tick/route.ts", "app/api/push/tick/route.ts"]) {
+  for (const f of ["app/api/campaign/tick/route.ts", "app/api/campaign/reply-tick/route.ts", "app/api/push/tick/route.ts"]) {
     const r = readFileSync(join(process.cwd(), f), "utf8");
     assert.match(r, /CRON_SECRET/, `${f} doit exiger CRON_SECRET`);
     assert.match(r, /if \(!secret\) return false/, `${f} doit refuser quand le secret n'est pas configuré`);

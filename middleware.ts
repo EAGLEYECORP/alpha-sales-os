@@ -176,6 +176,10 @@ const PUBLIC_PREFIXES = [
   // SITE_PASSWORD est posé : l'autopilote d'appels et les notifications ne
   // partent jamais, et rien dans la réponse ne relie ça au mot de passe.
   "/api/campaign/tick",
+  // Tri automatique des réponses entrantes : même porte que le tick vocal
+  // (CRON_SECRET, refuse tout sans secret). Il LIT `inbound_events` et ne fait
+  // partir aucun email — le tri seul, pour l'instant.
+  "/api/campaign/reply-tick",
   "/api/push/tick",
   // Flux calendrier : lu par les serveurs de Google/Apple/Microsoft, jamais
   // par un navigateur connecté — donc aucun cookie possible. Il porte son
