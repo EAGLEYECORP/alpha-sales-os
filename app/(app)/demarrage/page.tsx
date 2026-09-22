@@ -21,6 +21,7 @@ import { n8nConnected } from "@/lib/n8n";
 import { buildPath, repartirParSurface, type PathStep } from "@/lib/onboarding-path";
 import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
 import { SurfacePreuve } from "@/components/demarrage/surface-preuve";
+import { ApercuValeur } from "@/components/demarrage/apercu-valeur";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -133,6 +134,11 @@ export default function DemarragePage() {
           </button>
         }
       />
+
+      {/* LA VALEUR EN 30 SECONDES — avant toute config, on MONTRE ce qu'Alpha
+          écrit pour le marché de l'inscrit. « Montrer avant de faire brancher. »
+          Le bouton fait défiler vers le parcours (la prochaine action réelle). */}
+      <ApercuValeur onBrancher={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })} />
 
       {/* ──────────────────────────────────────────────────────────────
           DEPUIS CE TÉLÉPHONE — le bloc qui manquait, et il passe AVANT
