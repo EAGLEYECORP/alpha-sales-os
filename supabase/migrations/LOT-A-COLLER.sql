@@ -9,7 +9,7 @@
 -- Une seule fois suffit. Le rejouer ne casse rien — chaque instruction est
 -- protégée (vérifié fichier par fichier, pas supposé).
 --
--- CE QUI N'EST PAS DEDANS : 004-ordonnanceur.sql.
+-- CE QUI N'EST PAS DEDANS : 004-ordonnanceur.sql, 014-autopilote-email.sql.
 -- Cette migration-là exige DEUX SECRETS VAULT posés à la main avant d'être
 -- jouée. Sans eux elle planifierait un cron qui échoue toutes les dix
 -- minutes, en silence. Elle se pose à part, après — la fin de ce fichier dit

@@ -50,7 +50,11 @@ export const maxDuration = 60;
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const MAX_MAILS_PAR_TICK = 5;
+// Petit exprès : un envoi à froid se répartit dans la journée, il ne part pas
+// en rafale. Le TOTAL du jour est plafonné par le palier (`email-ramp`) ; ce
+// nombre-ci ne borne QUE la rafale d'un passage. Le cron rappelle plusieurs
+// fois dans la journée (migration 014).
+const MAX_MAILS_PAR_TICK = 2;
 const MODE: ModeProduction = "autonome";
 
 function serviceClient(): SupabaseClient | null {
