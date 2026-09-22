@@ -652,3 +652,32 @@ qui disait « DNS non bloqué » sans distinguer).
 > ⚠ Ce test d'en-tête est LE MÊME geste que la preuve d'envoi attendue depuis
 > le 18/09 : un envoi `/recette` vers `eagleyecorp.ad@gmail.com` prouve le SMTP
 > ET révèle l'état DKIM/DMARC. Deux blocages levés d'un seul envoi.
+
+---
+
+## 🧭 DÉCISION CEO 22/09/2026 — LINKEDIN D'ABORD, EMAIL À FROID EN ATTENTE DE DKIM
+
+Mesuré ce jour (`dns.resolve`, 30 sélecteurs DKIM sondés) : **DKIM non publié**,
+DMARC toujours **strict** (`adkim=s; aspf=s; p=quarantine`), SPF conforme.
+
+- **B2 a inboxé** — mais **par alignement SPF** (Return-Path = eagleyecorp.fr),
+  pas par DKIM. Un auto-envoi ne prouve donc PAS l'envoi à froid.
+- **Risque réel sur envoi à FROID** : si le relais réécrit le Return-Path,
+  l'alignement SPF tombe, et **sans DKIM + `p=quarantine` → spam**. Volume de
+  cold email dans cet état = domaine grillé.
+
+**Décision (tenue) :**
+1. **LinkedIn est le canal d'ouverture** des premiers prospects — zéro risque de
+   délivrabilité, et c'est déjà le canal par défaut de l'ICP maîtrise d'ouvrage.
+2. **Aucune campagne d'email à FROID vers des prospects** tant que DKIM n'est pas
+   publié (d=eagleyecorp.fr) ET qu'un envoi à froid vers une adresse externe n'a
+   pas montré `DKIM PASS` + `DMARC PASS` dans l'en-tête.
+3. **On ne relâche pas le DNS à l'aveugle.** Le fix, quand on le fera :
+   - **Compléter DKIM chez Amen** (activer + publier l'enregistrement ; vérifier
+     qu'un sélecteur répond en DNS et signe `d=eagleyecorp.fr`).
+   - **Relâcher l'alignement DMARC** le temps du rodage :
+     `v=DMARC1; p=none; rua=mailto:contact@eagleyecorp.fr; adkim=r; aspf=r; pct=100`
+     puis resserrer une fois les rapports au vert.
+
+> Le transactionnel (liens Supabase, devis) part de la même boîte et inboxe déjà
+> — cette décision ne le bloque pas ; elle borne seulement le COLD EMAIL de masse.
