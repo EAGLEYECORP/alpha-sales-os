@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { deciderTypee, type RunnerLLM } from "@/lib/decision-typee";
 import { jevDisponible, deciderViaJev } from "@/lib/jev";
+import { layaDisponible, deciderViaLaya } from "@/lib/laya";
 import { INTENTIONS, interpreterClassement, type IntentionReponse } from "@/lib/reponse-auto";
 
 // Un moteur factice : le joint ne l'utilise pas (le runner est injecté), mais
@@ -38,6 +39,63 @@ test("jev — indisponible sans les DEUX variables (fail-closed)", () => {
 
 test("jev — le client refuse tant que la forme d'API n'est pas renseignée", async () => {
   await assert.rejects(deciderViaJev({ texteEntrant: "x", valeurs: ["a", "b"] as const }), /forme d'API/);
+});
+
+test("laya — indisponible sans LAYA_URL, et le client lève alors (fail-closed)", async () => {
+  const url = process.env.LAYA_URL;
+  delete process.env.LAYA_URL;
+  try {
+    assert.equal(layaDisponible(), false);
+    await assert.rejects(deciderViaLaya({ texteEntrant: "x", valeurs: ["a", "b"] as const }), /LAYA_URL absent/);
+  } finally {
+    if (url !== undefined) process.env.LAYA_URL = url;
+  }
+});
+
+test("décideur — Laya SOUVERAIN passe devant, et sa confiance est conservée", async () => {
+  const url = process.env.LAYA_URL;
+  const vraiFetch = globalThis.fetch;
+  process.env.LAYA_URL = "http://127.0.0.1:9999";
+  // Sidecar simulé : rend une décision typée + confiance.
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ valeur: "veut-rdv", confiance: 0.91 }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })) as typeof fetch;
+  try {
+    const r = await deciderTypee<IntentionReponse>(
+      { texteEntrant: "ok mardi", promptSysteme: "x", valeurs: INTENTIONS, valider: interpreterClassement, moteur: moteurFactice },
+      runnerQuiRend({ intention: "prix" }), // le LLM ne doit PAS être consulté
+    );
+    assert.equal(r.source, "laya");
+    assert.equal(r.valeur, "veut-rdv");
+    assert.equal(r.confiance, 0.91);
+  } finally {
+    globalThis.fetch = vraiFetch;
+    if (url === undefined) delete process.env.LAYA_URL;
+    else process.env.LAYA_URL = url;
+  }
+});
+
+test("décideur — Laya injoignable ne casse rien : repli sur le LLM", async () => {
+  const url = process.env.LAYA_URL;
+  const vraiFetch = globalThis.fetch;
+  process.env.LAYA_URL = "http://127.0.0.1:9999";
+  globalThis.fetch = (async () => {
+    throw new Error("ECONNREFUSED");
+  }) as typeof fetch;
+  try {
+    const r = await deciderTypee<IntentionReponse>(
+      { texteEntrant: "c'est combien ?", promptSysteme: "x", valeurs: INTENTIONS, valider: interpreterClassement, moteur: moteurFactice },
+      runnerQuiRend({ intention: "prix" }),
+    );
+    assert.equal(r.source, "llm", "Laya injoignable → le LLM prend le relais");
+    assert.equal(r.valeur, "prix");
+  } finally {
+    globalThis.fetch = vraiFetch;
+    if (url === undefined) delete process.env.LAYA_URL;
+    else process.env.LAYA_URL = url;
+  }
 });
 
 test("décideur — sans Jev, il classe via le LLM et rend une valeur VALIDÉE", async () => {

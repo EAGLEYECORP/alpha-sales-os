@@ -25,15 +25,16 @@
 
 import { runAIJson, type AiMessage } from "@/lib/ai-engine";
 import type { MoteurIA } from "@/lib/credentials";
+import { layaDisponible, deciderViaLaya } from "@/lib/laya";
 import { jevDisponible, deciderViaJev } from "@/lib/jev";
 
 export interface DecisionTypee<T extends string> {
   /** La valeur retenue — toujours du domaine, le `valider` garantit un repli sûr. */
   valeur: T;
-  /** Le score de confiance (0..1) si Jev a tranché ; `null` pour le LLM. */
+  /** Le score de confiance (0..1) si un modèle de décision a tranché ; `null` pour le LLM. */
   confiance: number | null;
   /** Qui a décidé — utile pour l'affichage et pour savoir ce qui tourne vraiment. */
-  source: "jev" | "llm";
+  source: "laya" | "jev" | "llm";
 }
 
 export interface OptionsDecision<T extends string> {
@@ -65,8 +66,20 @@ export async function deciderTypee<T extends string>(
   opts: OptionsDecision<T>,
   runner: RunnerLLM = runnerParDefaut,
 ): Promise<DecisionTypee<T>> {
-  // 1. Jev d'abord s'il est configuré — c'est SA tâche. Tout échec (indispo,
-  //    forme inattendue) tombe silencieusement sur le LLM : le filet, pas le mur.
+  // 1. Laya d'abord — le modèle de décision SOUVERAIN (local, poids ouverts).
+  //    Préféré à Jev : rien de la donnée métier ne sort, ce qui tient l'argument
+  //    de vitrine au lieu de le contredire. Tout échec tombe sur le repli.
+  if (layaDisponible()) {
+    try {
+      const brut = await deciderViaLaya({ texteEntrant: opts.texteEntrant, valeurs: opts.valeurs });
+      return { valeur: opts.valider(brut.valeur), confiance: brut.confiance, source: "laya" };
+    } catch {
+      /* repli ci-dessous */
+    }
+  }
+
+  // 2. Jev, si quelqu'un l'a explicitement configuré (API propriétaire — à
+  //    n'utiliser qu'en connaissance de la tension avec la souveraineté).
   if (jevDisponible()) {
     try {
       const brut = await deciderViaJev({ texteEntrant: opts.texteEntrant, valeurs: opts.valeurs });
@@ -76,7 +89,7 @@ export async function deciderTypee<T extends string>(
     }
   }
 
-  // 2. LLM par défaut : il émet du JSON, `valider` le ramène à une valeur sûre.
+  // 3. LLM par défaut : il émet du JSON, `valider` le ramène à une valeur sûre.
   const { data } = await runner(
     [
       { role: "system", content: opts.promptSysteme },

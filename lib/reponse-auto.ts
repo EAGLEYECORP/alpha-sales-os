@@ -147,8 +147,15 @@ export const PROMPT_CLASSER_REPONSE = [
  * ne doit pas pouvoir faire partir un email tout seul.
  */
 export function interpreterClassement(data: unknown): IntentionReponse {
-  if (!data || typeof data !== "object") return "hors-sujet";
-  const brut = (data as Record<string, unknown>).intention;
+  // Deux formes selon le moteur qui a décidé, et une seule validation :
+  //  · un modèle de décision (Laya/Jev) rend la VALEUR nue (une chaîne) ;
+  //  · un LLM rend un JSON `{ intention: "…" }`.
+  const brut =
+    typeof data === "string"
+      ? data
+      : data && typeof data === "object"
+        ? (data as Record<string, unknown>).intention
+        : undefined;
   if (typeof brut !== "string") return "hors-sujet";
   const i = brut.trim() as IntentionReponse;
   return (INTENTIONS as readonly string[]).includes(i) ? i : "hors-sujet";

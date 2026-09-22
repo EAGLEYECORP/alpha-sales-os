@@ -86,8 +86,8 @@ interface LigneDuPlan {
   motif: string;
   /** true seulement pour le milieu de tunnel sûr — le seul feu vert d'un futur auto-envoi. */
   automatisable: boolean;
-  /** Quel moteur a tranché (`jev` si configuré, sinon `llm`) — transparence. */
-  source: "jev" | "llm";
+  /** Quel moteur a tranché (`laya`/`jev` si configuré, sinon `llm`) — transparence. */
+  source: "laya" | "jev" | "llm";
 }
 
 export async function POST(req: NextRequest) {
