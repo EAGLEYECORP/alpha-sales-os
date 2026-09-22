@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { safeEqual } from "@/lib/access";
 import { moteurIADeLaRequete } from "@/lib/credentials-secret";
-import { runAIJson, aiAvailable } from "@/lib/ai-engine";
+import { aiAvailable } from "@/lib/ai-engine";
 import { wrapUntrusted } from "@/lib/untrusted";
+import { deciderTypee } from "@/lib/decision-typee";
 import {
+  INTENTIONS,
   PROMPT_CLASSER_REPONSE,
   interpreterClassement,
   routerReponse,
@@ -84,6 +86,8 @@ interface LigneDuPlan {
   motif: string;
   /** true seulement pour le milieu de tunnel sûr — le seul feu vert d'un futur auto-envoi. */
   automatisable: boolean;
+  /** Quel moteur a tranché (`jev` si configuré, sinon `llm`) — transparence. */
+  source: "jev" | "llm";
 }
 
 export async function POST(req: NextRequest) {
@@ -137,16 +141,15 @@ export async function POST(req: NextRequest) {
 
   const plan: LigneDuPlan[] = [];
   for (const e of entrants) {
+    // Décision typée : Jev si configuré, sinon le LLM (le joint `decision-typee`).
     // Le message entrant est du texte HOSTILE (écrit par un tiers) : on l'encadre.
-    const { data: brut } = await runAIJson<unknown>(
-      [
-        { role: "system", content: PROMPT_CLASSER_REPONSE },
-        { role: "user", content: wrapUntrusted("message-entrant", e.message, { maxChars: 4_000 }) },
-      ],
+    const { valeur: intention, source } = await deciderTypee<IntentionReponse>({
+      texteEntrant: wrapUntrusted("message-entrant", e.message, { maxChars: 4_000 }),
+      promptSysteme: PROMPT_CLASSER_REPONSE,
+      valeurs: INTENTIONS,
+      valider: interpreterClassement,
       moteur,
-      { maxTokens: 200, temperature: 0.1 },
-    );
-    const intention = interpreterClassement(brut);
+    });
     const routage = routerReponse(intention);
     plan.push({
       id: e.id,
@@ -155,6 +158,7 @@ export async function POST(req: NextRequest) {
       disposition: routage.disposition,
       motif: routage.motif,
       automatisable: estAutomatisable(intention),
+      source,
     });
   }
 
