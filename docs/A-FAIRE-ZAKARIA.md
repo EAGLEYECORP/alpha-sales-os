@@ -10,6 +10,29 @@
 
 ---
 
+## ✅ 22/09/2026 — SOCLE COMPLET, EMAIL PROUVÉ EN BOÎTE DE RÉCEPTION
+
+Délégation CEO reçue de Zakaria (« make the best decisions, don't call unless
+urgent »). État réel :
+- **B1 fait** : `LOT-A-COLLER.sql` appliqué sur Supabase, **sans erreur**
+  (schéma complet : entitlements, organisation, `commandes_alpha`…). Éprouvé
+  d'abord sur Postgres local (0 erreur, 20 tables).
+- **B2 fait** : test `/recette` → **SMTP ok, mail arrivé en BOÎTE DE RÉCEPTION**.
+  Le canal email fonctionne de bout en bout depuis `contact@eagleyecorp.fr`.
+- **B3 (DNS) — NON urgent, tenu en attente VOLONTAIREMENT** : le DMARC est
+  strict (`adkim=s/aspf=s; p=quarantine`) mais l'auto-envoi inboxe. On ne
+  relâche PAS le DNS à l'aveugle : la vraie preuve est un envoi à FROID vers une
+  adresse externe. Tant que ça inboxe, on n'y touche pas.
+
+**Décisions CEO tenues (ce que je NE fais PAS tout seul, par discipline) :**
+- **Pas d'envoi à froid automatique** à de vrais prospects : irréversible,
+  risque légal (décret 2022-1313) et réputation de domaine. Ça attend un GO
+  explicite par campagne.
+- **Pas de churn de features** : le produit est sain et vendu par personne. La
+  seule chose qui fait le 1er euro est l'**outreach humain** (LinkedIn/appels)
+  + le **closing** — sur Zakaria. Je prépare, je ne remplace pas.
+- Je garde le produit vert (tsc + tests + build) et je consigne l'état ici.
+
 ## 📍 ÉTAT AU 18/09/2026 — L'HÉBERGEUR EST **NETLIFY**, PAS VERCEL
 
 Cette page a été écrite pour Vercel. On a basculé sur **Netlify** (site
