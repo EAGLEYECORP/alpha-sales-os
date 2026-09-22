@@ -180,6 +180,9 @@ const PUBLIC_PREFIXES = [
   // (CRON_SECRET, refuse tout sans secret). Il LIT `inbound_events` et ne fait
   // partir aucun email — le tri seul, pour l'instant.
   "/api/campaign/reply-tick",
+  // Envoi à froid automatique : même porte que le tick vocal (CRON_SECRET,
+  // refuse tout sans secret). Envoie de VRAIS emails — d'où les trois gardes.
+  "/api/campaign/mail-tick",
   "/api/push/tick",
   // Flux calendrier : lu par les serveurs de Google/Apple/Microsoft, jamais
   // par un navigateur connecté — donc aucun cookie possible. Il porte son
