@@ -16,6 +16,7 @@ import { durationSec, formatDuration, transcriptText, extractInsights, type Call
 import { pipelineCoverage } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { FilVente } from "@/components/flux/fil-vente";
 
 /**
  * SALLE DE CONTRÔLE — tout ce qui tourne, en un écran.
@@ -112,6 +113,10 @@ export default function ControlePage() {
           </button>
         }
       />
+
+      {/* LE FIL DE VENTE — le mode guidé bout en bout (cible → encaissement).
+          En tête, replié par défaut si on préfère aller droit à la file. */}
+      <FilVente />
 
       {/* Ce que l'orchestrateur propose — en haut : c'est la file qu'on
           tranche avant de chercher quoi faire soi-même. */}
