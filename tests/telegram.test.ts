@@ -4,6 +4,8 @@ import {
   analyserCommande,
   estProprietaire,
   etatTelegram,
+  interpreterIntention,
+  PROMPT_COMPREHENSION,
   reponsePour,
   texteAide,
   VERBES_CONNUS,
@@ -43,6 +45,38 @@ test("aide — chaque verbe connu y est cité (la liste ne dérive pas du code)"
   for (const v of VERBES_CONNUS) {
     assert.equal(aide.includes(`/${v}`), true, `verbe absent de l'aide : ${v}`);
   }
+});
+
+test("compréhension — normalise une sortie valide et retombe SÛR sur du bruit", () => {
+  // Question valide.
+  assert.deepEqual(interpreterIntention({ type: "question", reponse: "Voici." }), {
+    type: "question",
+    reponse: "Voici.",
+  });
+  // Note avec résumé → rangeable.
+  assert.deepEqual(interpreterIntention({ type: "note", reponse: "ok", resume: "rappeler PROMOVAL" }), {
+    type: "note",
+    reponse: "ok",
+    resume: "rappeler PROMOVAL",
+  });
+  // Note SANS résumé → dégradée en question (rien à ranger).
+  assert.equal(interpreterIntention({ type: "note", reponse: "ok" }).type, "question");
+  // Action reste une action (mais la route ne l'exécute pas — c'est ailleurs).
+  assert.equal(interpreterIntention({ type: "action", reponse: "Compris, ça se lance depuis l'app." }).type, "action");
+  // Bruit → repli neutre, jamais un crash.
+  for (const mauvais of [null, undefined, 42, "texte", {}, { type: "autre", reponse: "x" }, { type: "question" }]) {
+    const r = interpreterIntention(mauvais);
+    assert.equal(r.type, "question");
+    assert.ok(r.reponse.length > 0);
+  }
+});
+
+test("compréhension — le prompt INTERDIT d'inventer et de prétendre avoir agi", () => {
+  assert.match(PROMPT_COMPREHENSION, /jamais de chiffre invent/i);
+  assert.match(PROMPT_COMPREHENSION, /NE pr[ée]tends JAMAIS l'avoir fait/i);
+  // Le JSON strict est décrit (type/reponse), sinon la route ne peut rien parser.
+  assert.match(PROMPT_COMPREHENSION, /"type"/);
+  assert.match(PROMPT_COMPREHENSION, /"reponse"/);
 });
 
 test("état — ne rapporte que la PRÉSENCE, jamais la valeur", () => {

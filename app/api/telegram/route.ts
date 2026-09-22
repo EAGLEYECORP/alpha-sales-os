@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { safeEqual } from "@/lib/access";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
+import { runAIJson, aiAvailable } from "@/lib/ai-engine";
 import {
   analyserCommande,
   estProprietaire,
   etatTelegram,
+  interpreterIntention,
+  PROMPT_COMPREHENSION,
   reponsePour,
   texteAide,
   texteStatut,
@@ -53,6 +57,38 @@ const envoiPret = (): boolean =>
 const autopiloteArme = (): boolean =>
   (process.env.CAMPAIGN_AUTOPILOT ?? "").trim().toLowerCase() === "on";
 
+/**
+ * LA COMPRÉHENSION EN LANGAGE NATUREL — le modèle classe, le CODE dispose.
+ *
+ * ⚠ La garde centrale : une intention « action » (sourcer, envoyer, dépenser)
+ * n'est JAMAIS exécutée ici — on RÉPOND seulement. Le seul effet de bord
+ * autorisé est de ranger une note. Le modèle ne peut donc pas déclencher un
+ * envoi ni une dépense, même s'il l'annonce : la route ne sait pas le faire.
+ */
+async function comprendre(req: NextRequest, texte: string, chatId: string): Promise<string> {
+  const moteur = await moteurIADeLaRequete(req);
+  if (!aiAvailable(moteur)) {
+    return "IA indisponible pour l'instant. Utilise /statut, /note <texte>, ou /aide.";
+  }
+  const { data } = await runAIJson<unknown>(
+    [
+      { role: "system", content: PROMPT_COMPREHENSION },
+      { role: "user", content: texte },
+    ],
+    moteur,
+    { maxTokens: 400, temperature: 0.2 },
+  );
+  const intention = interpreterIntention(data);
+  if (intention.type === "note" && intention.resume) {
+    const persistee = await rangerNote(intention.resume, chatId);
+    return persistee
+      ? `Noté ✅ — « ${intention.resume} »`
+      : `Compris (« ${intention.resume} ») mais NON persisté (file indisponible).`;
+  }
+  // question / action : on répond, on n'exécute rien.
+  return intention.reponse;
+}
+
 /** Range une consigne dans la file. Renvoie true si vraiment persistée. */
 async function rangerNote(texte: string, chatId: string): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -80,7 +116,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "secret invalide" }, { status: 401 });
   }
 
-  let update: { message?: { text?: string; from?: { id?: number }; chat?: { id?: number } } };
+  let update: { message?: { text?: string; voice?: unknown; from?: { id?: number }; chat?: { id?: number } } };
   try {
     update = await req.json();
   } catch {
@@ -97,20 +133,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const cmd = analyserCommande(message.texte);
-  const r = reponsePour(cmd);
-
-  // On construit le texte final (les effets de bord vivent ici, pas dans lib).
   let reponse: string;
-  if (r.verbe === "statut") {
-    reponse = texteStatut(etatTelegram(process.env), envoiPret(), autopiloteArme());
-  } else if (r.verbe === "note" && r.texte === null) {
-    const persistee = await rangerNote(cmd.args, message.chatId);
-    reponse = persistee
-      ? "Noté ✅ — rangé dans ta file."
-      : "Noté, mais NON persisté (file indisponible). Je te le redis : ce n'est pas stocké.";
+
+  const cmd = analyserCommande(message.texte);
+  if (m?.voice && !message.texte) {
+    // La voix arrive : Telegram envoie un fichier audio, pas du texte. La
+    // transcription (Deepgram, déjà dans la pile) se branchera ici — pour
+    // l'instant on le dit honnêtement plutôt que d'ignorer en silence.
+    reponse = "🎙️ La voix arrive bientôt. Pour l'instant, écris-moi ton instruction — je comprends le langage naturel.";
+  } else if (cmd.verbe === "" && message.texte.trim().length > 0) {
+    // Pas une commande `/` : c'est du langage naturel → compréhension IA.
+    reponse = await comprendre(req, message.texte.trim(), message.chatId);
   } else {
-    reponse = r.texte ?? texteAide();
+    // Une commande `/` connue (ou une inconnue → aide).
+    const r = reponsePour(cmd);
+    if (r.verbe === "statut") {
+      reponse = texteStatut(etatTelegram(process.env), envoiPret(), autopiloteArme());
+    } else if (r.verbe === "note" && r.texte === null) {
+      const persistee = await rangerNote(cmd.args, message.chatId);
+      reponse = persistee
+        ? "Noté ✅ — rangé dans ta file."
+        : "Noté, mais NON persisté (file indisponible). Je te le redis : ce n'est pas stocké.";
+    } else {
+      reponse = r.texte ?? texteAide();
+    }
   }
 
   if (token) await envoyerTelegram(token, message.chatId, reponse);

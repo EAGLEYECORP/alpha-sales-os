@@ -137,6 +137,66 @@ export function texteStatut(e: EtatTelegram, envoiPret: boolean, autopiloteArme:
 }
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA COMPRÉHENSION EN LANGAGE NATUREL — le vrai canal opérateur ↔ Alpha.
+ *
+ * Un message qui n'est pas une commande `/` est une instruction en langage
+ * naturel. On la fait CLASSER par le moteur IA (côté route), et le CODE décide
+ * quoi en faire — jamais le modèle. C'est la garde centrale : une intention
+ * « action » (sourcer, envoyer, dépenser) NE S'EXÉCUTE PAS toute seule ; elle
+ * se confirme. Le modèle propose, la route dispose, et la route ne sait faire
+ * que des choses sûres (répondre, ranger une note).
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+export type IntentionType = "question" | "note" | "action";
+
+export interface IntentionComprise {
+  type: IntentionType;
+  /** Ce qu'on répond à l'opérateur (déjà rédigé par le modèle). */
+  reponse: string;
+  /** Pour une note : la consigne reformulée courte, à ranger. */
+  resume?: string;
+}
+
+/**
+ * Le prompt système — une seule source, testable. Il contraint le modèle à
+ * rendre un JSON strict et lui INTERDIT d'inventer ou de prétendre avoir agi.
+ */
+export const PROMPT_COMPREHENSION = [
+  "Tu es Alpha Sales OS, l'assistant d'un opérateur commercial (maître d'ouvrage, promoteurs Lyon).",
+  "On te donne UNE instruction en langage naturel. Réponds UNIQUEMENT par un JSON :",
+  '{"type": "question"|"note"|"action", "reponse": "...", "resume": "..."}',
+  "- question : il demande une info ou un conseil → 'reponse' = 2 à 4 phrases, français, concret, honnête.",
+  "- note : il te confie une consigne/idée à garder → 'resume' = la consigne reformulée en une phrase, 'reponse' = une confirmation courte.",
+  "- action : il demande une action qui DÉPENSE ou ENVOIE (sourcer des leads, lancer une campagne, envoyer un email/SMS, appeler) → 'reponse' dit que tu as COMPRIS et que ça se lance depuis l'app ou après confirmation. NE prétends JAMAIS l'avoir fait.",
+  "Règles : jamais de chiffre inventé, jamais de promesse de résultat, jamais de témoignage. Bref.",
+].join("\n");
+
+/**
+ * Valide et normalise la sortie du modèle en une intention SÛRE. Un modèle qui
+ * rend n'importe quoi ne casse rien : on retombe sur une question neutre.
+ */
+export function interpreterIntention(data: unknown): IntentionComprise {
+  const repliNeutre: IntentionComprise = {
+    type: "question",
+    reponse: "Je n'ai pas bien saisi. Reformule, ou utilise /statut, /note <texte>, /aide.",
+  };
+  if (!data || typeof data !== "object") return repliNeutre;
+  const o = data as Record<string, unknown>;
+  const type = o.type;
+  const reponse = typeof o.reponse === "string" ? o.reponse.trim() : "";
+  if ((type !== "question" && type !== "note" && type !== "action") || !reponse) return repliNeutre;
+  if (type === "note") {
+    const resume = typeof o.resume === "string" ? o.resume.trim() : "";
+    // ⚠ Une note sans résumé n'est pas rangeable : on la traite en question.
+    return resume ? { type: "note", reponse, resume } : { type: "question", reponse };
+  }
+  // question | action : pas de résumé (rien à ranger).
+  return { type, reponse };
+}
+
+/**
  * La réponse à une commande PURE (sans effet de bord). Les effets (persister
  * une note, lire l'état serveur) sont injectés par la route : ce module reste
  * testable sans base ni réseau.

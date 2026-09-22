@@ -67,3 +67,17 @@ la route compare à temps constant.
 - Un expéditeur qui n'est pas le propriétaire est **acquitté puis ignoré** —
   rien ne fuit, pas même un « accès refusé ».
 - `TELEGRAM_BOT_TOKEN` est un secret : jamais commité, posé côté Netlify.
+
+## Langage naturel (au-delà des commandes /)
+Tout message qui n'est PAS une commande `/` est compris en **langage naturel**
+via le moteur IA de l'app : « où en est mon pipeline ? », « rappelle-moi de
+relancer PROMOVAL », « trouve-moi 10 promoteurs »…
+
+- **Le modèle CLASSE, le code DISPOSE.** Une intention `question` → réponse ;
+  `note` → rangée dans `commandes_alpha` ; `action` (sourcer/envoyer/dépenser)
+  → **jamais exécutée toute seule**, on répond « compris, ça se lance depuis
+  l'app / après confirmation ». La route ne sait faire que des choses sûres.
+- **Voix** : un message vocal est reconnu ; la transcription (Deepgram, déjà
+  dans la pile) se branchera ici — pour l'instant Alpha répond « écris-moi ».
+- Si l'IA n'est pas configurée (moteur absent), Alpha le dit et renvoie vers
+  `/statut` `/note` `/aide`.
