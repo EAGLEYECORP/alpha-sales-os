@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { FilVente } from "@/components/flux/fil-vente";
 import { BoutonAutopilote } from "@/components/autopilote/bouton-autopilote";
+import { PretAutonomie } from "@/components/autonomie/pret-autonomie";
 
 /**
  * SALLE DE CONTRÔLE — tout ce qui tourne, en un écran.
@@ -118,6 +119,11 @@ export default function ControlePage() {
       {/* LE FIL DE VENTE — le mode guidé bout en bout (cible → encaissement).
           En tête, replié par défaut si on préfère aller droit à la file. */}
       <FilVente />
+
+      {/* COCKPIT D'AUTONOMIE — d'abord « suis-je prêt ? » (checklist tirée de
+          /api/health), puis le bouton pour armer. Maître seul (les deux se
+          masquent pour un non-maître). */}
+      <PretAutonomie />
 
       {/* LE BOUTON AUTOPILOTE — « Alpha se gère tout seul », en un tap. Maître
           seul (le composant se masque sinon) : il bascule le drapeau serveur
