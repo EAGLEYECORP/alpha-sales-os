@@ -2,8 +2,41 @@
 // ALPHA SALES OS® — Domain model
 // Hormozi-native: the decision IS the product. Emotion first, logic second.
 // ─────────────────────────────────────────────────────────────────────
+import type { ProfilOperateur } from "./profil-operateur";
+import type { EtatCadrage } from "./cadrage";
 
-export type Sector = "restaurant" | "pub" | "ambulance" | "artisan" | "autre";
+export type { ProfilOperateur };
+
+/**
+ * Le secteur d'une fiche — le bucket grossier choisi à l'import.
+ *
+ * ⚠ IL A CESSÉ D'ÊTRE TENU À JOUR QUAND LE MARCHÉ A CHANGÉ. Le 09/09/2026
+ * l'avatar est devenu le maître d'ouvrage à permis actif ; ce type, lui, est
+ * resté celui d'avant (restauration, pubs, ambulances). Les huit fiches de
+ * démonstration ont donc atterri dans `"autre"` — le fourre-tout — et le
+ * marché ACTUEL n'était nommable nulle part.
+ *
+ * Ce que ça coûtait, mesuré : une fiche de maîtrise d'ouvrage importée par CSV
+ * (donc sans tag de verticale, et dont les notes ne contiennent aucun mot-clé
+ * reconnu) tombait sur `verticalForSector("autre")` → la verticale
+ * **générique**. Le script du marché actuel existait, il était juste
+ * inatteignable par le seul chemin dont dispose un import plat.
+ *
+ * ⚠⚠ ON N'A PAS RECOPIÉ ICI `TypeMaitreOuvrage` (lib/permis-construire.ts).
+ * Promoteur, bailleur social, collectivité, particulier : ce n'est pas le même
+ * AXE. C'est une typologie INTERNE à la maîtrise d'ouvrage, qui répond à « a-t-il
+ * quelque chose à vendre ? », pas à « quel métier ? ». La déverser ici aurait
+ * créé un quatrième vocabulaire en prétendant en réparer un second.
+ *
+ * ⚠ Les trois valeurs du marché d'avant RESTENT, et c'est une décision. Elles
+ * portent des playbooks complets et des angles d'accroche écrits
+ * (`SECTOR_ANGLES`) ; les retirer supprimerait une capacité de vente, pas un
+ * libellé périmé. Le produit ne vise pas QUE la maîtrise d'ouvrage — CLAUDE.md
+ * interdit de lire la campagne en cours dans la portée de l'outil. Ce qui les
+ * fait disparaître des écrans est qu'aucune fiche ne les porte
+ * (`secteursPresents`, lib/secteurs.ts), pas une suppression de vocabulaire.
+ */
+export type Sector = "maitrise-ouvrage" | "restaurant" | "pub" | "ambulance" | "artisan" | "autre";
 
 /**
  * Pipeline stages. Strict doctrine:
@@ -58,6 +91,7 @@ export type EventKind =
   | "visite"
   | "email"
   | "whatsapp"
+  | "linkedin"
   | "demo"
   | "meeting"
   | "note"
@@ -88,6 +122,33 @@ export interface DeepAudit {
   websiteState: string;
   socialState: string;
   missedCallsPerWeek?: number;
+  /**
+   * ─────────────────────────────────────────────────────────────────
+   * LOTS ENCORE À COMMERCIALISER — la saturation de demande, côté maîtrise
+   * d'ouvrage.
+   *
+   * ⚠⚠ IL MANQUAIT, ET SON ABSENCE RENDAIT L'ESCALIER AVEUGLE À NOTRE MARCHÉ.
+   * `demandEvidence` (`lib/ladder.ts`) ne détectait la saturation QUE par
+   * `missedCallsPerWeek`. Sur une fiche issue d'un permis, ce champ est vide :
+   * la marche « volume de demandes » ne se déclenchait donc JAMAIS sur le
+   * marché qu'on prospecte depuis le 09/09. Rien ne tombait, aucun log — le
+   * détecteur rendait simplement une liste vide, ce qui ressemble trait pour
+   * trait à « ce prospect n'a pas de problème de volume ».
+   *
+   * ⚠ POURQUOI ICI ET PAS DANS LES NOTES. Le nombre de lots y survivait déjà,
+   * mais en TEXTE LIBRE (« Logements : 68 »). Le lire par motif serait la
+   * devinette que ce dépôt refuse partout ailleurs — c'est la même règle que
+   * « la verticale se lit sur le tag, pas sur le texte ». `deepAudit` est le
+   * bon endroit : il porte déjà les nombres MESURÉS, importables par CSV, et
+   * c'est exactement ce qu'est un nombre de lots lu sur un arrêté public.
+   *
+   * ⚠ Ce nombre sert à CHOISIR qui on appelle, jamais à ouvrir l'appel — la
+   * verticale l'interdit explicitement : « citer son nombre de lots à froid
+   * sonne fliqué ». Il peut donc entrer dans la PREUVE (ce que l'opérateur
+   * lit) et jamais dans le PITCH (ce qui se prononce).
+   * ─────────────────────────────────────────────────────────────────
+   */
+  lotsACommercialiser?: number;
   /** average basket / ticket in € */
   avgTicket?: number;
   /** % of missed contacts that would have converted */
@@ -100,6 +161,8 @@ export interface DeepAudit {
 /** Inbound webhook event (email reply/open, WhatsApp, form…). */
 export interface InboundEvent {
   id: string;
+  /** Locataire (user_id) auquel l'événement est rattaché ; absent = pool solo. */
+  userId?: string;
   receivedAt: string;
   type: "email.reply" | "email.open" | "whatsapp.reply" | "form.submit" | "autre";
   email: string;
@@ -125,6 +188,14 @@ export interface ContractInfo {
 }
 
 export type DeliveryStatus = "non-demarre" | "en-cours" | "livre" | "maintenance";
+
+/** Opportunité d'upsell sur un client livré. */
+export type UpsellStatus = "aucun" | "identifie" | "propose" | "gagne";
+export interface UpsellOpportunity {
+  note: string;
+  value?: number; // € additionnel /mois
+  status: UpsellStatus;
+}
 
 export interface Attachment {
   id: string;
@@ -179,14 +250,106 @@ export interface Prospect {
   payments: Payment[];
   contract: ContractInfo;
   delivery: DeliveryStatus;
+  /** Plateforme d'échange privilégiée (email, whatsapp, tel, linkedin…). */
+  preferredChannel?: string;
+  /** URL du profil LinkedIn (personne ou page entreprise) — canal de prospection. */
+  linkedin?: string;
+  /**
+   * DÉBLOCAGE DES FONDS — la réponse la plus décisive du cycle, et la plus
+   * souvent oubliée. Un « oui » sans date de déblocage n'est pas une vente :
+   * c'est une intention. On note QUAND la compta peut payer et PAR QUEL canal,
+   * puis on relance sur CETTE date, pas au hasard.
+   */
+  funding?: {
+    /** Date à laquelle les fonds peuvent être débloqués (ISO). */
+    availableAt?: string;
+    /** Virement, prélèvement, CB, mandat administratif, leasing… */
+    channel?: string;
+    /** Qui valide côté compta / direction financière. */
+    approver?: string;
+    /** Contrainte réelle : clôture, budget annuel, trésorerie, délai interne. */
+    constraint?: string;
+    /** Le point de relance calé sur cette date (ISO). */
+    followUpAt?: string;
+    /** Confirmé par le prospect, ou simple supposition de notre part ? */
+    confirmed?: boolean;
+  };
+  /**
+   * ⚠⚠ LE CADRAGE — la condition d'émission d'un devis, ENFIN STRUCTURÉE.
+   *
+   * `lib/cadrage.ts` porte la règle (`peutEmettreDevis`) depuis des semaines et
+   * `EtatCadrage` n'avait AUCUN producteur dans l'application : la seule
+   * fonction qui l'interrogeait était `renderDevis` — que personne n'appelait,
+   * et qui a depuis été supprimé (le doublon mort de rendu de devis).
+   * Pendant ce temps le devis qui part réellement — `quoteText`, servi par
+   * `/api/catalogue` et copié depuis la fiche — ne posait la question à
+   * personne.
+   *
+   * ⚠ POURQUOI UN CHAMP, ET PAS UNE LECTURE DE LA TIMELINE. Un événement
+   * `meeting` dit qu'une rencontre a eu lieu ; il ne dit pas QUI a validé la
+   * suite, ni que le périmètre a été arrêté. Le déduire d'un résumé libre
+   * serait la devinette que ce dépôt refuse partout (« la verticale se lit sur
+   * le tag, pas sur le texte »). Précédent exact : `lotsACommercialiser`, sorti
+   * des notes pour devenir un nombre.
+   *
+   * Absent = aucun cadrage. C'est l'état de départ, et il REFUSE le devis.
+   */
+  cadrage?: EtatCadrage;
+  /** Suivi de satisfaction 0–100 (post-livraison). */
+  satisfaction?: number;
+  /** Témoignage / avis obtenu. */
+  testimonial?: string;
+  testimonialAt?: string;
+  /** Opportunité d'upsell. */
+  upsell?: UpsellOpportunity;
   wonReason?: string;
   lostReason?: string;
+  /**
+   * Les TERMES NÉGOCIÉS de CETTE affaire.
+   *
+   * Le portefeuille (`lib/accounts-commercial.ts`) porte la RÉFÉRENCE : ce
+   * qu'on prend d'habitude sur ce type de deal. Mais chaque affaire se
+   * structure différemment — le taux suit le levier qu'on garde, pas un
+   * barème. Un chantier Nuwacom où on donne la main sur la technique juste
+   * après la vision, c'est le plancher ; le même chantier où on a construit
+   * les démos avant de transmettre, c'est plus.
+   *
+   * Absent = on applique la référence. Renseigné = c'est CE chiffre qui compte
+   * partout (payouts, prévisions, marge), parce que c'est celui qui sera
+   * facturé. Sans ce champ, l'app affichait une prévision au barème pendant
+   * que la réalité était ailleurs.
+   */
+  dealTerms?: {
+    /** % négocié sur le one-shot / setup. */
+    commissionPct?: number;
+    /** % négocié sur le récurrent mensuel. */
+    recurringPct?: number;
+    /** Comment ce deal est monté, en une ligne — le levier qui justifie le taux. */
+    structure?: string;
+    /** Quand ces termes ont été convenus (ISO). Un terme sans date est un souhait. */
+    agreedAt?: string;
+  };
   wonAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export type CampaignStepKind = "email" | "whatsapp" | "appel";
+
+/**
+ * Script écrit À LA MAIN par l'utilisateur (mode test / manuel) — en plus de
+ * la bibliothèque doctrine. Variables : {prenom} {commerce} {ville} {taxe}
+ * {taxe_semaine} {closer} {fois}, remplies via fillTemplate.
+ */
+export interface CustomScript {
+  id: string;
+  name: string;
+  channel: "email" | "dm";
+  subject: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type StepRole = "premiere-impression" | "relance" | "reponse";
 
@@ -198,6 +361,27 @@ export interface CampaignStep {
   delayDays: number;
   subject: string;
   body: string;
+}
+
+/**
+ * Brouillon de campagne — un message généré, EN ATTENTE de relecture avant
+ * envoi. « Rien ne part tant que l'humain n'a pas validé. »
+ */
+export type DraftStatus = "pending" | "approved" | "skipped" | "sent" | "error";
+
+export interface CampaignDraft {
+  id: string;
+  campaignId: string;
+  prospectId: string;
+  company: string;
+  channel: CampaignStepKind; // email | whatsapp | appel
+  /** destinataire : email (email) ou téléphone (whatsapp/appel) */
+  to: string;
+  subject: string;
+  body: string;
+  status: DraftStatus;
+  error?: string;
+  sentAt?: string;
 }
 
 export interface Campaign {
@@ -264,22 +448,116 @@ export interface Activity {
 }
 
 export interface AppSettings {
+  /**
+   * Compte white-label actif dans le portefeuille du compte maître (EAGLEYE).
+   * Absent = compte maître par défaut. Voir lib/accounts.ts — le maître bascule
+   * d'un compte à l'autre, chaque bascule applique l'identité + la commission +
+   * l'ICP de CE compte. L'usage solo n'est jamais impacté (champ optionnel).
+   */
+  accountId?: string;
   agencyName: string;
   closerName: string;
+  /**
+   * L'offre du compte — CE QU'IL VEND. White-label : chez EAGLEYE, Alpha Sales
+   * OS vend Alpha Sales OS ; un commercial revendeur configure SA propre offre.
+   * Alimente les documents (audit/projection) et, à terme, les prompts IA.
+   */
+  offer?: {
+    /** Ville affichée dans les documents (défaut « Lyon »). */
+    city: string;
+    /** Ce que tu vends, en une ligne (ex. « des sites premium + accueil IA »). */
+    whatYouSell: string;
+    /** Ta proposition de valeur en une phrase. */
+    valueProp: string;
+  };
   targetMRR: number;
   commissionPct: number;
+  /**
+   * Le socle du Cerveau a-t-il déjà été semé depuis le serveur ?
+   *
+   * Sans ce drapeau, chaque chargement rajouterait les notes du playbook que
+   * l'opérateur a supprimées — un socle qui repousse est pire qu'un socle
+   * absent.
+   */
+  knowledgeSeeded?: boolean;
   role: "solo" | "team";
   /** Free-text business rules injected into every AI prompt */
   businessRules: string;
+  /**
+   * Lien de réservation public (Cal.com, Calendly…). C'est LA pièce qui
+   * permet à un prospect de poser un RDV sans toi — donc d'obtenir des
+   * rendez-vous pendant que tu es sur le terrain. Vide = pas de bouton.
+   */
+  bookingUrl?: string;
+  /**
+   * Qui est l'inscrit, et à qui il vend (`lib/profil-operateur.ts`).
+   *
+   * ⚠ OPTIONNEL, ET ÇA DOIT LE RESTER. Absent = l'inscrit n'a pas répondu, ou
+   * son store date d'avant ce champ. Les deux cas retombent sur le jeu de
+   * démonstration écrit à la main, qui est cohérent. Rendre ce champ
+   * obligatoire casserait chaque store déjà en circulation.
+   */
+  profil?: ProfilOperateur;
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
+  /**
+   * LE PIPE VIT SUR LE SERVEUR, plus dans ce navigateur.
+   *
+   * Absent/faux = mode historique : localStorage détient les fiches, la
+   * synchro n'est qu'une sauvegarde. Vrai = les fiches ne sont plus persistées
+   * localement, elles se chargent au démarrage depuis Supabase.
+   *
+   * ⚠ OPT-IN, et ça doit le rester : ce réglage déplace l'endroit où vivent
+   * les données de l'opérateur. Personne ne doit le découvrir après coup.
+   * Il n'a de sens qu'avec `supabaseSync` — sans elle, rien n'a jamais été
+   * envoyé et le chargement rendrait un pipe vide.
+   */
+  pipeServeur?: boolean;
+  /**
+   * Où en est la montée en charge de la campagne (`lib/paliers-campagne.ts`).
+   *
+   * ⚠ On stocke UNIQUEMENT ce qu'aucune donnée ne peut redire : les paliers
+   * validés à la main et les points déclaratifs cochés. Tout le reste — appels
+   * composés, décrochés, intérêts, oppositions — se relit de la base à chaque
+   * affichage. Recopier une mesure ici, ce serait figer un chiffre du jour où
+   * l'écran a été ouvert, et personne ne saurait pourquoi il ne bouge plus.
+   */
+  paliersCampagne?: {
+    valides: import("./paliers-campagne").IdPalierCampagne[];
+    coches: string[];
+  };
   /** First-run choice made (demo vs real data) */
   onboarded: boolean;
+  /** Tarifs du compte (white-label). Absent = modèle EAGLEYE par défaut. */
+  pricing?: import("./pricing").PricingConfig;
+  /**
+   * Les prompts modifiés par l'opérateur, par identifiant du registre
+   * (`lib/prompts.ts`). Absent = tout le monde tourne sur les textes livrés.
+   *
+   * ⚠ On stocke la MODIFICATION, jamais le texte livré. Recopier le défaut
+   * ici fige la version du jour où l'opérateur a ouvert l'écran : une
+   * amélioration livrée plus tard ne l'atteindrait plus, et personne ne
+   * saurait pourquoi son agent est resté en arrière.
+   */
+  prompts?: import("./prompts").PromptModifie[];
+  /**
+   * Ce qu'un partenaire (Nuwacom) a relu et validé — par texte et
+   * par compte (`lib/validation-partenaire.ts`).
+   *
+   * ⚠ On stocke l'EMPREINTE du texte validé, pas un simple « oui ». Une
+   * validation attachée à un identifiant survivrait à la réécriture du texte :
+   * on fait relire, on modifie le lendemain, et le tampon reste. C'est pire
+   * que pas de validation, parce que tout le monde croit que le contrôle a
+   * eu lieu.
+   */
+  validationsPartenaire?: import("./validation-partenaire").Validation[];
   security: {
     /** SHA-256 of the app-lock PIN; null = no lock */
     pinHash: string | null;
     /** Require PIN on every app open */
     autoLock: boolean;
+    /** SaaS multi-locataire : exiger un compte Supabase (email + mot de passe) pour ouvrir l'app */
+    requireAuth?: boolean;
   };
 }
 
@@ -289,4 +567,55 @@ export interface AuditLogEntry {
   actor: string;
   action: string;
   target: string;
+}
+
+/**
+ * Un PRESCRIPTEUR — quelqu'un qui parle déjà à tes prospects.
+ *
+ * Volontairement séparé de Prospect, et pas un simple tag : un
+ * prescripteur ne doit JAMAIS entrer dans le volume d'envoi, ni dans le
+ * pipe pondéré, ni dans les taux de conversion. Le mélanger fausserait
+ * tout ce qui se calcule — et surtout, on ne lui écrit pas la même chose.
+ */
+export type PartnerStatus =
+  | "identifie"   // repéré, jamais contacté
+  | "contacte"    // approche faite, pas de réponse tranchée
+  | "rdv"         // rendez-vous obtenu ou passé
+  | "accord"      // il a dit oui, l'accord tient
+  | "actif"       // il a présenté au moins une fois
+  | "dormant";    // accord signé, mais plus rien depuis — le piège du canal
+
+export interface PartnerIntro {
+  id: string;
+  date: string;
+  /** Qui il a présenté. Texte libre : l'entreprise peut ne pas être en base. */
+  company: string;
+  /** Fiche prospect créée à partir de cette mise en relation, si elle existe. */
+  prospectId?: string;
+  /** Chiffre d'affaires réellement ENCAISSÉ sur cette mise en relation. */
+  revenue: number;
+  notes?: string;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  organisation: string;
+  /** Identifiant d'archétype (lib/prescripteurs.ts). */
+  archetype: string;
+  status: PartnerStatus;
+  city: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  /** Taille de portefeuille annoncée par LUI — pas une estimation. */
+  portfolio?: number;
+  /** Ce qui a été convenu, en clair. Un accord flou ne produit rien. */
+  agreement?: string;
+  /** Les mises en relation reçues. C'est la seule mesure qui compte. */
+  intros: PartnerIntro[];
+  nextStep: NextStep | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
 }

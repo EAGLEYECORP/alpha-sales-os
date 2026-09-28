@@ -1,0 +1,470 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  AlertTriangle, Bot, Check, Clock, Gauge, PhoneCall, RadioTower, RefreshCw, User, Zap,
+} from "lucide-react";
+import { useAlpha } from "@/lib/store";
+import { masterRappelAll, type MasterPlan } from "@/lib/master-rappel";
+import { buildCampaignRun, skipBreakdown, SKIP_LABELS } from "@/lib/campaign-runner";
+import { CampaignRunner } from "@/components/controle/runner";
+import { PropositionsPanel } from "@/components/controle/propositions-panel";
+import { PaliersPanel } from "@/components/controle/paliers-panel";
+import { plafondPalierCampagne } from "@/lib/paliers-campagne";
+import { durationSec, formatDuration, transcriptText, extractInsights, type CallSession } from "@/lib/call-log";
+import { pipelineCoverage } from "@/lib/checkpoints";
+import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/ui/page-header";
+import { FilVente } from "@/components/flux/fil-vente";
+import { BoutonAutopilote } from "@/components/autopilote/bouton-autopilote";
+
+/**
+ * SALLE DE CONTRÔLE — tout ce qui tourne, en un écran.
+ *
+ * Trois strates, de la plus urgente à la plus froide :
+ *   1. les APPELS EN COURS (temps réel, avec la transcription qui défile) ;
+ *   2. ce qui ATTEND UNE ACTION HUMAINE — c'est là que l'argent se perd ;
+ *   3. ce qu'ALPHA exécute tout seul, et les fiches dont le tracking est muet.
+ *
+ * Chaque ligne est cliquable : elle ouvre la fiche pour intervenir.
+ */
+export default function ControlePage() {
+  const prospects = useAlpha((s) => s.prospects);
+  const accountId = useAlpha((s) => s.settings.accountId);
+  const agencyName = useAlpha((s) => s.settings.agencyName);
+  const paliersValides = useAlpha((s) => s.settings.paliersCampagne?.valides) ?? [];
+
+  const [sessions, setSessions] = useState<CallSession[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Les plans sont calculés localement : instantané, hors ligne, sans clé.
+  const now = useMemo(() => new Date(), []);
+  const plans = useMemo(
+    () => masterRappelAll(prospects, { now, accountId }),
+    [prospects, now, accountId]
+  );
+  // La file d'appels : qui appeler, dans quel ordre, et qui NE PAS appeler.
+  /**
+   * ⚠ Le plafond de PALIER, pas le plafond quotidien. Il se compte sur tout
+   * l'historique et ne se remet jamais à zéro : c'est ce qui empêche de
+   * monter à 1 000 appels avant d'avoir mesuré sur 100. Une seule réponse à
+   * « combien a-t-on le droit d'en passer » — `plafondPalierCampagne`.
+   */
+  const plafondPalier = plafondPalierCampagne(paliersValides);
+  const run = useMemo(
+    () => buildCampaignRun(prospects, { now, accountId, plafondPalier }),
+    [prospects, now, accountId, plafondPalier]
+  );
+  const breakdown = useMemo(() => skipBreakdown(run), [run]);
+  // Où le pipeline est troué : le point qui bloque le plus de fiches.
+  const coverage = useMemo(() => {
+    const declared: Record<string, string[]> = {};
+    for (const p of prospects) {
+      declared[p.id] = (p.tags ?? []).filter((x) => x.startsWith("cp:")).map((x) => x.slice(3));
+    }
+    return pipelineCoverage(prospects, declared);
+  }, [prospects]);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await fetch("/api/voice/session", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status === 401 ? "non autorisé (VOICE_WEBHOOK_SECRET)" : `HTTP ${r.status}`);
+      const j = (await r.json()) as { sessions?: CallSession[] };
+      setSessions(j.sessions ?? []);
+      setErr(null);
+    } catch (e) {
+      // Le journal indisponible ne doit pas vider l'écran : le reste marche.
+      setErr(e instanceof Error ? e.message : "journal injoignable");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Rafraîchissement court : un appel en cours n'a de valeur que s'il est vu vivant.
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  const live = sessions.filter((s) => s.state === "en-cours");
+  const finished = sessions.filter((s) => s.state !== "en-cours").slice(0, 12);
+
+  // Ce qui attend UN HUMAIN, le plus prêt à signer d'abord.
+  const humanQueue = plans.filter((p) => p.human.length > 0 && p.stage !== "signe" && p.stage !== "perdu").slice(0, 15);
+  const alphaQueue = plans.filter((p) => p.alpha.some((a) => a.channel !== "systeme")).slice(0, 10);
+  const mute = plans.filter((p) => p.checks.some((c) => c.id === "retour-donnee" && c.state === "absent")).slice(0, 10);
+  const ready = plans.filter((p) => p.closing);
+
+  // ⚠ Le `p-4` qui était ici s'AJOUTAIT au padding de la coquille : cet écran
+  // avait un cadre plus épais que tous les autres, et personne ne l'avait
+  // décidé. Le padding appartient à la coquille, pas à la page.
+  return (
+    <div className="page">
+      <PageHeader
+        icon={<RadioTower size={20} className="text-bronze-400" />}
+        title="Salle de contrôle"
+        actions={
+          <button onClick={load} className="btn-ghost flex items-center gap-1.5 text-[12px]">
+            <RefreshCw size={13} className={cn(loading && "animate-spin")} /> Rafraîchir
+          </button>
+        }
+      />
+
+      {/* LE FIL DE VENTE — le mode guidé bout en bout (cible → encaissement).
+          En tête, replié par défaut si on préfère aller droit à la file. */}
+      <FilVente />
+
+      {/* LE BOUTON AUTOPILOTE — « Alpha se gère tout seul », en un tap. Maître
+          seul (le composant se masque sinon) : il bascule le drapeau serveur
+          que les ticks lisent, et dit franchement ce qu'il n'arme PAS. */}
+      <BoutonAutopilote />
+
+      {/* Ce que l'orchestrateur propose — en haut : c'est la file qu'on
+          tranche avant de chercher quoi faire soi-même. */}
+      <PropositionsPanel />
+
+      <div className="grid gap-2 sm:grid-cols-4">
+        <Stat label="Appels en cours" value={live.length} tone={live.length ? "green" : "muted"} icon={<PhoneCall size={13} />} />
+        <Stat label="Attendent TOI" value={humanQueue.length} tone={humanQueue.length ? "amber" : "muted"} icon={<User size={13} />} />
+        <Stat label="Prêts à signer" value={ready.length} tone={ready.length ? "green" : "muted"} icon={<Gauge size={13} />} />
+        <Stat label="Tracking muet" value={mute.length} tone={mute.length ? "red" : "muted"} icon={<AlertTriangle size={13} />} />
+      </div>
+
+      {err && (
+        <p className="rounded-xl border border-signal-amber/40 bg-signal-amber/5 px-3 py-2 text-[11.5px] text-signal-amber">
+          Journal d&apos;appels : {err}. Le reste de l&apos;écran reste exact — seules les sessions vocales manquent.
+        </p>
+      )}
+
+      {/* ── 1. Appels en cours ── */}
+      <section className="card p-4">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <PhoneCall size={15} className="text-bronze-400" /> Appels en cours
+          {live.length > 0 && <span className="h-2 w-2 animate-pulse rounded-full bg-signal-green" />}
+        </h2>
+        {live.length === 0 ? (
+          <p className="mt-2 text-[11.5px] text-paper-faint">
+            Aucun appel en cours. Les sessions apparaissent ici dès qu&apos;Alpha Voice décroche.
+          </p>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {live.map((s) => (
+              <SessionRow key={s.id} s={s} open={openId === s.id} onToggle={() => setOpenId(openId === s.id ? null : s.id)} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Couverture du pipeline — le point qui bloque le plus de fiches */}
+      {coverage.total > 0 && coverage.topBlocker && (
+        <section className="card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <AlertTriangle size={15} className="text-signal-amber" /> Ce qui bloque le pipeline
+          </h2>
+          {/*
+            ⚠ LA PHRASE DISAIT L'INVERSE DE LA DOCTRINE. TROUVÉ EN LISANT L'ÉCRAN.
+
+            Elle s'écrivait « N fiche(s) bloquées par le même point : La démo a
+            été montrée AVANT le prix. » — c'est-à-dire, lu simplement : montrer
+            la démo avant le prix bloquerait le deal. C'est exactement le
+            contraire de la règle, et la ligne d'explication juste en dessous
+            disait déjà le bon sens (« Un prix annoncé sans démo transforme la
+            conversation en négociation »).
+
+            La cause n'est pas le libellé : les `CHECKPOINTS` sont formulés
+            comme des conditions REMPLIES, parce qu'ailleurs ils s'affichent en
+            case à cocher (« ✓ La démo a été montrée AVANT le prix »). C'est
+            cette phrase-ci qui les présentait comme des causes de blocage. On
+            nomme donc la condition comme une condition, et on dit sur combien
+            de fiches elle n'est pas encore vraie.
+          */}
+          <p className="mt-1 text-[12px] text-paper">
+            Le point qui manque au plus grand nombre : <strong>{coverage.topBlocker.label}</strong> — pas encore
+            vrai sur <strong className="text-signal-amber">{coverage.topBlocker.count} fiche(s)</strong>.
+          </p>
+          <p className="mt-0.5 text-[11.5px] text-paper-faint">{coverage.topBlocker.why}</p>
+          <p className="mt-1.5 text-[11px] text-paper-faint">
+            {coverage.ready}/{coverage.total} fiches peuvent avancer · couverture moyenne{" "}
+            {coverage.coverage}%. Corriger ce point vaut mieux que traiter les fiches une par une.
+          </p>
+        </section>
+      )}
+
+      {/* ── 1bis. La montée en charge, AVANT la file : c'est elle qui la borne ── */}
+      <PaliersPanel />
+
+      {/* ── 1ter. La file d'appels de la campagne ── */}
+      <section className="card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <Zap size={15} className="text-bronze-400" /> File d&apos;appels
+          </h2>
+          <span className={cn("text-[11px]", run.windowOpen ? "text-signal-green" : "text-signal-amber")}>
+            {run.windowOpen ? "fenêtre ouverte" : run.windowWhy}
+          </span>
+        </div>
+        <p className="mt-1 text-[11.5px] text-paper-dim">{run.summary}</p>
+        <p className="mt-0.5 text-[11px] text-paper-faint">
+          Plafond {run.dailyCap} appels/jour · {run.alreadyToday} déjà passé(s) — au-delà, la qualité de
+          conversation décroche.
+        </p>
+        {/* Deux plafonds, deux raisons. Celui du jour parle de fatigue ; celui du
+            palier parle d'apprentissage et ne se remet jamais à zéro. Les
+            afficher ensemble évite de chercher pourquoi la file est vide alors
+            que le compteur du jour est à zéro. */}
+        {run.plafondPalier !== null && (
+          <p className="mt-0.5 text-[11px] text-paper-faint">
+            Palier de campagne : {run.composesTotal} / {run.plafondPalier} appels composés au total
+            {run.composesTotal >= run.plafondPalier && (
+              <strong className="text-signal-amber"> — atteint, la file est fermée tant que le palier n&apos;est pas validé.</strong>
+            )}
+          </p>
+        )}
+
+        {/* Le lanceur — manuel ou auto, avec armement explicite */}
+        <div className="mt-3">
+          <CampaignRunner
+            queue={run.queue}
+            windowOpen={run.windowOpen}
+            windowWhy={run.windowWhy}
+            accountId={accountId}
+            agencyName={agencyName}
+          />
+        </div>
+
+        {run.queue.length > 0 && (
+          <ol className="mt-3 space-y-1.5">
+            {run.queue.slice(0, 12).map((t) => (
+              <li key={t.prospectId} className="flex flex-wrap items-baseline gap-2 text-[11.5px]">
+                <span className="font-mono text-[10.5px] text-paper-faint">#{t.rank}</span>
+                <Link href={`/prospects/${t.prospectId}`} className="text-paper hover:text-bronze-400">
+                  {t.company}
+                </Link>
+                <span className="font-mono text-[10.5px] text-bronze-400">{t.phone}</span>
+                {t.recallIndex > 0 && (
+                  <span className="rounded-full bg-bronze-900/25 px-1.5 py-0.5 text-[10px] text-bronze-300">
+                    rappel {t.recallIndex + 1}/5
+                  </span>
+                )}
+                <span className="text-[10.5px] text-paper-faint">prio {t.priority}</span>
+                <span className="w-full text-[11px] text-paper-faint">→ {t.objective}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        {/* Ce qui bloque le volume — la vraie information d'une campagne. */}
+        {breakdown.length > 0 && (
+          <div className="mt-3 border-t border-line/40 pt-2">
+            <p className="text-[11px] uppercase tracking-wider text-paper-faint">Écartés — et pourquoi</p>
+            <ul className="mt-1 grid gap-0.5 sm:grid-cols-2">
+              {breakdown.map((b) => (
+                <li key={b.reason} className="text-[11.5px] text-paper-dim">
+                  <span className="font-mono text-signal-amber">{b.count}</span> — {SKIP_LABELS[b.reason]}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* ── 2. Ce qui attend une action HUMAINE ── */}
+      <section className="card p-4">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+          <User size={15} className="text-bronze-400" /> Ça attend TOI
+          <span className="text-[11px] font-normal text-paper-faint">— c&apos;est ici que l&apos;argent se perd</span>
+        </h2>
+        {humanQueue.length === 0 ? (
+          <p className="mt-2 text-[11.5px] text-paper-faint">Rien en attente de ton côté.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-line/40">
+            {humanQueue.map((plan) => (
+              <PlanRow key={plan.prospectId} plan={plan} prospects={prospects} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* ── 3. Ce qu'Alpha exécute ── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <Bot size={15} className="text-bronze-400" /> Alpha exécute
+          </h2>
+          {alphaQueue.length === 0 ? (
+            <p className="mt-2 text-[11.5px] text-paper-faint">Aucun automatisme en cours.</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {alphaQueue.map((plan) => {
+                const a = plan.alpha.find((x) => x.channel !== "systeme")!;
+                const name = prospects.find((p) => p.id === plan.prospectId)?.company ?? plan.prospectId;
+                return (
+                  <li key={plan.prospectId} className="text-[11.5px]">
+                    <Link href={`/prospects/${plan.prospectId}`} className="text-paper hover:text-bronze-400">
+                      {name}
+                    </Link>
+                    <p className="text-paper-faint">
+                      {a.do} <span className="text-[10.5px]">· {new Date(a.when).toLocaleDateString("fr-FR")}</span>
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* Les fiches dont Alpha ne reçoit RIEN — angle mort le plus coûteux. */}
+        <section className="card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <AlertTriangle size={15} className="text-signal-red" /> Alpha ne reçoit rien
+          </h2>
+          <p className="mt-1 text-[11px] text-paper-faint">
+            Aucune donnée ne remonte : impossible d&apos;analyser ces prospects ni de personnaliser quoi que ce soit.
+          </p>
+          {mute.length === 0 ? (
+            <p className="mt-2 text-[11.5px] text-signal-green">Toutes les fiches actives remontent de la donnée.</p>
+          ) : (
+            <ul className="mt-2 space-y-1">
+              {mute.map((plan) => {
+                const p = prospects.find((x) => x.id === plan.prospectId);
+                const why = plan.checks.find((c) => c.id === "retour-donnee")?.detail ?? "";
+                return (
+                  <li key={plan.prospectId} className="text-[11.5px]">
+                    <Link href={`/prospects/${plan.prospectId}`} className="text-paper hover:text-bronze-400">
+                      {p?.company ?? plan.prospectId}
+                    </Link>
+                    <span className="text-paper-faint"> — {why}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {/* ── Appels terminés : la matière à relire ── */}
+      {finished.length > 0 && (
+        <section className="card p-4">
+          <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <Clock size={15} className="text-bronze-400" /> Appels terminés
+          </h2>
+          <ul className="mt-2 space-y-2">
+            {finished.map((s) => (
+              <SessionRow key={s.id} s={s} open={openId === s.id} onToggle={() => setOpenId(openId === s.id ? null : s.id)} />
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function SessionRow({ s, open, onToggle }: { s: CallSession; open: boolean; onToggle: () => void }) {
+  const insights = useMemo(() => extractInsights(s), [s]);
+  const dur = durationSec(s);
+  return (
+    <li className="rounded-xl border border-line/50 bg-surface/30 p-3">
+      <button onClick={onToggle} className="flex w-full flex-wrap items-center gap-2 text-left">
+        <span
+          className={cn(
+            "h-2 w-2 rounded-full",
+            s.state === "en-cours" ? "animate-pulse bg-signal-green" : s.state === "echec" ? "bg-signal-red" : "bg-paper-faint"
+          )}
+        />
+        <span className="text-[12px] text-paper">{s.peer ?? s.room}</span>
+        <span className="rounded-full bg-bronze-900/25 px-1.5 py-0.5 text-[10.5px] text-bronze-300">{s.direction}</span>
+        <span className="font-mono text-[11px] text-paper-faint">{formatDuration(dur)}</span>
+        <span className="text-[11px] text-paper-faint">{s.turns.length} tours</span>
+        {s.prospectId && (
+          <Link
+            href={`/prospects/${s.prospectId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto text-[11px] text-bronze-400 hover:underline"
+          >
+            ouvrir la fiche ↗
+          </Link>
+        )}
+      </button>
+
+      {open && (
+        <div className="mt-2 border-t border-line/40 pt-2">
+          {insights.length > 0 && (
+            <ul className="mb-2 space-y-0.5">
+              {insights.map((i, n) => (
+                <li key={n} className="text-[11px] text-signal-amber">
+                  <strong className="uppercase">{i.kind}</strong> — « {i.quote} »
+                </li>
+              ))}
+            </ul>
+          )}
+          <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-[11px] leading-relaxed text-paper-dim">
+            {transcriptText(s) || "Aucune transcription."}
+          </pre>
+          {s.error && <p className="mt-1 text-[11px] text-signal-red">Erreur : {s.error}</p>}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function PlanRow({ plan, prospects }: { plan: MasterPlan; prospects: { id: string; company: string }[] }) {
+  const name = prospects.find((p) => p.id === plan.prospectId)?.company ?? plan.prospectId;
+  const a = plan.human[0];
+  const s = plan.signs;
+  return (
+    <li className="py-2">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <Link href={`/prospects/${plan.prospectId}`} className="text-[12.5px] font-medium text-paper hover:text-bronze-400">
+          {name}
+        </Link>
+        <span
+          className={cn(
+            "font-mono text-[11px]",
+            s.readiness >= 70 ? "text-signal-green" : s.readiness >= 45 ? "text-bronze-400" : "text-paper-faint"
+          )}
+        >
+          {s.readiness}/100
+        </span>
+        {plan.closing && (
+          <span className="flex items-center gap-1 rounded-full bg-signal-green/10 px-1.5 py-0.5 text-[10.5px] text-signal-green">
+            <Check size={10} /> prêt à signer
+          </span>
+        )}
+        {s.fatigueLevel === "sature" && (
+          <span className="rounded-full bg-signal-red/10 px-1.5 py-0.5 text-[10.5px] text-signal-red">saturé</span>
+        )}
+        <span className="ml-auto text-[10.5px] text-paper-faint">
+          {a ? new Date(a.when).toLocaleDateString("fr-FR") : ""}
+        </span>
+      </div>
+      <p className="mt-0.5 text-[11.5px] text-paper-dim">{plan.headline}</p>
+      {a?.mustCapture?.length ? (
+        <p className="mt-0.5 text-[11px] text-signal-amber">À récolter : {a.mustCapture.join(" · ")}</p>
+      ) : null}
+    </li>
+  );
+}
+
+function Stat({
+  label, value, tone, icon,
+}: { label: string; value: number; tone: "green" | "amber" | "red" | "muted"; icon: React.ReactNode }) {
+  const t = {
+    green: "text-signal-green",
+    amber: "text-signal-amber",
+    red: "text-signal-red",
+    muted: "text-paper-faint",
+  }[tone];
+  return (
+    <div className="card p-3">
+      <p className="flex items-center gap-1.5 text-[11px] text-paper-faint">
+        {icon} {label}
+      </p>
+      <p className={cn("mt-0.5 font-display text-xl font-bold", t)}>{value}</p>
+    </div>
+  );
+}

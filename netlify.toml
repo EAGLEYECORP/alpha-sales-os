@@ -1,0 +1,49 @@
+# ─────────────────────────────────────────────────────────────────────
+# NETLIFY, À LA RACINE — ce fichier construit désormais L'APP ALPHA.
+#
+# ══ CE QUI A CHANGÉ LE 17/09/2026, ET POURQUOI ══
+#
+# Avant, ce fichier ne servait qu'à INTERDIRE la racine : il posait
+# `base = "site"` pour que le dépôt, relié à Netlify, ne publie que le site
+# vitrine statique et jamais la racine (où vit `donnees-privees/`, 78 fiches
+# RÉELLES). Décision de Zakaria : Alpha Sales OS — l'app Next.js — passe elle
+# aussi sur Netlify, à côté de `eagleyecorp.fr` qui y est déjà.
+#
+# Une app Next.js ne se PUBLIE pas comme un dossier statique : elle se
+# CONSTRUIT. Le runtime `@netlify/plugin-nextjs` lance `next build` et sert la
+# sortie du build (`public/` + les fonctions générées), **jamais l'arbre du
+# dépôt**. C'est le fait qui rend cette bascule sûre, et il a été vérifié :
+# `donnees-privees/` est à la racine, hors de `public/` — aucun build Next ne
+# le sert. Le danger d'exposition était propre à une PUBLICATION STATIQUE de la
+# racine (`publish = "."`), pas à un build. Ce fichier n'en déclare aucune.
+#
+# ══ ⚠⚠ LA GARDE N'A PAS DISPARU, ELLE A CHANGÉ DE MÉCANISME ══
+#
+# `tests/site-vitrine.test.ts` n'exige plus `base = "site"` ici — il exige
+# maintenant que ce fichier CONSTRUISE (présence du runtime Next, preuve qu'on
+# ne sert pas l'arbre) et ne déclare AUCUN `publish` statique de la racine. Le
+# mode de panne s'en trouve adouci, pas aggravé : un site mal configuré
+# déploierait la mauvaise APP, il n'exposerait pas des données.
+#
+# ══ LE SITE VITRINE, LUI, N'A PAS BOUGÉ ══
+#
+# `eagleyecorp.fr` reste un site Netlify DISTINCT, dont le « base directory »
+# est réglé sur `site/` dans SES réglages Netlify — il lit alors
+# `site/netlify.toml` (publish confiné à `site/`, en-têtes) et ne lit JAMAIS ce
+# fichier-ci. Deux sites, un dépôt, deux bases. Le dépôt n'a aucun lien CI
+# Netlify aujourd'hui (envoi manuel), donc ce changement ne casse rien de
+# vivant : il prépare le branchement, il ne le déclenche pas.
+#
+# ⚠ Le build Netlify lui-même n'a PAS pu être vérifié depuis la sandbox
+# (réseau bloqué, `next build` local OK mais pas l'adaptateur Netlify). Le
+# premier déploiement Netlify est le test — voir `docs/DEPLOIEMENT-NETLIFY.md`.
+# ─────────────────────────────────────────────────────────────────────
+
+[build]
+  command = "npm run build"
+  # ⚠ AUCUN `publish` ici. Le runtime Next pose la sienne (`.next` via
+  # l'adaptateur). Écrire `publish = "."` servirait la racine du dépôt en
+  # statique — exactement le trou que ce fichier existe pour fermer.
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -1,0 +1,85 @@
+{
+  "name": "ALPHA SALES OS — Sync Supabase → Google Sheets (info critique)",
+  "meta": {
+    "description": "Ferme la boucle de l'info critique. Toutes les 1–5 min : lit Supabase crm_records où synced_to_sheet=false, écrit/merge chaque ligne dans Google Sheets (clé = prospect), puis repasse synced_to_sheet=true. Idempotent. Mappe ta credential Supabase + Google Sheets. Colonnes = crm-schema.json."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 2 }] }
+      },
+      "id": "cc000000-0000-4000-8000-000000000001",
+      "name": "Toutes les 2 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-260, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "crm_records",
+        "returnAll": true,
+        "filters": {
+          "conditions": [{ "keyName": "synced_to_sheet", "condition": "eq", "keyValue": "false" }]
+        }
+      },
+      "id": "cc000000-0000-4000-8000-000000000002",
+      "name": "Supabase — lignes non synchronisées",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [-40, 300],
+      "credentials": { "supabaseApi": { "id": "REMPLACE_MOI", "name": "Supabase account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aplati la ligne CRM (data jsonb) pour Google Sheets.\nreturn items.map((it) => {\n  const r = it.json || {};\n  const d = r.data || {};\n  return { json: { _id: r.id, prospect: d.prospect || r.company || r.id, ...d } };\n});"
+      },
+      "id": "cc000000-0000-4000-8000-000000000003",
+      "name": "Aplatir data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "REMPLACE_PAR_TON_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "CRM", "mode": "name" },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["prospect"]
+        },
+        "options": {}
+      },
+      "id": "cc000000-0000-4000-8000-000000000004",
+      "name": "Google Sheets — append/update",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [400, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "crm_records",
+        "filters": { "conditions": [{ "keyName": "id", "condition": "eq", "keyValue": "={{ $json._id }}" }] },
+        "dataToSend": "defineBelow",
+        "fieldsUi": { "fieldValues": [{ "fieldId": "synced_to_sheet", "fieldValue": "true" }] }
+      },
+      "id": "cc000000-0000-4000-8000-000000000005",
+      "name": "Supabase — flag synced",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [620, 300],
+      "credentials": { "supabaseApi": { "id": "REMPLACE_MOI", "name": "Supabase account" } }
+    }
+  ],
+  "connections": {
+    "Toutes les 2 min": { "main": [[{ "node": "Supabase — lignes non synchronisées", "type": "main", "index": 0 }]] },
+    "Supabase — lignes non synchronisées": { "main": [[{ "node": "Aplatir data", "type": "main", "index": 0 }]] },
+    "Aplatir data": { "main": [[{ "node": "Google Sheets — append/update", "type": "main", "index": 0 }]] },
+    "Google Sheets — append/update": { "main": [[{ "node": "Supabase — flag synced", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

@@ -1,60 +1,85 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { FileSpreadsheet, Compass } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAlpha, useHydrated } from "@/lib/store";
-import { Eagle } from "@/components/eagle";
+import { SetupWizard } from "@/components/setup-wizard";
+import { chargerProgression, doitSOuvrirSeul } from "@/lib/wizard-progress";
+import { chargerDroits } from "@/lib/use-droits";
 
 /**
- * First-run choice: explore the Lyon demo, or start clean with real data.
- * Shown once (settings.onboarded), non-destructive by default.
+ * Assistant de configuration guidé. S'ouvre automatiquement au premier
+ * lancement (settings.onboarded = false) et se rouvre à la demande via
+ * l'événement « alpha:open-setup » (bouton dans les Réglages).
  */
 export function Onboarding() {
   const hydrated = useHydrated();
-  const { settings, patchSettings, clearAllData, prospects } = useAlpha();
-  const router = useRouter();
+  const onboarded = useAlpha((s) => s.settings.onboarded);
+  const [open, setOpen] = useState(false);
 
-  if (!hydrated || settings.onboarded) return null;
+  /**
+   * Premier lancement → ouvre l'assistant. MAIS pas s'il a déjà été repoussé.
+   *
+   * Sans ce second garde-fou, la croix ne servait à rien : `open` revenait à
+   * faux, puis la navigation suivante remontait cet effet et le panneau
+   * plein écran (z-95) reprenait la main. L'app était injouable tant que les
+   * dix étapes n'avaient pas été traversées — et personne ne fait ça avant
+   * d'avoir seulement regardé le produit.
+   */
+  /**
+   * ⚠ TROISIÈME GARDE-FOU : IL NE S'OUVRE QUE POUR L'OPÉRATEUR.
+   *
+   * Cet assistant configure NOTRE installation : Google Sheets, n8n, SMTP,
+   * Ollama, Supabase, déploiement. Ce sont des variables d'environnement du
+   * SERVEUR et des services tiers qu'un locataire ne possède pas et ne peut
+   * pas poser — il n'existe aucun chemin d'identifiants par locataire.
+   *
+   * Or il s'ouvrait AUTOMATIQUEMENT au premier lancement, pour tout le monde.
+   * Mesuré sur une capture mobile : la toute première chose qu'un inscrit
+   * gratuit voit, avant même le produit, est un panneau plein écran qui lui
+   * explique « Google Sheets = la mémoire, n8n = le cerveau » — la pile de
+   * quelqu'un d'autre, qu'il ne peut ni installer ni contourner autrement
+   * qu'en trouvant la croix.
+   *
+   * C'est exactement le défaut corrigé sur `/demarrage` : un parcours
+   * d'opérateur servi à un client. La différence, c'est que celui-ci est
+   * MODAL — il ne se contente pas d'être hors sujet, il barre l'écran.
+   *
+   * Le bon parcours pour un inscrit existe déjà et il est filtré par ses
+   * droits : `/demarrage`. Celui-ci reste ouvrable à la main depuis les
+   * Réglages, pour qui a de quoi s'en servir.
+   *
+   * ⚠ `droits.maitre` OU `droits.solo` : le mode solo est l'installation
+   * locale de l'opérateur, sans comptes configurés. L'exclure ferait
+   * disparaître l'assistant de la machine de développement, c'est-à-dire du
+   * seul endroit où il sert vraiment.
+   *
+   * ⚠⚠ ON ATTEND LA RÉPONSE DU SERVEUR — `useDroits` ne suffit PAS ici.
+   * Ce hook est OPTIMISTE par construction : il rend `maitre: true` tant que
+   * la réponse n'est pas arrivée, pour qu'un menu ne clignote pas. Bon pour un
+   * menu ; faux pour un panneau modal qui barre l'écran et ne se referme pas
+   * tout seul — l'assistant se serait ouvert pendant le chargement, et serait
+   * resté. On lit donc la promesse, pas la valeur d'attente.
+   */
+  useEffect(() => {
+    if (!hydrated) return;
+    let vivant = true;
+    void chargerDroits().then((d) => {
+      if (!vivant) return;
+      if (!(d.maitre || d.solo)) return;
+      if (doitSOuvrirSeul(onboarded, chargerProgression())) setOpen(true);
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [hydrated, onboarded]);
 
-  const keepDemo = () => patchSettings({ onboarded: true });
-  const startReal = () => {
-    if (prospects.length > 0) clearAllData();
-    patchSettings({ onboarded: true });
-    router.push("/settings");
-  };
+  // Réouverture manuelle depuis n'importe où.
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener("alpha:open-setup", onOpen);
+    return () => window.removeEventListener("alpha:open-setup", onOpen);
+  }, []);
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink-950/90 p-4 backdrop-blur-sm">
-      <div className="card w-full max-w-lg p-7 text-center animate-fade-up">
-        <span className="mx-auto block animate-floaty text-bronze-400">
-          <Eagle size={80} glow />
-        </span>
-        <h1 className="mt-4 font-display text-2xl font-extrabold text-paper">
-          Bienvenue dans ALPHA <span className="text-bronze-400">SALES OS</span>
-        </h1>
-        <p className="mt-2 text-sm text-paper-dim">
-          Émotion d&apos;abord, logique ensuite. Chaque contact se termine par un next step daté.
-        </p>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <button onClick={keepDemo} className="card card-hover p-4 text-left">
-            <Compass size={20} className="text-bronze-400" />
-            <p className="mt-2 font-display text-sm font-bold text-paper">Explorer la démo</p>
-            <p className="mt-1 text-[12px] text-paper-faint">
-              8 prospects lyonnais fictifs pour prendre en main la doctrine, le Kanban et l&apos;agent. Effaçable en un clic.
-            </p>
-          </button>
-          <button onClick={startReal} className="card card-hover border-bronze-700/60 p-4 text-left">
-            <FileSpreadsheet size={20} className="text-bronze-400" />
-            <p className="mt-2 font-display text-sm font-bold text-paper">Démarrer en réel</p>
-            <p className="mt-1 text-[12px] text-paper-faint">
-              Base vide + import direct de ton Google Sheet / CSV (prospects et deep audit). Tu es opérationnel en 2 minutes.
-            </p>
-          </button>
-        </div>
-        <p className="mt-4 font-mono text-[9.5px] uppercase tracking-[0.18em] text-paper-faint">
-          Changeable à tout moment dans Réglages
-        </p>
-      </div>
-    </div>
-  );
+  if (!hydrated || !open) return null;
+  return <SetupWizard onClose={() => setOpen(false)} />;
 }

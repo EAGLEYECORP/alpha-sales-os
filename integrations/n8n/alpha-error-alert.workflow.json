@@ -1,0 +1,47 @@
+{
+  "name": "ALPHA SALES OS — Alerte erreur (panne silencieuse = interdite)",
+  "meta": {
+    "description": "Workflow d'erreur global : dès qu'un AUTRE workflow ALPHA échoue, tu reçois un email avec le nom du workflow, le nœud fautif, le message d'erreur et le lien direct vers l'exécution rouge. À brancher UNE FOIS : ouvre chacun des 5 workflows ALPHA → Settings (⋯ en haut à droite) → Error Workflow → choisis celui-ci. Variable d'env n8n : ALPHA_ALERT_EMAIL (l'adresse qui reçoit les alertes)."
+  },
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f0000000-0000-4000-8000-000000000001",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-260, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Met en forme l'alerte — un email lisible en 5 secondes.\nconst j = items[0].json || {};\nconst wf = j.workflow || {};\nconst ex = j.execution || {};\nconst err = ex.error || {};\nconst lines = [\n  `Workflow : ${wf.name || 'inconnu'}`,\n  `Nœud     : ${ex.lastNodeExecuted || err.node?.name || 'inconnu'}`,\n  `Erreur   : ${err.message || 'sans message'}`,\n  `Quand    : ${new Date().toLocaleString('fr-FR')}`,\n  '',\n  ex.url ? `Voir l'exécution : ${ex.url}` : `Exécution #${ex.id || '?'} — ouvre n8n → Executions.`,\n  '',\n  'Réflexe : ouvre l\\'exécution, lis la sortie du nœud rouge, corrige (credential expiré ? Sheet renommé ? Ollama éteint ?), puis « Retry ».'\n];\nreturn [{ json: {\n  subject: `⚠️ ALPHA OS — « ${wf.name || 'workflow'} » a échoué`,\n  body: lines.join('\\n'),\n} }];"
+      },
+      "id": "f0000000-0000-4000-8000-000000000002",
+      "name": "Formater l'alerte",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-20, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.ALPHA_ALERT_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "f0000000-0000-4000-8000-000000000003",
+      "name": "Gmail — m'alerter",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [220, 300],
+      "credentials": { "gmailOAuth2": { "id": "REMPLACE_MOI", "name": "Gmail account" } }
+    }
+  ],
+  "connections": {
+    "Error Trigger": { "main": [[{ "node": "Formater l'alerte", "type": "main", "index": 0 }]] },
+    "Formater l'alerte": { "main": [[{ "node": "Gmail — m'alerter", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

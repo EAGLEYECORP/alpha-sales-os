@@ -1,0 +1,306 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Prospect } from "@/lib/types";
+import { buildCampaignRun } from "@/lib/campaign-runner";
+import { PALIERS_CAMPAGNE, plafondPalierServeur } from "@/lib/paliers-campagne";
+import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-tick";
+import { safeEqual } from "@/lib/access";
+import { lireProspectsOperateur } from "@/lib/lecture-serveur";
+import { presenceAgent } from "@/lib/presence-agent";
+import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * DÉCLENCHEUR AUTOMATIQUE DE CAMPAGNE.
+ *
+ * Appelé par un cron (Vercel Cron ou n8n). Construit la file, prend la tête,
+ * écrit la tentative, puis déclenche l'appel.
+ *
+ * ⚠ TROIS CONDITIONS, toutes obligatoires, aucune contournable :
+ *
+ *  1. SECRET — `CRON_SECRET` doit être configuré ET fourni. Sans secret
+ *     configuré, la route REFUSE de tourner. Une route qui déclenche des
+ *     appels téléphoniques réels ne peut pas être ouverte au monde.
+ *
+ *  2. ARMEMENT EXPLICITE — `CAMPAIGN_AUTOPILOT=on` doit être posé en variable
+ *     d'environnement. Sans lui, la route s'exécute en SIMULATION et rend ce
+ *     qu'elle AURAIT fait. Déployer ce fichier ne suffit donc jamais à faire
+ *     partir un appel : il faut un second geste, délibéré.
+ *
+ *  3. DONNÉES SERVEUR — les prospects doivent être synchronisés dans Supabase.
+ *     Le store de l'app vit dans le navigateur ; sans synchronisation, un cron
+ *     serveur ne voit RIEN et ne peut rien appeler. La route le dit au lieu de
+ *     rendre un succès vide.
+ *
+ * La fenêtre horaire n'est JAMAIS forcée en automatique : `force` n'existe pas
+ * ici. Un humain peut décider d'appeler un samedi ; une machine, non.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+function serviceClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+function authorized(req: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET?.trim();
+  // Pas de secret configuré = la route n'existe pas. Volontaire.
+  if (!secret) return false;
+  const header = req.headers.get("authorization") ?? "";
+  const provided = (header.startsWith("Bearer ") ? header.slice(7) : req.headers.get("x-cron-secret") ?? "").trim();
+  // Temps constant : ce secret déclenche des appels téléphoniques réels, il ne
+  // doit pas révéler par la durée combien de caractères sont justes.
+  return provided.length > 0 && safeEqual(provided, secret);
+}
+
+// Armement unifié (`lib/autopilote.ts`) : env OU drapeau en base (le bouton).
+
+export async function POST(req: NextRequest) {
+  if (!authorized(req)) {
+    return NextResponse.json(
+      { error: "non autorisé", why: "CRON_SECRET absent ou invalide. Une route qui passe des appels ne s'ouvre pas." },
+      { status: 401 }
+    );
+  }
+
+  const db = serviceClient();
+  if (!db) {
+    return NextResponse.json(
+      {
+        error: "Supabase non configuré",
+        why:
+          "Les prospects vivent dans le navigateur tant que la synchronisation n'est pas activée. " +
+          "Un cron serveur ne voit alors aucune donnée — il ne peut pas appeler à l'aveugle.",
+      },
+      { status: 412 }
+    );
+  }
+
+  const url = new URL(req.url);
+  const accountId = url.searchParams.get("accountId") ?? "eagleye";
+  const max = Number(url.searchParams.get("max") ?? MAX_CALLS_PER_TICK);
+  const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
+  const dryRun = !arme || url.searchParams.get("dryRun") === "1";
+
+  /**
+   * ── Lecture des prospects ──
+   *
+   * ⚠ ELLE NE FILTRAIT PAS PAR PROPRIÉTAIRE. La borne à 2 000 était là, le
+   * cloisonnement non — alors que `/api/v1/etat` portait déjà le raisonnement
+   * écrit. Sur cette route-ci la conséquence n'est pas une fuite de lecture :
+   * c'est un APPEL TÉLÉPHONIQUE passé au prospect d'un autre locataire, avec
+   * notre ligne et sur notre facture. Les deux moitiés vivent maintenant dans
+   * `lib/lecture-serveur.ts`, et un test interdit la lecture directe.
+   */
+  const lecture = await lireProspectsOperateur(db);
+  if (lecture.erreur) {
+    return NextResponse.json({ error: "lecture impossible", detail: lecture.erreur }, { status: 500 });
+  }
+  const prospects = lecture.prospects;
+  const avertissement = lecture.avertissement || undefined;
+
+  if (prospects.length === 0) {
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      /**
+       * ⚠⚠ CE MESSAGE ENVOYAIT CONSTRUIRE CE QUI EXISTE DÉJÀ.
+       *
+       * Il disait « aucun composant de l'app ne pousse les prospects » et
+       * « il faut une synchro vers Supabase ». C'était vrai quand il a été
+       * écrit ; ça ne l'est plus. La chaîne est complète : le moteur
+       * (`components/sync-moteur.tsx`) est monté dans la coquille, pousse
+       * après 8 s de silence et repousse au `pagehide` ; la route
+       * `/api/sync/prospects` écrit ; `lib/lecture-serveur.ts` relit sous le
+       * même propriétaire.
+       *
+       * Ce qui manque dans ce cas-là n'est donc pas du code — c'est un
+       * INTERRUPTEUR : `settings.supabaseSync` vaut `false` par défaut. Un
+       * message qui envoie bâtir un chantier de plusieurs jours à la place de
+       * « coche la case » coûte exactement ces jours-là. Le mode de panne
+       * d'une prose périmée n'est pas de casser : c'est de mentir à celui qui
+       * vient chercher quoi faire.
+       *
+       * ⚠ Les deux causes restent distinctes et se disent toutes les deux :
+       * la synchro éteinte, et la synchro allumée qui n'a encore rien poussé.
+       */
+      why:
+        "Aucun prospect côté serveur — l'autopilote n'a rien à appeler. " +
+        "La synchro existe et tourne dans la coquille de l'app, mais elle est EN OPT-IN : " +
+        "Réglages → Synchronisation Supabase. Si elle est déjà active, c'est qu'aucune poussée n'a encore " +
+        "abouti — la carte de Réglages en donne l'état et la dernière erreur.",
+    });
+  }
+
+  /**
+   * ── LE PALIER DE CAMPAGNE, CÔTÉ SERVEUR ──
+   *
+   * Même philosophie que `CAMPAIGN_AUTOPILOT` : déployer ne suffit jamais, il
+   * faut un second geste délibéré. Le palier ne se lit PAS dans les réglages
+   * du navigateur — ils n'arrivent pas jusqu'ici, et un cron qui déduirait
+   * tout seul qu'il a le droit de monter à 1 000 appels serait précisément le
+   * bug qu'on refuse.
+   *
+   * ⚠ Absent ou illisible = palier le plus bas. Jamais « pas de plafond » :
+   * une variable mal orthographiée ne doit pas ouvrir les vannes.
+   */
+  const plafondPalier = plafondPalierServeur(process.env.CAMPAIGN_PALIER);
+
+  // ── La file, avec toutes les portes habituelles (jamais de force) ──
+  const run = buildCampaignRun(prospects, { accountId, plafondPalier });
+
+  if (run.queue.length === 0 && run.skipped.some((s) => s.reason === "palier-atteint")) {
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      palier: plafondPalier,
+      composes: run.composesTotal,
+      why:
+        `Palier de ${plafondPalier} appels atteint (${run.composesTotal} composés). L'autopilote s'arrête ici : ` +
+        `mesure ce qui est déjà sorti, valide le palier dans l'app, puis passe CAMPAIGN_PALIER au cran suivant.`,
+    });
+  }
+  if (!run.windowOpen) {
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      skipped: run.queue.length,
+      why: `Fenêtre fermée — ${run.windowWhy} Une machine n'appelle pas hors des heures ouvrées.`,
+    });
+  }
+
+  const plan = planTick(run.queue.map((t) => t.prospectId), prospects, { max });
+  const tasks = run.queue.filter((t) => plan.take.includes(t.prospectId));
+
+  if (dryRun) {
+    return NextResponse.json({
+      ok: true,
+      simulation: true,
+      why: arme
+        ? "dryRun demandé explicitement."
+        : "Autopilote désarmé (ni le bouton ni CAMPAIGN_AUTOPILOT) — rien ne part tant qu'il n'est pas armé.",
+      wouldCall: tasks.map((t) => ({ prospectId: t.prospectId, company: t.company, phone: t.phone, objective: t.objective })),
+      queueSize: run.queue.length,
+      tooSoon: plan.tooSoon.length,
+      cap: plan.cap,
+    });
+  }
+
+  /**
+   * ── PERSONNE AU BOUT ? ALORS ON NE COMPOSE PAS ──
+   *
+   * ⚠ LA DERNIÈRE PORTE, ET ELLE EST FAIL-CLOSED.
+   *
+   * `/api/voice/call` crée un dispatch LiveKit et rend `dispatched: true` que
+   * `voice/agent.py` tourne ou non. Sans cette vérification, un poste éteint
+   * un vendredi soir laisse le cron composer tout le week-end : la ligne
+   * sonne, le prospect décroche, personne ne parle. La fiche est brûlée, le
+   * numéro perd sa réputation, les minutes sont facturées — et rien n'échoue.
+   *
+   * ⚠⚠ ELLE NE S'APPLIQUE QU'À L'EXÉCUTION RÉELLE, jamais à la simulation :
+   * `dryRun` doit continuer de rendre ce qu'il AURAIT fait, sinon on perd
+   * précisément l'outil qui sert à comprendre pourquoi rien ne part.
+   *
+   * ⚠⚠⚠ L'inconnu vaut REFUS. Table absente, base injoignable, migration 005
+   * non passée : on ne compose pas. Ne pas appeler coûte un créneau ; appeler
+   * dans le vide coûte une fiche, un numéro et de l'argent.
+   */
+  const presence = await (async () => {
+    const { data } = await db.from("agent_presence").select("vu_le").eq("cle", "agent-vocal").maybeSingle();
+    return presenceAgent((data as { vu_le?: string } | null)?.vu_le ?? null);
+  })().catch(() => presenceAgent(null));
+
+  if (!presence.peutAppeler) {
+    return NextResponse.json({
+      ok: true,
+      called: 0,
+      agent: presence.etat,
+      pret: tasks.length,
+      why: presence.phrase,
+      ...(avertissement ? { avertissement } : {}),
+    });
+  }
+
+  // ── Exécution ──
+  const base = url.origin;
+  const results: { prospectId: string; company: string; ok: boolean; detail?: string }[] = [];
+
+  for (const t of tasks) {
+    const p = prospects.find((x) => x.id === t.prospectId);
+    if (!p) continue;
+
+    // ⚠ L'ORDRE EST CRITIQUE : on écrit la tentative AVANT d'appeler.
+    // Un crash après l'écriture coûte un appel manqué ; l'ordre inverse
+    // coûterait un appel RÉPÉTÉ à chaque tick — du harcèlement.
+    const updated = appendCallAttempt(p);
+    const { error: wErr } = await db.from("prospects").update({ data: updated }).eq("id", p.id);
+    if (wErr) {
+      results.push({ prospectId: p.id, company: t.company, ok: false, detail: `écriture refusée : ${wErr.message}` });
+      continue; // sans trace écrite, on n'appelle PAS.
+    }
+
+    try {
+      // Borné : l'autopilote tourne sur un cron. Un appel qui pend consomme
+      // tout le budget de la fonction, le cron repart, et on ne sait pas si
+      // l'appel précédent est parti ou non — c'est le pire état possible pour
+      // une route qui compose des numéros.
+      const res = await fetch(`${base}/api/voice/call`, {
+        signal: AbortSignal.timeout(20_000),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "prospection-b2b",
+          phone: t.phone,
+          company: t.company,
+          prospectBrief: t.brief,
+          prospectId: t.prospectId,
+          accountId: t.accountId,
+          isProfessional: true,
+          optedOut: false,
+          // `force` volontairement absent : la fenêtre ne se force pas en auto.
+        }),
+      });
+      const body = (await res.json()) as Record<string, unknown>;
+      results.push({
+        prospectId: p.id,
+        company: t.company,
+        ok: res.ok && body.dispatched === true,
+        detail: res.ok ? undefined : ((body.error as string) ?? `HTTP ${res.status}`),
+      });
+    } catch (e) {
+      results.push({ prospectId: p.id, company: t.company, ok: false, detail: e instanceof Error ? e.message : "réseau" });
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    called: results.filter((r) => r.ok).length,
+    failed: results.filter((r) => !r.ok).length,
+    queueSize: run.queue.length,
+    tooSoon: plan.tooSoon.length,
+    // Remonté à l'ordonnanceur : c'est le seul endroit où quelqu'un le lira.
+    ...(avertissement ? { tronque: true, avertissement, lus: prospects.length } : {}),
+    results,
+  });
+}
+
+/** GET = état du pilote, sans rien déclencher. Utile pour vérifier la config. */
+export async function GET(req: NextRequest) {
+  if (!authorized(req)) return NextResponse.json({ error: "non autorisé" }, { status: 401 });
+  const db = serviceClient();
+  const arme = db ? estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) }) : autopiloteArmeEnv();
+  return NextResponse.json({
+    autopilot: arme ? "armé" : "désarmé (simulation)",
+    supabase: db ? "configuré" : "absent — le cron ne verrait aucun prospect",
+    maxParTick: MAX_CALLS_PER_TICK,
+    palier:
+      (process.env.CAMPAIGN_PALIER ?? "").trim() ||
+      `non défini — plafond le plus bas appliqué (${PALIERS_CAMPAGNE[0].appels} appels cumulés)`,
+    note: "POST pour exécuter. Sans CAMPAIGN_AUTOPILOT=on, la route simule et rend ce qu'elle aurait fait.",
+  });
+}

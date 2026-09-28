@@ -1,33 +1,65 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/shell/app-shell";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { CaptureParrainage } from "@/components/capture-parrainage";
+import { baseMetadonnees } from "@/lib/url-publique";
 
 export const metadata: Metadata = {
+  // ⚠ POSÉE ICI ET NULLE PART AILLEURS. Next fait hériter `metadataBase` par
+  // tous les layouts enfants : les deux pages publiques (`/vitrine` et
+  // `/souscrire`) y prennent la base de leurs `og:image` et de leur
+  // `canonical`. Sans elle, le build résout contre `http://localhost:3000` et
+  // l'écrit dans le HTML livré — vérifié au rendu : la vignette annoncée à
+  // LinkedIn pointait vers la machine de celui qui regarde. Le motif complet
+  // est dans `lib/url-publique.ts`.
+  metadataBase: baseMetadonnees(),
   title: {
     default: "ALPHA SALES OS® — EAGLEYE CORP",
     template: "%s · ALPHA SALES OS®",
   },
-  description:
-    "Système d'exploitation commercial Hormozi-natif. Pipeline, Red Zone, Taxe d'Ignorance, 3 Croyances — Lyon.",
+  // Volontairement neutre : cette description part avec CHAQUE page, y
+  // compris là où elle serait lue par un tiers. Le vocabulaire interne de la
+  // méthode (« Taxe d'Ignorance », « 3 Croyances »…) décrit le procédé à
+  // quiconque sait lire, et ne dit rien à un prospect. La vitrine porte sa
+  // propre description, tournée vers le résultat.
+  description: "Système d'exploitation commercial — EAGLEYE CORP, Lyon.",
   applicationName: "ALPHA SALES OS",
   manifest: "/manifest.webmanifest",
-  keywords: ["sales", "CRM", "Hormozi", "Lyon", "EAGLEYE"],
+  // L'app est un CRM privé : rien n'y est indexable. La vitrine SURCHARGE
+  // cette valeur dans son propre layout — sans quoi la seule page publique
+  // resterait invisible pour Google.
   robots: { index: false, follow: false },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>◆</text></svg>",
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  // Installée sur le téléphone (PWA) : plein écran, sans chrome navigateur.
+  appleWebApp: {
+    capable: true,
+    title: "ALPHA OS",
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0908",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0908" },
+    { media: "(prefers-color-scheme: light)", color: "#ede7da" },
+  ],
   width: "device-width",
   initialScale: 1,
+  // Laisse l'app peindre sous les encoches/barres système (safe-areas gérées).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className="dark">
+    <html lang="fr" className="dark" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -35,8 +67,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
-        <AppShell>{children}</AppShell>
+      {/* suppressHydrationWarning : le script de thème mute <html> avant
+          l'hydratation, et des extensions navigateur ajoutent souvent des
+          attributs sur <body>. Ni l'un ni l'autre ne doit faire échouer
+          l'hydratation. */}
+      <body suppressHydrationWarning>
+        {/*
+          ⚠ La capture du code d'apport vit ICI, dans la racine — un prospect
+          amené par un apporteur arrive sur `/vitrine`, qui est hors de la
+          coquille applicative. La monter dans `app/(app)/layout` l'aurait
+          rendue inerte pour le seul public qu'elle concerne.
+        */}
+        <CaptureParrainage />
+        {children}
       </body>
     </html>
   );

@@ -1,0 +1,143 @@
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * PROGRESSION DE L'ASSISTANT DE CONFIGURATION.
+ *
+ * Deux composants ont besoin du même état et ils ne se parlent pas :
+ *  · `SetupWizard` écrit où en est l'utilisateur (l'installation complète
+ *    prend ~1 h, on ne la refait pas depuis le début à chaque retour) ;
+ *  · `Onboarding` décide si l'assistant s'OUVRE tout seul au chargement.
+ *
+ * ⚠ LE DÉFAUT QUE CE MODULE CORRIGE — trouvé au navigateur, pas par un test.
+ * Le rail de l'assistant promet noir sur blanc : « Votre progression est
+ * sauvegardée — fermez et revenez quand vous voulez. » Or la croix ne posait
+ * rien : elle basculait un `useState` local. Au chargement suivant — un lien
+ * cliqué, un onglet rouvert — `onboarded` valait toujours faux et l'assistant
+ * revenait par-dessus l'écran (`fixed inset-0 z-95`, il intercepte TOUS les
+ * clics). L'app était donc inutilisable tant que l'utilisateur n'avait pas
+ * traversé les onze étapes, alors que le texte lui disait le contraire.
+ *
+ * On ne corrige PAS en posant `onboarded: true` à la fermeture : ce drapeau
+ * dit « la configuration est faite », et le poser mentirait — le tour
+ * opérateur s'ouvrirait sur une machine non branchée, et les écrans
+ * croiraient à un n8n configuré. On enregistre autre chose, exactement ce que
+ * l'utilisateur a fait : il a REPOUSSÉ, il n'a pas fini.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+export const PROGRESS_KEY = "alpha_wizard_progress_v2";
+
+export interface Progress {
+  step: number;
+  sheetsReady: boolean;
+  workflowReady: boolean;
+  /** L'utilisateur a fermé l'assistant à la croix : ne plus l'ouvrir seul. */
+  differe?: boolean;
+}
+
+const VIDE: Progress = { step: 0, sheetsReady: false, workflowReady: false, differe: false };
+
+/**
+ * Relit la progression. Tolère tout : clé absente, JSON cassé, champs d'une
+ * version antérieure (`differe` n'existait pas). Une progression illisible
+ * n'est pas une panne — on repart du début, ce qui est déjà le cas du
+ * nouvel arrivant.
+ */
+export function lireProgression(raw: string | null): Progress {
+  if (!raw) return { ...VIDE };
+  try {
+    const p = JSON.parse(raw) as Partial<Progress>;
+    if (typeof p !== "object" || p === null) return { ...VIDE };
+    return {
+      step: typeof p.step === "number" && p.step >= 0 ? Math.floor(p.step) : 0,
+      sheetsReady: Boolean(p.sheetsReady),
+      workflowReady: Boolean(p.workflowReady),
+      differe: Boolean(p.differe),
+    };
+  } catch {
+    return { ...VIDE };
+  }
+}
+
+/**
+ * LA règle d'ouverture automatique, en un seul endroit.
+ *
+ * Elle ne s'ouvre seule que pour quelqu'un qui n'a NI terminé NI repoussé.
+ * Le bouton des Réglages (`alpha:open-setup`) reste évidemment souverain :
+ * repousser n'est pas fermer la porte, c'est ne plus se la prendre en pleine
+ * figure à chaque navigation.
+ */
+export function doitSOuvrirSeul(onboarded: boolean, p: Progress): boolean {
+  return !onboarded && !p.differe;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA MÊME QUESTION POUR LA VISITE GUIDÉE — et elle a une condition de plus.
+ *
+ * ⚠ CE QUI ÉTAIT CASSÉ, VU SUR UNE VRAIE PRODUCTION.
+ *
+ * `OperatorTour` est monté dans la COQUILLE, donc sur les 38 écrans. Sa
+ * condition d'ouverture ne regardait que « l'assistant est fini » et « la
+ * visite n'a pas déjà été faite ». Elle s'ouvrait donc 800 ms après l'arrivée
+ * sur N'IMPORTE QUELLE page.
+ *
+ * Et elle ne se contentait pas de recouvrir : l'effet d'alignement du
+ * composant fait un `router.push()` vers la première étape dès que le chemin
+ * courant en diffère. Constaté : on ouvre `/settings`, on commence à lire, et
+ * l'app nous EMMÈNE ailleurs. Ce n'est pas un carrousel mal placé, c'est une
+ * navigation qu'on n'a pas demandée.
+ *
+ * D'où la 3ᵉ condition : on ne s'ouvre seul que si l'opérateur se trouve DÉJÀ
+ * là où la visite commence. Il n'y a alors plus rien à déplacer.
+ *
+ * ── CE QUE ÇA COÛTE, ET POURQUOI C'EST LE BON CÔTÉ DE L'ERREUR ──
+ *
+ * Quelqu'un qui n'ouvre jamais le tableau de bord ne verra jamais la visite
+ * s'ouvrir seule. C'est assumé : elle reste à un clic dans Réglages, et la
+ * relance MANUELLE garde le droit de naviguer — là, c'est demandé. Entre ne
+ * pas proposer une visite et déplacer quelqu'un qui lisait autre chose, le
+ * choix n'est pas difficile.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function visiteDoitSOuvrir(opts: {
+  /** L'assistant de configuration est terminé. */
+  onboarded: boolean;
+  /** La visite a déjà été faite (drapeau `alpha_tour_done`). */
+  dejaFaite: boolean;
+  /** Le chemin affiché en ce moment. */
+  chemin: string;
+  /** Le chemin de la 1re étape de la visite. */
+  premiereEtape: string;
+}): boolean {
+  return opts.onboarded && !opts.dejaFaite && opts.chemin === opts.premiereEtape;
+}
+
+/** Lecture navigateur. Un stockage bloqué rend la valeur neutre, pas une erreur. */
+export function chargerProgression(): Progress {
+  if (typeof window === "undefined") return { ...VIDE };
+  try {
+    return lireProgression(window.localStorage.getItem(PROGRESS_KEY));
+  } catch {
+    return { ...VIDE };
+  }
+}
+
+/** Écriture navigateur. Stockage plein ou bloqué : sans gravité, on continue. */
+export function enregistrerProgression(p: Progress): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
+  } catch {
+    /* la progression ne sera pas reprise — l'assistant reste utilisable */
+  }
+}
+
+/** Efface la progression : l'assistant est allé jusqu'au bout. */
+export function effacerProgression(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(PROGRESS_KEY);
+  } catch {
+    /* ignore */
+  }
+}

@@ -1,4 +1,5 @@
 import type { Prospect, Sector, Stage } from "./types";
+import { parseDeadline, parseDelivery, parseHistory, parseObjections, parseObstacles } from "./crm-parse";
 import { prospectDefaults } from "./seed";
 import { daysAhead, uid } from "./utils";
 import { STAGES } from "./hormozi";
@@ -53,12 +54,13 @@ const strip = (s: string) =>
 
 /** header aliases → canonical field */
 const HEADER_MAP: Record<string, string> = {
-  company: "company", commerce: "company", entreprise: "company", societe: "company", business: "company",
+  company: "company", commerce: "company", entreprise: "company", societe: "company", business: "company", prospect: "company",
   name: "name", nom: "name", decideur: "name", contact: "name", gerant: "name",
   sector: "sector", secteur: "sector", industrie: "sector", industry: "sector",
   city: "city", ville: "city", quartier: "city", adresse: "city",
-  phone: "phone", telephone: "phone", tel: "phone",
+  phone: "phone", telephone: "phone", tel: "phone", numdetel: "phone",
   email: "email", mail: "email", courriel: "email",
+  linkedin: "linkedin", linkedinurl: "linkedin", profillinkedin: "linkedin",
   stage: "stage", etape: "stage", statut: "stage", status: "stage",
   monthlyvalue: "monthlyValue", abonnement: "monthlyValue", mrr: "monthlyValue", mensuel: "monthlyValue",
   setupvalue: "setupValue", setup: "setupValue",
@@ -67,18 +69,33 @@ const HEADER_MAP: Record<string, string> = {
   problems: "problems", problemes: "problems",
   tags: "tags",
   // deep audit
-  googlerating: "googleRating", notegoogle: "googleRating",
-  googlereviews: "googleReviews", avisgoogle: "googleReviews", avis: "googleReviews",
+  googlerating: "googleRating", notegoogle: "googleRating", notedavis: "googleRating",
+  googlereviews: "googleReviews", avisgoogle: "googleReviews", avis: "googleReviews", nombredavis: "googleReviews",
   missedcalls: "missedCallsPerWeek", missedcallsperweek: "missedCallsPerWeek", appelsrates: "missedCallsPerWeek", appelsmanques: "missedCallsPerWeek",
   avgticket: "avgTicket", panier: "avgTicket", panierMoyen: "avgTicket", ticketmoyen: "avgTicket",
   conversionrate: "conversionRate", conversion: "conversionRate",
   website: "websiteState", siteweb: "websiteState", site: "websiteState",
   social: "socialState", reseaux: "socialState", reseauxsociaux: "socialState",
   competition: "localCompetition", concurrence: "localCompetition",
-  process: "currentProcess", processus: "currentProcess",
+  process: "currentProcess", processus: "currentProcess", audit: "currentProcess",
+  // colonnes « process » du CRM Sheets (fichier régies)
+  history: "history", historique: "history",
+  deadline: "deadline", echeance: "deadline",
+  deliverystatus: "delivery", livraison: "delivery",
+  satisfaction: "satisfaction",
+  upsell: "upsell",
+  obstacles: "obstaclesRaw",
+  objections: "objectionsRaw",
+  closedate: "closeDate",
+  typedentreprise: "typeTag",
 };
 
 const SECTOR_ALIASES: Record<string, Sector> = {
+  // Maîtrise d'ouvrage : le marché en cours. Sans ces alias, un CSV qui dit
+  // « promoteur » atterrit dans « autre » et perd son playbook.
+  maitriseouvrage: "maitrise-ouvrage", moa: "maitrise-ouvrage", promoteur: "maitrise-ouvrage",
+  promotion: "maitrise-ouvrage", amenageur: "maitrise-ouvrage", bailleur: "maitrise-ouvrage",
+  constructeur: "maitrise-ouvrage",
   restaurant: "restaurant", resto: "restaurant", restauration: "restaurant", bouchon: "restaurant",
   pub: "pub", bar: "pub", brasserie: "pub",
   ambulance: "ambulance", ambulances: "ambulance", transportsanitaire: "ambulance", vsl: "ambulance",
@@ -119,6 +136,15 @@ export function csvToProspects(text: string): CsvImportResult {
     const stage = (STAGES.find((s) => s.id === strip(rec.stage ?? "") || strip(s.label) === strip(rec.stage ?? ""))?.id ?? "prospect") as Stage;
     const now = new Date().toISOString();
 
+    // Quand le métier de la feuille (« garage », « immobilier », « auto-école »,
+    // « plombier »…) ne rentre pas dans l'enum secteur, il tomberait dans
+    // « autre » et la fiche perdrait sa verticale. On garde le mot dans les
+    // notes : c'est ce que lit verticalForProspect pour rattacher le playbook.
+    const rawSector = rec.sector?.trim();
+    const notes = rawSector && sector === "autre" && !new RegExp(rawSector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(rec.notes ?? "")
+      ? [`Métier : ${rawSector}.`, rec.notes].filter(Boolean).join(" ")
+      : (rec.notes ?? "");
+
     prospects.push({
       ...prospectDefaults,
       id: uid(),
@@ -128,6 +154,7 @@ export function csvToProspects(text: string): CsvImportResult {
       city: rec.city ?? "",
       phone: rec.phone || undefined,
       email: rec.email || undefined,
+      linkedin: rec.linkedin || undefined,
       stage,
       trust: 10,
       auditScore: 0,
@@ -137,18 +164,25 @@ export function csvToProspects(text: string): CsvImportResult {
       probability: STAGES.find((s) => s.id === stage)?.probability ?? 5,
       ignoranceTax: num(rec.ignoranceTax ?? "") ?? 0,
       croyances: { produit: 5, soutien: 5, pourLui: 3 },
-      obstacles: [],
-      objections: [],
-      events: [],
+      obstacles: parseObstacles(rec.obstaclesRaw ?? ""),
+      objections: parseObjections(rec.objectionsRaw ?? ""),
+      events: parseHistory(rec.history ?? ""),
       demoShownBeforePrice: false,
-      nextStep: { date: daysAhead(3), action: "Premier contact terrain" },
-      tags: (rec.tags ?? "").split(/[|,]/).map((t) => t.trim()).filter(Boolean),
+      nextStep: parseDeadline(rec.deadline ?? "") ?? { date: daysAhead(3), action: "Premier contact terrain" },
+      tags: [
+        ...(rec.tags ?? "").split(/[|,]/).map((t) => t.trim()).filter(Boolean),
+        ...(rec.typeTag ? [rec.typeTag.replace(/^[·\s]+/, "")] : []),
+      ],
       attachments: [],
-      notes: rec.notes ?? "",
+      notes,
+      delivery: parseDelivery(rec.delivery ?? "") ?? prospectDefaults.delivery,
+      satisfaction: num(rec.satisfaction ?? ""),
+      upsell: rec.upsell ? { note: rec.upsell, status: "identifie" as const } : undefined,
+      wonAt: (rec.closeDate ?? "").match(/\d{4}-\d{2}-\d{2}/)?.[0],
       problems: (rec.problems ?? "").split("|").map((t) => t.trim()).filter(Boolean),
       deepAudit: {
         googleRating: num(rec.googleRating ?? ""),
-        googleReviews: num(rec.googleReviews ?? ""),
+        googleReviews: (() => { const n = num(rec.googleReviews ?? ""); return n === undefined ? undefined : Math.abs(n); })(),
         websiteState: rec.websiteState ?? "",
         socialState: rec.socialState ?? "",
         missedCallsPerWeek: num(rec.missedCallsPerWeek ?? ""),

@@ -1,0 +1,350 @@
+"use client";
+
+import Link from "next/link";
+import {
+  ArrowRight,
+  CalendarClock,
+  Coins,
+  Flame,
+  Target,
+  TrendingUp,
+} from "lucide-react";
+import { useAlpha } from "@/lib/store";
+import { isDemoProspect } from "@/lib/seed";
+import { BandeauDemo } from "@/components/bandeau-demo";
+import { STAGES, BLAME_LAYERS, weightedValue, ignoranceTaxTotal, nextBestAction } from "@/lib/hormozi";
+import type { BlameLayer } from "@/lib/types";
+import { LIBELLE_SECTEUR, secteursPresents } from "@/lib/secteurs";
+import { eur, relativeFr } from "@/lib/utils";
+import { useCountUp } from "@/lib/use-count-up";
+import { FunnelChart, ForecastChart, SectorChart } from "@/components/charts";
+import { StageBadge } from "@/components/ui/stage-badge";
+import { RoutinesPanel } from "@/components/routines-panel";
+import { PageHeader } from "@/components/ui/page-header";
+
+/**
+ * ⚠ CETTE LISTE ÉTAIT EN DUR ET OUBLIAIT `"autre"`.
+ *
+ * Les huit fiches de maîtrise d'ouvrage — le marché actuel — sont toutes en
+ * `"autre"`. La répartition par secteur et la carte de chaleur des obstacles
+ * comptaient donc ZÉRO partout, sur l'écran d'accueil, sans que rien ne
+ * tombe. Elles se dérivent maintenant des fiches. Voir `lib/secteurs.ts`.
+ */
+
+export default function DashboardPage() {
+  const { prospects, meetings, settings } = useAlpha();
+
+  const active = prospects.filter((p) => !["signe", "perdu"].includes(p.stage));
+  const signed = prospects.filter((p) => p.stage === "signe");
+  const mrrSigned = signed.reduce((s, p) => s + p.monthlyValue, 0);
+  const pipeWeighted = prospects.reduce((s, p) => s + weightedValue(p), 0);
+  const taxTotal = active.reduce((s, p) => s + p.ignoranceTax, 0);
+  const commission = mrrSigned * 12 * (settings.commissionPct / 100);
+
+  const funnelData = STAGES.filter((s) => !["perdu"].includes(s.id)).map((s) => ({
+    name: s.label,
+    value: prospects.filter((p) => p.stage === s.id).length,
+  }));
+
+  // 6-month forecast: signed MRR flat + weighted pipe converting linearly.
+  const monthlyWeighted = active.reduce((s, p) => s + (p.monthlyValue * p.probability) / 100, 0);
+  const months = ["M0", "M+1", "M+2", "M+3", "M+4", "M+5"];
+  const forecastData = months.map((name, i) => ({
+    name,
+    signe: mrrSigned,
+    pondere: mrrSigned + monthlyWeighted * (i / 5),
+  }));
+
+  const SECTORS = secteursPresents(prospects);
+  const sectorData = SECTORS.map((sec) => ({
+    name: LIBELLE_SECTEUR[sec],
+    value: prospects.filter((p) => p.sector === sec).reduce((s, p) => s + weightedValue(p), 0),
+  }));
+
+  // Blocker heatmap: open obstacles by blame layer × sector.
+  const layers = Object.keys(BLAME_LAYERS) as BlameLayer[];
+  const heat = layers.map((layer) => ({
+    layer,
+    cells: SECTORS.map((sec) => {
+      const n = prospects
+        .filter((p) => p.sector === sec)
+        .flatMap((p) => p.obstacles)
+        .filter((o) => !o.resolved && o.blameLayer === layer).length;
+      return { sec, n };
+    }),
+  }));
+  const maxHeat = Math.max(1, ...heat.flatMap((h) => h.cells.map((c) => c.n)));
+
+  const lostReasons = prospects.filter((p) => p.lostReason).map((p) => p.lostReason!);
+
+  const upcoming = meetings
+    .filter((m) => !m.done && new Date(m.date) > new Date(Date.now() - 864e5))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 4);
+
+  const hottest = [...active].sort((a, b) => weightedValue(b) - weightedValue(a)).slice(0, 3);
+
+  if (prospects.length === 0) {
+    return (
+      <div className="grid min-h-[70vh] place-items-center animate-fade-up">
+        <div className="card max-w-lg p-8 text-center">
+          <h1 className="font-display text-2xl font-extrabold text-paper">
+            Base vide — <span className="text-bronze-400">prêt pour le réel</span>
+          </h1>
+          <p className="mt-2 text-sm text-paper-dim">
+            Importe tes prospects (Google Sheet / CSV avec deep audit) ou ajoute le premier à la main. Le reste — doctrine, agent, KPIs — s&apos;active tout seul.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Link href="/settings" className="btn-bronze">Importer mes données</Link>
+            <Link href="/pipeline" className="btn-ghost">Ajouter un prospect</Link>
+          </div>
+          <p className="mt-4 font-mono text-[9.5px] uppercase tracking-[0.18em] text-paper-faint">
+            Réglages → Restaurer la démo pour revoir l&apos;exemple
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page">
+      <PageHeader
+        title="Dashboard"
+        subtitle="Émotion d'abord, logique ensuite. Chaque contact se termine par un next step daté."
+        actions={
+          <Link href="/pipeline" className="btn-bronze">
+            Pipeline <ArrowRight size={15} />
+          </Link>
+        }
+      />
+
+      {/* KPI tiles */}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi icon={<TrendingUp size={16} />} label="MRR signé" value={mrrSigned} sub={`${signed.length} client(s)`} />
+        <Kpi icon={<Target size={16} />} label="Pipe pondéré (annuel)" value={pipeWeighted} sub={`${active.length} deals actifs`} accent />
+        <Kpi icon={<Flame size={16} />} label="Taxe d'Ignorance du pipe" value={taxTotal} suffix="/mois" sub="ce que les prospects perdent" tone="red" />
+        <Kpi icon={<Coins size={16} />} label={`Commission ${settings.commissionPct}% (CA an)`} value={commission} sub="sur MRR signé" />
+      </section>
+
+      {/*
+        ⚠ CE BANDEAU INTERROGEAIT `SEED_PROSPECT_IDS.includes` — une LISTE.
+        Depuis que le jeu de démonstration se génère depuis l'ICP de
+        l'inscrit, les fiches produites n'y sont pas : le bandeau aurait
+        disparu au moment précis où il devient le plus utile, laissant
+        quelqu'un croire que six fiches inventées sont son pipeline.
+        `isDemoProspect` répond sur la structure de l'identifiant.
+      */}
+      {prospects.some((p) => isDemoProspect(p.id)) && <BandeauDemo />}
+
+      {/* Routines — les actions humaines à faire pour avancer */}
+      <RoutinesPanel />
+
+      {/* Charts row */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="card p-4">
+          <h2 className="mb-2 font-display text-sm font-semibold text-paper">Funnel de conversion</h2>
+          <FunnelChart data={funnelData} />
+        </div>
+        <div className="card p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-display text-sm font-semibold text-paper">Prévision MRR — 6 mois</h2>
+            <span className="text-[11px] text-paper-faint">
+              clair = signé · foncé = pondéré · objectif {eur(settings.targetMRR)}
+            </span>
+          </div>
+          <ForecastChart data={forecastData} />
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        <div className="card p-4">
+          <h2 className="mb-2 font-display text-sm font-semibold text-paper">Pipe par secteur</h2>
+          <SectorChart data={sectorData} />
+        </div>
+
+        {/* Blocker heatmap */}
+        <div className="card p-4">
+          <h2 className="mb-1 font-display text-sm font-semibold text-paper">Excuses entendues (Oignon du Blâme)</h2>
+          <p className="mb-3 text-[11px] text-paper-faint">
+            derrière quoi ils se cachent, par secteur : les circonstances, les autres, ou eux-mêmes
+          </p>
+          {/* ⚠ Le nombre de colonnes SUIT les secteurs présents. Il était figé
+              à quatre, ce qui n'était juste que pour la liste en dur d'avant :
+              dérivée, elle peut en rendre un seul — ou six demain. */}
+          <div
+            className="grid gap-1 text-[11px]"
+            style={{ gridTemplateColumns: `auto repeat(${Math.max(1, SECTORS.length)}, minmax(0, 1fr))` }}
+          >
+            <span />
+            {SECTORS.map((s) => (
+              <span key={s} className="text-center text-paper-faint">{LIBELLE_SECTEUR[s]}</span>
+            ))}
+            {heat.map(({ layer, cells }) => (
+              <FragmentRow key={layer} label={BLAME_LAYERS[layer].label} cells={cells} maxHeat={maxHeat} />
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] italic text-paper-faint">
+            « On épluche, on n&apos;argumente pas. »
+          </p>
+        </div>
+
+        {/* Win/loss reasons */}
+        <div className="card p-4">
+          <h2 className="mb-2 font-display text-sm font-semibold text-paper">Raisons de perte</h2>
+          {lostReasons.length === 0 ? (
+            <p className="text-sm text-paper-faint">Aucune perte documentée. Continue.</p>
+          ) : (
+            <ul className="space-y-2">
+              {lostReasons.map((r, i) => (
+                <li key={i} className="rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-sm text-paper-dim">
+                  {r}
+                </li>
+              ))}
+            </ul>
+          )}
+          <h2 className="mb-2 mt-4 font-display text-sm font-semibold text-paper">Deals les plus chauds</h2>
+          <ul className="space-y-2">
+            {hottest.map((p) => (
+              <li key={p.id}>
+                <Link href={`/prospects/${p.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-sm hover:border-bronze-700">
+                  <span className="truncate text-paper">{p.company}</span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <StageBadge stage={p.stage} />
+                    <span className="font-mono text-bronze-400">{eur(weightedValue(p))}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Next best actions + meetings */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="card p-4">
+          <h2 className="mb-3 font-display text-sm font-semibold text-paper">Prochaines meilleures actions</h2>
+          <ul className="space-y-2.5">
+            {active.slice(0, 5).map((p) => {
+              const nba = nextBestAction(p);
+              return (
+                <li key={p.id} className="flex gap-3">
+                  <span
+                    className={
+                      nba.urgency === "haute"
+                        ? "mt-1.5 h-2 w-2 shrink-0 rounded-full bg-signal-red animate-pulse-ring"
+                        : "mt-1.5 h-2 w-2 shrink-0 rounded-full bg-bronze-500"
+                    }
+                  />
+                  <div className="min-w-0">
+                    <Link href={`/prospects/${p.id}`} className="text-sm font-medium text-paper hover:text-bronze-300">
+                      {p.company}
+                    </Link>
+                    <p className="text-sm text-paper-dim">{nba.action}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="card p-4">
+          <h2 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold text-paper">
+            <CalendarClock size={15} className="text-bronze-400" /> Rendez-vous à venir
+          </h2>
+          <ul className="space-y-2">
+            {upcoming.map((m) => {
+              const p = prospects.find((x) => x.id === m.prospectId);
+              return (
+                <li key={m.id} className="flex items-center justify-between gap-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate text-paper">{m.title}</p>
+                    <p className="text-[11px] text-paper-faint">{m.location} · {p?.city ?? ""}</p>
+                  </div>
+                  <span className="shrink-0 font-mono text-[11px] text-bronze-400">{relativeFr(m.date)}</span>
+                </li>
+              );
+            })}
+            {upcoming.length === 0 && <p className="text-sm text-paper-faint">Aucun RDV planifié — le terrain n&apos;attend pas.</p>}
+          </ul>
+        </div>
+      </section>
+
+      {/* Ignorance tax cumulative */}
+      <section className="card p-4">
+        <h2 className="mb-2 font-display text-sm font-semibold text-paper">Ce qu&apos;ils ont déjà perdu (Taxe d&apos;Ignorance)</h2>
+        <p className="text-[11px] text-paper-faint mb-3">
+          L&apos;argent parti chez le concurrent depuis qu&apos;on les connaît, faute d&apos;avoir agi — l&apos;argument massue au closing.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {active.slice(0, 8).map((p) => (
+            <Link key={p.id} href={`/prospects/${p.id}`} className="rounded-lg border border-ink-700 bg-ink-850 px-3 py-2 hover:border-bronze-700">
+              <p className="truncate text-xs text-paper-dim">{p.company}</p>
+              <p className="font-mono text-base text-signal-red">−{eur(ignoranceTaxTotal(p))}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FragmentRow({
+  label,
+  cells,
+  maxHeat,
+}: {
+  label: string;
+  cells: { sec: string; n: number }[];
+  maxHeat: number;
+}) {
+  return (
+    <>
+      <span className="pr-2 py-1.5 text-paper-dim">{label}</span>
+      {cells.map((c) => (
+        <span
+          key={c.sec}
+          title={`${c.n} obstacle(s)`}
+          className="grid h-8 place-items-center rounded font-mono text-paper"
+          style={{ background: `rgba(176,141,87,${c.n === 0 ? 0.06 : 0.15 + 0.65 * (c.n / maxHeat)})` }}
+        >
+          {c.n || ""}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function Kpi({
+  icon,
+  label,
+  value,
+  suffix,
+  sub,
+  tone,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  suffix?: string;
+  sub: string;
+  tone?: "red";
+  accent?: boolean;
+}) {
+  const animated = useCountUp(value);
+  return (
+    <div className="card card-hover p-4">
+      <p className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-paper-faint">
+        <span className="text-bronze-400">{icon}</span> {label}
+      </p>
+      <p
+        className={`mt-1.5 font-display text-2xl font-extrabold md:text-[28px] ${
+          tone === "red" ? "text-signal-red" : accent ? "text-bronze-400" : "text-paper"
+        }`}
+      >
+        {eur(Math.round(animated))}
+        {suffix && <span className="text-sm font-semibold text-paper-faint">{suffix}</span>}
+      </p>
+      <p className="text-[11px] text-paper-faint">{sub}</p>
+    </div>
+  );
+}

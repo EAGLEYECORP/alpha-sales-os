@@ -21,9 +21,45 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env
+# env — TOUT sauf les exemples.
+#
+# ⚠ La règle précédente était `.env` + `.env*.local`. Elle laissait passer
+# `.env.production`, `.env.prod` et `.env.staging` : exactement les fichiers
+# qui contiennent les vraies clés. Un secret poussé sur GitHub reste dans
+# l'historique même après suppression — il faut le considérer comme brûlé et
+# le faire tourner.
 .env
-.env*.local
+.env.*
+!.env.example
 
 # vercel
 .vercel
+
+# Sortie de compilation des tests
+/.test-build/
+
+# Python (agent vocal)
+__pycache__/
+*.pyc
+voice/.venv/
+
+# Captures produit (motion design) — matière de travail, pas du code.
+# 19 Mo de PNG regénérables par un script : rien à faire dans le dépôt.
+.captures/
+
+# ⚠ DONNÉES RÉELLES — jamais commitées.
+# Fiches prospects et listes de prospection : noms, téléphones, notes de vente.
+# Ce sont des données personnelles de tiers ; le dépôt a été public une fois,
+# et une fois suffit. Voir lib/pipeline-juillet.ts pour le raisonnement.
+donnees-privees/
+
+# Export public — généré par scripts/export-public.mjs, jamais commité ici.
+# Le dépôt public est un dépôt DISTINCT : pas de chemin automatique du privé
+# vers le public.
+/.export-public/
+
+# Captures d ecran de la pub : binaires, regenerables par scripts/pub/capturer.mjs,
+# et elles dateraient (le jeu de demo porte des dates relatives).
+scripts/pub/caps/
+scripts/pub/frames-*/
+scripts/pub/*-plan*.png

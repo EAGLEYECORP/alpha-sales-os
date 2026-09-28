@@ -1,0 +1,13 @@
+{
+  "name": "alpha-live-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Overlay transparent always-on-top pour Alpha Live (RDV visio).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^32.0.0"
+  }
+}

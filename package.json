@@ -2,12 +2,34 @@
   "name": "alpha-sales-os",
   "version": "2.0.0",
   "private": true,
-  "description": "ALPHA SALES OS® — EAGLEYE CORP. Hormozi-native sales operating system. Monochrome bronze, ink & paper.",
+  "description": "Alpha Sales OS® — l'OS de vente white-label d'EAGLEYE CORP (Lyon). Trouve, audite, appelle et relance les prospects, tient l'historique de chaque conversation, et dit à l'humain quoi faire maintenant.",
+  "homepage": "https://alphasalesos.eagleyecorp.fr",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eagleyecorp/alpha-sales-os.git"
+  },
+  "author": "EAGLEYE CORP — Zakaria Tazi (Lyon)",
+  "keywords": [
+    "crm",
+    "prospection",
+    "agent-vocal",
+    "closing",
+    "white-label",
+    "nextjs",
+    "typescript",
+    "france"
+  ],
+  "engines": {
+    "node": ">=18.18"
+  },
   "scripts": {
+    "sql:lot": "node scripts/bundle-migrations.mjs",
+    "test": "node -e \"require('fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --import ./tests/resolution-alias.mjs --test \".test-build/tests/*.test.js\"",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:rls": "node supabase/verify-isolation.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

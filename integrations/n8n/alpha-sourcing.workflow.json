@@ -1,0 +1,203 @@
+{
+  "name": "ALPHA SALES OS — Sourcing (Maps + Pappers + Apollo → CRM)",
+  "meta": {
+    "description": "Remplit le haut du pipeline (le refill après chaque STOP). Formulaire n8n (secteur + ville + nombre) → Google Places (nom, note, avis, tél, site) → Pappers (SIREN, forme juridique) → Apollo (email direct du dirigeant) → dédup contre le CRM existant → ajout dans Google Sheets en étape « prospect ». Pappers et Apollo sont OPTIONNELS : sans leur clé, l'étape passe et le prospect arrive quand même (sans SIREN / sans email direct). Variables d'env n8n : GOOGLE_PLACES_KEY (requis), PAPPERS_TOKEN (optionnel), APOLLO_API_KEY (optionnel). Multi-secteurs par design : le champ « Secteur » devient la colonne type du CRM."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "path": "alpha-sourcing",
+        "formTitle": "ALPHA — Sourcing prospects",
+        "formDescription": "Remplis le haut du pipeline : secteur + ville → prospects qualifiés dédupliqués dans le CRM.",
+        "formFields": {
+          "values": [
+            { "fieldLabel": "Secteur", "placeholder": "ex. régie immobilière, restaurant, clinique dentaire…", "requiredField": true },
+            { "fieldLabel": "Ville", "placeholder": "ex. Lyon", "requiredField": true },
+            { "fieldLabel": "Nombre (max 20)", "fieldType": "number", "placeholder": "10" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "g0000000-0000-4000-8000-000000000001",
+      "name": "Formulaire — sourcing",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [-560, 300],
+      "webhookId": "alpha-sourcing"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://places.googleapis.com/v1/places:searchText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Goog-Api-Key", "value": "={{ $env.GOOGLE_PLACES_KEY }}" },
+            { "name": "X-Goog-FieldMask", "value": "places.displayName,places.rating,places.userRatingCount,places.nationalPhoneNumber,places.websiteUri,places.formattedAddress" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"textQuery\": $json['Secteur'] + ' ' + $json['Ville'], \"languageCode\": \"fr\", \"pageSize\": Math.min(Number($json['Nombre (max 20)'] || 10), 20) } }}",
+        "options": {}
+      },
+      "id": "g0000000-0000-4000-8000-000000000002",
+      "name": "Google Places — chercher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-320, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Une entreprise trouvée = un item prospect (clés = colonnes du CRM).\nconst form = $('Formulaire — sourcing').first().json;\nconst secteur = (form['Secteur'] || '').toString().trim();\nconst ville = (form['Ville'] || '').toString().trim();\nconst places = $json.places || [];\nreturn places.map((p) => ({ json: {\n  prospect: p.displayName?.text || '',\n  type: secteur,\n  city: ville,\n  phone: p.nationalPhoneNumber || '',\n  website: p.websiteUri || '',\n  rating: p.rating ?? '',\n  reviews: p.userRatingCount ?? '',\n  address: p.formattedAddress || '',\n} })).filter((it) => it.json.prospect);"
+      },
+      "id": "g0000000-0000-4000-8000-000000000003",
+      "name": "Mapper prospects",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-80, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.pappers.fr/v2/recherche",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "api_token", "value": "={{ $env.PAPPERS_TOKEN }}" },
+            { "name": "q", "value": "={{ $json.prospect + ' ' + $json.city }}" },
+            { "name": "par_page", "value": "1" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "g0000000-0000-4000-8000-000000000004",
+      "name": "Pappers — SIREN",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [160, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recolle le SIREN Pappers sur le prospect d'origine (même index).\n// Si Pappers a échoué (pas de clé, quota…), on passe sans bloquer.\nconst base = $('Mapper prospects').all();\nreturn $input.all().map((it, i) => {\n  const src = base[i]?.json || {};\n  const r = (it.json?.resultats || [])[0] || {};\n  const notes = r.siren ? `SIREN ${r.siren}${r.forme_juridique ? ' · ' + r.forme_juridique : ''}` : '';\n  return { json: { ...src, siren: r.siren || '', notes } };\n});"
+      },
+      "id": "g0000000-0000-4000-8000-000000000005",
+      "name": "Fusion Pappers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_people/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.APOLLO_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"q_keywords\": $json.prospect + ' ' + $json.city, \"person_seniorities\": [\"owner\", \"founder\", \"c_suite\"], \"per_page\": 1 } }}",
+        "options": {}
+      },
+      "id": "g0000000-0000-4000-8000-000000000006",
+      "name": "Apollo — dirigeant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recolle l'email direct du dirigeant (Apollo) — optionnel lui aussi.\nconst base = $('Fusion Pappers').all();\nreturn $input.all().map((it, i) => {\n  const src = base[i]?.json || {};\n  const p = (it.json?.people || [])[0] || {};\n  const email = p.email && !String(p.email).includes('email_not_unlocked') ? String(p.email).toLowerCase() : '';\n  const contact = p.name || '';\n  return { json: { ...src, email, contact } };\n});"
+      },
+      "id": "g0000000-0000-4000-8000-000000000007",
+      "name": "Fusion Apollo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Regroupe tout en un seul item → la lecture du Sheet ne se fait qu'UNE fois.\nreturn [{ json: { prospects: $input.all().map((i) => i.json) } }];"
+      },
+      "id": "g0000000-0000-4000-8000-000000000008",
+      "name": "Agréger",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "REMPLACE_PAR_TON_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "CRM", "mode": "name" },
+        "options": {}
+      },
+      "id": "g0000000-0000-4000-8000-000000000009",
+      "name": "CRM — lire (dédup)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1360, 300],
+      "alwaysOutputData": true,
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ne garde que les VRAIS nouveaux : ni le nom ni l'email ne sont déjà au CRM.\nconst existing = $input.all().map((r) => r.json || {});\nconst norm = (s) => String(s || '').toLowerCase().trim();\nconst seenName = new Set(existing.map((r) => norm(r.prospect || r.Prospect)).filter(Boolean));\nconst seenEmail = new Set(existing.map((r) => norm(r.email || r.Email)).filter(Boolean));\nconst now = new Date().toISOString().slice(0, 16).replace('T', ' ');\nconst fresh = ($('Agréger').first().json.prospects || []).filter((p) => {\n  const name = norm(p.prospect);\n  const mail = norm(p.email);\n  if (!name || seenName.has(name)) return false;\n  if (mail && seenEmail.has(mail)) return false;\n  return true;\n});\nreturn fresh.map((p) => ({ json: {\n  ...p,\n  stage: 'prospect',\n  history: `[${now}] Sourcing auto — Maps${p.siren ? '+Pappers' : ''}${p.email ? '+Apollo' : ''} (${p.type})`,\n} }));"
+      },
+      "id": "g0000000-0000-4000-8000-000000000010",
+      "name": "Dédupe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "REMPLACE_PAR_TON_SHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "CRM", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "prospect": "={{ $json.prospect }}",
+            "contact": "={{ $json.contact }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "city": "={{ $json.city }}",
+            "website": "={{ $json.website }}",
+            "rating": "={{ $json.rating }}",
+            "reviews": "={{ $json.reviews }}",
+            "type": "={{ $json.type }}",
+            "stage": "={{ $json.stage }}",
+            "notes": "={{ $json.notes }}",
+            "history": "={{ $json.history }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "g0000000-0000-4000-8000-000000000011",
+      "name": "CRM — ajouter",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1840, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "REMPLACE_MOI", "name": "Google Sheets account" } }
+    }
+  ],
+  "connections": {
+    "Formulaire — sourcing": { "main": [[{ "node": "Google Places — chercher", "type": "main", "index": 0 }]] },
+    "Google Places — chercher": { "main": [[{ "node": "Mapper prospects", "type": "main", "index": 0 }]] },
+    "Mapper prospects": { "main": [[{ "node": "Pappers — SIREN", "type": "main", "index": 0 }]] },
+    "Pappers — SIREN": { "main": [[{ "node": "Fusion Pappers", "type": "main", "index": 0 }]] },
+    "Fusion Pappers": { "main": [[{ "node": "Apollo — dirigeant", "type": "main", "index": 0 }]] },
+    "Apollo — dirigeant": { "main": [[{ "node": "Fusion Apollo", "type": "main", "index": 0 }]] },
+    "Fusion Apollo": { "main": [[{ "node": "Agréger", "type": "main", "index": 0 }]] },
+    "Agréger": { "main": [[{ "node": "CRM — lire (dédup)", "type": "main", "index": 0 }]] },
+    "CRM — lire (dédup)": { "main": [[{ "node": "Dédupe", "type": "main", "index": 0 }]] },
+    "Dédupe": { "main": [[{ "node": "CRM — ajouter", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

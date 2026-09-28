@@ -1,0 +1,219 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { CreditCard, Crown, ExternalLink, Loader2 } from "lucide-react";
+import {
+  getSubscription,
+  startCheckout,
+  openBillingPortal,
+  isOwnerEmail,
+  subActive,
+  PLAN_UI,
+  FREE_TIER,
+  type Plan,
+  type Subscription,
+} from "@/lib/billing";
+import { cn } from "@/lib/utils";
+
+/**
+ * Carte d'abonnement du compte connecté : statut, choix d'un plan (Checkout
+ * Stripe), et accès au portail (gérer / annuler). Le propriétaire (allowlist
+ * NEXT_PUBLIC_OWNER_EMAILS) a un accès permanent — jamais bloqué par la facture.
+ */
+export function BillingCard({ email }: { email: string | null }) {
+  const [sub, setSub] = useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const owner = isOwnerEmail(email);
+  const [notice, setNotice] = useState<{ tone: "ok" | "neutral"; text: string } | null>(null);
+  const [usage, setUsage] = useState<{ tier: string; emailsUsed: number; emailsLimit: number | null } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      getSubscription()
+        .then((s) => alive && setSub(s))
+        .finally(() => alive && setLoading(false));
+    void load();
+    // Consommation du mois (jauge de quota) — silencieux si indisponible.
+    fetch("/api/billing/usage")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => alive && u && setUsage(u))
+      .catch(() => {});
+
+    // Retour de Stripe : le webhook peut écrire le statut avec un léger décalage
+    // → on affiche un mot et on relit une fois après quelques secondes.
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const ab = params.get("abonnement");
+    if (ab === "ok") {
+      setNotice({ tone: "ok", text: "Paiement reçu — activation du compte en cours…" });
+      const t = setTimeout(load, 4000);
+      return () => {
+        alive = false;
+        clearTimeout(t);
+      };
+    }
+    if (ab === "annule") setNotice({ tone: "neutral", text: "Paiement annulé — aucun débit." });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const go = async (fn: () => Promise<{ ok: boolean; error?: string }>, key: string) => {
+    setBusy(key);
+    setError(null);
+    const r = await fn();
+    if (!r.ok) {
+      setError(r.error ?? "Échec.");
+      setBusy(null);
+    }
+    // Succès → redirection Stripe (la page change).
+  };
+
+  if (owner) {
+    return (
+      <section className="card border-bronze-700/50 bg-bronze-900/10 p-5">
+        <p className="flex items-center gap-2 text-sm font-medium text-bronze-400">
+          <Crown size={15} /> Accès propriétaire
+        </p>
+        <p className="mt-2 text-[13px] text-paper-dim">
+          Ton compte est reconnu comme propriétaire — accès complet et permanent, indépendant de tout abonnement.
+        </p>
+      </section>
+    );
+  }
+
+  const active = subActive(sub?.status);
+  const fdate = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+  return (
+    <section className="card p-5">
+      <p className="flex items-center gap-2 text-sm font-medium text-paper">
+        <CreditCard size={15} className="text-bronze-400" /> Abonnement
+      </p>
+
+      {notice && (
+        <p
+          className={cn(
+            "mt-2 rounded-lg border px-3 py-2 text-[12px]",
+            notice.tone === "ok"
+              ? "border-signal-green/40 bg-signal-green/5 text-signal-green"
+              : "border-ink-700 bg-ink-850 text-paper-dim"
+          )}
+        >
+          {notice.text}
+        </p>
+      )}
+
+      {loading ? (
+        <p className="mt-3 flex items-center gap-2 text-[13px] text-paper-faint">
+          <Loader2 size={14} className="animate-spin" /> Chargement…
+        </p>
+      ) : active ? (
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip border-signal-green/50 text-signal-green">
+              {sub?.status === "trialing" ? "Essai" : sub?.status === "past_due" ? "Paiement en retard" : "Actif"}
+            </span>
+            {sub?.plan && <span className="text-sm text-paper">Plan {PLAN_UI[sub.plan]?.name ?? sub.plan}</span>}
+          </div>
+          <p className="mt-2 text-[12px] text-paper-faint">
+            Prochaine échéance : {fdate(sub?.currentPeriodEnd ?? null)}
+          </p>
+          <button
+            className="btn-ghost mt-3"
+            onClick={() => go(openBillingPortal, "portal")}
+            disabled={busy !== null}
+          >
+            {busy === "portal" ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+            Gérer l&apos;abonnement
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <div className="rounded-lg border border-ink-700 bg-ink-850 p-3">
+            <p className="flex items-center justify-between text-[13px] font-medium text-paper">
+              <span>Formule {FREE_TIER.name} <span className="text-[11px] text-signal-green">· active</span></span>
+              <span className="font-mono text-[11px] text-paper-faint">
+                {FREE_TIER.maxProspects} fiches · {FREE_TIER.emailsPerMonth} envois/mois
+              </span>
+            </p>
+            <p className="mt-1 text-[11px] text-paper-faint">
+              Inclus : {FREE_TIER.features.join(" · ")}. Passe au payant pour :{" "}
+              {FREE_TIER.excluded.join(", ")}.
+            </p>
+
+            {/* Jauge de quota : n'apparaît qu'en palier « free » réellement compté. */}
+            {usage?.tier === "free" && usage.emailsLimit != null && (() => {
+              const pct = Math.min(100, Math.round((usage.emailsUsed / usage.emailsLimit) * 100));
+              const over = usage.emailsUsed >= usage.emailsLimit;
+              const near = !over && usage.emailsUsed >= usage.emailsLimit * 0.8;
+              return (
+                <div className="mt-2.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-paper-faint">E-mails ce mois</span>
+                    <span className={cn("font-mono tabular-nums", over ? "text-signal-red" : near ? "text-signal-amber" : "text-paper-dim")}>
+                      {usage.emailsUsed}/{usage.emailsLimit}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-800">
+                    <div
+                      className={cn("h-full rounded-full transition-all", over ? "bg-signal-red" : near ? "bg-signal-amber" : "bg-signal-green")}
+                      style={{ width: `${Math.max(4, pct)}%` }}
+                    />
+                  </div>
+                  {(over || near) && (
+                    <p className={cn("mt-1 text-[10.5px]", over ? "text-signal-red" : "text-signal-amber")}>
+                      {over
+                        ? "Quota atteint — passe à Solo ou Pro pour continuer d'envoyer."
+                        : "Bientôt au quota — pense à passer au payant."}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+            {usage?.tier === "unmetered" && (
+              <p className="mt-2 text-[11px] text-paper-faint">Envois illimités — mode local (facturation non activée).</p>
+            )}
+          </div>
+          <p className="mt-3 text-[13px] text-paper-dim">
+            Choisis un plan pour débloquer l&apos;OS en continu.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {(Object.keys(PLAN_UI) as Plan[]).map((p) => (
+              <div key={p} className={cn("rounded-xl border p-4", p === "pro" ? "border-bronze-700/60 bg-bronze-900/10" : "border-ink-700 bg-ink-850")}>
+                <p className="font-display text-sm font-bold text-paper">{PLAN_UI[p].name}</p>
+                <p className="font-display text-2xl font-extrabold text-bronze-400">
+                  {PLAN_UI[p].monthly} €<span className="text-[11px] font-normal text-paper-faint"> / mois</span>
+                </p>
+                <p className="mt-0.5 text-[11px] text-paper-faint">{PLAN_UI[p].blurb}</p>
+                <ul className="mt-2 space-y-1 text-[11.5px] text-paper-dim">
+                  {PLAN_UI[p].features.map((f) => (
+                    <li key={f}>· {f}</li>
+                  ))}
+                </ul>
+                <button
+                  className={cn("mt-3 w-full", p === "pro" ? "btn-bronze" : "btn-ghost")}
+                  onClick={() => go(() => startCheckout(p), `checkout-${p}`)}
+                  disabled={busy !== null}
+                >
+                  {busy === `checkout-${p}` ? <Loader2 size={14} className="animate-spin" /> : null}
+                  S&apos;abonner
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-paper-faint">
+            Besoin d&apos;un plan Agence (plusieurs commerciaux) ?{" "}
+            <a href="mailto:contact@eagleyecorp.fr" className="text-bronze-400 hover:underline">contact@eagleyecorp.fr</a>.
+          </p>
+        </div>
+      )}
+
+      {error && <p className="mt-3 text-[12px] text-signal-red">{error}</p>}
+    </section>
+  );
+}

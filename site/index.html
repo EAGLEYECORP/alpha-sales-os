@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- Titre et description taillés pour la LARGEUR D'AFFICHAGE d'un résultat de
+     recherche, pas pour tout dire : au-delà, Google coupe au milieu d'un mot et
+     la promesse se termine par « … ». ~60 caractères pour le titre, ~155 pour
+     la description. Le reste du discours est dans la page. -->
+<title>EAGLEYE CORP. — systèmes de vente pour PME, à Lyon</title>
+<meta name="description" content="EAGLEYE CORP installe ce qui se trouve avant et autour de la vente : trouver, qualifier, relancer, suivre. La livraison et la poignée de main restent chez vous. Lyon." />
+<meta property="og:title" content="EAGLEYE CORP. — on installe la machine, vous gardez la poignée de main" />
+<meta property="og:description" content="Systèmes de vente pour PME, à Lyon. Trouver, qualifier, relancer, suivre — la livraison de votre prestation et la présence humaine restent chez vous." />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:site_name" content="EAGLEYE CORP." />
+<meta property="og:url" content="https://eagleyecorp.fr/" />
+<meta property="og:image" content="https://eagleyecorp.fr/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="EAGLEYE CORP. — on installe la machine, vous gardez la poignée de main" />
+<meta name="twitter:description" content="Systèmes de vente pour PME, à Lyon." />
+<meta name="twitter:image" content="https://eagleyecorp.fr/og.png" />
+<meta name="theme-color" content="#0E0E0D" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#F4F2ED" media="(prefers-color-scheme: light)" />
+<link rel="canonical" href="https://eagleyecorp.fr/" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --paper:#F4F2ED; --paper-2:#EBE8E1; --raised:#FBFAF6;
+  --ink:#0E0E0D; --ink-2:#26241F; --graphite:#6E6A63; --graphite-l:#928D83;
+  --line:rgba(14,14,13,.14); --line-2:rgba(14,14,13,.28);
+  --accent:#D2402F; --accent-ink:#F4F2ED;
+  --good:#4F8A5B;
+  --shadow:0 1px 0 rgba(14,14,13,.04), 0 18px 40px -24px rgba(14,14,13,.28);
+  /* Panneau « doctrine » — inverse en clair, surélevé en sombre. */
+  --panel-bg:#0E0E0D; --panel-text:#F4F2ED; --panel-muted:#9C978D; --panel-line:rgba(244,242,237,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D0C0A; --paper-2:#141210; --raised:#181613;
+    --ink:#F1ECE2; --ink-2:#D9D3C7; --graphite:#928D83; --graphite-l:#6E6A63;
+    --line:rgba(241,236,226,.14); --line-2:rgba(241,236,226,.26);
+    --accent:#E5564E; --accent-ink:#0D0C0A;
+    --good:#6FB47C;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 24px 50px -28px rgba(0,0,0,.7);
+    --panel-bg:#17140F; --panel-text:#F1ECE2; --panel-muted:#928D83; --panel-line:rgba(241,236,226,.14);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D0C0A; --paper-2:#141210; --raised:#181613;
+  --ink:#F1ECE2; --ink-2:#D9D3C7; --graphite:#928D83; --graphite-l:#6E6A63;
+  --line:rgba(241,236,226,.14); --line-2:rgba(241,236,226,.26);
+  --accent:#E5564E; --accent-ink:#0D0C0A;
+  --good:#6FB47C;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 24px 50px -28px rgba(0,0,0,.7);
+  --panel-bg:#17140F; --panel-text:#F1ECE2; --panel-muted:#928D83; --panel-line:rgba(241,236,226,.14);
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Inter Tight",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  line-height:1.55; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4{font-family:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;font-weight:700;line-height:1.02;letter-spacing:-.02em;text-wrap:balance}
+.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+.wrap{width:100%;max-width:1080px;margin:0 auto;padding:0 24px}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--graphite);display:inline-flex;align-items:center;gap:11px}
+.eyebrow::before{content:"";width:26px;height:1px;background:currentColor;opacity:.7}
+.accent{color:var(--accent)}
+
+/* logo */
+.eagle{display:block}
+svg symbol{overflow:visible}
+
+/* ── brandbar ── */
+.nav{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--paper) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .row{display:flex;align-items:center;justify-content:space-between;height:66px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .eagle{width:30px;height:24px;color:var(--ink)}
+.brand b{font-family:"Bricolage Grotesque";font-weight:800;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.brand .sep{width:1px;height:18px;background:var(--line-2)}
+.brand .prod{font-family:"JetBrains Mono";font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--graphite)}
+.nav .links{display:flex;align-items:center;gap:26px}
+.nav .links a{font-size:13.5px;color:var(--graphite);transition:color .18s}
+.nav .links a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:"Inter Tight";font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:100px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;transition:transform .15s,opacity .18s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:var(--paper-2)}
+.themetgl{width:38px;height:38px;border-radius:100px;border:1px solid var(--line-2);background:transparent;color:var(--ink);cursor:pointer;display:grid;place-items:center;font-size:15px;flex:none}
+
+/* ⚠⚠ LE BOUTON DU HAUT DÉBORDAIT DE L'ÉCRAN — corrigé le 17/09/2026.
+   Constaté au rendu sur un téléphone, pas déduit : « Demander un cadrag »,
+   coupé net par le bord droit, sur toutes les captures.
+
+   La cause : sous 760px on masquait les liens de nav mais on gardait le
+   bouton, qui porte `white-space:nowrap` et refuse donc de se réduire.
+   Marque + bascule de thème + bouton dépassaient la largeur utile (~352px
+   sur un écran de 400). Le bouton sortait, et le BODY s'élargissait avec
+   lui : d'où le défilement horizontal de toute la page.
+
+   Deux corrections, et il faut les deux :
+   · le libellé raccourcit sous 760px (« Cadrage »), au lieu d'être coupé ;
+   · la marque a le droit de rétrécir (`min-width:0`) — sans ça, c'est elle
+     qui pousse, et le bouton qui sort. */
+.nav .row>*{min-width:0}
+.brand{flex:1 1 auto;overflow:hidden}
+.brand b,.brand .prod{white-space:nowrap}
+.nav .links{flex:none}
+.btn .court{display:none}
+@media(max-width:760px){
+  .nav .links a:not(.btn){display:none}
+  .brand .sep,.brand .prod{display:none}
+  .btn .long{display:none}
+  .btn .court{display:inline}
+}
+
+/* ⚠ LE FILET DE SÉCURITÉ, distinct de la correction ci-dessus.
+   `overflow-x:clip` sur la racine empêche qu'un SEUL élément trop large
+   fasse défiler la page entière de côté. On garde la correction de fond —
+   ce filet ne doit jamais servir d'excuse à ne pas la faire — mais un
+   débordement futur ne cassera plus la lecture sur mobile.
+   `clip` et non `hidden` : `hidden` crée un conteneur de défilement qui
+   casserait `position:sticky` sur la barre du haut. */
+html,body{overflow-x:clip}
+
+/* ── hero ── */
+.hero{padding:78px 0 62px;position:relative;overflow:hidden}
+.hero .grid-bg{position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;-webkit-mask-image:radial-gradient(120% 90% at 70% 0%,#000 20%,transparent 72%);mask-image:radial-gradient(120% 90% at 70% 0%,#000 20%,transparent 72%)}
+.hero-inner{position:relative}
+.hero h1{font-size:clamp(40px,7.4vw,76px);font-weight:800;margin:20px 0 0;max-width:15ch}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero .lede{font-size:clamp(16px,2vw,19px);color:var(--graphite);max-width:52ch;margin-top:22px;line-height:1.65}
+.hero .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.hero .cta .btn{padding:14px 24px;font-size:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:52px;border:1px solid var(--line);background:var(--line);border-radius:16px;overflow:hidden}
+.stat{background:var(--paper);padding:22px 22px}
+.stat .n{font-family:"Bricolage Grotesque";font-weight:800;font-size:30px;letter-spacing:-.02em}
+.stat .n .accent{font-size:.7em;vertical-align:.06em}
+.stat .l{font-size:12.5px;color:var(--graphite);margin-top:4px;line-height:1.4}
+@media(max-width:680px){.stats{grid-template-columns:1fr}}
+
+/* ── section frame ── */
+section.band{padding:64px 0;border-top:1px solid var(--line)}
+.sec-head{display:flex;flex-direction:column;gap:14px;margin-bottom:38px;max-width:60ch}
+.sec-head h2{font-size:clamp(26px,4vw,40px);font-weight:700}
+.sec-head p{color:var(--graphite);font-size:15.5px}
+
+/* constat */
+.constat{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.cst{border-top:2px solid var(--ink);padding-top:16px}
+.cst .k{font-family:"JetBrains Mono";font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.cst h3{font-size:18px;margin:9px 0 8px;font-weight:700}
+.cst p{font-size:13.5px;color:var(--graphite)}
+@media(max-width:760px){.constat{grid-template-columns:1fr;gap:26px}}
+
+/* ⚠ CSS ORPHELIN RETIRÉ LE 17/09/2026 — `.feat` / `.f` / `.ic` / `.tag`.
+   Zéro usage dans le markup, vérifié en comparant chaque sélecteur aux
+   classes réellement posées. Le HTML a été réécrit le 04/09 (« eagleyecorp.fr
+   devient la SOCIÉTÉ ») sans nettoyer la feuille : environ un tiers du style
+   décrivait une page disparue.
+
+   Pourquoi ce n'est pas cosmétique : du CSS mort ne fait rien tomber, mais il
+   fait croire à la session suivante que la structure existe — c'est
+   exactement ce qui a caché le vrai défaut de `.doctrine` pendant deux
+   semaines. On relit un sélecteur, on suppose le markup, on se trompe. */
+
+/* ── la règle légale : une famille de mise en page DISTINCTE ──
+   La section « ce qu'on refuse » utilise déjà le panneau noir. Lui donner la
+   même forme ici ferait deux blocs identiques d'affilée, et une page se lit
+   par ses RUPTURES : deux compositions jumelles se lisent comme une redite,
+   pas comme une insistance. Celle-ci reste sur le papier, en colonnes
+   séparées par des filets. */
+.regles{display:grid;grid-template-columns:1fr 1fr;gap:0 44px;margin-top:34px;border-top:1px solid var(--line)}
+.r{padding:24px 0;border-bottom:1px solid var(--line)}
+.r h3{font-size:16.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+.r p{font-size:13.5px;color:var(--graphite);margin-top:9px;line-height:1.6}
+/* La réserve : elle dit que la conformité dépend du client, pas de l'outil.
+   Elle a sa place en bas de section, en pleine largeur, et elle ne se coupe
+   jamais — un test l'exige (`tests/site-vitrine.test.ts`). */
+.reserve{margin-top:26px;font-size:13.5px;color:var(--graphite);line-height:1.65;max-width:68ch;border-left:2px solid var(--accent);padding-left:16px}
+@media(max-width:760px){.regles{grid-template-columns:1fr;gap:0}}
+
+/* ── doctrine : la liste de ce qu'on refuse ──
+   ⚠⚠ CE BLOC DÉCRIVAIT UN MARKUP QUI N'EXISTE PLUS, et c'est ce qui
+   l'écrasait à l'écran. Trouvé en comparant les sélecteurs aux classes
+   réellement posées : `.dlist` et `.num` apparaissent ZÉRO fois dans le
+   HTML, et `.d b` visait un `<b>` que le markup a remplacé par un `<h3>`.
+
+   Conséquence exacte, visible sur téléphone : `.dlist` portait la grille
+   à deux colonnes ET son repli mobile — les deux morts. Restait
+   `.d{display:flex}` avec `<h3>` et `<p>` en enfants DIRECTS, donc le titre
+   et le paragraphe côte à côte, en deux colonnes étroites, sur tous les
+   écrans et sans aucun repli. « On ne livre pas votre prestation » tombait
+   sur quatre lignes dans une colonne de 90px.
+
+   Ce n'était donc pas un défaut de responsive : c'était du CSS orphelin.
+   La grille vit désormais sur `.doctrine`, qui est le vrai parent.
+
+   La règle qui évite la récidive : **le conteneur de grille doit être
+   l'élément qui EXISTE dans le markup**, jamais un niveau intermédiaire
+   qu'on suppose. Un sélecteur orphelin ne fait rien tomber — il laisse la
+   mise en page se rabattre sur des valeurs par défaut qui ont l'air
+   volontaires. */
+.doctrine{background:var(--panel-bg);color:var(--panel-text);border:1px solid var(--panel-line);border-radius:20px;padding:44px;position:relative;overflow:hidden;
+  display:grid;grid-template-columns:1fr 1fr;gap:34px 44px}
+.doctrine h2{color:var(--panel-text);font-size:clamp(24px,3.4vw,34px)}
+.doctrine .eyebrow{color:var(--panel-muted)}
+/* Chaque refus s'ouvre sur un filet accentué : c'est la seule marque
+   graphique du bloc, et elle dit « entrée de liste » sans numéroter — le
+   lecteur compte tout seul jusqu'à quatre. */
+.d{color:var(--panel-text);padding-top:20px;border-top:1px solid var(--accent)}
+.d h3{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.22}
+.d p{font-size:13.5px;color:var(--panel-muted);margin-top:10px;line-height:1.6}
+@media(max-width:680px){.doctrine{padding:30px 22px;grid-template-columns:1fr;gap:26px}}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s}
+.step{border:1px solid var(--line);border-radius:14px;padding:24px 22px;background:var(--raised)}
+.step .n{font-family:"Bricolage Grotesque";font-weight:800;font-size:14px;width:32px;height:32px;border:1px solid var(--line-2);border-radius:100px;display:grid;place-items:center;margin-bottom:14px}
+.step h3{font-size:16.5px;margin-bottom:7px}
+.step p{font-size:13px;color:var(--graphite)}
+@media(max-width:760px){.steps{grid-template-columns:1fr}}
+
+/* ⚠ CSS ORPHELIN RETIRÉ — `.pricing` / `.tier` / `.badge` / `.price`.
+   Zéro usage. Et c'est cohérent avec une règle déjà écrite dans le markup :
+   « AUCUN PRIX ICI » — les montants vivent sur le site produit, seule source.
+   Garder la grille tarifaire en CSS invitait à la remplir. */
+
+/* ── LA REVENDICATION, sous le titre ──
+   Elle porte `CATEGORIE` (lib/promesse.ts) et doit se lire comme une
+   AFFIRMATION, pas comme la suite du paragraphe d'introduction : même corps
+   que la lede, mais à l'encre pleine et non en gris, avec un filet accentué
+   qui la détache. Le lien renvoie à sa démonstration, juste en dessous. */
+.claim{margin-top:18px;max-width:52ch;font-size:clamp(16px,2vw,19px);line-height:1.6;color:var(--ink);border-left:2px solid var(--accent);padding-left:16px}
+.claim strong{font-weight:700}
+.claim a{color:var(--graphite);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.claim a:hover{color:var(--ink)}
+
+/* pricing / cta band */
+.close{border:1px solid var(--line-2);border-radius:20px;padding:48px 40px;text-align:center;background:
+  radial-gradient(120% 130% at 50% -20%, color-mix(in srgb,var(--accent) 9%,transparent), transparent 60%), var(--raised)}
+.close h2{font-size:clamp(28px,4.6vw,46px);max-width:18ch;margin:8px auto 0}
+.close p{color:var(--graphite);max-width:46ch;margin:18px auto 0;font-size:15.5px}
+.close .cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:30px}
+.close .cta .btn{padding:15px 28px;font-size:15px}
+.close .mail{margin-top:20px;font-family:"JetBrains Mono";font-size:12.5px;letter-spacing:.06em;color:var(--graphite)}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:38px 0 46px;margin-top:8px}
+.foot{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start}
+.foot .brand .eagle{width:34px;height:27px}
+.foot .legal{font-family:"JetBrains Mono";font-size:10.5px;letter-spacing:.05em;color:var(--graphite);line-height:1.9;text-align:right}
+@media(max-width:600px){.foot{flex-direction:column}.foot .legal{text-align:left}}
+
+/* Entrée en CSS pur (aucune dépendance JS).
+
+   ⚠ PAS de `fill-mode`, à l'inverse de ce qui était écrit ici. `both` fait
+   porter à l'élément l'état de DÉPART — opacity 0 — tant que l'animation
+   n'a pas démarré : c'est exactement ce qui peut laisser une page blanche,
+   pas ce qui l'en protège. Sans fill-mode, l'état hors animation est l'état
+   normal, donc visible ; le rendu est identique quand l'animation tourne, et
+   la différence ne se voit que le jour où elle ne tourne pas.
+   Aucun navigateur réel ne l'a produit ici — le seul cas observé était un
+   navigateur sans compositeur, qui ne peignait aucune image. Mais sur une
+   page dont l'unique métier est de vendre, le pari ne vaut pas le mot en
+   trop qu'il fait économiser. */
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.reveal{animation:rise .7s cubic-bezier(.2,.7,.2,1)}
+@media (prefers-reduced-motion: reduce){.reveal{animation:none}html{scroll-behavior:auto}}
+
+  /* Capture produit — cadre sobre, coins doux, ombre portée discrète. */
+  .shot { margin: 40px 0 8px; }
+  .shot picture { display: block; }
+  .shot img {
+    width: 100%; height: auto; display: block; border-radius: 14px;
+    border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    box-shadow: 0 18px 50px -20px rgba(0,0,0,.35);
+  }
+  .shot figcaption {
+    margin-top: 12px; font-size: 13px; line-height: 1.7;
+    color: var(--graphite, currentColor); opacity: .8;
+  }
+</style>
+</head>
+<body>
+
+<!-- eagle symbol (defined once) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="eagle" viewBox="0 0 704 564"><g transform="translate(0,564) scale(0.1,-0.1)" fill="currentColor" stroke="none"><path d="M5000 4154 c-1944 -1942 -2315 -2309 -2328 -2308 -7 1 -16 2 -21 3 -15 2 -114 159 -140 221 -69 162 -66 411 6 570 56 123 98 176 280 361 95 96 173 182 173 189 0 14 -2418 2440 -2431 2440 -9 0 -26 -76 -39 -175 -8 -63 -7 -107 5 -210 26 -214 55 -396 65 -416 6 -10 17 -58 26 -106 8 -48 19 -92 25 -99 5 -7 21 -54 35 -105 14 -50 34 -108 45 -128 10 -20 19 -45 19 -56 0 -11 7 -33 16 -50 9 -16 27 -59 40 -95 14 -35 31 -71 38 -80 8 -8 19 -34 25 -57 7 -23 16 -45 21 -48 14 -8 13 -55 -1 -55 -6 0 -32 11 -58 24 -105 55 -460 226 -469 226 -5 0 -20 8 -33 19 -13 10 -41 24 -61 30 -20 7 -54 23 -74 37 -22 15 -47 24 -63 22 -23 -3 -26 -7 -25 -38 1 -46 47 -198 83 -275 16 -33 32 -71 36 -85 4 -14 11 -30 15 -35 5 -6 30 -51 56 -100 79 -151 241 -383 367 -527 31 -36 57 -70 57 -77 0 -18 -76 -13 -233 14 -80 14 -151 27 -158 30 -28 10 -241 34 -255 28 -22 -8 -17 -34 22 -98 143 -237 431 -515 739 -713 39 -24 81 -52 95 -62 15 -10 48 -30 75 -44 28 -15 77 -43 110 -62 33 -19 83 -46 110 -59 86 -42 106 -67 62 -79 -45 -11 -308 -46 -347 -46 -22 0 -57 -7 -77 -15 -21 -8 -63 -18 -93 -23 -78 -10 -76 -28 10 -98 77 -64 139 -104 241 -158 36 -18 74 -39 85 -44 68 -38 317 -129 386 -142 29 -5 69 -16 88 -24 42 -17 331 -72 450 -85 47 -6 130 -12 185 -15 55 -3 101 -5 103 -6 19 -3 -52 -80 -348 -375 -193 -192 -350 -354 -350 -358 0 -13 59 -79 86 -97 12 -8 47 -33 79 -55 73 -52 117 -80 217 -138 46 -27 90 -53 98 -57 36 -22 221 -110 231 -110 5 0 31 -11 57 -25 26 -14 52 -25 58 -25 7 0 45 -13 85 -30 41 -16 83 -30 94 -30 12 0 71 51 151 131 93 93 137 130 148 126 14 -6 16 -29 16 -167 l0 -161 36 -15 c60 -25 121 -33 350 -45 350 -18 756 9 812 53 9 8 12 55 12 174 0 108 4 165 11 170 7 4 69 -51 148 -130 98 -98 143 -136 160 -136 23 0 168 53 247 91 23 10 46 19 51 19 13 0 254 122 321 163 50 30 164 104 222 144 72 49 160 127 160 142 0 9 -157 174 -350 366 -295 295 -367 373 -347 375 1 0 72 5 157 10 158 10 511 68 580 96 19 8 58 18 85 24 57 10 254 78 302 103 18 9 37 17 43 17 10 0 91 43 237 125 19 11 72 49 116 85 105 83 107 100 17 115 -36 6 -71 14 -77 18 -7 5 -54 12 -105 18 -95 10 -285 36 -325 45 -13 2 -23 10 -23 17 0 15 20 28 140 90 52 27 106 58 119 68 13 11 29 19 36 19 7 0 30 13 52 29 22 16 55 37 73 46 18 9 38 21 44 26 23 19 103 77 161 117 144 97 379 322 506 482 47 60 119 178 119 195 0 22 -30 33 -74 28 -73 -8 -239 -34 -246 -38 -14 -9 -256 -45 -297 -45 -24 0 -43 5 -43 10 0 6 39 58 88 115 48 57 96 117 108 132 38 51 184 272 184 279 0 4 6 15 14 23 23 27 139 264 152 311 3 14 14 43 24 65 10 22 26 75 36 118 29 124 27 125 -201 13 -349 -171 -464 -226 -472 -226 -4 0 -19 -9 -33 -20 -29 -23 -68 -26 -76 -7 -3 8 22 70 54 139 33 69 63 140 67 159 4 19 13 43 19 54 31 49 138 402 162 530 9 50 23 112 31 139 39 134 39 649 -1 645 -6 -1 -679 -669 -1496 -1485z M7021 5470 c-21 -13 -27 -119 -8 -145 9 -11 18 -17 22 -14 3 4 5 43 3 87 -3 68 -5 80 -17 72z M2824 2633 c-106 -113 -128 -185 -81 -268 35 -62 61 -59 130 14 32 33 64 76 72 95 23 55 19 137 -8 177 -34 51 -51 48 -113 -18z"/></g></symbol></svg>
+
+<!-- ────────────────────────────────────────────────────────────────────
+     eagleyecorp.fr — LA SOCIÉTÉ. Pas le produit.
+
+     ⚠ CETTE PAGE ÉTAIT UNE DEUXIÈME PAGE DE VENTE D'ALPHA SALES OS, avec sa
+     propre grille tarifaire. C'est-à-dire deux sites qui vendaient la même
+     chose à deux prix — et ça a dérivé au moins deux fois : « Solo 79 € »
+     vendait ce qui est devenu gratuit, et le palier voix annonçait 149 €/mois
+     sans les 990 € d'installation.
+
+     Ce n'est pas un défaut de relecture, c'est un défaut de découpage : tant
+     que deux surfaces portent le même prix, l'une des deux finit périmée, et
+     c'est toujours celle qu'on oublie de rouvrir.
+
+     Le découpage est donc net, et il rend la dérive IMPOSSIBLE plutôt
+     qu'improbable :
+
+       · eagleyecorp.fr ............ la SOCIÉTÉ, ce qu'elle fait, comment elle
+                                     travaille. AUCUN prix produit.
+       · alphasalesos.eagleyecorp.fr le PRODUIT : offres, prix, inscription,
+                                     tableau de bord.
+
+     Un test refuse tout prix en euros dans cette page.
+     ──────────────────────────────────────────────────────────────────── -->
+
+<!-- ── NAV ── -->
+<header class="nav">
+  <div class="wrap row">
+    <a class="brand" href="#top" aria-label="EAGLEYE CORP. — accueil">
+      <svg class="eagle" aria-hidden="true"><use href="#eagle"/></svg>
+      <b>Eagleye</b><span class="sep"></span><span class="prod">Corp<span class="accent">.</span></span>
+    </a>
+    <nav class="links">
+      <a href="#metier">Ce qu'on fait</a>
+      <a href="#limites">Ce qu'on ne fait pas</a>
+      <a href="#conformite">Conformité</a>
+      <a href="#produit">Alpha Sales OS</a>
+      <a href="#methode">La méthode</a>
+      <button class="themetgl" id="tgl" aria-label="Changer le thème">◐</button>
+      <!-- ⚠ Le libellé RACCOURCIT sous 760px, il ne se coupe pas. « Demander
+           un cadrage » sortait de l'écran sur téléphone (constaté au rendu),
+           et entraînait tout le body dans un défilement horizontal.
+           Deux libellés dans le markup plutôt qu'un `text-overflow` : un
+           bouton dont le texte est tronqué par des points de suspension n'est
+           pas un bouton, c'est un bug qui a l'air volontaire. -->
+      <a class="btn accent" href="#demo"><span class="long">Demander un cadrage</span><span class="court">Cadrage</span></a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="grid-bg"></div>
+  <div class="wrap hero-inner">
+    <span class="eyebrow">Systèmes de vente pour PME · Lyon</span>
+    <h1 class="reveal">On installe la machine.<br/>Vous gardez <em>la poignée de main</em>.</h1>
+    <p class="lede reveal">EAGLEYE CORP conçoit et installe ce qui se trouve <em>avant</em> et <em>autour</em> de la vente : trouver les bons interlocuteurs, qualifier, relancer, suivre, mesurer. Le travail répétitif qui fait qu'un bon vendeur passe sa journée à ne pas vendre. La livraison de votre prestation et la présence humaine au moment de signer restent chez vous — c'est là que vous êtes irremplaçable.</p>
+    <!-- ⚠⚠ LA CATÉGORIE — phrase RECOPIÉE depuis `CATEGORIE` (lib/promesse.ts).
+         Ce site est du HTML statique : il ne peut pas importer la constante,
+         donc cette ligne est une SECONDE définition, exactement ce que le dépôt
+         refuse partout ailleurs. Elle est tenue par `tests/site-vitrine.test.ts`,
+         qui compare les deux caractère par caractère et tombe si elles
+         divergent. Changer la constante SANS changer cette ligne casse le
+         build — c'est le seul moyen honnête de recopier une doctrine.
+
+         ⚠ Elle est posée APRÈS la promesse et AVANT sa démonstration : la
+         section « ce qu'on ne fait pas » est la liste des refus. Une
+         revendication sans sa liste juste en dessous serait un slogan. -->
+    <p class="claim reveal"><strong>Tout le monde vend un agent qui en fait plus. Alpha est celui qui refuse.</strong> <a href="#limites">La liste est juste en dessous</a> — et chaque refus est une règle que le logiciel applique, pas une intention affichée.</p>
+    <div class="cta reveal">
+      <a class="btn accent" href="#demo">Demander un cadrage</a>
+      <a class="btn ghost" href="#metier">Ce qu'on fait exactement</a>
+    </div>
+    <div class="stats reveal">
+      <!-- ⚠ Trois FAITS vérifiables, pas trois chiffres de performance. Cette
+           page a déjà porté un « 80 % » que rien ne mesurait. Un chiffre qu'on
+           ne peut pas prouver au premier rendez-vous coûte plus qu'il ne
+           rapporte. -->
+      <div class="stat"><div class="n">0</div><div class="l">message parti sans relecture humaine — rien ne s'envoie tout seul, jamais</div></div>
+      <div class="stat"><div class="n">1</div><div class="l">cadrage obligatoire avant tout devis, y compris quand la réponse est non</div></div>
+      <div class="stat"><div class="n">Lyon</div><div class="l">conçu, écrit et opéré ici — vous parlez à celui qui installe</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CE QU'ON FAIT ── -->
+<section class="band" id="metier">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Ce qu'on fait</span>
+      <h2>Cinq chantiers, un seul sujet : que votre commerce arrête de dépendre de votre disponibilité.</h2>
+      <p>On ne vend pas un abonnement sorti d'un catalogue. On regarde d'abord ce qui vous coûte des clients aujourd'hui — puis on installe la brique qui règle ça, et rien d'autre.</p>
+    </div>
+    <div class="constat">
+      <div class="cst reveal">
+        <div class="k">Visibilité</div>
+        <h3>Être trouvé, et donner envie</h3>
+        <p>Site, fiche locale, présence. Le préalable de tout le reste : une machine de vente branchée sur un commerce introuvable ne fait que découvrir plus vite qu'il est introuvable.</p>
+      </div>
+      <div class="cst reveal">
+        <div class="k">Alpha Sales OS</div>
+        <h3>Le système de vente</h3>
+        <p>Notre produit : prospection, qualification, relances, pipeline, closing. Il se prend en entier ou brique par brique. <a href="#produit">Détail et tarifs</a>.</p>
+      </div>
+      <div class="cst reveal">
+        <div class="k">Alpha Voice</div>
+        <h3>L'accueil qui décroche</h3>
+        <p>Un agent vocal qui répond quand vous ne pouvez pas, prend la demande et vous envoie le résumé. Il annonce qu'il est une intelligence artificielle, dès la première phrase. <a href="#produit">Voir l'offre</a>.</p>
+      </div>
+      <div class="cst reveal">
+        <div class="k">Sur mesure</div>
+        <h3>Un OS taillé sur votre métier</h3>
+        <p>Pas une déclinaison du nôtre : un système écrit pour vos étapes, votre vocabulaire et vos contraintes. Chiffré au cadrage, parce qu'il n'y a pas deux fois le même.</p>
+      </div>
+      <div class="cst reveal">
+        <div class="k">Digitalisation</div>
+        <h3>Les chantiers d'organisation</h3>
+        <p>Devis, plannings, suivi, documents : ce qui se fait encore à la main et qui vous prend vos soirées. Jusqu'à un certain volume — au-delà, voir ci-dessous.</p>
+      </div>
+      <div class="cst reveal">
+        <div class="k">Accompagnement</div>
+        <h3>Vous montrer, pas seulement faire</h3>
+        <p>Quand une partie du travail ne s'automatise pas, on la fait à la main <em>et</em> on vous montre comment la faire. Borné et annoncé d'avance — c'est une prestation, pas un « on est là si besoin ».</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CE QU'ON NE FAIT PAS ── -->
+<section class="band" id="limites">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Ce qu'on ne fait pas</span>
+      <h2>La liste de ce qu'on refuse est plus utile que celle de ce qu'on sait faire.</h2>
+      <p>Une agence qui dit oui à tout se paie à la livraison. Voici ce qu'on ne prend pas, et pourquoi on le dit avant le devis plutôt qu'après.</p>
+    </div>
+    <div class="doctrine">
+      <div class="d reveal">
+        <h3>On ne livre pas votre prestation</h3>
+        <p>On amène les demandes, on les qualifie, on les suit. Le chantier, le soin, la réparation, le conseil — c'est vous. Une machine qui promet de livrer à votre place promet ce qu'elle ne peut pas tenir.</p>
+      </div>
+      <div class="d reveal">
+        <h3>On ne remplace pas la personne qui rassure</h3>
+        <p>La voix, la présence, la poignée de main au moment de signer : ça ne s'automatise pas, et personne ne devrait vous vendre le contraire. Ce qu'on supprime, c'est tout ce qui se trouve avant.</p>
+      </div>
+      <div class="d reveal">
+        <h3>On ne prend pas les gros chantiers seuls</h3>
+        <p>Au-delà d'un certain volume, une PME de notre taille devient un risque pour vous, pas un atout. Sur ces projets-là, on travaille avec un partenaire européen spécialisé — et on vous le dit au cadrage, pas à la signature.</p>
+      </div>
+      <div class="d reveal">
+        <h3>On ne collecte pas vos données à votre place</h3>
+        <p>Aspirer un annuaire ou une session LinkedIn, c'est faire porter un risque juridique à quelqu'un qui ne l'a pas choisi. La collecte reste dehors, sous votre responsabilité, et l'outil trie ce que vous lui donnez.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LA CONFORMITÉ ──
+     ⚠⚠ CE QUI NE DOIT JAMAIS ÊTRE ÉCRIT ICI : « vous serez conforme ».
+     La conformité d'une entreprise dépend de ce qu'elle fait, pas de l'outil
+     qu'elle achète — le promettre serait un conseil juridique qu'on n'a pas
+     le droit de donner, et une promesse qu'on ne peut pas tenir. Chaque
+     phrase ci-dessous décrit ce que LE LOGICIEL applique, à la première
+     personne, et rien d'autre.
+
+     ⚠ Aucun montant d'amende. Le règlement en prévoit, ils sont publics, et
+     les citer sur une page de vente transforme un argument vrai en argument
+     de peur — le contraire exact de la voix de ce site. Qui veut le chiffre
+     le trouve en une recherche.
+
+     ⚠ Aucun label, aucune certification, aucun organisme cité. C'est la
+     famille d'affirmations la plus dangereuse : elle se vérifie auprès d'un
+     tiers, sans nous prévenir. -->
+<section class="band" id="conformite">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">La contrainte légale</span>
+      <h2>Depuis le 2 août 2026, un agent qui appelle doit annoncer qu'il est une IA. Chez nous, c'est le code qui le dit.</h2>
+      <p>Les obligations de transparence du règlement européen sur l'IA sont entrées en application. La plupart des outils traitent ça comme un réglage : une case à cocher, une phrase à écrire dans un script, qu'un utilisateur pressé retire. Nous avons fait l'inverse — ce sont des règles que le logiciel applique, et qu'on ne peut pas désactiver depuis l'écran.</p>
+    </div>
+    <div class="regles">
+      <div class="r reveal">
+        <h3>La divulgation est prononcée, pas configurée</h3>
+        <p>Sur un appel mené par l'agent vocal, la première phrase dit qu'il s'agit d'une intelligence artificielle, pour le compte de qui elle appelle, et elle ne peut pas être interrompue. Elle n'est pas dans le script : elle est dans le programme. Un script qui ne la contient pas est refusé avant d'être utilisé.</p>
+      </div>
+      <div class="r reveal">
+        <h3>Le plafond de relances s'arrête tout seul</h3>
+        <p>Le démarchage téléphonique est plafonné à quatre sollicitations par personne sur trente jours glissants. Chez nous, la cadence s'arrête d'elle-même à ce nombre — elle ne compte pas sur la mémoire de celui qui appelle, et un forçage ne passe pas outre.</p>
+      </div>
+      <div class="r reveal">
+        <h3>Les secteurs interdits sont refusés</h3>
+        <p>Là où la prospection est interdite, l'outil ne produit pas de script. Il refuse, il nomme le texte qui l'interdit, et il dit ce qui reste possible. Un refus qui n'explique rien se contourne ; un refus qui cite sa raison se comprend.</p>
+      </div>
+      <div class="r reveal">
+        <h3>Rien ne part sans savoir qui écrit</h3>
+        <p>Chaque message sortant porte qui l'envoie et comment refuser d'en recevoir d'autres. Sans ces deux mentions, l'envoi est bloqué — on ne les ajoute pas discrètement à votre place, parce qu'un trou masqué ne se voit plus jamais.</p>
+      </div>
+    </div>
+    <p class="reserve reveal">Aucune de ces phrases n'est une promesse de résultat, et aucune ne vous rend conforme à notre place : votre conformité dépend de ce que vous faites. Ce sont des règles vérifiables aujourd'hui — au cadrage, on vous les montre en fonctionnement.</p>
+  </div>
+</section>
+
+<!-- ── LE PRODUIT ── -->
+<section class="band" id="produit">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Notre produit</span>
+      <h2>ALPHA SALES OS<span class="accent">®</span> — le système, en libre accès.</h2>
+      <p>Le socle est gratuit et sans limite de durée : le CRM, le Closer, le Cerveau et le pilotage. Vous créez un compte, vous entrez, vous regardez. Ce qui <em>agit</em> à votre place — les appels, les envois, l'agent qui écrit — se paie, parce que ça consomme une ligne, un serveur et des crédits.</p>
+    </div>
+    <!-- ⚠ AUCUN PRIX ICI, ET C'EST LA RÈGLE. Les offres et les montants vivent
+         sur le site produit, qui est la seule source. Recopier un prix ici,
+         c'est recréer la dérive qui a déjà coûté deux grilles fausses. -->
+
+    <!-- ⚠⚠ LA PAGE N'AVAIT AUCUNE IMAGE, ET LA CAPTURE ÉTAIT DÉJÀ EN LIGNE.
+         `assets/produit-pipeline.{webp,jpg}` est déployé depuis le 04/09 et
+         n'était référencé NULLE PART : 264 Ko servis à chaque visiteur qui les
+         téléchargeait sans jamais les voir. Mesuré, pas supposé — zéro
+         occurrence dans le markup.
+
+         Une page qui vend un LOGICIEL sans jamais le montrer demande au
+         lecteur de croire sur parole. C'est le seul endroit de la page où
+         « voir » vaut mieux que « lire », et c'est ici, sous le nom du
+         produit.
+
+         ⚠ `loading="lazy"` + `decoding="async"` : l'image est sous la ligne de
+         flottaison, elle ne doit pas retarder le premier rendu. Et `width`/
+         `height` sont posés pour réserver la place — sans eux, l'arrivée de
+         l'image décale tout ce qui suit (CLS), ce qui se voit surtout sur un
+         téléphone en 4G. -->
+    <figure class="shot reveal">
+      <picture>
+        <source srcset="/assets/produit-pipeline.webp" type="image/webp" />
+        <img src="/assets/produit-pipeline.jpg" width="2200" height="1375"
+             loading="lazy" decoding="async"
+             alt="Le pipeline d'Alpha Sales OS : les affaires en cours réparties par étape de vente, avec le montant et la prochaine action de chacune." />
+      </picture>
+      <figcaption>Le pipeline, tel qu'il s'affiche. Vos affaires, vos étapes, vos montants.</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step reveal"><b>Le voir</b><p>Les tarifs, les offres et le détail de chaque brique sont sur le site du produit.</p></div>
+      <div class="step reveal"><b>L'essayer</b><p>Inscription libre, sans carte bancaire. Vous démarrez sur vos propres données.</p></div>
+      <div class="step reveal"><b>En parler</b><p>Si vous voulez qu'on l'installe et qu'on le règle sur votre métier, c'est un cadrage.</p></div>
+    </div>
+    <div class="cta reveal" style="margin-top:26px">
+      <a class="btn accent" href="https://alphasalesos.eagleyecorp.fr/vitrine">Voir Alpha Sales OS</a>
+      <a class="btn ghost" href="https://alphasalesos.eagleyecorp.fr/souscrire">Créer mon compte</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── LA MÉTHODE ── -->
+<section class="band" id="methode">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">La méthode</span>
+      <h2>Le cadrage est obligatoire. Y compris quand il se termine par un non.</h2>
+      <p>On ne chiffre jamais à l'aveugle. Avant tout devis, on regarde votre situation réelle : ce que vous perdez aujourd'hui, comment vous le traitez, et ce qu'une machine changerait vraiment chez vous.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><b>Une date décidée</b><p>Un créneau fixé ensemble, pas un « on se rappelle ». Visio, téléphone ou SMS — vous choisissez le canal.</p></div>
+      <div class="step reveal"><b>Vos chiffres, pas les nôtres</b><p>On travaille sur ce que vous constatez, pas sur des moyennes de secteur. Toute estimation est annoncée comme telle.</p></div>
+      <div class="step reveal"><b>Une réponse franche</b><p>À la fin, on vous dit si c'est pertinent. Quand ça ne l'est pas, on le dit aussi — c'est moins cher pour tout le monde.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ── -->
+<section class="band" id="demo">
+  <div class="wrap">
+    <div class="close reveal">
+      <span class="eyebrow" style="justify-content:center">Passons à l'action</span>
+      <h2>Vingt minutes pour savoir si on peut vous être utile.</h2>
+      <p>Dites-nous ce qui vous fait perdre le plus de clients aujourd'hui. On vous répond avec un avis, pas avec une plaquette — et s'il n'y a rien à faire chez vous, on vous le dira.</p>
+      <div class="cta">
+        <a class="btn accent" href="mailto:contact@eagleyecorp.fr?subject=Demande%20de%20cadrage%20%E2%80%94%20EAGLEYE%20CORP&amp;body=Bonjour%2C%0A%0AMon%20activit%C3%A9%20%3A%0AMa%20ville%20%3A%0ACe%20qui%20me%20fait%20perdre%20le%20plus%20de%20clients%20aujourd%27hui%20%3A%0AMes%20disponibilit%C3%A9s%20%3A%0A%0AMerci.">Demander un cadrage</a>
+        <a class="btn ghost" href="https://alphasalesos.eagleyecorp.fr/vitrine">Voir le produit d'abord</a>
+      </div>
+      <div class="mail">contact@eagleyecorp.fr · Lyon</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div class="brand" style="margin-bottom:12px">
+        <svg class="eagle" aria-hidden="true" style="width:34px;height:27px;color:var(--ink)"><use href="#eagle"/></svg>
+        <b>Eagleye Corp.</b>
+      </div>
+      <p class="mono" style="font-size:11px;color:var(--graphite);max-width:34ch;line-height:1.8">Le système d'exploitation de la vente terrain.<br/>Conçu et opéré à Lyon.</p>
+    </div>
+    <div class="legal">
+      EAGLEYE CORP. — Zakaria Tazi<br/>
+      8 Cours Lafayette, 69003 Lyon<br/>
+      SIREN 831&nbsp;729&nbsp;934 · TVA FR32831729934<br/>
+      contact@eagleyecorp.fr · eagleyecorp.fr<br/>
+      ALPHA SALES OS® — marque déposée
+      <div style="margin-top:14px;line-height:2">
+        <a href="/mentions-legales.html">Mentions légales</a> ·
+        <a href="/cgv.html">CGV</a> ·
+        <a href="/cgu.html">CGU</a> ·
+        <a href="/confidentialite.html">Confidentialité</a> ·
+        <a href="/dpa.html">DPA</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // Thème : mémorise le choix ; sinon suit le système.
+  var root=document.documentElement, K="eagleye-theme";
+  try{var s=localStorage.getItem(K); if(s) root.setAttribute("data-theme",s);}catch(e){}
+  document.getElementById("tgl").addEventListener("click",function(){
+    var cur=root.getAttribute("data-theme");
+    var next = cur==="dark" ? "light" : cur==="light" ? "dark"
+      : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+    root.setAttribute("data-theme",next);
+    try{localStorage.setItem(K,next);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

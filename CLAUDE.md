@@ -1,0 +1,1928 @@
+# ALPHA SALES OS — mémoire de projet
+
+> Ce fichier se charge à CHAQUE session. Il porte la doctrine stable pour ne
+> jamais relire toute la conversation. Ce qui bouge (plan, avancement) vit dans
+> `docs/ROADMAP-TRILLION.md`. Mets à jour ici quand une RÈGLE change, pas quand
+> une tâche avance.
+
+## Qui / quoi
+- **Propriétaire** : Zakaria Tazi — EAGLEYE CORP, Lyon. Français par défaut dans
+  tout ce qui est produit (code en anglais, UI + docs + prompts en français).
+- **Produit** : Alpha Sales OS — OS de vente white-label. Next.js 15 / React 19 /
+  TS strict, Zustand persist (`alpha-sales-os-v2`). **Les briques qui
+  capteraient de la donnée métier — crypto, CSV, RAG, PDF — sont faites à la
+  main.** Ne JAMAIS ajouter une dépendance npm sans raison impérieuse.
+  > ⚠ Ne pas dire « **zéro** dépendance runtime » : `package.json` en déclare
+  > quatorze (Next, React, client Supabase, nodemailer, recharts, SDK IA…).
+  > La formule courte est fausse et se vérifie en trente secondes — elle
+  > décrédibiliserait tout ce qui l'entoure, à commencer par un dossier de
+  > candidature. Ce qui est vrai, c'est que rien de ce qui touche la donnée
+  > MÉTIER ne passe par un tiers.
+- **Branche de travail** : `claude/crm-n8n-email-tracking-4qxtwr`. Commit + push
+  systématiques. Tests : `npm test` (node:test). Types : `npx tsc --noEmit`.
+  Les deux doivent être verts avant push.
+
+## Ton
+Brutalement honnête. Pas de flatterie, pas de « tu as raison ». Si un chiffre
+est faux, une idée irréaliste ou un truc pas testé — le dire net. L'utilisateur
+demande explicitement ça et il a besoin de **ventes réelles**, pas de démos.
+
+### FIN DE CHAQUE RÉPONSE — trois blocs, rien d'autre (17/09/2026)
+Toute réponse se termine par :
+
+```
+## CE QUE J'AI FAIT
+- une ligne par chose livrée, le résultat d'abord
+
+## À FAIRE — TOI
+- les actions qui sont sur LUI, la plus bloquante d'abord
+
+## ÉTAPE SUIVANTE
+- UNE seule action, la prochaine
+```
+
+> ⚠ **Le premier bloc a été ajouté à sa demande**, et il ne dispense pas du
+> corps de la réponse : le corps porte le RAISONNEMENT (ce qui a été mesuré,
+> ce qui a été écarté et pourquoi), le bloc n'en porte que le RÉSULTAT. Les
+> confondre donnerait soit un résumé qui ne prouve rien, soit un bloc aussi
+> long que le texte — et dans les deux cas on ne lit plus ni l'un ni l'autre.
+
+- **« À faire — toi » ne contient que ce qui est sur LUI.** Ce que j'ai fait moi va
+  au-dessus, dans le corps de la réponse. Mélanger les deux fabrique une liste
+  où il ne trouve plus sa part — c'est-à-dire une liste qu'on ne lit pas.
+- **« Étape suivante » est UNE action, jamais deux.** Une liste de priorités
+  n'est pas une priorité. S'il y a un ordre imposé (les 4 variables Vercel
+  AVANT le SMTP, les secrets Vault AVANT la 004), c'est cet ordre qui décide
+  laquelle est la prochaine — pas ce qui est le plus rapide à faire.
+- **Zéro action sur lui ⇒ on l'écrit** (« rien sur toi »), on ne supprime pas
+  le bloc. Un bloc absent et un bloc vide ne se lisent pas pareil : le premier
+  ressemble à un oubli. Même mode de panne que le moniteur qui affiche du
+  calme quand la base est morte.
+- Il lit ça **au salon, sur un téléphone**, entre deux conversations. C'est ce
+  qui impose la brièveté, pas une préférence de style.
+
+## Les 2 comptes (portefeuille white-label) — `lib/accounts.ts`
+Le compte MAÎTRE (EAGLEYE) est l'interface qui pilote tout. Basculer de compte
+change l'identité + l'offre + la commission, **pas** les données.
+
+| Compte | Ce qu'il prend | Ce qui NOUS revient |
+|---|---|---|
+| **EAGLEYE CORP** (maître) | **nos offres** : visibilité (sites, growth), **Alpha Sales OS** (VIP ou **à la carte**), **OS personnalisé**, digitalisation **< 40 k**, **Alpha Voice** | **100 %** |
+| **Nuwacom** | chantiers **> 40 k** (sinon trop lourd pour nous) | **15 %**, puis **100 %** de la maintenance |
+
+> ⚠ **ILS ÉTAIENT TROIS — 02/09/2026, l'accord ScintIA / Callflow est MORT.**
+> Le compte a été retiré du portefeuille. Son offre, elle, n'est pas morte : le
+> besoin ne dépendait pas de l'accord, et **Alpha Voice fait ce travail et il
+> est à nous** — revenu chez EAGLEYE à **100 %** au lieu de 30 % + 10 %.
+> · Le nom « Callflow » ne doit plus apparaître nulle part : c'était **leur**
+>   marque. **`tests/marque-morte.test.ts` l'applique** — la règle est restée
+>   écrite et non branchée pendant des semaines. Interdit : la marque dans une
+>   **chaîne** (ce qui s'affiche, s'envoie, se stocke) et dans un **identifiant
+>   de doctrine**. Autorisé : un **commentaire** qui explique pourquoi une garde
+>   ou un repli existe — effacer ces noms-là laisserait des décisions sans leur
+>   raison.
+> · Leur grille (990 € + paliers 59/115/169/219/319) et leur cadence de
+>   5 rappels ont été **remplacées le même jour**. Les sections « Tarifs » et
+>   « Cadence de relance » plus bas font foi.
+> 📦 Ce que sa mort a laissé traîner huit jours — doctrine qui se contredit,
+> dix-sept traces de la marque, une famille de routage prescrite qui n'existait
+> plus : `docs/ANGLES-MORTS.md`.
+
+> ⚠ **Deux « 30 % » différents, ne jamais les confondre.**
+> · Le taux d'un compte = ce qui NOUS revient. Sur EAGLEYE c'est **100 %** :
+>   c'est notre société, il n'y a personne à qui reverser. Il ne descend sous
+>   100 % que là où nous sommes **intermédiaires** — il n'en reste qu'un : Nuwacom.
+> · Les **30 % + setup** de l'offre commerciale = ce qu'on **facture au
+>   client** sur le CA qu'on lui fait gagner (`lib/pricing` → `REV_SHARE`).
+>   C'est un PRIX, pas une commission reversée.
+
+> ⚠ **LE DOSSIER D'UN PARTENAIRE NE DESCEND PAS DANS LE NAVIGATEUR.**
+> `lib/accounts.ts` est importé par le store et cinq composants client : tout
+> ce qu'on y écrit part dans un chunk `_next/static/**` que n'importe qui
+> télécharge **sans compte**. L'entrée Nuwacom y portait ses deux domaines et
+> un ICP COMPLET (acheteur, douleurs, déclencheurs, canaux, disqualifiants,
+> angle) — notre travail de ciblage, public. Mesuré, pas supposé.
+> · Ce qui vit désormais dans `lib/accounts-commercial.ts` (serveur, servi par
+>   `/api/catalogue` au **maître seul**) : nom d'usage, domaines, proposition
+>   de valeur, ICP, acte de closing — le champ `identite`.
+> · Ce qui RESTE côté client : l'**id** et les **familles d'offres**. Elles
+>   ROUTENT : les vider casse le périmètre d'offre, les rituels de closing,
+>   le deep-dive et les segments — mesuré en les retirant, pas supposé. Sans
+>   nom en face, « ce compte peut porter telle famille » ne dit rien.
+> · Le **nom** reste aussi, faute de mieux : il est porteur dans une dizaine
+>   de modules de routage. L'en sortir est un vrai refactor (l'identité
+>   viendrait des Réglages, hydratés du serveur), pas une ligne.
+
+**Règle de routage** : faisable par nous → EAGLEYE · > 40 k → Nuwacom.
+Il n'y a plus d'exception par OFFRE : c'est la TAILLE qui sous-traite.
+
+> ⚠⚠ **DEUX CRITÈRES, ET UN SEUL MORDAIT — réparé le 13/09/2026**
+> (`lib/veille.ts`). Le **PRIX** était exécutable (`NUWACOM_THRESHOLD_HT`, lu
+> par le calculateur). La **FAISABILITÉ** — « si un open-source ou nous-mêmes
+> pouvons le faire vite → on le fait nous » — vivait dans une **chaîne** de
+> `lib/accounts-commercial.ts`. Le défaut exact déjà payé par `forbidden` et
+> par `structuralPain` : une règle juste, en prose, que rien ne pose.
+> · **Les deux se contredisent.** Un chantier à 60 k qu'un outil libre règle en
+>   une semaine : le prix l'envoie à 15 %, la faisabilité dit 100 %. **51 000 €
+>   d'écart sur un seul dossier.**
+> · **On NOMME le conflit, on ne tranche pas** (`arbitrage-humain`). Précédent :
+>   `fit` vs `bloquant` dans `lib/opportunites.ts`. Un routage automatique
+>   aurait choisi le critère le plus facile à coder — le prix — et sous-traité
+>   à 15 % ce qu'on sait faire à 100 %.
+> · **Deux questions distinctes** : *peut-on le FAIRE ?* (non ⇒ Nuwacom, quel
+>   que soit le montant — aucun prix ne rend faisable ce qu'on ne sait pas
+>   livrer) et *doit-on le PRENDRE ?* (taille et risque).
+> · **L'effort cumule les bornes HAUTES.** Additionner les basses suppose le
+>   meilleur des cas sur chaque brique en même temps — le biais qui fait tenir
+>   un devis sur le papier et pas à la livraison. Et **une seule brique « à
+>   construire » sort du régime rapide**, même courte : ce n'est pas sa durée
+>   qui coûte, c'est son incertitude.
+> · **`EFFORT_RAPIDE_MAX_JOURS = 10`** est une DÉCISION — deux semaines pleines
+>   d'une seule personne, puisque l'installation se fait à la main et par une
+>   seule personne.
+> · **La table `CAPACITES` est VIDE, et c'est l'état honnête.** Une veille se
+>   remplit en regardant ce qui sort, pas en écrivant de mémoire : des entrées
+>   devinées qui ont l'air mesurées **routeraient de vrais dossiers**. Chaque
+>   entrée portera son niveau de preuve (`mesure-maison` seulement après une
+>   livraison réelle), et se décrira par sa **FONCTION** — un nom de produit
+>   périme la table et décrit notre stack dans un dépôt public.
+
+### L'ESCALIER — le check de CHAQUE prospect (`lib/ladder.ts`)
+Cascade, pas aiguillage : un prospect peut déclencher plusieurs marches, et
+chacune revient à un compte. On monte **une marche à la fois**, jamais tout d'un
+coup.
+1. **Visibilité** détectée → **EAGLEYE** (100 % — c'est nous).
+2. **Volume de demandes très élevé** → **ALPHA VOICE / EAGLEYE** (100 %).
+   *(Cette marche revenait à un revendeur à 30 % + 10 %. L'accord est mort ; la
+   marche reste, le besoin n'ayant jamais dépendu de lui.)*
+3. **Automatisation demandée en plus** → **EAGLEYE** (100 %). *Argument clé* :
+   Alpha Voice est le **point d'entrée** — il capte l'info exacte sur chaque
+   appelant, donc l'automatisation qui suit coûte **moins de setup** (les données
+   sont déjà là, le process est cartographié). Cet argument n'est servi QUE si
+   Alpha Voice est effectivement en amont.
+4. **Trop gros pour nous (> 40 k)** → **NUWACOM** : le gros devis justifie les
+   **15 %**, puis **100 % de toute la maintenance mensuelle**.
+
+**Nuwacom** : sites `nuwacom.fr` / `nuwacom.com/en`. CEO **Christophe** (visio
+faite, réglo). Fort en Allemagne + Benelux, **entre sur le marché FR**. Le
+contrat se dresse **après le cadrage** → levier de négociation. Doctrine :
+**si un open-source GitHub ou nous-mêmes pouvons le faire vite → on le fait
+nous** (meilleur levier) ; si trop lourd, ou si on leur a présenté et qu'ils
+n'en veulent pas → on passe par leur plateforme.
+
+## NOTRE CIBLE — le maître d'ouvrage à permis actif (09/09/2026)
+`lib/permis-construire.ts` · ICP dans `lib/accounts-commercial.ts` (serveur) ·
+`docs/PERMIS-LYON.md`.
+
+**Le maître d'ouvrage PROFESSIONNEL dont le permis de construire est actif, sur
+Lyon et Villeurbanne.** ICP à **déclencheur**, pas à secteur : « les
+promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois près
+— donc **quand** appeler. L'arrêté est public, daté, vérifiable.
+
+> ⚠ **« Maître d'ouvrage » est un RÔLE juridique, pas un métier.** Le même
+> export contient le promoteur qui bâtit 68 lots POUR LES VENDRE, le bailleur
+> social qui construit pour ATTRIBUER, la commune qui bâtit une école, et le
+> couple qui fait construire sa maison — ce dernier étant le **gros du
+> volume**. Les trois derniers n'ont **rien à vendre**. Et le couple est un
+> **consommateur** : le décret n° 2022-1313 s'applique, et c'est nous qui
+> portons le risque. Le tri sort ces cas par **exclusion sèche**, jamais par un
+> score qui pourrait les rattraper.
+
+- **La zone est une exclusion**, pas dix points de score (`communeDansLaZone`).
+  Elle ne l'était pas : un bon permis de Bron sortait *retenu* et rien ne le
+  disait. Ce que la zone achète : l'ancrage local est le **seul argument
+  vérifiable** à zéro vente. Ce qu'elle coûte : un export métropolitain perd la
+  majorité de ses lignes — et le lot le **dit** (les hors-zone se comptent à
+  part des « rien à vendre » : le premier veut dire « refiltre à la source »,
+  le second est le fonctionnement normal).
+  > ⚠ Ancré en **début de libellé**, jamais un `includes("lyon")` :
+  > Sainte-Foy-lès-Lyon, Métropole de Lyon et Grand Lyon contiennent tous
+  > « lyon ». Commune **absente** ≠ hors zone — c'est un `manque` qu'on nomme,
+  > pas une ligne qu'on jette.
+- **Sous 6 logements, on n'exclut pas — on dit disproportionné.** 10 000 € d'OS
+  de vente sur trois lots est une part indécente du budget de
+  commercialisation. C'est **Alpha Voice seul** qui se propose là.
+- **La phase décide de l'angle** : recours (< 2 mois) → se faire connaître,
+  **ne rien vendre** · pré-commercialisation (2-12 mois) → la meilleure fenêtre
+  · > 12 mois sans chantier → le signal le plus fort **et le plus ambigu**
+  (l'opération peut être morte : le premier appel sert à le vérifier, rien
+  d'autre) · chantier → queue de programme.
+- **Canal par défaut : LinkedIn.** Un export de permis ne porte **aucun
+  numéro** ; mettre « tel » ferait entrer la fiche dans la file d'appels où
+  elle resterait muette. Le téléphone se relève **à la main** — troisième
+  colonne.
+- **Zéro permis converti à ce jour.** 6 logements, score 55, les poids par
+  phase : ce sont des **décisions**, pas des mesures.
+
+> ⚠⚠ **L'ICP DOIT CROULER SOUS LA DEMANDE — pas en chercher** (13/09/2026).
+> C'est la règle qui décide si le prospect peut **payer**, et elle n'était
+> écrite nulle part dans le code.
+> · Qui **manque** de demande a besoin de CLIENTS. On serait son seul espoir,
+>   sur un budget qu'il n'a pas, avec une promesse qu'on ne tient pas — **Alpha
+>   ne crée pas de marché, il empêche de perdre ce qui arrive déjà.** Le jour
+>   où ça ne marche pas, il n'a pas perdu un outil : il a perdu sa dernière
+>   chance. C'est le pire client possible, et c'est celui qui dit oui le plus
+>   vite.
+> · Qui **croule** a déjà l'argent, et sa douleur est datée : les contacts
+>   qu'il n'a pas rappelés existent, il peut les compter.
+> ⚠ **La règle était déjà là, EN PROSE** : `structuralPain` de la verticale
+> maîtrise d'ouvrage dit « des centaines de contacts acquéreurs, une ou deux
+> personnes dédiées ». Invisible pour le code — le défaut exact que `forbidden`
+> a payé dans `lib/playbook.ts`.
+
+- **`LecturePermis.demande`** (`saturee` · `faible` · `inconnue`) **nomme** la
+  question au lieu de la noyer dans le score. Le nombre de logements ajoutait
+  15, 25 ou 30 points et disparaissait dans un total : une opération de huit
+  lots et une de soixante sortaient au même score, pour des raisons opposées.
+  **Un score agrège ; une décision d'ICP se nomme.**
+  > ⚠⚠ **DEUX SEUILS, DEUX QUESTIONS**, longtemps confondus par commodité :
+  > `LOGEMENTS_MIN` (6) demande « le **PRIX** est-il proportionné ? » ;
+  > `SATURATION_LOGEMENTS` (20) demande « y a-t-il plus de **contacts que de
+  > bras** ? ». Entre les deux, le prix tient et la douleur n'existe pas — on
+  > vendait quand même « vos acquéreurs refroidissent » à dix lots.
+  > **20 est une DÉCISION**, aucune vente ne l'a validée.
+  > ⚠ **`inconnue` n'est PAS `faible`.** Une colonne manquante ne dit pas que
+  > l'opération est petite ; les confondre amputerait la file sans que
+  > personne sache pourquoi.
+- **On COMPTE, on n'exclut pas.** Mesuré sur le jeu de démonstration : 8
+  retenus, dont **2 sous le seuil**. Le résumé d'import le dit en clair. Exclure
+  sur un chiffre que personne n'a validé amputerait la file d'un quart sur une
+  intuition — le jour où un maître d'ouvrage dit « à douze lots je suis déjà
+  noyé », ce compteur devient une exclusion, en une ligne qui se voit au diff.
+
+### L'ESCALIER ÉTAIT AVEUGLE À NOTRE MARCHÉ — réparé le 13/09/2026
+`demandEvidence` (`lib/ladder.ts`) ne détectait la saturation **que** par
+`missedCallsPerWeek`. Sur une fiche issue d'un permis, ce champ est vide : la
+marche « volume de demandes » ne se déclenchait **jamais** sur le marché qu'on
+prospecte depuis le 09/09. Rien ne tombait — le détecteur rendait une liste
+vide, ce qui ressemble trait pour trait à « ce prospect n'a pas de problème ».
+
+- **`DeepAudit.lotsACommercialiser`** porte la saturation, **structurée**. Le
+  nombre de lots survivait déjà dans les **notes**, en texte libre : le lire par
+  motif aurait été la devinette que ce dépôt refuse partout (« la verticale se
+  lit sur le tag, pas sur le texte »). `deepAudit` porte déjà les nombres
+  MESURÉS et importables — un lot lu sur un arrêté public en est un.
+- **⚠⚠ LA PREUVE SEULE NE SUFFISAIT PAS.** Le `pitch` de la marche était FIGÉ
+  sur « chaque appel manqué est un client qui appelle le concurrent » — la
+  phrase exacte que la verticale INTERDIT. Brancher la détection sans toucher
+  au pitch aurait produit le pire résultat possible : **la marche se déclenche
+  à raison et sert la phrase qui fait raccrocher.** La preuve et la phrase
+  viennent désormais de la même source (`PITCH_DEMANDE`), sinon l'une des deux
+  ment.
+- **Le nombre de lots entre dans la PREUVE, jamais dans la PHRASE.** Le second
+  interdit de la verticale refuse de citer permis, adresse ou nombre de lots à
+  froid — « la donnée est publique, mais l'annoncer sonne fliqué. Elle sert à
+  CHOISIR qui on appelle, pas à ouvrir l'appel. »
+- **Le seuil est IMPORTÉ** de `permis-construire`, jamais recopié : deux
+  définitions de « croule-t-il ? » feraient dire « demande faible » à l'import
+  pendant que l'escalier proposerait la marche.
+
+> ⚠⚠ **LE SIXIÈME TEXTE QUE PERSONNE NE RELISAIT.**
+> `tests/playbook-interdits.test.ts` auditait « les CINQ textes que l'offre
+> fait dire » plus le script assemblé. Les `pitch` de l'escalier s'écrivent
+> entre guillemets et se PRONONCENT : c'est un sixième, et il portait déjà la
+> phrase refusée. Elle ne s'était jamais servie pour une raison qui n'est pas
+> rassurante — **un bug la masquait**. Elle est maintenant croisée contre les
+> motifs exécutables, sur un prospect de chaque famille.
+
+> ⚠⚠ **J'AI TESTÉ LES MAILLONS, PAS LA CHAÎNE — et la mutation l'a dit.**
+> Après avoir réparé l'escalier, j'ai retiré `lotsACommercialiser` de la
+> conversion d'import : **aucun test n'est tombé**. La fiche ne portait plus la
+> saturation, l'escalier redevenait aveugle, et trois tests verts l'affirmaient
+> réparé. Un test part désormais d'un **arrêté** et va jusqu'à **la phrase
+> prononcée** ; retirer n'importe quel maillon le fait tomber.
+> Mesuré sur le jeu de démonstration : **6 des 8 retenus** déclenchent la
+> marche, les 2 sous le seuil ne la déclenchent pas.
+
+> ⚠ **La phrase « appels manqués » n'est pas supprimée du produit**, et un
+> contre-test l'exige : elle est fausse SUR CETTE VERTICALE, pas dans l'absolu.
+> Un garage qui ne décroche pas perd vraiment le client au profit du suivant.
+
+### ⚠⚠ NOS 8 FICHES ICP SUR 8 PARTAIENT SUR LA MAUVAISE OFFRE (17/09/2026)
+`lib/mesure-champ.ts` · `lib/offer-match.ts` · `tests/routage-offre-verticale.test.ts`.
+
+Mesuré de l'arrêté jusqu'à l'aimant servi : les huit permis retenus recevaient
+**Visibilité / Growth**, alors que la verticale `maitrise-ouvrage` sert l'OS de
+vente. Le message d'approche s'ouvrait donc sur « quelqu'un qui cherche du neuf
+dans le quartier tombe sur votre programme » — un sujet qu'on n'avait relevé
+sur aucune de ces fiches.
+- **UN GARDE ÉCRIT SUR UN ÉTAT QUE LE TYPE REND IMPOSSIBLE.** `matchOffer`
+  testait `websiteState !== undefined`, avec en commentaire l'intention exacte
+  (« on ne score que ce qui est mesuré »). Mais `DeepAudit` déclare ce champ
+  `string` OBLIGATOIRE et **`prospectDefaults.deepAudit` — le socle de TOUS les
+  imports — écrit `""`**. Le champ est donc toujours défini, et `weakWebsite("")`
+  rendait `true` : +3 « site absent ou obsolète » sur chaque fiche importée.
+  Même famille que `AngleKey = Exclude<Sector, "autre">` : un type qui rend
+  fausse la garde écrite à côté de lui.
+- **ET L'ESCALIER RÉPONDAIT JUSTE SUR LES MÊMES FICHES** (`filled()` avant de
+  conclure). Deux définitions de « son site est-il un problème ? », deux
+  réponses opposées, même produit, même fiche. `estMesure` n'en laisse qu'une ;
+  les deux copies faibles qui survivent (`master-rappel`, `checkpoints`) sont
+  **nommées avec leur motif**, parce que les basculer changerait des écrans que
+  je n'ai pas mesurés.
+- **⚠⚠ LA RÈGLE EST DISSYMÉTRIQUE EXPRÈS : un signal MESURÉ peut contredire la
+  verticale ; un vide ne le peut pas.** Un maître d'ouvrage dont on a CONSTATÉ
+  l'absence de site part sur la visibilité — 1re marche de l'escalier, même
+  compte. Sans rien de mesuré, c'est `offreDeLaVerticale` qui tranche, au lieu
+  d'un ordre de départage écrit en dur. `sansSignal` dit à l'appelant si le
+  routage vient d'une observation ou d'un défaut : un angle mort se DIT.
+- **⚠⚠ UNE MUTATION N'A PAS MORDU, ET C'EST LA LEÇON.** Débrancher la verticale
+  du deep-dive laissait six tests verts : la maîtrise d'ouvrage sert
+  `alpha-sales-os`, qui est AUSSI le défaut en dur — **l'assertion était
+  satisfaite par une coïncidence du code existant**. Le test se joue désormais
+  sur une verticale qui sert une autre offre.
+- Mesuré : ICP réel **8/8 → 0/8**. Jeu de démonstration 5/8 → 4/8, et les 4
+  restants sont des routages MESURÉS (31/18/14 appels relevés en audit sur
+  place, un site constaté absent) — ils doivent rester, c'est la règle.
+
+### LE SECTEUR NOMME LE MARCHÉ — et rien d'autre n'en dépend (11/09/2026)
+`Sector` (`lib/types.ts`) était resté au marché d'AVANT deux jours après la
+bascule. Faute de valeur pour le dire, `permisVersProspect` rangeait NOS fiches
+dans `"autre"`, le fourre-tout.
+- **Ce que ça coûtait** : `verticalForProspect` lit tag → texte → **secteur**.
+  Une fiche qui perd son tag — un aller-retour par un tableur suffit — tombait
+  sur `verticalForSector("autre")`, donc la verticale **générique**. Le script
+  du marché en cours existait et était inatteignable par le seul chemin dont
+  dispose un import plat. Le secteur est ce qui survit à un CSV ; le tag, non.
+- **On n'a PAS recopié `TypeMaitreOuvrage`** ici. Promoteur / bailleur /
+  collectivité / particulier répond à « a-t-il quelque chose à vendre ? », pas
+  à « quel métier ? ». Deux axes. Le déverser aurait créé un **quatrième**
+  vocabulaire en prétendant en réparer un second.
+- **Les trois valeurs du marché d'avant restent** : elles portent des playbooks
+  et des angles écrits. Ce qui les fait disparaître des écrans, c'est
+  qu'aucune fiche ne les porte (`secteursPresents`, `lib/secteurs.ts`), jamais
+  une suppression de vocabulaire.
+
+> ⚠⚠ **`AngleKey` S'ÉCRIVAIT `Exclude<Sector, "autre">`, ET CE COUPLAGE ÉTAIT UN
+> MENSONGE.** Il affirmait que TOUT secteur a un angle d'appel manqué. Ces
+> gabarits font dire « des lots qui vont chez le concurrent qui répond » et
+> « mettez vos horaires à jour » — la famille accueil téléphonique / visibilité
+> locale. Laissé couplé, **ajouter le marché au type aurait FORCÉ, sous peine
+> d'erreur de compilation, d'écrire pour la maîtrise d'ouvrage l'argument que
+> sa propre verticale interdit.** Le type aurait exigé le mensonge.
+> `AngleKey` est désormais une union EXPLICITE, et un test croise les deux
+> côtés : aucun gabarit n'est engendré pour un secteur dont la verticale porte
+> un interdit exécutable. Deux indices qu'il était déjà faux avant : la liste
+> contenait `equipe-terrain` et `centre-appels`, qui ne sont pas des secteurs.
+
+> ⚠ **L'ICP écrit et le code qui trie sont DEUX endroits qui posent la même
+> question.** `tests/permis-construire.test.ts` rejoue chaque disqualifiant
+> annoncé dans `lirePermis` — reformuler est libre, retirer du code ne l'est
+> pas. Une prose qui dérive du code ne casse rien : elle ment, à l'endroit
+> précis où quelqu'un vient chercher la règle.
+
+### CE QUE LE SCRIPT A LE DROIT DE DIRE (`InterditFroid`, `lib/playbook.ts`)
+Chaque verticale déclare ses **interdits d'appel à froid**. Sur la maîtrise
+d'ouvrage, le premier est : « **Vous ratez des appels** » — faux ici, et ça
+prouve qu'on n'a pas compris le métier. Sa perte, ce sont des **acquéreurs déjà
+rencontrés que personne n'a rappelés**.
+
+> ⚠⚠ **UNE RÈGLE ÉCRITE EN PROSE N'EST PAS UNE RÈGLE.** `forbidden` était un
+> tableau de chaînes — invisible pour le code — pendant que le catalogue
+> d'offres faisait prononcer l'argument qu'il interdit, dans le MÊME prompt.
+> · Chaque interdit porte désormais, **dans la même entrée**, la `regle`
+>   lisible ET son `motif` exécutable. Deux listes divergeraient, et c'est
+>   celle qu'on ne relit pas qui cesserait de mordre.
+> · `motif` est **absent** quand l'interdit relève du jugement (« citer son
+>   permis à froid ») — un motif approximatif produit des faux positifs
+>   jusqu'à ce que le garde entier soit désarmé.
+> · `tests/playbook-interdits.test.ts` croise les interdits contre les CINQ
+>   textes que l'offre fait dire, **et** le script assemblé.
+> ⚠ Le motif a dû être corrigé **deux fois par MUTATION, pas par relecture** :
+> **un garde par motif n'attrape que ce qu'on a déjà vu**, il se rouvre à
+> chaque tournure neuve. 📦 Détail : `docs/ANGLES-MORTS.md`.
+
+### LA VERTICALE SE LIT SUR LE TAG, PAS SUR LE TEXTE (`verticalForProspect`)
+Ordre : **tag → texte → secteur**. Un tag posé par l'importeur est
+DÉTERMINISTE ; un mot dans une note est une devinette qui se trompe en silence.
+
+> ⚠ Mesuré : les huit fiches de maîtrise d'ouvrage tombaient toutes sur la
+> verticale **AUTO-ÉCOLE** — le mot « Permis » de leurs notes la déclenchait.
+> En production, la file du matin aurait servi le script du moniteur de
+> conduite à des directeurs de programmes. Aucune erreur, aucun log.
+> · Un motif d'appartenance exige un **contexte**, jamais une liste
+>   d'exceptions : elle est toujours en retard sur la façon dont les gens
+>   écrivent.
+> · « permis » NU est **ambigu** et ne rattache à rien. Les deux erreurs ne
+>   coûtent pas pareil — rater une auto-école coûte un rattachement, servir son
+>   script à un promoteur coûte l'appel et la crédibilité.
+> · La règle existait déjà pour le Cerveau (« verticale par tag, jamais par
+>   ressemblance de mots ») : elle n'était branchée qu'à un endroit.
+
+> ⚠ **L'ICP a déménagé** de `IdentiteCompte` vers `AccountCommercial`.
+> `identite` n'existe que pour les comptes PARTENAIRES (la marque qu'on
+> masque) — le compte MAÎTRE était donc le seul du portefeuille sans client
+> parfait déclaré, faute d'endroit où l'écrire. « Quelle marque parle ? » et
+> « à qui on écrit ? » sont deux questions distinctes ; la seconde n'a aucune
+> raison d'être conditionnée à la première. Les deux restent **serveur**.
+
+### Le jeu de démonstration EN DESCEND (`lib/seed.ts`)
+Il décrivait encore un bouchon, un pub irlandais et deux sociétés
+d'ambulances — le marché d'AVANT. Le premier bouton de l'app étant « Explorer
+la démo », **la première chose qu'un prospect apprenait du produit décrivait
+une cible qu'on ne prospecte plus.**
+- Chaque fiche déclare son arrêté dans `PERMIS_DEMO` ; `tests/seed-moa.test.ts`
+  le rejoue dans le **vrai** `lirePermis`. Une démo qui contredirait le module
+  de ciblage montrerait exactement ce que le produit refuse de faire.
+- Le lot garde **3 arrêtés écartés** (particulier · hors zone · périmé) : « 8
+  fiches » ne dit rien du travail fait, « 8 retenus sur 11 » le dit.
+- Les **quatre garanties** du jeu engendré valent maintenant des deux côtés :
+  préfixe `demo-` · plages ARCEP fiction · domaines **RFC 2606** (il portait des
+  `.fr` INVENTÉS, déposables par n'importe qui demain) · « (démo) » dans le nom.
+- **Aucun montant recopié** : les prix viennent de `lib/offres-publiques.ts`.
+
+> ⚠ **La preuve sociale fabriquée passait par des NOMS, pas par des
+> possessifs.** L'ancien jeu portait une chaîne de recommandation complète, et
+> le générateur d'aimants dictait quatre études de cas chiffrées.
+> `tests/preuve-sociale.test.ts` ne les voyait pas : son motif cherche « nos
+> clients » / « qu'on équipe », et une **référence nommée n'en porte aucun**.
+> C'est la forme la plus convaincante des trois, et la seule qu'aucun garde ne
+> tenait. 📦 `docs/ANGLES-MORTS.md`.
+>
+> ⚠⚠ **ELLE EST RESTÉE NON BRANCHÉE, ET VOICI CE QU'ELLE A LAISSÉ PASSER :**
+> « et c'est ce qui a **converti** la \<enseigne réelle\> », recopiée dans
+> **cinq** fichiers dont `lib/os-map.ts` et `lib/voice-script.ts`, qui
+> alimentent les prompts. **Deux fautes en huit mots** : elle nommait une
+> entreprise réelle dans un dépôt public, **et elle était fausse** — la fiche
+> est au stade `offre`, `JUILLET_REEL.gagnes` vaut **0**. Rien n'a jamais été
+> signé. `docs/POST-LANCEMENT-VERITE.md` avait relevé la contradiction sans
+> pouvoir la trancher ; la donnée l'a tranchée.
+> · **Quatrième famille** désormais armée : la conversion **attribuée à un
+>   nom**. Les trois motifs existants cherchent un possessif, un « on » nu ou
+>   une troisième personne collective — une conversion attribuée à un nom
+>   propre n'en porte **aucun**.
+> · Le motif exige un **nom propre derrière le verbe** : « taux de conversion »
+>   et « convertir un prospect » restent du vocabulaire de vente légitime. Il a
+>   mordu au premier passage sur une phrase honnête du README (« consentement
+>   du **client depuis** SON compte ») — resserré le jour même, jamais la
+>   phrase juste reformulée.
+> · Ce qui remplace, et qui tient debout seul : l'ordre « émotion avant prix »
+>   est une **décision de méthode**, pas un résultat mesuré.
+
+## L'ICP EST LE CLIENT FULL-STACK, ET L'ABONNEMENT SE FACTURE AU SIÈGE (13/09/2026)
+`lib/offres-publiques.ts` → `abonnementMensuel()` · `tests/tarif-sieges.test.ts`.
+
+**Décision de Zakaria : on va chercher des clients qui prennent le PACK COMPLET.**
+L'à-la-carte n'est pas supprimé — il reste servi et testé, et une offre portée
+par une fiche signée ne s'efface pas — mais ce n'est plus ce qu'on va vendre.
+
+```
+Installation      10 000 € HT, une fois    (travail humain, fait à la main)
+Socle plateforme     600 € HT/mois         (indépendant du nombre de têtes)
+Par utilisateur       80 € HT/mois
+Alpha Voice          à l'usage, INCHANGÉ   (149/349 + 0,20 €/min)
+```
+
+- **Le défaut corrigé** : `PACK_MONTHLY_HT` était un FORFAIT de 1 000 €/mois.
+  Une société de trois personnes et une de trente payaient le même prix. Le
+  relevé de marché l'avait nommé le 12/09 sans pouvoir le réparer — « c'est le
+  vrai chantier de tarification, et il est plus grand que n'importe quel
+  montant écrit ici ». C'est ce chantier.
+- **⚠⚠ DEUX TERMES, ET LE SOCLE N'EST PAS UN ARRONDI.** Une partie de ce qu'on
+  vend **ne dépend pas du nombre de personnes** : le moteur de conformité
+  (art. 50, décret 2022-1313, fenêtres, mentions, palier d'envoi), le Cerveau,
+  l'autopilote. C'est aussi **l'actif le moins copiable du produit** — le noyer
+  dans un prix par tête le ferait disparaître de la négociation. Un prix par
+  siège NU aurait en plus divisé le revenu par huit sur une petite équipe.
+- **⚠⚠ ON NE FACTURE JAMAIS AU SIÈGE CE QUI REMPLACE UN SIÈGE.** Alpha Voice
+  est hors formule, et un test l'interdit : il augmenterait avec le nombre
+  d'humains alors qu'il sert à en avoir moins, et il perdrait son seul ancrage
+  gagnant — **un SALAIRE** (~35-45 k€/an chargés), jamais un abonnement par
+  utilisateur.
+- **Neutre à la référence, et c'est vérifié** : `600 + 5 × 80 = 1 000`, soit
+  exactement le forfait d'avant. Le passage au siège n'est pas une hausse
+  déguisée en changement d'unité — la manœuvre qu'un client repère.
+  Mesuré au rendu : `1 → 680 € (-32 %)` · `5 → 1 000 € (0)` ·
+  `10 → 1 400 € (+40 %)` · `20 → 2 200 € (+120 %)` · `50 → 4 600 € (+360 %)`.
+- **`PACK_MONTHLY_HT` est DÉRIVÉ**, jamais recopié : c'est la constante que les
+  écrans affichent et la formule ce que le client paie. Deux nombres écrits à
+  la main auraient divergé au premier ajustement, et c'est la vitrine — celle
+  qu'on ne recalcule pas — qui aurait menti.
+- **`SIEGES_REFERENCE` a DÉMÉNAGÉ** de `lib/marche.ts` vers les prix : tant
+  qu'il n'était qu'une hypothèse de COMPARAISON, sa place était dans le relevé ;
+  c'est devenu un paramètre de TARIFICATION. Un test refuse la redéclaration.
+- **600 et 80 sont des DÉCISIONS**, pas des mesures — `gagnes: 0`. Le seul
+  élément mesuré est la bande du marché par siège (14–79 €) : 80 € se pose
+  juste au-dessus, parce qu'Alpha embarque Agent ALPHA et Alpha Live, dont la
+  catégorie relevée commence à 250 $.
+  > ⚠ **Et la formule est BRANCHÉE à un écran**, curseur compris
+  > (`components/offre/calculateur-complet.tsx`). Sans ça elle aurait été un
+  > export que personne n'appelle — le défaut récurrent du dépôt, commis par la
+  > correction elle-même : une grille au siège inatteignable laisse le forfait
+  > en place dans les faits tout en donnant l'impression qu'il a disparu. Trois
+  > mutations le tiennent : curseur retiré · prix affiché figé à côté du
+  > curseur · chiffrage qui ignore le nombre saisi.
+  > ⚠ **Une saisie invalide ne fait pas tomber un chiffrage.**
+  > `abonnementMensuel` JETTE sur 0 / décimal / négatif — juste pour une
+  > facture. `chiffrer()` borne et **l'annonce dans les alertes** : l'écran sert
+  > quelqu'un qui tape, et un champ vidé une seconde ne doit pas vider la page.
+  > Mais corriger en silence ferait partir un devis avec un nombre que
+  > personne n'a choisi.
+
+### TARIFER CHACUN SUR CE QU'ALPHA LUI A RAPPORTÉ (`lib/valeur-produite.ts`)
+Décidé le 13/09/2026. Le socle et le prix par siège sont des DÉCISIONS faute de
+vente ; une cohorte d'utilisateurs gratuits est le seul instrument capable d'en
+faire des mesures.
+
+> ⚠⚠ **ET LE SERVEUR NE VOIT RIEN D'UN COMPTE GRATUIT.** Mesuré : aucune
+> télémétrie, aucune table d'usage, et le CRM vit dans le `localStorage`
+> (`pipeServeur` est opt-in). Pas une fiche, pas un RDV, pas un euro.
+> **Ce n'est pas une lacune, c'est la promesse** — « rien de ce qui touche la
+> donnée métier ne passe par un tiers » est l'argument de souveraineté qui
+> tient la vitrine debout, celui qui a remplacé une affiliation inventée.
+> Mesurer une cohorte se DÉCIDE ; ça ne se code pas en douce.
+
+> ⚠⚠ **LE PIÈGE QUI DÉCIDE DE TOUT : indexer un prix sur un nombre que le
+> client TAPE lui donne une raison d'en taper un plus petit.** Aujourd'hui il
+> n'en a aucune. `part-resultat` le dit déjà pour la part au résultat (« celui
+> qui paie contrôle le dénominateur ») ; ici ce serait pire — on fabriquerait
+> l'incitation là où elle n'existe pas.
+> · **`mesure-infra`** (emails de `/api/send`, minutes de `/api/voice/call`) :
+>   compté chez nous, infalsifiable au bénéfice du client. **Seul facturable.**
+> · **`declare-client`** (montants, stades, RDV) : utile pour lui montrer SA
+>   performance, jamais une base de facture. Un test l'interdit, et un signal
+>   inconnu n'est pas facturable par défaut — on n'ouvre jamais par omission.
+
+- **Le partage porte des COMPTES, jamais du CONTENU**, et le garde vise le
+  **TYPE** : toute `string` est refusée dans `PartageCohorte`, sauf le
+  `tenantId`. Une liste de mots interdits avait mordu sur `emailsEnvoyes` (un
+  compteur) et aurait laissé passer un `notesLibres`. Mesuré par mutation : un
+  champ de contenu **optionnel** compile sans rien casser — c'est celui-là qui
+  serait passé.
+- **Rien ne sort aujourd'hui, et c'est le bon état.** `prixJustifie` est typé
+  `null` LITTÉRALEMENT : « aucun poids ne s'auto-corrige » appliqué au type.
+  Même sur 500 comptes, le module rend un verdict et l'humain change la
+  constante — un ajustement automatique apprendrait le bruit de quarante
+  comptes et le graverait dans la facture de tout le monde.
+- **`COHORTE_MIN = 20`**, et le seuil se dit AVEC sa valeur. Sous ce nombre, un
+  seul utilisateur très actif déplace la médiane.
+- **« Rien ne remonte » ≠ « personne n'utilise »** (`etatDuDispositif`) — même
+  mode de panne que le moniteur qui affiche du calme quand la base est morte.
+
+> ⚠ **Ce que la décision « full-stack seulement » laisse ouvert, et qu'il faut
+> trancher** : l'échelle du gratuit n'a plus de barreau intermédiaire. Un
+> opérateur qui gagne ses premiers euros avec le socle gratuit fait face à
+> 10 000 € + 680 €/mois — il n'y a rien entre les deux. Le gratuit était conçu
+> pour « qu'il rapporte assez pour payer la suite » ; la suite vient de
+> s'éloigner. Aucune vente ne dit encore si c'est un problème.
+
+## Tarifs Alpha Sales OS (à refléter sur le site)
+- **10 000 € d'installation + la grille au siège ci-dessus** (offre haute), OU
+  **30 % + frais de setup** (local / cloud) sur devis. Ces 30 %-là sont un
+  **PRIX facturé au client** (part de SON CA généré), pas une commission
+  reversée — voir l'encadré plus haut.
+- **Cadrage OBLIGATOIRE** avant devis : visio, appel ou SMS, avec **date + heure
+  décidées** et validation de la suite côté Zakaria.
+- **Prix à la carte par brique** : un client peut ne prendre qu'Alpha Voice.
+  Il ne voit QUE sa brique ; nous voyons tout.
+- **OS personnalisé** : un OS taillé sur le métier du client, pas une
+  déclinaison du nôtre. Chiffré au cadrage.
+- **Alpha Voice** — grille DÉCIDÉE le 02/09/2026 (`lib/offres-publiques.ts`) :
+  **1 490 € HT** de setup (relevé le 12/09, voir plus bas), puis **deux** paliers — **Essentiel 149 €/mois**
+  (500 min, ~200 appels) et **Intensif 349 €/mois** (1 500 min, ~600 appels).
+  Au-delà : **0,20 €/min** (descendu de 0,25 le 04/09/2026), pas de
+  coupure, pas de palier à revendre.
+  > ⚠ Ce qui a changé, et pourquoi — c'est le raisonnement qui compte, pas les
+  > nombres : **cinq paliers font comparer les paliers entre eux** au lieu de
+  > comparer à ce qu'il perd. Et le plancher passe de 59 € à 149 € parce que
+  > **59 € ne couvrait pas le socle fixe (~57 €/mois)** : le palier d'entrée
+  > était une perte déguisée en offre d'appel. Marges sur coût mesuré :
+  > ~81 % et ~76 %. Un client Essentiel couvre désormais le socle à lui seul.
+  > **Le coût/minute est mesuré ; les prix sont des DÉCISIONS** — aucune vente
+  > ne les a validés. Le premier client qui refuse en disant pourquoi vaudra
+  > plus que ce raisonnement.
+
+### ⚠⚠ LE PIPELINE ENTIER ÉTAIT CHIFFRÉ SUR LA GRILLE MORTE (17/09/2026)
+`lib/grille-perimee.ts` · `components/prospects/alerte-prix-perime.tsx` ·
+`tests/grille-perimee.test.ts`.
+
+Mesuré sur le pipeline réel : **16 fiches sur 16** portent `setupValue = 990`
+et un mensuel pris dans `59 / 115 / 169 / 219 / 319`. C'est exactement la
+grille remplacée le 02/09, puis réajustée le 12/09 — **les trois offres encore
+sur la table comprises**. Écart sur le seul setup : 990 → 1 490, soit
+**1 500 € sur trois dossiers**.
+- **Le défaut de signature du dépôt, appliqué à l'argent** : une DÉCISION prise
+  dans la doctrine qui n'atteint jamais la DONNÉE. Le Cerveau l'avait déjà payé
+  (`sc-voix-tarifs`). Ici c'est pire — le Cerveau alimente un prompt, une fiche
+  alimente un **devis**.
+- **⚠⚠ ET LA DOCTRINE RÉPÉTAIT LE PRIX MORT.** « 3 fiches en offre (2 970 €) »
+  revenait dans chaque compte rendu : 2 970 = **3 × 990**. Le chiffre qui
+  servait à décider de la priorité était celui de la grille disparue. Une prose
+  qui recopie un montant se périme sans bruit — la règle « ne jamais recopier
+  une grille dans une prose » existait, et c'est le suivi qui l'a violée.
+- **ON SIGNALE, ON NE CORRIGE PAS — l'inverse du cadrage.** Le cadrage BLOQUE
+  un document ; ici on ne bloque rien et **aucun bouton ne propose de
+  corriger** : un prix ANNONCÉ au prospect ne se réécrit pas en douce, ce
+  serait renégocier sans le dire. « Aucun poids ne s'auto-corrige », appliqué
+  à une facture.
+- **⚠⚠ DEUX CERTITUDES, ET C'EST LA DATE QUI TRANCHE.** `datee` = la fiche n'a
+  pas bougé depuis le remplacement, le montant vient de l'ancienne grille.
+  `coincidence` = elle a vécu depuis, 115 €/mois peut être un choix assumé — on
+  le dit, on ne l'affirme pas, et la phrase n'ordonne rien. Un garde qui crie
+  sur une fiche juste est un garde qu'on désarme.
+- **La dernière touche se lit sur les ÉVÉNEMENTS**, jamais sur un « modifié
+  le » : ce dernier bouge au moindre clic, et une fiche figée depuis juillet
+  passerait pour vivante — l'alerte perdrait sa force là où elle compte.
+- **Les montants PÉRIMÉS se recopient dans ce module** (ils n'existent plus
+  ailleurs, c'est le seul endroit légitime) ; les montants **EN VIGUEUR sont
+  IMPORTÉS**, et un test refuse qu'ils soient écrits en dur ici.
+
+### LE PRIX S'ANCRE SUR TROIS CHOSES, ET IL N'EN UTILISAIT AUCUNE (12/09/2026)
+`lib/marche.ts` (le relevé) · `lib/positionnement.ts` (le rapprochement) ·
+`lib/pricing-briques.ts` (le coût) · `tests/marche-briques.test.ts`.
+
+Un prix s'appuie sur le **coût**, le **marché** ou la **vente**. État mesuré au
+12/09 : le coût ne mord pas sur du logiciel (`pricing-briques` rend lui-même
+`hors-regle` sur six briques), le marché n'était relevé pour aucune des dix
+briques du catalogue à la carte, et la vente n'existe pas. **Six prix sur dix
+ne venaient de rien.** `lib/marche.ts` existait depuis le 26/08 et
+`positionnement` rapprochait les OFFRES — les BRIQUES, jamais.
+
+- **⚠⚠ LE PIÈGE N°1 : le marché facture par SIÈGE, nous par COMPTE.** Passer
+  « CRM 190 €/mois » et « Pipedrive 14–79 €/utilisateur » dans le même
+  `comparer()` rend « ×2,4, HORS MARCHÉ » — une phrase juste sur deux
+  grandeurs qui n'ont pas la même unité, et qui pousse à BAISSER un prix situé
+  au milieu de sa bande. D'où `parSiege` + `comparerParCompte`.
+  > ⚠ `SIEGES_REFERENCE = 5` est une **DÉCISION**. Le vrai défaut qu'elle
+  > révèle est plus grand que n'importe quel montant : **le catalogue n'a pas
+  > de dimension « siège »**, donc la grille est juste pour une seule taille
+  > d'équipe et fausse pour toutes les autres. Le relevé ne le corrige pas, il
+  > le rend visible.
+- **Quatre prix ont bougé, et l'un BAISSE** — c'est ce qui prouve que le relevé
+  n'a pas été fait pour justifier une hausse : Agent ALPHA 220 → **490 €**
+  (il était sous le plancher d'une catégorie qui commence à 250 $, le premier
+  concurrent sérieux étant à ~1 650 €) · Closer OS 140 → **190 €** (il était
+  AU plancher) · tracking 140 → **120 €** (seul **au-dessus** de sa bande, sur
+  la brique la plus facile à comparer du catalogue) · setup Alpha Voice
+  990 → **1 490 €**.
+- **Six prix ne bougent pas**, et ne rien faire est un résultat : ils sont au
+  milieu de leur bande. Bouger un prix sans raison est du mouvement, pas du
+  travail.
+- **⚠⚠ DEUX ANCRAGES OPPOSÉS COHABITAIENT DANS LE DÉPÔT, à un facteur 15.**
+  Mise en service d'un télésecrétariat : 100–300 €. Installation par une agence
+  d'automatisation : 1 840–11 040 €. Les deux étaient dans `lib/marche.ts`
+  depuis le 26/08, et le setup vivait entre les deux sans raison écrite.
+  **Ce qui tranche est l'ACHETEUR, pas une moyenne** : l'artisan compare au
+  télésecrétariat (marché d'avant), le maître d'ouvrage compare à l'agence
+  (marché en cours depuis le 09/09). L'ancrage applicable a changé avec l'ICP,
+  le prix n'avait pas suivi.
+- **Niveau de preuve : aucune page tarifaire d'éditeur n'a été ouverte.** Le
+  proxy sortant autorise la RECHERCHE et refuse la RÉCUPÉRATION de page
+  (`EGRESS_BLOCKED`, vérifié). Tout est `secondaire` ou `fourchette` ;
+  `source-primaire` reste **vide**, et un test l'exige. Pire : les guides de
+  prix du marché français de l'agent vocal sont publiés **par des agences qui
+  vendent ce service** — la source la plus utile et la plus intéressée à la
+  fois. On ne les suit donc pas jusqu'en haut.
+- **`null` + un motif écrit vaut mieux qu'une comparaison bancale.** Le
+  pilotage n'a AUCUN comparable défendable (le seul trouvé est une plateforme
+  de prévision d'entreprise américaine à 100–400 $/siège) et le dit, au lieu
+  de rendre « sous le marché de 340 € » — un verdict qui a l'air calculé.
+
+> ⚠⚠ **LE CERVEAU PORTAIT LA GRILLE DU REVENDEUR MORT.** `sc-voix-tarifs`
+> (`lib/knowledge-seed.ts`) annonçait « Installation : 990 € HT » et les cinq
+> paliers 59/115/169/219/319 — remplacés le 02/09 — **et affirmait « le PRIX
+> n'a pas encore été décidé par nous »**, faux depuis dix jours. Son
+> `updatedAt` portait le 02/09 : quelqu'un avait touché la DATE le jour de la
+> décision sans toucher au CONTENU. Le Cerveau alimente les prompts, et les
+> prompts écrivent de VRAIS emails : c'est la seule source de prix que le
+> modèle peut citer. La note DÉRIVE désormais des constantes.
+> · Le garde a dû être écrit **deux fois** : la première cherchait le montant
+>   courant n'importe où dans la note, et la phrase de contexte (« passée de
+>   990 à 1 490 € ») le satisfaisait. Il vise maintenant la **ligne
+>   d'annonce** — celle que le modèle recopie.
+
+> ⚠ **Ne jamais recopier une grille dans une prose.** Trois fautes de rendu
+> trouvées en imprimant la note, aucune déductible du code : « 1490 € » sans
+> espace des milliers, « 0,2 €/min » au lieu de « 0,20 », et un « trois fois
+> sous le marché » qui était faux (990 contre 1 500, c'est 1,5×).
+
+## Répartition du travail — ce qu'Alpha fait, ce que le client fait
+Doctrine de cadrage, à dire au client dès le premier rendez-vous : elle évite
+la promesse floue qui se paie à la livraison.
+
+| | Qui |
+|---|---|
+| Prospection, qualification, relances, scripts, suivi, pipeline, présentations, mesure | **Alpha Sales OS** |
+| **La livraison** de la prestation vendue | **le client** |
+| **La réassurance humaine** — la présence, la voix, la poignée de main au moment de signer | **le client** |
+
+Alpha ne livre pas le chantier et ne remplace pas la personne qui rassure. Il
+supprime tout ce qui se trouve AVANT et AUTOUR : le travail répétitif qui fait
+qu'un bon vendeur passe sa journée à ne pas vendre.
+
+### La troisième colonne : ce qu'Alpha NE FAIT PAS
+**Si Alpha ne sait pas le faire, on le fait à la main — et on montre au client
+comment le faire.** Ce n'est pas un aveu, c'est une position : le lien Google
+Sheet est la porte prévue pour ça (`/api/import/sheet`, direct, sans n8n ; ou
+la synchro bidirectionnelle via n8n). L'humain relève, la feuille transporte,
+Alpha trie.
+
+C'est ce qui permet de refuser d'embarquer un collecteur dans le produit
+(scraping d'annuaire, session LinkedIn, aspiration de Maps) sans perdre le
+service : la collecte reste dehors, remplaçable, et sous la responsabilité de
+celui qui la fait.
+
+> 📦 **La règle appliquée à des dépôts précis** : `docs/COLLECTEURS-EXTERIEURS.md`.
+> Deux ponts existent (`scripts/permis-lyon.mjs`, `scripts/maps-vers-alpha.mjs`),
+> et deux tests refusent qu'un fichier de `lib/`, `components/` ou `app/` les
+> importe — en visant un **chemin d'import**, jamais le nom du fichier.
+> · **Maps ne source PAS notre ICP** et il faut le dire avant de le lancer : une
+>   SCCV n'a pas de fiche Maps, et « promoteurs à Lyon » est un ciblage par
+>   SECTEUR — QUI, jamais OÙ EN EST l'affaire. Ce qu'il apporte vraiment, c'est
+>   **la troisième colonne** : le téléphone que l'arrêté ne porte pas.
+> · **Le rapprochement est EXACT ou n'a pas lieu**, et un nom ambigu est écarté :
+>   un faux rapprochement pose le numéro d'une société sur la fiche d'une autre,
+>   et ce numéro part dans une file d'appels.
+> · **Le secteur se DÉCLARE**, il ne se devine pas sur la catégorie Google — le
+>   défaut du moniteur d'auto-école servi à des directeurs de programmes.
+> · `ScrapeGraphAI` est **refusé**, avec ses trois motifs écrits (23 dépendances
+>   Python, coût par page, et `undetected-playwright` — un contournement de
+>   détection, dans un produit dont l'argument est la conformité).
+
+> ⚠ La contrepartie, à cadrer AVANT de la promettre. « On montre au client
+> comment faire » est du **service**, pas du logiciel : ça ne s'automatise pas,
+> ça ne se duplique pas, et sans limite écrite ça devient du travail gratuit
+> illimité. Ça se vend comme une prestation d'accompagnement bornée (nombre de
+> séances, périmètre), ou ça se donne une fois au cadrage — jamais « on est là
+> si besoin ».
+
+> ⚠ Ne PAS écrire « les meilleurs du marché » dans un artefact vendu ou public.
+> Zéro vente à ce jour : c'est une conviction, pas une preuve, et les tests de
+> la vitrine refusent déjà les affirmations invérifiables. Ce qui se dit sans
+> mentir : « on fait tout sauf la livraison et la poignée de main ».
+
+## Offres — modifiables sans redéployer (`lib/offer-catalogue.ts`)
+Ce que l'OPÉRATEUR vend à SES prospects (≠ `lib/bricks.ts`, qui est NOTRE
+catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
+- Chaque offre se rattache à une **famille de routage** (`alpha-sales-os`,
+  `alpha-voice`, `visibilite-growth`). La famille décide du compte, de l'aimant
+  et de la marche — **pas le nom**. Créer une 4ᵉ mécanique de routage demande
+  encore du code.
+  > ⚠ La doc nommait ici la famille du revendeur disparu. Le code, lui, avait
+  > déjà été renommé en `alpha-voice` : **la doc décrivait une famille qui
+  > n'existe plus**, et quiconque l'aurait recopiée aurait créé une offre que
+  > `validerOffre` refuse. Une doc fausse coûte plus cher qu'une doc absente.
+  > `tests/marque-morte.test.ts` refuse désormais un identifiant portant cette
+  > marque dans la doctrine — la citer en prose reste permis, la PRESCRIRE non.
+- On **désactive**, on ne supprime pas : une offre portée par une fiche signée
+  ne s'efface pas sans rendre l'historique illisible.
+
+## Alpha Voice (opérationnel)
+- Pile : Deepgram STT · LLM **NVIDIA NIM `openai/gpt-oss-20b`** (défaut — sans
+  latence ; le 70B fait la file d'attente ~14 s, ne pas y revenir) · Fish TTS ·
+  Silero VAD. `voice/agent.py`.
+- **Entrant OK** : Telnyx `+33451222182` → FQDN `5mwzznpudte.sip.livekit.cloud`
+  (préfixe SIP LiveKit ALÉATOIRE, ≠ slug projet — c'était le bug), port 5060 UDP
+  → trunk → dispatch rule → agent `alpha-voice`. Voir `voice/INBOUND.md`.
+- **Art. 50 EU AI Act** : la 1re phrase (IA + pas une personne + pour le compte
+  de X) est prononcée par le CODE (`first_sentence`, `allow_interruptions=False`)
+  et `audit_script` refuse un script non conforme. **Ne jamais contourner.**
+- **APPEL À FROID — doctrine du 28/08/2026.** Alpha Voice **démarche à froid**
+  et mène l'appel ENTIER : il qualifie et conclut lui-même. La constante
+  `COLD_CALLING_REFUSED` qui l'interdisait décrivait un état faux
+  (`prospection-b2b` était déjà `allowed: true`) — elle est devenue
+  `COLD_CALLING_DISCIPLINE`. L'ancien argument reste vrai et devient une
+  contrainte de script : **une IA qui démarche n'a droit à aucune
+  improvisation**.
+  > ⚠ **La correction n'avait été faite que dans `lib/`.** `app/(app)/voice/page.tsx`
+  > a gardé **treize jours de plus** « le démarchage à froid n'est pas
+  > proposé » — dans l'écran qui mappe sur `CALL_MODES`, donc qui le **sert**,
+  > et qui porte même une branche `isProspection`. Un commentaire faux ne fait
+  > rien tomber : il ment à la session suivante, qui le croit et raisonne
+  > dessus. `tests/voice-script.test.ts` relie désormais la **prose** à la
+  > **donnée** — il ne cherche pas une phrase interdite dans l'absolu, il
+  > refuse une phrase que `CALL_MODES` contredit. Si un mode repasse
+  > `allowed: false`, l'écrire redevient licite et le garde se tait.
+  > **Les citations (« … ») sont exclues** : une phrase rapportée n'est pas une
+  > phrase affirmée, et effacer l'explication laisserait la décision sans sa
+  > raison.
+- **Le passage de main se fait sur INTÉRÊT QUALIFIÉ, plus sur le décroché.**
+  Nouveau résultat `interesse` (`lib/call-cadence.ts`) : lui seul rend
+  `handoffToHuman: true`. Un « non » ou un « rappelez-moi » se traite et se
+  consigne **sans mobiliser personne**. Avant, les quatre résultats « il a
+  décroché » réveillaient un closer — un refus coûtait autant qu'un RDV, et
+  c'est ce qui rendait le volume impossible.
+  > ⚠ `interesse` est un SOUS-ENSEMBLE de « a décroché » : tout ce qui compte
+  > les décrochés passe par `aDecroche()`. La calibration avait déjà perdu les
+  > RDV de son dénominateur en une ligne.
+- **Script d'appel à froid — ce que `auditScript` REFUSE** : objectif unique
+  (le RDV), aucun prix, le NON qui raccroche, le OUI qui passe la main. Et sur
+  un **COMPTE PARTENAIRE**, une exigence de plus : **aucune autre société,
+  aucune autre offre citée**. Sur son appel c'est SA marque qui parle — nous ne
+  sommes qu'intermédiaires.
+  > ⚠ **Cette garde s'armait sur l'OFFRE (l'accueil téléphonique), parce que
+  > c'est le revendeur qui la portait qui l'avait demandée.** L'offre est
+  > revenue chez nous : laissée en l'état, elle aurait interdit de citer
+  > EAGLEYE sur NOTRE propre appel, et n'aurait rien gardé sur un appel
+  > Nuwacom. Elle suit maintenant le **COMPTE** — et **des deux côtés** : ce
+  > que `buildVoiceScript` ÉCRIT et ce qu'`auditScript` EXIGE doivent poser la
+  > même question, sinon l'un des deux ment.
+- **Cadence de relance** : après le 1er appel sans réponse → **3 rappels sur
+  2 jours** (`[3, 24, 32]` h : même jour plus tard · lendemain matin · lendemain
+  après-midi — trois CRÉNEAUX différents, jamais deux fois la même heure). Dès
+  qu'il répond, la cadence **s'arrête** ; l'humain n'est appelé que sur un OUI.
+  > ⚠ **Le décret n° 2022-1313 plafonne le démarchage à 4 sollicitations par
+  > consommateur sur 30 jours glissants.** Il vise le B2C, mais une liste
+  > terrain est MÊLÉE et c'est nous qui portons le risque. La cadence fait
+  > **exactement 4 contacts** (1er appel + 3 rappels) : au plafond, jamais
+  > au-dessus. `plafondRappels` reste armé (SIREN connu → cadence entière ;
+  > pas de SIREN → 4) — un filet qui ne mord plus, et c'est l'état qu'on veut.
+  > **Remonter le tableau réactive ce régime à deux vitesses**, et c'est testé :
+  > le filet ne s'enlève pas avec le chiffre.
+  > ⚠ **Les rappels sont CALÉS sur des fenêtres d'appel ouvertes**
+  > (`prochaineFenetreOuverte`), **et espacés d'au moins 3 h**. Deux règles
+  > DISTINCTES qui doivent coexister : le calage seul renvoyait cinq rappels au
+  > lundi matin entre 9h et 10h — corriger « au bon moment » avait cassé « de la
+  > bonne manière ».
+  > 📦 Le récit complet (5 rappels non mesurés, les relevés jeudi/vendredi, la
+  > doctrine qui se contredisait) : `docs/ANGLES-MORTS.md`.
+
+## L'OFFRE ALPHA VOICE (`lib/offre-alpha-voice.ts` + `docs/OFFRE-ALPHA-VOICE.md`)
+Construite sur l'équation de valeur — **Résultat × Probabilité ÷ (Délai ×
+Effort)**. Le piège du pitch est de ne travailler que le numérateur : chez un
+artisan, ce qui bloque est au DÉNOMINATEUR (pas le temps, déjà déçu par un
+outil jamais installé).
+- **Zéro preuve sociale, et un test le refuse.** Zéro vente = pas de
+  témoignage disponible ; en fabriquer un est la seule façon de perdre un
+  client pour de bon. Ce qui remplace : **ses chiffres à lui**
+  (`computeLosses`), **une démo en direct** (on fait sonner l'agent pendant le
+  rendez-vous), **une garantie chiffrée**.
+- **La garantie est le levier qui remplace la preuve.** Celle qu'on offre
+  (décidé le 02/09/2026) : **« le setup ne se paie qu'au premier RDV »**. Les
+  deux autres ne coûtent rien et ne lèvent rien.
+  > ⚠ **Son vrai coût n'est PAS celui qu'on croit.** `coutGarantiePremierRdv`
+  > chiffre les MINUTES — quelques euros, poste négligeable. Ce qu'on risque,
+  > c'est le **temps d'installation**, fait à la main : une garantie activée
+  > coûte une demi-journée, pas 8 €. Elle est offrable parce qu'on en offre
+  > **peu à la fois** — c'est pour ça qu'elle va de pair avec la rareté.
+  > ⚠⚠ **Trois bords, dits à l'oral** : une DURÉE (30 j de ligne active), un
+  > PÉRIMÈTRE (le setup, pas l'abonnement consommé), un CRITÈRE (un RDV
+  > **pris**, pas honoré — qui vient et qui signe ne dépend plus de nous).
+  > Sans bords, elle s'active au bout de trois jours ligne coupée.
+- **La rareté est un FAIT** (l'installation se fait à la main, par une seule
+  personne), jamais un compteur de places inventé — ça se vérifie au coup de
+  fil suivant.
+- **Aucun montant en dur dans le module**, et un test l'interdit : les prix
+  vivent dans `lib/offres-publiques.ts`, une seule source.
+- **Le prix arrive APRÈS la démonstration, et jamais sans la garantie.**
+
+## Rituels de closing (par compte) — `Account.closing`
+Se tromper de rituel = perdre le deal au dernier mètre.
+- **EAGLEYE** → DEVIS EAGLEYE CORP, envoyé depuis `contact@eagleyecorp.fr`.
+- **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
+  **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
+
+### LE CADRAGE EST EXÉCUTABLE SUR LE CHEMIN VIVANT — 17/09/2026
+`lib/cadrage.ts` · `Prospect.cadrage` · `components/prospects/cadrage-panel.tsx` ·
+`app/api/catalogue/route.ts` · `tests/cadrage-devis.test.ts`.
+
+« Cadrage OBLIGATOIRE avant devis » était écrit ici, et `peutEmettreDevis`
+l'exécutait correctement. Son seul appelant applicatif était **`renderDevis`,
+que personne n'importe**. Le devis qui PART réellement — `quoteText`, titré
+`DEVIS — <client>`, daté, quinze jours de validité, servi par `/api/catalogue`
+et copié depuis la fiche — ne posait la question à personne.
+- **Le défaut récurrent, avec une aggravation** : la règle n'était pas branchée
+  à un endroit sur deux — **l'endroit branché était le MORT**. Qui lisait
+  `lib/cadrage.ts` en concluait que la porte tenait.
+- **`EtatCadrage` n'avait aucun PRODUCTEUR.** Même en appelant la règle, il n'y
+  avait rien à lui donner : aucun champ de la fiche ne la portait. D'où
+  `Prospect.cadrage`, **structuré** — un événement `meeting` dit qu'une
+  rencontre a eu lieu, pas qui a validé la suite. Le déduire d'un résumé libre
+  serait la devinette que ce dépôt refuse (précédent : `lotsACommercialiser`).
+- **⚠⚠ ON REFUSE LE DOCUMENT, PAS LE CHIFFRAGE.** Le `texte` ne se fabrique pas
+  sans cadrage ; `quote` et `pack` sortent quand même. Ce sont SES prix sur SON
+  dossier, et chiffrer pour soi n'est pas émettre. Couper les nombres ferait
+  d'une discipline commerciale une **panne d'outil** — et devant un outil en
+  panne on recopie la grille à la main, c'est-à-dire on se trompe de montant au
+  dernier mètre. Mesuré : deux autres écrans (calculateur `/offre`, prix du
+  deck) n'appellent ce POST **que** pour les nombres.
+- **Le verdict voyage AUSSI quand c'est bon** : sinon l'appelant ne distingue
+  pas « autorisé » de « cette route ne connaît pas la règle ».
+- **⚠⚠ ON NE PRÉ-REMPLIT PAS CE QU'ON VÉRIFIE.** Mettre `settings.closerName`
+  dans « validé par » aurait satisfait la 3ᵉ condition par **configuration** et
+  non par un **acte** : deux conditions sur trois cochées au premier créneau
+  saisi. Et « la visio s'est tenue » ne se déclare pas sur un créneau à venir
+  (`creneauPasse`, horloge **injectée**) — un point déclaratif ne s'offre pas
+  tant que sa condition n'existe pas.
+- **Reprogrammer le créneau remet « tenu » à faux** : un drapeau qui survit à
+  la réécriture atteste d'une rencontre qui n'a pas eu lieu. Même défaut que
+  `perimee` dans `validation-partenaire`.
+- **`lireCadrage` fail-closed** : `{ reelementTenu: "non" }` passerait pour vrai
+  avec un `Boolean()`. L'inconnu **bloque** ici, il ne se contente pas de se
+  dire.
+
+> ⚠⚠ **ET LA DATE DÉRIVAIT — défaut trouvé le jour même où je l'ai écrit.**
+> Le panneau réaffichait le créneau avec `toISOString().slice(0, 16)` : de
+> l'**UTC** reposé dans un `datetime-local`, qui l'interprète en heure
+> **LOCALE**. Deux heures perdues à chaque lecture — et comme l'enregistrement
+> suivant reconvertit local → UTC, **l'erreur se CUMULE** :
+> `tapé 14:00 → relu 12:00 → réenregistré → relu 10:00`. Trois ouvertures et le
+> cadrage change de jour.
+> · **Ce n'est pas cosmétique** : cette date part sur un DEVIS (« établi après
+>   le cadrage du … »), le document engageant, et elle est ce qui prouve que le
+>   cadrage a précédé.
+> · **Seule la LECTURE était fausse** : `new Date("2026-09-15T14:00")` sans `Z`
+>   est parsé en heure locale par le moteur, avec le bon décalage d'été.
+>   « Réparer » les deux sens aurait réintroduit le décalage à l'envers.
+> · **Le décalage est celui de LA DATE stockée**, pas celui d'aujourd'hui : un
+>   cadrage d'août relu en novembre bougerait d'une heure.
+> · ⚠⚠ **C'est l'ALLER-RETOUR qui l'attrape, pas la conversion.** Tester
+>   `isoVersChampLocal` seule aurait demandé d'écrire la valeur attendue — et je
+>   l'aurais écrite AVEC mon erreur, puisque je ne la voyais pas. Le test juste
+>   ne connaît **aucune valeur** : il exige qu'écrire puis relire rende ce qu'on
+>   a tapé, sur quatre fuseaux. Même leçon que « j'ai testé les maillons, pas la
+>   chaîne ».
+
+> ⚠ **TRANCHÉ le 17/09/2026 : `renderDevis` + `estRefus` SUPPRIMÉS** (avec le
+> type `RefusDevis`). Il y avait deux rendus de devis dont un seul atteignable ;
+> le mort était sûr (il appelait la règle) mais c'était un second endroit où se
+> décidait « comment rend-on un devis ? », qu'une session future aurait
+> rebranché sans garantie de repasser par la porte. Le devis vivant part par
+> `quoteText`, gardé par le cadrage sur `/api/catalogue` et testé là. Un devis
+> HTML imprimable, si on en veut un, se construira SUR cette voie — pas en
+> ressuscitant un mort. Le module ne garde que sa voie vivante : `renderPreDevis`
+> et `emailPreDevis` (le pré-devis).
+
+### UNE ROUTE PEUT ENFIN S'EXÉCUTER DANS UN TEST (`tests/resolution-alias.mjs`)
+`npm test` compile avec `tsc` puis lance `node --test`. `tsc` **ne réécrit pas
+les alias `paths`** : le fichier compilé garde `require("@/lib/…")`, que Node ne
+résout pas. Conséquence mesurée : **aucune des ~45 routes `app/api/**` n'était
+exécutable depuis un test**, et toutes étaient donc gardées par des assertions
+sur le TEXTE SOURCE.
+- **C'est la famille de garde qui a le plus souvent échoué ici** — « l'assertion
+  était satisfaite par la PROSE », « asserter la PRÉSENCE du refus au lieu de la
+  CONDITION ». Un import inutilisé, un `if (false)`, un commentaire bien écrit :
+  tout ça passe un `grep`. Mesuré sur la garde du cadrage : la mutation qui
+  garde l'import et rend la condition inerte (`verdict !== null`) est la
+  seule qu'un test de source n'aurait pas vue.
+- Le crochet (`node:module`, **aucune dépendance**) ne fait qu'une chose :
+  remplacer `@/` par la racine de `.test-build`. Il ne transforme aucun code.
+- **Écrire désormais un test de route en l'APPELANT**, pas en la lisant.
+
+## VALIDATION PARTENAIRE (`lib/validation-partenaire.ts`)
+Sur un compte revendeur, le prospect n'entend pas « Alpha pour le compte
+d'Untel » : il entend **Untel**. Ce qui se dit là engage une réputation qui
+n'est pas la nôtre. Rien ne sort d'un compte partenaire — script d'appel, email,
+SMS — sans un tampon de relecture.
+- **La conformité n'est PAS l'accord.** `auditScript` refuse un texte illicite ;
+  il ne dit rien de ce que le partenaire a effectivement relu. Deux contrôles
+  distincts, aucun ne remplace l'autre.
+- **Le tampon porte sur le TEXTE EXACT, pas sur son nom** : il stocke
+  l'empreinte (`empreinte()`, un hash 32 bits — pas de la cryptographie, la
+  menace c'est notre propre oubli). Un tampon attaché à « la trame d'appel »
+  survivrait à sa réécriture : on fait relire, on modifie le lendemain, et tout
+  le monde croit que le contrôle a eu lieu. Réécrire ⇒ `perimee`.
+- Un compte non partenaire est `non-requise` — on ne se demande pas
+  l'autorisation à nous-mêmes. Détail complet : `docs/COMPTE-PARTENAIRE.md`.
+> ⚠ Le piège de test rencontré quatre fois ici : asserter la PRÉSENCE du refus
+> (`status: 422`) au lieu de la CONDITION qui y mène. Un `if (false)` laisse le
+> 422 en place et le test passe. Toujours muter la condition pour vérifier.
+
+## QUI SIGNE, ET CE QUI NE PART PAS SANS MENTIONS
+Deux contrôles distincts sur **tout** message sortant, tous deux arbitrés
+côté serveur dans `/api/send` — le seul endroit d'où un message PART.
+- **Le signataire** (`lib/signature.ts`) : on ne devine JAMAIS l'identité d'un
+  humain. Ordre de repli : le nom saisi → la **société** (une raison sociale
+  identifie légalement, et elle est à l'expéditeur) → le libellé d'usine,
+  **rendu visible** (`usine: true`) au lieu d'être masqué.
+  > ⚠⚠ **LE BALAYAGE S'ÉTAIT ARRÊTÉ AUX EMAILS** (11/09/2026). Trois modules
+  > sortants signaient encore en dur : les **trois** messages LinkedIn,
+  > l'**argumentaire d'appel** — qui se PRONONCE — et le repli d'agence de
+  > `mail-compose` (plus sa ville, « Lyon »). Un revendeur écrivait à SES
+  > prospects sous NOTRE raison sociale.
+  > · `presentation()` (`lib/signature.ts`) est désormais la seule source de la
+  >   phrase « je suis … ». Elle tient deux règles que deux fichiers
+  >   recopiaient : ne pas nommer la société **deux fois** quand le repli tombe
+  >   sur elle (« je suis EAGLEYE CORP, de EAGLEYE CORP » — défaut CRÉÉ en
+  >   retirant le prénom en dur), et l'**élision** (« d'EAGLEYE CORP » mais
+  >   « de Nuwacom » ; jamais devant un h, le h aspiré ne se devine pas).
+  > · **Un email est rattrapé par `/api/send`, une invitation LinkedIn NON** :
+  >   elle se copie à la main, aucun serveur ne la relit. `/linkedin` porte
+  >   donc le bandeau d'identité d'usine que `/outbox` avait déjà.
+  > · ⚠ Un garde qui cherche la RAISON SOCIALE ne voit pas un **prénom** en
+  >   dur — et `lib/signature.ts` appelle celui-là « le pire des quatre ».
+  >   Mesuré : deux mutations sur trois n'ont pas mordu. Le garde ne nomme donc
+  >   personne : on passe un nom SAISI et on exige qu'il ressorte, par la file
+  >   entière, pas seulement par les fonctions appelées en direct.
+
+  > ⚠ Le produit est **white-label**. Aucun repli ne remet « EAGLEYE » : la
+  > marque, l'adresse légale, le papier à en-tête et le logo suivent le
+  > **compte**. Ils étaient tous les quatre en dur — un email partenaire partait
+  > avec notre en-tête, notre raison sociale et notre aigle. Seule survit la
+  > mention de **plateforme** (« Envoyé avec Alpha Sales OS® »), qui nomme
+  > l'éditeur de l'outil et reste vraie partout.
+- **Les mentions obligatoires** (`lib/conformite.ts` → `verifieMentions`) :
+  qui écrit + moyen de refus. Vérifiées sur **ce qui part réellement** —
+  l'email sur le texte RENDU (le pied « STOP » est ajouté par le rendu), le
+  SMS sur `body.body` (rien ne s'y ajoute : il partait nu).
+  > ⚠ On **refuse**, on n'ajoute pas en douce : un SMS se paie au segment, et
+  > masquer un trou le rend indétectable. Et **`force` ne passe pas outre** —
+  > il arbitre le score anti-spam et la fenêtre de recontact, deux jugements ;
+  > une mention obligatoire n'en est pas un.
+- **Le palier du jour** (`lib/email-ramp.ts` → `rampDepuisPremierEnvoi`) :
+  5 envois/jour la première semaine, +5 par semaine, **40 au plafond** pour une
+  seule boîte. Au-delà, on ne gagne pas plus — on grille le domaine d'un coup.
+  > ⚠ **IL NE COUPAIT QUE LA FILE D'UN ÉCRAN.** Le barème était enfermé dans
+  > `emailRamp()`, qui prend des `Prospect[]` — donc inatteignable depuis le
+  > serveur, qui n'a pas le CRM du navigateur. `/outbox` était borné ; les
+  > **trois autres appelants** (revue de campagne, newsletter, recette) ne
+  > connaissaient que `MAX_SENDS_PER_HOUR`. Le palier tenait par la mémoire de
+  > celui qui envoie. Branché côté serveur le 10/09/2026.
+  > ⚠ **24 h GLISSANTES, pas la journée civile**, et ce n'est pas une
+  > divergence par négligence avec l'écran : un jour calendaire autorise cinq
+  > envois à 23h59 et cinq à 00h01 — dix messages en deux minutes depuis une
+  > boîte neuve, soit le schéma exact que les filtres cherchent.
+  > ⚠ **`force` ne passe pas outre**, comme pour les mentions. La réputation
+  > d'un domaine n'est pas un jugement : elle ne se répare pas en redéployant.
+  > ⚠ **Toute panne mène au palier le plus BAS.** `firstSendAt` rend `null` sur
+  > une base injoignable, une table vide ou un service role absent → 5/jour.
+  > C'est l'inverse du réflexe « en cas de doute, ne pas bloquer » : rendre une
+  > date sur une panne ouvrirait le plafond au moment précis où l'on ne sait
+  > plus rien.
+  > **Conséquence à connaître** : une newsletter plus large que le palier est
+  > COUPÉE au palier. Ce n'est pas une panne.
+- **Le câblage** (`lib/expediteur.ts` → `identiteEnvoi`) : les **quatre**
+  appelants de `/api/send` (barre d'envoi, revue de campagne, newsletter,
+  recette) étalent le même triplet. Trois annonçaient le compte, aucun le
+  signataire, la recette rien du tout. Le client ne tranche rien : il
+  transmet, le serveur arbitre.
+
+### D'OÙ PARTENT NOS EMAILS — `contact@eagleyecorp.fr` (10/09/2026)
+La boîte `noreply@` prévue n'a jamais été créée, et attendre bloquait tout.
+`contact@eagleyecorp.fr` existe, fonctionne, et **quelqu'un la lit**.
+- Un `noreply@` en expéditeur de **prospection** n'est pas une convention
+  neutre : il annonce « ne répondez pas » à quelqu'un dont on attend
+  précisément une réponse. Et `contact@` est déjà l'adresse du cadrage sur la
+  vitrine et celle d'émission des devis — le prospect qui répond tombe là où
+  quelqu'un regarde, du premier message jusqu'à la signature.
+> ⚠⚠ **CE QUE ÇA COÛTE, et c'est écrit plutôt que tu.** Le transactionnel et
+> le commercial partagent désormais UNE SEULE boîte. Une campagne qui prend
+> des plaintes fait tomber les mails d'inscription Supabase **en même temps**
+> — aucun code ne change, rien ne le signale, et un client qui ne reçoit pas
+> son lien de confirmation ne devient jamais client. La même réputation porte
+> les devis.
+> ⚠ `docs/CHECKLIST-LANCEMENT.md` disait **l'inverse** (« une adresse distincte
+> de celle des campagnes »), et elle avait raison sur le fond. La ligne n'a pas
+> été supprimée : elle porte la décision qui l'annule et son motif. Une
+> consigne remplacée sans sa raison se fait réappliquer à l'envers par la
+> session suivante, qui croit corriger un oubli.
+> ⚠ Ce qui rend le choix tenable est le **palier du jour ci-dessus**, et rien
+> d'autre. La séparation des domaines (transactionnel sur une boîte dédiée,
+> prospection sur un sous-domaine) est **repoussée, pas annulée**.
+> Procédure : `docs/SMTP-SUPABASE-AMEN.md`.
+
+## Références externes (`lib/references.ts`) — un livre n'est PAS une vérité
+Les sources extérieures (livres, vidéos, cours) entrent dans le Cerveau avec
+trois choses attachées, jamais sans :
+1. **la provenance** (titre, auteur, année) ;
+2. **le niveau de preuve** — `mesure-maison` (constaté sur NOS affaires : la
+   seule catégorie qui mérite le mot « vérité ») · `source-primaire` ·
+   `praticien` (la plupart des livres de vente) · `folklore` (répété partout,
+   sans source — ex. « il faut sept expositions ») ;
+3. **le statut face à la doctrine** — `applicable` · `sous-condition` ·
+   `conflit-doctrine` · `bloque`.
+
+> ⚠ Un statut `conflit-doctrine`, `bloque` ou `sous-condition` **exige une
+> réserve écrite**. Un avertissement sans contenu se fait ignorer, et la leçon
+> s'applique par défaut. C'est ce point-là qui évite l'erreur, pas le volume de
+> citations accumulées.
+
+Les notes de référence sont marquées `[SOURCE EXTERNE — non vérifiée chez nous]`
+dans le contexte IA : la doctrine alimente les prompts, les prompts produisent
+de VRAIS emails. Une phrase de livre ne doit jamais revenir au même rang qu'un
+chiffre mesuré.
+
+**Ce qui reste bloqué tant qu'il n'y a pas de client** : témoignages, logos,
+endossements, « 101 histoires de réussite ». Zéro vente = zéro preuve sociale
+disponible ; l'appliquer quand même fabrique de la preuve inventée.
+
+> ⚠⚠ **IL Y A UNE TROISIÈME FAMILLE, ET C'EST LA PIRE : L'AFFILIATION.**
+> Trouvée EN LIGNE le 10/09/2026, pas par un test. La vitrine affirmait
+> « c'est aussi ce qui nous vaut de candidater à French Tech 2030 » — un
+> programme dont un critère d'entrée **éliminatoire** nous écarte, et dont
+> l'échéance était passée sans dépôt.
+> · Les gardes existants refusaient les témoignages comptés et les
+>   superlatifs. Un LABEL, un PROGRAMME, un ACCÉLÉRATEUR, un « lauréat »
+>   forment une famille à part — et la plus dangereuse : un témoignage inventé
+>   se démonte en conversation, une affiliation **se vérifie auprès de
+>   l'organisme, sans nous prévenir**.
+> · `tests/vitrine-fuite.test.ts` la refuse désormais, et exige que l'argument
+>   qui la remplaçait RESTE : la souveraineté est vraie et tient debout sans
+>   aucun label.
+> ⚠ Le garde a immédiatement mordu sur une phrase honnête (« ce qu'Alpha
+> **supprime** » — `prim[ée]` sans limite de mot). Resserré le jour même : un
+> garde qui refuse une phrase juste est un garde qu'on assouplira au mauvais
+> endroit la fois suivante.
+
+## L'ADMISSIBILITÉ N'EST PAS L'ADÉQUATION (`lib/opportunites.ts`)
+Sur tout dossier d'aide, de programme ou d'appel à projets, **deux questions
+distinctes** qui se lisaient comme une seule :
+- `fit` — « ce programme nous va-t-il ? ». Une question de pertinence.
+- `bloquant` — « avons-nous le DROIT d'entrer ? ». Un critère qu'on ne remplit
+  pas et qui **ne se rattrape pas** par la qualité du dossier.
+
+> ⚠ **French Tech 2030 : porte FERMÉE.** Le critère d'entrée est 3 M€ de
+> financements et/ou de CA cumulés depuis 2024 ; nous sommes à 0 €. Le seuil
+> est éliminatoire, **et la promotion suivante appliquera le même**.
+> ⚠⚠ Ce constat était écrit, daté et exact — **dans un README**. Le code, lui,
+> ne connaissait pas le critère : `/trajectoire` affichait « adéquation :
+> plausible » en AMBRE (une couleur qui encourage) et `lib/mission-french-tech`
+> découpait neuf lots de travail pour un dossier rejeté à la première page.
+> Personne ne relit un README avant de cocher une case dans un tableau de bord.
+> · Un blocage **GRISE** l'adéquation à l'écran : rangé dans une phrase sous la
+>   carte, il se lit APRÈS la couleur, et la couleur avait déjà rassuré.
+> · Le critère se nomme **avec sa valeur** — « non éligible » sans le seuil
+>   envoie chercher la porte suivante, qui appliquera le même.
+> · Les dossiers OUVERTS ne portent aucun blocage, et c'est testé : sinon on en
+>   remplit partout par prudence et l'écran devient un mur rouge que personne
+>   ne lit.
+
+## MASTER RAPPEL (`lib/master-rappel.ts` + `lib/vital-signs.ts`)
+Pour chaque prospect, à chaque instant : **signaux vitaux** (prêt à signer ?),
+**fatigue** (saturé ?), **fenêtre** (quand revenir sans l'agacer), **actions
+séparées humain / Alpha**, **checklist « ça tourne + Alpha reçoit la donnée »**,
+et le **plan de comms** (quoi dire, quand, comment, à quelle fréquence).
+Règles dures :
+- La fréquence suit la **réactivité**, jamais le calendrier. Prêt → tous les
+  jours ; saturé → silence de 7-21 j puis **raison NEUVE** (jamais « je me
+  permets de relancer »).
+  > ⚠⚠ **CETTE RÈGLE ÉTAIT ÉNONCÉE CINQ FOIS ET PRODUITE ZÉRO FOIS** —
+  > mesuré le 17/09/2026. Elle vit dans `master-rappel`, `priorites`,
+  > `reactivite`, `vital-signs` et `business-rules` ; **aucun des cinq n'en
+  > fabrique une.** `master-rappel` en liste les formes EN PROSE et s'arrête.
+  > Résultat sur l'écran du matin : « Revenir avec une raison NEUVE » s'affiche
+  > à quelqu'un qui n'en a aucune — **et qui écrira « je me permets de
+  > relancer », la phrase même que la règle interdit, produite PAR la règle
+  > faute d'alternative.**
+  > · `lib/raison-neuve.ts` la PRODUIT, et **n'invente rien** : zéro fait daté
+  >   → `null`, et `AUCUNE_RAISON` dit alors de **ne pas relancer**. Une raison
+  >   fabriquée est pire que pas de raison — un prétexte ne se rejoue pas.
+  > · **Deux sources seulement, parce qu'il n'existe que deux faits datés** :
+  >   le **prix honoré** (`grille-perimee`) et une **ouverture/clic récente**
+  >   (`reactivite`). « Une actualité de son métier » serait une INVENTION tant
+  >   qu'aucune source ne l'alimente : elle n'est pas écrite.
+  > · **Le prix passe devant l'ouverture** : il APPORTE quelque chose, quand
+  >   « vous avez ouvert mon message » n'apprend rien au prospect et le met en
+  >   position de se justifier. On ouvre sur ce qu'on donne.
+  > · **Le fait se dit, l'observation NON.** « J'ai vu que vous aviez ouvert »
+  >   est vrai et sonne fliqué — même interdit que citer son permis à froid.
+  >   Le fait sert à choisir le MOMENT, jamais à ouvrir la conversation.
+  > · **Aucun montant dans la phrase** : un prix écrit se transfère et se cite
+  >   hors de son périmètre. Il se redit de vive voix.
+  > · Les phrases sont croisées contre les **motifs exécutables** des
+  >   verticales — c'est un texte qui se prononce, donc un « sixième texte ».
+  > ⚠ Le garde « aucun montant » a dû être resserré le jour même : écrit
+  > `\d{3,}`, il faisait tomber ma propre phrase sur « jusqu'au 17/10/**2026** »
+  > — une DATE, qui est justement ce qui rend la raison défendable.
+- Le compteur de saturation **repart à zéro dès qu'il répond**.
+- 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré)…
+  **sauf s'il OUVRE** (`lib/reactivite.ts`) : là le canal passe, c'est la
+  DEMANDE qui coince. Changer de registre jetterait le seul canal dont on a
+  la preuve qu'il arrive.
+- Jamais de prix avant la démo. Jamais de closing sur un vital au rouge.
+  Jamais doubler un RDV déjà calé.
+
+## LA BOUCLE — la sortie doit revenir corriger l'entrée
+Le flux allait dans un seul sens : sourcing → tri → appel → résultat écrit →
+plus rien. Chaque module était juste, et la chaîne ne bouclait pas. Les cinq
+arcs de retour sont branchés ; ils se protègent par
+`tests/boucle-terrain.test.ts`, qui suit la chaîne entière.
+
+1. **Résultat d'appel → cadence.** `RESULTATS_MANUELS` (`lib/call-outcome.ts`)
+   est la SEULE source du texte écrit à la main, et l'aller-retour
+   résultat → texte → résultat est testé ligne par ligne. Écrire un résumé
+   d'appel ailleurs casse le test — c'est voulu.
+2. **Résultat d'appel → poids du tri.** `lib/calibration.ts` mesure ; il ne
+   corrige rien tout seul.
+3. **Débrief / objection / perte → Cerveau → file d'appels** du même métier
+   (`lib/lecons-terrain.ts`), verticale identifiée par **tag**, jamais par
+   ressemblance de mots.
+4. **Cible → plafond légal**, lu de façon identique par l'autopilote et par le
+   plan humain (`cibleDepuisProspect`).
+5. **Ouvertures / clics → plan de comms** (`lib/reactivite.ts`).
+
+### LES PALIERS DE CAMPAGNE — 10 · 100 · 1 000 (`lib/paliers-campagne.ts`)
+Trois chiffres gouvernent tout le dimensionnement et **aucun n'est mesuré** :
+décroché (hyp. 30 %), intérêt qualifié parmi les décrochés (hyp. 20 % — c'est
+lui qui fait dire « un closer suffit pour 500/jour »), tarif Telnyx à la minute
+(le relevé réel autorise un facteur 29). On les mesure par paliers.
+- **Un palier BORNE, il ne décore pas.** Le plafond est un compte CUMULÉ passé
+  à `buildCampaignRun` ; les fiches en trop sont écartées en `palier-atteint`.
+  Ne jamais le confondre avec `dailyCap` (fatigue, remis à zéro chaque matin) —
+  ce dépôt a déjà payé une constante à deux sens.
+- **Deux gestes, deux endroits, et c'est voulu** : l'écran suit les paliers
+  validés dans les réglages ; le cron suit `CAMPAIGN_PALIER` (10/100/1000/aucun,
+  **absente = plafond le plus bas**). Valider dans l'app ne débride pas le cron.
+- Points `mesure` (la base répond, ils ne se cochent pas) vs `declaratif` (même
+  vocabulaire que `lib/checkpoints.ts`) — et **un point déclaratif ne s'offre
+  pas** tant que sa condition n'existe pas : cocher « j'ai entendu la phrase
+  art. 50 » sans décroché fabriquerait la preuve.
+- **Aucun palier ne se valide seul**, même tout vert. Automatique = le REFUS.
+- Le coût d'un palier vit dans `lib/paliers-campagne-cout.ts` (**serveur
+  uniquement** — `voice-costs` porte nos marges) et sort en fourchette.
+
+> ⚠ **Les trois règles qui empêchent la boucle de fabriquer de la fausse
+> science** — elles valent pour tout nouveau module de mesure :
+> · **zéro donnée → zéro chiffre.** `source: "aucune"`, `valeur: null`. Un
+>   `0 %` se lit comme un résultat ; l'angle mort se DIT.
+> · **jamais un taux nu** : dénominateur + intervalle de Wilson à 95 %, et la
+>   réserve qui va avec (un taux d'ouverture est un *plancher*, pas une mesure).
+> · **aucun poids ne s'auto-corrige.** Sur quarante appels, un ajustement
+>   automatique apprend le bruit et le grave dans le tri. Le module rend un
+>   verdict et nomme le fichier ; la constante se change à la main, et ça se
+>   voit dans un diff.
+
+## CE QUI TOURNE SANS PERSONNE — l'ordonnanceur et le moniteur
+Décidé le 09/09/2026. Le but : Alpha tourne dans la poche du client ET sur son
+ordi, sans qu'aucune machine reste allumée chez nous.
+- **L'ordonnanceur est `pg_cron` + `pg_net`** (`supabase/migrations/004-ordonnanceur.sql`),
+  jamais Vercel Cron. **Vercel Cron émet des `GET`**, or `/api/campaign/tick`
+  et `/api/push/tick` réservent le `GET` au STATUT en lecture seule et le
+  `POST` à l'exécution : un cron Vercel aurait rendu 200 toutes les heures sans
+  jamais passer un appel. Vert, silencieux, inutile. Et sur un plan Hobby,
+  c'est une exécution par jour. Fusionner les verbes pour contenter le cron
+  serait le mauvais échange : « lire l'état » et « composer des numéros » ne
+  sont pas la même requête.
+  > ⚠ Le secret vit dans le **Vault** Supabase, jamais dans le SQL versionné.
+- **⚠⚠ LE CRON NE DÉCIDE JAMAIS QUAND APPELER, IL DEMANDE.** C'est la route qui
+  refuse hors fenêtre, au-delà du palier, trop tôt après une tentative.
+  L'horaire du plan n'est qu'une économie d'invocations : l'élargir ne peut pas
+  produire un appel à minuit. **Un test interdit au SQL de recopier la fenêtre
+  d'appel** — deux définitions de « peut-on appeler maintenant ? » et c'est
+  celle du cron qui gagne, parce qu'elle s'exécute en premier et que personne
+  ne relit du SQL.
+- **`/moniteur` LIT LE SERVEUR, jamais le store** (`lib/moniteur.ts`), et un
+  test interdit `useAlpha` dans cet écran. Le store vit dans le `localStorage` :
+  un téléphone et un ordinateur sont DEUX Alpha. L'autopilote, lui, tourne sur
+  le serveur — un moniteur branché sur le store afficherait zéro appel pendant
+  que le cron en passe quarante, en ayant l'air parfaitement fonctionnel.
+  > ⚠ **Seules les tentatives du ROBOT** comptent comme travail de la machine
+  > (préfixe d'identifiant posé par `appendCallAttempt`). Sinon l'écran annonce
+  > « la machine a passé 3 appels » un jour où l'humain les a passés à la main.
+  > La garde est dans un test qui fabrique l'événement avec la VRAIE fonction :
+  > changer ce format ferait tomber le moniteur à zéro **en silence**.
+  > ⚠ **Un écran de supervision a un mode de panne à lui : afficher du calme.**
+  > Base injoignable → `null` et un tiret, jamais `0`. Zéro parce que rien ne
+  > tourne, zéro parce qu'on ne voit rien et zéro parce que tout va bien
+  > demandent trois gestes opposés.
+- **OÙ TOURNE L'AGENT VOCAL — décidé le 09/09/2026.** `voice/agent.py` reste
+  **en LOCAL chez nous** ; un VPS ne se monte que **pour les clients**.
+  > ⚠ **La conséquence à tenir** : un appel composé sans agent vivant sonne dans
+  > le VIDE — la ligne compose, le prospect décroche, personne ne parle. C'est
+  > PIRE que de ne pas appeler (fiche brûlée, réputation du numéro, minutes
+  > facturées) et `/api/voice/call` rend `dispatched: true` dans les deux cas.
+  > **Refermé** par `lib/presence-agent.ts` + migration 005 : l'agent bat toutes
+  > les 30 s, le tick REFUSE de composer sans battement récent.
+  > · **L'inconnu vaut REFUS.** Ici, contrairement aux écrans de mesure, `null`
+  >   ne se contente pas de se dire — il bloque. Ne pas appeler coûte un
+  >   créneau ; appeler dans le vide coûte une fiche, un numéro et de l'argent.
+  > · La garde ne s'applique **qu'à l'EXÉCUTION** : `dryRun` continue de rendre
+  >   ce qu'il aurait fait, sinon on perd l'outil qui explique pourquoi rien ne
+  >   part.
+  > · Un battement prouve qu'un **processus tourne**, pas qu'il sait parler —
+  >   une clé TTS expirée laisserait le voyant vert.
+- **Stripe Connect : formule EXPRESS** (décidé le 09/09/2026). On garde la main
+  sur le parcours ; le client n'a pas de tableau de bord Stripe à lui.
+- **`/ceo`** (`lib/alpha-ceo.ts` + `lib/ceo-sondes.ts`) diagnostique tout ça.
+  Maître seul, **masqué** et non grisé : griser, c'est annoncer, et cette
+  console parle de NOTRE exploitation, pas d'une brique à vendre.
+
+## Les quatre règles d'écran (elles ont toutes coûté un bug)
+1. **`prospectDefaults` (`lib/seed.ts`) est le socle de TOUS les imports**, pas
+   des données de démo. Tout champ non optionnel de `Prospect` y a sa valeur
+   neutre. Il manquait cinq tableaux → `/aujourdhui` tombait en écran blanc
+   après un import terrain. `merge` renormalise à chaque réhydratation, sinon
+   le stock déjà écrit dans les navigateurs reste cassé (`migrate` est gated
+   par la version).
+2. **Une seule façon de demander « a-t-il dit non ? »** :
+   `aRefuseTouteRelance` (`lib/voice-script.ts`), tag **et** timeline. La
+   question se posait à trois endroits, deux répondaient non — la fiche
+   revenait dans la file d'appels et dans le plan du matin.
+3. **Un écran se plafonne, et ce qui est replié se COMPTE** (nombre, minutes,
+   € pondérés). 1 000 fiches → 1 000 lignes n'est pas un plan de journée,
+   c'est l'export du CRM. Vaut pour `/aujourdhui`, le tableau pipeline
+   (paginé) et le kanban (borné). On borne l'affichage, **jamais le compte**.
+4. **Le mur localStorage se montre AVANT de coller** (`projeterImport`). Une
+   écriture qui rate ne ressemble pas à une panne : l'écran continue
+   d'afficher les fiches, elles disparaissent en fermant l'onglet. Une fiche
+   terrain ≈ 1,3 Ko → 1 000 numéros ≈ la moitié du quota de 5 Mo.
+
+> **La sortie de la 4, quand le volume la dépasse** (`lib/hydratation.ts`) :
+> au-delà de ~1 200 fiches aucun élagage ne suffit, et le pipe doit vivre sur
+> le serveur — réglage **opt-in** `pipeServeur`, les fiches ne sont plus
+> persistées localement (`partialize`) et se chargent au démarrage.
+> ⚠ **L'invariant unique qui rend ça sûr : on ne pousse JAMAIS depuis un état
+> qu'on n'a pas chargé** (`peutSynchroniser`). Un navigateur qui a raté son
+> chargement a une liste vide, et la synchro sortante calcule des
+> suppressions. L'état d'hydratation **ne se persiste pas** : le relire du
+> disque affirmerait « chargé » sur une liste vide, et rouvrir l'onglet
+> effacerait le pipe. Deuxième filet, distinct et voulu : `SEUIL_EFFACEMENT`.
+> Corollaire : le moteur de synchro se monte dans la **coquille**, jamais dans
+> un écran — sans persistance locale, une synchro qui ne tourne que sur
+> `/settings` perd la journée de qui n'y va pas.
+
+> ⚠ Corollaire de la 4 : **ne jamais recopier de la doctrine dans une fiche.**
+> Les notes d'import portaient l'explication de chaque signal — mille copies du
+> même paragraphe, 47 % du poids — pendant que la phrase du client, elle, était
+> jetée. On garde ce qui ne se recalcule pas ; le reste vit dans le code.
+
+## LE MATÉRIAU ET LE RYTHME (`app/globals.css` + `components/ui/page-header.tsx`)
+Gardés par `tests/mise-en-page.test.ts`. Trois classes, et **une seule
+définition de chacune** — c'est tout le sujet.
+- **`.page`** = le rythme d'un écran (`animate-fade-up space-y-5`). Le padding
+  appartient à la **coquille**, jamais à la page : deux écrans ajoutaient `p-4`
+  par-dessus et avaient un cadre plus épais que tous les autres. Les exceptions
+  (`/agent` pleine hauteur, `/login` centré, `/overlay` fenêtre Electron) sont
+  **listées avec leur motif** dans le test, et le test refuse une exception qui
+  survit à sa page.
+- **`.card`** = la plaque de verre de premier plan. Une plaque translucide, ce
+  sont **quatre** choses ensemble : transparence · flou · **saturation** ·
+  arête haute éclairée + arête basse dans l'ombre. Retirer la saturation
+  suffit à la faire rendre **gris et sale** — c'est celle qu'on oublie.
+- **`.panel`** = la sous-surface CREUSÉE dans une plaque. Teintée avec
+  `--card-fg` (la couleur du TEXTE) : elle s'éclaircit sur fond sombre et
+  s'assombrit sur crème sans une seule règle par thème.
+- **`.glass-chrome`** = le rail, l'en-tête mobile, la barre du bas. Ils
+  encadrent le même contenu et portaient **trois opacités différentes**.
+
+> ⚠ **Pas de verre dans le verre.** Un `backdrop-filter` imbriqué ne floute pas
+> la page : il floute le rendu **déjà flouté** de son parent. Ce n'est pas
+> « plus de verre », c'est de la boue grise, et chaque niveau coûte une couche
+> de composition. `.card .card` et `.card .panel` perdent leur flou d'office.
+
+> ⚠ **Le clair ne redéfinit PAS le matériau, il reteinte les jetons
+> `--glass-*`.** `html.light .card` existait et redéclarait ombre + bordure : le
+> sombre a reçu le flou et la saturation, le clair **ne les a jamais eus**. Deux
+> définitions du même matériau = deux vérités, et les deux « marchaient ».
+
+> ⚠ **Une carte sans flou doit devenir OPAQUE, sinon elle est illisible** — le
+> texte se pose sur le dégradé et le grain de la page. Deux cas réels : le
+> navigateur qui ne sait pas flouter (`@supports not`), et l'utilisateur qui a
+> demandé moins de transparence dans son système
+> (`prefers-reduced-transparency`, réglage d'**accessibilité** — même statut
+> que `reduced-motion`, qu'on respecte déjà).
+
+- **`PageHeader`** est le seul endroit où s'écrit un titre d'écran (la chaîne
+  `font-display text-2xl font-bold text-paper` était recopiée dans 35
+  fichiers). Ordre imposé : sur-titre → `<h1>` → phrase → actions. La
+  **pastille d'état a sa propre entrée** et se rend HORS du `<h1>` : dedans, un
+  lecteur d'écran annonce « titre : Machin Négociation » d'un bloc.
+
+## LE TÉLÉPHONE EST UN POSTE DE TRAVAIL, PLUS UN ÉCRAN DE CONSULTATION
+`lib/modes-mobile.ts` · `StepDef.surface` (`lib/onboarding-path.ts`) ·
+`tests/modes-mobile.test.ts` · décidé le 12/09/2026.
+
+La coquille portait une justification écrite : « on règle depuis un ordinateur,
+on regarde ce que la machine a fait depuis un téléphone ». Elle était vraie
+quand l'autopilote demandait une machine allumée. **Il tourne sur le serveur
+depuis le 09/09** — la phrase est morte le jour de cette bascule, et les deux
+défauts qu'elle couvrait sont restés.
+
+### 1. La barre du pouce n'atteignait ni le pipeline, ni les campagnes, ni le CEO
+Cinq entrées FIGÉES. Trois des écrans les plus utilisés imposaient d'ouvrir la
+palette et de taper.
+- **Cinq entrées, toujours** — la contrainte est physique, elle tient. On ne
+  rallonge pas la barre : on change ce qu'elle DÉSIGNE. Un **mode** = un moment
+  du métier (terrain · pipeline · campagnes · closer · Alpha CEO), mémorisé par
+  navigateur, sélecteur dans l'en-tête (lui donner une place dans la barre
+  l'aurait payé avec un écran).
+- **Le mode par défaut reprend l'ancienne barre à l'identique**, et c'est
+  testé : sur une barre de pouce on clique par mémoire musculaire, pas en
+  lisant. Une nouveauté qui déplace ce que les gens savent faire se paie en
+  désorientation.
+- **Les modes ne créent aucun écran et n'en cachent aucun** : ils réordonnent
+  l'accès. Un test exige que chaque route d'un mode existe dans la navigation —
+  sinon on aurait une deuxième navigation, qui divergerait.
+- **`maitreSeul` MASQUE, `brique` GRISE.** Alpha CEO disparaît chez un client
+  (griser, c'est annoncer notre économie) ; les campagnes restent visibles et
+  grisées chez un gratuit (on ne peut pas vouloir ce qu'on ne voit pas). C'est
+  la doctrine du rail, appliquée au pouce.
+  > ⚠ **Un mode mémorisé qui n'est plus visible ne doit pas vider la barre.**
+  > Cas réel : le propriétaire choisit « Alpha CEO », puis ouvre l'app avec un
+  > compte client dans le même navigateur. Sans repli, la barre n'a plus
+  > AUCUNE entrée — et une barre vide ne ressemble pas à un droit manquant,
+  > elle ressemble à une panne.
+
+### 2. Le parcours d'installation s'arrêtait au deuxième barreau sur un mobile
+`/demarrage` déroule ses étapes dans l'ordre. La deuxième est « Brancher
+l'envoi email », dont le premier geste est « colle-le dans `.env.local` ». Sur
+un téléphone, ce geste n'existe pas — et **rien ne disait que les treize
+suivantes se font très bien au pouce**. On repose le téléphone en pensant que
+le produit n'est pas pour soi.
+- **`StepDef.surface` est OBLIGATOIRE** (`"partout" | "ordinateur"`). Un défaut
+  implicite ferait passer une étape de plomberie pour une étape de pouce au
+  premier ajout distrait. Mesuré : le script qui a posé ces valeurs a **sauté
+  `n8n`** — identifiant avec un chiffre — et c'est `tsc` qui l'a rattrapé.
+- **Cinq étapes sur dix-huit exigent une machine** : SMTP, DNS, IA, n8n,
+  webhook entrant. Toutes les autres se font au téléphone. Le produit était
+  déjà mobile ; son parcours d'installation ne le savait pas.
+  > ⚠ Conséquence mesurée, et elle est forte : **un compte GRATUIT n'a aucune
+  > étape d'ordinateur** — les cinq servent des briques qu'il n'a pas, et le
+  > filtre par droits les retire déjà. Son installation est intégralement
+  > faisable depuis un téléphone.
+- **⚠⚠ ON NE CACHE PAS les étapes d'ordinateur sur mobile, on les SÉPARE**, avec
+  le motif de chacune. Filtrer donnerait un écran propre et un parcours qui se
+  termine en croyant avoir tout installé — alors que les emails ne peuvent pas
+  partir. Et « pas faisable sur mobile » sans raison se lit comme une limite du
+  PRODUIT, alors que c'est une limite du GESTE.
+- **« Rien à faire ici » et « tu as fini » ne se disent pas pareil**
+  (`bloqueSurMobile`). Même mode de panne que le moniteur qui affiche du calme
+  quand la base est injoignable.
+
+> ⚠ **Vu au RENDU, jamais déduit** : le bloc mobile et l'encadré « prochaine
+> action » affichaient LA MÊME ÉTAPE l'une sous l'autre dès qu'elle était
+> faisable au pouce — c'est-à-dire la plupart du temps. Deux cartes identiques
+> ne se lisent pas comme une redite, elles se lisent comme un bug. L'encadré
+> général est passé `hidden md:block`.
+
+## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
+**L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il
+démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiants**.
+
+| | Ce qu'on ouvre |
+|---|---|
+| **GRATUIT**, sans limite de durée (`BRIQUES_GRATUITES`) | `crm` · `closer` · `cerveau` · `pilotage` · `alpha-live` — **tout ce qui tourne chez TOI** |
+| **PAYANT** | `campagnes` · `alpha-voice` · `agent-alpha` · `audits` · `tracking` — **tout ce qui DÉPENSE chez nous** |
+| **MAÎTRE seul** | `/payouts`, `/offre`, `MAITRE_SEULEMENT` — notre économie |
+
+### LE BUT DU GRATUIT : qu'il rapporte assez pour payer la suite (12/09/2026)
+Ce n'est **pas** de donner un aperçu. C'est qu'un opérateur sans un euro puisse
+prospecter POUR DE VRAI — cibler, écrire, approcher, appeler, décrocher des
+rendez-vous, en tirer du chiffre — et acheter **ensuite** ce qui lui fait gagner
+du temps. Un gratuit qui s'arrête avant le premier rendez-vous ne convertit
+personne : il fabrique des comptes morts.
+
+**La frontière : écrire est gratuit, envoyer depuis NOTRE infrastructure se paie.**
+
+> ⚠⚠ **TROIS ÉCRANS ÉTAIENT PAYANTS SANS NOUS COÛTER UN CENTIME**, et les trois
+> pour la même raison : rangés par **famille**, pas par coût. Le même défaut que
+> `alpha-live`, à trois endroits de plus.
+> · **`/linkedin`** — mesuré : **zéro `fetch`** dans la page. Les messages se
+>   copient à la main, la doctrine le disait déjà ailleurs. C'est le canal par
+>   défaut de notre propre ICP, et il était derrière un paywall.
+> · **`/templates`** — n'appelle que `/api/email/preview`, et `app/api/email/`
+>   ne contient QUE `preview` : aucun `sendMail`, aucun transport. On fermait
+>   l'aperçu à quelqu'un qui allait de toute façon copier le texte lui-même.
+> · **`/appels`** — « la liste du matin » est une session d'appels **humaine** :
+>   l'opérateur compose depuis SON téléphone. Elle était avec `alpha-voice`, le
+>   ROBOT qui compose depuis NOS minutes. Seul le mot « appel » les rapprochait.
+
+> ⚠ **On ne crée pas une 7ᵉ brique pour ça** : une brique de plus se recopie
+> dans huit fichiers (catalogue, offres, provisionnement, vitrine, relevé de
+> marché) et n'aurait rien à vendre. C'est le **CHEMIN** qu'on reclasse, sur
+> `crm`. Précédent : `/controle`, ouvert par `["pilotage", "crm"]`.
+
+> ⚠⚠ **UN SEUL TEST REGARDE LA CHAÎNE, ET C'EST LUI QUI A TOUT TROUVÉ**
+> (`⚠⚠ LE PARCOURS ORGANIQUE COMPLET TIENT DANS LE GRATUIT`). Chaque écran pris
+> isolément avait l'air correctement classé ; c'est le PARCOURS qui était coupé,
+> à trois endroits, et aucun test ne le parcourait. Son contre-test
+> (`…et il s'arrête net quand ça part de CHEZ NOUS`) est obligatoire : sans lui,
+> un produit entièrement gratuit le satisferait.
+
+> ⚠ **`/api/email` a été retirée de `API_QUI_DEPENSENT`** — son entrée disait
+> « SMTP — notre serveur » et c'était **faux**, la seule route du dossier rend un
+> aperçu. Retirer une entrée de cette liste sans garde serait ouvrir une porte en
+> silence : un test **liste le dossier** `app/api/email/` et refuse toute route
+> autre que `preview`. Motif : `cheminMetierDeLApi` prend le **premier** préfixe
+> qui correspond, pas le plus spécifique — un `app/api/email/send/` ajouté demain
+> hériterait du chemin **gratuit** et partirait de notre SMTP pour tout inscrit.
+
+> ⚠ **Cette ligne n'est PAS un arbitrage commercial, elle est imposée par un
+> fait technique.** `/api/send` lit `SMTP_*` dans l'environnement du SERVEUR,
+> `/api/voice/call` lit `LIVEKIT_*`, `/api/ai` brûle nos jetons. **Il n'existe
+> aucun chemin d'identifiants par locataire.** Ouvrir une de ces briques au
+> gratuit revient à donner notre carte de crédit et notre nom de domaine à des
+> inconnus — et ça ne se voit que sur la facture, un mois plus tard. Le jour où
+> les identifiants deviennent par locataire, la ligne se rediscute. Pas avant.
+
+> ⚠⚠ **LE CRITÈRE EST LE COÛT, ET IL EST DÉSORMAIS EXÉCUTABLE** (12/09/2026).
+> La doctrine disait déjà « ce n'est pas un arbitrage commercial, c'est un fait
+> technique » — mais rien ne le vérifiait, et **une brique était classée par
+> FAMILLE** (« la machine agit à ta place ») au lieu de l'être par sa dépense.
+> · `alpha-live` — le copilote d'appel — ne garde que `/overlay`, **aucune
+>   route API ne sert ce chemin**, et `components/live/alpha-live.tsx` n'appelle
+>   aucun `/api/…` : store local, RAG maison hors-ligne, reconnaissance vocale
+>   du navigateur. Zéro jeton, zéro minute, zéro SMTP. Il est passé au gratuit.
+> · Pire que le classement : `POURQUOI_PAYANT["alpha-live"]` **disait au client
+>   une raison fausse** — « fait tourner le modèle en continu, même mécanique
+>   que l'agent ». Une ANALOGIE servie comme une mesure, démontable en ouvrant
+>   un fichier. Faire payer est légitime ; inventer le motif ne l'est pas.
+> · Le garde (`⚠⚠ UNE BRIQUE N'EST PAYANTE QUE SI ELLE COÛTE`) dérive les
+>   payantes de `BRIQUES_CONNUES \ BRIQUES_GRATUITES` et exige, pour chacune,
+>   un chemin servi par une API de `API_QUI_DEPENSENT`. Deux listes écrites à
+>   la main ont été supprimées le même jour : c'est la recopie qui laisse
+>   entrer la brique suivante sans contrôle.
+
+> ⚠⚠ **TROIS FUITES TROUVÉES EN ÉCRIVANT LA GARDE, aucune ne se voyait** :
+> `/api/ai` → `/pipeline`, `/api/sparring` → `/closer`, `/api/digest` →
+> `/aujourdhui`. Les trois pointaient vers des chemins devenus gratuits le
+> même jour. `tests/entitlements.test.ts` (`API_QUI_DEPENSENT`) les tient
+> maintenant, et refuse une entrée orpheline.
+
+> ⚠⚠ **LE MODE SOLO ÉTAIT LA DERNIÈRE PORTE QUI ÉCHAPPAIT À L'INVARIANT.**
+> `resoudreDroits` rendait `DROIT_SOLO` — donc **maître**, donc TOUT ouvert —
+> dès que les comptes n'étaient pas configurés. Sur une production joignable :
+> **quiconque connaît l'URL est maître**.
+> · `deploiementSansSerrure()` = **production ET aucun compte ET aucun
+>   `SITE_PASSWORD`**. Les trois ensemble, jamais moins. Un mot de passe EST une
+>   serrure (le middleware mure déjà tout) ; en dev, le solo reste intact.
+> · On ne coupe PAS le site : on retombe au **socle gratuit**. Une page blanche
+>   sur une prod en ligne est une panne, et on n'en crée pas une pour corriger
+>   une faille. L'app reste utilisable, plus personne n'est maître.
+> · `SITE_PASSWORD=""` (variable créée mais pas remplie, ça arrive) n'est PAS
+>   une serrure — d'où le `.trim()`, et un test qui le vérifie.
+> 📦 Pourquoi ce n'était pas une config manquante mais un défaut de conception :
+> `docs/ANGLES-MORTS.md`.
+>
+> ⚠⚠ **ET LE REPLI ÉTAIT CALCULÉ SANS ÊTRE APPLIQUÉ — 13/09/2026.**
+> `deploiementSansSerrure()` faisait bien retomber `resoudreDroits` au socle
+> gratuit. Mais **le middleware ne lisait que `comptesActifs()`** : dans cet
+> état précis, AUCUN contrôle de brique ne s'exécutait. Le défaut récurrent du
+> dépôt, sur la porte la plus chère qui existe ici.
+> · **Trouvé en frappant un `next start` de production**, pas en relisant :
+>   `/api/send` et `/api/voice/call` rendaient **400** (validation du corps) à
+>   un inconnu — donc ils ACCEPTAIENT la requête. Avec `SITE_PASSWORD` posé :
+>   401. Le mot de passe était la seule serrure, et la doctrine a décidé qu'il
+>   ne murerait plus l'app.
+> · **La fenêtre est datée** : le jour où `SMTP_*` est posé sur Vercel et où
+>   les comptes ne le sont pas encore. Ça ne se voit que sur la réputation du
+>   domaine, des semaines plus tard.
+> · La condition est désormais `comptesActifs() || deploiementSansSerrure()`.
+>   Vérifié sur serveur réel : 403 `brique_absente` sur les deux API, 200 sur
+>   `/aujourdhui`, `/templates`, `/vitrine`. **On ne coupe pas le site.**
+> · ⚠ **Le garde a dû être écrit deux fois, et c'est la MUTATION qui l'a dit.**
+>   Il capturait `[\s\S]*?` à travers les lignes et avalait le commentaire qui
+>   explique la règle — lequel nomme les deux fonctions. **L'assertion était
+>   satisfaite par la PROSE** : remis à l'état vulnérable, le test restait
+>   vert. Un garde qui échoue en s'ouvrant ne fait pas de bruit, il valide.
+>   On retire les commentaires avant de chercher (comme le test de `lib/auth.ts`).
+
+### L'AVERTISSEMENT DE BUILD EST UN ANGLE MORT À PART ENTIÈRE (13/09/2026)
+`lib/url-publique.ts` · `tests/url-publique.test.ts`.
+
+`metadataBase` n'était déclaré nulle part. Next résout alors toute URL
+relative de métadonnée contre `http://localhost:3000` **et l'écrit dans le
+HTML livré** — vérifié sur le build, pas déduit :
+`<meta property="og:image" content="http://localhost:3000/media/hero-poster.jpg">`.
+C'est l'adresse annoncée à LinkedIn quand on partage le lien : la carte sort
+**sans vignette**. Le layout de la vitrine porte lui-même la phrase qui chiffre
+la perte, et LinkedIn est le canal PAR DÉFAUT de notre ICP.
+- **`next build` le disait à chaque passage.** Les tests étaient verts, `tsc`
+  aussi : c'est le seul canal d'alerte du dépôt que rien n'oblige à lire.
+- **Le repli va jusqu'à `VERCEL_URL`**, que la plateforme pose seule — une
+  correction qui exige une action humaine n'est pas une correction, c'est une
+  ligne de checklist de plus.
+- **Posée à la RACINE uniquement** : Next la fait hériter. Un test refuse
+  qu'un layout enfant la redéclare.
+- **Le garde va jusqu'au FICHIER** : une base absolue pointant vers une image
+  supprimée donne la même carte vide, pour une autre cause. Trouvé comme ça :
+  `/souscrire` — la page où l'on **achète** — déclarait des balises Open Graph
+  **sans image**.
+
+**L'INVARIANT** : *on ne descend jamais sous le gratuit, on ne monte jamais
+au-dessus sans une ligne prouvée en base.*
+- Pas de ligne, base injoignable, service role absent → **gratuit**. Une panne
+  dégrade un payant en gratuit (visible) ; l'inverse serait invisible et cher.
+- **Impayé → gratuit, pas le néant.** Ses données lui appartiennent ; le mettre
+  dehors ne récupère aucun impayé, ça fabrique un ancien client qui ne peut
+  même pas exporter son CRM.
+- **Pas de `tenantId` = pas de session = pas de plancher.** `DROIT_REFUSE`
+  porte aussi `statut: "suspendu"` : sans ce discriminant, une requête sans
+  aucune session héritait du socle. Trouvé par une assertion.
+
+**Notre compte** : `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste) =
+`contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com`. `estMaitre()` lit l'email du
+JETON, jamais un paramètre client, et court-circuite la base — si elle tombe,
+on doit encore pouvoir entrer chez nous.
+
+> ⚠ `/controle` est ouvert au gratuit (il agrège CRM + pilotage) et affiche
+> donc le lanceur de campagnes. Le bouton existe, **le serveur refuse** (403
+> `brique_absente`). Délibéré : voir la porte fermée vaut mieux que ne pas
+> savoir qu'elle existe, et la sécurité ne dépend jamais de l'écran.
+
+## LA PART SUR LE RÉSULTAT — ce qu'on demande à qui a gagné avec Alpha
+`lib/part-resultat.ts` · `components/billing/part-resultat-panel.tsx` (sur
+`/compte`) · `tests/part-resultat.test.ts` · décidé le 13/09/2026.
+
+Le modèle qui ferme la boucle du gratuit : le produit est libre tant qu'il ne
+dépense rien chez nous, donc quelqu'un sans un euro prospecte pour de vrai et
+encaisse. Ce qu'on demande ensuite n'est pas un abonnement à l'aveugle, c'est
+une part de ce qu'on lui a fait gagner. **On ne gagne que s'il gagne.**
+
+> ⚠⚠ **« 10–30 % DES BÉNÉFICES » ET « 10–30 % DU CA » NE SONT PAS LA MÊME
+> CLAUSE, et la différence décide si on se fait payer.** Le CA, nous le voyons.
+> Le bénéfice dépend des coûts, des salaires et des amortissements du client,
+> que nous ne pouvons ni lire ni auditer : **celui qui paie contrôle le
+> dénominateur**. Chaque euro de charge imputé à l'affaire réduit notre
+> facture, légalement, sans qu'on ait un mot à dire.
+> **Un pourcentage plus petit sur une base qu'on mesure vaut mieux qu'un grand
+> pourcentage sur une base qu'on subit.** `BASE_REFUSEE` rend le refus
+> exécutable : le module ne chiffre rien sur une base qu'il ne mesure pas, et
+> un test interdit qu'une entrée « bénéfice » y revienne par la fenêtre.
+
+- **La base est l'argent RÉELLEMENT ENCAISSÉ** (`payments[].amount`, statut
+  `paye` seulement) — la même que `buildPayoutLedger`, donc pas une deuxième
+  définition. On ne prélève rien tant que le client n'a pas été payé : c'est
+  l'objection la plus légitime qui existe, et on la retire d'avance.
+  > ⚠⚠ **TROUVÉ AU RENDU, PAS À LA RELECTURE.** La première version facturait
+  > `monthlyValue`, et l'écran affichait « 30 % de 349 € = 105 € ». 349 € est
+  > un **mensuel** — on facturait 30 % d'UN MOIS en l'appelant « le CA de
+  > l'affaire ». Faux dans les deux sens à la fois.
+- **L'échelle 10 / 20 / 30 se DÉRIVE du travail fait**, pas d'une négociation
+  au cas par cas : suivi (l'affaire a vécu ici) · approche (un contact sortant
+  est consigné) · rendez-vous (une rencontre a eu lieu avant la signature). Un
+  taux unique force à défendre le même prix sur une affaire portée de bout en
+  bout et sur une autre où on a tenu le fil — c'est la seconde qui fait dire
+  « votre pourcentage est abusif », sur toutes les autres en même temps.
+  > ⚠ Le haut de l'échelle **importe `REV_SHARE`**, il ne le recopie pas.
+- **⚠⚠ CE QU'ON MESURE EST « L'AFFAIRE A ÉTÉ TRAVAILLÉE DANS ALPHA », PAS
+  « ALPHA A FAIT LE TRAVAIL ».** La première rédaction avait un échelon « Alpha
+  a SOURCÉ la fiche » — **`tsc` l'a fait tomber** : aucun `EventKind` ne
+  l'atteste, et l'échelon aurait été le plus fréquent des trois. C'était une
+  invention, et c'est le compilateur qui l'a dit.
+- **L'attribution se borne à AVANT la signature.** Sans cette borne, toute
+  fiche finirait au palier haut : il suffit de poser un rendez-vous de suivi
+  une fois le contrat signé.
+- **Une fiche sans aucune touche n'est pas à nous** — quelqu'un a collé une
+  affaire déjà signée pour l'archiver. `null`, pas 10 % par défaut.
+- **Zéro affaire facturable → `null`, jamais « 0 € ».**
+
+> ⚠⚠ **L'ÉCRAN DIT « SIMULATION » AVANT DE DIRE UN MONTANT**, et un test
+> l'exige. Aucun contrat de part n'est signé : afficher une somme dans la
+> section « Compte » se lit comme une dette. Le client découvrirait un dû
+> qu'il n'a jamais contracté — la façon la plus rapide de perdre quelqu'un
+> qu'on venait de convaincre. C'est aussi le seul argument de conversion
+> honnête qu'on ait : il est calculé sur SES chiffres, pas sur une étude de
+> cas inventée.
+
+> ⚠ **Ce que ce module ne réglera jamais : la sous-déclaration.** Tout repose
+> sur ce que le client saisit. Aucun code ne corrige ça — c'est une clause de
+> contrat (droit de regard sur les factures de l'affaire) ou un forfait.
+> L'écrire ici évite de croire qu'un calcul juste suffit à se faire payer.
+
+## ⚠ AUCUNE DONNÉE RÉELLE DANS LE DÉPÔT (`tests/donnees-reelles.test.ts`)
+**Le dépôt a été rendu public le 09/09/2026, et il contenait des données
+personnelles de tiers** — seize fiches prospects réelles, dont une personne
+physique identifiée avec son mobile personnel.
+
+> ⚠ **Trois gardes existaient, et les trois ont fait leur travail.** Toutes
+> empêchaient la donnée d'atteindre un **navigateur**. Aucune n'empêchait le
+> **fichier** d'être lu — et un dépôt public ne se visite pas, il se `clone`.
+> Le modèle de menace entier supposait un attaquant qui passe par le produit.
+
+- Les fiches vivent dans **`donnees-privees/`**, ignoré par git.
+  `lib/pipeline-juillet.ts` et `lib/prospects-icp.ts` sont des **chargeurs** :
+  absent ⇒ vide, jamais une exception (une CI ou un déploiement neuf n'a pas ce
+  dossier).
+- Ce qui RESTE dans le code : les **chiffres agrégés** (`JUILLET_REEL` — 78
+  prospects, 132 appels, 6 RDV, 0 gagné). Ils n'identifient personne et ce sont
+  eux dont la doctrine se sert. Les effacer par excès de prudence détruirait la
+  mesure sans protéger qui que ce soit.
+- **Tout numéro du dépôt est dans une plage ARCEP réservée à la fiction**
+  (décision 2018-0881) : `0199 00` · `0261 91` · `0353 01` · `0465 71` ·
+  `0536 49` · `0639 98`. Ni appelables, ni attribuables.
+  > **Une seule exception, nommée** : `+33 4 51 22 21 82`, NOTRE ligne entrante
+  > Alpha Voice. Elle existe pour être appelée — mais elle nous est facturée à
+  > la minute : un dépôt public l'expose à l'abus.
+- La garde cherche la **FORME** d'un numéro, jamais une liste de numéros connus
+  — une liste de ce qu'il faut cacher serait une copie de ce qu'on cache.
+- **Les NOMS sont gardés à la même échelle que les numéros** (`tests/noms-reels.ts`,
+  branché dans `tests/donnees-reelles`). Ils ne l'étaient pas : les numéros
+  étaient cherchés dans **tout fichier commité**, les noms seulement dans le
+  **bundle client** — donc sous le modèle de menace « atteindre un navigateur »,
+  celui dont l'encadré ci-dessus dit qu'il est insuffisant. Mesuré : 18 fichiers
+  de `lib/`, `tests/`, `docs/`, `voice/` portaient des raisons sociales réelles
+  hors bundle. Le garde du bundle a été **retiré**, pas doublé : sur un
+  sous-ensemble strict, il créait une deuxième définition de la même règle.
+  > ⚠ **Deux niveaux, et la calibration EST le sujet.** Le nom distinctif rare
+  > se cherche **seul** — c'est la forme courte qui fuit, une enseigne se
+  > recopiant presque toujours amputée de son mot de métier. L'enseigne bâtie
+  > sur un **toponyme** se cherche **entière** : un quartier nu décrit un
+  > territoire de prospection dans une dizaine de fichiers justes, et seul le
+  > couple *métier + toponyme* identifie quelqu'un. Les interdire au mot aurait
+  > fait tomber des phrases vraies — et un garde qui refuse une phrase vraie
+  > est un garde qu'on assouplit au mauvais endroit.
+  > ⚠⚠ **Cette règle-ci s'est fait attraper par elle-même** : la première
+  > rédaction du paragraphe ci-dessus **citait deux vrais noms en exemple**, et
+  > le garde a fait tomber `CLAUDE.md`. C'est le bon comportement, et ça dit
+  > quelque chose de général — **expliquer une règle de non-divulgation est
+  > exactement le moment où l'on redivulgue.** Une règle se décrit par sa
+  > FORME, jamais par l'échantillon qui l'a motivée.
+- **Un test qui dépend de `donnees-privees/` déclare `skip`**, il ne passe
+  jamais à vide. Trois tests tombaient sur un clone propre ; un quatrième
+  passait **vacant** (une liste vide filtrée rend une liste vide). Règle :
+  une **fixture** (`tests/fixtures-icp.ts`) mesure le CODE et tourne partout ;
+  le **vrai fichier** mesure la DONNÉE et se déclare `skip` quand il manque.
+  Asserter « chaque fiche a un téléphone » sur un texte qu'on a tapé soi-même
+  ne mesure rien.
+
+> ⚠⚠ **Rendre le dépôt privé n'annule rien.** L'historique git garde tout, les
+> forks et clones existants aussi, et les caches d'indexation. Corriger `HEAD`
+> arrête l'hémorragie ; ça ne rappelle pas ce qui est sorti.
+
+> 📦 Le détail de ce qui a fuité, et pourquoi c'est le jeu de démo ÉCRIT À LA
+> MAIN qui s'est fait attraper sur les numéros (pas les fiches générées) :
+> `docs/ANGLES-MORTS.md`.
+
+## Sécurité — non négociable
+- L'utilisateur a déjà collé des **clés API réelles en clair** (NVIDIA, Fish).
+  Elles sont à **rotate**. Ne JAMAIS écrire une clé collée dans un fichier, un
+  commit ou un artefact. Scanner chaque commit. Lui redire de ne pas les coller.
+- `SITE_PASSWORD`, JWT Supabase, RLS : le cloisonnement des données est la RLS +
+  le JWT (`lib/tenant.ts`). Un « compte » du portefeuille est une frontière
+  d'**identité commerciale**, pas de sécurité. Ne pas confondre.
+- **`SITE_PASSWORD` n'est PLUS un mur sur toute l'app** (décision de Zakaria).
+  Il murait aussi les clients payants, qui n'auront jamais le mot de passe de
+  notre outil interne. Il ne garde plus que `ADMIN_PREFIXES` (`middleware.ts`) :
+  `/payouts`, `/offre`, `/api/sync` — ce qui parle de NOTRE économie, pas de
+  celle du client. Le reste est gouverné par le compte + les briques.
+  > ⚠ **La garde qui rend ça sûr, et qu'il ne faut jamais retirer** : le mur ne
+  > se lève QUE si `comptesActifs() && serverAuthEnforced()`. Les deux sont
+  > opt-in. Sans eux, il n'existe aucune autre serrure et l'app entière serait
+  > publique — `/api/send` envoie de vrais emails, `/api/voice/call` compose de
+  > vrais numéros. Par défaut on protège ; on n'ouvre que sur preuve.
+  >
+  > ⚠⚠ **Cette question ne se pose QU'À UN ENDROIT** : `verrouDeComptesActif`
+  > (`lib/entitlements.ts`). Le middleware ET l'écran de connexion la posent ;
+  > deux définitions de « l'app est-elle protégée ? » finiraient par diverger,
+  > et l'une des deux ouvrirait tout.
+
+### DU MOT DE PASSE AU COMPTE — la bascule (02/09/2026)
+`SITE_PASSWORD` est un mot de passe PARTAGÉ, sans identifiant, changeable
+seulement par redéploiement. Le vrai login (email + mot de passe, que le
+titulaire change lui-même) est le compte Supabase, et l'écran existe déjà :
+`components/security/auth-gate.tsx`.
+- **Ce qui bascule** : poser `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_JWT_SECRET`
+  + `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste), **puis**
+  `REQUIRE_AUTH=1` **en dernier**. Les trois premières ne changent RIEN tant
+  que la quatrième n'est pas là — vérifié sur serveur réel.
+- **Le fail-closed** : `REQUIRE_AUTH=1` sans `SUPABASE_JWT_SECRET` → les API
+  de données répondent **503**, et le mot de passe continue de tout murer. La
+  misconfiguration n'ouvre jamais.
+- **Après bascule, le mot de passe reste** sur `ADMIN_PREFIXES` (`/payouts`,
+  `/offre`, `/api/sync`) : notre économie, jamais celle du client.
+- **La pré-vérification existe déjà** : `GET /api/health`, une fois connecté,
+  rend `auth.serverEnv` · `auth.serverEnforced` · `auth.misconfigured` ·
+  `auth.verrou` · `proprietaire.coherent` (les deux listes `OWNER_EMAILS`
+  concordent-elles). C'est ce qu'il faut lire AVANT et APRÈS avoir posé
+  `REQUIRE_AUTH`.
+  > ⚠ Elle **lit** ces états, elle ne les recalcule pas. Elle les redéduisait
+  > avec sa propre expression régulière sur `REQUIRE_AUTH` — une seconde
+  > définition, dans l'outil même qui sert à vérifier la bascule. Une
+  > divergence n'aurait pas planté : elle aurait MENTI. Un test refuse toute
+  > relecture locale de `REQUIRE_AUTH` dans ce fichier.
+  > ⚠ **Le défaut corrigé, et il ne se voyait pas** : l'écran de connexion ne
+  > se fermait que sur `settings.security.requireAuth` — un réglage du
+  > NAVIGATEUR. Un navigateur neuf (client, navigation privée, autre appareil)
+  > ne le voyait donc JAMAIS, quelle que soit la config serveur. **Une serrure
+  > dont l'existence dépend du trousseau de celui qui entre n'est pas une
+  > serrure.** Il lit maintenant le serveur (`GET /api/gate` → `compteRequis`)
+  > **OU** le réglage local — un `&&` reproduirait exactement le bug.
+  > Corollaire testé : une panne réseau ne conclut jamais « pas de compte
+  > requis » ; elle retombe sur le réglage local, jamais sur « ouvert ».
+  >
+  > Vérifié sur serveur réel : sans comptes, tout reste muré ; avec comptes,
+  > une page produit renvoie vers `/compte?bloque=…` (parcours client) et une
+  > page admin vers `/gate` (mot de passe). Deux portes, deux publics.
+
+## CE QUI EST BLOQUÉ SUR ZAKARIA — `docs/A-FAIRE-ZAKARIA.md`
+Écrit le 13/09/2026, veille de lancement. **Une session qui ne sait pas quoi
+faire commence par là** : c'est la liste de ce qu'aucune session ne peut
+exécuter (Vercel, Supabase, registrar, export de fiches), avec l'ordre imposé
+et la RAISON de chaque dépendance.
+
+> ⚠ **La dépendance qui coûte cher si on l'inverse** : poser `SMTP_*` AVANT
+> les quatre variables de comptes rend `/api/send` joignable par n'importe qui
+> avec un SMTP qui marche — de vrais emails depuis notre domaine, pour des
+> inconnus, visibles seulement sur la réputation des semaines plus tard.
+
+> ⚠ **Le dépôt passe en privé.** Ça n'annule rien : l'historique git, les forks,
+> les clones et les caches d'indexation gardent tout. Et **les gardes ne se
+> retirent pas** (`tests/donnees-reelles`, `tests/noms-reels`, plages ARCEP) —
+> un dépôt privé se partage, se clone, et redevient public par accident. Ce
+> sont des données de tiers, pas un secret commercial.
+
+## CE QU'ON PROMET, ET CE QU'ON REFUSE DE DIRE (`lib/promesse.ts`)
+Décidé le 14/09/2026. Le positionnement vivait à **quatre endroits** — README,
+section mission, trois commentaires — et aucun ne faisait autorité.
+
+> **On ne fabrique pas l'intelligence. On fabrique ce qui permet de s'en servir
+> pour vendre — en France, sans se mettre hors la loi.**
+> Courte : *les humains closent, Alpha fait tourner la machine.*
+
+> ⚠⚠ **ON NE SE POSITIONNE PAS COMME « LE \<GRAND ACTEUR\> DE LA VENTE »**, et
+> ce n'est pas une question de goût :
+> · **ça contredit notre seul argument vérifiable** — la vitrine défend que
+>   l'automatisation des PME françaises ne devrait pas dépendre d'acteurs
+>   américains, et `tests/vitrine-fuite` EXIGE que cet angle reste. Emprunter
+>   le nom d'un de ces acteurs se contredit dans la même page ;
+> · **ça invite la question qu'on perd** : « quel modèle entraînez-vous ? » —
+>   aucun, on loue l'intelligence comme tout le monde ;
+> · **« le X de Y » signale DÉRIVÉ**, et à zéro vente ça rejoint la famille des
+>   affirmations invérifiables (superlatifs, affiliations) déjà refusée.
+> Un test cherche la **forme** ET une courte liste de noms — une liste seule
+> serait périmée au prochain acteur à la mode.
+
+- **Chaque preuve NOMME le fichier qui l'applique**, et un test l'ouvre. C'est
+  ce qui sépare une garantie d'un argument de vente : on peut la lire. Une
+  preuve dont le module disparaît fait **tomber le build** au lieu de continuer
+  à se dire sur une page publique.
+- **Aucune preuve n'est une performance.** Pas de pourcentage, pas de « X fois
+  plus » : zéro vente, donc aucune mesure à citer. Ce sont des RÈGLES que le
+  logiciel applique — vérifiables aujourd'hui, contrairement à un résultat.
+- **La promesse s'AJOUTE à l'angle de souveraineté, elle ne le remplace pas**
+  (l'ordre est testé) : l'un dit où vivent les données, l'autre pourquoi un
+  meilleur modèle ailleurs ne nous remplace pas.
+- **Elle n'est recopiée nulle part** — la vitrine l'importe. C'est la recopie
+  qui a fait dériver ce positionnement en quatre versions.
+
+## Contraintes d'environnement (sandbox)
+**Re-mesuré le 17/09/2026** — cette liste avait dérivé, et une contrainte fausse
+coûte plus cher qu'une contrainte absente : elle fait renoncer sans essayer.
+
+| | État mesuré |
+|---|---|
+| `git` vers **github.com** | **PASSE** (`git ls-remote` sur deux dépôts publics) |
+| `data.grandlyon.com` · `data.gouv.fr` · API adresse · API Sirene | **BLOQUÉS** (`000`, refus du proxy) |
+| Hôtes **Supabase** (5432 · 6543 · 443) | **BLOQUÉS** — 403 au CONNECT, politique |
+| Clés live NVIDIA / Stripe · récupération de page tarifaire | bloquées |
+| pypi | passe |
+
+- **La ligne « github.com bloqué » était FAUSSE.** Elle a survécu à un
+  changement de politique du proxy, et personne ne la retestait — on ne teste
+  pas ce qu'on croit savoir. Ce qui reste vrai : **aucune source open-data
+  française n'est joignable**, donc **aucun lead ne se produit d'ici**.
+- **Postgres 16 est installé en local** (`/usr/lib/postgresql/16/bin`) : une
+  migration se joue pour de vrai sur une base jetable, avec un décor `auth`/
+  `storage` imité. C'est comme ça que `LOT-A-COLLER.sql` a été éprouvé.
+- **Chromium est là** (`/opt/pw-browsers`) et se pilote en CDP avec le
+  `WebSocket` natif de Node — **aucune dépendance à ajouter**. « Vu au RENDU »
+  est donc faisable d'ici, et deux défauts d'aujourd'hui ne se voyaient que là.
+- **Je ne peux pas tester un service live** (Telnyx, LiveKit, Vercel,
+  Supabase) : ça se vérifie côté Zakaria. Ne pas prétendre avoir testé ce qui
+  ne l'a pas été.
+
+## LE DÉFAUT RÉCURRENT DU DÉPÔT — le brancher, pas seulement l'écrire
+C'est de LOIN la panne la plus fréquente ici, et elle ne ressemble pas à un
+bug : **un mécanisme juste, testé, correct — branché à un seul endroit, ou à
+aucun.** Le module rend la bonne réponse, personne ne la lit. Rien n'échoue,
+donc rien n'alerte. Exemples payés : la garde d'`/api/send` sans appelant,
+`capaciteAppels` calculé et affiché nulle part, « a-t-il dit non ? » posée à
+trois endroits dont deux répondaient faux.
+- **Avant de dire qu'une fonctionnalité est livrée** : chercher qui l'importe.
+  Un export `lib/` que rien ne consomme est mort, pas « prêt ».
+- **La question à poser, quand une règle existe** : *combien d'endroits la
+  posent, et répondent-ils tous pareil ?* Une seule source, sinon un test qui
+  interdit la deuxième (cf. `aRefuseTouteRelance`, `RESULTATS_MANUELS`).
+- Le pendant côté doc : `tests/docs-chiffres.test.ts` exige qu'un module
+  doctrinaire soit cité quelque part — sinon la session suivante le réécrit
+  à côté.
+
+### ET C'EST DÉSORMAIS EXÉCUTABLE (`tests/exports-morts.test.ts`, 17/09/2026)
+La règle ci-dessus vivait **en prose** — c'est-à-dire que la règle qui décrit
+la panne la plus fréquente du dépôt souffrait elle-même de cette panne.
+- **L'unité juste est la FONCTION, pas le module.** Mesuré aux trois échelles :
+  au niveau MODULE, 2 sur 199 sont morts (`valeur-produite`, `ceo-historique`,
+  tous deux documentés) — à cette échelle le dépôt est sain, et `renderDevis`
+  serait passé, puisqu'il vit dans un module parfaitement branché. Au niveau
+  SYMBOLE sans distinguer l'usage interne : 141 résultats, presque tous faux.
+  **Fonction exportée qu'aucun fichier de production n'appelle, pas même son
+  propre module : 43.** C'est celle-là qui attrape le vrai défaut.
+- **Le test GÈLE l'inventaire, il ne répare pas les 43.** Beaucoup sont
+  légitimes (inertes par décision, en attente d'une brique, audits de
+  cohérence). Ce qu'il empêche, c'est la **44ᵉ** — écrire une règle juste, la
+  tester, et la croire livrée.
+- **Chaque tolérance porte son MOTIF**, et un test refuse un motif trop court
+  pour dire quoi que ce soit — sinon la liste devient la décharge où l'on
+  inscrit une fonction plutôt que de la brancher. Un second test refuse une
+  entrée **périmée** : sans lui, l'inventaire ment à la session suivante.
+- **Les VRAIS restes sont marqués `⚠ RESTE` et PLAFONNÉS à 6.** Au-delà, on
+  n'est plus en train de tolérer, on accumule. Aujourd'hui, après la
+  suppression de `renderDevis` + `estRefus` (le doublon mort de devis, TRANCHÉ
+  le 17/09) : `finDEssai` (jamais eu
+  d'appelant), `interdictionPour` — **inatteignable par construction** : il
+  s'indexe sur `formation-cpf` / `renovation-energetique` / `assurance`, des
+  identifiants qui n'existent ni dans `Sector` ni dans les verticales. Lui
+  trouver un appelant demanderait d'inventer un vocabulaire de plus.
+  > ⚠ Les interdictions sectorielles, elles, SONT branchées — par
+  > `secteursInterditsDans` (motif sur le texte du script), dans `auditScript`
+  > et dans le Cerveau. La doctrine ne ment pas sur ce point. Ce qui manque est
+  > le pendant DÉTERMINISTE : un script bien écrit qui évite les mots
+  > déclencheurs passe. Le combler suppose que la fiche porte le secteur
+  > réglementé, ce qu'aucun champ ne fait — à trancher, pas à bricoler.
+- ⚠ **La limite, écrite plutôt que tue** : le test regarde UN niveau. Une
+  fonction appelée seulement par une autre fonction elle-même morte passe au
+  travers. L'accessibilité transitive demanderait un graphe d'appels.
+
+## Conventions de code
+- Commentaires en français, denses, qui expliquent le POURQUOI (le style du repo).
+- Modules purs et testables dans `lib/`, testés dans `tests/*.test.ts`.
+- Pas de `any`. Pas de dépendance nouvelle. Pas de secret en dur.
+- Fin de commit : les lignes `Co-Authored-By:` et `Claude-Session:` **fournies
+  par le harness**, telles quelles.
+  > ⚠ Cette ligne gravait « Opus 4.8 » — un numéro périmé, que le harness
+  > écrase de toute façon. Une doc qui prescrit une valeur obsolète se fait
+  > recopier par la session suivante, qui croit suivre la convention. On nomme
+  > la SOURCE, pas la valeur.
+  > ⚠ Jamais d'identifiant de modèle ailleurs : ni dans le code, ni dans un
+  > commentaire, ni dans un artefact poussé.

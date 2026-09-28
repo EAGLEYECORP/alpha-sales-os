@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, ChevronLeft, ChevronRight, GripVertical, Smartphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical, Smartphone } from "lucide-react";
 import type { Prospect, Stage } from "@/lib/types";
 import { STAGES, weightedValue, croyancesReady, signingBlockers } from "@/lib/hormozi";
 import { cn, eur, isOverdue, relativeFr } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { Modal } from "@/components/ui/modal";
 import { ReasonDialog } from "@/components/ui/reason-dialog";
+import { BlocagesSignature } from "@/components/blocages-signature";
+
+/** Cartes affichees par colonne. Au-dela, le glisser-deposer devient poisseux. */
+const CARTES_MAX = 40;
 import { fireSignedConfetti } from "@/lib/confetti";
 
-export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
+export function KanbanBoard({ prospects, onVoirListe }: { prospects: Prospect[]; onVoirListe?: () => void }) {
   const moveStage = useAlpha((s) => s.moveStage);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overStage, setOverStage] = useState<Stage | null>(null);
@@ -57,6 +60,19 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
         {STAGES.map((stage) => {
           const items = prospects.filter((p) => p.stage === stage.id);
           const colValue = items.reduce((s, p) => s + weightedValue(p), 0);
+          /**
+           * La colonne se BORNE. Objectif affiché : 1 000 numéros terrain, et
+           * ils atterrissent tous au stade « prospect » — mille cartes dans
+           * une seule colonne, chacune avec son badge et sa poignée de
+           * glisser-déposer. Le rendu se compte en secondes et le drag devient
+           * inutilisable, sur une vue qu'on ouvre tous les jours.
+           *
+           * Le TOTAL affiché en tête (nombre et € pondérés) reste calculé sur
+           * la colonne entière : on borne l'affichage, jamais le compte.
+           * Au-delà, le kanban n'est de toute façon pas le bon outil — le
+           * tableau paginé l'est, et le lien le dit.
+           */
+          const visibles = items.slice(0, CARTES_MAX);
           return (
             <div
               key={stage.id}
@@ -67,8 +83,11 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
               onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
               onDrop={() => drop(stage.id)}
               className={cn(
-                "flex w-64 shrink-0 flex-col rounded-xl border bg-ink-900/50 transition-colors",
-                overStage === stage.id ? "border-bronze-500 bg-bronze-900/20" : "border-ink-700",
+                // Une colonne est une sous-surface : `panel`, pas une plaque de
+                // verre. Empiler dix colonnes floutées côte à côte coûterait dix
+                // couches de composition pour un effet qu'on ne verrait pas.
+                "panel flex w-64 shrink-0 flex-col transition-colors",
+                overStage === stage.id && "border-bronze-500 bg-bronze-900/20",
                 stage.id === "redzone" && "border-signal-red/30",
                 stage.id === "signe" && "border-signal-green/30"
               )}
@@ -91,7 +110,7 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                 <p className="font-mono text-[11px] text-bronze-500">{eur(colValue)}</p>
               </div>
               <div className="flex-1 space-y-2 p-2 min-h-24">
-                {items.map((p) => (
+                {visibles.map((p) => (
                   <KanbanCard
                     key={p.id}
                     p={p}
@@ -105,28 +124,48 @@ export function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                     }}
                   />
                 ))}
+                {items.length > visibles.length && (
+                  <p className="rounded-lg border border-ink-700 px-2.5 py-2 text-[11px] leading-relaxed text-paper-faint">
+                    + {items.length - visibles.length} autres dans cette colonne. Le kanban sert à DÉPLACER quelques
+                    affaires, pas à parcourir un fichier
+                    {onVoirListe ? (
+                      <>
+                        {" — "}
+                        <button onClick={onVoirListe} className="text-bronze-400 hover:underline">
+                          passe en vue liste
+                        </button>
+                        .
+                      </>
+                    ) : (
+                      "."
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      <Modal open={!!blockers} onClose={() => setBlockers(null)} title="⛔ Signature bloquée par la doctrine">
-        <p className="mb-3 text-sm text-paper-dim">
-          <strong className="text-paper">{blockers?.company}</strong> ne peut pas passer en « Signé » :
-        </p>
-        <ul className="space-y-2">
-          {blockers?.list.map((b, i) => (
-            <li key={i} className="flex gap-2 rounded-lg border border-signal-red/30 bg-signal-red/5 px-3 py-2 text-sm text-paper">
-              <AlertTriangle size={15} className="mt-0.5 shrink-0 text-signal-red" />
-              {b}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 text-[12px] italic text-paper-faint">
-          La conviction se transfère, elle ne se négocie pas. Répare les croyances, puis reviens signer.
-        </p>
-      </Modal>
+      {/*
+        Le panneau de blocages est PARTAGÉ (components/blocages-signature).
+
+        ⚠ Il vivait ici, écrit à la main, et il était bon — pendant que les
+        deux autres chemins de closing (la fiche prospect et le mode Closing)
+        annonçaient les mêmes blocages dans un `alert()` du navigateur. Trois
+        chemins, une seule bonne implémentation, invisible depuis les deux
+        autres : le motif habituel de ce dépôt.
+
+        ⚠ La phrase de clôture du kanban (« La conviction se transfère, elle ne
+        se négocie pas ») N'a PAS été reprise : `signingBlockers` la produit
+        déjà comme premier blocage. Vue à l'écran, elle s'affichait deux fois
+        dans le même panneau.
+      */}
+      <BlocagesSignature
+        blocages={blockers?.list ?? []}
+        company={blockers?.company}
+        onClose={() => setBlockers(null)}
+      />
 
       <ReasonDialog
         open={!!pendingReason}

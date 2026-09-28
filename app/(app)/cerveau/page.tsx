@@ -1,0 +1,393 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Brain, Plus, Search, Trash2, Link2, Sparkles, Loader2, Download, X, Network, ListTree, FileDown, Unlink } from "lucide-react";
+import { useAlpha } from "@/lib/store";
+import { buildIdentity } from "@/lib/identity";
+import { search, backlinks, extractLinks, contextFromNotes, notesForAccount, type KnowledgeNote } from "@/lib/knowledge";
+import { getAccount } from "@/lib/accounts";
+import { cn, relativeFr } from "@/lib/utils";
+import { Synapse } from "@/components/cerveau/synapse";
+import { KnowledgeGraph } from "@/components/cerveau/graph";
+import { FileImport } from "@/components/cerveau/file-import";
+import { ReferencesPanel } from "@/components/cerveau/references-panel";
+import { PageHeader } from "@/components/ui/page-header";
+
+export default function CerveauPage() {
+  const allNotes = useAlpha((s) => s.notes);
+  const prospects = useAlpha((s) => s.prospects);
+  const settings = useAlpha((s) => s.settings);
+  // Le Cerveau est cloisonné par compte : depuis un compte revendeur on ne voit que ses
+  // notes + les communes. Depuis le MAÎTRE, on voit tout le portefeuille.
+  const account = getAccount(settings.accountId);
+  const notes = useMemo(
+    () => notesForAccount(allNotes, account.id, account.kind === "master"),
+    [allNotes, account]
+  );
+  const { upsertNote, deleteNote } = useAlpha();
+
+  const [q, setQ] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(notes[0]?.id ?? null);
+  const [view, setView] = useState<"liste" | "graphe">("liste");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [orphansOnly, setOrphansOnly] = useState(false);
+
+  // Santé du vault : liens résolus, orphelines, tags.
+  const { edgeCount, orphanIds, allTags } = useMemo(() => {
+    const byTitle = new Map(notes.map((n) => [n.title.trim().toLowerCase(), n.id]));
+    const connected = new Set<string>();
+    let edges = 0;
+    for (const n of notes) {
+      for (const l of extractLinks(n.body)) {
+        const t = byTitle.get(l.trim().toLowerCase());
+        if (t && t !== n.id) { edges += 1; connected.add(n.id); connected.add(t); }
+      }
+    }
+    return {
+      edgeCount: edges,
+      orphanIds: new Set(notes.filter((n) => !connected.has(n.id)).map((n) => n.id)),
+      allTags: Array.from(new Set(notes.flatMap((n) => n.tags))).sort(),
+    };
+  }, [notes]);
+
+  // Liste : recherche RAG si requête, sinon les plus récentes ; puis filtres.
+  const list = useMemo(() => {
+    let base = q.trim() ? search(q, notes, 50).map((s) => s.note) : [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    if (tagFilter) base = base.filter((n) => n.tags.includes(tagFilter));
+    if (orphansOnly) base = base.filter((n) => orphanIds.has(n.id));
+    return base;
+  }, [q, notes, tagFilter, orphansOnly, orphanIds]);
+
+  const exportMd = () => {
+    const md = notes
+      .map((n) => `# ${n.title}\n\n${n.tags.length ? `Tags : ${n.tags.join(", ")}\n\n` : ""}${n.body}\n`)
+      .join("\n---\n\n");
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `cerveau-${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+  };
+
+  const selected = notes.find((n) => n.id === selectedId) ?? null;
+
+  const newNote = () => {
+    const id = upsertNote({ title: "Nouvelle note", body: "", tags: [] });
+    setSelectedId(id);
+    setQ("");
+  };
+
+  // Aspirer les prospects : une note par fiche, à partir de la donnée réelle.
+  const ingestProspects = () => {
+    let n = 0;
+    for (const p of prospects) {
+      const bits = [
+        p.solution && `Solution : ${p.solution}`,
+        p.personalizedOffer && `Offre : ${p.personalizedOffer}`,
+        p.problems?.length ? `Problèmes : ${p.problems.join(" ; ")}` : "",
+        p.deepAudit?.currentProcess && `Process actuel : ${p.deepAudit.currentProcess}`,
+        p.deepAudit?.websiteState && `Site : ${p.deepAudit.websiteState}`,
+        p.notes && `Notes : ${p.notes}`,
+      ].filter(Boolean);
+      if (bits.length === 0) continue;
+      upsertNote({
+        id: `prospect:${p.id}`,
+        title: `${p.company} (${p.sector})`,
+        body: bits.join("\n"),
+        tags: [String(p.sector), p.stage],
+        source: "intel",
+      });
+      n += 1;
+    }
+    alert(n > 0 ? `${n} fiche(s) aspirée(s) dans le Cerveau.` : "Aucune fiche avec du contenu à aspirer.");
+  };
+
+  return (
+    <div className="page">
+      {/* Le seul en-tête POSÉ SUR une plaque, parce qu'il héberge l'animation
+          Synapse : la carte est le cadre du décor, l'en-tête reste le même
+          composant que partout ailleurs. Il portait une surface bricolée
+          (`rounded-2xl border-ink-700 bg-ink-900/60`) qui ne recevait ni le
+          flou ni la saturation du verre — visible dès qu'on la mettait à
+          côté d'une vraie carte. */}
+      <div className="card relative overflow-hidden p-5">
+        <Synapse />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink-950/70 via-ink-950/30 to-transparent" />
+        <PageHeader
+          className="relative z-10"
+          eyebrow="RAG · zéro dépendance · hors-ligne"
+          icon={<Brain size={22} className="animate-pulse text-bronze-400" style={{ filter: "drop-shadow(0 0 6px rgba(210,64,47,0.5))" }} />}
+          title="Cerveau"
+          subtitle={<>Toutes tes infos au même endroit — cherchées par pertinence, reliées en <code className="font-mono text-bronze-400">[[wikilinks]]</code>, interrogeables.</>}
+          actions={
+            <>
+              <button className="btn-ghost" onClick={exportMd} title="Exporter en Markdown (Obsidian-compatible)"><FileDown size={14} /> Exporter</button>
+              <button className="btn-ghost" onClick={ingestProspects}><Download size={14} /> Aspirer mes prospects</button>
+              <button className="btn-bronze" onClick={newNote}><Plus size={14} /> Nouvelle note</button>
+            </>
+          }
+        />
+      </div>
+
+      <AskBrain notes={notes} settings={settings} onOpen={(id) => { setSelectedId(id); setView("liste"); }} />
+
+      {/* Import de fichiers — audits PDF, emails .html, comptes rendus */}
+      <FileImport onImported={(ids) => { if (ids[0]) { setSelectedId(ids[0]); setView("liste"); } }} />
+
+      <ReferencesPanel />
+
+      {/* Barre de contrôle : vue, tags, orphelines, stats */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex rounded-lg border border-ink-700 bg-ink-900 p-0.5 text-[12px]">
+          <button className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5", view === "liste" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")} onClick={() => setView("liste")}>
+            <ListTree size={13} /> Liste
+          </button>
+          <button className={cn("flex items-center gap-1.5 rounded-md px-2.5 py-1.5", view === "graphe" ? "bg-bronze-600 text-white" : "text-paper-faint hover:text-paper")} onClick={() => setView("graphe")}>
+            <Network size={13} /> Graphe
+          </button>
+        </div>
+        {allTags.slice(0, 12).map((t) => (
+          <button
+            key={t}
+            className={cn("chip", tagFilter === t ? "border-bronze-500 bg-bronze-900/40 text-bronze-300" : "border-ink-600 text-paper-faint hover:text-paper")}
+            onClick={() => setTagFilter(tagFilter === t ? null : t)}
+          >
+            {t}
+          </button>
+        ))}
+        <button
+          className={cn("chip flex items-center gap-1", orphansOnly ? "border-signal-amber/60 bg-signal-amber/10 text-signal-amber" : "border-ink-600 text-paper-faint hover:text-paper")}
+          onClick={() => setOrphansOnly((v) => !v)}
+          title="Notes reliées à aucune autre"
+        >
+          <Unlink size={12} /> orphelines {orphanIds.size > 0 && `(${orphanIds.size})`}
+        </button>
+        <span className="ml-auto font-mono text-[11px] text-paper-faint">{notes.length} notes · {edgeCount} liens</span>
+      </div>
+
+      {view === "graphe" ? (
+        <div>
+          <KnowledgeGraph notes={notes} selectedId={selectedId} onOpen={(id) => { setSelectedId(id); setView("liste"); }} />
+          <p className="mt-2 text-center text-[11px] text-paper-faint">Chaque point = une note · les lignes = les <code className="font-mono text-bronze-400">[[wikilinks]]</code>. Clique un nœud pour l&apos;ouvrir.</p>
+        </div>
+      ) : (
+      <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+        {/* Colonne gauche : recherche + liste */}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-paper-faint" />
+            <input
+              className="input pl-9"
+              placeholder="Chercher (BM25)…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+          <p className="px-1 text-[11px] text-paper-faint">{list.length} note{list.length > 1 ? "s" : ""}{q.trim() ? " · par pertinence" : ""}</p>
+          <ul className="max-h-[60vh] space-y-1 overflow-y-auto pr-1">
+            {list.map((n) => (
+              <li key={n.id}>
+                <button
+                  className={cn(
+                    "w-full rounded-lg border px-3 py-2 text-left transition",
+                    n.id === selectedId ? "border-bronze-600 bg-bronze-900/30" : "border-ink-700 bg-ink-900 hover:border-ink-600"
+                  )}
+                  onClick={() => setSelectedId(n.id)}
+                >
+                  <p className="truncate text-[13px] font-medium text-paper">{n.title}</p>
+                  <p className="truncate text-[11px] text-paper-faint">{n.body.replace(/[#*[\]]/g, "").slice(0, 60) || "—"}</p>
+                </button>
+              </li>
+            ))}
+            {list.length === 0 && <li className="rounded-lg border border-dashed border-ink-700 px-3 py-4 text-center text-[12px] text-paper-faint">Rien trouvé.</li>}
+          </ul>
+        </div>
+
+        {/* Colonne droite : éditeur + rétroliens */}
+        {selected ? (
+          <NoteEditor
+            key={selected.id}
+            note={selected}
+            notes={notes}
+            onSave={(patch) => upsertNote({ id: selected.id, title: patch.title, body: patch.body, tags: patch.tags, source: selected.source })}
+            onDelete={() => { deleteNote(selected.id); setSelectedId(null); }}
+            onOpenTitle={(title) => {
+              const found = notes.find((x) => x.title.toLowerCase() === title.toLowerCase());
+              if (found) setSelectedId(found.id);
+              else { const id = upsertNote({ title, body: "" }); setSelectedId(id); }
+            }}
+          />
+        ) : (
+          <div className="grid place-items-center rounded-xl border border-dashed border-ink-700 p-10 text-center text-[13px] text-paper-faint">
+            Sélectionne une note, ou crée-en une.
+          </div>
+        )}
+      </div>
+      )}
+    </div>
+  );
+}
+
+function NoteEditor({
+  note, notes, onSave, onDelete, onOpenTitle,
+}: {
+  note: KnowledgeNote;
+  notes: KnowledgeNote[];
+  onSave: (patch: { title: string; body: string; tags: string[] }) => void;
+  onDelete: () => void;
+  onOpenTitle: (title: string) => void;
+}) {
+  const [title, setTitle] = useState(note.title);
+  const [body, setBody] = useState(note.body);
+  const [tagsRaw, setTagsRaw] = useState(note.tags.join(", "));
+  const dirty = title !== note.title || body !== note.body || tagsRaw !== note.tags.join(", ");
+
+  const save = () => onSave({ title: title.trim() || "Sans titre", body, tags: tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) });
+
+  const links = extractLinks(body);
+  const back = backlinks(note.title, notes);
+
+  // Suggestions de liens : notes proches (RAG) pas encore reliées.
+  const related = useMemo(() => {
+    const linked = new Set(extractLinks(body).map((l) => l.toLowerCase()));
+    return search(`${title} ${body}`, notes.filter((n) => n.id !== note.id), 8)
+      .map((s) => s.note)
+      .filter((n) => !linked.has(n.title.toLowerCase()))
+      .slice(0, 4);
+  }, [title, body, notes, note.id]);
+
+  const addLink = (t: string) => setBody((b) => `${b}${b && !b.endsWith("\n") ? "\n" : ""}Voir [[${t}]].`);
+
+  return (
+    <div className="space-y-3">
+      <section className="card p-4">
+        <div className="flex items-center gap-2">
+          <input className="input flex-1 font-display text-base font-semibold" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <button className="btn-bronze" onClick={save} disabled={!dirty}>Enregistrer</button>
+          <button className="btn-ghost text-signal-red" onClick={() => confirm("Supprimer cette note ?") && onDelete()}><Trash2 size={14} /></button>
+        </div>
+        <input className="input mt-2 text-[12px]" placeholder="tags (séparés par des virgules)" value={tagsRaw} onChange={(e) => setTagsRaw(e.target.value)} />
+        <textarea
+          className="input mt-2 min-h-[42vh] font-mono text-[12.5px] leading-relaxed"
+          placeholder="Corps de la note (markdown). Relie avec [[Titre d'une autre note]]."
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+        <p className="mt-1 text-[11px] text-paper-faint">Maj {relativeFr(note.updatedAt)} · {note.source}</p>
+      </section>
+
+      {related.length > 0 && (
+        <div className="card p-3">
+          <p className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-paper-faint">
+            <Sparkles size={12} className="text-bronze-400" /> Notes similaires à relier
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {related.map((n) => (
+              <button key={n.id} className="chip border-bronze-700/50 text-bronze-400 hover:bg-bronze-900/30" onClick={() => addLink(n.title)} title="Insérer un lien vers cette note">
+                + {n.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(links.length > 0 || back.length > 0) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <LinkPanel title="Liens sortants" icon={<Link2 size={13} />} items={links} onClick={onOpenTitle} />
+          <LinkPanel title="Rétroliens (mentionnée par)" icon={<Link2 size={13} className="rotate-180" />} items={back.map((b) => b.title)} onClick={onOpenTitle} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LinkPanel({ title, icon, items, onClick }: { title: string; icon: React.ReactNode; items: string[]; onClick: (t: string) => void }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="card p-3">
+      <p className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-paper-faint">{icon} {title}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((t) => (
+          <button key={t} className="chip border-bronze-700/50 text-bronze-400 hover:bg-bronze-900/30" onClick={() => onClick(t)}>{t}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AskBrain({ notes, settings, onOpen }: { notes: KnowledgeNote[]; settings: ReturnType<typeof useAlpha.getState>["settings"]; onOpen: (id: string) => void }) {
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [answer, setAnswer] = useState<string>("");
+  const [engine, setEngine] = useState<string>("");
+  const [sources, setSources] = useState<KnowledgeNote[]>([]);
+  const [open, setOpen] = useState(false);
+
+  const ask = async () => {
+    if (!q.trim()) return;
+    setBusy(true);
+    setAnswer("");
+    const hits = search(q, notes, 6);
+    setSources(hits.map((h) => h.note));
+    setOpen(true);
+    try {
+      const res = await fetch("/api/brain", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ query: q, context: contextFromNotes(hits), identity: buildIdentity(settings) }),
+      });
+      const data = await res.json();
+      setAnswer(data.answer ?? "");
+      setEngine(data.engine ?? "");
+    } catch {
+      setEngine("hors-ligne");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="card p-4">
+      <div className="flex items-center gap-2">
+        <Sparkles size={16} className="text-bronze-400" />
+        <input
+          className="input flex-1"
+          placeholder="Demander au Cerveau… (ex : « quelle offre pour un garage qui rate des appels ? »)"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && ask()}
+        />
+        <button className="btn-bronze" onClick={ask} disabled={busy || !q.trim()}>
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Demander
+        </button>
+      </div>
+
+      {open && (
+        <div className="mt-3 rounded-lg border border-bronze-700/40 bg-bronze-900/10 p-3">
+          <div className="flex items-start justify-between gap-2">
+            {answer ? (
+              <p className="whitespace-pre-wrap text-[13px] text-paper-dim">{answer}</p>
+            ) : busy ? (
+              <p className="text-[12px] text-paper-faint">Le Cerveau réfléchit…</p>
+            ) : (
+              <p className="text-[12px] text-paper-faint">{sources.length ? "Pas de synthèse IA (aucune clé) — voici les notes pertinentes ci-dessous." : "Rien de pertinent dans le Cerveau. Ajoute des notes ou aspire tes prospects."}</p>
+            )}
+            <button className="text-paper-faint hover:text-paper" onClick={() => setOpen(false)}><X size={14} /></button>
+          </div>
+
+          {sources.length > 0 && (
+            <div className="mt-2 border-t border-ink-700 pt-2">
+              <p className="mb-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-paper-faint">Sources ({sources.length})</p>
+              <div className="flex flex-wrap gap-1.5">
+                {sources.map((n) => (
+                  <button key={n.id} className="chip border-ink-600 text-paper-dim hover:border-bronze-600 hover:text-bronze-400" onClick={() => onOpen(n.id)}>{n.title}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {engine && <p className="mt-2 text-[10.5px] italic text-paper-faint">Moteur : {engine} · réponse fondée sur tes notes.</p>}
+        </div>
+      )}
+    </section>
+  );
+}

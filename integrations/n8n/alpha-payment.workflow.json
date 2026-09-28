@@ -1,0 +1,70 @@
+{
+  "name": "ALPHA SALES OS — Paiement Stripe (W11)",
+  "meta": {
+    "description": "Ferme W11. Le nœud Stripe Trigger (credential Stripe — il enregistre le webhook et vérifie la signature tout seul) écoute checkout.session.completed et invoice.paid → n8n journalise le paiement dans le History du CRM et NOTIFIE l'app (Réponses entrantes) : « Paiement reçu X € — enregistre-le sur la fiche (Commercial → Paiements) ». La saisie du paiement reste HUMAINE (H7) : ce workflow n'écrit aucun montant dans les colonnes, il trace et alerte. Variables d'env n8n : ALPHA_CRM_URL, ALPHA_CRM_TOKEN, ALPHA_APP_URL, ALPHA_WEBHOOK_SECRET. Credential : Stripe (clé secrète)."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "events": ["checkout.session.completed", "invoice.paid"]
+      },
+      "id": "k0000000-0000-4000-8000-000000000001",
+      "name": "Stripe Trigger",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "typeVersion": 1,
+      "position": [-360, 300],
+      "credentials": { "stripeApi": { "id": "REMPLACE_MOI", "name": "Stripe account" } },
+      "webhookId": "alpha-payment"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrait l'essentiel des deux formes d'événements Stripe.\nconst b = $json.body || $json;\nconst type = String(b.type || '');\nconst o = (b.data && b.data.object) || {};\nconst email = String(o.customer_details?.email || o.customer_email || '').toLowerCase().trim();\nconst cents = Number(o.amount_total ?? o.amount_paid ?? 0);\nconst amount = Math.round(cents) / 100;\nconst currency = String(o.currency || 'eur').toUpperCase();\nconst label = type.includes('invoice') ? 'facture' : 'paiement';\nif (!email || !amount) return [];\nreturn [{ json: { email, amount, currency, label } }];"
+      },
+      "id": "k0000000-0000-4000-8000-000000000002",
+      "name": "Extraire paiement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALPHA_CRM_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"token\": $env.ALPHA_CRM_TOKEN, \"action\": \"history\", \"id\": $json.email, \"text\": \"💰 \" + $json.label + \" reçu (Stripe) : \" + $json.amount + \" \" + $json.currency } }}",
+        "options": {}
+      },
+      "id": "k0000000-0000-4000-8000-000000000003",
+      "name": "CRM — journaliser le paiement",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [140, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALPHA_APP_URL }}/api/webhooks/inbound",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-webhook-secret", "value": "={{ $env.ALPHA_WEBHOOK_SECRET }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"type\": \"autre\", \"email\": $json.email, \"message\": \"💰 PAIEMENT REÇU (Stripe) : \" + $json.amount + \" \" + $json.currency + \" — enregistre-le sur la fiche (onglet Commercial → Paiements) et vérifie le statut du contrat.\" } }}",
+        "options": {}
+      },
+      "id": "k0000000-0000-4000-8000-000000000004",
+      "name": "App — notifier (HITL)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300]
+    }
+  ],
+  "connections": {
+    "Stripe Trigger": { "main": [[{ "node": "Extraire paiement", "type": "main", "index": 0 }]] },
+    "Extraire paiement": { "main": [[{ "node": "CRM — journaliser le paiement", "type": "main", "index": 0 }]] },
+    "CRM — journaliser le paiement": { "main": [[{ "node": "App — notifier (HITL)", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

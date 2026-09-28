@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { audiencePrompt } from "@/lib/audience";
+import { doctrineOrDefault } from "@/lib/business-rules";
 import type { Prospect } from "@/lib/types";
+import { runAI } from "@/lib/ai-engine";
+import { moteurIADeLaRequete } from "@/lib/credentials-secret";
+import { playbookPrompt } from "@/lib/playbook";
+import { prescripteurPrompt } from "@/lib/prescripteurs";
+import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
+import { clipDoctrine } from "@/lib/identity";
+import { deepDive } from "@/lib/deep-dive";
+import { SYSTEME_COPILOTE } from "@/lib/prompts-textes";
 import {
   fallbackAuditNotes,
   fallbackObjectionAnswer,
@@ -12,29 +22,75 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply";
+type AiTask = "script" | "audit" | "objection" | "summary" | "next-action" | "reply" | "briefing" | "prescripteur";
 
 interface AiRequest {
   task: AiTask;
-  prospect: Prospect;
+  /** Requis pour toutes les tâches sauf `briefing` (qui porte sur la tournée). */
+  prospect?: Prospect;
   businessRules: string;
+  /** Identité + offre du compte (white-label). */
+  identity?: string;
+  /** Extraits du Cerveau (RAG) récupérés côté client. */
+  brainContext?: string;
+  /** Compte actif : détermine l'ICP, donc à qui le texte s'adresse. */
+  accountId?: string;
   objection?: string;
   /** inbound message to answer (task = reply) */
   inboundMessage?: string;
+  /** résumé de la tournée du jour (task = briefing) */
+  tourSummary?: string;
+  /** verticale du playbook terrain à injecter (défaut : déduite du secteur) */
+  verticalId?: string;
+  /** archétype de prescripteur (task = prescripteur) — leur économie n'est pas celle d'un prospect */
+  archetypeId?: string;
+  /** question libre sur l'approche d'un prescripteur */
+  question?: string;
 }
 
-const SYSTEM = `Tu es le copilote de vente d'EAGLEYE CORP (agence lyonnaise : sites premium + overlays IA pour restaurants, pubs, ambulances, artisans).
-Doctrine Hormozi non négociable :
-- La décision EST le produit. Émotion d'abord (démo mobile avant le prix), logique ensuite.
-- OBSTACLES (pré-offre) ≠ OBJECTIONS (post-offre / Red Zone). Ne jamais confondre.
-- Oignon du Blâme : Circonstances → Les Autres → Soi. On épluche couche par couche.
-- Toujours chiffrer la Taxe d'Ignorance (€/mois perdus à ne rien faire).
-- 3 Croyances à 10/10 avant signature : le produit fonctionne, tu le soutiens, ça marche POUR LUI.
-- Chaque contact se termine par un next step DATÉ. Conviction 10/10 requise.
-Réponds en français, format Markdown, concret et terrain — zéro corporate.`;
+// Le texte vit dans `lib/prompts-textes.ts` : c'était la 1re des sept copies
+// de la doctrine (voir l'en-tête de ce module).
+const SYSTEM = SYSTEME_COPILOTE;
 
 function buildPrompt(req: AiRequest): string {
-  const p = req.prospect;
+  // Un prescripteur n'a PAS le problème qu'on résout : il connaît des gens
+  // qui l'ont. L'argumentaire prospect ne s'applique pas, et le servir
+  // quand même fait perdre l'interlocuteur en une phrase.
+  if (req.task === "prescripteur") {
+    return [
+      `## Règles business de l'agence`,
+      req.businessRules,
+      ``,
+      `## Question`,
+      req.question ?? "Comment aborder ce prescripteur ?",
+      ``,
+      `## Tâche`,
+      `Réponds en partant de SON économie à lui : ce qu'il gagne, ce qu'il risque, ce que ça lui coûte en temps. Donne une phrase exacte à prononcer, la demande concrète et petite à formuler, et le piège à éviter avec cet archétype précis. Jamais de projection chiffrée sans fourchette ni hypothèses.`,
+    ].join("\n");
+  }
+
+  // Le briefing porte sur la tournée entière, pas sur une fiche.
+  if (req.task === "briefing") {
+    return [
+      `## Tournée du jour (RDV terrain, dans l'ordre horaire)`,
+      req.tourSummary ?? "(aucune étape)",
+      ``,
+      `## Règles business de l'agence`,
+      req.businessRules,
+      ``,
+      `## Tâche`,
+      `Tu es le directeur commercial qui briefe son closer avant la tournée. Donne un BRIEFING tactique en 4 puces courtes (commence chaque ligne par « • »), langage terrain :`,
+      `1. l'ordre / le rythme de la tournée,`,
+      `2. LE closing prioritaire du jour et pourquoi (valeur × chaleur),`,
+      `3. l'angle qui marche aujourd'hui (Taxe d'Ignorance chiffrée, démo mobile avant prix),`,
+      `4. le piège doctrine à éviter (croyance cassée, objection bloquante, prix sans démo).`,
+    ].join("\n");
+  }
+
+  const p = req.prospect!;
+  // L'offre vient du MÊME calcul que le script déterministe, l'email et
+  // l'argumentaire — sinon le chemin IA redevient une source parallèle.
+  const offreRoutee = deepDive(p, req.accountId);
   const ctx = [
     `## Prospect`,
     `- ${p.name}, ${p.company} (${p.sector}) — ${p.city}`,
@@ -45,15 +101,56 @@ function buildPrompt(req: AiRequest): string {
     `- Affinité (il nous apprécie) : ${p.likeness}/100`,
     `- Obstacles ouverts : ${p.obstacles.filter((o) => !o.resolved).map((o) => o.label).join(" ; ") || "aucun"}`,
     `- Objections ouvertes : ${p.objections.filter((o) => o.status !== "traitee").map((o) => o.label).join(" ; ") || "aucune"}`,
-    `- Problèmes audités : ${p.problems.length ? p.problems.join(" ; ") : "audit non documenté"}`,
-    `- Solution conçue : ${p.solution || "—"}`,
-    `- Offre personnalisée : ${p.personalizedOffer || "—"}`,
     `- Contrat : ${p.contract.status} · Livraison : ${p.delivery}`,
-    `- Derniers contacts : ${p.events.slice(0, 3).map((e) => `[${e.kind}] ${e.summary}`).join(" | ") || "aucun"}`,
-    `- Notes : ${p.notes || "—"}`,
+    /**
+     * ── L'OFFRE ROUTÉE — elle manquait, et c'est elle qui décide du texte ──
+     *
+     * ⚠ Le contexte donnait l'étape, les croyances, les objections, la valeur…
+     * et pas l'offre. Or la tâche `script` demande « un script de vente terrain
+     * complet ». Sans savoir ce qu'on vend à CETTE fiche, le modèle le déduit
+     * de la doctrine — qui parle surtout d'accueil téléphonique — ou l'invente.
+     *
+     * C'est la sixième couche du même défaut : le script déterministe,
+     * l'email, LinkedIn, l'argumentaire et les trous du deep-dive avaient tous
+     * été recâblés sur l'offre. Le chemin IA, lui, continuait de deviner —
+     * et c'est celui qu'on utilise quand on veut un texte sur mesure.
+     *
+     * Même source que partout ailleurs : `deepDive`, contraint aux offres
+     * autorisées du compte.
+     */
+    `- OFFRE À REPRÉSENTER : ${offreRoutee.offerLabel}. Le script ne parle que de celle-là.`,
+    `- Pourquoi elle : ${offreRoutee.routingReason}`,
+    ``,
+    // Les champs LIBRES sont isolés du reste : notes importées d'un CSV,
+    // résumés d'appels transcrits, problèmes recopiés d'un audit reçu. Rien
+    // de tout ça n'est écrit par nous, et jusqu'ici c'était collé au même
+    // niveau que la doctrine — donc lisible comme une consigne.
+    `## Champs libres de la fiche`,
+    wrapUntrusted(
+      "fiche",
+      [
+        `Problèmes audités : ${p.problems.length ? p.problems.join(" ; ") : "audit non documenté"}`,
+        `Solution conçue : ${p.solution || "—"}`,
+        `Offre personnalisée : ${p.personalizedOffer || "—"}`,
+        `Derniers contacts : ${p.events.slice(0, 3).map((e) => `[${e.kind}] ${e.summary}`).join(" | ") || "aucun"}`,
+        `Notes : ${p.notes || "—"}`,
+      ].join("\n"),
+      { maxChars: 6_000 }
+    ),
+    ``,
+    ``,
+    // À QUI on parle, déduit du segment du prospect. La fiche donne les faits ;
+    // ce bloc donne le VOCABULAIRE de son métier — c'est ce qui fait la
+    // différence entre « un texte sur lui » et « un texte pour lui ».
+    audiencePrompt({
+      accountId: req.accountId,
+      prospect: { sector: p.sector, company: p.company, notes: p.notes, problems: p.problems },
+    }),
     ``,
     `## Règles business de l'agence`,
-    req.businessRules,
+    clipDoctrine(req.businessRules ?? ""),
+    ``,
+    UNTRUSTED_RULES,
   ].join("\n");
 
   switch (req.task) {
@@ -68,26 +165,43 @@ function buildPrompt(req: AiRequest): string {
     case "next-action":
       return `${ctx}\n\n## Tâche\nRecommande LA prochaine meilleure action (une seule), avec le pourquoi doctrine et le timing exact.`;
     case "reply":
-      return `${ctx}\n\n## Message entrant du prospect\n« ${req.inboundMessage ?? ""} »\n\n## Tâche\nRédige LA réponse à envoyer (email ou WhatsApp selon le ton). Objectif unique : verrouiller un next step DATÉ (audit ou démo mobile). Court, chaleureux, zéro pitch produit, jamais de prix par écrit avant la démo. Termine par une question fermée à deux créneaux.`;
+      // Le message entrant est le texte le plus hostile que l'OS manipule :
+      // il arrive par webhook, écrit par quelqu'un d'extérieur, et la réponse
+      // générée part vraiment. Encadré, et la tâche est rappelée APRÈS lui.
+      return `${ctx}\n\n## Message entrant du prospect\n${wrapUntrusted("message-entrant", req.inboundMessage ?? "", { maxChars: 4_000 })}\n\n## Tâche\nRédige LA réponse à envoyer (email ou WhatsApp selon le ton). Objectif unique : verrouiller un next step DATÉ (audit ou démo mobile). Court, chaleureux, zéro pitch produit, jamais de prix par écrit avant la démo. Termine par une question fermée à deux créneaux.`;
   }
 }
 
 function fallback(req: AiRequest): string {
   switch (req.task) {
+    case "prescripteur": {
+      // Sans IA, on rend la doctrine elle-même : elle est écrite, précise,
+      // et elle vaut mieux qu'une paraphrase générique.
+      return prescripteurPrompt(req.archetypeId);
+    }
+    case "briefing":
+      // Le client affiche déjà son brief déterministe (lib/closer) ; ce repli
+      // serveur rappelle juste la doctrine de tournée.
+      return [
+        "• Suis l'ordre horaire — chaque RDV se termine par un next step DATÉ.",
+        "• Garde ton énergie pour le closing à plus forte valeur pondérée × chaleur.",
+        "• L'angle : la Taxe d'Ignorance chiffrée, démo mobile AVANT tout prix.",
+        "• Piège : ne traite jamais une objection sans avoir isolé la croyance cassée.",
+      ].join("\n");
     case "script":
-      return fallbackScript(req.prospect, req.businessRules);
+      return fallbackScript(req.prospect!, req.businessRules);
     case "audit":
-      return fallbackAuditNotes(req.prospect);
+      return fallbackAuditNotes(req.prospect!);
     case "objection":
-      return fallbackObjectionAnswer(req.objection ?? "Objection inconnue", req.prospect);
+      return fallbackObjectionAnswer(req.objection ?? "Objection inconnue", req.prospect!);
     case "summary":
-      return fallbackSummary(req.prospect);
+      return fallbackSummary(req.prospect!);
     case "next-action": {
-      const nba = nextBestAction(req.prospect);
+      const nba = nextBestAction(req.prospect!);
       return `**Action recommandée (${nba.urgency}) :** ${nba.action}\n\n**Pourquoi :** ${nba.why}`;
     }
     case "reply": {
-      const p = req.prospect;
+      const p = req.prospect!;
       const first = (p.name || "").split(" ")[0] || "bonjour";
       return [
         `**Brouillon de réponse (moteur templates) :**`,
@@ -113,28 +227,41 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }
-  if (!body?.task || !body?.prospect) {
+  const noProspectNeeded = body?.task === "briefing" || body?.task === "prescripteur";
+  if (!body?.task || (!noProspectNeeded && !body?.prospect)) {
     return NextResponse.json({ error: "task et prospect requis" }, { status: 400 });
   }
-
-  // No key → deterministic Hormozi template engine (app works offline).
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ text: fallback(body), engine: "template" });
+  if (body.task === "briefing" && typeof body.tourSummary !== "string") {
+    return NextResponse.json({ error: "tourSummary requis pour le briefing" }, { status: 400 });
   }
 
+  // La doctrine ne dépend plus de ce que le navigateur veut bien envoyer :
+  // une chaîne vide donnait une IA qui ignore « jamais de prix avant la démo »,
+  // sans que rien ne le signale. Le repli est côté serveur.
+  body.businessRules = doctrineOrDefault(body.businessRules);
+
+  // Le playbook terrain entre dans le système : c'est lui qui fait la
+  // différence entre un conseil générique et la méthode maison.
+  const idBlock = body.identity ? `${body.identity}\n\n` : "";
+  const brainBlock = body.brainContext ? `\n\n## Cerveau — notes de l'opérateur (appuie-toi dessus)\n${body.brainContext}` : "";
+  const system =
+    (body.task === "prescripteur"
+      ? `${idBlock}${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
+      : `${idBlock}${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`) + brainBlock;
+
   try {
-    const { generateText } = await import("ai");
-    const { anthropic } = await import("@ai-sdk/anthropic");
-    const { text } = await generateText({
-      model: anthropic(process.env.AI_MODEL ?? "claude-opus-4-8"),
-      system: SYSTEM,
-      prompt: buildPrompt(body),
-      maxTokens: 2000,
-    });
-    return NextResponse.json({ text, engine: "claude" });
+    const { text, engine } = await runAI(
+      [
+        { role: "system", content: system },
+        { role: "user", content: buildPrompt(body) },
+      ],
+      await moteurIADeLaRequete(request),
+      { temperature: 0.3, maxTokens: 2000 }
+    );
+    return NextResponse.json({ text, engine });
   } catch (e) {
-    // API failure → degrade gracefully to the template engine.
-    console.error("AI route error, falling back to templates:", e);
+    // Aucun moteur n'a répondu → moteur de templates. L'app marche sans IA.
+    console.error("Cascade IA indisponible, repli templates:", e);
     return NextResponse.json({ text: fallback(body), engine: "template" });
   }
 }

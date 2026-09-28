@@ -1,0 +1,89 @@
+{
+  "name": "ALPHA SALES OS — Récap urgent du matin (Sheet → /api/digest → SMS)",
+  "meta": {
+    "description": "Chaque matin (cron), lit le CRM (Google Sheet), reconstruit des fiches minimales (société, étape, prochaine étape datée, dernier contact) et les POST à /api/digest de l'app. L'app calcule le cadran « faire » (urgent ET important) avec la MÊME logique que l'écran Aujourd'hui, et t'envoie un SMS SEULEMENT s'il y a quelque chose de critique. Rien de critique = pas de SMS (on ne dresse pas à ignorer). Mappe : Google Sheets (CRM) + une variable APP_BASE_URL. Le SMS part côté app (TEXTBELT_KEY + ALERT_PHONE)."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * 1-6"
+            }
+          ]
+        }
+      },
+      "id": "e0000000-0000-4000-8000-000000000001",
+      "name": "Chaque matin 7h30 (lun–sam)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-320, 300]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REMPLACE_PAR_TON_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "CRM",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "e0000000-0000-4000-8000-000000000002",
+      "name": "Lire le CRM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-80, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REMPLACE_MOI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reconstruit des fiches minimales pour /api/digest.\n// La logique d'URGENCE vit dans l'app (lib/priorites.ts) — ici on ne fait\n// que traduire les colonnes du Sheet en champs qu'elle sait lire :\n//   société, étape, prochaine étape datée (deadline), dernier contact.\n// construireJournee déclenche le cadran « faire » sur : deadline en retard\n// ou du jour, RDV du jour/lendemain, et deals avancés qui refroidissent.\n\nconst STAGE_ALIAS = { prospect:'prospect', contact:'contact', audit:'audit', demo:'demo', 'démo':'demo', offre:'offre', 'red zone':'redzone', redzone:'redzone', 'red-zone':'redzone', signe:'signe', 'signé':'signe', gagne:'signe', perdu:'perdu' };\nconst norm = (s) => String(s || '').trim().toLowerCase();\nconst toISO = (v) => {\n  if (!v) return null;\n  // Accepte 2026-08-07, 07/08/2026, 7 août… (best effort)\n  const iso = String(v).match(/(\\d{4})-(\\d{2})-(\\d{2})/);\n  if (iso) return new Date(iso[0] + 'T09:00:00').toISOString();\n  const fr = String(v).match(/(\\d{1,2})[\\/.](\\d{1,2})[\\/.](\\d{2,4})/);\n  if (fr) { const [_, d, m, y] = fr; const yy = y.length === 2 ? '20'+y : y; return new Date(`${yy}-${m.padStart(2,'0')}-${d.padStart(2,'0')}T09:00:00`).toISOString(); }\n  return null;\n};\n\nconst prospects = [];\nlet i = 0;\nfor (const it of items) {\n  const r = it.json || {};\n  const company = r.prospect || r.company || r.entreprise || r.société || r.societe;\n  if (!company) continue;\n  const stage = STAGE_ALIAS[norm(r.stage || r['étape'] || r.etape)] || 'prospect';\n  const deadline = toISO(r.deadline || r['échéance'] || r.echeance);\n  const lastTouch = toISO(r.lastContact || r['dernier contact'] || r.history_date || r.updatedAt);\n  prospects.push({\n    id: 'sheet-' + (i++),\n    company: String(company),\n    name: r.contact || r.name || '',\n    sector: 'autre',\n    city: r.city || r.ville || '',\n    stage,\n    probability: 50,\n    trust: 20,\n    monthlyValue: Number(r.monthlyValue || r.mrr || 0) || 0,\n    setupValue: Number(r.setupValue || 990) || 990,\n    ignoranceTax: 0,\n    nextStep: deadline ? { date: deadline, action: (r.deadline_action || 'Prochaine étape') } : null,\n    events: lastTouch ? [{ id: 'e'+i, date: lastTouch, kind: 'note', summary: 'dernier contact' }] : [],\n    objections: [], obstacles: [], problems: [], attachments: [], payments: [],\n    deepAudit: {}, tags: [], notes: '',\n    createdAt: lastTouch || new Date().toISOString(), updatedAt: lastTouch || new Date().toISOString(),\n  });\n}\nreturn [{ json: { prospects, meetings: [] } }];"
+      },
+      "id": "e0000000-0000-4000-8000-000000000003",
+      "name": "Sheet → fiches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [160, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_BASE_URL }}/api/digest",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ prospects: $json.prospects, meetings: $json.meetings, channel: 'sms' }) }}",
+        "options": {}
+      },
+      "id": "e0000000-0000-4000-8000-000000000004",
+      "name": "POST /api/digest (l'app envoie le SMS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 300]
+    }
+  ],
+  "connections": {
+    "Chaque matin 7h30 (lun–sam)": {
+      "main": [[{ "node": "Lire le CRM", "type": "main", "index": 0 }]]
+    },
+    "Lire le CRM": {
+      "main": [[{ "node": "Sheet → fiches", "type": "main", "index": 0 }]]
+    },
+    "Sheet → fiches": {
+      "main": [[{ "node": "POST /api/digest (l'app envoie le SMS)", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

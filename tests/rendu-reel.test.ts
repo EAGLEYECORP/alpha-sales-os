@@ -1,0 +1,312 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { memeOrigine, peutLireSessions, REFUS_LECTURE } from "../lib/voice-session-acces";
+import { lireRapportDns } from "../lib/deliverability-dns";
+
+/** Tous les .ts/.tsx sous les dossiers donnés — sert aux gardes DÉDUITS. */
+function fichiersSources(dirs: string[]): string[] {
+  const out: string[] = [];
+  const visite = (d: string) => {
+    for (const f of readdirSync(d)) {
+      if (f === "node_modules" || f.startsWith(".")) continue;
+      const p = join(d, f);
+      if (statSync(p).isDirectory()) visite(p);
+      else if (/\.tsx?$/.test(p)) out.push(p);
+    }
+  };
+  for (const d of dirs) visite(join(process.cwd(), d));
+  return out;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QUE LE NAVIGATEUR A TROUVÉ, ET QUE LES TESTS AVAIENT MANQUÉ.
+ *
+ * 943 tests passaient au vert pendant que la Salle de contrôle affichait
+ * « non autorisé » sur tous les appels en production. Aucun test ne pouvait
+ * le voir : ils vérifiaient des modules purs, jamais une requête réelle
+ * partant d'une page réelle vers une route réelle.
+ *
+ * Les deux défauts trouvés en pilotant Chromium sur les 36 écrans :
+ *
+ *  1. `/api/voice/session` exigeait le secret de l'AGENT pour la LECTURE.
+ *     Le navigateur de l'opérateur ne l'a pas — et ne doit pas l'avoir.
+ *  2. `/api/deliverability/dns` rendait 400 pour « pas encore configuré ».
+ *     Une configuration absente n'est pas une requête malformée.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+
+/** Fabrique un jeu d'en-têtes lisible comme ceux d'une vraie requête. */
+const entetes = (h: Record<string, string>) => ({
+  get: (n: string) => h[n.toLowerCase()] ?? null,
+});
+
+// ─────────── 1. LIRE ET ÉCRIRE N'ONT PAS LA MÊME PORTE ───────────
+
+test("le navigateur de l'opérateur peut LIRE les sessions sans le secret de l'agent", () => {
+  /**
+   * LE BUG. Le secret est celui de l'agent Python ; le mettre dans le bundle
+   * client l'exposerait à quiconque ouvre les devtools. Sans cette règle,
+   * l'écran de supervision est mort dès que le secret est configuré —
+   * c'est-à-dire en production.
+   */
+  const navigateur = entetes({ "sec-fetch-site": "same-origin", host: "alpha.eagleyecorp.fr" });
+  assert.equal(peutLireSessions(navigateur, false), true);
+});
+
+test("le secret de l'agent ouvre la lecture aussi — outils et scripts", () => {
+  assert.equal(peutLireSessions(entetes({}), true), true);
+});
+
+test("un site TIERS ne lit rien, même en prétendant venir de chez nous", () => {
+  // `Sec-Fetch-Site` est posé par le navigateur : un site tiers ne peut pas
+  // le forger. Un `Sec-Fetch-Site` présent mais différent est un refus NET —
+  // on ne doit pas retomber sur `Origin`, qu'un tiers contrôle.
+  const tiers = entetes({
+    "sec-fetch-site": "cross-site",
+    origin: "https://alpha.eagleyecorp.fr",
+    host: "alpha.eagleyecorp.fr",
+  });
+  assert.equal(memeOrigine(tiers), false, "un Origin falsifié ne doit pas rattraper un Sec-Fetch-Site cross-site");
+  assert.equal(peutLireSessions(tiers, false), false);
+});
+
+test("curl sans en-tête ne lit rien non plus", () => {
+  // Aucun navigateur = aucun Sec-Fetch-Site et aucun Origin. Refus par défaut.
+  assert.equal(peutLireSessions(entetes({ host: "alpha.eagleyecorp.fr" }), false), false);
+});
+
+test("le repli par Origin exige que l'hôte corresponde vraiment", () => {
+  const bon = entetes({ origin: "https://alpha.eagleyecorp.fr", host: "alpha.eagleyecorp.fr" });
+  const mauvais = entetes({ origin: "https://pirate.example", host: "alpha.eagleyecorp.fr" });
+  assert.equal(memeOrigine(bon), true);
+  assert.equal(memeOrigine(mauvais), false);
+  // Un Origin illisible ne doit pas faire tomber la route.
+  assert.equal(memeOrigine(entetes({ origin: "pas-une-url", host: "x" })), false);
+});
+
+test("le refus DIT quoi faire au lieu de se contenter de refuser", () => {
+  assert.match(REFUS_LECTURE, /x-voice-secret/);
+  assert.match(REFUS_LECTURE, /application elle-même/);
+});
+
+test("la route lit bien la règle partagée, et l'ÉCRITURE reste au secret seul", () => {
+  const src = readFileSync(join(process.cwd(), "app/api/voice/session/route.ts"), "utf8");
+  assert.ok(src.includes("peutLireSessions(req.headers, authorized(req))"), "le GET doit passer par la règle partagée");
+
+  // Le POST, lui, ne doit PAS s'être ouvert au passage : c'est l'agent qui
+  // écrit les transcriptions, et une écriture de même origine suffirait à
+  // n'importe quel onglet ouvert pour fabriquer de fausses sessions.
+  const post = src.slice(src.indexOf("export async function POST"));
+  const gardePost = post.slice(0, 400);
+  assert.match(gardePost, /authorized\(req\)/, "le POST doit rester réservé au secret de l'agent");
+  assert.doesNotMatch(gardePost, /peutLireSessions/, "l'écriture ne doit jamais s'ouvrir à la même origine");
+});
+
+// ─────────── 2. « PAS CONFIGURÉ » N'EST PAS UNE ERREUR ───────────
+
+test("l'absence de domaine d'envoi ne rend plus un 400", () => {
+  /**
+   * 400 = requête malformée du CLIENT. Ici la requête est parfaite, c'est le
+   * serveur qui n'a pas de domaine. Deux écrans affichaient une erreur rouge
+   * à chaque chargement, et une supervision aurait compté des erreurs client
+   * qui n'en sont pas.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/deliverability/dns/route.ts"), "utf8");
+  const bloc = src.slice(src.indexOf("if (!domain)"), src.indexOf("const [root, dmarc"));
+  assert.doesNotMatch(bloc, /status:\s*400/, "« pas configuré » ne doit pas être un 400");
+  assert.match(bloc, /configure:\s*false/, "l'état doit être explicite dans la réponse");
+  assert.match(bloc, /quoiFaire/, "et la réponse doit dire l'étape à faire");
+});
+
+test("TOUT écran qui lit la route DNS distingue « pas configuré » de « en panne »", () => {
+  /**
+   * ⚠ CE TEST NOMMAIT DEUX ÉCRANS. IL Y EN AVAIT TROIS.
+   *
+   * `/demarrage` lisait la même route sans connaître la forme
+   * `{ configure: false }` — et affichait, en toutes lettres :
+   * « Publier SPF, DKIM et DMARC — undefined enregistrement(s) DNS
+   * manquant(s) ». `r.json()` rend `any`, donc rien ne l'a arrêté : ni le
+   * compilateur, ni ce test, qui gardait une liste écrite à la main.
+   *
+   * La liste est donc DÉDUITE : on cherche qui appelle la route. Le quatrième
+   * écran qui la lira sera couvert le jour où il sera écrit.
+   */
+  /**
+   * ⚠⚠ ON RETIRE LES COMMENTAIRES AVANT DE CHERCHER — troisième fois que ce
+   * défaut se paie dans ce dépôt, et la première dans ce fichier.
+   *
+   * Le 17/09, un commentaire de `app/api/video/render/route.ts` a cité
+   * `/api/deliverability/dns` pour EXPLIQUER un raisonnement analogue (« ces
+   * routes lisent un état, elles ne le créent pas »). Le fichier a aussitôt été
+   * compté comme un lecteur de la route DNS, et ce test a exigé qu'il traite
+   * `configure === false` — une réponse qu'il ne reçoit jamais.
+   *
+   * Un garde qui lit la prose attrape les fichiers qui PARLENT du sujet au lieu
+   * de ceux qui le FONT. Et le réflexe de réparation est le pire : effacer
+   * l'explication pour faire passer le build.
+   */
+  const sansCommentaires = (s: string) => s.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+  const lecteurs = fichiersSources(["app", "components"]).filter((f) =>
+    sansCommentaires(readFileSync(f, "utf8")).includes("/api/deliverability/dns")
+  );
+  assert.ok(lecteurs.length >= 3, `attendu au moins 3 lecteurs de la route DNS, trouvé ${lecteurs.length}`);
+
+  const fautes: string[] = [];
+  for (const f of lecteurs) {
+    const src = readFileSync(f, "utf8");
+    // Deux façons acceptables de traiter le cas : le lecteur typé partagé,
+    // ou une branche explicite pour l'écran qui a besoin du rapport complet.
+    const ok = /lireRapportDns\(/.test(src) || /configure === false/.test(src);
+    if (!ok) fautes.push(relative(process.cwd(), f));
+  }
+  assert.deepEqual(
+    fautes,
+    [],
+    "ces écrans lisent la route DNS sans traiter « aucun domaine d'envoi » — c'est ce qui affichait `undefined` :\n  " +
+      fautes.join("\n  ")
+  );
+});
+
+test("le lecteur typé refuse ce qu'il ne sait pas lire, au lieu d'interpoler undefined", () => {
+  // La forme réelle renvoyée par la route quand SMTP_FROM est absent.
+  assert.deepEqual(lireRapportDns({ configure: false, domain: null, quoiFaire: "…" }), {
+    etat: "non-configure",
+  });
+  // Ce qui arrivait avant : un objet sans les champs attendus passait pour un
+  // rapport, et `${undefined}` finissait à l'écran.
+  assert.equal(lireRapportDns({ domain: "x.fr" }).etat, "illisible");
+  assert.equal(lireRapportDns(null).etat, "illisible");
+  assert.equal(lireRapportDns("nope").etat, "illisible");
+  // Et une vraie mesure reste une vraie mesure.
+  const m = lireRapportDns({ domain: "x.fr", verdict: "bon", manquants: 0, inconnus: 0, checks: [] });
+  assert.deepEqual(m, { etat: "mesure", domain: "x.fr", verdict: "bon", manquants: 0, inconnus: 0 });
+});
+
+// ─────────── 3. LES TIERS QUE LA PAGE APPELLE ───────────
+
+test("l'app n'appelle qu'UN SEUL tiers, et on sait lequel", () => {
+  /**
+   * Mesuré au navigateur : sur les 37 écrans, la seule requête sortant de
+   * notre domaine est la feuille de style Google Fonts. Aucun pixel, aucun
+   * traceur, aucune CDN de script — c'est une bonne nouvelle, et c'est
+   * exactement ce qu'il faut verrouiller : un tiers de plus s'ajoute sans
+   * bruit, et personne ne le voit avant un audit.
+   *
+   * ⚠ CE TIERS-LÀ N'EST PAS ANODIN EN FRANCE. Charger une police depuis les
+   * serveurs de Google transmet l'IP du visiteur aux États-Unis sans son
+   * consentement — c'est le motif de condamnations en Europe (LG München,
+   * janvier 2022) et un point de contrôle CNIL connu. Pour une app qui
+   * affiche des mentions RGPD et un DPA, l'incohérence se voit.
+   *
+   * La correction est simple mais demande le réseau au build : passer à
+   * `next/font/google`, qui télécharge les polices à la compilation et les
+   * SERT DEPUIS NOTRE DOMAINE. Je n'ai pas pu la faire ici (le proxy du bac à
+   * sable bloque fonts.gstatic.com, donc je n'aurais pas pu vérifier le
+   * build) — elle est documentée plutôt qu'appliquée à l'aveugle.
+   */
+  const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+  const tiers = [...layout.matchAll(/https:\/\/([a-z0-9.-]+)/gi)]
+    .map((m) => m[1].toLowerCase())
+    .filter((h) => !h.endsWith("eagleyecorp.fr") && !h.includes("schema.org") && !h.includes("w3.org"));
+
+  const attendus = new Set(["fonts.googleapis.com", "fonts.gstatic.com"]);
+  const inattendus = [...new Set(tiers)].filter((h) => !attendus.has(h));
+
+  assert.deepEqual(
+    inattendus,
+    [],
+    `nouveau(x) tiers dans le layout : ${inattendus.join(", ")} — chaque domaine externe est une donnée qui part`
+  );
+});
+
+test("les polices ont un repli système — un tiers bloqué ne casse pas la lecture", () => {
+  // Bloqueur de contenu, pare-feu d'entreprise, ou simplement Google
+  // injoignable : la page doit rester lisible. Vérifié au navigateur, les
+  // 37 écrans se rendent complètement avec Google Fonts inaccessible.
+  const tw = readFileSync(join(process.cwd(), "tailwind.config.ts"), "utf8");
+  const familles = tw.slice(tw.indexOf("fontFamily"), tw.indexOf("fontFamily") + 400);
+  for (const repli of ["system-ui", "sans-serif", "monospace"]) {
+    assert.ok(familles.includes(repli), `repli « ${repli} » absent : sans lui la page devient illisible hors ligne`);
+  }
+});
+
+// ─────────── 4. LE MOTEUR IA ABSENT N'EST PAS UNE PANNE ───────────
+
+/**
+ * `/api/icp` rendait **500** — trouvé en cliquant les boutons des Réglages au
+ * navigateur, avec `Aucun moteur IA configuré` dans les logs du serveur.
+ *
+ * La cause est un contrat mal lu : `runAIJson` ne rend pas `data: null` quand
+ * il n'y a pas de moteur, il LÈVE. La route promettait pourtant un « repli
+ * déterministe (jamais vide) » dans son propre commentaire.
+ *
+ * Ça vise exactement l'installation neuve — celle du client qui vient
+ * d'acheter et n'a pas encore de clé. Les quatre autres routes IA du dépôt
+ * enveloppaient déjà leur appel ; celle-ci était la seule oubliée, et rien ne
+ * l'aurait dit avant un écran rouge chez lui.
+ */
+const ROUTES_IA = [
+  "app/api/ai/route.ts",
+  "app/api/brain/route.ts",
+  "app/api/debrief/route.ts",
+  "app/api/icp/route.ts",
+  "app/api/social/draft/route.ts",
+];
+
+test("AUCUNE route IA n'appelle le moteur hors d'un try — il lève quand rien n'est configuré", () => {
+  for (const f of ROUTES_IA) {
+    const src = readFileSync(join(process.cwd(), f), "utf8");
+    const appel = src.search(/\brunAIJson?[<(]|\brunAI\(/);
+    assert.ok(appel > 0, `${f} : appel au moteur introuvable — le test ne prouverait rien`);
+
+    /**
+     * « Il y a un try quelque part avant » ne suffit PAS : ces routes ouvrent
+     * déjà un try/catch pour lire le JSON du corps. Vérifié en cassant la
+     * garde exprès — le test passait quand même. Ce qui compte, c'est que le
+     * try le plus proche soit encore OUVERT au moment de l'appel : donc aucun
+     * `catch` ne doit s'intercaler entre lui et l'appel.
+     */
+    const ouvert = src.lastIndexOf("try {", appel);
+    assert.ok(ouvert > 0, `${f} : le moteur est appelé sans aucun try`);
+    assert.doesNotMatch(
+      src.slice(ouvert, appel),
+      /\}\s*catch/,
+      `${f} : le try le plus proche est déjà refermé — sans clé IA, la route rend 500 au lieu du repli`
+    );
+  }
+});
+
+test("l'ICP hors ligne se rend QUAND MÊME, et il le dit", () => {
+  const src = readFileSync(join(process.cwd(), "app/api/icp/route.ts"), "utf8");
+  // L'ORDRE est la preuve : appel au moteur, PUIS un catch, PUIS le repli.
+  // Un repli placé avant le catch serait sauté par l'exception.
+  // ⚠ `indexOf("runAIJson")` tombait sur la LIGNE D'IMPORT, pas sur l'appel :
+  // le test passait alors que la garde était cassée. On vise `await`.
+  const appel = src.indexOf("await runAIJson");
+  const attrape = src.indexOf("} catch", appel);
+  const repli = src.indexOf("deriveICP(offer)", attrape);
+  assert.ok(attrape > appel, "l'appel au moteur doit être rattrapé");
+  assert.ok(repli > attrape, "le squelette déterministe doit venir APRÈS le catch");
+  assert.match(src.slice(repli - 200, repli + 200), /hors-ligne/, "et la réponse doit dire que l'IA n'a pas servi");
+});
+
+// ─────────── 5. ANNULER DOIT ANNULER ───────────
+
+test("fermer la fenêtre de feedback ne marque PAS le rendez-vous fait", () => {
+  /**
+   * `prompt()` rend `null` sur Échap ou Annuler, `""` sur une validation à
+   * vide. Le `?? ""` confondait les deux : un clic malencontreux suivi d'Échap
+   * sortait le rendez-vous du plan du matin et des relances, sans décision.
+   */
+  const src = readFileSync(join(process.cwd(), "app/(app)/meetings/page.tsx"), "utf8");
+  const bloc = src.slice(src.indexOf("Feedback du RDV") - 200, src.indexOf("Feedback du RDV") + 700);
+  assert.match(bloc, /outcome === null\)\s*return/, "l'annulation doit sortir avant l'écriture");
+  assert.doesNotMatch(
+    bloc.slice(0, bloc.indexOf("outcome === null")),
+    /prompt\([^)]*\)\s*\?\?/,
+    "le `?? \"\"` écrasait la différence entre annuler et répondre à vide"
+  );
+});

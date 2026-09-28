@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  Activity, BarChart3, Bot, CalendarDays, CornerDownLeft, Gauge, Kanban, Mail,
-  ScrollText, Search, Settings, Sprout, Swords, User,
+  Activity, AudioLines, BarChart3, Bot, CalendarCheck, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
+  Gem, Handshake, Linkedin, Navigation, Newspaper, PhoneCall, ScrollText, Search, Send, Settings, Sprout, Swords, User,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { StageBadge } from "@/components/ui/stage-badge";
@@ -13,11 +13,23 @@ import { cn } from "@/lib/utils";
 
 const PAGES = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
+  { href: "/aujourdhui", label: "Aujourd'hui (urgent / important)", icon: CalendarCheck },
+  { href: "/demarrage", label: "Prise en main", icon: Footprints },
+  { href: "/pilote", label: "Pilote automatique", icon: Cpu },
   { href: "/pipeline", label: "Pipeline", icon: Kanban },
+  { href: "/closer", label: "Closer OS", icon: Navigation },
+  { href: "/debrief", label: "Débrief terrain (voix)", icon: Mic },
+  { href: "/voice", label: "Alpha Voice (agent vocal)", icon: AudioLines },
+  { href: "/appels", label: "Session d'appels", icon: PhoneCall },
+  { href: "/linkedin", label: "Machine LinkedIn", icon: Linkedin },
+  { href: "/prescripteurs", label: "Prescripteurs (apporteurs)", icon: Handshake },
   { href: "/agent", label: "Agent ALPHA", icon: Bot },
   { href: "/templates", label: "Templates", icon: ScrollText },
   { href: "/campaigns", label: "Campagnes", icon: Mail },
+  { href: "/outbox", label: "Boîte d'envoi (manuel)", icon: Send },
+  { href: "/newsletter", label: "Newsletter", icon: Newspaper },
   { href: "/kpis", label: "KPIs", icon: Gauge },
+  { href: "/preuves", label: "Preuves", icon: Gem },
   { href: "/meetings", label: "Rendez-vous", icon: CalendarDays },
   { href: "/nurture", label: "Relances", icon: Sprout },
   { href: "/intel", label: "Concurrents", icon: Swords },
