@@ -16,12 +16,15 @@ export const dynamic = "force-dynamic";
  * ── LE POINT QUI COMPTE ──
  *
  * Les outils exposés sont VOLONTAIREMENT asymétriques :
- *   · en LECTURE, l'agent voit tout ce qui l'aide à comprendre le pipe ;
+ *   · en LECTURE, l'agent voit le pipe ET peut PRÉPARER une campagne à froid —
+ *     le texte exact de chaque mail, plafonné au palier du jour ;
  *   · en ÉCRITURE, il n'a QU'UNE chose : déposer une proposition.
  *
- * Aucun outil n'envoie d'email, ne lance d'appel, ne déplace une fiche. Ce
- * n'est pas une omission — c'est la conception. Un agent qui orchestre un
- * pipe réel doit pouvoir se tromper sans que ça coûte un client.
+ * Aucun outil n'envoie d'email, ne lance d'appel, ne déplace une fiche — et
+ * « préparer une campagne » rend un PLAN, pas un envoi. Ce n'est pas une
+ * omission, c'est la conception : un agent qui orchestre un pipe réel doit
+ * pouvoir se tromper sans que ça coûte un client. L'envoi reste gardé côté
+ * serveur (palier, DKIM, mentions) et armé par un humain.
  *
  * Les droits viennent de la CLÉ (ALPHA_API_KEYS) : un agent branché avec une
  * clé sans `propositions.write` ne peut que regarder, et l'outil disparaît de
@@ -99,6 +102,30 @@ const OUTILS: Outil[] = [
         quand: { type: "string", description: "Pour type=rendez-vous : date ISO." },
       },
       required: ["type", "titre", "pourquoi"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "preparer_campagne",
+    description:
+      "PLANIFIE une campagne d'emails à froid sur les prospects éligibles du pipe (stade prospect/contact, email présent, " +
+      "aucun refus). Rend le TEXTE EXACT de chaque mail (objet + corps, avec la divulgation IA de l'article 50 dans le corps) " +
+      "et le préflight, PLAFONNÉ au palier d'envoi du jour — le reste attend un prochain tour. " +
+      "N'ENVOIE RIEN et ne modifie aucune fiche : c'est un plan à faire approuver ; l'envoi réel reste gardé côté serveur " +
+      "(palier, DKIM, mentions) et armé par l'opérateur. Ne rend AUCUNE adresse email — seulement le texte à relire. " +
+      "Le champ « max » resserre le lot sous le palier, il ne peut jamais l'élargir.",
+    portee: "campagne.read",
+    chemin: "/api/v1/campagne",
+    methode: "POST",
+    inputSchema: {
+      type: "object",
+      properties: {
+        max: {
+          type: "number",
+          description: "Plafonne le lot à N mails (jamais au-dessus du palier du jour). Omis = tout le palier du jour.",
+        },
+      },
+      required: [],
       additionalProperties: false,
     },
   },

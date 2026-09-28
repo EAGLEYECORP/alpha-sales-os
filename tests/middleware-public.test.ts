@@ -108,6 +108,7 @@ test("les routes à clé la vérifient VRAIMENT, pas seulement sur la liste", ()
     ["app/api/v1/prospects/route.ts", /ALPHA_API_KEYS|autoriserApi\(/],
     ["app/api/v1/etat/route.ts", /autoriserApi\(/],
     ["app/api/v1/propositions/route.ts", /autoriserApi\(/],
+    ["app/api/v1/campagne/route.ts", /autoriserApi\(/],
     ["app/api/billing/checkout/route.ts", /getTenant\(req\)/],
     // Le webhook Telegram compare le secret d'en-tête à temps constant.
     ["app/api/telegram/route.ts", /safeEqual\(/],
@@ -126,7 +127,11 @@ test("MCP — aucun outil ne peut agir, seulement lire et proposer", () => {
   const src = readFileSync(join(process.cwd(), "app/api/mcp/route.ts"), "utf8");
   const chemins = [...src.matchAll(/chemin:\s*"([^"]+)"/g)].map((m) => m[1]);
   assert.ok(chemins.length >= 2, "les outils doivent être déclarés avec leur chemin");
-  const AUTORISES = ["/api/v1/etat", "/api/v1/propositions"];
+  // Lecture, PLAN et proposition — jamais l'action. `/api/v1/campagne` PRÉPARE
+  // un lot d'emails (le texte à relire) et n'envoie rien : sa route porte
+  // `envoiBranche: false` et n'importe aucun transport. Un test dédié
+  // (tests/preparer-campagne) tient l'invariant « ça ne sort pas ».
+  const AUTORISES = ["/api/v1/etat", "/api/v1/propositions", "/api/v1/campagne"];
   for (const c of chemins) {
     assert.ok(AUTORISES.includes(c), `l'outil MCP appelle ${c} — hors du périmètre lecture/proposition`);
   }

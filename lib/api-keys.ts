@@ -36,6 +36,11 @@ import { safeEqual } from "./access";
  */
 export const PORTEES = [
   "etat.read",
+  // Planifie une campagne d'emails à froid et rend le texte EXACT à relire.
+  // C'est une LECTURE + un CALCUL : elle n'écrit rien et n'envoie rien. Elle
+  // expose le CORPS des mails (donc le prénom d'accroche), jamais l'adresse —
+  // même règle que `etat.read`, qui ne rend aucune coordonnée.
+  "campagne.read",
   "prospects.read",
   "prospects.write",
   "propositions.read",
