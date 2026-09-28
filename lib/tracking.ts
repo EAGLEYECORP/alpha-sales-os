@@ -187,6 +187,45 @@ export async function contactedEmails(
 }
 
 /**
+ * L'HISTORIQUE D'ENVOI VERS UNE ADRESSE, sur une fenêtre — ce que la cadence de
+ * relance (`lib/relance-mail.ts`) lit pour savoir « combien de fois, et quand la
+ * dernière ». Comparaison en minuscules, même table que le reste.
+ *
+ * ⚠ Toute panne rend `{ count: 0, dernierISO: null }` : la décision de relance
+ * lit alors « jamais contacté » et NE relance PAS. Comme partout ici, le doute
+ * penche vers le silence, jamais vers un envoi de plus.
+ */
+export async function historiqueEnvois(
+  email: string,
+  sinceMs: number,
+  userId?: string | null,
+): Promise<{ count: number; dernierISO: string | null }> {
+  const cle = (email ?? "").toLowerCase().trim();
+  if (!cle) return { count: 0, dernierISO: null };
+  const since = new Date(Date.now() - sinceMs).toISOString();
+  const sb = serviceClient();
+  if (sb) {
+    let q = sb
+      .from("tracking_messages")
+      .select("created_at")
+      .eq("channel", "email")
+      .eq("email", cle)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false });
+    if (userId) q = q.eq("user_id", userId);
+    const { data, error } = await q;
+    if (error) return { count: 0, dernierISO: null };
+    const rows = (data ?? []) as { created_at?: string }[];
+    return { count: rows.length, dernierISO: rows[0]?.created_at ?? null };
+  }
+  const rows = [...memory.values()]
+    .filter((r) => r.channel === "email" && r.email?.toLowerCase() === cle && r.createdAt > since && (!userId || r.userId === userId))
+    .map((r) => r.createdAt)
+    .sort((a, b) => (a < b ? 1 : -1));
+  return { count: rows.length, dernierISO: rows[0] ?? null };
+}
+
+/**
  * ─────────────────────────────────────────────────────────────────────
  * LA CLÉ DU DESTINATAIRE — ce qui fait que c'est « la même personne ».
  *

@@ -73,8 +73,13 @@ plupart (d'où le panneau UX ci-dessous).
    `REPLY_AUTOSEND=on` (ton **attestation DKIM**, que le serveur ne peut pas
    vérifier seul). Tant que la variable manque, la boucle planifie sans envoyer.
    → Activation : relève `d=eagleyecorp.fr`, puis pose `REPLY_AUTOSEND=on`, puis arme.
-2. **Auto-relance email.** Le 1er contact part par `mail-tick` ; les rappels
-   (fenêtres + plafond 4/30 j) doivent être tick-drivés comme la voix. À brancher.
+2. **Auto-relance email — ✅ BRANCHÉE (inerte jusqu'à l'armement).**
+   `/api/campaign/relance-tick` envoie les rappels après un 1er contact sans
+   réponse : ESPACÉS (`RELANCE_GAPS_H`), PLAFONNÉS à 4/30 j (décret 2022-1313,
+   dérivé de `RAPPELS_MAX`), et chacun avec une RAISON NEUVE ou pas du tout
+   (`lib/relance-mail.ts` + `raison-neuve` — jamais « je me permets de
+   relancer »). Mêmes gardes que `mail-tick`. Gate : autopilote armé (famille
+   cold). À SCHEDULER (pg_cron, comme la 014).
 3. **Prise de RDV.** Une réponse « veut-rdv » doit proposer 2 créneaux depuis un
    calendrier. Aujourd'hui : passage de main humain. Semi-auto faisable ; le
    close reste humain.

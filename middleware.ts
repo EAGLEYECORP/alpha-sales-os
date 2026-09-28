@@ -183,6 +183,9 @@ const PUBLIC_PREFIXES = [
   // Envoi à froid automatique : même porte que le tick vocal (CRON_SECRET,
   // refuse tout sans secret). Envoie de VRAIS emails — d'où les trois gardes.
   "/api/campaign/mail-tick",
+  // Auto-relance email (B2) : même porte (CRON_SECRET). Envoie de VRAIES
+  // relances — plafond 4/30 j, raison neuve obligatoire, armement requis.
+  "/api/campaign/relance-tick",
   "/api/push/tick",
   // Flux calendrier : lu par les serveurs de Google/Apple/Microsoft, jamais
   // par un navigateur connecté — donc aucun cookie possible. Il porte son
