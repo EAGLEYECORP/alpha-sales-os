@@ -76,6 +76,9 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // ── CRM & Pipeline ──
   "/api/crm": "/pipeline",
   "/api/import": "/pipeline",
+  // Chercheur d'emails BYOK (clé Hunter de l'opérateur) : coût pour NOUS = 0,
+  // donc chemin GRATUIT. Il ne dépense pas chez nous ⇒ hors `API_QUI_DEPENSENT`.
+  "/api/trouver-email": "/pipeline",
   /**
    * ⚠ PAS `/pipeline` — voir `/jeux-internes` dans `lib/bricks-access.ts`.
    *
