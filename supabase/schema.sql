@@ -428,3 +428,16 @@ create table if not exists public.commandes_alpha (
   cree_le  timestamptz not null default now()
 );
 alter table public.commandes_alpha enable row level security;
+
+-- ── Interrupteur de l'autopilote (bouton « Alpha se gère tout seul ») ──
+-- Détail et motifs : supabase/migrations/015-autopilote-reglage.sql
+-- ⚠ RLS actif, AUCUNE policy : lu/écrit par le service role (tick + route
+-- maître). Une seule ligne (id='global'). Le drapeau décide si le tick AGIT ;
+-- il n'installe pas le cron et ne contourne aucune garde.
+create table if not exists public.autopilote_reglage (
+  id         text primary key default 'global',
+  actif      boolean not null default false,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+alter table public.autopilote_reglage enable row level security;

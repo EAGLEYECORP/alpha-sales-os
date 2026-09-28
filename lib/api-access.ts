@@ -133,6 +133,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   "/api/social": "/social",
   "/api/video": "/social",
   "/api/deliverability": "/campaigns",
+  /**
+   * L'interrupteur de l'autopilote : armer = laisser les ticks ENVOYER de
+   * vrais emails/appels au lieu de simuler. C'est de l'outreach, donc
+   * `/campaigns` — la même porte que ce qu'il déclenche. Il est EN PLUS
+   * `MAITRE_SEULEMENT` (c'est notre économie) : la route refuse déjà 403 à
+   * tout non-maître avant même la brique. La double couche est voulue —
+   * alléger l'une ne doit pas suffire à ouvrir.
+   */
+  "/api/autopilote": "/campaigns",
 
   // ── Le Cerveau ──
   "/api/brain": "/cerveau",
@@ -240,4 +249,7 @@ export const MAITRE_SEULEMENT: readonly string[] = [
   "/api/references",
   "/api/digest",
   "/api/notion",
+  // L'interrupteur de l'autopilote arme l'envoi de VRAIS emails depuis notre
+  // domaine, à nos frais : notre économie, jamais celle du locataire.
+  "/api/autopilote",
 ];

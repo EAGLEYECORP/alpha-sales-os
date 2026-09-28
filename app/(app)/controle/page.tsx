@@ -17,6 +17,7 @@ import { pipelineCoverage } from "@/lib/checkpoints";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { FilVente } from "@/components/flux/fil-vente";
+import { BoutonAutopilote } from "@/components/autopilote/bouton-autopilote";
 
 /**
  * SALLE DE CONTRÔLE — tout ce qui tourne, en un écran.
@@ -117,6 +118,11 @@ export default function ControlePage() {
       {/* LE FIL DE VENTE — le mode guidé bout en bout (cible → encaissement).
           En tête, replié par défaut si on préfère aller droit à la file. */}
       <FilVente />
+
+      {/* LE BOUTON AUTOPILOTE — « Alpha se gère tout seul », en un tap. Maître
+          seul (le composant se masque sinon) : il bascule le drapeau serveur
+          que les ticks lisent, et dit franchement ce qu'il n'arme PAS. */}
+      <BoutonAutopilote />
 
       {/* Ce que l'orchestrateur propose — en haut : c'est la file qu'on
           tranche avant de chercher quoi faire soi-même. */}

@@ -19,6 +19,7 @@ import {
   supprimerTrace,
 } from "@/lib/tracking";
 import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
+import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -73,7 +74,8 @@ function authorized(req: NextRequest): boolean {
   return provided.length > 0 && safeEqual(provided, secret);
 }
 
-const armed = () => (process.env.CAMPAIGN_AUTOPILOT ?? "").trim().toLowerCase() === "on";
+// L'armement est UNIFIÉ dans `lib/autopilote.ts` : disjoncteur d'env OU drapeau
+// en base (le bouton). Lu ci-dessous, une fois le client Supabase disponible.
 
 function baseUrlFrom(req: NextRequest): string {
   return (process.env.TRACKING_BASE_URL || process.env.APP_BASE_URL || req.nextUrl.origin).replace(/\/+$/, "");
@@ -109,7 +111,8 @@ export async function POST(req: NextRequest) {
   }
 
   const url = new URL(req.url);
-  const dryRun = !armed() || url.searchParams.get("dryRun") === "1";
+  const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
+  const dryRun = !arme || url.searchParams.get("dryRun") === "1";
   const base = baseUrlFrom(req);
 
   // La boîte d'envoi du MAÎTRE. En envoi réel elle est obligatoire ; en dryRun
@@ -217,7 +220,7 @@ export async function POST(req: NextRequest) {
   const envoyes = lignes.filter((l) => l.etat === "envoyé").length;
   return NextResponse.json({
     ok: true,
-    armed: armed(),
+    armed: arme,
     dryRun,
     envoiBranche: !dryRun,
     eligibles: eligibles.length,
@@ -236,11 +239,12 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "non autorisé" }, { status: 401 });
   const db = serviceClient();
-  if (!db) return NextResponse.json({ armed: armed(), eligibles: null, why: "Supabase non configuré" }, { status: 412 });
+  if (!db) return NextResponse.json({ armed: autopiloteArmeEnv(), eligibles: null, why: "Supabase non configuré" }, { status: 412 });
+  const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
   const lecture = await lireProspectsOperateur(db);
   if (lecture.erreur) return NextResponse.json({ error: lecture.erreur }, { status: 500 });
   const eligibles = lecture.prospects.filter((p) => eligibleColdMail(p).ok).length;
   const envoyes24h = await countRecentSends("email", 86_400_000, null);
   const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
-  return NextResponse.json({ armed: armed(), envoiBranche: false, eligibles, ramp: { jour: ramp.today, envoyes24h } });
+  return NextResponse.json({ armed: arme, envoiBranche: false, eligibles, ramp: { jour: ramp.today, envoyes24h } });
 }

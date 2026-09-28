@@ -7,6 +7,7 @@ import { appendCallAttempt, planTick, MAX_CALLS_PER_TICK } from "@/lib/campaign-
 import { safeEqual } from "@/lib/access";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { presenceAgent } from "@/lib/presence-agent";
+import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -57,7 +58,7 @@ function authorized(req: NextRequest): boolean {
   return provided.length > 0 && safeEqual(provided, secret);
 }
 
-const armed = () => (process.env.CAMPAIGN_AUTOPILOT ?? "").trim().toLowerCase() === "on";
+// Armement unifié (`lib/autopilote.ts`) : env OU drapeau en base (le bouton).
 
 export async function POST(req: NextRequest) {
   if (!authorized(req)) {
@@ -83,7 +84,8 @@ export async function POST(req: NextRequest) {
   const url = new URL(req.url);
   const accountId = url.searchParams.get("accountId") ?? "eagleye";
   const max = Number(url.searchParams.get("max") ?? MAX_CALLS_PER_TICK);
-  const dryRun = !armed() || url.searchParams.get("dryRun") === "1";
+  const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
+  const dryRun = !arme || url.searchParams.get("dryRun") === "1";
 
   /**
    * ── Lecture des prospects ──
@@ -179,9 +181,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       simulation: true,
-      why: armed()
+      why: arme
         ? "dryRun demandé explicitement."
-        : "CAMPAIGN_AUTOPILOT n'est pas sur « on » — rien ne part tant que ce second geste n'est pas fait.",
+        : "Autopilote désarmé (ni le bouton ni CAMPAIGN_AUTOPILOT) — rien ne part tant qu'il n'est pas armé.",
       wouldCall: tasks.map((t) => ({ prospectId: t.prospectId, company: t.company, phone: t.phone, objective: t.objective })),
       queueSize: run.queue.length,
       tooSoon: plan.tooSoon.length,
@@ -290,9 +292,11 @@ export async function POST(req: NextRequest) {
 /** GET = état du pilote, sans rien déclencher. Utile pour vérifier la config. */
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "non autorisé" }, { status: 401 });
+  const db = serviceClient();
+  const arme = db ? estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) }) : autopiloteArmeEnv();
   return NextResponse.json({
-    autopilot: armed() ? "armé" : "désarmé (simulation)",
-    supabase: serviceClient() ? "configuré" : "absent — le cron ne verrait aucun prospect",
+    autopilot: arme ? "armé" : "désarmé (simulation)",
+    supabase: db ? "configuré" : "absent — le cron ne verrait aucun prospect",
     maxParTick: MAX_CALLS_PER_TICK,
     palier:
       (process.env.CAMPAIGN_PALIER ?? "").trim() ||

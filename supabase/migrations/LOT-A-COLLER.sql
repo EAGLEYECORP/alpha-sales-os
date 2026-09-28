@@ -15,7 +15,7 @@
 -- minutes, en silence. Elle se pose à part, après — la fin de ce fichier dit
 -- comment la vérifier une fois qu'elle sera passée.
 --
--- Migrations incluses (13) :
+-- Migrations incluses (14) :
 --   · schema.sql
 --   · 001-proprietaire-et-tables-serveur.sql
 --   · 002-entitlements.sql
@@ -29,6 +29,7 @@
 --   · 011-byok-email.sql
 --   · 012-ouverture-30-jours.sql
 --   · 013-commandes-alpha.sql
+--   · 015-autopilote-reglage.sql
 -- ══════════════════════════════════════════════════════════════════════
 
 -- ┌────────────────────────────────────────────────────────────────────
@@ -464,6 +465,19 @@ create table if not exists public.commandes_alpha (
   cree_le  timestamptz not null default now()
 );
 alter table public.commandes_alpha enable row level security;
+
+-- ── Interrupteur de l'autopilote (bouton « Alpha se gère tout seul ») ──
+-- Détail et motifs : supabase/migrations/015-autopilote-reglage.sql
+-- ⚠ RLS actif, AUCUNE policy : lu/écrit par le service role (tick + route
+-- maître). Une seule ligne (id='global'). Le drapeau décide si le tick AGIT ;
+-- il n'installe pas le cron et ne contourne aucune garde.
+create table if not exists public.autopilote_reglage (
+  id         text primary key default 'global',
+  actif      boolean not null default false,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+alter table public.autopilote_reglage enable row level security;
 
 -- ┌────────────────────────────────────────────────────────────────────
 -- │ 001-proprietaire-et-tables-serveur.sql
@@ -1577,6 +1591,42 @@ alter table public.commandes_alpha enable row level security;
 create index if not exists commandes_alpha_a_traiter
   on public.commandes_alpha (cree_le desc)
   where traitee = false;
+
+-- ┌────────────────────────────────────────────────────────────────────
+-- │ 015-autopilote-reglage.sql
+-- └────────────────────────────────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────
+-- MIGRATION 015 — L'INTERRUPTEUR DE L'AUTOPILOTE, EN BASE.
+--
+-- « Alpha se gère tout seul » se pilotait par la variable d'env
+-- `CAMPAIGN_AUTOPILOT=on` — un geste d'ops, pas un bouton. Cette table porte le
+-- drapeau que l'opérateur bascule depuis l'app (`/api/autopilote`), et que les
+-- ticks serveur (mail/reply/campaign) lisent avant d'agir.
+--
+-- ⚠ UNE SEULE LIGNE (`id = 'global'`), compte maître mono-locataire. Le jour où
+-- l'autopilote devient multi-locataire, la clé passe au `tenant_id` — pas avant,
+-- pour ne pas inventer une dimension qu'aucun écran ne remplit encore.
+--
+-- ⚠ RLS ACTIVÉE, AUCUNE POLICY : la table n'est lue/écrite QUE par le service
+-- role (le tick et la route `/api/autopilote`, elle-même gardée maître). Un
+-- navigateur ne la touche jamais en direct — comme le reste de l'ordonnanceur.
+--
+-- ⚠ CE DRAPEAU N'INSTALLE PAS LE CRON. `pg_cron` (004/014) doit être posé une
+-- fois ; ce drapeau décide seulement si le tick AGIT ou SIMULE. Et il ne
+-- contourne aucune garde (palier, mentions, DKIM, présence agent).
+--
+-- Table ordinaire (pas de pg_cron/Vault) : elle EST dans le LOT-A-COLLER.
+-- ─────────────────────────────────────────────────────────────────────
+
+create table if not exists public.autopilote_reglage (
+  id         text primary key default 'global',
+  actif      boolean not null default false,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+
+alter table public.autopilote_reglage enable row level security;
+-- Volontairement aucune policy : accès service-role uniquement.
 
 
 -- ══════════════════════════════════════════════════════════════════════

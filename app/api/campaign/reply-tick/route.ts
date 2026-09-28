@@ -5,6 +5,7 @@ import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { aiAvailable } from "@/lib/ai-engine";
 import { wrapUntrusted } from "@/lib/untrusted";
 import { deciderTypee } from "@/lib/decision-typee";
+import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
 import {
   INTENTIONS,
   PROMPT_CLASSER_REPONSE,
@@ -67,7 +68,7 @@ function authorized(req: NextRequest): boolean {
   return provided.length > 0 && safeEqual(provided, secret);
 }
 
-const armed = () => (process.env.CAMPAIGN_AUTOPILOT ?? "").trim().toLowerCase() === "on";
+// Armement unifié (`lib/autopilote.ts`) : env OU drapeau en base (le bouton).
 
 /** Une réponse entrante réduite à ce que le tri lit. */
 interface EntrantABrasser {
@@ -108,6 +109,8 @@ export async function POST(req: NextRequest) {
       { status: 412 }
     );
   }
+
+  const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
 
   const moteur = await moteurIADeLaRequete(req);
   if (!aiAvailable(moteur)) {
@@ -166,7 +169,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    armed: armed(),
+    armed: arme,
     // Honnête et central : rien ne part tant que ce n'est pas true.
     envoiBranche: false,
     dkimRequis: true,
@@ -189,12 +192,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "non autorisé" }, { status: 401 });
   }
   const db = serviceClient();
-  if (!db) return NextResponse.json({ armed: armed(), enAttente: null, why: "Supabase non configuré" }, { status: 412 });
+  if (!db) return NextResponse.json({ armed: autopiloteArmeEnv(), enAttente: null, why: "Supabase non configuré" }, { status: 412 });
+  const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
   const { count, error } = await db
     .from("inbound_events")
     .select("id", { count: "exact", head: true })
     .eq("processed", false)
     .eq("type", "email.reply");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ armed: armed(), envoiBranche: false, enAttente: count ?? 0 });
+  return NextResponse.json({ armed: arme, envoiBranche: false, enAttente: count ?? 0 });
 }
