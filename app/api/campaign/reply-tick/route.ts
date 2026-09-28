@@ -6,12 +6,23 @@ import { aiAvailable } from "@/lib/ai-engine";
 import { wrapUntrusted } from "@/lib/untrusted";
 import { deciderTypee } from "@/lib/decision-typee";
 import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
+import { autoReponseAttestee, doitEnvoyerReponse } from "@/lib/reply-autosend";
+import { DROIT_SOLO } from "@/lib/entitlements";
+import { habillageEnvoi } from "@/lib/expediteur";
+import { renderEmail, plainText } from "@/lib/email-html";
+import { verifieMentions, type RangMessage } from "@/lib/conformite";
+import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
+import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { lintForSpam, maxSendsPerHour, deliverabilityHeaders } from "@/lib/deliverability";
+import { createTrackedEmail, countRecentSends, firstSendAt, aDejaEcrit, supprimerTrace } from "@/lib/tracking";
+import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
 import {
   INTENTIONS,
   PROMPT_CLASSER_REPONSE,
   interpreterClassement,
   routerReponse,
   estAutomatisable,
+  construireReponseAuto,
   type Disposition,
   type IntentionReponse,
 } from "@/lib/reponse-auto";
@@ -24,33 +35,26 @@ export const maxDuration = 60;
  * L'AUTOPILOTE DES RÉPONSES ENTRANTES — le maillon qui retire l'humain de la
  * BOUCLE email, sans le retirer du CLOSE.
  *
- * Aujourd'hui chaque réponse d'un prospect oblige l'opérateur à ouvrir l'inbox,
- * cliquer « Réponse IA », lire, envoyer. Ce tick fait le TRI tout seul : il lit
- * les réponses non traitées, les fait CLASSER par le modèle, et le CODE décide
- * quoi en faire (`lib/reponse-auto.ts`). Un cron l'appelle, exactement comme
- * `/api/campaign/tick` pour la voix.
+ * Le tick lit les réponses non traitées, les fait CLASSER par le modèle
+ * (`lib/reponse-auto.ts`), et le CODE décide quoi en faire. Le milieu de tunnel
+ * SÛR (`veut-rdv`, `renseignement`) reçoit une réponse DÉTERMINISTE ; tout ce qui
+ * touche l'argent, la signature ou le doute REMONTE à l'humain.
  *
- * ⚠⚠ CE QU'IL NE FAIT PAS ENCORE, ET POURQUOI C'EST VOULU. Il ne fait partir
- * AUCUN email. Deux raisons, dans l'ordre :
- *  1. L'auto-envoi d'une réponse à un vrai prospect part de NOTRE domaine
- *     (`/api/send`). Tant que le DKIM n'est pas publié chez Amen, tout part en
- *     spam : envoyer serait griller le domaine ET la fiche. La délivrabilité
- *     n'est pas un jugement qu'on force (`docs/SMTP-SUPABASE-AMEN.md`).
- *  2. `/api/send` est verrouillé par les droits PAR LOCATAIRE ; un chemin
- *     d'envoi pour l'autopilote maître se construit avec ses propres gardes et
- *     son propre test — pas en ouvrant la route la plus sensible du produit en
- *     passant. C'est la brique suivante, et elle s'enclenche ICI, sur le plan
- *     que ce tick produit déjà.
+ * ⚠⚠ L'ENVOI EST FAIL-CLOSED (`lib/reply-autosend.ts`). Trois conditions
+ * cumulatives : intention automatisable, autopilote armé, et DKIM attesté
+ * (`REPLY_AUTOSEND=on`). Le serveur NE PEUT PAS vérifier le DKIM (c'est du DNS) ;
+ * c'est l'opérateur qui l'atteste après l'avoir relevé. Tant que l'attestation
+ * manque, la boucle est BRANCHÉE mais INERTE : elle planifie, elle n'envoie pas.
  *
- * Donc pour l'instant il rend le PLAN : pour chaque réponse, l'intention, la
- * disposition (`auto` / `escalade` / `clore`) et le motif. C'est ce plan que
- * l'opérateur (ou moi) lit pour agir — et sur lequel l'auto-envoi se branchera.
- *
- * ⚠ TROIS GARDES, comme le tick vocal : secret de cron, armement explicite
- * (`CAMPAIGN_AUTOPILOT=on`, sinon `dryRun`), et données serveur présentes.
- * Aucune n'est contournable.
+ * ⚠ Quand elle envoie, elle passe EXACTEMENT les gardes de `mail-tick` /
+ * `/api/send` : mentions, divulgation IA (art. 50), lint anti-spam, palier +
+ * plafond horaire, tracking. Un envoi réussi marque la réponse `processed` — un
+ * message parti deux fois est un bug, pas une relance.
  * ─────────────────────────────────────────────────────────────────────
  */
+
+const MAX_REPONSES_PAR_TICK = 3;
+const MODE: ModeProduction = "autonome";
 
 function serviceClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -61,16 +65,22 @@ function serviceClient(): SupabaseClient | null {
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET?.trim();
-  // Pas de secret configuré = la route n'existe pas. Volontaire, comme le tick vocal.
   if (!secret) return false;
   const header = req.headers.get("authorization") ?? "";
   const provided = (header.startsWith("Bearer ") ? header.slice(7) : req.headers.get("x-cron-secret") ?? "").trim();
   return provided.length > 0 && safeEqual(provided, secret);
 }
 
-// Armement unifié (`lib/autopilote.ts`) : env OU drapeau en base (le bouton).
+function baseUrlFrom(req: NextRequest): string {
+  return (process.env.TRACKING_BASE_URL || process.env.APP_BASE_URL || req.nextUrl.origin).replace(/\/+$/, "");
+}
 
-/** Une réponse entrante réduite à ce que le tri lit. */
+/** Ne compter que les VRAIS liens de contenu (hors désinscription) — comme `/api/send`. */
+function countContentLinks(html: string): number {
+  const urls = [...html.matchAll(/href="(https?:\/\/[^"]+)"/gi)].map((m) => m[1]).filter((u) => !u.includes("/api/unsubscribe"));
+  return new Set(urls).size;
+}
+
 interface EntrantABrasser {
   id: string;
   email: string;
@@ -78,24 +88,25 @@ interface EntrantABrasser {
   message: string;
 }
 
-/** Le verdict rendu pour une réponse : ce que la machine PROPOSE d'en faire. */
 interface LigneDuPlan {
   id: string;
   email: string;
   intention: IntentionReponse;
   disposition: Disposition;
   motif: string;
-  /** true seulement pour le milieu de tunnel sûr — le seul feu vert d'un futur auto-envoi. */
   automatisable: boolean;
-  /** Quel moteur a tranché (`laya`/`jev` si configuré, sinon `llm`) — transparence. */
   source: "laya" | "jev" | "llm";
+  /** true seulement si le tick a RÉELLEMENT envoyé la réponse. */
+  envoye: boolean;
+  /** Pourquoi envoyé / pas envoyé — jamais décoratif. */
+  raisonEnvoi: string;
 }
 
 export async function POST(req: NextRequest) {
   if (!authorized(req)) {
     return NextResponse.json(
-      { error: "non autorisé", why: "CRON_SECRET absent ou invalide. Un tick qui lira les réponses des prospects ne s'ouvre pas." },
-      { status: 401 }
+      { error: "non autorisé", why: "CRON_SECRET absent ou invalide. Un tick qui lit et répond aux prospects ne s'ouvre pas." },
+      { status: 401 },
     );
   }
 
@@ -106,26 +117,26 @@ export async function POST(req: NextRequest) {
         error: "Supabase non configuré",
         why: "Les réponses entrantes vivent dans `inbound_events`. Sans service role, ce tick ne voit rien.",
       },
-      { status: 412 }
+      { status: 412 },
     );
   }
 
   const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
+  const atteste = autoReponseAttestee();
+  // La boucle d'envoi est-elle LIVE ? (armée ET DKIM attesté). Sinon : plan seul.
+  const envoiLive = arme && atteste;
 
   const moteur = await moteurIADeLaRequete(req);
   if (!aiAvailable(moteur)) {
     return NextResponse.json(
       { error: "IA indisponible", why: "Le tri d'une réponse en langage libre exige le modèle — pas une liste de mots-clés." },
-      { status: 503 }
+      { status: 503 },
     );
   }
 
   const url = new URL(req.url);
   const max = Math.min(Number(url.searchParams.get("max") ?? 20) || 20, 50);
 
-  // Lecture des réponses non traitées. Même table que `/api/webhooks/inbound` ;
-  // ici on ne lit que les réponses email (les ouvertures/formulaires ne se
-  // « répondent » pas).
   const { data, error } = await db
     .from("inbound_events")
     .select("id, email, name, message, type")
@@ -142,10 +153,19 @@ export async function POST(req: NextRequest) {
     message: String(r.message ?? ""),
   }));
 
+  // ── Ce qu'il faut pour ENVOYER (résolu une fois, utilisé seulement si live). ──
+  const base = baseUrlFrom(req);
+  const habillage = habillageEnvoi({ accountId: "eagleye", base });
+  const smtp = envoiLive ? await resoudreSmtp(null, DROIT_SOLO) : null;
+  const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
+  const envoyes24h = envoiLive ? await countRecentSends("email", 86_400_000, null) : 0;
+  const envoyes1h = envoiLive ? await countRecentSends("email", 3_600_000, null) : 0;
+  let capacite = envoiLive
+    ? Math.max(0, Math.min(ramp.today - envoyes24h, maxSendsPerHour() - envoyes1h, MAX_REPONSES_PAR_TICK))
+    : 0;
+
   const plan: LigneDuPlan[] = [];
   for (const e of entrants) {
-    // Décision typée : Jev si configuré, sinon le LLM (le joint `decision-typee`).
-    // Le message entrant est du texte HOSTILE (écrit par un tiers) : on l'encadre.
     const { valeur: intention, source } = await deciderTypee<IntentionReponse>({
       texteEntrant: wrapUntrusted("message-entrant", e.message, { maxChars: 4_000 }),
       promptSysteme: PROMPT_CLASSER_REPONSE,
@@ -154,35 +174,115 @@ export async function POST(req: NextRequest) {
       moteur,
     });
     const routage = routerReponse(intention);
+    const automatisable = estAutomatisable(intention);
+    const decision = doitEnvoyerReponse({ automatisable, arme, atteste });
+
+    let envoye = false;
+    let raisonEnvoi = decision.raison;
+
+    // Envoi réel : seulement si la décision l'autorise, qu'il reste du budget,
+    // et que la boîte maître est utilisable. Sinon on reste au PLAN.
+    if (decision.envoyer && capacite > 0 && smtp && smtpUtilisable(smtp)) {
+      const to = e.email.trim();
+      const reponse = construireReponseAuto(intention, e.name ?? undefined);
+      if (!reponse) {
+        raisonEnvoi = "aucun gabarit — intention non automatisable (ne devrait pas arriver ici)";
+      } else {
+        const emailOpts = {
+          subject: reponse.subject,
+          body: reponse.body,
+          closerName: habillage.closerName,
+          addressLine: habillage.addressLine,
+          logoUrl: habillage.logoUrl,
+        };
+        const html = renderEmail(emailOpts);
+        const text = plainText(emailOpts);
+        // Une réponse n'est jamais un premier contact : rang « suivant » (pas de
+        // mention de provenance), mais expéditeur + STOP restent exigés.
+        const rang: RangMessage = (await aDejaEcrit("email", to, null)) ? "suivant" : "premier";
+        const manques = verifieMentions(text, habillage.closerName, habillage.marque, rang);
+        const divulg = verifieDivulgation(text, "email", MODE);
+        const lint = lintForSpam(reponse.subject, reponse.body, true, countContentLinks(html));
+
+        if (manques.length) {
+          raisonEnvoi = `NON envoyé — mentions: ${manques.join(", ")}`;
+        } else if (divulg.length) {
+          raisonEnvoi = `NON envoyé — divulgation: ${divulg.join(", ")}`;
+        } else if (lint.level === "risque") {
+          raisonEnvoi = `NON envoyé — anti-spam: ${lint.warnings?.join(", ") || "score élevé"}`;
+        } else {
+          const { id: trackingId, html: trackedHtml } = await createTrackedEmail(html, base, {
+            channel: "email",
+            email: to,
+            subject: reponse.subject,
+            userId: undefined,
+          });
+          try {
+            const nodemailer = (await import("nodemailer")).default;
+            const transporter = nodemailer.createTransport({
+              host: smtp.host,
+              port: smtp.port,
+              secure: smtp.port === 465,
+              auth: { user: smtp.user, pass: smtp.pass },
+            });
+            const stopMailto = smtp.from.match(/<([^>]+)>/)?.[1] ?? smtp.from;
+            await transporter.sendMail({
+              from: smtp.from,
+              to,
+              subject: reponse.subject,
+              text,
+              html: trackedHtml,
+              headers: deliverabilityHeaders(stopMailto),
+            });
+            // ⚠ Marquer traité APRÈS un envoi réussi : sinon le prochain tick
+            // renvoie la même réponse. Un message parti deux fois est un bug.
+            await db.from("inbound_events").update({ processed: true }).eq("id", e.id);
+            envoye = true;
+            capacite -= 1;
+            raisonEnvoi = "envoyé (réponse déterministe, dans les gardes)";
+          } catch (err) {
+            // Une trace ne survit pas à un envoi raté (1 ligne = 1 message parti).
+            await supprimerTrace(trackingId);
+            raisonEnvoi = `NON envoyé — SMTP: ${err instanceof Error ? err.message : "échec"}`;
+          }
+        }
+      }
+    }
+
     plan.push({
       id: e.id,
       email: e.email,
       intention,
       disposition: routage.disposition,
       motif: routage.motif,
-      automatisable: estAutomatisable(intention),
+      automatisable,
       source,
+      envoye,
+      raisonEnvoi,
     });
   }
 
   const parDisposition = (d: Disposition) => plan.filter((l) => l.disposition === d).length;
+  const envoyes = plan.filter((l) => l.envoye).length;
 
   return NextResponse.json({
     ok: true,
     armed: arme,
-    // Honnête et central : rien ne part tant que ce n'est pas true.
-    envoiBranche: false,
+    // Honnête et central : la boucle envoie-t-elle réellement, ou planifie-t-elle ?
+    envoiBranche: envoiLive,
+    autoReponse: atteste,
     dkimRequis: true,
     lus: entrants.length,
+    envoyes,
     compte: {
       auto: parDisposition("auto"),
       escalade: parDisposition("escalade"),
       clore: parDisposition("clore"),
     },
     plan,
-    why:
-      "Tri seul pour l'instant : le modèle CLASSE, le code DISPOSE. L'auto-envoi des réponses `auto` " +
-      "s'enclenche une fois le DKIM publié (délivrabilité) et le chemin d'envoi maître branché avec ses gardes.",
+    why: envoiLive
+      ? "Auto-réponse LIVE : le milieu de tunnel reçoit une réponse déterministe, dans les gardes. Le reste remonte à l'humain."
+      : "Plan seul : le modèle CLASSE, le code DISPOSE. L'auto-envoi s'active avec l'autopilote armé ET REPLY_AUTOSEND=on (DKIM attesté).",
   });
 }
 
@@ -192,13 +292,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "non autorisé" }, { status: 401 });
   }
   const db = serviceClient();
-  if (!db) return NextResponse.json({ armed: autopiloteArmeEnv(), enAttente: null, why: "Supabase non configuré" }, { status: 412 });
+  if (!db)
+    return NextResponse.json(
+      { armed: autopiloteArmeEnv(), autoReponse: autoReponseAttestee(), enAttente: null, why: "Supabase non configuré" },
+      { status: 412 },
+    );
   const arme = estArme({ env: autopiloteArmeEnv(), dbActif: await lireDrapeauAutopilote(db) });
+  const atteste = autoReponseAttestee();
   const { count, error } = await db
     .from("inbound_events")
     .select("id", { count: "exact", head: true })
     .eq("processed", false)
     .eq("type", "email.reply");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ armed: arme, envoiBranche: false, enAttente: count ?? 0 });
+  return NextResponse.json({ armed: arme, autoReponse: atteste, envoiBranche: arme && atteste, enAttente: count ?? 0 });
 }

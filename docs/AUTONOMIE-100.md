@@ -64,10 +64,15 @@ plupart (d'où le panneau UX ci-dessous).
 | 8 | **`pipeServeur`** activé + fiches importées (les 982) | ❌ réglage navigateur |
 
 ### B. LA BOUCLE D'EXÉCUTION (code, après l'infra)
-1. **Auto-réponse aux réponses sûres.** `reply-tick` trie mais `envoiBranche:false` :
-   il ne répond pas encore tout seul. Brancher l'envoi des réponses
-   `veut-rdv` / `renseignement` **après DKIM**, par un chemin maître gardé. Le
-   plan est déjà produit ; il attend DKIM et le chemin d'envoi.
+1. **Auto-réponse aux réponses sûres — ✅ BRANCHÉE (inerte jusqu'au DKIM).**
+   `reply-tick` envoie désormais une réponse DÉTERMINISTE au milieu de tunnel
+   (`veut-rdv` / `renseignement`), dans les mêmes gardes que `mail-tick`
+   (mentions, divulgation art. 50, lint, palier, tracking), et marque la réponse
+   traitée sur un envoi réussi. **Fail-closed** (`lib/reply-autosend.ts`) : trois
+   conditions cumulatives — intention automatisable, autopilote armé, et
+   `REPLY_AUTOSEND=on` (ton **attestation DKIM**, que le serveur ne peut pas
+   vérifier seul). Tant que la variable manque, la boucle planifie sans envoyer.
+   → Activation : relève `d=eagleyecorp.fr`, puis pose `REPLY_AUTOSEND=on`, puis arme.
 2. **Auto-relance email.** Le 1er contact part par `mail-tick` ; les rappels
    (fenêtres + plafond 4/30 j) doivent être tick-drivés comme la voix. À brancher.
 3. **Prise de RDV.** Une réponse « veut-rdv » doit proposer 2 créneaux depuis un

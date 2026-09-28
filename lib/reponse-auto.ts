@@ -27,6 +27,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import { DIVULGATION_ECRITE } from "@/lib/signature-ia";
+
 /**
  * Les intentions qu'une réponse entrante peut porter. Chacune mène à UNE
  * disposition (voir `routerReponse`) — c'est la carte qui décide, pas un score.
@@ -117,6 +119,63 @@ export function routerReponse(intention: IntentionReponse): RoutageReponse {
 /** Raccourci : cette intention s'auto-traite-t-elle ? (le seul feu vert du cron) */
 export function estAutomatisable(intention: IntentionReponse): boolean {
   return TABLE_ROUTAGE[intention].disposition === "auto";
+}
+
+export interface ReponseAuto {
+  subject: string;
+  body: string;
+}
+
+/**
+ * ⚠⚠ LA RÉPONSE AUTOMATIQUE EST DÉTERMINISTE, PAS ENGENDRÉE PAR UN MODÈLE.
+ *
+ * Auto-envoyer du texte qu'un modèle vient d'écrire, sans relecture, est
+ * exactement ce que la doctrine de l'appel à froid refuse (« aucune
+ * improvisation »). Le modèle a déjà fait son seul travail : CLASSER. La
+ * réponse, elle, est un gabarit FIXE par intention — sans prix, qui pousse vers
+ * le RDV (l'objectif unique), et qui PORTE la divulgation IA (l'envoi est
+ * autonome, art. 50). `verifieDivulgation` le vérifie à l'envoi ; si un gabarit
+ * la perdait, l'envoi est REFUSÉ, pas parti illégal.
+ *
+ * `null` si l'intention n'est pas automatisable — dernier filet avant tout
+ * envoi : on ne fabrique pas de réponse à ce qui doit remonter à l'humain.
+ */
+export function construireReponseAuto(intention: IntentionReponse, prenom?: string): ReponseAuto | null {
+  if (!estAutomatisable(intention)) return null;
+  const p = (prenom || "").trim().split(/\s+/)[0] || "bonjour";
+
+  if (intention === "veut-rdv") {
+    return {
+      subject: "Parfait — deux créneaux pour vous montrer ça",
+      body: [
+        `Bonjour ${p},`,
+        "",
+        "Parfait. 15 minutes suffisent pour vous le montrer sur un de vos programmes en " +
+          "cours — plutôt mardi 15h ou jeudi 10h ?",
+        "",
+        "Dites-moi le créneau qui vous va et je vous envoie le lien.",
+        "",
+        DIVULGATION_ECRITE,
+      ].join("\n"),
+    };
+  }
+
+  // renseignement
+  return {
+    subject: "Votre question — en deux mots",
+    body: [
+      `Bonjour ${p},`,
+      "",
+      "En deux mots : on reprend les acquéreurs déjà passés au bureau de vente que personne " +
+        "n'a eu le temps de rappeler, on les relance, et on ne vous rend que ceux qui " +
+        "redeviennent chauds.",
+      "",
+      "Le plus simple est que je vous montre ça 15 minutes sur un de vos programmes — plutôt " +
+        "mardi 15h ou jeudi 10h ?",
+      "",
+      DIVULGATION_ECRITE,
+    ].join("\n"),
+  };
 }
 
 /**
