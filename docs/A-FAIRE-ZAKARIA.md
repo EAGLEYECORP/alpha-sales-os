@@ -293,6 +293,20 @@ l'état DNS. Celui-là se relève en dix secondes, et la commande est dans le do
 Sur Vercel **et** dans le Vault Supabase, identiques. Sans ça, `/api/campaign/tick`
 rend **401** — et c'est voulu : « une route qui passe des appels ne s'ouvre pas ».
 
+### 🎯 LE PREMIER ENVOI — 5 mails, pas plus
+
+Une fois l'envoi prouvé (§4) et DKIM aligné (§5), **la procédure complète du
+premier lot est dans `docs/PREMIER-LOT-5.md`** : les 3 vérifs, le choix des 5
+(Lyon + décideurs), le message déjà écrit et ses interdits de verticale, la
+phrase de provenance CNIL à ajouter **en envoi manuel** (le garde `/api/send`
+ne s'applique qu'en envoi par l'app), la cadence légale (4 contacts / 30 j), et
+ce qu'on mesure sur cinq mails.
+
+> ⚠ **5/jour la première semaine** (`lib/email-ramp.ts`), pas un blast. Le but
+> du premier lot n'est pas le volume : c'est de prouver que ça inboxe et que ça
+> répond. Le carburant, ce sont les **982 fiches** livrées
+> (`alpha-import-promoteurs.csv`), à importer dans Réglages.
+
 ---
 
 ## 🟡 POUR QUE L'AGENT VOCAL PARLE
@@ -498,11 +512,12 @@ l'adresse, non.**
 1. Les variables Vercel (6)        → tu as ton accès complet
 2. LOT-A-COLLER.sql, un seul Run   → la base suit  (004 à part, après)
 3. SMTP + DNS                      → tu peux envoyer  (JAMAIS avant 1)
-4. L'export de fiches              → la machine a de quoi mordre
-5. python voice/agent.py           → l'agent peut parler
-6. (option) connecteur Cowork      → un agent tourne le pipe  (après 1+2, cf. COWORK-CONNEXION.md)
+4. L'export de fiches              → la machine a de quoi mordre  (982 déjà livrées)
+5. LE PREMIER LOT DE 5             → prouver que ça inboxe et répond  (cf. PREMIER-LOT-5.md)
+6. python voice/agent.py           → l'agent peut parler
+7. (option) connecteur Cowork      → un agent tourne le pipe  (après 1+2, cf. COWORK-CONNEXION.md)
 ```
 
 **Rien ne sert de faire 3 avant 1.** C'est la seule dépendance qui coûte cher
-si on l'inverse. Le 6 est un accélérateur, pas un préalable — il attend que
-1 à 3 tiennent.
+si on l'inverse. Le 7 (Cowork) est un accélérateur, pas un préalable — il attend
+que 1 à 3 tiennent, et surtout que le 5 ait prouvé que ça répond.
