@@ -16,6 +16,8 @@ import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
 import { lintForSpam, maxSendsPerHour, deliverabilityHeaders } from "@/lib/deliverability";
 import { createTrackedEmail, countRecentSends, firstSendAt, aDejaEcrit, supprimerTrace } from "@/lib/tracking";
 import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
+import { lireMeetingsBornes } from "@/lib/lecture-serveur";
+import { prochainsCreneaux, labelsCreneaux } from "@/lib/creneaux-rdv";
 import {
   INTENTIONS,
   PROMPT_CLASSER_REPONSE,
@@ -164,6 +166,17 @@ export async function POST(req: NextRequest) {
     ? Math.max(0, Math.min(ramp.today - envoyes24h, maxSendsPerHour() - envoyes1h, MAX_REPONSES_PAR_TICK))
     : 0;
 
+  // B3 — de VRAIS créneaux à proposer (fenêtres ouvertes, RDV calés évités).
+  // Lu une fois par tick ; le close reste humain.
+  let creneaux: string[] = [];
+  if (envoiLive) {
+    const rdv = await lireMeetingsBornes(db);
+    const occupes = (rdv.meetings ?? [])
+      .map((m) => new Date(m.date))
+      .filter((d) => !Number.isNaN(d.getTime()));
+    creneaux = labelsCreneaux(prochainsCreneaux(new Date(), { occupes }));
+  }
+
   const plan: LigneDuPlan[] = [];
   for (const e of entrants) {
     const { valeur: intention, source } = await deciderTypee<IntentionReponse>({
@@ -184,7 +197,7 @@ export async function POST(req: NextRequest) {
     // et que la boîte maître est utilisable. Sinon on reste au PLAN.
     if (decision.envoyer && capacite > 0 && smtp && smtpUtilisable(smtp)) {
       const to = e.email.trim();
-      const reponse = construireReponseAuto(intention, e.name ?? undefined);
+      const reponse = construireReponseAuto(intention, e.name ?? undefined, creneaux);
       if (!reponse) {
         raisonEnvoi = "aucun gabarit — intention non automatisable (ne devrait pas arriver ici)";
       } else {

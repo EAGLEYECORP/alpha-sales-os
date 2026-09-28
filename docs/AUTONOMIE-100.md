@@ -80,9 +80,14 @@ plupart (d'où le panneau UX ci-dessous).
    (`lib/relance-mail.ts` + `raison-neuve` — jamais « je me permets de
    relancer »). Mêmes gardes que `mail-tick`. Gate : autopilote armé (famille
    cold). À SCHEDULER (pg_cron, comme la 014).
-3. **Prise de RDV.** Une réponse « veut-rdv » doit proposer 2 créneaux depuis un
-   calendrier. Aujourd'hui : passage de main humain. Semi-auto faisable ; le
-   close reste humain.
+3. **Prise de RDV — ✅ BRANCHÉE (semi-auto, close humain).** La réponse
+   `veut-rdv` propose désormais de VRAIS créneaux (`lib/creneaux-rdv.ts`) :
+   prochaines heures ouvertes (`fenetreOuverte`, une seule définition), en
+   ÉVITANT les RDV déjà calés (`lireMeetingsBornes` — « jamais doubler un RDV »),
+   avec préavis. Injectés dans la réponse auto ; repli générique si le calendrier
+   n'est pas lu. **Le close reste humain** : on propose, on ne confirme pas.
+   Reste à faire quand un calendrier par locataire existera : écrire le RDV
+   confirmé (aujourd'hui l'humain le pose).
 4. **Sourcing autonome → CRM.** Le serveur ne peut PAS appeler GetLeads (c'est
    un connecteur Claude, pas de l'infra serveur). Le sourcing autonome vit donc
    dans une **Routine Cowork**. Bonne nouvelle : le pont existe déjà —

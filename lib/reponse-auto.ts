@@ -140,18 +140,36 @@ export interface ReponseAuto {
  * `null` si l'intention n'est pas automatisable — dernier filet avant tout
  * envoi : on ne fabrique pas de réponse à ce qui doit remonter à l'humain.
  */
-export function construireReponseAuto(intention: IntentionReponse, prenom?: string): ReponseAuto | null {
+/**
+ * La phrase qui propose des créneaux. Avec de VRAIS créneaux (B3, calculés dans
+ * les fenêtres ouvertes en évitant les RDV calés — `lib/creneaux-rdv.ts`), on
+ * les liste ; sans, on retombe sur deux créneaux génériques. Le repli n'est pas
+ * un défaut, c'est le cas « pas de calendrier lu » — il reste utilisable.
+ */
+function phraseCreneaux(creneaux?: string[]): string {
+  const c = (creneaux ?? []).filter((x) => x && x.trim());
+  if (c.length === 0) return "plutôt mardi 15h ou jeudi 10h ?";
+  if (c.length === 1) return `est-ce que ${c[0]} vous irait ?`;
+  const dernier = c[c.length - 1];
+  return `je vous propose ${c.slice(0, -1).join(", ")} ou ${dernier} — lequel vous va ?`;
+}
+
+export function construireReponseAuto(
+  intention: IntentionReponse,
+  prenom?: string,
+  creneaux?: string[],
+): ReponseAuto | null {
   if (!estAutomatisable(intention)) return null;
   const p = (prenom || "").trim().split(/\s+/)[0] || "bonjour";
+  const quand = phraseCreneaux(creneaux);
 
   if (intention === "veut-rdv") {
     return {
-      subject: "Parfait — deux créneaux pour vous montrer ça",
+      subject: "Parfait — un créneau pour vous montrer ça",
       body: [
         `Bonjour ${p},`,
         "",
-        "Parfait. 15 minutes suffisent pour vous le montrer sur un de vos programmes en " +
-          "cours — plutôt mardi 15h ou jeudi 10h ?",
+        `Parfait. 15 minutes suffisent pour vous le montrer sur un de vos programmes en cours — ${quand}`,
         "",
         "Dites-moi le créneau qui vous va et je vous envoie le lien.",
         "",
@@ -170,8 +188,7 @@ export function construireReponseAuto(intention: IntentionReponse, prenom?: stri
         "n'a eu le temps de rappeler, on les relance, et on ne vous rend que ceux qui " +
         "redeviennent chauds.",
       "",
-      "Le plus simple est que je vous montre ça 15 minutes sur un de vos programmes — plutôt " +
-        "mardi 15h ou jeudi 10h ?",
+      `Le plus simple est que je vous montre ça 15 minutes sur un de vos programmes — ${quand}`,
       "",
       DIVULGATION_ECRITE,
     ].join("\n"),
