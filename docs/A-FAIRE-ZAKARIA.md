@@ -315,6 +315,41 @@ dans `.env.example`).
 
 ---
 
+## 🟢 OPTIONNEL — BRANCHER UN AGENT COWORK
+
+> **Runbook complet : `docs/COWORK-CONNEXION.md`.** Ici, juste la place dans
+> l'ordre et ce que ça change.
+
+Alpha expose un **serveur MCP** (`/api/mcp`) : une session Claude Cowork s'y
+branche et **fait le travail** — lit le pipe, PRÉPARE une campagne à froid
+(`preparer_campagne` : le texte exact + préflight art. 50, plafonné au palier),
+dépose des propositions. **Elle n'envoie jamais** : ça reste gardé côté serveur
+et armé par toi (le bouton autopilote sur `/controle`).
+
+**Ça vient APRÈS l'infra, pas avant :**
+- Sans les variables (étape 1) **et** Supabase posé, `/api/v1/*` répond **503** :
+  l'agent ne voit RIEN. Le pipe doit aussi être **synchronisé côté serveur**
+  (Réglages → Synchro), sinon l'agent lit un pipe vide.
+- L'envoi réel exige toujours **DKIM (étape 5) + autopilote armé**. L'agent peut
+  tout préparer avant ça ; rien ne partira, c'est voulu.
+
+**Les 3 gestes** (détaillés dans le runbook) :
+1. Créer une clé dans `ALPHA_API_KEYS` (env de l'hébergeur), portées
+   `etat.read|campagne.read|propositions.read|propositions.write`. Génère le
+   secret toi-même (`openssl rand -hex 32`), ne le colle nulle part dans le dépôt.
+   Pose aussi `APP_BASE_URL`. Redéploie.
+2. Vérifier : `curl -s https://<app>/api/mcp -H "authorization: Bearer <SECRET>"`
+   → `authentifie: true` + tes portées.
+3. Ajouter Alpha comme connecteur MCP **distant (HTTP)** dans Cowork : URL
+   `https://<app>/api/mcp`, auth = en-tête `Authorization: Bearer <SECRET>`.
+
+> ⚠ **Ça ne fait pas le premier euro à ta place.** Cowork industrialise le
+> travail répétitif (sourcer, rédiger, trier) ; l'**outreach humain** et le
+> **closing** restent sur toi. Brancher l'agent avant d'avoir un pipe et un
+> canal d'envoi qui inboxe, c'est automatiser du vide.
+
+---
+
 ## 🔵 À VÉRIFIER TOI-MÊME — je n'y ai pas accès
 
 ### 8. Y a-t-il eu des inscriptions ?
@@ -465,7 +500,9 @@ l'adresse, non.**
 3. SMTP + DNS                      → tu peux envoyer  (JAMAIS avant 1)
 4. L'export de fiches              → la machine a de quoi mordre
 5. python voice/agent.py           → l'agent peut parler
+6. (option) connecteur Cowork      → un agent tourne le pipe  (après 1+2, cf. COWORK-CONNEXION.md)
 ```
 
 **Rien ne sert de faire 3 avant 1.** C'est la seule dépendance qui coûte cher
-si on l'inverse.
+si on l'inverse. Le 6 est un accélérateur, pas un préalable — il attend que
+1 à 3 tiennent.
