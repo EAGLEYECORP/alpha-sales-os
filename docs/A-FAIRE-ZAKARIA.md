@@ -63,6 +63,27 @@ identique — Vercel Cron n'était de toute façon jamais l'ordonnanceur (c'est
   `SUPABASE_JWT_SECRET`, `SERVICE_ROLE`) **restent scannés**. Ne JAMAIS mettre
   `SECRETS_SCAN_ENABLED=false` : ça éteindrait l'alarme le jour d'une vraie fuite.
 
+## 🔴🔴 AVANT TOUT — LA PRODUCTION EST FIGÉE AU 22/09 (constaté le 29/09)
+
+Le site en ligne tourne sur le commit `688d1d9` du **22/09**. Depuis, une
+vingtaine de push — auto-réponse, relances, créneaux, `diagnostic`, **le
+serveur OAuth qui permet de brancher Alpha sur Cowork** — **ne sont PAS en
+ligne**. La prod est bien rattachée à notre branche, mais aucun push n'a
+redéclenché de build.
+Je ne peux pas déployer d'ici : les hôtes de téléversement Netlify sont bloqués
+par le proxy du bac à sable (testé : `000`).
+
+1. Netlify → site `alphasalesos` → **Deploys**. Regarde s'il y a un bandeau
+   (« builds arrêtés », « auto-publishing verrouillé », minutes de build
+   épuisées — le plan gratuit en a un quota mensuel).
+2. **Trigger deploy → Deploy site.** Le build part du dernier commit de la
+   branche `claude/crm-n8n-email-tracking-4qxtwr`.
+3. Si le bouton n'existe pas : **Site configuration → Build & deploy → Link
+   repository** → GitHub → `EAGLEYECORP/alpha-sales-os`, branche de production
+   `claude/crm-n8n-email-tracking-4qxtwr`. Après ça, chaque push déploie seul.
+4. **Comment savoir que c'est bon** : `https://alphasalesos.netlify.app/.well-known/oauth-protected-resource`
+   doit afficher du JSON avec `"resource"` — aujourd'hui, cette page n'existe pas.
+
 ## 🔴 CE QUI RESTE — dans l'ordre
 
 1. **PROUVER L'ENVOI** (2 min, toi) : `/recette` → adresse test
