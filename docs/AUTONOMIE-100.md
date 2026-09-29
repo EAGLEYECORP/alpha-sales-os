@@ -114,25 +114,23 @@ plupart (d'où le panneau UX ci-dessous).
    nécessaire pour que les prix s'auto-calibrent, mais ça se **décide** (ça
    touche l'argument de souveraineté), ça ne se code pas en douce.
 
-### B bis. SE BRANCHER COMME ATTIO — l'OAuth du serveur MCP (ouvert, 29/09/2026)
-Attio se connecte à Claude en un clic parce que son MCP parle **OAuth**. Le
-nôtre exige un **Bearer statique**, que claude.ai/Cowork n'accepte qu'en bêta,
-pour un nombre limité d'organisations (`static_headers`, doc officielle des
-connecteurs). Pour la plupart des comptes, Alpha n'est donc **pas branchable**
-sur Cowork — et `COWORK-CONNEXION.md` le laissait croire.
-· **La voie naturelle est bloquée** : Supabase Auth est un serveur OAuth 2.1
-  conforme MCP, mais `supabase/auth#2820` (ouvert) le fait répondre 400 à un
-  client public, à `offline_access` ou au paramètre `resource` — les trois
-  choses qu'envoie Claude (DCR/CIMD = client public).
-· **La voie qui ne dépend de personne** : un petit serveur d'autorisation
-  OAuth 2.1 dans l'app (métadonnées RFC 9728/8414, DCR, PKCE S256, `/token`,
-  rotation du refresh), la connexion elle-même restant celle de Supabase.
-  Fait main, zéro dépendance — c'est la règle du dépôt pour ce qui touche
-  l'authentification. Garde intacte : le jeton OAuth ne donnera que les
-  portées du « cerveau » (lecture + proposition), jamais `prospects.write`.
-· **Non commencé.** Décision à prendre avant d'écrire une ligne : c'est du code
-  d'authentification, et il s'éprouve contre un vrai client Claude, pas contre
-  un test unitaire.
+### B bis. SE BRANCHER COMME ATTIO — l'OAuth du serveur MCP — ✅ LIVRÉ (29/09/2026)
+Attio se connecte à Claude en un clic parce que son MCP parle **OAuth** ; le
+nôtre exigeait un Bearer statique, que claude.ai/Cowork n'acceptent qu'en bêta
+(pas sur le compte de Zakaria : pas de « Request headers »).
+· **Livré** : un serveur d'autorisation OAuth 2.1 dans l'app, fait main, zéro
+  dépendance (`lib/mcp-oauth.ts`) : métadonnées RFC 9728/8414, enregistrement
+  dynamique, PKCE S256, `/token`, rotation du refresh, écran de consentement
+  `/oauth/authorize`. La connexion reste celle de Supabase.
+· **Pas le serveur OAuth de Supabase** : `supabase/auth#2820` (ouvert) le fait
+  répondre 400 à un client public, `offline_access` et `resource` — ce
+  qu'envoie Claude.
+· **Garde intacte** : un jeton OAuth ne donne que le cerveau (lecture +
+  proposition), seul un compte maître autorise, revérifié à chaque appel.
+· **Preuve** : parcours complet en HTTP réel sur `next start` verrouillé
+  (15/15) ; 5 mutations de sécurité (PKCE, garde maître, retours, 401,
+  portées) font chacune tomber un test. **Pas encore éprouvé avec un vrai
+  client Claude** — c'est le premier branchement qui le dira.
 
 ### C. L'ORCHESTRATION (le « cerveau » qui tourne seul)
 Deux moteurs qui se rejoignent sur **les propositions que tu approuves** :

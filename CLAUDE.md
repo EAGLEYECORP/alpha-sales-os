@@ -1747,6 +1747,32 @@ physique identifiée avec son mobile personnel.
   > deux définitions de « l'app est-elle protégée ? » finiraient par diverger,
   > et l'une des deux ouvrirait tout.
 
+### LE MCP S'OUVRE PAR OAUTH, PAS PAR UNE CLÉ (29/09/2026)
+`lib/mcp-oauth.ts` · `lib/autoriser-appelant.ts` · `app/api/oauth/**` ·
+`app/oauth/authorize` · `tests/mcp-oauth.test.ts`.
+Attio se branche sur Claude en un clic (OAuth) ; notre Bearer statique n'était
+accepté par claude.ai/Cowork qu'en bêta limitée — Alpha n'était branchable
+nulle part. Serveur d'autorisation OAuth 2.1 **fait main** (DCR, PKCE S256,
+refresh), la connexion restant celle de Supabase.
+- **Pas le serveur OAuth de Supabase** : `supabase/auth#2820` (ouvert) le fait
+  répondre 400 à ce qu'envoie un client MCP. On ne bâtit pas la porte d'entrée
+  sur un bug ouvert chez un tiers.
+- **⚠⚠ Un jeton OAuth ne donne QUE le cerveau** (`PORTEES_OAUTH` : lecture +
+  proposition). Jamais `prospects.write`, jamais un envoi — même au maître.
+  L'invariant « le MCP ne peut rien casser » survit au changement d'auth.
+- **Seul un compte MAÎTRE autorise**, revérifié à CHAQUE appel : retirer une
+  adresse de `OWNER_EMAILS` coupe l'accès au prochain appel.
+- **Retours limités à Claude** (claude.ai / claude.com / boucle locale de
+  Claude Code, port ignoré). Ouvrir un autre client se DÉCIDE.
+- **Une seule question « qui appelle ? »** : `autoriserAppelant` (clé OU
+  jeton). Les routes MCP et `/api/v1` du cerveau la posent ; `prospects.write`
+  reste sur `autoriserApi` seul.
+- **Sans base, et c'est écrit** : code à usage unique garanti par instance
+  seulement (60 s + PKCE), refresh non révocable seul. Coupe-circuits :
+  `OWNER_EMAILS`, ou `OAUTH_SECRET` (sinon dérivé de `SUPABASE_JWT_SECRET`).
+- **Prouvé en HTTP réel** (`next start` verrouillé, 15/15) + 5 mutations qui
+  mordent. **Pas encore avec un vrai client Claude.**
+
 ### DU MOT DE PASSE AU COMPTE — la bascule (02/09/2026)
 `SITE_PASSWORD` est un mot de passe PARTAGÉ, sans identifiant, changeable
 seulement par redéploiement. Le vrai login (email + mot de passe, que le

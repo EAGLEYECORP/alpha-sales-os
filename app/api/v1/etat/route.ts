@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Prospect } from "@/lib/types";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
-import { autoriserApi } from "@/lib/api-keys";
+import { autoriserAppelant } from "@/lib/autoriser-appelant";
 import { vitalSigns } from "@/lib/vital-signs";
 import { statutReel, resumeFile, type Proposition } from "@/lib/propositions";
 
@@ -40,7 +40,7 @@ function serviceClient() {
 }
 
 export async function GET(req: NextRequest) {
-  const v = autoriserApi(req.headers.get("authorization"), "etat.read");
+  const v = autoriserAppelant(req.headers.get("authorization"), "etat.read");
   if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
 
   const db = serviceClient();

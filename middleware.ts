@@ -158,6 +158,24 @@ const PUBLIC_PREFIXES = [
   // ⚠ Ses outils sont en LECTURE et PROPOSITION uniquement : aucun n'envoie,
   // n'appelle ni ne modifie. C'est ce qui rend acceptable de l'exposer.
   "/api/mcp",
+  /**
+   * ⚠ LE SERVEUR D'AUTORISATION OAUTH DU MCP (29/09/2026) — `lib/mcp-oauth.ts`.
+   *
+   * Claude (claude.ai, Cowork, Claude Code) ne connaît ni notre cookie ni notre
+   * mot de passe : il DOIT pouvoir lire les métadonnées, s'enregistrer et
+   * échanger son code sans session. Ce n'est pas un trou :
+   *  · les métadonnées ne portent aucun secret ;
+   *  · l'enregistrement n'accepte que des retours vers CLAUDE ;
+   *  · le jeton n'est rendu que contre un code signé + le vérificateur PKCE ;
+   *  · le code n'est émis que sur approbation d'un compte MAÎTRE, session
+   *    Supabase vérifiée (`/api/oauth/authorize`, POST).
+   * `/oauth/authorize` est l'écran de consentement : il exige lui-même la
+   * connexion, et le mettre derrière la porte d'accès empêcherait l'utilisateur
+   * de s'y rendre depuis Claude.
+   */
+  "/api/oauth",
+  "/oauth",
+  "/.well-known",
   // Service worker : il DOIT être servi comme du JavaScript, à la racine.
   // Derrière la porte d'accès, le navigateur recevrait la redirection vers
   // /gate — donc du HTML — et l'enregistrement échouerait avec une erreur de

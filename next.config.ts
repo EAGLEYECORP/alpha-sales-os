@@ -14,6 +14,19 @@ const nextConfig: NextConfig = {
   // Ne pas révéler la stack (fingerprinting)
   poweredByHeader: false,
   eslint: { ignoreDuringBuilds: true },
+  /**
+   * Découverte OAuth du serveur MCP (RFC 9728 + RFC 8414). Les clients cherchent
+   * ces documents à la RACINE, sous `/.well-known/`, parfois avec le chemin de
+   * la ressource en suffixe (`/.well-known/oauth-protected-resource/api/mcp`).
+   * On les sert depuis des routes d'API ordinaires : un dossier `app/.well-known`
+   * dépendrait du traitement des dossiers pointés par chaque hébergeur.
+   */
+  rewrites: async () => [
+    { source: "/.well-known/oauth-protected-resource", destination: "/api/oauth/metadata/resource" },
+    { source: "/.well-known/oauth-protected-resource/:chemin*", destination: "/api/oauth/metadata/resource" },
+    { source: "/.well-known/oauth-authorization-server", destination: "/api/oauth/metadata/serveur" },
+    { source: "/.well-known/oauth-authorization-server/:chemin*", destination: "/api/oauth/metadata/serveur" },
+  ],
   headers: async () => [
     {
       source: "/(.*)",

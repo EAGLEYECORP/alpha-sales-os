@@ -79,6 +79,10 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
     // Serveur MCP : porte sa propre clé À PORTÉES et refuse tout sans clé
     // configurée. Vérifié pour de vrai plus bas — l'inscrire ici ne suffit pas.
     "/api/mcp",
+    // Serveur d'autorisation OAuth du MCP : aucune session par nature (c'est
+    // lui qui en établit une). Chaque route porte sa garde — vérifié en source
+    // dans « OAUTH — chaque route garde sa porte », plus bas.
+    "/api/oauth",
     /**
      * Checkout : porte le JWT Supabase (`getTenant`) et rend 401 sans lui.
      *
@@ -107,12 +111,12 @@ test("les routes à clé la vérifient VRAIMENT, pas seulement sur la liste", ()
    * raccourci qu'on prendrait un soir de rush. On vérifie donc la SOURCE.
    */
   for (const [f, motif] of [
-    ["app/api/mcp/route.ts", /autoriserApi\(/],
+    ["app/api/mcp/route.ts", /autoriserApi\(|autoriserAppelant\(/],
     ["app/api/v1/prospects/route.ts", /ALPHA_API_KEYS|autoriserApi\(/],
-    ["app/api/v1/etat/route.ts", /autoriserApi\(/],
-    ["app/api/v1/propositions/route.ts", /autoriserApi\(/],
-    ["app/api/v1/campagne/route.ts", /autoriserApi\(/],
-    ["app/api/v1/diagnostic/route.ts", /autoriserApi\(/],
+    ["app/api/v1/etat/route.ts", /autoriserApi\(|autoriserAppelant\(/],
+    ["app/api/v1/propositions/route.ts", /autoriserApi\(|autoriserAppelant\(/],
+    ["app/api/v1/campagne/route.ts", /autoriserApi\(|autoriserAppelant\(/],
+    ["app/api/v1/diagnostic/route.ts", /autoriserApi\(|autoriserAppelant\(/],
     ["app/api/billing/checkout/route.ts", /getTenant\(req\)/],
     // Le webhook Telegram compare le secret d'en-tête à temps constant.
     ["app/api/telegram/route.ts", /safeEqual\(/],
@@ -145,6 +149,35 @@ test("MCP — aucun outil ne peut agir, seulement lire et proposer", () => {
   // Et aucun chemin d'action ne doit apparaître dans le fichier, même commenté
   // en exemple : un exemple se copie.
   assert.doesNotMatch(src, /api\/send|api\/voice\/call|api\/gmail/, "un chemin d'ACTION apparaît dans le serveur MCP");
+});
+
+test("OAUTH — chaque route publique du serveur d'autorisation garde sa porte", () => {
+  /**
+   * `/api/oauth` est public (Claude n'a ni cookie ni mot de passe). Inscrire
+   * le préfixe ne suffit pas : on exige, route par route, le MÉCANISME qui la
+   * ferme — hors commentaires, pour qu'une prose bien écrite ne satisfasse pas
+   * le garde (défaut déjà payé sur `deploiementSansSerrure`).
+   */
+  const code = (f: string) =>
+    readFileSync(join(process.cwd(), f), "utf8")
+      .split("\n")
+      .filter((l) => !/^\s*(\*|\/\/|\/\*)/.test(l))
+      .join("\n");
+  // L'enregistrement passe par la liste fermée des retours de Claude.
+  assert.match(code("app/api/oauth/register/route.ts"), /enregistrerClient\(/);
+  // Le jeton ne sort que par l'échange vérifié (code signé + PKCE + maître).
+  assert.match(code("app/api/oauth/token/route.ts"), /echangerJeton\(/);
+  // L'approbation exige une session Supabase vérifiée ET un compte maître,
+  // AVANT d'émettre un code.
+  const auth = code("app/api/oauth/authorize/route.ts");
+  const iSession = auth.indexOf("verifySupabaseJwt(");
+  const iMaitre = auth.indexOf("estMaitre(");
+  const iCode = auth.indexOf("emettreCode(");
+  assert.ok(iSession > 0 && iMaitre > iSession && iCode > iMaitre, "session → maître → code, dans cet ordre");
+  // Aucune route OAuth ne touche à un transport d'envoi.
+  for (const f of ["register", "token", "authorize", "metadata/resource", "metadata/serveur"]) {
+    assert.doesNotMatch(code(`app/api/oauth/${f}/route.ts`), /sendMail|nodemailer|api\/send|voice\/call/);
+  }
 });
 
 test("MCP — le cockpit `diagnostic` est BRANCHÉ, en lecture seule", () => {

@@ -220,6 +220,7 @@ test("orchestrateur — toute route /api/v1 vérifie une portée", () => {
   assert.ok(routes.length >= 3, `seulement ${routes.length} routes trouvées — le balayage est cassé`);
   for (const r of routes) {
     const src = readFileSync(join(dir, r), "utf8");
-    assert.match(src, /autoriserApi\(|ALPHA_API_KEYS/, `${r} ne vérifie aucune clé`);
+    // `autoriserAppelant` = clé d'API OU jeton OAuth signé (lib/autoriser-appelant.ts).
+    assert.match(src, /autoriserApi\(|autoriserAppelant\(|ALPHA_API_KEYS/, `${r} ne vérifie aucune clé`);
   }
 });

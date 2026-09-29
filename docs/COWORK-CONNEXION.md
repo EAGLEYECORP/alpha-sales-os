@@ -125,36 +125,53 @@ Tu dois voir les 5 outils listés (seulement ceux que la clé permet).
 
 ## 4. Ajouter Alpha comme connecteur MCP dans Cowork
 
-Dans les réglages de connecteurs de Claude (côté claude.ai / Cowork), ajoute un
-**serveur MCP distant (HTTP)** :
+> ✅ **Depuis le 29/09/2026 : OAuth, AUCUNE clé à créer ni à coller.** Alpha
+> embarque son propre serveur d'autorisation (`lib/mcp-oauth.ts`), exactement
+> comme Attio : on colle l'URL, on se connecte, on clique « Autoriser ».
+> L'étape 2 (clé API) n'est plus nécessaire pour Cowork — elle reste utile pour
+> n8n et pour le sourcing par `prospects.write`.
 
-- **URL** : `https://<ton-app>/api/mcp`
-- **Authentification** : en-tête `Authorization: Bearer <SECRET>` (Alpha
-  s'authentifie par **clé API**, pas par OAuth).
+1. claude.ai → **Réglages → Connecteurs → Ajouter un connecteur personnalisé**.
+2. **Nom** : `Alpha Sales OS`. **URL** : `https://alphasalesos.netlify.app/api/mcp`
+   (ou ton domaine custom une fois branché — l'URL saisie doit être celle où
+   l'app répond).
+3. Laisse les champs OAuth (Client ID / secret) **vides** : Claude s'enregistre
+   tout seul.
+4. Clique **Connecter** → une page Alpha s'ouvre. Connecte-toi avec ton compte
+   **maître** (`contact@eagleyecorp.fr` ou `eagleyecorp.ad@gmail.com`), relis
+   « Il pourra / Il ne pourra jamais », clique **Autoriser**.
+5. Retour dans Claude : le connecteur est actif, avec 5 outils.
 
-> ⚠⚠ **CETTE ÉTAPE PEUT ÊTRE IMPOSSIBLE SUR TON COMPTE — vérifié le 29/09/2026
-> dans la doc officielle des connecteurs Claude.** claude.ai / Cowork acceptent
-> trois authentifications : **OAuth** (par défaut, pour tous), **aucune**, et
-> **en-têtes statiques** (`static_headers`) — cette dernière est en **bêta,
-> réservée à un nombre limité d'organisations**, et seul un **Owner**
-> d'organisation la voit. Sans elle, la section « Request headers » **n'apparaît
-> pas** quand on ajoute le connecteur : il n'y a nulle part où coller le Bearer.
-> · **Test en 10 secondes** : Réglages → Connecteurs → Ajouter un connecteur
->   personnalisé. Section « Request headers » visible ? → ce guide marche tel
->   quel. Absente ? → Alpha ne peut PAS être branché sur Cowork aujourd'hui, et ce
->   n'est pas une erreur de ta part.
-> · **Claude Code (terminal) n'a pas cette limite** : `claude mcp add --transport
->   http alpha https://<ton-app>/api/mcp --header "Authorization: Bearer <SECRET>"`.
-> · **Ce qui lève la limite pour tout le monde : OAuth** — c'est pour ça qu'Attio
->   se branche en un clic (OAuth sur `mcp.attio.com`, aucune clé). Le serveur
->   OAuth de Supabase aurait été la voie naturelle, mais son ticket `supabase/auth#2820`
->   (ouvert) le fait répondre 400 aux clients publics, à `offline_access` et au
->   paramètre `resource` — exactement ce qu'envoie un client MCP. Chantier
->   ouvert, pas encore livré : voir `docs/AUTONOMIE-100.md`.
+**Ce que le jeton OAuth donne, et rien d'autre** : lecture du pipe, état de la
+machine, préparation de campagne (sans envoi), dépôt de propositions. Jamais
+`prospects.write`, jamais un envoi — même pour le maître.
+
+**Qui peut autoriser** : seulement un compte listé dans `OWNER_EMAILS`. Un
+client qui essaie reçoit un refus (les outils lisent le pipe de l'opérateur ;
+la lecture par locataire n'existe pas encore). Retirer une adresse de
+`OWNER_EMAILS` coupe son accès **au prochain appel**.
+
+**Couper tout de suite, pour tout le monde** : pose (ou change) `OAUTH_SECRET`
+sur Netlify (≥ 32 caractères) et redéploie — tous les jetons meurent. Sans
+cette variable, le secret est dérivé de `SUPABASE_JWT_SECRET` : rien à poser
+pour que ça marche.
+
+> ⚠ **Prouvé sur un vrai serveur de production local (29/09), PAS encore avec
+> un vrai client Claude.** Les 15 étapes que fait Claude (401 → découverte
+> `/.well-known` → enregistrement → consentement → PKCE → jeton → `tools/list`
+> → refresh) passent en HTTP réel, en mode verrouillé. Le premier branchement
+> depuis ton compte est le vrai test. Si ça casse, colle-moi le message exact.
 >
-> Cette doc prescrivait le Bearer comme s'il était disponible partout. C'était
-> faux pour la plupart des comptes, et c'est pire qu'une doc absente : on
-> cherche un champ qui n'existe pas en croyant se tromper.
+> **Limites écrites plutôt que tues** : pas de base, donc un code
+> d'autorisation n'est garanti à usage unique que sur une même instance (il vit
+> 60 s et reste inutile sans le vérificateur PKCE), et un refresh token ne se
+> révoque pas seul (coupe-circuits : `OWNER_EMAILS` ou `OAUTH_SECRET`). Seuls
+> les retours vers Claude sont acceptés : un autre client MCP (ChatGPT…) sera
+> refusé tant qu'on ne l'a pas décidé.
+
+**Claude Code (terminal)** : `claude mcp add --transport http alpha
+https://alphasalesos.netlify.app/api/mcp` — il ouvrira la même page
+d'autorisation dans ton navigateur.
 
 ---
 

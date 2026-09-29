@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { autoriserApi } from "@/lib/api-keys";
+import { autoriserAppelant } from "@/lib/autoriser-appelant";
 import { autopiloteArmeEnv, lireDrapeauAutopilote, estArme } from "@/lib/autopilote";
 import { firstSendAt } from "@/lib/tracking";
 import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
@@ -75,7 +75,7 @@ function moteurDecision(): { actif: "laya" | "jev" | "llm"; souverain: boolean; 
 }
 
 export async function GET(req: NextRequest) {
-  const v = autoriserApi(req.headers.get("authorization"), "etat.read");
+  const v = autoriserAppelant(req.headers.get("authorization"), "etat.read");
   if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
 
   const db = serviceClient();

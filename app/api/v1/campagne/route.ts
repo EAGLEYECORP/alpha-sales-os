@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { autoriserApi } from "@/lib/api-keys";
+import { autoriserAppelant } from "@/lib/autoriser-appelant";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { firstSendAt } from "@/lib/tracking";
 import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
@@ -36,7 +36,7 @@ function serviceClient() {
 }
 
 export async function POST(req: NextRequest) {
-  const v = autoriserApi(req.headers.get("authorization"), "campagne.read");
+  const v = autoriserAppelant(req.headers.get("authorization"), "campagne.read");
   if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
 
   const db = serviceClient();

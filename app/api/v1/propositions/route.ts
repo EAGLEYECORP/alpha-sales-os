@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { autoriserApi } from "@/lib/api-keys";
+import { autoriserAppelant } from "@/lib/autoriser-appelant";
 import { statutReel, validerProposition, type Proposition } from "@/lib/propositions";
 
 export const runtime = "nodejs";
@@ -40,7 +40,7 @@ const indisponible = () =>
   );
 
 export async function POST(req: NextRequest) {
-  const v = autoriserApi(req.headers.get("authorization"), "propositions.write");
+  const v = autoriserAppelant(req.headers.get("authorization"), "propositions.write");
   if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
 
   let body: Partial<Proposition>;
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const v = autoriserApi(req.headers.get("authorization"), "propositions.read");
+  const v = autoriserAppelant(req.headers.get("authorization"), "propositions.read");
   if (!v.ok) return NextResponse.json({ error: v.erreur, why: v.pourquoi }, { status: v.statut });
 
   const db = serviceClient();

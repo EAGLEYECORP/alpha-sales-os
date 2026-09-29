@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { autoriserApi, type Portee } from "@/lib/api-keys";
+import type { Portee } from "@/lib/api-keys";
+import { autoriserAppelant, origineDe } from "@/lib/autoriser-appelant";
+import { defiBearer, secretOAuth } from "@/lib/mcp-oauth";
 import { TYPES_PROPOSITION } from "@/lib/propositions";
 
 export const runtime = "nodejs";
@@ -26,11 +28,27 @@ export const dynamic = "force-dynamic";
  * pouvoir se tromper sans que ça coûte un client. L'envoi reste gardé côté
  * serveur (palier, DKIM, mentions) et armé par un humain.
  *
- * Les droits viennent de la CLÉ (ALPHA_API_KEYS) : un agent branché avec une
- * clé sans `propositions.write` ne peut que regarder, et l'outil disparaît de
- * sa liste plutôt que d'échouer à l'appel.
+ * Les droits viennent de la CLÉ (ALPHA_API_KEYS) ou du JETON OAUTH : un agent
+ * sans `propositions.write` ne peut que regarder, et l'outil disparaît de sa
+ * liste plutôt que d'échouer à l'appel.
+ *
+ * ── OAUTH (29/09/2026) ──
+ *
+ * claude.ai et Cowork ne savent se brancher qu'en OAuth pour la plupart des
+ * comptes. Sans authentification valide, ce serveur répond donc 401 avec un
+ * `WWW-Authenticate` qui pointe vers ses métadonnées : c'est CE 401 qui fait
+ * démarrer la connexion côté Claude (un en-tête sur un 200 est ignoré).
+ * Un jeton OAuth ne porte que les portées du cerveau — voir `lib/mcp-oauth.ts`.
  * ─────────────────────────────────────────────────────────────────────
  */
+
+/**
+ * Versions du protocole qu'on sait servir. On n'utilise que des outils et des
+ * réponses JSON, communs à toutes : on renvoie donc celle que le client
+ * demande si on la connaît, au lieu d'imposer la plus ancienne — un client
+ * récent qui reçoit une version qu'il ne parle plus se déconnecte.
+ */
+const VERSIONS_MCP = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 interface RequeteRpc {
   jsonrpc?: string;
@@ -159,9 +177,34 @@ export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const { id, method } = body;
 
+  /**
+   * ⚠ LE 401 QUI DÉMARRE LA CONNEXION. Aucune authentification valide (ni clé,
+   * ni jeton) ⇒ 401 + pointeur vers les métadonnées OAuth. Un jeton EXPIRÉ
+   * tombe ici aussi, avec `error="invalid_token"` : c'est ce qui fait
+   * rafraîchir Claude. Un appelant authentifié mais sans `etat.read` n'est pas
+   * refusé ici : ses outils sont filtrés plus bas, comme avant.
+   * Si OAuth n'est pas configuré (aucun secret), on garde l'ancien comportement
+   * — annoncer un serveur d'autorisation qui ne peut rien signer serait mentir.
+   */
+  const ident = autoriserAppelant(auth, "etat.read");
+  if (!ident.ok && ident.statut === 401 && secretOAuth()) {
+    const origine = origineDe(req);
+    return NextResponse.json(
+      { jsonrpc: "2.0", id: id ?? null, error: { code: -32001, message: `${ident.erreur} ${ident.pourquoi}` } },
+      { status: 401, headers: { "WWW-Authenticate": defiBearer(origine, Boolean(auth?.trim())) } },
+    );
+  }
+
+  // Une notification n'attend pas de réponse : 202, corps vide (MCP HTTP).
+  if (typeof method === "string" && method.startsWith("notifications/")) {
+    return new NextResponse(null, { status: 202 });
+  }
+  if (method === "ping") return rpcOk(id, {});
+
   if (method === "initialize") {
+    const demandee = body.params?.protocolVersion;
     return rpcOk(id, {
-      protocolVersion: "2024-11-05",
+      protocolVersion: typeof demandee === "string" && VERSIONS_MCP.includes(demandee) ? demandee : VERSIONS_MCP[0],
       capabilities: { tools: {} },
       serverInfo: { name: "alpha-sales-os", version: "1.0.0" },
       instructions:
@@ -175,7 +218,7 @@ export async function POST(req: NextRequest) {
   if (method === "tools/list") {
     // On n'expose que ce que la clé permet : un outil qui échouerait à
     // l'appel est pire qu'un outil absent — l'agent le retente.
-    const dispo = OUTILS.filter((o) => autoriserApi(auth, o.portee).ok);
+    const dispo = OUTILS.filter((o) => autoriserAppelant(auth, o.portee).ok);
     return rpcOk(id, {
       tools: dispo.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })),
     });
@@ -187,7 +230,7 @@ export async function POST(req: NextRequest) {
     const outil = OUTILS.find((o) => o.name === nom);
     if (!outil) return rpcErr(id, -32601, `Outil inconnu : ${nom}`);
 
-    const v = autoriserApi(auth, outil.portee);
+    const v = autoriserAppelant(auth, outil.portee);
     if (!v.ok) {
       return rpcOk(id, {
         isError: true,
@@ -214,8 +257,15 @@ export async function POST(req: NextRequest) {
 
 /** GET : sonde de configuration, sans rien exposer. */
 export async function GET(req: NextRequest) {
+  // Un client MCP qui ouvre un flux d'événements (GET + text/event-stream)
+  // reçoit 405 : on ne pousse rien vers le client. Lui servir notre JSON de
+  // sonde le ferait croire à un flux cassé.
+  const accepte = req.headers.get("accept") ?? "";
+  if (accepte.includes("text/event-stream") && !accepte.includes("application/json")) {
+    return new NextResponse(null, { status: 405, headers: { Allow: "POST" } });
+  }
   const auth = req.headers.get("authorization");
-  const v = autoriserApi(auth, "etat.read");
+  const v = autoriserAppelant(auth, "etat.read");
   return NextResponse.json({
     serveur: "alpha-sales-os",
     protocole: "MCP 2024-11-05 (JSON-RPC 2.0 sur POST)",

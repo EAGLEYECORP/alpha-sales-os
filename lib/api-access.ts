@@ -199,6 +199,10 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // sont hors session.
   "/api/v1": "/",
   "/api/mcp": "/",
+  // Serveur d'autorisation OAuth du MCP (lib/mcp-oauth.ts) : hors session par
+  // nature — c'est lui qui en établit une. Gardé par PKCE, signature et la
+  // session maître vérifiée à l'approbation.
+  "/api/oauth": "/",
   /**
    * Webhook Telegram du propriétaire : appelé par Telegram (aucune session),
    * gardé par son secret d'en-tête + l'id de l'expéditeur. Comme `/api/v1` et
