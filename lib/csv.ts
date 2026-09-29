@@ -1,8 +1,9 @@
-import type { Prospect, Sector, Stage } from "./types";
+import type { Prospect, Stage } from "./types";
 import { parseDeadline, parseDelivery, parseHistory, parseObjections, parseObstacles } from "./crm-parse";
 import { prospectDefaults } from "./seed";
 import { daysAhead, uid } from "./utils";
 import { STAGES } from "./hormozi";
+import { sectorDepuisTexte } from "./secteurs";
 
 /**
  * CSV parsing + prospect mapping for real-data import.
@@ -90,17 +91,9 @@ const HEADER_MAP: Record<string, string> = {
   typedentreprise: "typeTag",
 };
 
-const SECTOR_ALIASES: Record<string, Sector> = {
-  // Maîtrise d'ouvrage : le marché en cours. Sans ces alias, un CSV qui dit
-  // « promoteur » atterrit dans « autre » et perd son playbook.
-  maitriseouvrage: "maitrise-ouvrage", moa: "maitrise-ouvrage", promoteur: "maitrise-ouvrage",
-  promotion: "maitrise-ouvrage", amenageur: "maitrise-ouvrage", bailleur: "maitrise-ouvrage",
-  constructeur: "maitrise-ouvrage",
-  restaurant: "restaurant", resto: "restaurant", restauration: "restaurant", bouchon: "restaurant",
-  pub: "pub", bar: "pub", brasserie: "pub",
-  ambulance: "ambulance", ambulances: "ambulance", transportsanitaire: "ambulance", vsl: "ambulance",
-  artisan: "artisan", artisanat: "artisan", plomberie: "artisan", menuiserie: "artisan", electricite: "artisan", batiment: "artisan",
-};
+// ⚠ La table d'alias secteur VIVAIT ici, en privé. Elle est devenue
+// `sectorDepuisTexte` (`lib/secteurs.ts`) : l'ingestion API posait la même
+// question et répondait « autre » à « promoteur ». Une seule source, désormais.
 
 const num = (v: string): number | undefined => {
   const n = parseFloat(v.replace(/\s/g, "").replace(",", "."));
@@ -132,7 +125,7 @@ export function csvToProspects(text: string): CsvImportResult {
       skipped++;
       continue;
     }
-    const sector = SECTOR_ALIASES[strip(rec.sector ?? "")] ?? "autre";
+    const sector = sectorDepuisTexte(rec.sector);
     const stage = (STAGES.find((s) => s.id === strip(rec.stage ?? "") || strip(s.label) === strip(rec.stage ?? ""))?.id ?? "prospect") as Stage;
     const now = new Date().toISOString();
 

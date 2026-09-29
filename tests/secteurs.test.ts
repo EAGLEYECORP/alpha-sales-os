@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ORDRE_SECTEURS, LIBELLE_SECTEUR, GROUPE_SECTEUR, secteursPresents } from "../lib/secteurs";
+import { ORDRE_SECTEURS, LIBELLE_SECTEUR, GROUPE_SECTEUR, secteursPresents, sectorDepuisTexte } from "../lib/secteurs";
 import { buildArgumentaire, argumentaireText } from "../lib/argumentaire";
 import { seedProspects } from "../lib/seed";
 import type { Prospect, Sector } from "../lib/types";
@@ -218,4 +218,42 @@ test("⚠ chaque secteur a un nom de groupe DISTINCT et non vide", () => {
     assert.ok(!deja, `« ${g} » sert à la fois pour ${deja} et ${s}`);
     vus.set(g, s);
   }
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * sectorDepuisTexte — LA SEULE DÉFINITION de « ce mot désigne quel secteur ? ».
+ *
+ * Elle vivait à deux endroits (csv.ts + api-ingest.ts) avec deux réponses :
+ * l'ingestion API jetait « promoteur » dans « autre » et perdait la verticale
+ * de notre ICP. Ces tests fixent le comportement ET interdisent la seconde
+ * copie de revenir.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("sectorDepuisTexte — le marché en cours se reconnaît sous ses formes courantes", () => {
+  for (const mot of ["promoteur", "Promoteur", "PROMOTEUR", "MOA", "moa", "maîtrise d'ouvrage", "maitrise-ouvrage", "bailleur", "aménageur", "constructeur"]) {
+    assert.equal(sectorDepuisTexte(mot), "maitrise-ouvrage", `« ${mot} »`);
+  }
+});
+
+test("sectorDepuisTexte — les autres secteurs et le fourre-tout", () => {
+  assert.equal(sectorDepuisTexte("resto"), "restaurant");
+  assert.equal(sectorDepuisTexte("brasserie"), "pub");
+  assert.equal(sectorDepuisTexte("VSL"), "ambulance");
+  assert.equal(sectorDepuisTexte("plomberie"), "artisan");
+  // Inconnu, vide, absent → autre, jamais une exception.
+  assert.equal(sectorDepuisTexte("boulangerie"), "autre");
+  assert.equal(sectorDepuisTexte(""), "autre");
+  assert.equal(sectorDepuisTexte(null), "autre");
+  assert.equal(sectorDepuisTexte(undefined), "autre");
+});
+
+test("⚠ une seule source : csv.ts n'a plus sa propre table d'alias secteur", () => {
+  // La divergence qu'on vient de tuer se rouvrirait en recopiant la table.
+  // On refuse la seconde définition, comme aRefuseTouteRelance / RESULTATS_MANUELS.
+  const csv = readFileSync(join(process.cwd(), "lib/csv.ts"), "utf8");
+  assert.doesNotMatch(csv, /SECTOR_ALIASES\s*[:=]/, "csv.ts redéfinit une table d'alias secteur — passe par sectorDepuisTexte");
+  assert.match(csv, /sectorDepuisTexte/, "csv.ts doit consommer la source partagée");
+  const ingest = readFileSync(join(process.cwd(), "lib/api-ingest.ts"), "utf8");
+  assert.match(ingest, /sectorDepuisTexte/, "api-ingest.ts doit consommer la source partagée");
 });

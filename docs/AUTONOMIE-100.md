@@ -88,12 +88,28 @@ plupart (d'où le panneau UX ci-dessous).
    n'est pas lu. **Le close reste humain** : on propose, on ne confirme pas.
    Reste à faire quand un calendrier par locataire existera : écrire le RDV
    confirmé (aujourd'hui l'humain le pose).
-4. **Sourcing autonome → CRM.** Le serveur ne peut PAS appeler GetLeads (c'est
-   un connecteur Claude, pas de l'infra serveur). Le sourcing autonome vit donc
-   dans une **Routine Cowork**. Bonne nouvelle : le pont existe déjà —
-   `/api/v1/prospects` accepte une écriture par clé (`prospects.write`), donc un
-   agent Cowork peut **pousser ses fiches dans le CRM sans CSV manuel**. C'est la
-   pièce qui ferme la boucle sourcing → pipe.
+4. **Sourcing autonome → CRM — ✅ PONT CORRIGÉ (29/09/2026).** Le serveur ne
+   peut PAS appeler GetLeads (c'est un connecteur Claude, pas de l'infra
+   serveur). Le sourcing autonome vit donc dans une **Routine Cowork**. Le pont
+   existe : `/api/v1/prospects` accepte une écriture par clé (`prospects.write`),
+   donc un agent Cowork **pousse ses fiches dans le CRM sans CSV manuel**.
+   · **Le défaut qui la rendait inutile pour NOTRE marché** : l'ingestion faisait
+     un match EXACT contre l'enum secteur et jetait « promoteur », « MOA »,
+     « bailleur »… dans « autre » — la verticale de notre ICP perdue en silence.
+     L'import CSV, lui, avait une table d'alias. Deux définitions, celle de la
+     porte publique était fausse. Réparé : `sectorDepuisTexte` (`lib/secteurs.ts`),
+     une seule source, consommée par `csv.ts` ET `api-ingest.ts` ; un test
+     interdit la seconde copie. Un agent qui POST `sector:"promoteur"` obtient
+     désormais la maîtrise d'ouvrage.
+   · **Décision NON tranchée, nommée** : l'agent Cowork pousse par **HTTP direct**
+     (Bearer `prospects.write`), PAS par le connecteur MCP. Le serveur MCP reste
+     verrouillé « lecture + plan + proposition » (`tests/middleware-public` →
+     `AUTORISES`) : aucun de ses outils n'écrit dans le CRM sans passer par la
+     file de propositions qu'un humain approuve. Ajouter un `pousser_prospects`
+     au MCP briserait cette garantie ET alimenterait le seul chemin d'envoi
+     automatique (une fiche à froid poussée → cold-email par `mail-tick` une fois
+     l'autopilote armé, sans approbation par fiche). C'est un arbitrage de
+     doctrine, pas une ligne de code — à trancher par Zakaria, pas en douce.
 5. **Mesure / tarification.** `valeur-produite` (cohorte) n'est pas branché —
    nécessaire pour que les prix s'auto-calibrent, mais ça se **décide** (ça
    touche l'argument de souveraineté), ça ne se code pas en douce.

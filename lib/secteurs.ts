@@ -107,3 +107,60 @@ export function secteursPresents(prospects: Pick<Prospect, "sector">[]): Sector[
   }
   return ORDRE_SECTEURS.filter((s) => vus.has(s));
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * D'UN MOT ÉTRANGER VERS UN SECTEUR CONNU — une seule définition.
+ *
+ * ⚠⚠ POURQUOI, mesuré le 29/09/2026. La question « le mot "promoteur"
+ * désigne quel secteur ? » se posait à DEUX endroits qui répondaient
+ * DIFFÉREMMENT :
+ *  · `lib/csv.ts` (import CSV) : une table d'alias mappait « promoteur »,
+ *    « moa », « bailleur »… → `maitrise-ouvrage`. Correct.
+ *  · `lib/api-ingest.ts` (LA PORTE des intégrations : n8n, un scraper, un
+ *    agent Cowork qui pousse par `prospects.write`) : un match EXACT contre
+ *    l'enum. « promoteur » n'y figure pas → `autre`, et la fiche perdait la
+ *    verticale de NOTRE ICP.
+ * La porte par laquelle un agent Cowork pousse ses leads jetait donc la
+ * maîtrise d'ouvrage dans le fourre-tout — le défaut récurrent du dépôt (deux
+ * définitions d'une même règle, celle qu'on relit le moins qui se trompe)
+ * appliqué à l'entrée du marché EN COURS. Les deux importent désormais cette
+ * fonction ; un alias s'ajoute ici, une fois.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const ALIAS_SECTEUR: Record<string, Sector> = {
+  // Maîtrise d'ouvrage : le marché en cours. Sans ces alias, un « promoteur »
+  // atterrit dans « autre » et perd son playbook.
+  // « maitrisedouvrage » : la forme « maîtrise d'ouvrage » écrite en toutes
+  // lettres — l'apostrophe-d survit à la normalisation (…d'ouvrage → douvrage).
+  maitriseouvrage: "maitrise-ouvrage", maitrisedouvrage: "maitrise-ouvrage",
+  moa: "maitrise-ouvrage", promoteur: "maitrise-ouvrage",
+  promotion: "maitrise-ouvrage", amenageur: "maitrise-ouvrage", bailleur: "maitrise-ouvrage",
+  constructeur: "maitrise-ouvrage",
+  restaurant: "restaurant", resto: "restaurant", restauration: "restaurant", bouchon: "restaurant",
+  pub: "pub", bar: "pub", brasserie: "pub",
+  ambulance: "ambulance", ambulances: "ambulance", transportsanitaire: "ambulance", vsl: "ambulance",
+  artisan: "artisan", artisanat: "artisan", plomberie: "artisan", menuiserie: "artisan",
+  electricite: "artisan", batiment: "artisan",
+};
+
+/**
+ * Normalise comme les clés ci-dessus : minuscules, accents dépliés, sans rien
+ * d'autre que lettres et chiffres. « Maîtrise d'ouvrage », « MOA »,
+ * « maitrise_ouvrage » tombent tous sur la même clé. C'est le MÊME repli que
+ * `strip` dans `lib/csv.ts` — reproduit ici pour que l'import CSV et
+ * l'ingestion API rendent le même secteur pour le même mot.
+ */
+function normaliserSecteur(brut: string): string {
+  return brut
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/** Le secteur connu que désigne un mot libre, ou `"autre"` si aucun. */
+export function sectorDepuisTexte(brut: string | null | undefined): Sector {
+  if (!brut) return "autre";
+  return ALIAS_SECTEUR[normaliserSecteur(brut)] ?? "autre";
+}

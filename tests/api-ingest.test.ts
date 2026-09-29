@@ -56,6 +56,25 @@ test("ingestion — un secteur inconnu retombe sur « autre », et le dit", () =
   assert.equal(ok.warnings.some((w) => /inconnu/.test(w)), false);
 });
 
+test("⚠⚠ ingestion — « promoteur » atterrit sur maitrise-ouvrage, PAS « autre »", () => {
+  // Le défaut réparé le 29/09 : la porte des intégrations (n8n, scraper, agent
+  // Cowork poussant par prospects.write) faisait un match EXACT contre l'enum
+  // et jetait NOTRE ICP dans le fourre-tout. C'est le marché en cours.
+  for (const mot of ["promoteur", "Promoteur", "MOA", "maîtrise d'ouvrage", "bailleur", "aménageur"]) {
+    const r = normalizeIncoming({ company: `T ${mot}`, secteur: mot }, NOW);
+    assert.equal(r.prospect!.sector, "maitrise-ouvrage", `« ${mot} » devrait mapper sur maitrise-ouvrage`);
+    assert.equal(r.warnings.some((w) => /inconnu/.test(w)), false, `« ${mot} » ne doit PAS être signalé inconnu`);
+  }
+});
+
+test("ingestion — un métier non aliasé garde son mot dans les notes (repli verticale)", () => {
+  // Comme l'import CSV : « garage » tombe dans « autre » mais reste lisible pour
+  // verticalForProspect, qui lit le texte à défaut de tag/secteur.
+  const r = normalizeIncoming({ company: "Garage T", secteur: "garage" }, NOW);
+  assert.equal(r.prospect!.sector, "autre");
+  assert.match(r.prospect!.notes, /garage/i, "le mot du métier doit survivre dans les notes");
+});
+
 test("ingestion — l'id est stable : deux envois = une mise à jour, pas un doublon", () => {
   const a = normalizeIncoming({ company: "Carrosserie Test", email: "M@Test.FR" }, NOW).prospect!;
   const b = normalizeIncoming({ societe: "Carrosserie Test", mail: "m@test.fr" }, NOW).prospect!;

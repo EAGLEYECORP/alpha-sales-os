@@ -1,6 +1,6 @@
 import type { Prospect, Sector } from "./types";
 import { prospectDefaults } from "./seed";
-import { ORDRE_SECTEURS } from "./secteurs";
+import { ORDRE_SECTEURS, sectorDepuisTexte } from "./secteurs";
 import { toE164 } from "./voice-script";
 import { auditCompleteness } from "./deep-dive";
 
@@ -116,9 +116,12 @@ export function normalizeIncoming(raw: unknown, now: Date = new Date()): IngestR
     warnings.push(`Email de forme inhabituelle : « ${email} ».`);
   }
 
-  const rawSector = pick(r, "sector")?.toLowerCase();
-  const sector: Sector = (SECTORS.find((s) => s === rawSector) ?? "autre") as Sector;
-  if (rawSector && sector === "autre" && rawSector !== "autre") {
+  // ⚠ On passe par `sectorDepuisTexte` (une seule définition, partagée avec
+  // l'import CSV) : un match exact contre l'enum jetait « promoteur » — NOTRE
+  // ICP — dans « autre » et lui faisait perdre sa verticale.
+  const rawSector = pick(r, "sector");
+  const sector: Sector = sectorDepuisTexte(rawSector);
+  if (rawSector && sector === "autre" && rawSector.toLowerCase() !== "autre") {
     warnings.push(`Secteur « ${rawSector} » inconnu → « autre ». Valeurs : ${SECTORS.join(", ")}.`);
   }
 
@@ -127,6 +130,16 @@ export function normalizeIncoming(raw: unknown, now: Date = new Date()): IngestR
   const id = `api-${seed}`.slice(0, 60);
 
   const website = pick(r, "website");
+
+  // Même repli que l'import CSV : quand le métier tombe dans « autre » (garage,
+  // immobilier, auto-école…), on garde le mot dans les notes — c'est ce que lit
+  // `verticalForProspect` pour rattacher le playbook. Sans ça, un secteur non
+  // aliasé perd sa verticale en silence.
+  const notesBrutes = pick(r, "notes") ?? "";
+  const notes =
+    rawSector && sector === "autre" && !new RegExp(rawSector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(notesBrutes)
+      ? [`Métier : ${rawSector}.`, notesBrutes].filter(Boolean).join(" ")
+      : notesBrutes;
 
   const prospect: Prospect = {
     ...prospectDefaults,
@@ -138,7 +151,7 @@ export function normalizeIncoming(raw: unknown, now: Date = new Date()): IngestR
     city: pick(r, "city") ?? "",
     sector,
     linkedin: pick(r, "linkedin"),
-    notes: pick(r, "notes") ?? "",
+    notes,
     // ⚠ Le stade n'est JAMAIS pris de l'extérieur : un système tiers n'a pas
     // à décider qu'un prospect est signé. On entre au début du pipeline.
     stage: "prospect",
