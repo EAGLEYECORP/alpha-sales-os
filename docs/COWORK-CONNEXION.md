@@ -130,12 +130,31 @@ Dans les réglages de connecteurs de Claude (côté claude.ai / Cowork), ajoute 
 
 - **URL** : `https://<ton-app>/api/mcp`
 - **Authentification** : en-tête `Authorization: Bearer <SECRET>` (Alpha
-  s'authentifie par **clé API**, pas par OAuth — choisis l'option « clé / en-tête
-  personnalisé » si on te demande).
+  s'authentifie par **clé API**, pas par OAuth).
 
-> Les écrans de connecteurs évoluent : si l'intitulé exact diffère, cherche
-> « MCP distant / custom / HTTP » et colle l'URL + le Bearer. La sonde de l'étape
-> 3 est le test de vérité — si elle répond `authentifie: true`, l'endpoint est bon.
+> ⚠⚠ **CETTE ÉTAPE PEUT ÊTRE IMPOSSIBLE SUR TON COMPTE — vérifié le 29/09/2026
+> dans la doc officielle des connecteurs Claude.** claude.ai / Cowork acceptent
+> trois authentifications : **OAuth** (par défaut, pour tous), **aucune**, et
+> **en-têtes statiques** (`static_headers`) — cette dernière est en **bêta,
+> réservée à un nombre limité d'organisations**, et seul un **Owner**
+> d'organisation la voit. Sans elle, la section « Request headers » **n'apparaît
+> pas** quand on ajoute le connecteur : il n'y a nulle part où coller le Bearer.
+> · **Test en 10 secondes** : Réglages → Connecteurs → Ajouter un connecteur
+>   personnalisé. Section « Request headers » visible ? → ce guide marche tel
+>   quel. Absente ? → Alpha ne peut PAS être branché sur Cowork aujourd'hui, et ce
+>   n'est pas une erreur de ta part.
+> · **Claude Code (terminal) n'a pas cette limite** : `claude mcp add --transport
+>   http alpha https://<ton-app>/api/mcp --header "Authorization: Bearer <SECRET>"`.
+> · **Ce qui lève la limite pour tout le monde : OAuth** — c'est pour ça qu'Attio
+>   se branche en un clic (OAuth sur `mcp.attio.com`, aucune clé). Le serveur
+>   OAuth de Supabase aurait été la voie naturelle, mais son ticket `supabase/auth#2820`
+>   (ouvert) le fait répondre 400 aux clients publics, à `offline_access` et au
+>   paramètre `resource` — exactement ce qu'envoie un client MCP. Chantier
+>   ouvert, pas encore livré : voir `docs/AUTONOMIE-100.md`.
+>
+> Cette doc prescrivait le Bearer comme s'il était disponible partout. C'était
+> faux pour la plupart des comptes, et c'est pire qu'une doc absente : on
+> cherche un champ qui n'existe pas en croyant se tromper.
 
 ---
 
