@@ -129,8 +129,8 @@ nôtre exigeait un Bearer statique, que claude.ai/Cowork n'acceptent qu'en bêta
   proposition), seul un compte maître autorise, revérifié à chaque appel.
 · **Preuve** : parcours complet en HTTP réel sur `next start` verrouillé
   (15/15) ; 5 mutations de sécurité (PKCE, garde maître, retours, 401,
-  portées) font chacune tomber un test. **Pas encore éprouvé avec un vrai
-  client Claude** — c'est le premier branchement qui le dira.
+  portées) font chacune tomber un test. **Éprouvé par un vrai Claude le 29/09** :
+  connecteur ajouté, consentement donné, `diagnostic` a répondu.
 
 ### C. L'ORCHESTRATION (le « cerveau » qui tourne seul)
 Deux moteurs qui se rejoignent sur **les propositions que tu approuves** :

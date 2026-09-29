@@ -63,26 +63,18 @@ identique — Vercel Cron n'était de toute façon jamais l'ordonnanceur (c'est
   `SUPABASE_JWT_SECRET`, `SERVICE_ROLE`) **restent scannés**. Ne JAMAIS mettre
   `SECRETS_SCAN_ENABLED=false` : ça éteindrait l'alarme le jour d'une vraie fuite.
 
-## 🔴🔴 AVANT TOUT — LA PRODUCTION EST FIGÉE AU 22/09 (constaté le 29/09)
-
-Le site en ligne tourne sur le commit `688d1d9` du **22/09**. Depuis, une
-vingtaine de push — auto-réponse, relances, créneaux, `diagnostic`, **le
-serveur OAuth qui permet de brancher Alpha sur Cowork** — **ne sont PAS en
-ligne**. La prod est bien rattachée à notre branche, mais aucun push n'a
-redéclenché de build.
-Je ne peux pas déployer d'ici : les hôtes de téléversement Netlify sont bloqués
-par le proxy du bac à sable (testé : `000`).
-
-1. Netlify → site `alphasalesos` → **Deploys**. Regarde s'il y a un bandeau
-   (« builds arrêtés », « auto-publishing verrouillé », minutes de build
-   épuisées — le plan gratuit en a un quota mensuel).
-2. **Trigger deploy → Deploy site.** Le build part du dernier commit de la
-   branche `claude/crm-n8n-email-tracking-4qxtwr`.
-3. Si le bouton n'existe pas : **Site configuration → Build & deploy → Link
-   repository** → GitHub → `EAGLEYECORP/alpha-sales-os`, branche de production
-   `claude/crm-n8n-email-tracking-4qxtwr`. Après ça, chaque push déploie seul.
-4. **Comment savoir que c'est bon** : `https://alphasalesos.netlify.app/.well-known/oauth-protected-resource`
-   doit afficher du JSON avec `"resource"` — aujourd'hui, cette page n'existe pas.
+## ✅ 29/09 — PRODUCTION REDÉPLOYÉE, ALPHA BRANCHÉ SUR CLAUDE
+Le site était resté sur le commit du 22/09 ; Zakaria a relancé le déploiement.
+Preuve que le nouveau code est en ligne : le connecteur Alpha a été ajouté dans
+Claude par OAuth et `diagnostic` a répondu (ces deux choses n'existent que dans
+le nouveau code).
+> ⚠ **Leçon** : l'API Netlify interrogée depuis le bac à sable annonçait encore
+> le déploiement du 22/09 comme actif, APRÈS le redéploiement. Son pointeur
+> « déploiement courant » n'est pas une preuve. Le juge, c'est une requête sur
+> le site lui-même, ou un outil qui n'existe que dans le nouveau code.
+> ⚠ **Un push ne redéploie pas tout seul aujourd'hui** (constaté : une semaine
+> de push sans build). Tant que ce n'est pas réglé, chaque livraison demande un
+> « Trigger deploy ».
 
 ## 🔴 CE QUI RESTE — dans l'ordre
 

@@ -1771,7 +1771,8 @@ refresh), la connexion restant celle de Supabase.
   seulement (60 s + PKCE), refresh non révocable seul. Coupe-circuits :
   `OWNER_EMAILS`, ou `OAUTH_SECRET` (sinon dérivé de `SUPABASE_JWT_SECRET`).
 - **Prouvé en HTTP réel** (`next start` verrouillé, 15/15) + 5 mutations qui
-  mordent. **Pas encore avec un vrai client Claude.**
+  mordent, **puis par un vrai Claude le 29/09** : connecteur ajouté par
+  Zakaria, consentement, `diagnostic` a répondu. C'est ce test-là qui compte.
 
 ### DU MOT DE PASSE AU COMPTE — la bascule (02/09/2026)
 `SITE_PASSWORD` est un mot de passe PARTAGÉ, sans identifiant, changeable

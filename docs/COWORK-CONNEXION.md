@@ -156,11 +156,8 @@ sur Netlify (≥ 32 caractères) et redéploie — tous les jetons meurent. Sans
 cette variable, le secret est dérivé de `SUPABASE_JWT_SECRET` : rien à poser
 pour que ça marche.
 
-> ⚠ **Prouvé sur un vrai serveur de production local (29/09), PAS encore avec
-> un vrai client Claude.** Les 15 étapes que fait Claude (401 → découverte
-> `/.well-known` → enregistrement → consentement → PKCE → jeton → `tools/list`
-> → refresh) passent en HTTP réel, en mode verrouillé. Le premier branchement
-> depuis ton compte est le vrai test. Si ça casse, colle-moi le message exact.
+> ✅ **Éprouvé le 29/09 par un vrai Claude** : connecteur ajouté depuis le
+> compte de Zakaria, consentement donné, l'outil `diagnostic` a répondu.
 >
 > **Limites écrites plutôt que tues** : pas de base, donc un code
 > d'autorisation n'est garanti à usage unique que sur une même instance (il vit
