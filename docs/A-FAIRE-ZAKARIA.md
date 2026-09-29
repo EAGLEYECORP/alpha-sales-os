@@ -63,6 +63,48 @@ identique — Vercel Cron n'était de toute façon jamais l'ordonnanceur (c'est
   `SUPABASE_JWT_SECRET`, `SERVICE_ROLE`) **restent scannés**. Ne JAMAIS mettre
   `SECRETS_SCAN_ENABLED=false` : ça éteindrait l'alarme le jour d'une vraie fuite.
 
+## 🧭 29/09 SOIR — RELECTURE COMPLÈTE : CE QUI EST VRAI (corrige la session du jour)
+
+Relecture de toute la conversation + du dépôt, à la demande de Zakaria. Quatre
+affirmations faites dans la journée étaient FAUSSES ou incomplètes :
+
+1. **« Aucun prospect contacté » — FAUX.** Le 22/09, des invitations LinkedIn
+   sont parties vers les décideurs promoteurs validés ce jour-là, et **un
+   prospect a RÉPONDU**. Le contenu de sa réponse n'a jamais été transmis
+   (message vide côté session) et **aucune suite n'est tracée depuis**. C'est
+   le contact le plus chaud de toute l'histoire du projet. À retrouver dans la
+   messagerie LinkedIn de Zakaria, en priorité absolue.
+2. **« Colle-moi l'en-tête DKIM » — l'en-tête n'est JAMAIS arrivé** (le
+   22/09, message vide). Mesure DNS du 29/09, depuis le bac à sable (UDP 53
+   brut, qui passe quand le DNS-over-HTTPS est bloqué) :
+   · DMARC `p=quarantine; adkim=s; aspf=s; pct=100` — **strict** ;
+   · SPF `v=spf1 include:spf.webapps.net ~all` ;
+   · **DKIM : aucune clé publiée** sur 12 sélecteurs courants (30 le 22/09).
+   Le domaine ne passe DMARC que par l'alignement SPF (Return-Path =
+   eagleyecorp.fr). Un envoi par le SMTP Amen passe ; tout relais qui réécrit
+   l'adresse de retour part en quarantaine. Seul un en-tête reçu donnera le
+   vrai sélecteur (`s=`) si une clé existe sous un nom inhabituel.
+3. **« Vends Alpha Voice aux 7 contacts chauds » — contredit une contrainte
+   posée le 22/09** : « pas assez de sous pour lancer Voice en full effect,
+   mais on peut vendre les briques d'Alpha Sales OS ». Chaque client Voice
+   exige un agent hébergé et une installation à la main : ne le vendre que si
+   la livraison est finançable.
+4. **Le mail promoteur a été réécrit à la main pour Cowork** alors que
+   `construireMailCold` existait. Deux textes pour la même chose — le défaut
+   n°1 du dépôt. Le texte du code se termine par la divulgation IA d'un envoi
+   AUTONOME ; relu et envoyé par Zakaria, cette phrase devient fausse, et il
+   manque la provenance. À unifier dans le code (un corps, la signature et la
+   provenance selon le mode).
+
+Et une décision du 22/09 que la semaine a violée : « pas de churn de features,
+le 1er euro vient de l'outreach humain ». Du 22 au 29/09 : B1→B4, diagnostic,
+OAuth. Utile pour l'autonomie, **zéro effet sur le chiffre d'affaires**.
+
+> ⚠ « Je travaille avec des promoteurs sur Lyon » a servi de message LinkedIn
+> le 22/09, et le script d'appel du code (`lib/playbook.ts`, ligne « Ciblage »)
+> dit la même chose. À zéro client, c'est une preuve sociale implicite.
+> Formulation honnête : « je m'adresse aux maîtres d'ouvrage qui… ».
+
 ## ✅ 29/09 — PRODUCTION REDÉPLOYÉE, ALPHA BRANCHÉ SUR CLAUDE
 Le site était resté sur le commit du 22/09 ; Zakaria a relancé le déploiement.
 Preuve que le nouveau code est en ligne : le connecteur Alpha a été ajouté dans
