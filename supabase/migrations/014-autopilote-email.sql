@@ -15,12 +15,14 @@
 -- Vault `alpha_base_url` + `alpha_cron_secret`). Si 004 n'est pas là, la
 -- planification ci-dessous échoue en le disant — c'est le bon signal.
 --
--- ── POURQUOI SEULEMENT MAIL-TICK, PAS REPLY-TICK ──
+-- ── POURQUOI SEULEMENT MAIL-TICK ICI ──
 --
--- `/api/campaign/reply-tick` TRIE les réponses (le modèle CLASSE, le code
--- DISPOSE) mais n'ENVOIE encore rien (`envoiBranche: false`). Le planifier
--- ferait tourner un tri dont la sortie part à la poubelle du cron. On le
--- planifiera le jour où son auto-envoi est branché — pas avant.
+-- Ce fichier ne planifie QUE l'envoi à froid. Les deux autres boucles —
+-- reply-tick (tri + auto-réponse) et relance-tick (rappels) — sont désormais
+-- branchées ET planifiées, mais dans la migration 016 : elles sont arrivées
+-- plus tard (B1/B2, 29/09) et les migrations sont append-only. Ne PAS les
+-- rajouter ici. (Note : reply-tick n'était pas planifié à l'origine car il
+-- n'envoyait rien ; ce n'est plus vrai depuis B1 — voir 016.)
 --
 -- ── LES QUATRE VERROUS RESTENT INTACTS ──
 --

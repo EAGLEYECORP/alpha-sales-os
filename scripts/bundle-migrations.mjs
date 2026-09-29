@@ -47,10 +47,10 @@ const DOSSIER = join(RACINE, "supabase/migrations");
 const SUPABASE = join(RACINE, "supabase");
 
 /** Le lot ne contient que ce qui se rejoue SANS aucun geste humain préalable. */
-// 004 ET 014 exigent pg_cron/pg_net/Vault (extensions Supabase) et un geste
+// 004, 014 ET 016 exigent pg_cron/pg_net/Vault (extensions Supabase) et un geste
 // humain (secrets Vault, CAMPAIGN_AUTOPILOT). Elles ne se collent pas sur une
 // base fraîche — elles se posent APRÈS, à la main.
-export const EXCLUES = new Set(["004-ordonnanceur.sql", "014-autopilote-email.sql"]);
+export const EXCLUES = new Set(["004-ordonnanceur.sql", "014-autopilote-email.sql", "016-boucles-reply-relance.sql"]);
 
 export const SORTIE = join(DOSSIER, "LOT-A-COLLER.sql");
 

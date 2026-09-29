@@ -97,6 +97,20 @@ test("⚠⚠ 014 RESTE DEHORS POUR LA MÊME RAISON QUE 004", () => {
   assert.match(lot(), /014-autopilote-email\.sql/, "…mais il doit DIRE qu'il ne le contient pas");
 });
 
+test("⚠⚠ 016 RESTE DEHORS POUR LA MÊME RAISON QUE 004 ET 014", () => {
+  /**
+   * `016-boucles-reply-relance.sql` planifie reply-tick + relance-tick via
+   * `pg_cron` et réutilise `appeler_tick` (Vault de 004). Même raison
+   * d'exclusion : sur une base fraîche `cron.schedule` n'existe pas, la coller
+   * dans le lot le ferait échouer en entier. Le jour où elle ne dépend plus de
+   * pg_cron, cette assertion tombe et elle peut rentrer.
+   */
+  const src = readFileSync(join(RACINE, "supabase/migrations/016-boucles-reply-relance.sql"), "utf8");
+  assert.match(src, /cron\.schedule/, "016 planifie via pg_cron : il reste hors du lot");
+  assert.ok(!lot().includes("│ 016-"), "le lot ne doit pas contenir 016");
+  assert.match(lot(), /016-boucles-reply-relance\.sql/, "…mais il doit DIRE qu'il ne le contient pas");
+});
+
 test("⚠⚠ LA VÉRIFICATION NE RÉFÉRENCE NI `cron.job` NI LE VAULT", () => {
   /**
    * Le piège dans lequel je suis tombé en écrivant ce bloc. Ces deux objets
@@ -138,8 +152,8 @@ test("⚠ AUCUNE MIGRATION N'EST OUBLIÉE EN SILENCE", () => {
 
   assert.deepEqual(
     manquantes,
-    ["004-ordonnanceur.sql", "014-autopilote-email.sql"],
-    "seuls 004 et 014 peuvent manquer (pg_cron/Vault), pour la raison écrite dans les tests précédents",
+    ["004-ordonnanceur.sql", "014-autopilote-email.sql", "016-boucles-reply-relance.sql"],
+    "seuls 004, 014 et 016 peuvent manquer (pg_cron/Vault), pour la raison écrite dans les tests précédents",
   );
 });
 
