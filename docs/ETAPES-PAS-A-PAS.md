@@ -70,8 +70,15 @@ tri des réponses, relances. Sans ça, rien n'est automatique.
 **Où** : Supabase → SQL Editor.
 **Quoi faire, dans l'ordre** (colle chaque fichier entier, clique **Run**) :
 1. `supabase/migrations/004-ordonnanceur.sql` — **d'abord poser les 2 secrets
-   Vault** (`alpha_base_url`, `alpha_cron_secret`) : la procédure est écrite en
-   commentaire EN HAUT du fichier. Puis Run.
+   Vault** (`alpha_base_url`, `alpha_cron_secret`). SQL Editor → Run une fois :
+   ```sql
+   select vault.create_secret('https://alphasalesos.netlify.app', 'alpha_base_url', 'Origine publique de l app, sans slash final');
+   select vault.create_secret('<TON_SECRET>', 'alpha_cron_secret', 'Identique a CRON_SECRET sur Netlify');
+   ```
+   `<TON_SECRET>` = une valeur que TU génères (`openssl rand -hex 32`) — ne me la
+   colle pas. ⚠ `alpha_base_url` = **`netlify.app`** tant que le domaine custom
+   n'est pas branché (sinon le cron appelle un hôte mort ; passe-le à
+   `alphasalesos.eagleyecorp.fr` une fois l'étape 2 faite). Puis colle 004 entier → Run.
 2. Sur Netlify : ajoute `CRON_SECRET` = **exactement** la même valeur que le
    secret Vault `alpha_cron_secret`. Redéploie.
 3. `014-autopilote-email.sql` → Run (planifie l'envoi à froid).
