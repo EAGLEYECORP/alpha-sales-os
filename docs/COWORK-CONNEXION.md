@@ -14,12 +14,13 @@ c'est le code qui fait foi.
 ## 0. Ce que ça fait, et ce que ça ne fait PAS
 
 Alpha expose un **serveur MCP** (`/api/mcp`, JSON-RPC 2.0 sur POST, MCP
-2024-11-05). Un agent branché dessus dispose de quatre outils, et **d'aucun
+2024-11-05). Un agent branché dessus dispose de cinq outils, et **d'aucun
 autre** :
 
 | Outil | Ce qu'il fait | Portée requise |
 |---|---|---|
 | `etat_du_pipe` | Lit l'état du pipe (prêts, endormis, saturés) — **sans aucune coordonnée** | `etat.read` |
+| `diagnostic` | Lit l'état d'EXPLOITATION : autopilote armé ?, palier du jour, réponses auto (DKIM), et quel moteur classe (Laya/Jev/LLM). **Lecture seule.** | `etat.read` |
 | `preparer_campagne` | PLANIFIE un lot d'emails à froid : texte exact + préflight art. 50, plafonné au palier du jour. **N'envoie rien.** | `campagne.read` |
 | `lister_propositions` | Liste les propositions déjà déposées et leur statut | `propositions.read` |
 | `proposer` | Dépose une proposition pour revue humaine. **N'exécute rien.** | `propositions.write` |
@@ -118,7 +119,7 @@ curl -s https://<ton-app>/api/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Tu dois voir les 4 outils listés (seulement ceux que la clé permet).
+Tu dois voir les 5 outils listés (seulement ceux que la clé permet).
 
 ---
 
@@ -145,6 +146,9 @@ workflow et les pièges). Puis l'agent :
 
 1. **`etat_du_pipe`** — toujours d'abord : qui est prêt, qui dort, qui n'a pas de
    prochaine étape.
+1b. **`diagnostic`** — l'état de la machine : armée ?, palier du jour, réponses
+   auto, quel moteur classe (Laya/Jev/LLM). C'est ce qui permet un rapport du
+   matin honnête (« ça tourne, voici ce qui bloque »).
 2. **`lister_propositions`** — pour ne pas reproposer ce qui a déjà été rejeté
    (aucune mémoire entre deux sessions).
 3. **`preparer_campagne`** (`max` optionnel) — obtient le lot vérifié : objet +

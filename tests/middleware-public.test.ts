@@ -112,6 +112,7 @@ test("les routes à clé la vérifient VRAIMENT, pas seulement sur la liste", ()
     ["app/api/v1/etat/route.ts", /autoriserApi\(/],
     ["app/api/v1/propositions/route.ts", /autoriserApi\(/],
     ["app/api/v1/campagne/route.ts", /autoriserApi\(/],
+    ["app/api/v1/diagnostic/route.ts", /autoriserApi\(/],
     ["app/api/billing/checkout/route.ts", /getTenant\(req\)/],
     // Le webhook Telegram compare le secret d'en-tête à temps constant.
     ["app/api/telegram/route.ts", /safeEqual\(/],
@@ -134,13 +135,41 @@ test("MCP — aucun outil ne peut agir, seulement lire et proposer", () => {
   // un lot d'emails (le texte à relire) et n'envoie rien : sa route porte
   // `envoiBranche: false` et n'importe aucun transport. Un test dédié
   // (tests/preparer-campagne) tient l'invariant « ça ne sort pas ».
-  const AUTORISES = ["/api/v1/etat", "/api/v1/propositions", "/api/v1/campagne"];
+  // `/api/v1/diagnostic` LIT l'état d'exploitation (armé, palier, moteur de
+  // décision) — lecture seule, aucun secret, aucune action. Sa route est en GET
+  // et ne porte aucun transport (vérifié en source ci-dessous).
+  const AUTORISES = ["/api/v1/etat", "/api/v1/propositions", "/api/v1/campagne", "/api/v1/diagnostic"];
   for (const c of chemins) {
     assert.ok(AUTORISES.includes(c), `l'outil MCP appelle ${c} — hors du périmètre lecture/proposition`);
   }
   // Et aucun chemin d'action ne doit apparaître dans le fichier, même commenté
   // en exemple : un exemple se copie.
   assert.doesNotMatch(src, /api\/send|api\/voice\/call|api\/gmail/, "un chemin d'ACTION apparaît dans le serveur MCP");
+});
+
+test("MCP — le cockpit `diagnostic` est BRANCHÉ, en lecture seule", () => {
+  /**
+   * Le défaut récurrent du dépôt : écrire un outil et ne pas le brancher. On
+   * prouve que `diagnostic` figure bien dans la surface MCP, à la portée de
+   * LECTURE et en GET (un GET ne mute pas) — sinon une session future le
+   * croirait livré alors qu'aucun agent ne le verrait.
+   */
+  const src = readFileSync(join(process.cwd(), "app/api/mcp/route.ts"), "utf8");
+  const bloc = src.slice(src.indexOf('name: "diagnostic"'));
+  assert.ok(bloc.length > 0, "l'outil diagnostic doit être déclaré dans OUTILS");
+  const entete = bloc.slice(0, 600);
+  assert.match(entete, /portee:\s*"etat\.read"/, "diagnostic doit exiger la portée de LECTURE");
+  assert.match(entete, /methode:\s*"GET"/, "diagnostic doit être en GET — un GET n'agit pas");
+  assert.match(entete, /chemin:\s*"\/api\/v1\/diagnostic"/, "diagnostic doit pointer sa route");
+
+  // La route elle-même : lecture seule (pas de transport), et l'ORDRE de
+  // souveraineté (Laya avant Jev) qui décide « on utilise Laya ? ».
+  const route = readFileSync(join(process.cwd(), "app/api/v1/diagnostic/route.ts"), "utf8");
+  assert.doesNotMatch(route, /sendMail|nodemailer|api\/send|voice\/call/, "la route diagnostic ne doit porter aucun transport");
+  assert.ok(
+    route.indexOf("layaDisponible") < route.indexOf("jevDisponible"),
+    "Laya (souverain, local) doit être testé AVANT Jev (API US) — l'ordre de decision-typee"
+  );
 });
 
 test("les routes de cron exigent leur secret, et refusent tout sans lui", () => {

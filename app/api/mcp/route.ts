@@ -106,6 +106,18 @@ const OUTILS: Outil[] = [
     },
   },
   {
+    name: "diagnostic",
+    description:
+      "Lit l'ÉTAT D'EXPLOITATION de la machine (pas le pipe) : autopilote armé ou non, palier d'envoi du jour, " +
+      "si les réponses partent seules (attestation DKIM), et QUEL moteur classe les réponses — le souverain local " +
+      "(Laya), l'API US (Jev), ou le repli LLM. Sert à faire un rapport du matin complet : « est-ce que ça tourne, " +
+      "et qu'est-ce qui bloque ». N'AGIT PAS, ne rend aucun secret ni coordonnée.",
+    portee: "etat.read",
+    chemin: "/api/v1/diagnostic",
+    methode: "GET",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
     name: "preparer_campagne",
     description:
       "PLANIFIE une campagne d'emails à froid sur les prospects éligibles du pipe (stade prospect/contact, email présent, " +

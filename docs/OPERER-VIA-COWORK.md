@@ -37,7 +37,9 @@ ne close : **le closing reste à toi** (doctrine `lib/promesse.ts`).
    `prospects.write`. Depuis le 29/09, `sector:"promoteur"` (ou `MOA`,
    `bailleur`, `maîtrise d'ouvrage`…) tombe **enfin** sur la bonne verticale ;
    avant, il finissait dans « autre » et perdait son playbook.
-3. **Lire le pipe** — outil MCP `etat_du_pipe` : qui est prêt, qui dort.
+3. **Lire le pipe + l'état d'exploitation** — outils MCP `etat_du_pipe` (qui est
+   prêt, qui dort) et `diagnostic` (armé ?, palier du jour, réponses auto, quel
+   moteur classe — Laya/Jev/LLM).
 4. **Vérifier les propositions déjà déposées** — `lister_propositions` (pas de
    mémoire entre deux réveils : sans ça, il repropose ce que tu as rejeté).
 5. **Préparer la campagne** — `preparer_campagne` : le texte EXACT de chaque
@@ -122,7 +124,7 @@ Charge la skill alpha-vente si disponible. Enchaîne, sans jamais envoyer toi-m�
    (Authorization: Bearer <SECRET_B>), corps { "prospects": [ {company, name,
    email, city, sector:"promoteur", notes} ] }, par lots de 500 max. Lis le
    triage renvoyé.
-3. Connecteur Alpha (MCP) : etat_du_pipe, puis lister_propositions.
+3. Connecteur Alpha (MCP) : etat_du_pipe, diagnostic, puis lister_propositions.
 4. preparer_campagne (sans max) : récupère le lot vérifié, plafonné au palier.
 5. proposer : dépose une proposition par mail qui tient, en citant les FAITS
    de la fiche (jamais le permis ni l'adresse à froid — c'est interdit).
