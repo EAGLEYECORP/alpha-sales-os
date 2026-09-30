@@ -65,6 +65,37 @@ test("permis — le tri sépare ceux qui vendent de ceux qui n'ont rien à vendr
   assert.equal(typeDeMaitreOuvrage(""), "inconnu");
 });
 
+test("⚠⚠ bailleur social — le nom se lit SANS accent et SANS point, comme l'écrit le registre", () => {
+  /*
+   * Formes relevées dans Sitadel le 30/09/2026, avec la catégorie juridique
+   * GÉNÉRIQUE que la source leur donne (5599 / 5699 / 5560) : la voie par
+   * catégorie ne mord pas, c'est le nom seul qui doit les écarter. L'ancien
+   * motif exigeait « à loyer » accentué et « hlm » collé — ces quatre-là
+   * sortaient en « inconnu » ou « promoteur », donc RETENUS.
+   */
+  const vus: Array<[string, string, string]> = [
+    ["LOGIDIA  SOCIETE ANONYME D'HABITATIONS A LOYER MODERE", "5599", "68.20A"],
+    ["CDC HABITAT SOCIAL SOCIETE ANONYME D'HABITATIONS A LOYER MODERE", "5699", "68.20A"],
+    ["SOCIETE COOPERATIVE DE PRODUCTION D'H.L.M. DU VIVARAIS", "5560", "41.10A"],
+    ["ADOMA", "5515", "55.90Z"],
+    ["SOC DAUPHINOISE POUR L HABITAT", "5599", "68.20A"],
+  ];
+  for (const [nom, cj, ape] of vus) {
+    assert.equal(typeDeMaitreOuvrage(nom, cj, ape), "bailleur-social", nom);
+    const l = lirePermis(promoteur({ demandeur: nom, categorieJuridique: cj, codeApe: ape }), MAINTENANT);
+    assert.equal(l.retenu, false, `${nom} ne doit pas sortir retenu`);
+  }
+  // L'accentué reste reconnu : la normalisation ne doit rien perdre.
+  assert.equal(typeDeMaitreOuvrage("SA D'HABITATIONS À LOYER MODÉRÉ DU RHÔNE"), "bailleur-social");
+});
+
+test("…et le filet ne mord pas sur les promoteurs, « habitat » compris", () => {
+  // Contre-test : un filet trop large retire de vraies cibles EN SILENCE.
+  for (const nom of ["SCCV LES JARDINS DE GERLAND", "NEXITY PROMOTION IMMOBILIERE", "SMART HABITAT", "DH HABITAT", "S.A.S. BOUYGUES IMMOBILIER"]) {
+    assert.notEqual(typeDeMaitreOuvrage(nom), "bailleur-social", nom);
+  }
+});
+
 test("⚠ un bailleur social, une commune et un particulier sortent par EXCLUSION, pas par score", () => {
   /**
    * C'est le cœur du module. Un bailleur social de 80 logements coche TOUT le

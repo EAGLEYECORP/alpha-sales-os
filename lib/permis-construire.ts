@@ -195,7 +195,28 @@ const CONSTRUCTEUR_MAISONS =
  * et que le résumé de lot compte ce qui a été écarté.
  */
 const BAILLEUR_SOCIAL =
-  /\b(opac|oph|hlm|esh|opha?c)\b|office public de l'?habitat|habitations? à loyer mod[ée]r|logement social|\bsemcoda\b|grand ?lyon habitat|(est|lyon) m[ée]tropole habitat/i;
+  /\b(opac|oph|hlm|esh|opha?c)\b|office public de l'?habitat|habitations? a loyer moder|logement social|\bsemcoda\b|grand ?lyon habitat|(est|lyon) metropole habitat|\badoma\b|\bcdc habitat\b|\balliade\b|\bsollar\b|\bbatigere\b|\berilia\b|\bvilogia\b|\b1001 vies habitat\b|immobiliere rhone.alpes|dauphinoise pour l.?habitat/i;
+
+/**
+ * ⚠⚠ LE NOM SE NORMALISE AVANT D'ÊTRE LU — mesuré sur Sitadel le 30/09/2026.
+ * Les registres écrivent en majuscules SANS ACCENT (« HABITATIONS A LOYER
+ * MODERE ») et avec des POINTS (« COOPERATIVE DE PRODUCTION D'H.L.M. ») :
+ * l'ancien motif exigeait « à » et « hlm » collé, et laissait passer les deux.
+ * Pire, Sitadel range les SA d'HLM en catégorie juridique GÉNÉRIQUE (5599,
+ * 5699) : la voie par catégorie ne mord pas, le nom est le seul filet. Sur
+ * l'extraction régionale, 123 permis de bailleurs sortaient en « promoteur »
+ * ou « inconnu », donc RETENUS.
+ * Le motif s'écrit donc sur la forme normalisée : sans accent, sans point.
+ * Les noms ajoutés sont des bailleurs présents à Lyon qui ne portent aucun
+ * sigle ; la liste reste incomplète, c'est pour ça que `manque` existe.
+ */
+function nomPourBailleur(d: string): string {
+  return d.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\./g, "");
+}
+
+function estBailleurSocial(d: string): boolean {
+  return BAILLEUR_SOCIAL.test(nomPourBailleur(d));
+}
 
 /** Personne publique : commande publique, pas de fonction commerciale. */
 const PUBLIC =
@@ -395,11 +416,11 @@ export function typeDeMaitreOuvrage(
   // Un bailleur NOMMÉ l'emporte sur une forme de société muette (une SA
   // d'économie mixte peut porter une ESH) ; pour le reste, la déclaration INSEE
   // passe avant la devinette sur le nom.
-  if (BAILLEUR_SOCIAL.test(d)) return "bailleur-social";
+  if (estBailleurSocial(d)) return "bailleur-social";
   const parCj = typeParCategorieJuridique(categorieJuridique);
   if (parCj) return parCj;
   if (/^41\.?10/.test((codeApe ?? "").trim())) return "promoteur";
-  if (BAILLEUR_SOCIAL.test(d)) return "bailleur-social";
+  if (estBailleurSocial(d)) return "bailleur-social";
   if (PROMOTEUR.test(d)) return "promoteur";
   if (CONSTRUCTEUR_MAISONS.test(d)) return "constructeur-maisons";
   if (PUBLIC.test(d)) return "public";
