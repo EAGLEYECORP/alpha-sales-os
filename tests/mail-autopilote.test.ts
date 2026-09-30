@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { construireMailCold, eligibleColdMail } from "@/lib/mail-autopilote";
+import { construireMailCold, eligibleColdMail, TAG_DEJA_ECRIT } from "@/lib/mail-autopilote";
 import { prospectDefaults } from "@/lib/seed";
 import { habillageEnvoi } from "@/lib/expediteur";
 import { renderEmail, plainText } from "@/lib/email-html";
@@ -77,4 +77,30 @@ test("éligibilité — les inéligibles sont ÉCARTÉS avec une raison", () => 
   assert.equal(eligibleColdMail(promoteur({ tags: ["ne-pas-appeler"] })).ok, false);
   // Stade avancé : pas un premier contact à froid.
   assert.equal(eligibleColdMail(promoteur({ stage: "offre" })).ok, false);
+});
+
+test("⚠⚠ une fiche DÉJÀ écrite hors Alpha n'est plus un premier contact (tag ou événement email)", () => {
+  // La dédup de la route ne voit que les envois tracés par Alpha : un premier
+  // mail parti de Gmail n'y laisse rien. Sans cette garde, le même promoteur
+  // recevait un DEUXIÈME premier mail à la bascule vers l'autopilote serveur.
+  assert.equal(eligibleColdMail(promoteur({ tags: [TAG_DEJA_ECRIT] })).ok, false);
+  assert.equal(
+    eligibleColdMail(
+      promoteur({ events: [{ id: "e1", date: "2026-09-30T06:01:00.000Z", kind: "email", summary: "1er mail (Gmail)" }] }),
+    ).ok,
+    false,
+  );
+  // Contre-test : un autre événement (un appel) ne bloque pas le premier mail.
+  assert.equal(
+    eligibleColdMail(promoteur({ events: [{ id: "e2", date: "2026-09-30T06:01:00.000Z", kind: "appel", summary: "pas de réponse" }] })).ok,
+    true,
+  );
+});
+
+test("le mail propose le PILOTE borné, et plus aucun créneau figé", () => {
+  const { text } = rendreTexte(promoteur());
+  assert.match(text, /tester 30 jours sur un seul de vos programmes/);
+  assert.doesNotMatch(text, /mardi 15h|jeudi 10h/i);
+  // Aucune affirmation sur SA société qu'on n'a pas constatée.
+  assert.doesNotMatch(text, /forcément/i);
 });

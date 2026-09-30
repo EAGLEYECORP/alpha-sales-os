@@ -32,6 +32,13 @@ import { DIVULGATION_ECRITE } from "@/lib/signature-ia";
 import { estAdresseDeDemo } from "@/lib/seed";
 import { aRefuseTouteRelance } from "@/lib/voice-script";
 
+/**
+ * Tag posé à l'import sur une fiche qui a DÉJÀ reçu un premier mail par un autre
+ * canal (Gmail, outil tiers). Exporté : l'import et les tests le posent, jamais
+ * recopié en dur.
+ */
+export const TAG_DEJA_ECRIT = "deja-ecrit-hors-alpha";
+
 /** Les stades depuis lesquels un PREMIER mail à froid a du sens. */
 const STADES_FROID: ReadonlySet<Prospect["stage"]> = new Set(["prospect", "contact"]);
 
@@ -64,6 +71,15 @@ export function eligibleColdMail(p: Prospect): Eligibilite {
   if (estAdresseDeDemo(email)) return { ok: false, raison: "adresse de démonstration" };
   if (aRefuseTouteRelance(p)) return { ok: false, raison: "a demandé à ne plus être contacté" };
   if (!STADES_FROID.has(p.stage)) return { ok: false, raison: `stade « ${p.stage} » — pas un premier contact` };
+  // ⚠⚠ DÉJÀ ÉCRIT AILLEURS QU'ICI (30/09/2026). La dédup de la route ne voit
+  // que les envois TRACÉS par Alpha. Les premiers mails partis d'un autre canal
+  // (une boîte Gmail, un outil tiers, un envoi à la main) n'y laissent aucune
+  // trace — et la fiche, restée au stade « contact », repassait éligible : le
+  // même promoteur recevait un DEUXIÈME premier mail. Un événement email sur la
+  // fiche, ou le tag posé à l'import, suffit à dire « ce n'est plus un premier
+  // contact ». L'inverse (écrire deux fois le même premier mail) ne se rattrape pas.
+  if (p.tags.includes(TAG_DEJA_ECRIT)) return { ok: false, raison: "déjà écrit hors Alpha (tag)" };
+  if ((p.events ?? []).some((e) => e.kind === "email")) return { ok: false, raison: "déjà un email dans l'historique" };
   return { ok: true, raison: "" };
 }
 
@@ -82,7 +98,7 @@ function prenomDe(p: Prospect): string {
  * Le gabarit à froid pour la verticale maîtrise d'ouvrage. Déterministe,
  * conforme à la verticale (angle acquéreurs refroidis, aucun prix, aucune
  * mention de permis/adresse/lots à froid), objectif unique = le RDV, question
- * fermée à deux créneaux. La divulgation IA CLÔT le corps parce que l'envoi est
+ * fermée à deux options de moment. La divulgation IA CLÔT le corps parce que l'envoi est
  * autonome.
  *
  * ⚠ La signature de l'expéditeur (nom + société) et le pied « STOP » sont
@@ -91,22 +107,29 @@ function prenomDe(p: Prospect): string {
  */
 export function construireMailCold(p: Prospect): MailCold {
   const prenom = prenomDe(p);
-  const societe = (p.company || "votre structure").trim();
+  // ⚠ 30/09/2026 — le texte rejoint celui qui part RÉELLEMENT depuis la routine
+  // (feuille « Modèles ») : une question que le prospect peut vérifier chez lui,
+  // puis l'offre PILOTE (30 jours, un seul programme) — un chèque d'installation
+  // à froid ne se signe pas, un essai borné si. Ce qu'on a retiré, et pourquoi :
+  // · « X en a forcément une réserve » affirmait un fait sur SA société qu'on
+  //   n'a pas constaté ;
+  // · « mardi 15h ou jeudi 10h » étaient des créneaux FIGÉS, faux le jour où le
+  //   mail part un mercredi soir — et jamais vérifiés contre l'agenda.
   const body = [
     `Bonjour ${prenom},`,
     "",
-    "Sur un programme neuf, il passe plus de contacts acquéreurs au bureau de " +
-      "vente que deux commerciaux ne peuvent en rappeler. Les tièdes — ceux qui " +
-      "ont visité, hésité, puis plus de nouvelles — sont ceux qui coûtent le plus " +
-      "cher à laisser refroidir.",
+    "Je m'adresse aux maîtres d'ouvrage de la région qui ont un programme en " +
+      "cours de commercialisation, avec une question précise : un acquéreur qui a " +
+      "visité il y a trois semaines et que personne n'a rappelé, comment le " +
+      "sauriez-vous aujourd'hui ?",
     "",
-    `${societe} en a forcément une réserve. On a construit un outil qui reprend ce ` +
-      "fil tout seul : il relance, qualifie, et ne vous rend que les acquéreurs " +
-      "redevenus chauds — pour que vos équipes ne passent leur temps que sur ceux " +
-      "qui signent.",
+    "C'est ce que nous installons : le système qui tient la liste des acquéreurs " +
+      "à votre place. Le même principe qu'un planning de chantier : on ne le " +
+      "regarde pas pour savoir ce qui est fait, mais pour voir ce qui a pris du retard.",
     "",
-    "15 minutes pour vous le montrer sur un de vos programmes — plutôt mardi 15h " +
-      "ou jeudi 10h ?",
+    "Je vous propose de le tester 30 jours sur un seul de vos programmes. Quinze " +
+      "minutes en visio pour vous le montrer : plutôt fin de semaine ou début de " +
+      "la prochaine ?",
     "",
     // ⚠ Divulgation IA obligatoire (envoi autonome). Importée, jamais recopiée.
     DIVULGATION_ECRITE,
