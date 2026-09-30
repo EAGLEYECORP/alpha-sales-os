@@ -470,6 +470,18 @@ une cible qu'on ne prospecte plus.**
 >   phrase juste reformulée.
 > · Ce qui remplace, et qui tient debout seul : l'ordre « émotion avant prix »
 >   est une **décision de méthode**, pas un résultat mesuré.
+>
+> ⚠ **Cinquième forme, relevée le 30/09/2026 : le VERBE.** « Je travaille
+> avec les promoteurs de la région » se lit « j'ai des promoteurs pour
+> clients » — à zéro client, c'est faux. Elle partait par les quatre
+> générateurs écrits (invitation et message LinkedIn, email, forme courte).
+> Une seule phrase désormais, `phraseCritere` (`lib/approche-ecrite.ts`) :
+> « je m'adresse aux … » garde le critère choisi sans rien affirmer, et
+> `tests/linkedin.test.ts` refuse le retour de la tournure dans le texte
+> ENVOYÉ. ⚠ Les répliques d'appel du playbook (`lib/playbook.ts`) disent
+> encore « je travaille avec les métiers où… » : non touchées, à trancher.
+> Même jour : une fiche de PERMIS ne cite plus sa commune dans l'invitation —
+> c'est celle du chantier, donc l'interdit « citer son adresse à froid ».
 
 ## L'ICP EST LE CLIENT FULL-STACK, ET L'ABONNEMENT SE FACTURE AU SIÈGE (13/09/2026)
 `lib/offres-publiques.ts` → `abonnementMensuel()` · `tests/tarif-sieges.test.ts`.

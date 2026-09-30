@@ -45,6 +45,7 @@ export const STEP_LABEL: Record<LinkedinStep, string> = {
 const DELAY: Record<LinkedinStep, number> = { invitation: 0, message: 2, relance: 4, termine: 0 };
 
 const firstName = (p: Prospect) => (p.name || "").trim().split(/\s+/)[0] || "";
+const capitale = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 
 /**
@@ -104,13 +105,38 @@ function identite(accountId?: string, closerName?: string) {
  * ⚠⚠ La forme, elle, suit la règle des affirmations : le corps de
  * l'invitation est désormais UNE QUESTION. On ne lui donne rien à contester.
  */
+/**
+ * La ville qu'on peut ÉCRIRE dans un message, ou `null`.
+ *
+ * ⚠⚠ TROIS DÉFAUTS, RELEVÉS LE 30/09/2026 SUR LE LOT AURA :
+ *  · Sur une fiche issue d'un PERMIS, `city` est la commune du CHANTIER.
+ *    L'écrire à froid, c'est citer l'adresse de son opération — l'interdit
+ *    exact de la verticale (« la donnée sert à CHOISIR qui on appelle, pas à
+ *    ouvrir »). Et c'est faux en plus : on écrivait « à CLERMONT FERRAND » à
+ *    une direction régionale basée à Lyon. Le tag est posé par l'importeur,
+ *    c'est lui qu'on lit — jamais une devinette sur le texte.
+ *  · Les exports publics écrivent en MAJUSCULES : « à CLERMONT FERRAND » crie.
+ *  · Sitadel porte des libellés CORROMPUS à la source (« VAÃÂNISSIEUX ») :
+ *    irréparables (un octet manque), donc on n'écrit rien plutôt que ça.
+ */
+export function villeEcrivable(p: Prospect): string | null {
+  if (p.tags?.includes("permis-construire")) return null;
+  const brut = p.city?.trim() ?? "";
+  if (!brut || /[ÃÂ\uFFFD]/.test(brut)) return null;
+  if (brut !== brut.toUpperCase()) return brut;
+  return brut.toLowerCase().replace(/(^|[\s'-])(\p{L})/gu, (_, sep: string, c: string) => sep + c.toUpperCase());
+}
+
 export function inviteText(p: Prospect, accountId?: string, closerName?: string): string {
   const a = approcheEcrite(p, accountId);
   const moi = identite(accountId, closerName);
   const who = firstName(p) ? `Bonjour ${firstName(p)}, ` : "Bonjour, ";
-  // Le secteur géographique vient de la FICHE, jamais d'un arrondissement
-  // codé en dur : un message qui se trompe de quartier se grille seul.
-  const zone = p.city?.trim() ? ` à ${p.city.trim()}` : " à Lyon";
+  // Le secteur géographique vient de la FICHE quand elle en porte un qu'on
+  // peut dire. Sinon, la ville du COMPTE — jamais « Lyon » en dur, qui faisait
+  // signer un partenaire d'une ville où il n'est pas. Sur une fiche de permis,
+  // rien : la seule ville connue est celle du chantier.
+  const ville = villeEcrivable(p) ?? (p.tags?.includes("permis-construire") ? null : moi.ville || null);
+  const zone = ville ? ` à ${ville}` : "";
 
   /**
    * La troncature dégrade dans un ORDRE choisi, elle ne coupe pas au hasard.
@@ -118,7 +144,7 @@ export function inviteText(p: Prospect, accountId?: string, closerName?: string)
    * milieu — c'est-à-dire supprimait la seule partie qui fait répondre. On
    * sacrifie donc la formule de politesse d'abord, la question en dernier.
    */
-  const base = `${who}${moi.presentation}. Je travaille avec ${a.critere}${zone}.`;
+  const base = `${who}${moi.presentation}. ${capitale(a.phraseCritere)}${zone}.`;
   const question = ` La question qui m'intéresse : ${a.question}`;
   const fin = " Content d'échanger si le sujet vous parle.";
 
@@ -154,7 +180,7 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
     ``,
     `Merci pour la connexion. Je vais être direct et court.`,
     ``,
-    `Je n'écris pas au hasard : je travaille avec ${a.critere}. ${a.critereMetier ?? ""}`.trim(),
+    `Je n'écris pas au hasard : ${a.phraseCritere}. ${a.critereMetier ?? ""}`.trim(),
     ``,
     `Une seule question, celle qui m'intéresse vraiment : ${a.question}`,
     ...(a.signal ? [``, a.signal] : []),

@@ -85,7 +85,7 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
     "",
     `Je vous écris directement, ce sera court.`,
     "",
-    `Je n'écris pas au hasard : je travaille avec ${a.critere}.${a.critereMetier ? ` ${a.critereMetier}` : ""}`,
+    `Je n'écris pas au hasard : ${a.phraseCritere}.${a.critereMetier ? ` ${a.critereMetier}` : ""}`,
     "",
     `Une seule question, celle qui m'intéresse vraiment : ${a.question}`,
     ...(a.signal ? ["", a.signal] : []),

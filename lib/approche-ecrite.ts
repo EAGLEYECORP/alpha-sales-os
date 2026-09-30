@@ -40,8 +40,24 @@ import { OFFRES } from "./offer-match";
  */
 
 export interface ApprocheEcrite {
-  /** « je travaille avec les … » — le critère, sans la liste de secteurs. */
+  /** « les … » — le critère, sans la liste de secteurs. */
   critere: string;
+  /**
+   * La phrase de critère, prête à écrire : « je m'adresse aux … ».
+   *
+   * ⚠⚠ ELLE DISAIT « JE TRAVAILLE AVEC … », ET À ZÉRO CLIENT C'EST FAUX
+   * (relevé le 30/09/2026 en rédigeant les invitations du lot AURA).
+   * « Je travaille avec les promoteurs de la région » se lit « j'ai des
+   * promoteurs pour clients » : la preuve sociale inventée que la doctrine
+   * refuse, glissée dans un verbe. Elle partait par QUATRE générateurs —
+   * invitation, message LinkedIn, email, forme courte — qui la recopiaient
+   * chacun. Une seule phrase ici, et un test refuse que « je travaille
+   * avec » revienne dans ce qu'ils écrivent.
+   * « Je m'adresse aux … » garde ce qui fait la force de la tournure (on a
+   * CHOISI un critère, on n'écrit pas à tout le monde) sans rien affirmer
+   * qu'on ne puisse montrer.
+   */
+  phraseCritere: string;
   /**
    * L'observation de MÉTIER du playbook, ou `null` si elle ne colle pas à
    * l'offre routée.
@@ -111,13 +127,17 @@ export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcri
    */
   const offreVerticale = offreDeLaVerticale(v) ?? "alpha-voice";
   const verticaleColle = offre !== null && offre === offreVerticale;
+  const critere = pick
+    ? `les ${critereDepuisCiblage(pick.magnet.targets)}`
+    : // Sans aimant, on ne prétend pas viser un type de métier précis : on
+      // dit le vrai, qui est déjà un critère.
+      "les entreprises de votre taille, sur un sujet précis";
 
   return {
-    critere: pick
-      ? `les ${critereDepuisCiblage(pick.magnet.targets)}`
-      : // Sans aimant, on ne prétend pas travailler avec un type de métier
-        // précis : on dit le vrai, qui est déjà un critère.
-        "les entreprises de votre taille, sur un sujet précis",
+    critere,
+    // « les » → « aux » : le critère est TOUJOURS écrit avec « les » (un test
+    // garde la source des aimants), la contraction est donc mécanique.
+    phraseCritere: `je m'adresse ${critere.replace(/^les\b/, "aux")}`,
 
     critereMetier: verticaleColle ? v?.criterion ?? null : null,
 
@@ -180,5 +200,5 @@ export function messageCourt(p: Prospect, accountId?: string): string {
   // Zéro pitch, zéro chiffre, zéro prix : une phrase de critère et UNE
   // question. C'est la même discipline que l'invitation LinkedIn, qui est
   // plafonnée, et que l'appel à froid, qui n'a droit à aucune improvisation.
-  return `${salut} je n'écris pas au hasard : je travaille avec ${a.critere}. Une question, celle qui m'intéresse vraiment : ${a.question}`;
+  return `${salut} je n'écris pas au hasard : ${a.phraseCritere}. Une question, celle qui m'intéresse vraiment : ${a.question}`;
 }

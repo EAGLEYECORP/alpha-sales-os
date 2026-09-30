@@ -137,8 +137,8 @@ test("⚠ l'email et le message LinkedIn ne peuvent plus se contredire", () => {
     const mail = emailBody(p, { accountId: "eagleye" });
     const li = messageText(p, undefined, "eagleye");
 
-    assert.ok(mail.includes(a.critere), `${quoi} : l'email doit porter le critère routé`);
-    assert.ok(li.includes(a.critere), `${quoi} : LinkedIn aussi, et le MÊME`);
+    assert.ok(mail.includes(a.phraseCritere), `${quoi} : l'email doit porter le critère routé`);
+    assert.ok(li.includes(a.phraseCritere), `${quoi} : LinkedIn aussi, et le MÊME`);
     assert.ok(mail.includes(a.question), `${quoi} : même question à l'email`);
     assert.ok(li.includes(a.question), `${quoi} : et sur LinkedIn`);
     assert.ok(a.signal && mail.includes(a.signal) && li.includes(a.signal), `${quoi} : même audit annoncé`);
@@ -356,7 +356,7 @@ test("⚠ LA PHRASE DE CRITÈRE SE LIT EN FRANÇAIS, sur chaque fiche livrée", 
   const fiches = seedProspects;
   assert.ok(fiches.length > 0, "aucune fiche — le test ne mesure rien");
   for (const p of fiches) {
-    const phrase = `je travaille avec ${approcheEcrite(p).critere}`;
+    const phrase = approcheEcrite(p).phraseCritere;
     assert.doesNotMatch(
       phrase,
       /\b(les|la|le|des|du|un|une)\s+(les|la|le|des|du|un|une|ceux|celles|ce|cet|cette)\b/i,

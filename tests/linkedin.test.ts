@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { LINKEDIN_DAILY_SAFE, LINKEDIN_INVITE_LIMIT, linkedinTouchesToday, linkedinUrl } from "../lib/linkedin";
-import { buildLinkedinQueue, inviteText, relanceText, textForStep } from "../lib/linkedin-sequence";
+import { buildLinkedinQueue, inviteText, messageText, relanceText, textForStep, villeEcrivable } from "../lib/linkedin-sequence";
+import { approcheEcrite, messageCourt } from "../lib/approche-ecrite";
+import { emailBody } from "../lib/mail-compose";
+import { importerPermis } from "../lib/permis-construire";
+import { seedProspects } from "../lib/seed";
 import {
   EFFECTIF_MAX, PRESENCE_LINKEDIN, SCORE_MIN, detecterRole, qualifier, trierLot,
   type ProfilLinkedin,
@@ -624,4 +628,52 @@ test("⚠ la relance ne dit plus « vous n'êtes pas sur LinkedIn » à quelqu'u
   const artisan = makeProspect({ sector: "artisan", notes: "couvreur, chantiers" });
   assert.equal(PRESENCE_LINKEDIN[verticalForProspect(artisan)!.id], "faible");
   assert.match(relanceText(artisan), /pas sur LinkedIn/i);
+});
+
+// ═══════════ CE QUE LE MESSAGE AFFIRME, ET D'OÙ IL DIT QU'ON ÉCRIT ═══════════
+
+test("⚠⚠ aucun générateur écrit n'affirme « je travaille avec » — à zéro client, c'est faux", () => {
+  /*
+   * « Je travaille avec les promoteurs de la région » se lit « j'ai des
+   * promoteurs pour clients ». Relevé le 30/09/2026 : la phrase partait par
+   * les QUATRE générateurs écrits. On passe chaque fiche de démo par les
+   * quatre, pas seulement par `approcheEcrite` : c'est le texte ENVOYÉ qui
+   * compte, et une recopie locale dans un générateur passerait sinon.
+   */
+  assert.ok(seedProspects.length > 0);
+  for (const p of seedProspects) {
+    const textes = [
+      inviteText(p, "eagleye", "Zakaria Tazi"),
+      messageText(p, undefined, "eagleye", "Zakaria Tazi"),
+      messageCourt(p, "eagleye"),
+      emailBody(p, { closerName: "Zakaria Tazi" }),
+    ];
+    for (const t of textes) assert.doesNotMatch(t, /travaille avec/i, `${p.company} : « ${t.slice(0, 160)} »`);
+    assert.match(approcheEcrite(p).phraseCritere, /^je m'adresse aux? /, p.company);
+  }
+});
+
+test("⚠⚠ une fiche de PERMIS ne cite pas sa commune : c'est celle du chantier", () => {
+  const csv = [
+    "numero,demandeur,siren,categorieJuridique,codeApe,dateDecision,dateOuvertureChantier,dateAchevement,logements,surfacePlancher,commune,adresse",
+    `PC 063 113 26 A0042,SCCV DEMO CLERMONT,,6541,41.10A,${new Date(Date.now() - 150 * 864e5).toISOString().slice(0, 10)},,,48,3000,CLERMONT FERRAND,12 RUE DEMO 63000`,
+  ].join("\n");
+  const r = importerPermis(csv);
+  assert.equal(r.retenus.length, 1, "le témoin doit être retenu, sinon le test ne prouve rien");
+  const p = r.retenus[0].prospect;
+  assert.equal(villeEcrivable(p), null);
+  const invite = inviteText(p, "eagleye", "Zakaria Tazi");
+  assert.doesNotMatch(invite, /clermont/i, invite);
+  // …et on n'y colle pas non plus la ville du compte : « à Lyon » à un
+  // promoteur de Clermont serait une autre façon de se tromper de lieu.
+  assert.doesNotMatch(invite, / à Lyon/, invite);
+});
+
+test("la ville écrite : casse d'export corrigée, libellé corrompu jamais écrit", () => {
+  assert.equal(villeEcrivable(makeProspect({ city: "CLERMONT FERRAND" })), "Clermont Ferrand");
+  assert.equal(villeEcrivable(makeProspect({ city: "SAINT-GENIS-POUILLY" })), "Saint-Genis-Pouilly");
+  assert.equal(villeEcrivable(makeProspect({ city: "Lyon 6e" })), "Lyon 6e", "une casse déjà choisie ne se touche pas");
+  // Libellé corrompu tel que Sitadel le livre : un octet manque, rien ne le répare.
+  assert.equal(villeEcrivable(makeProspect({ city: "V\u00c3\u00c2NISSIEUX" })), null);
+  assert.doesNotMatch(inviteText(makeProspect({ name: "Léa", company: "Démo", city: "V\u00c3\u00c2NISSIEUX" })), /Ã/);
 });

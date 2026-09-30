@@ -142,7 +142,7 @@ export const LEAD_MAGNETS: LeadMagnet[] = [
     ],
     offer: "alpha-sales-os",
     accountIds: ["eagleye"],
-    targets: "Structures avec une vraie fonction commerciale : agences, conseil, B2B, courtage.",
+    targets: "Entreprises qui ont une vraie fonction commerciale : agences, conseil, B2B, courtage.",
     triggers: [
       "Cycle de vente structuré mais suivi artisanal",
       "Panier ou récurrent élevé",
