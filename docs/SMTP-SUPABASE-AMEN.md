@@ -302,7 +302,7 @@ DNS* → **Gestion avancée** (et valider l'avertissement).
 | **SPF** (apex, TXT) | `v=spf1 include:spf.webapps.net ~all` — un seul | **rien** |
 | **MX** | `mail-fr.securemail.pro` | rien — confirme la plateforme |
 | **DMARC** (`_dmarc`, TXT) | `p=quarantine; adkim=s; aspf=s; pct=100` | **rien**, mais lire l'encadré ci-dessous |
-| **DKIM** | **activé le 16/09** (rapporté) — sélecteur non relevé | **relever `s=`** dans un en-tête reçu |
+| **DKIM** | ✅ **VÉRIFIÉ le 30/09/2026** : `d=eagleyecorp.fr`, `s=key-dxy9fgigss` (RSA 2048), aligné | **rien** |
 
 ### SPF — déjà bon, et c'est le piège inverse qui menace
 

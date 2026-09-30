@@ -303,7 +303,23 @@ Procédure complète : `docs/SMTP-SUPABASE-AMEN.md`.
 |---|---|---|
 | **SPF** | `v=spf1 include:spf.webapps.net ~all`, un seul | **rien — n'y touche pas** |
 | **DMARC** | `p=quarantine; adkim=s; aspf=s` | **rien — n'en crée pas un second** |
-| **DKIM** | **activé** (rapporté le 16/09) — non confirmé par sondage DNS | **relever le sélecteur**, voir ci-dessous |
+| **DKIM** | ✅ **vérifié le 30/09** : `d=eagleyecorp.fr`, `s=key-dxy9fgigss` | **rien** |
+
+### ✅ 30/09 — DKIM ALIGNÉ, PROUVÉ PAR UN ENVOI RÉEL
+Envoi depuis `contact@eagleyecorp.fr` (Gmail « envoyer en tant que » → SMTP Amen
+`authsmtp.register.it`) vers le vérificateur public port25 : **SPF pass**
+(`smtp.mailfrom=contact@eagleyecorp.fr`), **DKIM pass** (`header.d=eagleyecorp.fr`,
+sélecteur `key-dxy9fgigss`, 2048 bits), iprev pass. Les deux identifiants sont
+alignés sur le From, donc **DMARC passe même en `adkim=s; aspf=s`**.
+> ⚠ Le sélecteur n'est sur AUCUNE des ~70 listes « courantes » sondées : Amen
+> le génère. Sonder le DNS ne prouvait rien dans un sens comme dans l'autre ;
+> seul l'en-tête d'un envoi réel tranche. C'est ce qui manquait depuis le 16/09.
+> ⚠ Ce que ça débloque : l'attestation DKIM derrière `REPLY_AUTOSEND=on` est
+> désormais FONDÉE — la poser reste un acte de Zakaria, pas de la session.
+> ⚠ Ce qui reste fragile : la copie des mails reçus sur `contact@` vers Gmail
+> (filtre Amen) a transmis une invitation Google Agenda mais **pas** la réponse
+> de port25. Une réponse d'un domaine sans DKIM, sous DMARC strict, peut être
+> refusée par Gmail à la redirection. Lire aussi `contact@` directement.
 
 ### ✅ 16/09 — DKIM activé, et les inscriptions Supabase arrivent
 
