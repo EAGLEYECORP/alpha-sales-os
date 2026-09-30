@@ -174,7 +174,7 @@ Mardi 15h ou jeudi 10h ?
   },
   {
     group: "premier-contact", format: "dm", title: "DM court — curiosité + créneau",
-    body: `Bonjour {prenom} 👋 {closer}, de {agence}. Une question directe : {night_court} ? C'est le cas pour la plupart des {secteur_bas} du coin. J'ai un truc à vous montrer sur mon téléphone, 2 minutes, pas un pitch. Je passe mardi 15h ou jeudi 10h ?`,
+    body: `Bonjour {prenom} 👋 {closer}, de {agence}. Une question directe : {night_court} ? J'ai un truc à vous montrer sur mon téléphone, 2 minutes, pas un pitch. Je passe mardi 15h ou jeudi 10h ?`,
     tip: "Un DM se lit en 5 secondes. Une question, une preuve, deux créneaux. Rien d'autre.",
   },
   {
@@ -183,7 +183,7 @@ Mardi 15h ou jeudi 10h ?
 « Bonjour, {prenom} ? {closer}, je m'adresse aux {secteur_bas} de {ville}. 30 secondes, promis. »
 
 2. LA DOULEUR (pas le produit)
-« Je vous appelle parce que chez vos confrères, on retrouve toujours le même problème : {pain}. »
+« Je vous appelle pour un sujet précis : {pain}. Je voulais savoir si c'est le cas chez vous. »
 
 3. LA PREUVE
 « Pour vous situer : {proof}. »

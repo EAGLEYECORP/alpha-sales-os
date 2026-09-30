@@ -148,6 +148,13 @@ const CLIENTELE_AFFIRMEE = [
    * m'adresse aux … », garde le critère choisi sans rien affirmer.
    */
   /\btravaill(?:e|ons) avec (?:les|des|aux?|la|le)\b/i,
+  /**
+   * L'EXPÉRIENCE affirmée (30/09/2026) : « chez vos confrères, on retrouve
+   * toujours… », « c'est le cas pour la plupart des … du coin ». Ni possessif
+   * ni chiffre, mais la même promesse : « j'en ai vu beaucoup ». À zéro vente,
+   * on n'a vu personne — on POSE la question, on ne la tranche pas à sa place.
+   */
+  /\bchez vos confr[èe]res\b|\bon retrouve toujours\b|\bla plupart des\b[^.?!»]{0,40}\bdu coin\b/i,
   /\bqu'on (?:équipe|accompagne|installe)\b/i,
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,

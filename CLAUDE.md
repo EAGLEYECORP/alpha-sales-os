@@ -485,6 +485,9 @@ une cible qu'on ne prospecte plus.**
 > liste de rédacteurs inclut le playbook — il n'y était pas, c'est pour ça
 > que la tournure y avait survécu. Les objections (`q:`) sont exclues : c'est
 > le PROSPECT qui parle de SES clients.
+> Et sa cousine, l'**EXPÉRIENCE affirmée** (« chez vos confrères, on retrouve
+> toujours… », « la plupart des … du coin ») : retirée des modèles le même
+> jour, motif ajouté au même test. On POSE la question, on ne la tranche pas.
 > Même jour : une fiche de PERMIS ne cite plus sa commune dans l'invitation —
 > c'est celle du chantier, donc l'interdit « citer son adresse à froid ».
 
