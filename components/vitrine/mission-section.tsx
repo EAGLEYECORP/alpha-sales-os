@@ -201,7 +201,11 @@ export function MissionSection() {
         </p>
       </div>
 
-      {/* Ce qui est VRAI et qui fait signer : on choisit nos clients. C'est le
+      {/* ⚠ AU FUTUR, EXPRÈS (30/09/2026) : « on installe peu de clients à la
+          fois » au présent se lisait « on en a déjà » — à zéro vente, c'est faux.
+          La règle (une seule personne, à la main, cadrage obligatoire) est vraie
+          aujourd'hui ; c'est la clientèle qui n'existe pas encore.
+          Ce qui est VRAI et qui fait signer : on choisit nos clients. C'est le
           même fait que « on n'en a pas des centaines », dit du bon côté — et
           c'est littéralement vrai : le cadrage est obligatoire et on refuse. */}
       <div className="mt-12 rounded-2xl border p-6" style={{ borderColor: ACCENT, background: "#fff" }}>
@@ -209,11 +213,11 @@ export function MissionSection() {
           Ce que ça veut dire pour vous
         </p>
         <p className="mt-3 text-[17px] leading-[1.6]" style={{ color: INK }}>
-          On installe peu de clients à la fois, et on les choisit.
+          Nous installerons peu de clients à la fois, et nous les choisirons.
         </p>
         <p className="mt-3 text-[15px] leading-[1.65]" style={{ color: MUTED }}>
-          Concrètement : le cadrage est obligatoire, on dit non quand ça ne matche pas, et celui qui
-          installe chez vous est celui qui a construit l&apos;outil. Ce n&apos;est pas tenable à mille
+          Concrètement : le cadrage est obligatoire, on dira non quand ça ne correspond pas, et celui qui
+          installera chez vous est celui qui a construit l&apos;outil. Ce n&apos;est pas tenable à mille
           clients — c&apos;est exactement pour ça que ça vaut le coup d&apos;en être maintenant.
         </p>
         <a

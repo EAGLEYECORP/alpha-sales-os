@@ -488,6 +488,13 @@ une cible qu'on ne prospecte plus.**
 > Et sa cousine, l'**EXPÉRIENCE affirmée** (« chez vos confrères, on retrouve
 > toujours… », « la plupart des … du coin ») : retirée des modèles le même
 > jour, motif ajouté au même test. On POSE la question, on ne la tranche pas.
+> Puis deux formes de plus, trouvées en balayant le dépôt : la **clientèle au
+> présent** (vitrine : « on installe peu de clients à la fois » → au FUTUR, la
+> règle est vraie, la clientèle n'existe pas encore) et l'**observation de
+> marché inventée** (consigne de relance J+60 du jeu de démo : « un constat
+> frais — ce qu'on voit passer », qui contredisait `lib/raison-neuve.ts`).
+> Le jeu de démo et la section de la vitrine n'étaient pas dans la liste du
+> garde : c'est le fichier qui manquait, pas le motif.
 > Même jour : une fiche de PERMIS ne cite plus sa commune dans l'invitation —
 > c'est celle du chantier, donc l'interdit « citer son adresse à froid ».
 

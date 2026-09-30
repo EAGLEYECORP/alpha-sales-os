@@ -773,7 +773,15 @@ export const seedNurture: NurtureSequence[] = [
        * s'en remet pas. Troisième endroit du dépôt où cette tentation était
        * écrite, après `hormozi` et la carte de preuves.
        */
-      { id: "ns2", day: 60, channel: "whatsapp", content: "Message personnel : un constat frais sur SON secteur — ce qu'on voit passer, ce qui a bougé depuis. ⚠ Aucune référence client tant qu'il n'y en a pas de vraie." },
+      /**
+       * ⚠ ET SA CORRECTION ÉTAIT FAUSSE À SON TOUR (30/09/2026) : « un constat
+       * frais sur SON secteur — ce qu'on voit passer » demandait d'inventer une
+       * OBSERVATION de marché au lieu d'une référence. `lib/raison-neuve.ts` le
+       * refuse en toutes lettres : « une actualité de son métier » est une
+       * invention tant qu'aucune source ne l'alimente. La consigne suit
+       * désormais la règle qui existe déjà, au lieu d'en écrire une seconde.
+       */
+      { id: "ns2", day: 60, channel: "whatsapp", content: "Message personnel SEULEMENT sur un fait daté qu'on a vraiment (le prix honoré, une ouverture récente — voir la raison neuve proposée sur la fiche). Sans fait daté : on ne relance pas. ⚠ Ni référence client, ni constat de marché inventé." },
       { id: "ns3", day: 90, channel: "appel", content: "Appel direct : « Où en êtes-vous avec votre site ? » — si le low-cost n'a rien produit, ré-audit gratuit." },
     ],
   },

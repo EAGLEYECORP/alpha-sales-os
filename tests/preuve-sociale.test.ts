@@ -155,6 +155,9 @@ const CLIENTELE_AFFIRMEE = [
    * on n'a vu personne — on POSE la question, on ne la tranche pas à sa place.
    */
   /\bchez vos confr[èe]res\b|\bon retrouve toujours\b|\bla plupart des\b[^.?!»]{0,40}\bdu coin\b/i,
+  // L'observation de marché inventée, et la clientèle au présent.
+  /\bce qu'on (?:voit|observe|constate) passer\b|\bconstat frais\b/i,
+  /\b(?:on|nous) install(?:e|ons) (?:peu de |des |nos )?clients\b/i,
   /\bqu'on (?:équipe|accompagne|installe)\b/i,
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,
@@ -272,6 +275,11 @@ const PORTEURS_DE_REFERENCE = [
    * garde qui manquait, c'est le fichier qui manquait au garde.
    */
   "docs/PUB-MOTION-MOA.md",
+  // Le jeu de démo (ses consignes de relance se lisent AU MOMENT d'écrire) et
+  // la section de la vitrine qui parle de nos clients — absents jusqu'au
+  // 30/09/2026, et chacun portait une phrase que le garde aurait dû voir.
+  "lib/seed.ts",
+  "components/vitrine/mission-section.tsx",
   // ⚠ Et le fichier RÉELLEMENT rendu, pas seulement le script relu : c'est
   // celui-ci qui part chez des gens. Un doc conforme ne protège de rien si la
   // scène dessine autre chose.
