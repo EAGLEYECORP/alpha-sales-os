@@ -204,7 +204,7 @@ export function buildArgumentaire(
      * deuxième phrase que le prospect entend, celle qui décide s'il écoute.
      * Une table de traduction, pas une branche (`lib/secteurs.ts`).
      */
-    `Je travaille avec des ${GROUPE_SECTEUR[p.sector] ?? GROUPE_SECTEUR.autre} du secteur sur un point précis : ` +
+    `Je m'adresse aux ${GROUPE_SECTEUR[p.sector] ?? GROUPE_SECTEUR.autre} du secteur, sur un point précis : ` +
     `les demandes qui arrivent et qui ne sont jamais traitées. Je vous vole deux minutes — dites-moi si ça vous parle ou pas. »`;
 
   /**

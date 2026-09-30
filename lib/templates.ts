@@ -161,7 +161,7 @@ const FRAMES: {
 
 Bonjour {prenom},
 
-Je travaille avec des {secteur_bas} de {ville} sur un problème précis : {pain}.
+Je m'adresse aux {secteur_bas} de {ville}, sur un problème précis : {pain}.
 
 {night}.
 
@@ -180,7 +180,7 @@ Mardi 15h ou jeudi 10h ?
   {
     group: "premier-contact", format: "appel", title: "Script d'appel — 30 secondes chrono",
     body: `1. OUVERTURE (10 s, débit calme)
-« Bonjour, {prenom} ? {closer}, je travaille avec des {secteur_bas} de {ville}. 30 secondes, promis. »
+« Bonjour, {prenom} ? {closer}, je m'adresse aux {secteur_bas} de {ville}. 30 secondes, promis. »
 
 2. LA DOULEUR (pas le produit)
 « Je vous appelle parce que chez vos confrères, on retrouve toujours le même problème : {pain}. »

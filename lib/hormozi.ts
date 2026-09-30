@@ -245,7 +245,7 @@ export function fallbackScript(p: Prospect, rules: string, preuveReelle?: string
     `# Script terrain — ${p.company} (${p.name})`,
     ``,
     `## 1. Ouverture (10 s — zéro pitch)`,
-    `« Bonjour ${p.name.split(" ")[0]}, je travaille avec des ${p.sector}s du coin sur ${hook.pain}. J'ai 2 minutes et un truc à vous montrer sur mon téléphone — pas à vous vendre, à vous montrer. »`,
+    `« Bonjour ${p.name.split(" ")[0]}, je passe voir les ${p.sector}s du coin au sujet d'un point précis : ${hook.pain}. J'ai 2 minutes et un truc à vous montrer sur mon téléphone — pas à vous vendre, à vous montrer. »`,
     ``,
     `## 2. Démo mobile AVANT tout prix (émotion d'abord)`,
     `Sortir le téléphone. Maquette avec LEUR nom, LEURS couleurs. « Voilà à quoi ressemblerait ${p.company} en ligne. » Se taire. Laisser regarder.`,

@@ -74,7 +74,7 @@ export const PARTNER_ARCHETYPES: PartnerArchetype[] = [
       why: "Proposer de l'argent d'emblée le transforme en apporteur d'affaires — exactement le rôle qu'il refuse. Une fois qu'un de ses clients l'a remercié de l'avoir mis en relation, la question de la rémunération devient facile et c'est souvent lui qui l'ouvre.",
     },
     opener:
-      "« Je travaille avec des TPE lyonnaises sur un angle que vous voyez passer dans les bilans sans qu'il ait de ligne : les appels qu'elles ne prennent pas. Je ne viens pas vous vendre quelque chose — je voulais savoir si ça vous parle, sur votre portefeuille. »",
+      "« Je m'intéresse aux TPE lyonnaises, sur un angle que vous voyez passer dans les bilans sans qu'il ait de ligne : les appels qu'elles ne prennent pas. Je ne viens pas vous vendre quelque chose — je voulais savoir si ça vous parle, sur votre portefeuille. »",
     diagnostic: [
       "Parmi vos clients, lesquels vivent du téléphone et n'ont personne pour le prendre ?",
       "Quand un client vous demande une recommandation sur un outil, vous faites quoi aujourd'hui ?",

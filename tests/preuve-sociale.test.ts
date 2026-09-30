@@ -47,6 +47,13 @@ const RACINE = process.cwd();
  * d'analyse et les libellés d'écran interne.
  */
 const REDACTEURS = [
+  // Les répliques d'appel, le pitch aux prescripteurs et le coach d'appel : ils
+  // se PRONONCENT. Absents de cette liste jusqu'au 30/09/2026 — c'est pour ça
+  // que « je travaille avec les métiers où… » y a survécu à la correction des
+  // messages écrits.
+  "lib/playbook.ts",
+  "lib/prescripteurs.ts",
+  "lib/live-assist.ts",
   "lib/hormozi.ts",
   "lib/templates.ts",
   "lib/mail-compose.ts",
@@ -134,6 +141,13 @@ function fichiersSources(dirs: string[]): string[] {
  */
 const CLIENTELE_AFFIRMEE = [
   /\bnos (?:clients?|artisans?|restos?|pubs?|garages?|partenaires?)\b/i,
+  /**
+   * Le VERBE (30/09/2026) : « je travaille avec les promoteurs » se lit « j'ai
+   * des promoteurs pour clients ». Aucun possessif, aucun chiffre — c'est pour
+   * ça qu'aucun des motifs ci-dessus ne le voyait. Le remplaçant, « je
+   * m'adresse aux … », garde le critère choisi sans rien affirmer.
+   */
+  /\btravaill(?:e|ons) avec (?:les|des|aux?|la|le)\b/i,
   /\bqu'on (?:équipe|accompagne|installe)\b/i,
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,
@@ -312,7 +326,14 @@ test("⚠ aucun texte destiné au prospect n'affirme une clientèle", () => {
       fautes.push(`${f} — introuvable, la liste des rédacteurs est périmée`);
       continue;
     }
-    const code = sansCommentaires(src);
+    /**
+     * ⚠ Les OBJECTIONS du playbook (`q: "…"`) sont ce que dit le PROSPECT :
+     * « Nos clients nous connaissent, ils rappellent. » est SA clientèle, pas
+     * la nôtre. Élargi au playbook le 30/09/2026, le motif « nos clients » y a
+     * mordu aussitôt. On retire les répliques du prospect, on n'assouplit pas
+     * le motif — il reste juste partout où c'est nous qui parlons.
+     */
+    const code = sansCommentaires(src).replace(/\bq:\s*"[^"]*"/g, "");
     for (const motif of CLIENTELE_AFFIRMEE) {
       const m = code.match(motif);
       if (m) fautes.push(`${relative(RACINE, f)} → « ${m[0]} »`);

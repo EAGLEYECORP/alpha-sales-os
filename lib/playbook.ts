@@ -33,7 +33,7 @@ export const DOCTRINE_TERRAIN: { rule: string; why: string }[] = [
   },
   {
     rule: "Le ciblage se dit en CRITÈRE, jamais en volume.",
-    why: "« Je travaille avec les métiers où le téléphone EST le chiffre d'affaires » fonctionne. « J'appelle toutes les agences de Lyon » annule l'effet en une phrase : on montre qu'on a choisi un critère, pas qu'on fait du nombre.",
+    why: "« Je m'adresse aux métiers où le téléphone EST le chiffre d'affaires » fonctionne. « J'appelle toutes les agences de Lyon » annule l'effet en une phrase : on montre qu'on a choisi un critère, pas qu'on fait du nombre.",
   },
   {
     rule: "L'observation se pose en QUESTION, jamais en affirmation.",
@@ -290,7 +290,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { label: "Permission", line: "Je vous appelle à froid, je fais très court : trente secondes, et si c'est pas pour vous, vous me le dites et je raccroche. Ça marche ?" },
       {
         label: "Ciblage",
-        line: "Je n'appelle pas au hasard : je travaille avec les métiers où le premier qui décroche prend l'affaire. L'immobilier, c'est le cas typique. Et chez vous, si j'ai bien vu, vous fermez le week-end, c'est bien ça ?",
+        line: "Je n'appelle pas au hasard : je m'adresse aux métiers où le premier qui décroche prend l'affaire. L'immobilier, c'est le cas typique. Et chez vous, si j'ai bien vu, vous fermez le week-end, c'est bien ça ?",
         note: "L'observation en question, jamais en affirmation.",
       },
       { label: "Bascule", line: "On installe un accueil qui décroche à toute heure, prend la demande — vente, estimation, visite — et vous en envoie le résumé par SMS. Vous récupérez les mandats que vous perdez sans le savoir." },
@@ -360,7 +360,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { label: "Permission", line: "Je vous appelle à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche. Ça marche ?" },
       {
         label: "Ciblage",
-        line: "Je n'appelle pas au hasard : je travaille avec les maîtres d'ouvrage qui ont un programme en cours de commercialisation. Vous en avez un en ce moment, c'est bien ça ?",
+        line: "Je n'appelle pas au hasard : je m'adresse aux maîtres d'ouvrage qui ont un programme en cours de commercialisation. Vous en avez un en ce moment, c'est bien ça ?",
         note: "L'observation en question, jamais en affirmation — même quand le permis est public.",
       },
       {
@@ -445,7 +445,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { label: "Permission", line: "Je vous appelle à froid, très court : trente secondes, et si c'est pas pour vous, vous me le dites et je raccroche. Ça marche ?" },
       {
         label: "Ciblage",
-        line: "Je travaille avec les métiers où le téléphone est le chiffre d'affaires et où le patron est sur le terrain — l'auto-école, c'est le cas d'école. Et chez vous, si j'ai bien vu, vous n'ouvrez que l'après-midi, c'est ça ?",
+        line: "Je m'adresse aux métiers où le téléphone est le chiffre d'affaires et où le patron est sur le terrain — l'auto-école, c'est le cas d'école. Et chez vous, si j'ai bien vu, vous n'ouvrez que l'après-midi, c'est ça ?",
       },
       { label: "Bascule", line: "On installe un accueil qui décroche à votre place, prend l'élève et ses coordonnées, et vous envoie le résumé par SMS. Vous continuez à conduire, lui capte tout ce que vous ratez." },
       { label: "CTA", line: "Quinze minutes en visio pour vous montrer sur votre auto-école — plutôt fin de semaine ou début de la prochaine ?" },
@@ -477,7 +477,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     opener: [
       { label: "Barrage", line: "Bonjour, je cherche le gérant — c'est au sujet des appels qui arrivent pendant que vous êtes à l'atelier. Il est là ?" },
       { label: "Permission", line: "Je vous appelle à froid, trente secondes : si c'est pas pour vous, vous me le dites et je raccroche." },
-      { label: "Ciblage", line: "Je travaille avec les métiers où l'atelier tourne et le téléphone sonne en même temps. La carrosserie, c'est exactement ça. Vous êtes combien à l'atelier ?" },
+      { label: "Ciblage", line: "Je m'adresse aux métiers où l'atelier tourne et le téléphone sonne en même temps. La carrosserie, c'est exactement ça. Vous êtes combien à l'atelier ?" },
       { label: "Bascule", line: "On installe un accueil qui décroche quand vous avez les mains dedans, prend la demande et vous envoie le résumé par SMS." },
       { label: "CTA", line: "Quinze minutes pour vous montrer — plutôt fin de semaine ou début de la prochaine ?" },
     ],
@@ -508,7 +508,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     opener: [
       { label: "Barrage", line: "Bonjour, je cherche la personne qui gère l'organisation du cabinet — c'est au sujet des appels patients non pris aux heures de pointe." },
       { label: "Permission", line: "Trente secondes, et si ce n'est pas pour vous, vous me le dites et je raccroche." },
-      { label: "Ciblage", line: "Je travaille avec les cabinets où le secrétariat doit choisir entre le patient au comptoir et celui au téléphone. Aux heures de pointe, chez vous, ça se passe comment ?" },
+      { label: "Ciblage", line: "Je m'adresse aux cabinets où le secrétariat doit choisir entre le patient au comptoir et celui au téléphone. Aux heures de pointe, chez vous, ça se passe comment ?" },
       { label: "Bascule", line: "On installe un accueil qui prend les appels que le secrétariat ne peut pas prendre, qualifie la demande et transmet le résumé." },
       { label: "CTA", line: "Quinze minutes pour vous montrer sur votre cabinet — fin de semaine ou début de la prochaine ?" },
     ],
@@ -542,7 +542,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { label: "Permission", line: "Je vous appelle à froid, trente secondes : si c'est pas pour vous, vous me le dites et je raccroche. Ça marche ?" },
       {
         label: "Ciblage",
-        line: "Je travaille avec les métiers où le téléphone sonne au pire moment — la restauration, c'est le cas type. Chez vous, en plein service, c'est qui qui décroche ?",
+        line: "Je m'adresse aux métiers où le téléphone sonne au pire moment — la restauration, c'est le cas type. Chez vous, en plein service, c'est qui qui décroche ?",
         note: "L'observation en question : il énonce lui-même le problème.",
       },
       { label: "Bascule", line: "On installe un accueil qui décroche pendant le service, prend la réservation et vous envoie le résumé. Vous restez en salle, lui capte tout ce qui passe." },
@@ -574,7 +574,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     opener: [
       { label: "Barrage", line: "Bonjour, je cherche le gérant — c'est au sujet des demandes de privatisation qui arrivent en journée. Il est là ?" },
       { label: "Permission", line: "Appel à froid, trente secondes, et si c'est pas pour vous je raccroche. Ça marche ?" },
-      { label: "Ciblage", line: "Je travaille avec les établissements où le chiffre se fait le soir mais où les demandes arrivent en journée. Chez vous, avant l'ouverture, qui prend les appels ?" },
+      { label: "Ciblage", line: "Je m'adresse aux établissements où le chiffre se fait le soir mais où les demandes arrivent en journée. Chez vous, avant l'ouverture, qui prend les appels ?" },
       { label: "Bascule", line: "On installe un accueil qui décroche en journée, prend la demande de groupe ou d'événement et vous envoie le résumé avant l'ouverture." },
       { label: "CTA", line: "Quinze minutes pour vous montrer — fin de semaine ou début de la prochaine ?" },
     ],
@@ -604,7 +604,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     opener: [
       { label: "Barrage", line: "Bonjour, je cherche le responsable d'exploitation — c'est au sujet des appels non pris aux heures de pointe. Il est là ?" },
       { label: "Permission", line: "Appel à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
-      { label: "Ciblage", line: "Je travaille avec les métiers où le standard sature aux heures de pointe. Le transport sanitaire, c'est le cas type. Le matin entre 8h et 10h, chez vous, ça se passe comment ?" },
+      { label: "Ciblage", line: "Je m'adresse aux métiers où le standard sature aux heures de pointe. Le transport sanitaire, c'est le cas type. Le matin entre 8h et 10h, chez vous, ça se passe comment ?" },
       { label: "Bascule", line: "On installe un accueil qui prend les demandes que le standard ne peut pas prendre, note le transport et vous transmet le résumé." },
       { label: "CTA", line: "Quinze minutes pour vous montrer sur votre exploitation — fin de semaine ou début de la prochaine ?" },
     ],
@@ -634,7 +634,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     opener: [
       { label: "Barrage", line: "Bonjour, je cherche le patron — c'est au sujet des demandes de devis qui arrivent pendant les chantiers." },
       { label: "Permission", line: "Appel à froid, trente secondes, et si c'est pas pour vous je raccroche. Ça marche ?" },
-      { label: "Ciblage", line: "Je travaille avec les métiers où le patron est sur le chantier toute la journée, donc jamais près du téléphone. C'est votre cas ?" },
+      { label: "Ciblage", line: "Je m'adresse aux métiers où le patron est sur le chantier toute la journée, donc jamais près du téléphone. C'est votre cas ?" },
       { label: "Bascule", line: "On installe un accueil qui décroche pendant que vous êtes sur le chantier, prend la demande de devis et vous envoie le résumé par SMS." },
       { label: "CTA", line: "Quinze minutes pour vous montrer — fin de semaine ou début de la prochaine ?" },
     ],
@@ -677,7 +677,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { label: "Permission", line: "Je vous appelle à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
       {
         label: "Ciblage",
-        line: "Je travaille avec les boîtes qui ont des commerciaux sur le terrain plutôt qu'un flux d'appels entrants. Vous êtes combien à faire de la pose de rendez-vous chez le particulier ?",
+        line: "Je m'adresse aux boîtes qui ont des commerciaux sur le terrain plutôt qu'un flux d'appels entrants. Vous êtes combien à faire de la pose de rendez-vous chez le particulier ?",
         note: "La question de taille sert au diagnostic : sous 3 commerciaux, l'argument ne tient pas.",
       },
       {
@@ -741,7 +741,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { label: "Permission", line: "Appel à froid, je fais court : trente secondes, et si ce n'est pas pour vous, je raccroche." },
       {
         label: "Ciblage",
-        line: "Je travaille avec les plateaux où une partie des appels ne demande aucune compétence humaine — la qualification, la relance, la confirmation de rendez-vous. Vous êtes combien en position ?",
+        line: "Je m'adresse aux plateaux où une partie des appels ne demande aucune compétence humaine — la qualification, la relance, la confirmation de rendez-vous. Vous êtes combien en position ?",
       },
       {
         label: "Bascule",
@@ -794,7 +794,7 @@ export const VERTICALS: VerticalPlaybook[] = [
     opener: [
       { label: "Barrage", line: "Bonjour, je cherche le responsable — c'est au sujet des appels qui arrivent quand personne n'est disponible pour les prendre." },
       { label: "Permission", line: "Appel à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
-      { label: "Ciblage", line: "Je travaille avec les métiers où le téléphone est le premier point de contact et où personne n'est dédié à le prendre. C'est votre cas ?" },
+      { label: "Ciblage", line: "Je m'adresse aux métiers où le téléphone est le premier point de contact et où personne n'est dédié à le prendre. C'est votre cas ?" },
       { label: "Bascule", line: "On installe un accueil qui décroche quand vous ne pouvez pas, prend la demande et vous en envoie le résumé." },
       { label: "CTA", line: "Quinze minutes pour vous montrer sur votre activité — fin de semaine ou début de la prochaine ?" },
     ],

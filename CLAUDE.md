@@ -478,8 +478,13 @@ une cible qu'on ne prospecte plus.**
 > Une seule phrase désormais, `phraseCritere` (`lib/approche-ecrite.ts`) :
 > « je m'adresse aux … » garde le critère choisi sans rien affirmer, et
 > `tests/linkedin.test.ts` refuse le retour de la tournure dans le texte
-> ENVOYÉ. ⚠ Les répliques d'appel du playbook (`lib/playbook.ts`) disent
-> encore « je travaille avec les métiers où… » : non touchées, à trancher.
+> ENVOYÉ. **Tranché le même jour pour l'ORAL aussi** (décision de Zakaria) :
+> les 13 répliques d'appel du playbook, l'argumentaire, le script
+> d'ouverture des modèles, le pitch terrain et celui des prescripteurs.
+> `tests/preuve-sociale.test.ts` porte désormais le motif du verbe, et sa
+> liste de rédacteurs inclut le playbook — il n'y était pas, c'est pour ça
+> que la tournure y avait survécu. Les objections (`q:`) sont exclues : c'est
+> le PROSPECT qui parle de SES clients.
 > Même jour : une fiche de PERMIS ne cite plus sa commune dans l'invitation —
 > c'est celle du chantier, donc l'interdit « citer son adresse à froid ».
 

@@ -164,7 +164,7 @@ const ALARMS: AlarmRule[] = [
   {
     id: "ciblage-volume",
     label: "Tu dis ton ciblage en volume, pas en critère",
-    fix: "« Je travaille avec les métiers où le téléphone EST le chiffre d'affaires » — un critère, jamais « j'appelle toutes les agences de Lyon ».",
+    fix: "« Je m'adresse aux métiers où le téléphone EST le chiffre d'affaires » — un critère, jamais « j'appelle toutes les agences de Lyon ».",
     cues: [["toutes", "agences"], ["tous", "garages"], ["tous", "restaurants"], ["appelle", "tout", "monde"], ["toutes", "entreprises"]],
   },
   {

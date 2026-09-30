@@ -19,7 +19,7 @@
   centaines de contacts acquéreurs et une ou deux personnes pour les rappeler.
 
 ## 1. Invitation LinkedIn (≤ 300 caractères)
-> Bonjour [Prénom], je travaille avec des maîtres d'ouvrage sur Lyon pour que
+> Bonjour [Prénom], je m'adresse aux maîtres d'ouvrage de la région pour que
 > les contacts acquéreurs déjà rencontrés ne restent pas sans rappel — le suivi
 > et les relances tournent tout seuls, vous gardez les RDV et la signature.
 > Ravi d'échanger si le sujet vous parle.
