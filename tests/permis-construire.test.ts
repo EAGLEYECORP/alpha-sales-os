@@ -107,6 +107,9 @@ test("⚠⚠ les offices « X Habitat » de la région sortent, nom par nom", ()
     ["HABITAT DAUPHINOIS", "5560", "68.20A"],
     ["HAUTE-SAVOIE HABITAT", "", ""],
     ["DRÔME AMÉNAGEMENT HABITAT", "", ""],
+    // SEMCODA sous sa raison sociale Sitadel — exclue par décision du 30/09/2026.
+    ["SEM DE CONSTRUCTION DU DPT DE L AIN", "5515", "68.20A"],
+    ["SEMCODA", "", ""],
   ];
   for (const [nom, cj, ape] of vus) {
     assert.equal(typeDeMaitreOuvrage(nom, cj, ape), "bailleur-social", nom);

@@ -236,6 +236,10 @@ const BAILLEURS_REGION = [
   "metropole habitat", "valence romans habitat", "allier habitat", "moulins habitat", "cantal habitat",
   "grenoble habitat", "ain habitat", "dynacite", "halpades", "pluralis", "ophis", "logidome", "actis",
   "rhone saone habitat", "savoisienne habitat", "batir et loger",
+  // SEMCODA sous sa raison sociale, telle que Sitadel l'écrit (« DPT » abrégé).
+  // Décision de Zakaria du 30/09/2026 : exclue, bien qu'elle fasse aussi de
+  // l'accession — son cœur est le logement social de l'Ain.
+  "sem de construction du (?:dpt|departement) de l ain",
 ];
 const BAILLEUR_REGION = new RegExp(
   `\\b(?:${BAILLEURS_REGION.map((n) => n.replace(/ /g, "[\\s'-]+")).join("|")})\\b`,
