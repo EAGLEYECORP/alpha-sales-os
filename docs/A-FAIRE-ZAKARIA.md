@@ -74,6 +74,11 @@ affirmations faites dans la journée étaient FAUSSES ou incomplètes :
    (message vide côté session) et **aucune suite n'est tracée depuis**. C'est
    le contact le plus chaud de toute l'histoire du projet. À retrouver dans la
    messagerie LinkedIn de Zakaria, en priorité absolue.
+   > ⚠ **DÉMENTI le 30/09/2026 au soir** : Zakaria a vérifié sa messagerie
+   > LinkedIn, **aucun message entrant**, et la boîte contact@ n'a reçu aucune
+   > réponse de prospect sur 14 jours. La « réponse » du 22/09 était au mieux
+   > une invitation acceptée. **Réponses de prospects à ce jour : 0.** Ne plus
+   > la citer comme un contact chaud.
 2. **« Colle-moi l'en-tête DKIM » — l'en-tête n'est JAMAIS arrivé** (le
    22/09, message vide). Mesure DNS du 29/09, depuis le bac à sable (UDP 53
    brut, qui passe quand le DNS-over-HTTPS est bloqué) :
