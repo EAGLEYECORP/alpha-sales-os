@@ -61,9 +61,16 @@ champ `prorogations`, à saisir à la main quand on le sait.
 
 ---
 
-## La zone : Lyon + Villeurbanne, et rien d'autre
+## La zone : Auvergne-Rhône-Alpes (Lyon + Villeurbanne jusqu'au 30/09/2026)
 
-**Exclusion sèche**, pas un malus de score. Un bon permis de Bron sortait
+> ⚠ **Élargie le 30/09/2026.** Ce qui suit décrit la règle d'avant ; elle
+> reste vraie dans son principe (exclusion sèche, hors-zone comptés à part),
+> mais le périmètre est désormais les douze départements de la région, lus
+> sur un CODE (postal, INSEE ou numéro d'arrêté), jamais sur un nom. Source :
+> `DEPARTEMENTS_ZONE` et `zoneDuPermis` dans `lib/permis-construire.ts`.
+> L'extraction régionale : `node scripts/permis-sitadel.mjs` (défaut = AURA).
+
+**Exclusion sèche**, pas un malus de score. Un bon permis hors zone sortait
 auparavant *retenu* et rien ne le disait.
 
 Ce que la zone achète : l'ancrage local est le **seul argument vérifiable**

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { parserPermis, trierPermis, typeDeMaitreOuvrage, lirePermis } from "../lib/permis-construire";
+import { parserPermis, trierPermis, typeDeMaitreOuvrage, lirePermis, DEPARTEMENTS_ZONE } from "../lib/permis-construire";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -124,16 +124,22 @@ test("⚠ LE COLLECTEUR RESTE DEHORS — aucun code du produit n'importe le pont
   assert.deepEqual(coupables, []);
 });
 
-test("--departements : le défaut reste Lyon + Villeurbanne, l'option filtre sur DEP_CODE", async () => {
+test("le défaut est la région (DEP_CODE) ; --lyon rend l'ancienne extraction, --departements en choisit d'autres", async () => {
   const m = (await import(SCRIPT)) as {
-    urlSitadel: (o?: { departements?: string[] }) => string;
+    urlSitadel: (o?: { departements?: string[]; lyon?: boolean }) => string;
     lireDepartements: (a?: string) => string[] | undefined;
     communeLisible: (comm: string, cp: string, localite?: string) => string;
   };
+  // Le défaut suit la zone du PRODUIT : un collecteur qui filtrerait plus
+  // étroit que le tri ferait disparaître des cibles sans rien dire.
   const defaut = new URL(m.urlSitadel()).searchParams;
-  assert.match(defaut.get("COMM") ?? "", /^in:69123,/);
-  assert.equal(defaut.get("DEP_CODE"), null);
-  assert.equal(m.lireDepartements(undefined), undefined, "sans option, aucune zone élargie");
+  assert.equal(defaut.get("DEP_CODE"), `in:${[...DEPARTEMENTS_ZONE].join(",")}`);
+  assert.equal(defaut.get("COMM"), null);
+  assert.equal(m.lireDepartements(undefined), undefined, "sans option, lireDepartements ne devine rien");
+
+  const lyon = new URL(m.urlSitadel({ lyon: true })).searchParams;
+  assert.match(lyon.get("COMM") ?? "", /^in:69123,/);
+  assert.equal(lyon.get("DEP_CODE"), null);
 
   const aura = m.lireDepartements("aura")!;
   assert.equal(aura.length, 12);

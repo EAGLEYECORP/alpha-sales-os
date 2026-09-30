@@ -170,12 +170,12 @@ contrat se dresse **après le cadrage** → levier de négociation. Doctrine :
 nous** (meilleur levier) ; si trop lourd, ou si on leur a présenté et qu'ils
 n'en veulent pas → on passe par leur plateforme.
 
-## NOTRE CIBLE — le maître d'ouvrage à permis actif (09/09/2026)
+## NOTRE CIBLE — le maître d'ouvrage à permis actif (09/09/2026 · zone AURA le 30/09)
 `lib/permis-construire.ts` · ICP dans `lib/accounts-commercial.ts` (serveur) ·
 `docs/PERMIS-LYON.md`.
 
-**Le maître d'ouvrage PROFESSIONNEL dont le permis de construire est actif, sur
-Lyon et Villeurbanne.** ICP à **déclencheur**, pas à secteur : « les
+**Le maître d'ouvrage PROFESSIONNEL dont le permis de construire est actif, en
+Auvergne-Rhône-Alpes** (Lyon + Villeurbanne seuls jusqu'au 30/09/2026). ICP à **déclencheur**, pas à secteur : « les
 promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois près
 — donc **quand** appeler. L'arrêté est public, daté, vérifiable.
 
@@ -188,17 +188,29 @@ promoteurs » dit QUI, un permis dit QUI **et** OÙ EN EST l'affaire au mois pr�
 > portons le risque. Le tri sort ces cas par **exclusion sèche**, jamais par un
 > score qui pourrait les rattraper.
 
-- **La zone est une exclusion**, pas dix points de score (`communeDansLaZone`).
-  Elle ne l'était pas : un bon permis de Bron sortait *retenu* et rien ne le
-  disait. Ce que la zone achète : l'ancrage local est le **seul argument
-  vérifiable** à zéro vente. Ce qu'elle coûte : un export métropolitain perd la
-  majorité de ses lignes — et le lot le **dit** (les hors-zone se comptent à
-  part des « rien à vendre » : le premier veut dire « refiltre à la source »,
-  le second est le fonctionnement normal).
-  > ⚠ Ancré en **début de libellé**, jamais un `includes("lyon")` :
-  > Sainte-Foy-lès-Lyon, Métropole de Lyon et Grand Lyon contiennent tous
-  > « lyon ». Commune **absente** ≠ hors zone — c'est un `manque` qu'on nomme,
-  > pas une ligne qu'on jette.
+- **La zone est une exclusion**, pas dix points de score (`zoneDuPermis`,
+  `DEPARTEMENTS_ZONE`). Un bon permis hors zone sortait *retenu* et rien ne le
+  disait. Les hors-zone se comptent à part des « rien à vendre » : le premier
+  veut dire « refiltre à la source », le second est le fonctionnement normal.
+  > ⚠⚠ **ÉLARGIE À AUVERGNE-RHÔNE-ALPES le 30/09/2026** (décision de Zakaria).
+  > Mesuré sur Sitadel : Lyon + Villeurbanne donnait une file trop courte pour
+  > apprendre quoi que ce soit ; la région, 842 groupes sur 24 mois. **Ce qu'on
+  > perd** : « je suis à Villeurbanne, votre programme est à trois rues » ne
+  > vaut plus qu'à Lyon. Ailleurs on est « de la région » — vérifiable, plus
+  > faible. Le message ne doit pas prétendre plus.
+  > ⚠⚠ **Le département se lit sur un CODE, jamais sur un nom** : code postal
+  > ou INSEE (commune, puis adresse), puis numéro d'arrêté (`PC 069…` → 69).
+  > « Saint-Priest » existe dans trois départements. Lyon et Villeurbanne
+  > restent reconnus au nom (ancrage en début de libellé, jamais un
+  > `includes("lyon")` — « Lyons-la-Forêt » est dans l'Eure). Un autre nom
+  > SANS code → `manque`, jamais une exclusion ; commune **absente** ≠ hors
+  > zone. Seul un code qui PROUVE un autre département exclut.
+  > ⚠ **Élargir la zone a ouvert un trou, fermé le même jour** : les offices
+  > « X Habitat » de la région (Isère Habitat, Auvergne Habitat…) portent une
+  > catégorie juridique générique dans Sitadel et aucun sigle — ils sortaient
+  > retenus. `BAILLEURS_REGION` les liste NOM PAR NOM ; « habitat » seul reste
+  > interdit (SMART HABITAT, DH HABITAT sont des promoteurs). Et le motif se
+  > lit sans accent ni point (« HABITATIONS A LOYER », « H.L.M. »).
 - **Sous 6 logements, on n'exclut pas — on dit disproportionné.** 10 000 € d'OS
   de vente sur trois lots est une part indécente du budget de
   commercialisation. C'est **Alpha Voice seul** qui se propose là.

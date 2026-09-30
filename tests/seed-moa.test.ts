@@ -26,7 +26,7 @@ import { verticalsWithTargets } from "../lib/call-session";
  * deux sociétés d'ambulances, c'est-à-dire le marché d'AVANT l'avatar.
  *
  * L'avatar décidé est le maître d'ouvrage professionnel à permis actif, sur
- * Lyon et Villeurbanne. Le module qui l'implémente existe
+ * Auvergne-Rhône-Alpes (Lyon + Villeurbanne jusqu'au 30/09/2026). Le module qui l'implémente existe
  * (`lib/permis-construire.ts`). Écrire des fiches « qui y ressemblent » à
  * la main suffirait à les faire diverger dès la session suivante : on ajoute
  * une fiche, personne ne rejoue le trieur, et la démo se met à montrer une
@@ -44,7 +44,7 @@ const numeroDe = (p: { numero?: string }) => (p.numero ?? "").trim();
 test("⚠ CHAQUE FICHE DE DÉMO DESCEND D'UN ARRÊTÉ QUE LE TRIEUR RETIENT", () => {
   /**
    * ⚠ Mutation vérifiée : passer la commune d'un permis de `PERMIS_DEMO` à
-   * « Bron », ou son demandeur à « M. et Mme X », ou sa date à trois ans, fait
+   * « Mâcon (71000) », ou son demandeur à « M. et Mme X », ou sa date à trois ans, fait
    * tomber CE test et lui seul. C'est exactement le geste qu'on veut rendre
    * impossible en silence.
    */
@@ -64,7 +64,7 @@ test("⚠ CHAQUE FICHE DE DÉMO DESCEND D'UN ARRÊTÉ QUE LE TRIEUR RETIENT", ()
       `${fiche.id} — le trieur REFUSE son propre arrêté (${lecture.risques.join(" | ") || "score " + lecture.score})`
     );
     assert.equal(lecture.problemeDeVente, true, `${fiche.id} — ce maître d'ouvrage n'a rien à vendre`);
-    assert.equal(communeDansLaZone(permis!.commune), true, `${fiche.id} — hors de Lyon + Villeurbanne`);
+    assert.equal(communeDansLaZone(permis!.commune), true, `${fiche.id} — hors d'Auvergne-Rhône-Alpes`);
   }
 
   // Et la table ne contient PAS de fiche fantôme : une entrée qui ne
@@ -94,7 +94,7 @@ test("⚠ le lot de démonstration MONTRE le filtre en train de travailler", () 
   );
   assert.ok(
     raisons.some((r) => /hors zone/i.test(r)),
-    "un permis hors Lyon + Villeurbanne doit être écarté"
+    "un permis hors Auvergne-Rhône-Alpes doit être écarté"
   );
   assert.ok(
     raisons.some((r) => /validité|périm/i.test(r)),

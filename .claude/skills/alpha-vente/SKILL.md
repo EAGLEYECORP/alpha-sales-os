@@ -29,7 +29,7 @@ description: >-
 
 ## 2. L'ICP (source de vérité : `lib/permis-construire.ts` + `accounts-commercial.ts`)
 Promoteur/bailleur **professionnel** qui **commercialise du neuf**, permis actif,
-**Lyon/Villeurbanne**, **≥ 6 logements**, phase **pré-commercialisation (2-12 mois)**,
+**Auvergne-Rhône-Alpes** (depuis le 30/09/2026 ; Lyon/Villeurbanne avant), **≥ 6 logements**, phase **pré-commercialisation (2-12 mois)**,
 qui **croule** sous les contacts acquéreurs (1-2 personnes pour relancer).
 **Canal : LinkedIn.** Offre : OS de vente en **part au résultat** (gratuit tant
 que ça ne rapporte pas, 30 % du CA encaissé — `lib/part-resultat.ts`).

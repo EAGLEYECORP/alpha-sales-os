@@ -13,7 +13,8 @@
  * ── CE QUI LES REMPLACE ──
  *
  * L'avatar décidé : le **maître d'ouvrage PROFESSIONNEL** dont le permis de
- * construire est **actif**, sur **Lyon et Villeurbanne**. C'est un ICP à
+ * construire est **actif**, en **Auvergne-Rhône-Alpes** (Lyon + Villeurbanne
+ * jusqu'au 30/09/2026 — les fiches de démo y sont restées). C'est un ICP à
  * DÉCLENCHEUR, pas à secteur : un permis dit non seulement QUI, mais OÙ EN EST
  * l'affaire, au mois près — donc QUAND appeler.
  *
@@ -207,8 +208,10 @@ export const PERMIS_DEMO: readonly PermisConstruire[] = [
   // Personne physique : elle construit une fois, elle ne vend rien — et c'est
   // un consommateur, donc le décret n° 2022-1313 s'applique.
   { numero: "PC 069 381 26 A0019", demandeur: "M. et Mme DUVAL (démo)", dateDecision: daysAgo(60), logements: 1, surfacePlancher: 140, commune: "Lyon 1er" },
-  // Hors zone : un bon permis, au mauvais endroit.
-  { numero: "PC 069 029 26 A0071", demandeur: "BÂTIR BRON SAS (démo)", dateDecision: daysAgo(130), logements: 40, surfacePlancher: 2800, commune: "Bron" },
+  // Hors zone : un bon permis, au mauvais endroit. Mâcon (71) est à 70 km de
+  // Lyon, mais en Bourgogne-Franche-Comté — c'est le NUMÉRO d'arrêté (071…)
+  // qui le dit, pas le nom.
+  { numero: "PC 071 270 26 A0071", demandeur: "BÂTIR MÂCON SAS (démo)", dateDecision: daysAgo(130), logements: 40, surfacePlancher: 2800, commune: "Mâcon" },
   // Périmé : plus de trois ans sans chantier déclaré. « Je vous appelle pour
   // votre programme » sur une opération morte coûte l'appel entier.
   { numero: "PC 069 385 22 A0154", demandeur: "SCCV LES JARDINS DE SAINT-JUST (démo)", dateDecision: daysAgo(1400), logements: 18, surfacePlancher: 1250, commune: "Lyon 5e" },
@@ -665,11 +668,11 @@ export const seedProspects: Prospect[] = baseProspects.map((p) => ({
 export const seedCampaigns: Campaign[] = [
   {
     id: "c-permis-lyon-commercialisation",
-    name: "Permis Lyon/Villeurbanne — pré-commercialisation",
+    name: "Permis Auvergne-Rhône-Alpes — pré-commercialisation",
     sector: "maitrise-ouvrage",
     status: "active",
     offerInfo: "Alpha Voice sur la ligne du bureau de vente : qualifie l'appelant (budget, typologie, délai), consigne, cale le rendez-vous. Setup + palier mensuel, setup payable au premier RDV pris.",
-    cible: "Maîtres d'ouvrage professionnels — promoteurs, SCCV, sociétés de promotion — dont le permis est purgé et le chantier non ouvert, sur Lyon et Villeurbanne. Opérations de 6 lots et plus.",
+    cible: "Maîtres d'ouvrage professionnels — promoteurs, SCCV, sociétés de promotion — dont le permis est purgé et le chantier non ouvert, en Auvergne-Rhône-Alpes. Opérations de 6 lots et plus.",
     industries: ["Promotion immobilière", "SCCV", "Construction de maisons individuelles"],
     marketInfo: "La fenêtre utile est la PRÉ-COMMERCIALISATION : entre l'arrêté purgé et l'ouverture du chantier, le nombre de réservations conditionne le financement de l'opération. C'est là que le sujet est le plus vif, et la date est publique — elle est sur l'arrêté.",
     leadMagnet: "Audit d'accueil téléphonique du bureau de vente : combien d'appels n'aboutissent pas, à quelles heures, et ce qu'ils devenaient.",
@@ -701,7 +704,7 @@ export const seedCampaigns: Campaign[] = [
     sector: "maitrise-ouvrage",
     status: "active",
     offerInfo: "Alpha Sales OS : pipe par lot, relances datées et tenues, prévision par étape, historique de chaque contact au même endroit.",
-    cible: "Maîtres d'ouvrage dont l'arrêté a plus d'un an SANS ouverture de chantier déclarée, Lyon + Villeurbanne, 20 lots et plus.",
+    cible: "Maîtres d'ouvrage dont l'arrêté a plus d'un an SANS ouverture de chantier déclarée, Auvergne-Rhône-Alpes, 20 lots et plus.",
     industries: ["Promotion immobilière", "SCCV", "Aménagement"],
     marketInfo: "⚠ C'est le signal le plus fort du fichier ET le plus ambigu : un permis d'un an sans chantier veut dire soit que la pré-commercialisation ne passe pas le seuil de financement — notre sujet exactement — soit que l'opération est abandonnée. Ça se vérifie AU PREMIER APPEL, ça ne se devine pas, et écrire à une opération morte brûle la relation avec le promoteur pour ses suivantes.",
     leadMagnet: "Relevé de la file : combien de contacts entrants sur les douze derniers mois, combien ont eu une relance datée, combien n'ont jamais été rappelés.",
@@ -718,7 +721,7 @@ export const seedCampaigns: Campaign[] = [
     sector: "maitrise-ouvrage",
     status: "brouillon",
     offerInfo: "Prise de contact seule. Aucune offre, aucun prix : le but est d'exister avant que le lancement commercial commence.",
-    cible: "Permis délivrés il y a moins de deux mois sur Lyon + Villeurbanne — le délai de recours des tiers court encore.",
+    cible: "Permis délivrés il y a moins de deux mois en Auvergne-Rhône-Alpes — le délai de recours des tiers court encore.",
     industries: ["Promotion immobilière", "Aménagement"],
     marketInfo: "Pendant le recours, un maître d'ouvrage sérieux ne lance pas sa commercialisation à plein régime. Le contacter n'est pas une erreur, mais l'angle n'est pas le même : on se fait connaître, on ne vend pas. Vouloir closer ici, c'est arriver deux mois trop tôt et griller la fiche pour le moment où elle vaudra quelque chose.",
     leadMagnet: "Rien. C'est le sujet : à ce stade on n'a rien à donner qui ne soit prématuré.",
@@ -822,7 +825,7 @@ export const seedCompetitors: Competitor[] = [
 
 export const seedActivities: Activity[] = [
   { id: "ac1", date: daysAgo(3), kind: "stage", message: "Terrasses des Canuts (démo) → Red Zone (objection de confiance ouverte)", prospectId: "demo-sccv-canuts" },
-  { id: "ac2", date: daysAgo(4), kind: "campagne", message: "Import permis Lyon + Villeurbanne : 11 arrêtés examinés, 8 retenus, 3 écartés (1 particulier, 1 hors zone, 1 périmé)" },
+  { id: "ac2", date: daysAgo(4), kind: "campagne", message: "Import permis Auvergne-Rhône-Alpes : 11 arrêtés examinés, 8 retenus, 3 écartés (1 particulier, 1 hors zone, 1 périmé)" },
   { id: "ac3", date: daysAgo(6), kind: "meeting", message: "Audit du dispositif d'accueil — Carré Monplaisir (démo)", prospectId: "demo-sccv-monplaisir" },
   { id: "ac4", date: daysAgo(11), kind: "ia", message: "Brief d'appel généré — Foncière du Rhône Nord (démo) (angle : permis de 14 mois sans chantier)", prospectId: "demo-fonciere-rhone-nord" },
   { id: "ac5", date: daysAgo(30), kind: "perdu", message: "Quai de la Confluence (démo) perdu — prix donné au téléphone avant toute démonstration", prospectId: "demo-sccv-confluence" },

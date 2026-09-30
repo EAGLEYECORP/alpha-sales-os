@@ -218,11 +218,11 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
      * ─────────────────────────────────────────────────────────────────────
      */
     icp: {
-      label: "Maître d'ouvrage professionnel dont le permis de construire est ACTIF — Lyon + Villeurbanne",
+      label: "Maître d'ouvrage professionnel dont le permis de construire est ACTIF — Auvergne-Rhône-Alpes",
       buyer: "Directeur de programmes · responsable commercialisation · gérant de SCCV · directeur du développement",
       sector: "Promotion immobilière, SCCV, sociétés d'aménagement, constructeurs de maisons individuelles",
       companySize: "Opérations de 6 lots et plus (sous 6, l'offre VIP n'est pas proportionnée au budget de commercialisation)",
-      geo: "Lyon (tous arrondissements) + Villeurbanne. Rien d'autre : l'ancrage local est le seul argument vérifiable qu'on ait à zéro vente.",
+      geo: "Auvergne-Rhône-Alpes (01, 03, 07, 15, 26, 38, 42, 43, 63, 69, 73, 74), élargie le 30/09/2026 depuis Lyon + Villeurbanne. L'ancrage régional est le seul argument vérifiable qu'on ait à zéro vente — hors de Lyon, on est « de la région », pas « du quartier ».",
       pains: [
         "La pré-commercialisation conditionne le financement de l'opération — et personne ne compte les contacts entrants qui se perdent",
         "Le bureau de vente est fermé, en visite ou seul : les appels tombent sur messagerie et l'appelant est perdu sans trace",
@@ -245,7 +245,7 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
         "Pétitionnaire PERSONNE PHYSIQUE : il construit une fois, il ne vend rien — et c'est un consommateur, donc le décret n° 2022-1313 s'applique",
         "Bailleur social : il ATTRIBUE des logements, il n'en vend pas — aucune fonction commerciale à équiper",
         "Personne publique (commune, métropole, hôpital) : commande et marchés publics, pas de vente",
-        "Hors Lyon + Villeurbanne, même si le permis est parfait par ailleurs",
+        "Hors Auvergne-Rhône-Alpes, même si le permis est parfait par ailleurs",
         "Permis achevé ou au-delà de sa validité : il n'y a plus d'opération derrière la ligne",
         "Moins de 6 logements : 10 000 € d'OS de vente représentent une part indécente du budget de commercialisation. Ce n'est pas un refus — c'est Alpha Voice seul qui se propose là",
       ],

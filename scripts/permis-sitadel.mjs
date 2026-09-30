@@ -28,24 +28,24 @@
  * ══ ⚠⚠ LA ZONE SE FILTRE CHEZ LA SOURCE ══
  *
  * Le fichier national fait près de deux millions de lignes. L'API DiDo filtre
- * côté serveur (`COMM=in:…`) : on ne télécharge que Lyon et Villeurbanne.
- * Lyon y figure sous son code de commune ENTIÈRE (69123), pas par
- * arrondissement — l'arrondissement se relit sur le code postal du terrain.
+ * côté serveur : on ne télécharge que la zone.
  *
- * ══ L'OPTION `--departements` (30/09/2026) ══
+ * ══ LE DÉFAUT EST LA RÉGION (30/09/2026) ══
  *
- * Le défaut RESTE Lyon + Villeurbanne : c'est la zone que `communeDansLaZone`
- * applique, et ce script ne la redéfinit pas. `--departements` sert une
- * extraction plus large (ex. la région entière), filtrée côté serveur sur
- * `DEP_CODE`. ⚠ Le tri du produit exclura alors tout ce qui est hors zone :
- * cette extraction se lit HORS du produit, tant que la zone n'est pas
- * rediscutée dans la doctrine — l'élargir se décide, ça ne se fait pas par un
- * paramètre de collecteur.
- * Hors Lyon, la commune se relit sur la localité du terrain.
+ * La zone du produit est passée à Auvergne-Rhône-Alpes (`DEPARTEMENTS_ZONE`,
+ * `lib/permis-construire.ts`) : le défaut filtre donc sur les douze
+ * départements (`DEP_CODE`). `--departements` en choisit d'autres ; `--lyon`
+ * rend l'ancienne extraction Lyon + Villeurbanne (`COMM`, où Lyon figure sous
+ * son code de commune ENTIÈRE, 69123 — l'arrondissement se relit sur le code
+ * postal du terrain). Hors Lyon, la commune est la localité du terrain ; son
+ * département, le tri le relit sur le code postal de l'adresse ou le numéro.
+ *
+ * ⚠ Le `fetch` de Node ignore le proxy sortant par défaut (403 mesuré dans un
+ * conteneur à proxy) : y lancer le script avec `NODE_USE_ENV_PROXY=1`.
  *
  * Usage :  node scripts/permis-sitadel.mjs > donnees-privees/permis-sitadel.csv
- *          node scripts/permis-sitadel.mjs --departements aura
  *          node scripts/permis-sitadel.mjs --departements 69,38,74
+ *          node scripts/permis-sitadel.mjs --lyon
  *          node scripts/permis-sitadel.mjs --mois 36
  *          node scripts/permis-sitadel.mjs --fichier export-sitadel.csv   (hors ligne)
  * ─────────────────────────────────────────────────────────────────────
@@ -205,8 +205,10 @@ export function versCsv(lignes) {
   return [COLONNES.join(","), ...lignes.map((l) => COLONNES.map((c) => champCsv(l[c])).join(","))].join("\n");
 }
 
-export function urlSitadel({ departements } = {}) {
-  const zone = departements?.length ? { DEP_CODE: `in:${departements.join(",")}` } : { COMM: `in:${COMMUNES_INSEE.join(",")}` };
+export function urlSitadel({ departements, lyon = false } = {}) {
+  const zone = lyon
+    ? { COMM: `in:${COMMUNES_INSEE.join(",")}` }
+    : { DEP_CODE: `in:${(departements?.length ? departements : DEPARTEMENTS_AURA).join(",")}` };
   const q = new URLSearchParams({
     withColumnName: "true",
     withColumnDescription: "false",
@@ -222,11 +224,12 @@ async function principal() {
   const mois = Number(arg("--mois") ?? 24);
   const fichier = arg("--fichier");
   const departements = lireDepartements(arg("--departements"));
+  const lyon = process.argv.includes("--lyon");
 
   let texte;
   if (fichier) texte = readFileSync(fichier, "utf8");
   else {
-    const r = await fetch(urlSitadel({ departements }));
+    const r = await fetch(urlSitadel({ departements, lyon }));
     if (!r.ok) { console.error(`Sitadel injoignable : HTTP ${r.status}`); process.exit(2); }
     texte = await r.text();
   }

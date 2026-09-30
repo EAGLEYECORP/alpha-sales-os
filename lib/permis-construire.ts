@@ -210,12 +210,45 @@ const BAILLEUR_SOCIAL =
  * Les noms ajoutés sont des bailleurs présents à Lyon qui ne portent aucun
  * sigle ; la liste reste incomplète, c'est pour ça que `manque` existe.
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LES OFFICES « X HABITAT » D'AUVERGNE-RHÔNE-ALPES (30/09/2026).
+ *
+ * La zone est passée à la région le même jour, et ils sont le trou qu'elle
+ * ouvre : mesuré sur Sitadel, Auvergne Habitat, Isère Habitat, Cristal
+ * Habitat… sortaient RETENUS — une catégorie juridique générique (5599 /
+ * 5560), un APE 41.10 parfois, et aucun sigle dans le nom.
+ *
+ * ⚠ « habitat » SEUL reste interdit comme motif : SMART HABITAT, DH HABITAT,
+ * ECODEC HABITAT sont des promoteurs du même fichier. On liste donc les
+ * NOMS ENTIERS, un par un. Une liste est toujours en retard — c'est pourquoi
+ * elle se nourrit de ce qu'un vrai export laisse passer, pas de mémoire.
+ * Forme normalisée : sans accent, sans point ; espace = espace, tiret ou
+ * apostrophe.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const BAILLEURS_REGION = [
+  // Relevés sur l'extraction Sitadel AURA du 30/09/2026.
+  "auvergne habitat", "vichy habitat", "habitat dauphinois", "isere habitat", "montelimar agglomeration habitat",
+  "cristal habitat", "chablais habitat", "evolea", "fonciere d habitat et humanisme",
+  // Offices et ESH de la région qui ne portent aucun sigle.
+  "alpes isere habitat", "haute savoie habitat", "drome amenagement habitat", "ardeche habitat", "loire habitat",
+  "metropole habitat", "valence romans habitat", "allier habitat", "moulins habitat", "cantal habitat",
+  "grenoble habitat", "ain habitat", "dynacite", "halpades", "pluralis", "ophis", "logidome", "actis",
+  "rhone saone habitat", "savoisienne habitat", "batir et loger",
+];
+const BAILLEUR_REGION = new RegExp(
+  `\\b(?:${BAILLEURS_REGION.map((n) => n.replace(/ /g, "[\\s'-]+")).join("|")})\\b`,
+  "i"
+);
+
 function nomPourBailleur(d: string): string {
   return d.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\./g, "");
 }
 
 function estBailleurSocial(d: string): boolean {
-  return BAILLEUR_SOCIAL.test(nomPourBailleur(d));
+  const n = nomPourBailleur(d);
+  return BAILLEUR_SOCIAL.test(n) || BAILLEUR_REGION.test(n);
 }
 
 /** Personne publique : commande publique, pas de fonction commerciale. */
@@ -230,33 +263,46 @@ const FORME_SOCIETE = /\b(sas|sasu|sarl|eurl|sa|snc|sci|sccv|scic|scop|gie|sem|s
 
 /**
  * ─────────────────────────────────────────────────────────────────────
- * LA ZONE — LYON + VILLEURBANNE, ET RIEN D'AUTRE (décision du 09/09/2026).
+ * LA ZONE — AUVERGNE-RHÔNE-ALPES (décision du 30/09/2026 ; Lyon +
+ * Villeurbanne seuls du 09/09 au 30/09).
+ *
+ * ── POURQUOI ELLE S'EST ÉLARGIE ──
+ *
+ * Mesuré sur Sitadel le 30/09 : Lyon + Villeurbanne, c'est une poignée de
+ * maîtres d'ouvrage sur 24 mois ; la région, c'est 842 groupes et 1 411
+ * permis professionnels de 6 logements et plus. À zéro vente, la file était
+ * trop courte pour apprendre quoi que ce soit. Décision de Zakaria.
+ *
+ * ⚠ CE QU'ON PERD, ET IL FAUT LE DIRE : l'ancrage « je suis à Villeurbanne,
+ * votre programme est rue Anatole-France » ne vaut plus qu'à Lyon. À
+ * Annecy ou Clermont, on est « de Lyon », c'est-à-dire de la même région —
+ * vérifiable, mais plus faible. Le message ne doit pas prétendre plus.
  *
  * ── POURQUOI UNE EXCLUSION, ET PAS UN MALUS DE SCORE ──
  *
- * La commune ne faisait que rapporter dix points. Un permis de Bron ou de
- * Saint-Priest sortait donc RETENU dès qu'il était par ailleurs bon — et rien
- * dans le lot ne disait qu'on venait d'ajouter à la file d'appels des cibles
- * hors du terrain qu'on couvre. C'est la même leçon que le reste du fichier :
- * un barème qui laisse passer ce qu'on a décidé d'exclure est décoratif.
+ * La commune ne faisait que rapporter dix points : un bon permis hors du
+ * terrain couvert sortait RETENU, et rien ne le disait. Un barème qui laisse
+ * passer ce qu'on a décidé d'exclure est décoratif. Ça reste vrai à
+ * l'échelle de la région.
  *
- * Ce que la zone achète, concrètement : l'ancrage local est le seul argument
- * qu'on ait à zéro vente. « Je suis à Villeurbanne, votre programme est rue
- * Anatole-France » se vérifie ; « je couvre la région » ne se vérifie pas et
- * ne vaut rien.
+ * ⚠⚠ LA ZONE SE LIT SUR UN CODE, JAMAIS SUR UN NOM. On ne sait pas, à la
+ * lecture de « Bron » ou de « Saint-Priest », dans quel département est la
+ * commune — et une liste de 4 000 communes serait une copie de l'INSEE
+ * qu'on tiendrait à la main. Le département se lit sur :
+ *  · un code postal ou INSEE (5 chiffres) dans la commune ou l'adresse ;
+ *  · le numéro d'arrêté (PC 069 383 25 A0123 → 069 → Rhône), dont les trois
+ *    premiers chiffres SONT le département, par construction nationale.
+ * Lyon et Villeurbanne restent reconnus au nom (c'est l'ancien périmètre, et
+ * les exports de la Métropole n'ont pas de code). Tout autre nom SANS code
+ * rend `null` : un `manque` à vérifier, jamais une exclusion.
  *
- * ⚠ CE QUE ÇA COÛTE, ET C'EST ASSUMÉ. Un export métropolitain perdra la
- * majorité de ses lignes. C'est le comportement voulu — mais le lot le DIT
- * (`trierPermis` compte les hors-zone à part), sinon un import qui rend
- * trois fiches sur deux cents ressemble à une panne du parseur.
- *
- * ⚠⚠ COMMUNE ABSENTE N'EST PAS HORS ZONE. Une colonne manquante est un angle
- * mort à nommer, pas une ligne fausse : elle reste dans `manque`, comme
- * avant. Exclure sur une donnée absente jetterait des cibles au motif que
- * l'export était pauvre.
+ * ⚠⚠ COMMUNE ABSENTE N'EST PAS HORS ZONE. Une donnée manquante est un angle
+ * mort à nommer, pas une ligne fausse. Seul un code qui PROUVE un autre
+ * département exclut.
  * ─────────────────────────────────────────────────────────────────────
  */
-export const COMMUNES_CIBLES = ["Lyon (tous arrondissements)", "Villeurbanne"] as const;
+export const DEPARTEMENTS_ZONE = ["01", "03", "07", "15", "26", "38", "42", "43", "63", "69", "73", "74"] as const;
+export const ZONE_CIBLE = "Auvergne-Rhône-Alpes";
 
 /** Minuscules, sans accent, espaces normalisés — pour comparer des libellés d'open data. */
 function normaliseCommune(v: string): string {
@@ -269,34 +315,56 @@ function normaliseCommune(v: string): string {
 }
 
 /**
- * ⚠ L'ANCRAGE EN DÉBUT DE CHAÎNE EST TOUT LE SUJET.
- *
- * Un `includes("lyon")` retiendrait **Sainte-Foy-lès-Lyon**, **Champagne-au-
- * Mont-d'Or** non mais **Saint-Fons** non plus — et surtout il retiendrait
- * n'importe quel libellé portant « Métropole de Lyon » ou « Grand Lyon »,
- * c'est-à-dire des lignes dont la commune réelle est ailleurs. Le nom de la
- * commune COMMENCE par « Lyon », suivi d'une fin de chaîne ou d'un séparateur
- * (« Lyon 3e », « Lyon-7e », « LYON 09 »). « Lyons-la-Forêt » ne passe pas
- * non plus : le « s » n'est ni un espace, ni un tiret, ni une fin.
+ * ⚠ L'ANCRAGE EN DÉBUT DE CHAÎNE : « Sainte-Foy-lès-Lyon », « Métropole de
+ * Lyon », « Grand Lyon » contiennent tous « lyon ». Ils sont désormais dans
+ * la zone de toute façon, mais pas PARCE QU'ils contiennent « lyon » : un
+ * `includes` rattacherait aussi « Lyons-la-Forêt » (Eure).
  */
-const NOM_CIBLE = /^(?:lyon|villeurbanne)(?:[\s-]|$)/;
+const NOM_LYON_VILLEURBANNE = /^(?:lyon|villeurbanne)(?:[\s-]|$)/;
+
+/** Département d'un code postal ou INSEE à 5 chiffres (« 69003 » → « 69 »). */
+function departementDuCode(texte: string): string | null {
+  const codes = texte.match(/\b\d{5}\b/g);
+  if (!codes) return null;
+  // Le DERNIER : dans une adresse, le code postal suit le numéro de rue.
+  return codes[codes.length - 1].slice(0, 2);
+}
 
 /**
- * Les codes, quand le libellé porte le code plutôt que le nom (« 69003 LYON »,
- * ou l'INSEE brut d'un export Sitadel).
- *  · postaux : 69001-69009 (Lyon) · 69100 (Villeurbanne) ;
- *  · INSEE  : 69381-69389 (arrondissements) · 69266 (Villeurbanne).
- * Lyon n'a pas de code INSEE unique par ailleurs utilisable ici : 69123
- * désigne la commune entière et se rencontre aussi dans les exports.
+ * Département lu sur le numéro d'arrêté : « PC 069 383 25 A0123 » ou
+ * « 06938325A0123 » (Sitadel) → « 69 ». Les trois premiers caractères après
+ * le type d'autorisation sont le département, complété à gauche par un 0.
  */
-const CODE_CIBLE = /\b(?:6900[1-9]|69100|6938[1-9]|69266|69123)\b/;
+export function departementDuNumero(numero?: string): string | null {
+  const brut = (numero ?? "").toUpperCase().replace(/^\s*(PC|PA|DP|PD|PCMI)\b/, "").replace(/[^0-9A-Z]/g, "");
+  const m = /^0(\d{2}|2[AB])/.exec(brut);
+  return m ? m[1] : null;
+}
 
-/** Cette commune est-elle dans la zone ? `null` = la donnée manque, ce n'est pas un refus. */
+const dansLaRegion = (dep: string) => (DEPARTEMENTS_ZONE as readonly string[]).includes(dep);
+
+/** Ce libellé de commune est-il dans la zone ? `null` = il ne le dit pas (nom sans code, ou vide). */
 export function communeDansLaZone(commune?: string): boolean | null {
   const brut = (commune ?? "").trim();
   if (!brut) return null;
-  const n = normaliseCommune(brut);
-  return NOM_CIBLE.test(n) || CODE_CIBLE.test(n);
+  const dep = departementDuCode(brut);
+  if (dep) return dansLaRegion(dep);
+  if (NOM_LYON_VILLEURBANNE.test(normaliseCommune(brut))) return true;
+  return null;
+}
+
+/**
+ * Le permis est-il dans la zone ? Commune, puis adresse, puis numéro
+ * d'arrêté : le premier qui PORTE un département tranche.
+ */
+export function zoneDuPermis(p: Pick<PermisConstruire, "commune" | "adresse" | "numero">): boolean | null {
+  const parCommune = communeDansLaZone(p.commune);
+  if (parCommune !== null) return parCommune;
+  const parAdresse = departementDuCode(p.adresse ?? "");
+  if (parAdresse) return dansLaRegion(parAdresse);
+  const parNumero = departementDuNumero(p.numero);
+  if (parNumero) return dansLaRegion(parNumero);
+  return null;
 }
 
 /**
@@ -590,19 +658,22 @@ export function lirePermis(p: PermisConstruire, now = new Date()): LecturePermis
   }
 
   // ── Le lieu : l'ancrage local se dit dans le message, il n'est pas décoratif. ──
-  const zone = communeDansLaZone(p.commune);
-  if (zone === null) {
-    manque.push("commune absente : le message perdra son ancrage local");
-  } else if (zone) {
-    score += 10;
-    pourquoi.push(`localisé — ${p.commune!.trim()}`);
-  } else {
+  const zone = zoneDuPermis(p);
+  const commune = (p.commune ?? "").trim();
+  if (zone === false) {
     // Exclusion sèche, pas un malus : un bon permis hors zone sortait retenu et
-    // rien ne le disait. Voir COMMUNES_CIBLES pour ce que ce choix coûte.
+    // rien ne le disait. Voir DEPARTEMENTS_ZONE pour ce que ce choix coûte.
     exclusions.push(
-      `${p.commune!.trim()} est hors zone : la cible est ${COMMUNES_CIBLES.join(" et ")}. ` +
-        "L'ancrage local est le seul argument qu'on ait à zéro vente, et il ne s'improvise pas à trente kilomètres."
+      `${commune || p.numero || "ce permis"} est hors zone : la cible est ${ZONE_CIBLE}. ` +
+        "L'ancrage régional est le seul argument vérifiable qu'on ait à zéro vente."
     );
+  } else if (!commune) {
+    manque.push("commune absente : le message perdra son ancrage local");
+  } else if (zone === null) {
+    manque.push(`« ${commune} » sans code postal ni numéro d'arrêté lisible : vérifier qu'elle est en ${ZONE_CIBLE}`);
+  } else {
+    score += 10;
+    pourquoi.push(`localisé — ${commune}`);
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -668,10 +739,10 @@ export function trierPermis(lignes: PermisConstruire[], now = new Date()): LotPe
    * la prochaine extraction doit filtrer à la source. Les fondre dans un seul
    * total ferait passer une erreur de collecte pour une fatalité.
    */
-  const horsZone = ecartes.filter((e) => communeDansLaZone(e.permis.commune) === false).length;
+  const horsZone = ecartes.filter((e) => zoneDuPermis(e.permis) === false).length;
   if (horsZone) {
     resume.push(
-      `${horsZone} écarté(s) hors zone (${COMMUNES_CIBLES.join(" + ")}). Si c'est le gros du fichier, ` +
+      `${horsZone} écarté(s) hors zone (${ZONE_CIBLE}). Si c'est le gros du fichier, ` +
         "l'extraction est à refiltrer à la source plutôt qu'ici."
     );
   }

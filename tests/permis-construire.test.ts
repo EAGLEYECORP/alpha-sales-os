@@ -7,6 +7,8 @@ import {
   SATURATION_LOGEMENTS,
   SCORE_MIN_PERMIS,
   communeDansLaZone,
+  departementDuNumero,
+  zoneDuPermis,
   VALIDITE_MOIS,
   importerPermis,
   lirePermis,
@@ -89,9 +91,31 @@ test("⚠⚠ bailleur social — le nom se lit SANS accent et SANS point, comme 
   assert.equal(typeDeMaitreOuvrage("SA D'HABITATIONS À LOYER MODÉRÉ DU RHÔNE"), "bailleur-social");
 });
 
+test("⚠⚠ les offices « X Habitat » de la région sortent, nom par nom", () => {
+  /*
+   * Relevés sur l'extraction Sitadel AURA du 30/09/2026, avec leur catégorie
+   * juridique réelle : générique, et parfois un APE 41.10 qui les ferait
+   * passer pour des promoteurs. Ouvrir la zone à la région sans eux aurait
+   * rempli la file de bailleurs.
+   */
+  const vus: Array<[string, string, string]> = [
+    ["AUVERGNE HABITAT", "5599", "68.20A"],
+    ["ISERE HABITAT", "5560", "41.10A"],
+    ["CRISTAL HABITAT", "5515", "68.20B"],
+    ["CHABLAIS HABITAT", "5615", "41.20B"],
+    ["MONTELIMAR AGGLOMERATION HABITAT", "5515", "41.20A"],
+    ["HABITAT DAUPHINOIS", "5560", "68.20A"],
+    ["HAUTE-SAVOIE HABITAT", "", ""],
+    ["DRÔME AMÉNAGEMENT HABITAT", "", ""],
+  ];
+  for (const [nom, cj, ape] of vus) {
+    assert.equal(typeDeMaitreOuvrage(nom, cj, ape), "bailleur-social", nom);
+  }
+});
+
 test("…et le filet ne mord pas sur les promoteurs, « habitat » compris", () => {
   // Contre-test : un filet trop large retire de vraies cibles EN SILENCE.
-  for (const nom of ["SCCV LES JARDINS DE GERLAND", "NEXITY PROMOTION IMMOBILIERE", "SMART HABITAT", "DH HABITAT", "S.A.S. BOUYGUES IMMOBILIER"]) {
+  for (const nom of ["SCCV LES JARDINS DE GERLAND", "NEXITY PROMOTION IMMOBILIERE", "SMART HABITAT", "DH HABITAT", "ECODEC HABITAT", "C&V HABITAT", "BATINEO HABITAT", "S.A.S. BOUYGUES IMMOBILIER", "SCCV DOMAIN HABITAT"]) {
     assert.notEqual(typeDeMaitreOuvrage(nom), "bailleur-social", nom);
   }
 });
@@ -203,62 +227,69 @@ test("⚠ HORS ZONE EST UNE EXCLUSION, PAS DIX POINTS EN MOINS", () => {
   /**
    * ⚠ CE QUE CE TEST GARDE, ET IL A ÉTÉ ÉCRIT PARCE QUE ÇA NE TENAIT PAS.
    *
-   * La commune ne faisait qu'ajouter dix points. Un promoteur de Bron, de
-   * Saint-Priest ou de Vénissieux — phase parfaite, 42 logements — sortait
-   * donc RETENU, entrait dans la file, et rien dans le lot ne disait qu'on
-   * venait d'ajouter des cibles hors du terrain qu'on couvre.
+   * La commune ne faisait qu'ajouter dix points : un bon permis hors du
+   * terrain couvert sortait RETENU, et rien ne le disait. La zone est passée
+   * de Lyon + Villeurbanne à Auvergne-Rhône-Alpes le 30/09/2026 ; la règle,
+   * elle, n'a pas bougé.
    *
-   * ⚠ Le piège de test du dépôt : asserter que le refus EST LÀ. On vérifie
-   * donc la CONDITION — le MÊME permis, à la commune près, passe. Mutation
-   * vérifiée : remettre `score += 10` à la place de l'exclusion fait tomber
-   * l'assertion `retenu === false` et elle seule.
+   * ⚠ On vérifie la CONDITION : le MÊME permis, au département près, passe.
    */
-  const dedans = lirePermis(promoteur({ commune: "Lyon 7e" }), MAINTENANT);
-  const dehors = lirePermis(promoteur({ commune: "Bron" }), MAINTENANT);
+  const dedans = lirePermis(promoteur({ commune: "Annecy", numero: "PC 074 010 25 A0042" }), MAINTENANT);
+  const dehors = lirePermis(promoteur({ commune: "Mâcon", numero: "PC 071 270 25 A0042" }), MAINTENANT);
 
   assert.equal(dedans.retenu, true, "le permis de référence doit passer, sinon ce test ne prouve rien");
-  assert.equal(dehors.retenu, false, "le même permis à Bron ne doit pas passer");
+  assert.equal(dehors.retenu, false, "le même permis à Mâcon (71) ne doit pas passer");
   assert.ok(
-    dehors.risques.some((r) => /hors zone/i.test(r)),
-    `la raison doit être écrite : ${dehors.risques.join(" | ")}`
+    dehors.risques.some((r) => /hors zone/i.test(r) && /auvergne-rhône-alpes/i.test(r)),
+    `la raison doit être écrite, avec la zone : ${dehors.risques.join(" | ")}`
   );
 });
 
-test("⚠ la zone se reconnaît sur la FORME du libellé, pas sur un `includes(\"lyon\")`", () => {
-  /**
-   * ⚠ LE FAUX POSITIF QU'UN `includes` AURAIT CRÉÉ, ET IL EST À CÔTÉ.
-   *
-   * « Sainte-Foy-lès-Lyon » contient « lyon ». « Métropole de Lyon » et
-   * « Grand Lyon » aussi, et ce sont des libellés qu'un export porte
-   * réellement, pour des lignes dont la commune est ailleurs. Le nom doit
-   * COMMENCER par la commune visée, suivi d'une fin de chaîne ou d'un
-   * séparateur — sinon on rouvre la zone à toute la métropole en croyant
-   * l'avoir fermée.
-   */
-  for (const ok of ["Lyon", "LYON 3E", "Lyon 7e", "Lyon-9e", "Villeurbanne", "VILLEURBANNE", "69003 LYON", "69100"]) {
+test("⚠⚠ la zone se lit sur un CODE (postal, INSEE, numéro d'arrêté), jamais sur un nom", () => {
+  // Les douze départements, par le code postal du libellé.
+  for (const ok of ["69003 LYON", "01500 Ambérieu-en-Bugey", "03200 Vichy", "07200 Aubenas", "15000 Aurillac", "26000 Valence",
+    "38000 Grenoble", "42000 Saint-Étienne", "43000 Le Puy-en-Velay", "63000 Clermont-Ferrand", "73000 Chambéry", "74000 Annecy", "69200"]) {
     assert.equal(communeDansLaZone(ok), true, `« ${ok} » doit être dans la zone`);
   }
-  for (const ko of ["Sainte-Foy-lès-Lyon", "Métropole de Lyon", "Grand Lyon", "Bron", "Vénissieux", "Lyons-la-Forêt", "69200"]) {
+  for (const ko of ["71000 Mâcon", "75015 Paris", "13001 Marseille", "21000 Dijon", "27480 Lyons-la-Forêt"]) {
     assert.equal(communeDansLaZone(ko), false, `« ${ko} » ne doit PAS être dans la zone`);
   }
+  // L'ancien périmètre reste reconnu au nom : les exports de la Métropole n'ont pas de code.
+  for (const ok of ["Lyon", "LYON 3E", "Lyon-9e", "Villeurbanne"]) assert.equal(communeDansLaZone(ok), true, ok);
 
-  /**
-   * ⚠⚠ COMMUNE ABSENTE N'EST PAS HORS ZONE — c'est `null`, et ça reste un
-   * `manque`. Exclure sur une donnée absente jetterait des cibles au motif
-   * que l'export était pauvre en colonnes : le module dit ses angles morts,
-   * il ne les comble pas et ne les punit pas.
+  /*
+   * ⚠⚠ UN NOM SANS CODE NE TRANCHE PAS. « Bron » est dans la zone, « Lyons-
+   * la-Forêt » non, « Saint-Priest » existe dans trois départements : un nom
+   * ne dit pas le département. `null`, donc un `manque` — jamais un rejet.
+   */
+  for (const nom of ["Bron", "Saint-Priest", "Lyons-la-Forêt", "Métropole de Lyon"]) {
+    assert.equal(communeDansLaZone(nom), null, `« ${nom} » seul ne doit rien trancher`);
+  }
+
+  // Le numéro d'arrêté porte le département : format affiché et format Sitadel.
+  assert.equal(departementDuNumero("PC 069 383 25 A0123"), "69");
+  assert.equal(departementDuNumero("00100424A1007"), "01");
+  assert.equal(departementDuNumero("PC 02A 004 25 A0001"), "2A");
+  assert.equal(departementDuNumero("PC-2"), null);
+
+  // Commune → adresse → numéro : le premier qui porte un département tranche.
+  assert.equal(zoneDuPermis({ commune: "Bron", numero: "PC 069 029 25 A0001" }), true);
+  assert.equal(zoneDuPermis({ commune: "Bron", numero: "PC 071 270 25 A0001" }), false);
+  assert.equal(zoneDuPermis({ commune: "AMBERIEU-EN-BUGEY", adresse: "195 RUE ALEXANDRE BERARD 01500" }), true);
+  assert.equal(zoneDuPermis({ commune: "Bron" }), null);
+
+  const nomSeul = lirePermis(promoteur({ commune: "Bron", numero: "PC-9" }), MAINTENANT);
+  assert.equal(nomSeul.retenu, true, "un nom sans code ne doit pas faire jeter la fiche");
+  assert.ok(nomSeul.manque.some((m) => /Bron/.test(m) && /vérifier/.test(m)), `le doute se NOMME : ${nomSeul.manque.join(" | ")}`);
+
+  /*
+   * ⚠⚠ COMMUNE ABSENTE N'EST PAS HORS ZONE — c'est un `manque`.
    */
   assert.equal(communeDansLaZone(undefined), null);
   assert.equal(communeDansLaZone("   "), null);
   const sansCommune = lirePermis(promoteur({ commune: undefined }), MAINTENANT);
-  assert.ok(
-    sansCommune.manque.some((m) => /commune absente/i.test(m)),
-    "l'absence se NOMME"
-  );
-  assert.ok(
-    !sansCommune.risques.some((r) => /hors zone/i.test(r)),
-    "…et ne se transforme jamais en exclusion"
-  );
+  assert.ok(sansCommune.manque.some((m) => /commune absente/i.test(m)), "l'absence se NOMME");
+  assert.ok(!sansCommune.risques.some((r) => /hors zone/i.test(r)), "…et ne se transforme jamais en exclusion");
 });
 
 // ── LE LOT, ET CE QU'IL VAUT ──
@@ -484,7 +515,7 @@ test("⚠ L'ICP ÉCRIT ET LE CODE QUI TRIE DISENT LA MÊME CHOSE", () => {
     ["personne physique", /personne physique/, { demandeur: "M. et Mme DUVAL" }],
     ["bailleur social", /bailleur social/, { demandeur: "OPAC DU RHONE" }],
     ["personne publique", /personne publique/, { demandeur: "VILLE DE LYON" }],
-    ["hors zone", /hors lyon \+ villeurbanne/, { commune: "Bron" }],
+    ["hors zone", /hors auvergne-rhône-alpes/, { commune: "Mâcon", numero: "PC 071 270 25 A0012" }],
     ["permis périmé", /au-delà de sa validité|achevé/, { dateDecision: ilYA(40) }],
   ];
 
