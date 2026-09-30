@@ -123,3 +123,29 @@ test("⚠ LE COLLECTEUR RESTE DEHORS — aucun code du produit n'importe le pont
   for (const racine of ["app", "components", "lib"]) parcourir(racine);
   assert.deepEqual(coupables, []);
 });
+
+test("--departements : le défaut reste Lyon + Villeurbanne, l'option filtre sur DEP_CODE", async () => {
+  const m = (await import(SCRIPT)) as {
+    urlSitadel: (o?: { departements?: string[] }) => string;
+    lireDepartements: (a?: string) => string[] | undefined;
+    communeLisible: (comm: string, cp: string, localite?: string) => string;
+  };
+  const defaut = new URL(m.urlSitadel()).searchParams;
+  assert.match(defaut.get("COMM") ?? "", /^in:69123,/);
+  assert.equal(defaut.get("DEP_CODE"), null);
+  assert.equal(m.lireDepartements(undefined), undefined, "sans option, aucune zone élargie");
+
+  const aura = m.lireDepartements("aura")!;
+  assert.equal(aura.length, 12);
+  const large = new URL(m.urlSitadel({ departements: aura })).searchParams;
+  assert.equal(large.get("DEP_CODE"), `in:${aura.join(",")}`);
+  assert.equal(large.get("COMM"), null, "les deux filtres ensemble rendraient Lyon seul");
+  assert.deepEqual(m.lireDepartements("69, 2a"), ["69", "2A"]);
+  // ⚠ Un code faux rendrait un fichier vide qui ressemble à « aucun permis ».
+  assert.throws(() => m.lireDepartements("rhone"));
+  assert.throws(() => m.lireDepartements(""));
+
+  // Hors Lyon, la localité du terrain ; Lyon reste relu sur le code postal.
+  assert.equal(m.communeLisible("38185", "38000", "COMMUNE DEMO"), "COMMUNE DEMO");
+  assert.equal(m.communeLisible("69123", "69003", "LYON"), "Lyon 3e");
+});

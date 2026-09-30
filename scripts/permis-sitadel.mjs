@@ -32,7 +32,20 @@
  * Lyon y figure sous son code de commune ENTIÈRE (69123), pas par
  * arrondissement — l'arrondissement se relit sur le code postal du terrain.
  *
+ * ══ L'OPTION `--departements` (30/09/2026) ══
+ *
+ * Le défaut RESTE Lyon + Villeurbanne : c'est la zone que `communeDansLaZone`
+ * applique, et ce script ne la redéfinit pas. `--departements` sert une
+ * extraction plus large (ex. la région entière), filtrée côté serveur sur
+ * `DEP_CODE`. ⚠ Le tri du produit exclura alors tout ce qui est hors zone :
+ * cette extraction se lit HORS du produit, tant que la zone n'est pas
+ * rediscutée dans la doctrine — l'élargir se décide, ça ne se fait pas par un
+ * paramètre de collecteur.
+ * Hors Lyon, la commune se relit sur la localité du terrain.
+ *
  * Usage :  node scripts/permis-sitadel.mjs > donnees-privees/permis-sitadel.csv
+ *          node scripts/permis-sitadel.mjs --departements aura
+ *          node scripts/permis-sitadel.mjs --departements 69,38,74
  *          node scripts/permis-sitadel.mjs --mois 36
  *          node scripts/permis-sitadel.mjs --fichier export-sitadel.csv   (hors ligne)
  * ─────────────────────────────────────────────────────────────────────
@@ -49,6 +62,24 @@ const API = `https://data.statistiques.developpement-durable.gouv.fr/dido/api/v1
  * listés même si le millésime mesuré n'en porte aucun : un changement de
  * convention à la source ne doit pas vider le fichier en silence.
  */
+/** Auvergne-Rhône-Alpes, pour `--departements aura`. */
+export const DEPARTEMENTS_AURA = ["01", "03", "07", "15", "26", "38", "42", "43", "63", "69", "73", "74"];
+
+/**
+ * `"aura"` ou `"69,38"` → codes de département. ⚠ Un code mal formé JETTE :
+ * filtré côté serveur, il rendrait un fichier vide qui ressemble à « aucun
+ * permis » (la Corse — 2A/2B — est acceptée).
+ */
+export function lireDepartements(arg) {
+  if (arg === undefined) return undefined;
+  const brut = String(arg).trim().toLowerCase();
+  if (brut === "aura") return [...DEPARTEMENTS_AURA];
+  const codes = brut.split(",").map((x) => x.trim().toUpperCase()).filter(Boolean);
+  const faux = codes.filter((c) => !/^(?:\d{2,3}|2[AB])$/.test(c));
+  if (!codes.length || faux.length) throw new Error(`--departements invalide : « ${arg} »`);
+  return codes;
+}
+
 export const COMMUNES_INSEE = ["69123", "69381", "69382", "69383", "69384", "69385", "69386", "69387", "69388", "69389", "69266"];
 
 /** Les colonnes que `parserPermis` sait lire — mêmes alias que `lib/permis-construire.ts`. */
@@ -101,13 +132,16 @@ export function lireCsvSitadel(texte) {
   return corps.map((l) => Object.fromEntries(entete.map((k, j) => [k, l[j] ?? ""])));
 }
 
-/** « Lyon 3e » depuis le code postal du terrain ; la commune seule sinon. */
-export function communeLisible(comm, codePostal) {
+/**
+ * « Lyon 3e » depuis le code postal du terrain ; la commune seule sinon. Hors
+ * Lyon/Villeurbanne, la localité du terrain telle que la source l'écrit.
+ */
+export function communeLisible(comm, codePostal, localite = "") {
   if (comm === "69266") return "Villeurbanne";
   const cp = String(codePostal ?? "").trim();
   const arr = /^6900([1-9])$/.exec(cp)?.[1] ?? (/^6938([1-9])$/.exec(String(comm))?.[1]);
   if (arr) return `Lyon ${arr}${arr === "1" ? "er" : "e"}`;
-  return comm === "69123" ? "Lyon" : "";
+  return comm === "69123" ? "Lyon" : String(localite ?? "").trim();
 }
 
 /**
@@ -140,7 +174,7 @@ export function ligneSitadel(b) {
       dateAchevement: String(b.DATE_REELLE_DAACT ?? "").trim(),
       logements: String(b.NB_LGT_TOT_CREES ?? "").trim(),
       surfacePlancher: String(b.SURF_HAB_CREEE ?? "").trim(),
-      commune: communeLisible(String(b.COMM ?? "").trim(), b.ADR_CODPOST_TER),
+      commune: communeLisible(String(b.COMM ?? "").trim(), b.ADR_CODPOST_TER, b.ADR_LOCALITE_TER),
       adresse,
     },
   };
@@ -171,12 +205,13 @@ export function versCsv(lignes) {
   return [COLONNES.join(","), ...lignes.map((l) => COLONNES.map((c) => champCsv(l[c])).join(","))].join("\n");
 }
 
-export function urlSitadel() {
+export function urlSitadel({ departements } = {}) {
+  const zone = departements?.length ? { DEP_CODE: `in:${departements.join(",")}` } : { COMM: `in:${COMMUNES_INSEE.join(",")}` };
   const q = new URLSearchParams({
     withColumnName: "true",
     withColumnDescription: "false",
     withColumnUnit: "false",
-    COMM: `in:${COMMUNES_INSEE.join(",")}`,
+    ...zone,
     TYPE_DAU: "eq:PC",
   });
   return `${API}/csv?${q}`;
@@ -186,11 +221,12 @@ async function principal() {
   const arg = (nom) => { const i = process.argv.indexOf(nom); return i > -1 ? process.argv[i + 1] : undefined; };
   const mois = Number(arg("--mois") ?? 24);
   const fichier = arg("--fichier");
+  const departements = lireDepartements(arg("--departements"));
 
   let texte;
   if (fichier) texte = readFileSync(fichier, "utf8");
   else {
-    const r = await fetch(urlSitadel());
+    const r = await fetch(urlSitadel({ departements }));
     if (!r.ok) { console.error(`Sitadel injoignable : HTTP ${r.status}`); process.exit(2); }
     texte = await r.text();
   }
