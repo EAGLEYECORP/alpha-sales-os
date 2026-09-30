@@ -74,6 +74,30 @@ export interface PermisConstruire {
   adresse?: string;
   /** Nombre de prorogations obtenues : chacune décale la péremption d'un an. */
   prorogations?: number;
+  /**
+   * Catégorie juridique INSEE du demandeur (4 chiffres), quand la source la
+   * porte — c'est le cas de Sitadel (`CJ_DEM`), pas des exports communaux.
+   *
+   * ⚠ Elle passe AVANT le nom, et c'est mesuré : sur le fichier Sitadel de
+   * Lyon/Villeurbanne, un office public de l'habitat, des SA d'HLM, une
+   * coopérative d'HLM et un établissement public national de l'enseignement
+   * supérieur portaient des noms qu'aucun motif du fichier ne reconnaissait.
+   * Ils sortaient « entreprise », donc RETENUS — un bailleur de cent logements
+   * ressemble au plus beau prospect du lot. La forme juridique est déclarée à
+   * l'INSEE ; le nom est une devinette. Même règle que « la verticale se lit
+   * sur le tag, pas sur le texte ».
+   */
+  categorieJuridique?: string;
+  /**
+   * Code APE (NAF) du demandeur, quand la source le porte (Sitadel `APE_DEM`).
+   * 41.10 = « promotion immobilière » : une activité DÉCLARÉE, qui dit « il
+   * construit pour vendre » sans deviner sur une raison sociale. Mesuré : les
+   * filiales régionales des grands promoteurs nationaux ne portent aucun
+   * marqueur dans leur nom et sortaient toutes « inconnu ».
+   */
+  codeApe?: string;
+  /** SIREN du demandeur : identifie la société sans deviner sur un nom. */
+  siren?: string;
 }
 
 export type TypeMaitreOuvrage =
@@ -82,6 +106,7 @@ export type TypeMaitreOuvrage =
   | "bailleur-social"
   | "public"
   | "particulier"
+  | "non-lucratif"
   | "entreprise"
   | "inconnu";
 
@@ -333,9 +358,47 @@ function moisEcoules(depuis: string | undefined, now: Date): number | null {
  * `public` par « office ». Le plus SPÉCIFIQUE gagne, du plus étroit au plus
  * large, et le fourre-tout `entreprise` ne se prononce qu'en dernier.
  */
-export function typeDeMaitreOuvrage(demandeur?: string): TypeMaitreOuvrage {
+/**
+ * Ce que la catégorie juridique INSEE tranche À ELLE SEULE. `null` = elle ne
+ * tranche pas (une SAS peut être promoteur ou boulangerie) : le nom décide.
+ *
+ * ⚠ Seules les catégories SANS AMBIGUÏTÉ sur « a-t-il quelque chose à
+ * vendre ? » sont listées. Une SCI (6540) n'y est PAS : elle détient le plus
+ * souvent pour louer, mais rien dans sa forme ne l'interdit de vendre — la
+ * déclarer « non vendeur » serait trancher sur une intuition.
+ */
+export function typeParCategorieJuridique(cj?: string): TypeMaitreOuvrage | null {
+  const c = (cj ?? "").trim();
+  if (!/^\d{4}$/.test(c)) return null;
+  // SCI de construction-vente : l'équivalent déclaré de la SCCV.
+  if (c === "6541") return "promoteur";
+  // SA d'HLM et coopératives d'HLM (conseil d'administration ou directoire).
+  if (c === "5546" || c === "5547" || c === "5646" || c === "5647") return "bailleur-social";
+  // Offices publics de l'habitat : établissements publics locaux (4140).
+  if (c === "4140") return "bailleur-social";
+  // Autres établissements publics (41xx) et personnes morales de droit public (7xxx).
+  if (c.startsWith("41") || c.startsWith("7")) return "public";
+  // Entrepreneur individuel, indivision : des personnes physiques.
+  if (c.startsWith("1") || c === "2110") return "particulier";
+  // Associations, fondations, congrégations : elles ne vendent pas de logements.
+  if (c.startsWith("9")) return "non-lucratif";
+  return null;
+}
+
+export function typeDeMaitreOuvrage(
+  demandeur?: string,
+  categorieJuridique?: string,
+  codeApe?: string,
+): TypeMaitreOuvrage {
   const d = (demandeur ?? "").trim();
   if (!d) return "inconnu";
+  // Un bailleur NOMMÉ l'emporte sur une forme de société muette (une SA
+  // d'économie mixte peut porter une ESH) ; pour le reste, la déclaration INSEE
+  // passe avant la devinette sur le nom.
+  if (BAILLEUR_SOCIAL.test(d)) return "bailleur-social";
+  const parCj = typeParCategorieJuridique(categorieJuridique);
+  if (parCj) return parCj;
+  if (/^41\.?10/.test((codeApe ?? "").trim())) return "promoteur";
   if (BAILLEUR_SOCIAL.test(d)) return "bailleur-social";
   if (PROMOTEUR.test(d)) return "promoteur";
   if (CONSTRUCTEUR_MAISONS.test(d)) return "constructeur-maisons";
@@ -408,7 +471,7 @@ export function lirePermis(p: PermisConstruire, now = new Date()): LecturePermis
   const exclusions: string[] = [];
 
   const demandeur = (p.demandeur ?? "").trim();
-  const typeMoa = typeDeMaitreOuvrage(demandeur);
+  const typeMoa = typeDeMaitreOuvrage(demandeur, p.categorieJuridique, p.codeApe);
   const problemeDeVente = devraVendre(typeMoa);
   const phase = phaseDuPermis(p, now);
   const moisDepuisDecision = moisEcoules(p.dateDecision, now);
@@ -422,6 +485,7 @@ export function lirePermis(p: PermisConstruire, now = new Date()): LecturePermis
       "bailleur-social": "bailleur social : il attribue des logements, il n'en vend pas — il n'y a pas de fonction commerciale à équiper",
       public: "personne publique : commande et marchés publics, pas de vente",
       particulier: "personne physique : elle construit pour elle, elle n'a rien à vendre",
+      "non-lucratif": "association ou fondation : elle loge ou héberge, elle ne commercialise pas de logements",
     };
     exclusions.push(raison[typeMoa] ?? "ce maître d'ouvrage n'a rien à vendre");
   }
@@ -668,6 +732,9 @@ const ALIAS: Record<string, keyof PermisConstruire> = {
   commune: "commune", ville: "commune", localite: "commune", nomcommune: "commune",
   adresse: "adresse", adressecomplete: "adresse", rue: "adresse", localisation: "adresse",
   prorogations: "prorogations", prorogation: "prorogations", nbprorogations: "prorogations",
+  categoriejuridique: "categorieJuridique", cj: "categorieJuridique", cjdem: "categorieJuridique",
+  siren: "siren", sirendem: "siren",
+  codeape: "codeApe", ape: "codeApe", apedem: "codeApe", naf: "codeApe",
 };
 
 export const COLONNES_PERMIS = champsReconnus(ALIAS);
@@ -767,6 +834,7 @@ export function permisVersProspect(p: PermisConstruire, l: LecturePermis, now = 
 function notesDepuisPermis(p: PermisConstruire, l: LecturePermis): string {
   const lignes: string[] = [];
   if (p.numero) lignes.push(`Permis : ${p.numero.trim()}`);
+  if (p.siren) lignes.push(`SIREN : ${p.siren.trim()}`);
   if (p.dateDecision) lignes.push(`Arrêté : ${p.dateDecision.trim()}`);
   if (p.logements !== undefined) lignes.push(`Logements : ${p.logements}`);
   if (p.surfacePlancher !== undefined) lignes.push(`Surface de plancher : ${p.surfacePlancher} m²`);
