@@ -762,7 +762,9 @@ export const seedNurture: NurtureSequence[] = [
     audience: "Prospects perdus (surtout vs low-cost)",
     active: true,
     steps: [
-      { id: "ns1", day: 30, channel: "email", content: "Article utile secteur (zéro vente) : « 3 choses que les meilleurs {secteur}s de Lyon font en ligne »." },
+      // ⚠ « 3 choses que les meilleurs {secteur}s de Lyon font en ligne » : un
+      // classement jamais fait, un savoir qu'on n'a pas (30/09/2026).
+      { id: "ns1", day: 30, channel: "email", content: "Email utile, zéro vente : trois gestes simples qu'il peut faire seul cette semaine (modèle « J+30 après un non »). ⚠ Aucun classement ni comparaison avec d'autres entreprises : on n'en sait rien." },
       /**
        * ⚠ CETTE ÉTAPE DISAIT : « une preuve fraîche même secteur (on vient
        * d'équiper X, +N clients/mois) ».

@@ -358,15 +358,19 @@ Vous n'avez rien à faire d'autre que valider. Mon numéro direct : je réponds.
 
 Bonjour {prenom},
 
-Promis, je ne revends rien. Trois choses que les meilleurs {secteur_bas} de {ville} font en ce moment, et que vous pouvez faire sans moi :
+Promis, je ne revends rien. Trois choses simples que vous pouvez faire sans moi, dès cette semaine :
 
-1. Répondre à chaque avis Google (même les bons) — ça remonte votre fiche
+1. Répondre à chaque avis Google (même les bons) — c'est ce que lit quelqu'un qui hésite
 2. Mettre vos horaires à jour partout ({night_court} !)
 3. Publier une vraie photo par semaine
 
 Si un jour vous voulez la version complète, vous savez où me trouver.
 
 {closer} — {agence}`,
+    // ⚠ Il disait « trois choses que les meilleurs {secteur} de {ville} font en
+    // ce moment » : un classement qu'on n'a jamais fait, et un savoir sur « les
+    // meilleurs » qu'on n'a pas (30/09/2026). Et « ça remonte votre fiche »
+    // promettait un effet de classement Google que personne ici n'a mesuré.
     tip: "Donner sans demander. C'est ce qui rend le retour à J+90 naturel et attendu.",
   },
   {

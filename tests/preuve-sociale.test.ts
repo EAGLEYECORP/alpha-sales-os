@@ -158,6 +158,8 @@ const CLIENTELE_AFFIRMEE = [
   // L'observation de marché inventée, et la clientèle au présent.
   /\bce qu'on (?:voit|observe|constate) passer\b|\bconstat frais\b/i,
   /\b(?:on|nous) install(?:e|ons) (?:peu de |des |nos )?clients\b/i,
+  // Le savoir affirmé sur « les meilleurs » : un classement qu'on n'a jamais fait.
+  /\bque (?:font )?les meilleur(?:e)?s\b/i,
   /\bqu'on (?:équipe|accompagne|installe)\b/i,
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,
