@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useAlpha } from "@/lib/store";
 // `import type` est effacé à la compilation : la forme voyage, pas la doctrine.
-import type { KnowledgeNote } from "@/lib/knowledge";
+import { REVISION_SOCLE, type KnowledgeNote } from "@/lib/knowledge";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -30,21 +30,28 @@ import type { KnowledgeNote } from "@/lib/knowledge";
  */
 export function KnowledgeSeedLoader() {
   const deja = useAlpha((s) => s.settings.knowledgeSeeded);
+  const revision = useAlpha((s) => s.settings.knowledgeSeedRevision ?? 0);
   const seedNotes = useAlpha((s) => s.seedNotes);
+  const reviser = useAlpha((s) => s.reviserSocle);
 
   useEffect(() => {
-    if (deja) return;
+    // ⚠ Un navigateur déjà semé DOIT quand même revenir chercher le socle quand
+    // il a été corrigé : sans ça, une note fausse y survivait indéfiniment.
+    if (deja && revision >= REVISION_SOCLE) return;
     let vivant = true;
     fetch("/api/knowledge/seed")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: { notes?: KnowledgeNote[]; businessRules?: string }) => {
+      .then((d: { notes?: KnowledgeNote[]; datesAnterieures?: string[]; businessRules?: string }) => {
         if (!vivant) return;
         // La doctrine par défaut : posée seulement si l'opérateur n'a rien
         // écrit. On n'écrase jamais ses règles à lui.
         if (d.businessRules && !useAlpha.getState().settings.businessRules.trim()) {
           useAlpha.getState().patchSettings({ businessRules: d.businessRules });
         }
-        if (d.notes?.length) seedNotes(d.notes);
+        if (d.notes?.length) {
+          seedNotes(d.notes);
+          reviser(d.notes, d.datesAnterieures ?? []);
+        }
       })
       .catch(() => {
         /* on retentera au prochain chargement */
@@ -52,7 +59,7 @@ export function KnowledgeSeedLoader() {
     return () => {
       vivant = false;
     };
-  }, [deja, seedNotes]);
+  }, [deja, revision, seedNotes, reviser]);
 
   return null;
 }

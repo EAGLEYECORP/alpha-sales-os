@@ -40,7 +40,7 @@ import { stageById, signingBlockers } from "./hormozi";
 // (adresses partenaires, prix de setup, taux par offre) et le store est importé
 // par toutes les pages client : il partait donc dans chaque bundle. Il arrive
 // maintenant par /api/knowledge/seed — voir `seedNotes` plus bas.
-import type { KnowledgeNote } from "./knowledge";
+import { reviserSocle, REVISION_SOCLE, type KnowledgeNote } from "./knowledge";
 import type { Lecon } from "./apprentissage";
 import { OFFRES_SYSTEME, idDepuisLabel, peutSupprimer, validerOffre, type ErreurOffre, type Offre } from "./offer-catalogue";
 import { elaguer } from "./apprentissage";
@@ -149,6 +149,8 @@ interface AlphaState {
   upsertNote: (note: Partial<KnowledgeNote> & { title: string; body: string }) => string;
   /** Fusionne le socle du Cerveau servi par le serveur (une seule fois). */
   seedNotes: (socle: KnowledgeNote[]) => void;
+  /** Remplace les notes du socle jamais éditées par leur version corrigée. */
+  reviserSocle: (socle: KnowledgeNote[], datesAnterieures: readonly string[]) => void;
   /** Crée ou met à jour une offre. Renvoie les erreurs de validation, ou []. */
   upsertOffre: (o: Partial<Offre>) => ErreurOffre[];
   /** Active / désactive une offre sans toucher à l'historique. */
@@ -831,6 +833,13 @@ export const useAlpha = create<AlphaState>()(
             notes: [...s.notes, ...ajouts],
             settings: { ...s.settings, knowledgeSeeded: true },
           };
+        }),
+
+      reviserSocle: (socle, datesAnterieures) =>
+        set((s) => {
+          if ((s.settings.knowledgeSeedRevision ?? 0) >= REVISION_SOCLE) return {};
+          const r = reviserSocle(s.notes, socle, datesAnterieures);
+          return { notes: r.notes, settings: { ...s.settings, knowledgeSeedRevision: REVISION_SOCLE } };
         }),
 
       toggleStandardItem: (itemId, held) =>

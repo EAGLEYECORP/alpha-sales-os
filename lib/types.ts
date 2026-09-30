@@ -480,6 +480,8 @@ export interface AppSettings {
    * absent.
    */
   knowledgeSeeded?: boolean;
+  /** Révision du socle déjà appliquée dans ce navigateur (`REVISION_SOCLE`). */
+  knowledgeSeedRevision?: number;
   role: "solo" | "team";
   /** Free-text business rules injected into every AI prompt */
   businessRules: string;

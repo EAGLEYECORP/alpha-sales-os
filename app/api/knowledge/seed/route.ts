@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { SEED_NOTES } from "@/lib/knowledge-seed";
+import { SEED_NOTES, DATES_SOCLE_ANTERIEURES } from "@/lib/knowledge-seed";
 import { DEFAULT_BUSINESS_RULES } from "@/lib/business-rules";
 
 export const runtime = "nodejs";
@@ -18,5 +18,5 @@ export const runtime = "nodejs";
  * ─────────────────────────────────────────────────────────────────────
  */
 export async function GET() {
-  return NextResponse.json({ notes: SEED_NOTES, businessRules: DEFAULT_BUSINESS_RULES });
+  return NextResponse.json({ notes: SEED_NOTES, datesAnterieures: DATES_SOCLE_ANTERIEURES, businessRules: DEFAULT_BUSINESS_RULES });
 }

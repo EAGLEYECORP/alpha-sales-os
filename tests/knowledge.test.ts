@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { tokenize, extractLinks, backlinks, search, contextFromNotes, type KnowledgeNote } from "../lib/knowledge";
-import { seedKnowledge, seedTerrain, SEED_NOTES } from "../lib/knowledge-seed";
+import { seedKnowledge, seedTerrain, SEED_NOTES, DATES_SOCLE_ANTERIEURES } from "../lib/knowledge-seed";
+import { reviserSocle } from "../lib/knowledge";
+import { RAPPELS_OFFSETS_H } from "../lib/call-cadence";
+import { PACK_SETUP_HT } from "../lib/offres-publiques";
+import { commercialFor } from "../lib/accounts-commercial";
 
 function note(id: string, title: string, body: string): KnowledgeNote {
   return { id, title, body, tags: [], createdAt: "2026-08-10T00:00:00Z", updatedAt: "2026-08-10T00:00:00Z", source: "manuel" };
@@ -119,8 +123,48 @@ test("cerveau — le socle porte les chiffres RÉELS de juillet, rapatriés chez
   assert.ok(hits.length > 0);
   assert.match(hits[0].note.body, /26/, "les 26 appels sans audit doivent être dans la note");
 
-  // La cadence de rappel est présente et exacte.
+  // La cadence de rappel est présente et exacte — c'est-à-dire celle du CODE.
+  // ⚠ Ce test exigeait « 5 rappels sur 2 jours » : il épinglait la valeur
+  // FAUSSE, tranchée à 3 le 02/09/2026. Il lit désormais la source.
   const cadence = seedTerrain.find((n) => /cadence/i.test(n.title))!;
-  assert.match(cadence.body, /5 rappels sur 2 jours/);
+  assert.match(cadence.body, new RegExp(`${RAPPELS_OFFSETS_H.length} rappels`));
+  assert.doesNotMatch(cadence.body, /5 rappels/);
   assert.match(cadence.body, /ARRÊTE/);
+});
+
+test("⚠⚠ le Cerveau dit la grille, l'ICP et le rôle EN VIGUEUR — pas ceux du 10/08", () => {
+  const corpus = SEED_NOTES.map((n) => `${n.title}\n${n.body}`).join("\n");
+  // Les prix morts : l'IA pouvait les citer dans un email.
+  assert.doesNotMatch(corpus, /2 500 €|290 €\/mois|LTV|CAC ~/, "prix ou projections du 10/08 encore servis");
+  assert.ok(corpus.includes(PACK_SETUP_HT.toLocaleString("fr-FR")), "l'installation en vigueur doit être dite");
+  // Le bon rôle : le maître d'OUVRAGE, pas l'architecte.
+  const permis = seedKnowledge.find((n) => n.id === "seed-permis")!;
+  assert.match(permis.body, /maître d'OUVRAGE/);
+  assert.doesNotMatch(permis.body, /MOE\b|maître d'œuvre nommé/);
+  // L'ICP est celui que le code trie, pas un avatar resté ailleurs.
+  const icp = SEED_NOTES.find((n) => n.id === "sc-icp-courant")!;
+  assert.ok(icp.title.includes(commercialFor("eagleye").icp!.label!), icp.title);
+  assert.doesNotMatch(icp.title, /intérim/i);
+});
+
+test("⚠⚠ une correction du socle ATTEINT les navigateurs déjà semés — sans écraser une note éditée", () => {
+  const vieille = (id: string, date: string, body = "ancien") =>
+    ({ id, title: id, body, tags: [], source: "playbook", createdAt: date, updatedAt: date }) as KnowledgeNote;
+  const socle = SEED_NOTES;
+  const stock: KnowledgeNote[] = [
+    vieille("seed-offre", "2026-08-10T00:00:00.000Z"),            // jamais touchée → remplacée
+    vieille("sc-cadence", "2026-09-21T14:03:12.481Z", "la mienne"), // éditée → gardée
+    vieille("note-perso", "2026-09-20T10:00:00.000Z"),              // pas du socle → intacte
+  ];
+  const r = reviserSocle(stock, socle, DATES_SOCLE_ANTERIEURES);
+  assert.deepEqual(r.remplacees, ["seed-offre"]);
+  assert.deepEqual(r.gardees, ["sc-cadence"]);
+  assert.equal(r.notes.find((n) => n.id === "seed-offre")!.body, socle.find((n) => n.id === "seed-offre")!.body);
+  assert.equal(r.notes.find((n) => n.id === "sc-cadence")!.body, "la mienne");
+  assert.equal(r.notes.length, 3, "une note supprimée ne revient pas, rien n'est ajouté");
+  // Toute note corrigée doit porter une date NEUVE, sinon la révision la saute.
+  for (const n of socle) {
+    assert.ok(!DATES_SOCLE_ANTERIEURES.includes(n.updatedAt) || ["sc-secteurs-interdits", "sc-routage-faisabilite"].includes(n.id),
+      `${n.id} porte une date déjà livrée : sa correction n'atteindrait aucun navigateur`);
+  }
 });

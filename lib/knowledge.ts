@@ -198,3 +198,49 @@ export function contextFromNotes(scored: Scored[], maxChars = 3000): string {
   }
   return blocks.join("\n\n");
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA RÉVISION DU SOCLE — une correction doit atteindre les navigateurs.
+ *
+ * ⚠⚠ Le socle ne se semait qu'UNE fois : corriger une note dans le code ne
+ * changeait rien chez qui avait déjà ouvert l'app, alors que c'est son
+ * navigateur qui alimente le prompt (relevé le 30/09/2026).
+ *
+ * On remplace une note du socle SEULEMENT si elle porte encore une date que le
+ * socle a lui-même livrée — preuve qu'elle n'a jamais été éditée, puisque
+ * `upsertNote` date une édition à la seconde près. Une note éditée reste
+ * celle de l'utilisateur ; une note supprimée ne revient pas.
+ *
+ * Monter `REVISION_SOCLE` à chaque correction du socle : c'est ce qui
+ * déclenche la révision dans les navigateurs déjà semés.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const REVISION_SOCLE = 2;
+
+export interface RevisionSocle {
+  notes: KnowledgeNote[];
+  remplacees: string[];
+  gardees: string[];
+}
+
+export function reviserSocle(
+  notes: KnowledgeNote[],
+  socle: KnowledgeNote[],
+  datesAnterieures: readonly string[],
+): RevisionSocle {
+  const parId = new Map(socle.map((n) => [n.id, n]));
+  const remplacees: string[] = [];
+  const gardees: string[] = [];
+  const suivantes = notes.map((n) => {
+    const neuve = parId.get(n.id);
+    if (!neuve || n.updatedAt === neuve.updatedAt) return n;
+    if (datesAnterieures.includes(n.updatedAt)) {
+      remplacees.push(n.id);
+      return neuve;
+    }
+    gardees.push(n.id);
+    return n;
+  });
+  return { notes: suivantes, remplacees, gardees };
+}

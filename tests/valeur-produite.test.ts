@@ -13,7 +13,7 @@ import {
 import { JUILLET_REEL } from "../lib/pipeline-juillet";
 import { SEED_NOTES } from "../lib/knowledge-seed";
 import { INTERDICTIONS_SECTORIELLES } from "../lib/secteurs-interdits";
-import { SEGMENT_PRINCIPAL } from "../lib/plan-traction";
+import { commercialFor } from "../lib/accounts-commercial";
 import { EFFORT_RAPIDE_MAX_JOURS } from "../lib/veille";
 
 const compte = (p: Partial<PartageCohorte> = {}): PartageCohorte => ({
@@ -251,9 +251,11 @@ test("⚠⚠ LE CERVEAU CONNAÎT CE QUE LE CODE APPLIQUE — sinon il suggère l
   }
 
   // 2. L'ICP en cours. Sans lui, le modèle cible le marché d'avant.
+  // ⚠ Il se lisait sur `SEGMENT_PRINCIPAL`, resté sur l'intérim : le test
+  // vérifiait la dérivation depuis la MAUVAISE source (30/09/2026).
   assert.ok(
-    corpus.includes(SEGMENT_PRINCIPAL.label.toLowerCase()),
-    "le Cerveau doit connaître l'ICP en cours",
+    corpus.includes(commercialFor("eagleye").icp!.label!.toLowerCase()),
+    "le Cerveau doit connaître l'ICP que le code trie",
   );
 
   // 3. Le seuil de faisabilité, pour ne pas router au seul prix.
@@ -269,7 +271,7 @@ test("⚠ LES NOTES DÉRIVENT DES MODULES — aucune grille recopiée à la main
    */
   const src = readFileSync(join(process.cwd(), "lib/knowledge-seed.ts"), "utf8");
   assert.match(src, /INTERDICTIONS_SECTORIELLES\.map\(/, "les interdits se dérivent du module");
-  assert.match(src, /SEGMENT_PRINCIPAL\./, "l'ICP se dérive du plan de traction");
+  assert.match(src, /commercialFor\("eagleye"\)\.icp/, "l'ICP se dérive du compte maître, celui que le tri applique");
   assert.match(src, /\$\{EFFORT_RAPIDE_MAX_JOURS\}/, "le seuil se dérive de lib/veille");
   assert.match(src, /NUWACOM_THRESHOLD_HT\.toLocaleString/, "le seuil de sous-traitance aussi");
 

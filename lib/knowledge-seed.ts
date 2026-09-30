@@ -13,6 +13,10 @@ import { INTERDICTIONS_SECTORIELLES } from "./secteurs-interdits";
 import { SEGMENTS, SEGMENT_PRINCIPAL } from "./plan-traction";
 import { EFFORT_RAPIDE_MAX_JOURS } from "./veille";
 import { NUWACOM_THRESHOLD_HT } from "./accounts";
+import { commercialFor } from "./accounts-commercial";
+import { PACK_SETUP_HT, SOCLE_PLATEFORME_HT, PRIX_SIEGE_HT } from "./offres-publiques";
+import { LOGEMENTS_MIN, SATURATION_LOGEMENTS, ZONE_CIBLE } from "./permis-construire";
+import { RAPPELS_OFFSETS_H } from "./call-cadence";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -49,41 +53,84 @@ import { NUWACOM_THRESHOLD_HT } from "./accounts";
  */
 const euros = (n: number) => n.toLocaleString("fr-FR");
 
+/**
+ * ⚠⚠ LES QUATRE NOTES DU 10/08 ÉTAIENT RECOPIÉES À LA MAIN, ET TOUTES AVAIENT
+ * DÉRIVÉ (relevé le 30/09/2026) : installation « 2 500 € » et abonnement « dès
+ * 290 €/mois » (la grille est 10 000 € + socle + siège), un CAC, une LTV et un
+ * « LTV:CAC 21:1 » calculés à zéro vente, un play qui visait le maître
+ * d'ŒUVRE au lieu du maître d'OUVRAGE, sur une source qui ne couvre pas Lyon.
+ * Le Cerveau alimente les prompts : l'IA pouvait citer ces prix dans un email.
+ * Elles DÉRIVENT désormais des modules qui font foi, comme les notes plus bas.
+ */
+const ICP = commercialFor("eagleye").icp ?? {};
+
 export const seedKnowledge: KnowledgeNote[] = [
   {
     id: "seed-offre",
     title: "Offre — Alpha Sales OS",
-    body: "L'OS de vente intelligent pour forces de vente et agences. Installation 2 500 €, abonnement dès 290 €/mois.\n\nPromesse : zéro lead perdu, la machine tourne 24/7. On outille le closing, on ne remplit pas une base — on remplit un agenda.\n\nVoir [[Chiffres — preuve de concept]] et [[Routage d'offre]].",
+    body:
+      "Un OS de vente : prospection, qualification, relances, scripts, suivi, pipeline, mesure. " +
+      "Les humains closent, Alpha fait tourner la machine — la livraison et la poignée de main " +
+      "restent au client.\n\n" +
+      `Grille du pack complet : installation **${euros(PACK_SETUP_HT)} € HT** (faite à la main), puis ` +
+      `**${euros(SOCLE_PLATEFORME_HT)} € HT/mois** de socle + **${euros(PRIX_SIEGE_HT)} € HT/mois par utilisateur**. ` +
+      "Alpha Voice se facture à l'usage, hors formule.\n\n" +
+      "⚠ Ces prix sont des DÉCISIONS : aucune vente ne les a validés. Cadrage obligatoire avant tout " +
+      "devis, et jamais de prix avant la démo.\n\n" +
+      "Voir [[Chiffres — preuve de concept]] et [[Routage d'offre]].",
     tags: ["offre", "alpha-sales-os"],
     createdAt: "2026-08-10T00:00:00.000Z",
-    updatedAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
     id: "seed-chiffres",
     title: "Chiffres — preuve de concept",
-    body: "Preuve de concept = 2 500 € d'installation × 10 clients = **25 000 €** de cash.\n\n- MRR à 290 €/mois × 10 = 2 900 €/mois (~35 k€ ARR)\n- CAC ~275 €/client (≈ 91 % ton temps) · LTV ~5 980 € · LTV:CAC ~21:1\n- Break-even infra : 1 client\n\nLes « 5M » viennent des revendeurs white-label, pas d'une campagne à 10 signatures.",
+    body:
+      "**Zéro vente à ce jour.** Aucun taux de signature, aucun CAC, aucune durée de vie client " +
+      "n'a été observé chez nous : toute projection en euros inventerait le seul maillon qui " +
+      "manque.\n\n" +
+      "Ce qui est MESURÉ : le pipe de juillet 2026 (voir [[Juillet 2026 — ce que le mois a réellement " +
+      "produit]]) et le coût à la minute d'Alpha Voice (voir [[Alpha Voice — grille tarifaire]]).\n" +
+      "Ce qui est DÉCIDÉ : les prix, les seuils de tri, les paliers de campagne.\n\n" +
+      "La preuve de concept, ce sera la première signature — pas un tableau.",
     tags: ["chiffres", "economie"],
     createdAt: "2026-08-10T00:00:00.000Z",
-    updatedAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
     id: "seed-routage",
     title: "Routage d'offre",
-    body: "Après l'audit, on route le prospect :\n\n- Appels manqués / métier téléphone → **Alpha Voice**\n- Leads & deals à structurer → **Alpha Sales OS**\n- Invisible en ligne (pas de site, peu d'avis) → **Visibilité / Growth** (offre personnalisée)\n\nPersonne ne sort les mains vides. Voir [[Play — Permis Lyon]].",
+    body:
+      "L'offre suit la VERTICALE du prospect, lue sur son tag (jamais sur un mot de ses notes) :\n\n" +
+      "- Maître d'ouvrage à permis actif → **Alpha Sales OS** : sa perte, ce sont des acquéreurs " +
+      "déjà rencontrés que personne n'a rappelés — jamais « vous ratez des appels ».\n" +
+      "- Métiers où le téléphone est le canal d'entrée (garage, cabinet, restauration…) → **Alpha Voice**.\n" +
+      "- Invisible en ligne, CONSTATÉ (pas de site, peu d'avis relevés) → **Visibilité / Growth**.\n\n" +
+      "Un signal MESURÉ peut contredire la verticale ; un champ vide, jamais. " +
+      "Voir [[Play — Permis de construire]].",
     tags: ["doctrine", "routage"],
     createdAt: "2026-08-10T00:00:00.000Z",
-    updatedAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
     id: "seed-permis",
-    title: "Play — Permis Lyon",
-    body: "ICP à déclencheur : un maître d'œuvre nommé sur un permis de construire EN COURS est en pleine activité — le bon moment pour l'approcher.\n\nn8n tire les permis (data.grandlyon.com) → pousse les MOE dans l'app → audit → [[Routage d'offre]] → séquence.",
-    tags: ["play", "prospection", "lyon"],
+    title: "Play — Permis de construire",
+    body:
+      "ICP à déclencheur : le **maître d'OUVRAGE professionnel** (promoteur, SCCV, aménageur) dont le " +
+      `permis de construire est actif, en ${ZONE_CIBLE}. Pas le maître d'œuvre : lui conçoit, il ne vend pas.\n\n` +
+      "Source : Sitadel (`scripts/permis-sitadel.mjs`), trié par `lib/permis-construire.ts` — particuliers, " +
+      "bailleurs sociaux et personnes publiques sortent par exclusion, ils n'ont rien à vendre.\n\n" +
+      `Sous ${LOGEMENTS_MIN} logements, l'offre n'est pas proportionnée. À partir de ${SATURATION_LOGEMENTS}, ` +
+      "il y a plus de contacts acquéreurs que de bras : c'est la douleur qu'on vend. Les deux seuils sont des " +
+      "DÉCISIONS, aucune vente ne les a validés.\n\n" +
+      "Le permis sert à CHOISIR qui on contacte, jamais à ouvrir la conversation : ni permis, ni adresse, " +
+      "ni nombre de lots à froid. Canal : LinkedIn. Voir [[Routage d'offre]].",
+    tags: ["play", "prospection", "permis"],
     createdAt: "2026-08-10T00:00:00.000Z",
-    updatedAt: "2026-08-10T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
 ];
@@ -127,7 +174,7 @@ export const seedTerrain: KnowledgeNote[] = [
       "La lecture qui compte : voir [[Juillet 2026 — une piste : l'audit écrit]].",
     tags: ["terrain", "chiffres", "juillet-2026"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
@@ -161,7 +208,7 @@ export const seedTerrain: KnowledgeNote[] = [
       "le permettront.",
     tags: ["terrain", "doctrine", "audit"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
@@ -198,32 +245,38 @@ export const seedTerrain: KnowledgeNote[] = [
       "0,0563 €/min, plus un socle fixe d'environ 57 €/mois. Marges : ~81 % sur Essentiel, " +
       "~76 % sur Intensif. Aucune vente n'a validé ces prix.\n\n" +
       `L'installation est passée de 990 à ${euros(ALPHA_VOICE_SETUP_HT)} € le 12/09/2026 : le marché ` +
-      "français de l'installation d'agent vocal commence vers 1 500 € et monte au-delà de 11 000 € " +
-      "(voir `lib/marche.ts`), et nous étions SOUS ce plancher. Un prix sous le moins cher du marché " +
+      "français de l'installation d'agent vocal commencerait vers 1 500 € et monterait au-delà de 11 000 € " +
+      "(voir `lib/marche.ts` — source SECONDAIRE : des guides publiés par des agences qui vendent ce " +
+      "service), et nous étions SOUS ce plancher. Un prix sous le moins cher du marché " +
       "ne se lit pas « bonne affaire », il se lit « ce n'est pas le même produit ».\n\n" +
       "Jamais de prix avant la démo. Voir [[Cadence de relance téléphonique]].",
     tags: ["tarifs", "alpha-voice"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-09-12T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
     id: "sc-cadence",
     accountId: "eagleye",
     title: "Cadence de relance téléphonique",
+    /**
+     * ⚠ Elle disait « 5 rappels sur 2 jours (3 h, 8 h, 24 h, 32 h, 48 h) »,
+     * tranché à 3 le 02/09/2026 dans `lib/call-cadence.ts` — et un test
+     * EXIGEAIT la phrase fausse. Dérivée du code désormais (30/09/2026).
+     */
     body:
-      "Après le premier appel sans réponse → **5 rappels sur 2 jours** (3 h, 8 h, 24 h, 32 h, 48 h).\n\n" +
-      "**Dès qu'il répond** : Alpha Voice ARRÊTE d'appeler, met à jour le pipeline, et passe " +
-      "la main à l'humain (closer).\n\n" +
+      `Après le premier appel sans réponse → **${RAPPELS_OFFSETS_H.length} rappels** ` +
+      `(${RAPPELS_OFFSETS_H.map((h) => `${h} h`).join(", ")} après le premier appel), ` +
+      "chacun calé sur une fenêtre d'appel ouverte et sur un créneau différent.\n\n" +
+      `Soit **${RAPPELS_OFFSETS_H.length + 1} contacts** au total : au plafond de 4 sollicitations sur ` +
+      "30 jours du décret n° 2022-1313, jamais au-dessus.\n\n" +
+      "**Dès qu'il répond** : Alpha Voice ARRÊTE d'appeler et met à jour le pipeline. L'humain n'est " +
+      "appelé que sur un intérêt qualifié — un « non » ou un « rappelez-moi » se consigne sans mobiliser personne.\n\n" +
       "Opposition (« ne me rappelez plus ») ou numéro invalide : arrêt DÉFINITIF immédiat, " +
-      "prioritaire sur la cadence.\n\n" +
-      "⚠ Ces 5 rappels étaient EXIGÉS par l'ancien partenaire. Personne ne les exige plus : " +
-      "c'est devenu un choix, et il est agressif (6 contacts en 2 jours, à comparer au " +
-      "plafond de 4/30 j du décret n° 2022-1313 sur les cibles non professionnelles). " +
-      "Sans SIREN, le code plafonne à 4 de lui-même.",
-    tags: ["doctrine", "cadence", "a-decider"],
+      "prioritaire sur la cadence.",
+    tags: ["doctrine", "cadence"],
     createdAt: "2026-08-01T00:00:00.000Z",
-    updatedAt: "2026-09-02T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
 ];
@@ -274,21 +327,30 @@ export const seedOperationnel: KnowledgeNote[] = [
   {
     id: "sc-icp-courant",
     accountId: "eagleye",
-    title: `ICP en cours — ${SEGMENT_PRINCIPAL.label}`,
+    /**
+     * ⚠⚠ ELLE ANNONÇAIT « Intérim & recrutement » (relevé le 30/09/2026) : elle
+     * dérivait de `SEGMENT_PRINCIPAL` (`lib/plan-traction.ts`), resté sur un
+     * avatar qui n'est pas le nôtre. Dériver ne protège que si la SOURCE est la
+     * bonne. Elle lit désormais l'ICP du compte maître (`accounts-commercial`)
+     * et les seuils du tri (`permis-construire`) — les deux endroits que le
+     * code applique réellement.
+     */
+    title: `ICP en cours — ${ICP.label ?? "maître d'ouvrage à permis actif"}`,
     body:
-      `**${SEGMENT_PRINCIPAL.label}.** ${SEGMENT_PRINCIPAL.critere}\n\n` +
-      `Pourquoi l'effet est immédiat : ${SEGMENT_PRINCIPAL.pourquoiImmediat}\n\n` +
-      `Effectif visé : ${SEGMENT_PRINCIPAL.commerciaux.bas} à ${SEGMENT_PRINCIPAL.commerciaux.haut} commerciaux — ` +
-      "au-delà, c'est achats, InfoSec et neuf mois de cycle, et nous n'avons ni identifiants par locataire ni référence.\n" +
-      `Cycle attendu : ${SEGMENT_PRINCIPAL.cycleJours.bas} à ${SEGMENT_PRINCIPAL.cycleJours.haut} jours ` +
-      "(source SECONDAIRE — blogs d'agences qui vendent de la prospection. Notre propre cycle se mesurera au troisième deal.)\n" +
-      `Canal par défaut : ${SEGMENT_PRINCIPAL.canal}.\n\n` +
-      "Segments voisins, MÊME geste de vente, à ne PAS travailler en parallèle : " +
-      SEGMENTS.slice(1).map((s) => s.label).join(" · ") +
-      ".\n\n⚠ Un seul avatar à la fois. Trois avatars simultanés ont déjà coûté trois tours de travail à ce projet.",
+      `**${ICP.label ?? ""}**\n\n` +
+      `Qui : ${ICP.buyer ?? ""}.\n` +
+      `Où : ${ICP.geo ?? ZONE_CIBLE}\n` +
+      `Taille : ${ICP.companySize ?? ""}. Au-delà de ${SATURATION_LOGEMENTS} logements, la demande sature — ` +
+      "c'est là que la douleur existe.\n\n" +
+      "Écarté d'office :\n" +
+      (ICP.disqualifiers ?? []).map((d) => `· ${d}`).join("\n") +
+      "\n\nCanaux :\n" +
+      (ICP.channels ?? []).map((c) => `· ${c}`).join("\n") +
+      "\n\n⚠ Un seul avatar à la fois. Zéro permis converti à ce jour : les seuils et la zone sont des " +
+      "DÉCISIONS, à revoir quand dix affaires les auront contredits.",
     tags: ["icp", "ciblage"],
     createdAt: "2026-09-13T00:00:00.000Z",
-    updatedAt: "2026-09-13T00:00:00.000Z",
+    updatedAt: "2026-09-30T00:00:00.000Z",
     source: "playbook",
   },
   {
@@ -312,6 +374,29 @@ export const seedOperationnel: KnowledgeNote[] = [
     updatedAt: "2026-09-13T00:00:00.000Z",
     source: "playbook",
   },
+];
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ UNE NOTE CORRIGÉE ICI N'ATTEIGNAIT AUCUN NAVIGATEUR (30/09/2026).
+ *
+ * Le socle ne se sème qu'UNE fois (`knowledgeSeeded`). La grille morte d'Alpha
+ * Voice, corrigée le 12/09, est donc restée dans tous les navigateurs déjà
+ * semés — et c'est le navigateur qui alimente le prompt. Corriger le code
+ * donnait l'impression d'avoir corrigé le Cerveau.
+ *
+ * Les dates qu'a PORTÉES le socle, relevées dans l'historique git. Une note
+ * encore datée de l'une d'elles n'a jamais été touchée par l'utilisateur
+ * (`upsertNote` date une édition à la seconde près) : on peut la remplacer
+ * sans rien lui prendre. Une note éditée, on la garde — c'est la sienne.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const DATES_SOCLE_ANTERIEURES: readonly string[] = [
+  "2026-08-01T00:00:00.000Z",
+  "2026-08-10T00:00:00.000Z",
+  "2026-09-02T00:00:00.000Z",
+  "2026-09-12T00:00:00.000Z",
+  "2026-09-13T00:00:00.000Z",
 ];
 
 /** Le socle complet, dans l'ordre d'insertion. */

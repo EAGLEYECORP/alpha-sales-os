@@ -730,6 +730,20 @@ ne venaient de rien.** `lib/marche.ts` existait depuis le 26/08 et
 >   990 à 1 490 € ») le satisfaisait. Il vise maintenant la **ligne
 >   d'annonce** — celle que le modèle recopie.
 
+> ⚠⚠ **UNE CORRECTION DU CERVEAU N'ATTEIGNAIT AUCUN NAVIGATEUR** (30/09/2026).
+> Le socle ne s'écrit qu'UNE fois (`knowledgeSeeded`) : la correction du 12/09
+> des prix Alpha Voice n'est jamais arrivée chez qui avait déjà ouvert l'app.
+> `reviserSocle` (`lib/knowledge.ts`) remplace une note stockée **seulement si
+> sa date est une date d'usine** (`DATES_SOCLE_ANTERIEURES`) — `upsertNote`
+> date toute édition à l'instant, donc une note touchée par l'utilisateur est
+> GARDÉE, une note supprimée ne revient pas.
+> · **Corriger une note du socle = nouvelle `updatedAt` + ancienne date dans
+>   `DATES_SOCLE_ANTERIEURES` + `REVISION_SOCLE` incrémenté.** Oublier l'un
+>   des trois et la correction reste dans le dépôt. Un test exige les dates.
+> · Les notes (offre, chiffres, routage, permis, cadence, ICP) DÉRIVENT des
+>   modules qui font foi — elles portaient 2 500 €, « 5 rappels », un CAC, et
+>   un ICP intérim. Deux tests épinglaient l'état faux.
+
 > ⚠ **Ne jamais recopier une grille dans une prose.** Trois fautes de rendu
 > trouvées en imprimant la note, aucune déductible du code : « 1490 € » sans
 > espace des milliers, « 0,2 €/min » au lieu de « 0,20 », et un « trois fois
