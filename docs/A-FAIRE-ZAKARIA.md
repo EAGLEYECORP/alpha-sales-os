@@ -89,6 +89,14 @@ affirmations faites dans la journée étaient FAUSSES ou incomplètes :
    eagleyecorp.fr). Un envoi par le SMTP Amen passe ; tout relais qui réécrit
    l'adresse de retour part en quarantaine. Seul un en-tête reçu donnera le
    vrai sélecteur (`s=`) si une clé existe sous un nom inhabituel.
+   > ✅ **TRANCHÉ le 30/09/2026 par un rapport DMARC agrégé de Google**
+   > (29→30/09) : **DKIM pass**, sélecteur **`key-dxy9fgigss`** (nom ALÉATOIRE
+   > posé par Amen — aucun balayage de noms courants ne pouvait le trouver),
+   > SPF pass, DMARC aligné, `disposition: none`. Clé RSA 2048 publiée, vérifiée
+   > au DNS. Le « aucune clé » ci-dessus était FAUX : l'absence d'un résultat
+   > sur une liste de noms devinés ne prouve pas l'absence de la clé. Le seul
+   > juge est un en-tête reçu ou un rapport DMARC — c'est ce que la ligne
+   > au-dessus disait déjà, et c'est ce qui a tranché.
 3. **« Vends Alpha Voice aux 7 contacts chauds » — contredit une contrainte
    posée le 22/09** : « pas assez de sous pour lancer Voice en full effect,
    mais on peut vendre les briques d'Alpha Sales OS ». Chaque client Voice
