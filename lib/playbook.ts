@@ -494,7 +494,7 @@ export const VERTICALS: VerticalPlaybook[] = [
       { q: "On est deux, on gère.", a: "Justement — quand vous êtes deux sous des voitures, vous êtes à zéro sur le téléphone. L'agent, c'est votre troisième paire de mains, celle qui décroche." },
       { q: "Les assurances nous envoient déjà des clients.", a: "Oui, et ces clients-là appellent souvent plusieurs carrossiers de la liste. Le premier qui décroche prend le dossier. L'agent fait que ce soit toujours vous." },
       { q: "Un robot au téléphone, ça fait fuir.", a: "Vous venez de l'entendre — dites-moi franchement si ça sonnait robot. Et la vraie question : mieux vaut un accueil qui répond, ou une sonnerie dans le vide ?" },
-      { q: "On débute, c'est pas le moment d'investir.", a: "C'est le meilleur moment, au contraire : vous construisez votre base client maintenant. Chaque appel raté aujourd'hui, c'est un client que vous ne fidéliserez jamais." },
+      { q: "On débute, c'est pas le moment d'investir.", a: "C'est justement le moment où s'organiser coûte le moins : vous construisez votre base client maintenant. Chaque appel raté aujourd'hui, c'est un client que vous ne fidéliserez pas." },
     ],
     leak: { callsPerMonth: 160, missRate: 0.25, avgTicket: 700, convertRate: 0.18 },
   },

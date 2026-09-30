@@ -23,7 +23,7 @@ import type { Meeting, Prospect, Sector, Stage } from "./types";
  * Les chiffres à retenir, tirés de l'activité réelle et non d'un modèle :
  *   · 78 travaillés → 6 RDV = 7,7 %  ·  51 qualifiés → 6 RDV = 11,8 %
  *     (le premier sert à planifier un export brut, le second un fichier trié)
- *   · auto-école : 3 prospects → 3 opportunités (le meilleur ratio, de loin)
+ *   · auto-école : 3 prospects → 3 opportunités (sur 3 fiches : un signal, pas un classement)
  *   · immobilier : 8 prospects, 4 audits → 2 opportunités
  *   · garage : 18 prospects, 34 appels, 1 audit → 2 opportunités
  *   · dépannage/plomberie : 14 prospects, 26 appels, 0 audit → 0 opportunité

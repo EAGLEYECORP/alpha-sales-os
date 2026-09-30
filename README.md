@@ -115,7 +115,7 @@ proximité lyonnais ; ce n'est plus le marché. Catalogue complet dans
 
 | Segment | Ce qui fait mal | Brique d'entrée |
 |---|---|---|
-| **Équipe terrain** — toiture, isolation, photovoltaïque, porte-à-porte (3 à 50 commerciaux) | L'écart entre le meilleur vendeur et les autres est énorme, et son savoir reste dans sa tête | **Alpha Live** + CRM |
+| **Équipe terrain** — toiture, isolation, photovoltaïque, porte-à-porte (3 à 50 commerciaux) | L'écart entre le meilleur vendeur et les autres peut être important, et son savoir reste dans sa tête | **Alpha Live** + CRM |
 | **Centre d'appels** — plateaux, qualification, relation client (5 à 200 postes) | Les équipes brûlent leur énergie sur des appels qui ne décrochent pas | **Alpha Voice** |
 | **Agence & services B2B** (1 à 30 personnes) | Le closing dépend du fondateur : le chiffre plafonne à ses heures | CRM + Campagnes + Cerveau |
 | **Réseau, franchise, groupement** (10 à 500 points de vente) | Le discours se dilue en s'éloignant du siège | CRM + Alpha Live + Pilotage |

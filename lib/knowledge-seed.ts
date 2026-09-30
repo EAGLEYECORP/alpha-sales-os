@@ -124,7 +124,7 @@ export const seedTerrain: KnowledgeNote[] = [
       `dimensionner un export.\n` +
       `Sur fichier QUALIFIÉ (univers) : ${pct(JUILLET_REEL.tauxQualifieRdv)} → il suppose qu'un tri a ` +
       `déjà eu lieu. Les confondre fait payer la qualification deux fois.\n\n` +
-      "La lecture qui compte : voir [[Juillet 2026 — l'audit fait la différence]].",
+      "La lecture qui compte : voir [[Juillet 2026 — une piste : l'audit écrit]].",
     tags: ["terrain", "chiffres", "juillet-2026"],
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",
@@ -133,19 +133,32 @@ export const seedTerrain: KnowledgeNote[] = [
   {
     id: "sc-juillet-lecon",
     accountId: "eagleye",
-    title: "Juillet 2026 — l'audit fait la différence",
+    title: "Juillet 2026 — une piste : l'audit écrit",
     body:
       "Par secteur (prospects · appels · audits · opportunités) :\n\n" +
-      "- Auto-école : 3 · 7 · 2 · **3** — le meilleur ratio, de loin\n" +
+      "- Auto-école : 3 · 7 · 2 · **3**\n" +
       "- Immobilier : 8 · 10 · 4 · **2**\n" +
       "- Garage/Carrosserie : 18 · 34 · 1 · **2**\n" +
       "- Médical/Dentaire : 10 · 13 · 5 · 0\n" +
       "- Dépannage/Plomberie : 14 · **26** · **0** · **0**\n" +
       "- Ambulance : 8 · 14 · 1 · 0\n\n" +
-      "**La leçon** : là où un AUDIT est parti, le taux monte. Là où il n'y a eu que " +
-      "des appels, il reste à zéro. 26 appels en plomberie sans une seule pièce écrite " +
-      "n'ont rien produit.\n\n" +
-      "Conséquence opérationnelle : aucun prospect ne va en séquence sans audit écrit.",
+      /*
+       * ⚠ CETTE NOTE AFFIRMAIT « le meilleur ratio, de loin » et « là où un audit
+       * est parti, le taux monte » (corrigé le 30/09/2026). Sur 3 prospects, un
+       * dossier de plus ou de moins renverse le classement — et la ligne
+       * médicale (5 audits, 0 opportunité) contredisait déjà la « leçon ». Le
+       * Cerveau alimente les prompts : une hypothèse écrite comme une loi se
+       * fait recopier comme une loi. « Jamais un taux nu », appliqué ici.
+       */
+      "**Ce que ça suggère — une HYPOTHÈSE, pas une mesure** : la plomberie (26 appels, " +
+      "aucun audit écrit) n'a rien produit, et plusieurs secteurs où un audit est parti " +
+      "ont produit des opportunités. Mais les effectifs sont minuscules (3 à 18 prospects " +
+      "par secteur) : un dossier de plus ou de moins renverse le classement, et la ligne " +
+      "médicale (5 audits, 0 opportunité) ne va déjà pas dans ce sens. Aucune " +
+      "comparaison entre secteurs ne tient à cette taille.\n\n" +
+      "Ce qu'on en garde, comme DÉCISION de méthode et non comme résultat : aucun " +
+      "prospect ne va en séquence sans audit écrit. À revérifier quand les effectifs " +
+      "le permettront.",
     tags: ["terrain", "doctrine", "audit"],
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",

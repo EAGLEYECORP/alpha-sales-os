@@ -160,6 +160,8 @@ const CLIENTELE_AFFIRMEE = [
   /\b(?:on|nous) install(?:e|ons) (?:peu de |des |nos )?clients\b/i,
   // Le savoir affirmé sur « les meilleurs » : un classement qu'on n'a jamais fait.
   /\bque (?:font )?les meilleur(?:e)?s\b/i,
+  // Un classement tiré d'effectifs qui ne le permettent pas.
+  /\ble meilleur (?:ratio|taux)\b/i,
   /\bqu'on (?:équipe|accompagne|installe)\b/i,
   /\bnous (?:équipons|accompagnons)\b/i,
   /\bdéjà \d+ (?:clients?|entreprises?)\b/i,
@@ -282,6 +284,9 @@ const PORTEURS_DE_REFERENCE = [
   // 30/09/2026, et chacun portait une phrase que le garde aurait dû voir.
   "lib/seed.ts",
   "components/vitrine/mission-section.tsx",
+  // Le Cerveau alimente les prompts : une hypothèse écrite comme une loi s'y
+  // fait recopier comme une loi (« le meilleur ratio, de loin » sur 3 fiches).
+  "lib/knowledge-seed.ts",
   // ⚠ Et le fichier RÉELLEMENT rendu, pas seulement le script relu : c'est
   // celui-ci qui part chez des gens. Un doc conforme ne protège de rien si la
   // scène dessine autre chose.
