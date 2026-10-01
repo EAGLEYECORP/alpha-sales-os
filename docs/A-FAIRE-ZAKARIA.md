@@ -318,6 +318,22 @@ Procédure complète : `docs/SMTP-SUPABASE-AMEN.md`.
 | **DMARC** | `p=quarantine; adkim=s; aspf=s` | **rien — n'en crée pas un second** |
 | **DKIM** | ✅ **vérifié le 30/09** : `d=eagleyecorp.fr`, `s=key-dxy9fgigss` | **rien** |
 
+### ✅ 01/10 — SESSIONS REFUSÉES : LA CLÉ DE SIGNATURE SUPABASE AVAIT BASCULÉ EN ECC
+Symptômes : `/moniteur` renvoyé vers `/compte` pour un propriétaire,
+`/api/compte/droits` → 401 « Compte requis », carte « Mon offre » absente,
+synchro du pipe « état inconnu ». **Une seule cause** : la clé courante du
+projet était passée en ECC P-256 (ES256), le serveur déployé ne vérifiait que
+HS256.
+- **Réparé sans déploiement** (Netlify à court de crédits) : Legacy HS256
+  remise en clé courante (standby → Rotate keys), reconnexion. Vérifié :
+  `/api/compte/droits` → `"maitre":true`.
+- **Le code accepte désormais ES256/RS256** (commit `d0c341f`, clé publique lue
+  dans le JWKS du projet). ⚠ **Pas encore déployé** : ne PAS repasser
+  Supabase en ECC avant que ce commit soit en production, sinon la panne
+  revient à l'identique.
+- Les refus disent désormais leur raison (`&raison=` sur la redirection,
+  `why` sur le 401) — commit `d01b9d6`, lui aussi en attente de déploiement.
+
 ### ✅ 30/09 — DKIM ALIGNÉ, PROUVÉ PAR UN ENVOI RÉEL
 Envoi depuis `contact@eagleyecorp.fr` (Gmail « envoyer en tant que » → SMTP Amen
 `authsmtp.register.it`) vers le vérificateur public port25 : **SPF pass**
