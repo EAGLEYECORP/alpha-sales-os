@@ -11,6 +11,7 @@ import {
   autorise,
   comptesActifs,
   deploiementSansSerrure,
+  raisonDuRefus,
   resoudreDroits,
   verrouDeComptesActif,
 } from "@/lib/entitlements";
@@ -379,7 +380,14 @@ export async function middleware(req: NextRequest) {
     if (!cookie || !safeEqual(cookie, expected)) {
       // API → 401 JSON ; page → redirection vers l'écran d'accès.
       if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Accès non autorisé." }, { status: 401 });
+        // ⚠ `why` dit QUEL mur a répondu. Sans lui, la synchro du pipe
+        // affichait « l'état du serveur n'est pas connu » à un compte bien
+        // connecté : `/api/sync` est une route d'ADMINISTRATION, gardée par le
+        // mot de passe du site et non par le compte (01/10/2026).
+        const why = startsWithAny(pathname, ADMIN_PREFIXES)
+          ? "Route d'administration : elle exige le mot de passe du site, pas seulement le compte. Ouvre /gate une fois dans ce navigateur."
+          : "Mot de passe du site requis : ouvre /gate.";
+        return NextResponse.json({ error: "Accès non autorisé.", why }, { status: 401 });
       }
       const url = req.nextUrl.clone();
       url.pathname = "/gate";
@@ -517,7 +525,9 @@ export async function middleware(req: NextRequest) {
       }
       const url = req.nextUrl.clone();
       url.pathname = "/compte";
-      url.search = `?bloque=${encodeURIComponent(pathname)}`;
+      // La RAISON voyage avec le refus : « bloqué » seul ne disait pas lequel
+      // des trois contrôles avait tranché (voir `raisonDuRefus`).
+      url.search = `?bloque=${encodeURIComponent(pathname)}&raison=${raisonDuRefus(droits, deploiementSansSerrure())}`;
       return NextResponse.redirect(url);
     }
   }

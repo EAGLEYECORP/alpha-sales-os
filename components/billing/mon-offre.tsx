@@ -5,6 +5,7 @@ import { Lock, PackageCheck, ShoppingCart, TimerReset } from "lucide-react";
 import { useDroits } from "@/lib/use-droits";
 import { CAPACITES } from "@/lib/public-catalogue";
 import { briquesPourChemin } from "@/lib/bricks-access";
+import type { RaisonRefus } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,13 +32,56 @@ import { cn } from "@/lib/utils";
 export function MonOffre() {
   const d = useDroits();
   const [bloque, setBloque] = useState<string | null>(null);
+  const [raison, setRaison] = useState<RaisonRefus | null>(null);
 
   useEffect(() => {
     // Lu au montage plutôt que par un hook de routeur : le paramètre est
     // informatif, il ne doit pas provoquer de re-rendu à chaque navigation.
-    const p = new URLSearchParams(window.location.search).get("bloque");
-    setBloque(p);
+    const q = new URLSearchParams(window.location.search);
+    setBloque(q.get("bloque"));
+    const r = q.get("raison");
+    setRaison(r === "sans-serrure" || r === "sans-session" || r === "brique" ? r : null);
   }, []);
+
+  /**
+   * ⚠ LE REFUS SE DIT AVANT TOUT LE RESTE, Y COMPRIS EN MODE SOLO.
+   *
+   * Cas réel du 01/10/2026 : le middleware (côté serveur) refusait `/moniteur`
+   * pendant que cet écran (côté navigateur) se croyait solo ou propriétaire et
+   * ne disait RIEN — le `return null` du mode solo avalait l'explication.
+   * Quand les deux côtés ne sont pas d'accord, c'est précisément le moment où
+   * il faut parler.
+   */
+  if (bloque && raison && raison !== "brique") {
+    return (
+      <section className="card p-4">
+        <div className="rounded-lg border border-signal-amber/40 bg-signal-amber/10 px-3 py-2 text-[12px] text-paper">
+          <p className="flex items-start gap-2">
+            <Lock size={14} className="mt-0.5 shrink-0 text-signal-amber" />
+            <span>
+              <strong>{bloque}</strong> a été refusé par le serveur, et ce n&apos;est pas une question d&apos;offre.{" "}
+              {raison === "sans-session" ? (
+                <>
+                  Le serveur ne voit <strong>aucune session valide</strong> sur cette page : le cookie de session est
+                  absent, expiré, ou signé par une autre clé que celle du serveur. Cet écran peut te reconnaître
+                  pendant que le serveur ne te reconnaît pas — ce sont deux contrôles distincts. Recharge la page
+                  après t&apos;être connecté ; si le refus persiste, vérifie que <code>SUPABASE_JWT_SECRET</code> du
+                  déploiement est bien le secret du projet Supabase.
+                </>
+              ) : (
+                <>
+                  Le serveur ne voit <strong>pas le système de comptes</strong> (<code>SUPABASE_JWT_SECRET</code> ou{" "}
+                  <code>NEXT_PUBLIC_SUPABASE_URL</code> absent de son environnement) : il applique le socle gratuit à
+                  tout le monde, propriétaire compris. C&apos;est la configuration du déploiement qu&apos;il faut
+                  corriger, pas le compte.
+                </>
+              )}
+            </span>
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   // En mode solo (notre usage), il n'y a pas d'offre à afficher : tout est là.
   if (d.solo) return null;

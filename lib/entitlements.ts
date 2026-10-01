@@ -247,6 +247,40 @@ export function deploiementSansSerrure(): boolean {
   return enProduction && !comptesActifs() && !motDePasse;
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * POURQUOI UNE PAGE EST REFUSÉE — la raison voyage avec la redirection.
+ *
+ * Trouvé le 01/10/2026 sur la production : `/moniteur` renvoyait vers
+ * `/compte?bloque=…` un compte que `/compte` affichait « Accès propriétaire ».
+ * Les deux affirmations venaient de DEUX contrôles différents — l'écran compare
+ * l'email de la session du NAVIGATEUR à la liste publique, le middleware lit le
+ * cookie `alpha-jwt` côté SERVEUR — et la redirection ne disait pas lequel
+ * avait tranché. Trois causes opposées, trois gestes opposés :
+ *
+ *  · `sans-serrure` : le middleware ne voit pas le système de comptes
+ *    (`SUPABASE_JWT_SECRET` ou `NEXT_PUBLIC_SUPABASE_URL` absent de SON
+ *    environnement) et applique le socle gratuit à tout le monde, maître
+ *    compris. Geste : la configuration du déploiement.
+ *  · `sans-session` : le système de comptes est là, mais aucun jeton valide
+ *    n'arrive (cookie absent, expiré, ou signé par une autre clé). Geste :
+ *    se reconnecter, puis vérifier la clé.
+ *  · `brique` : la session est reconnue et l'offre n'inclut pas la page.
+ *    Geste : l'offre.
+ *
+ * ⚠ La raison ne transporte AUCUN secret ni identifiant : un mot-clé parmi
+ * trois. Elle sert à diagnostiquer sans lire le code, pas à ouvrir quoi que
+ * ce soit — la décision d'accès reste celle du middleware.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export type RaisonRefus = "sans-serrure" | "sans-session" | "brique";
+
+export function raisonDuRefus(droits: Pick<Entitlement, "tenantId">, sansSerrure: boolean): RaisonRefus {
+  if (sansSerrure) return "sans-serrure";
+  if (!droits.tenantId) return "sans-session";
+  return "brique";
+}
+
 /** Le système de comptes est-il actif sur ce déploiement ? */
 export function comptesActifs(): boolean {
   return Boolean(process.env.SUPABASE_JWT_SECRET && process.env.NEXT_PUBLIC_SUPABASE_URL);

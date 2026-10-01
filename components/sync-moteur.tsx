@@ -41,6 +41,13 @@ export interface EtatMoteurSync {
   /** A-t-on le droit de pousser ? (`lib/hydratation.ts`) */
   autorise: boolean;
   plan: PlanSync | null;
+  /**
+   * La raison pour laquelle le serveur n'a pas pu être lu, mot pour mot.
+   * Sans elle, `plan === null` se lisait « état inconnu » — un refus du
+   * mot de passe d'administration et une base injoignable donnaient la
+   * même phrase, pour deux gestes opposés.
+   */
+  erreur?: string;
   etat: EtatSync;
   message: string;
   enCours: boolean;
@@ -310,6 +317,7 @@ export function SyncMoteur({ children }: { children: React.ReactNode }) {
         actif: active,
         autorise,
         plan,
+        erreur,
         etat,
         message,
         enCours,

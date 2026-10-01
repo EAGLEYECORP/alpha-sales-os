@@ -138,7 +138,8 @@ export function SyncProspects() {
           </p>
           {!pipeServeur && !toutPousse && (
             <p className="mt-1.5 text-[11.5px] leading-relaxed text-signal-amber">
-              Impossible d&apos;activer maintenant : {plan ? plan.resume : "l'état du serveur n'est pas connu"}. Une
+              Impossible d&apos;activer maintenant :{" "}
+              {plan ? plan.resume : (moteur.erreur ?? "l'état du serveur n'est pas encore connu")}. Une
               fois activé, les fiches ne sont plus écrites localement — ce qui n&apos;a pas été envoyé serait perdu au
               prochain rechargement. Synchronise d&apos;abord.
             </p>
