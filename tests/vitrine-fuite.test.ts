@@ -907,7 +907,9 @@ test("vitrine — elle MONTRE le produit, et seulement les écrans gratuits", ()
 
   // Les écrans payants, nommés par leur chemin métier — aucun ne doit
   // apparaître dans la galerie.
-  for (const payant of ["campaigns", "outbox", "voice", "agent", "audits", "activity", "overlay"]) {
+  // ⚠ 13/10/2026 : `activity` sort (passé au socle), `moniteur` entre — maître
+  // seul, sa capture montrerait les sociétés que NOUS prospectons.
+  for (const payant of ["campaigns", "outbox", "voice", "agent", "audits", "recette", "moniteur"]) {
     assert.ok(
       !captures.includes(payant),
       `« ${payant} » est une brique PAYANTE : sa capture n'a rien à faire dans la galerie du socle gratuit`

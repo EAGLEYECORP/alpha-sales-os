@@ -165,8 +165,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   "/api/icp": "/audits",
 
   // ── Tracking ──
-  "/api/track": "/activity",
-  "/api/webhooks": "/activity",
+  /**
+   * ⚠ RATTACHÉES À `/recette` LE 13/10/2026, plus à `/activity`. Le fil
+   * d'activité est passé au socle gratuit (il ne lit que le store) ; le
+   * laisser gouverner ces deux API aurait ouvert NOTRE pixel, nos redirections
+   * de clics et notre webhook entrant à tout inscrit. Même brique qu'avant
+   * (`tracking`) : rien ne change pour un client, sauf l'écran qui en décide.
+   */
+  "/api/track": "/recette",
+  "/api/webhooks": "/recette",
 
   // ── Closer OS & débrief ──
   "/api/debrief": "/debrief",
@@ -265,4 +272,8 @@ export const MAITRE_SEULEMENT: readonly string[] = [
   // L'interrupteur de l'autopilote arme l'envoi de VRAIS emails depuis notre
   // domaine, à nos frais : notre économie, jamais celle du locataire.
   "/api/autopilote",
+  // ⚠ 13/10/2026 : elle lit les fiches de l'OPÉRATEUR (`lireProspectsOperateur`)
+  // et rend le nom de chaque société à rappeler — notre pipe, pas celui du
+  // locataire. Elle était ouverte à tout client `campagnes` et à tout essai.
+  "/api/moniteur",
 ];

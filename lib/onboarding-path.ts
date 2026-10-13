@@ -240,7 +240,7 @@ export const STEPS: StepDef[] = [
     surface: "ordinateur",
     motifSurface:
       "n8n tourne sur une machine, et on y importe des workflows depuis un dossier du dépôt.",
-    chemin: "/activity",
+    chemin: "/recette",
   },
   {
     id: "inbound",
@@ -259,7 +259,7 @@ export const STEPS: StepDef[] = [
     surface: "ordinateur",
     motifSurface:
       "`WEBHOOK_SECRET` dans `.env.local`, plus la configuration du fournisseur entrant.",
-    chemin: "/activity",
+    chemin: "/recette",
   },
   {
     id: "booking",

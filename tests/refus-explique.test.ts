@@ -78,9 +78,11 @@ test(
 );
 
 test(
-  "/moniteur avec une session valide mais sans la brique : « brique »",
+  // ⚠ Joué sur `/campaigns` depuis le 13/10/2026 : `/moniteur` est passé
+  // maître seul (il lisait notre pipe) et n'est plus une brique à vendre.
+  "/campaigns avec une session valide mais sans la brique : « brique »",
   avecEnv(COMPTES, async () => {
-    const req = new NextRequest("https://alpha.exemple/moniteur", {
+    const req = new NextRequest("https://alpha.exemple/campaigns", {
       headers: { cookie: `alpha-jwt=${jeton("11111111-1111-4111-8111-111111111111", "client@exemple.fr")}` },
     });
     const r = await middleware(req);
@@ -107,5 +109,22 @@ test(
     const j = (await r.json()) as { why?: string };
     assert.match(j.why ?? "", /administration/);
     assert.match(j.why ?? "", /\/gate/);
+  })
+);
+
+test(
+  "⚠⚠ /api/moniteur refuse une session CLIENT : il rendait notre pipe à tout acheteur de campagnes",
+  avecEnv(COMPTES, async () => {
+    /**
+     * Joué sur le VRAI middleware, pas sur une liste : c'est la garde
+     * d'identité (`MAITRE_SEULEMENT`) qui doit trancher, avant les briques.
+     * Le contre-test plus haut garde l'autre moitié : le maître passe.
+     */
+    const req = new NextRequest("https://alpha.exemple/api/moniteur", {
+      headers: { cookie: `alpha-jwt=${jeton("11111111-1111-4111-8111-111111111111", "client@exemple.fr")}` },
+    });
+    const r = await middleware(req);
+    assert.equal(r.status, 403);
+    assert.equal(((await r.json()) as { code?: string }).code, "maitre_requis");
   })
 );

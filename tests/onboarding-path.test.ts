@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { prospect, meeting, daysAgo } from "./fixtures";
 import type { TimelineEvent } from "../lib/types";
+import { BRIQUES_GRATUITES } from "../lib/entitlements";
 import {
   buildPath,
   rhythmDays,
@@ -375,4 +376,26 @@ test("⚠⚠ L'ÉCRAN CONSOMME LA RÉPARTITION — sinon le module est mort", ()
   assert.match(page, /mobile\.surOrdinateur/, "l'écran ne liste pas les étapes qui exigent une machine");
   assert.match(page, /mobile\.bloqueSurMobile/, "l'écran ne distingue pas « bloqué ici » de « terminé »");
   assert.match(page, /md:hidden/, "le bloc mobile s'afficherait aussi sur ordinateur, où il n'a rien à dire");
+});
+
+test("⚠⚠ UN COMPTE GRATUIT N'A AUCUNE ÉTAPE D'ORDINATEUR — son installation se fait au pouce", () => {
+  /**
+   * Affirmé dans la doctrine, mesuré une fois, et tenu par RIEN : les cinq
+   * étapes de plomberie (SMTP, DNS, IA, n8n, webhook entrant) servent des
+   * briques payantes, et c'est leur `chemin` qui les retire d'un gratuit.
+   *
+   * ⚠ Trouvé par mutation le 13/10/2026 : `/activity` est passé au socle
+   * gratuit, et n8n + le webhook entrant y étaient rattachés. Les laisser là
+   * faisait apparaître deux étapes d'ordinateur chez un gratuit — sans
+   * qu'aucun test ne tombe. Elles pointent désormais sur `/recette`.
+   */
+  const path = buildPath(ctx({ bricks: [...BRIQUES_GRATUITES], maitre: false }));
+  const r = repartirParSurface(path);
+  assert.deepEqual(
+    r.surOrdinateur.map((s) => s.id),
+    [],
+    "un compte gratuit reçoit des étapes d'ordinateur pour des briques qu'il n'a pas"
+  );
+  // Non-vacuité : un parcours vidé passerait l'assertion du dessus.
+  assert.ok(r.auPouce.length > 0, "le parcours gratuit est vide");
 });

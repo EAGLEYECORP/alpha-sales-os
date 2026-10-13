@@ -140,11 +140,23 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
 
   // ── Campagnes & outreach ──
   /**
-   * Le moniteur surveille l'autopilote de campagne : sans la brique, il n'y a
-   * rien à surveiller. Il se GRISE donc (il est à vendre), il ne se masque
-   * pas — contrairement à `/ceo`, qui parle de notre exploitation à nous.
+   * ⚠⚠ MAÎTRE SEUL DEPUIS LE 13/10/2026 — il était « à vendre », et il
+   * montrait NOTRE pipe à qui l'achetait.
+   *
+   * Mesuré en ouvrant `app/api/moniteur/route.ts` : il lit
+   * `lireProspectsOperateur`, donc les fiches de l'OPÉRATEUR (les nôtres), et
+   * rend le nom de chaque société à rappeler. Aucun filtre par locataire.
+   * Un client `campagnes` — ou un compte en ESSAI, qui ouvre tout le
+   * catalogue sauf la téléphonie — voyait donc les entreprises que NOUS
+   * prospectons : des données de tiers, et notre ciblage.
+   *
+   * L'autopilote qu'il surveille est d'ailleurs le nôtre : `CAMPAIGN_AUTOPILOT`
+   * et `CRON_SECRET` sont NOTRE environnement, il n'en existe aucun par
+   * locataire. C'est notre exploitation, comme `/ceo` : on le MASQUE, on ne
+   * le grise pas. Le jour où le moniteur lira le pipe du locataire connecté,
+   * il redevient une brique à vendre — pas avant.
    */
-  "/moniteur": ["campagnes"],
+  "/moniteur": [],
   /**
    * ─────────────────────────────────────────────────────────────────
    * ÉCRIRE EST GRATUIT. ENVOYER DEPUIS NOTRE INFRASTRUCTURE SE PAIE.
@@ -211,7 +223,16 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
   "/audits": ["audits"],
 
   // ── Tracking & délivrabilité ──
-  "/activity": ["tracking"],
+  /**
+   * ⚠ GRATUIT DEPUIS LE 13/10/2026 — il était payant pour un motif FAUX.
+   * Le motif disait « il affiche les ouvertures et les clics remontés par
+   * NOTRE tracking ». Mesuré en ouvrant la page : zéro `fetch`, elle lit
+   * `activities` et `auditLog` dans le store du navigateur — fiches créées,
+   * stades, RDV, signatures. Un compte gratuit produit tout ça. Ce qui coûte
+   * (le pixel, les clics, le webhook entrant) vit sur `/api/track` et
+   * `/api/webhooks`, rattachées désormais à `/recette`, qui reste payant.
+   */
+  "/activity": ["crm"],
   "/recette": ["tracking"],
 
   // ── Alpha Live : le souffleur en direct ──

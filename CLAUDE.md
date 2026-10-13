@@ -1541,6 +1541,29 @@ personne : il fabrique des comptes morts.
 >   l'opérateur compose depuis SON téléphone. Elle était avec `alpha-voice`, le
 >   ROBOT qui compose depuis NOS minutes. Seul le mot « appel » les rapprochait.
 
+> ⚠⚠ **DEUX DE PLUS LE 13/10/2026, et les deux motifs étaient FAUX**
+> (`PAYANT_SANS_COUT`, `tests/entitlements.test.ts`, désormais vide).
+> · **`/activity` → `crm`.** Motif écrit : « les ouvertures et les clics de
+>   NOTRE tracking ». Mesuré : zéro `fetch`, la page lit le store. Le piège
+>   était à côté : `/api/track` et `/api/webhooks` étaient RATTACHÉES à cet
+>   écran — l'ouvrir sans les déplacer (vers `/recette`, même brique) ouvrait
+>   notre pixel et notre webhook à tout inscrit. Les étapes n8n + webhook du
+>   parcours ont suivi : un test exige qu'un gratuit n'ait AUCUNE étape
+>   d'ordinateur, et c'est la mutation qui a montré qu'il manquait.
+> · **`/moniteur` → MAÎTRE SEUL.** Motif écrit : « un écran de zéros ».
+>   Mesuré : `/api/moniteur` lit `lireProspectsOperateur` — NOTRE pipe — et
+>   rendait le nom des sociétés à rappeler à tout client `campagnes` **et à
+>   tout essai**. L'autopilote qu'il surveille est aussi le nôtre (aucun
+>   `CRON_SECRET` par locataire). Un test pose la question à **toutes** les
+>   routes : qui lit le pipe de l'opérateur doit être maître seul, exiger une
+>   clé, ou COMPARER un secret (`safeEqual`) — le lire ne suffit pas, la
+>   mutation l'a prouvé. Il redevient vendable le jour où il lira le pipe du
+>   locataire connecté.
+> · **Ce qui reste payant, et pourquoi** — tout dépense chez nous : `/voice`
+>   (minutes), `/agent` · `/social` (jetons, rendu — BYOK ouvre l'IA),
+>   `/campaigns` · `/newsletter` (notre SMTP), `/outbox` (notre boîte IMAP),
+>   `/audits` (notre egress), `/recette` (notre tracking).
+
 > ⚠ **On ne crée pas une 7ᵉ brique pour ça** : une brique de plus se recopie
 > dans huit fichiers (catalogue, offres, provisionnement, vitrine, relevé de
 > marché) et n'aurait rien à vendre. C'est le **CHEMIN** qu'on reclasse, sur

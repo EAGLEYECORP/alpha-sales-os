@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { ACCES_PAR_CHEMIN, CHEMINS_COMMUNS, briquesPourChemin, normaliser, peutOuvrir } from "../lib/bricks-access";
-import { CHEMIN_PAR_API } from "../lib/api-access";
+import { CHEMIN_PAR_API, MAITRE_SEULEMENT } from "../lib/api-access";
 import {
   autorise, BRIQUES_GRATUITES, deploiementSansSerrure, DROIT_REFUSE, DROIT_SOLO, droitGratuit, estMaitre,
-  normaliserBriques, statutEffectif, BRIQUES_CONNUES,
+  normaliserBriques, statutEffectif, BRIQUES_CONNUES, BRIQUES_ESSAI,
   type Entitlement,
 } from "../lib/entitlements";
 import { BRICKS } from "../lib/bricks";
@@ -909,7 +909,7 @@ test("⚠ …et il s'arrête net quand ça part de CHEZ NOUS", () => {
     ["/voice", "le robot qui compose NOS minutes"],
     ["/agent", "l'agent qui brûle NOS jetons"],
     ["/audits", "la récupération de sites depuis NOTRE IP"],
-    ["/activity", "NOTRE infrastructure de tracking"],
+    ["/recette", "NOTRE infrastructure de tracking (pixel, clics, webhook entrant)"],
     ["/social", "génération et rendu vidéo chez NOUS"],
   ];
   const ouvertes = FERMES.filter(([chemin]) => autorise(g, chemin));
@@ -944,15 +944,17 @@ test("⚠⚠ UN ÉCRAN QUI NE NOUS COÛTE RIEN EST GRATUIT — audit de TOUS les
    * appels et rend un verdict faux avec l'air d'avoir mesuré.
    * ─────────────────────────────────────────────────────────────────
    */
-  const PAYANT_SANS_COUT: Record<string, string> = {
-    "/moniteur":
-      "Il affiche ce que l'AUTOPILOTE a fait — une brique payante. Ouvert au gratuit, il montrerait " +
-      "un écran de zéros, ce qui se lit comme un produit cassé et non comme une porte fermée. " +
-      "L'entrée grisée du rail dit déjà qu'il existe, et c'est ce qu'on veut qu'elle dise.",
-    "/activity":
-      "Il affiche les ouvertures et les clics remontés par NOTRE infrastructure de tracking. " +
-      "Sans la brique, il n'y a littéralement aucune donnée à montrer : le même écran de zéros.",
-  };
+  /**
+   * ⚠ VIDE DEPUIS LE 13/10/2026, et les deux motifs qu'elle portait étaient
+   * FAUX — c'est ce qui rend la liste dangereuse.
+   * · `/activity` « affiche les ouvertures et les clics de NOTRE tracking » :
+   *   mesuré, la page ne fait aucun `fetch`, elle lit le store. Passée au socle.
+   * · `/moniteur` « afficherait un écran de zéros » : mesuré, il affichait
+   *   NOTRE pipe (les noms des sociétés que nous prospectons) à qui l'achetait.
+   *   Passé maître seul.
+   * Un motif se vérifie en ouvrant le fichier, pas en le supposant.
+   */
+  const PAYANT_SANS_COUT: Record<string, string> = {};
 
   const racine = join(process.cwd(), "app/(app)");
   const lire = (f: string) => { try { return readFileSync(f, "utf8"); } catch { return ""; } };
@@ -1112,4 +1114,87 @@ test("⚠ …et le socle gratuit reste OUVERT dans ce même état", () => {
       `${api} DÉPENSE chez nous : elle doit être refusée au socle gratuit`,
     );
   }
+});
+
+test("⚠⚠ LE FIL D'ACTIVITÉ EST GRATUIT, ET IL N'EMPORTE PAS LE TRACKING AVEC LUI", () => {
+  /**
+   * Passé au socle le 13/10/2026 : la page ne lit que le store. Le piège était
+   * à côté — `/api/track` et `/api/webhooks` étaient RATTACHÉES à `/activity`.
+   * Ouvrir l'écran sans les déplacer aurait ouvert notre pixel, nos
+   * redirections de clics et notre webhook entrant à tout inscrit, sans
+   * qu'aucun écran ne change.
+   */
+  const g = droitGratuit("t-neuf");
+  assert.equal(autorise(g, "/activity"), true, "le fil d'activité ne coûte rien : il doit être gratuit");
+  for (const api of ["/api/track", "/api/webhooks"]) {
+    const chemin = CHEMIN_PAR_API[api];
+    assert.notEqual(chemin, "/activity", `${api} est encore gouvernée par un écran devenu gratuit`);
+    assert.equal(autorise(g, chemin), false, `${api} → ${chemin} est ouverte au gratuit`);
+    assert.equal(autorise(compte({ bricks: ["tracking"] }), chemin), true, `${api} : un client tracking la perd`);
+  }
+});
+
+test("⚠⚠ LE MONITEUR LIT NOTRE PIPE : maître seul, même pour un client ou un essai", () => {
+  /**
+   * Il était rangé dans `campagnes`, « à vendre ». Mesuré : sa route lit
+   * `lireProspectsOperateur` et rend le nom des sociétés à rappeler — les
+   * nôtres. Un essai ouvre tout le catalogue sauf la téléphonie : n'importe
+   * quel inscrit en essai lisait donc notre ciblage.
+   */
+  const maitre = compte({ maitre: true });
+  const client = compte({ bricks: [...BRIQUES_CONNUES] });
+  const essai = compte({ statut: "essai", bricks: [...BRIQUES_ESSAI] });
+  assert.equal(autorise(maitre, "/moniteur"), true, "le maître doit garder son moniteur");
+  assert.equal(autorise(client, "/moniteur"), false, "un client qui a TOUT acheté ne voit pas notre pipe");
+  assert.equal(autorise(essai, "/moniteur"), false, "un essai ne voit pas notre pipe");
+  assert.ok(MAITRE_SEULEMENT.includes("/api/moniteur"), "/api/moniteur doit passer la garde d'identité");
+});
+
+test("⚠⚠ TOUTE ROUTE QUI LIT LE PIPE DE L'OPÉRATEUR EST FERMÉE AUX LOCATAIRES", () => {
+  /**
+   * Le moniteur n'était pas un cas isolé : c'est une FAMILLE — « quelles routes
+   * lisent nos fiches et répondent à n'importe quelle session ? ». Le test la
+   * pose à TOUTES les routes, pas à celle qu'on vient de réparer.
+   *
+   * Trois façons légitimes d'en lire, et une seule doit suffire :
+   *  · la route est dans `MAITRE_SEULEMENT` (garde d'identité du middleware) ;
+   *  · elle exige une clé d'API ou un jeton (`autoriserAppelant`/`autoriserApi`) ;
+   *  · elle exige un secret de NOTRE environnement, comparé à ce que
+   *    l'appelant fournit : `CRON_SECRET` (le cron) ou `CALENDAR_TOKEN` (le
+   *    flux d'agenda, que Google relit sans cookie — 404 sans le jeton).
+   * ⚠ Les secrets sont NOMMÉS : un nom nouveau doit s'ajouter ici à la main,
+   * donc se relire. Un motif générique sur `process.env.` accepterait
+   * n'importe quelle variable, y compris une URL.
+   * ⚠⚠ LIRE le secret ne suffit pas, il faut le COMPARER (`safeEqual`). La
+   * première rédaction se contentait de la lecture, et la mutation l'a dit :
+   * `/api/moniteur` lit `CRON_SECRET` pour afficher s'il est POSÉ — retirée de
+   * `MAITRE_SEULEMENT`, elle passait ce test par coïncidence.
+   */
+  const sansCommentaires = (src: string) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const routes: string[] = [];
+  const marcher = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const f = join(d, e.name);
+      if (e.isDirectory()) marcher(f);
+      else if (e.name === "route.ts") routes.push(f);
+    }
+  };
+  marcher(join(process.cwd(), "app/api"));
+
+  const lecteurs: string[] = [];
+  const fautes: string[] = [];
+  for (const f of routes) {
+    const code = sansCommentaires(readFileSync(f, "utf8"));
+    if (!/lireProspectsOperateur\(/.test(code)) continue;
+    const api = "/" + f.slice(join(process.cwd(), "app").length + 1).replace(/\/route\.ts$/, "").split("\\").join("/");
+    lecteurs.push(api);
+    const maitreSeul = MAITRE_SEULEMENT.some((m) => api === m || api.startsWith(m + "/"));
+    const cle = /autoriser(Appelant|Api)\(/.test(code);
+    const secret = /process\.env\.(CRON_SECRET|CALENDAR_TOKEN)\b/.test(code) && /safeEqual\(/.test(code);
+    if (!maitreSeul && !cle && !secret) fautes.push(api);
+  }
+  // Non-vacuité : sans lecteur trouvé, le test passerait sur un motif cassé.
+  assert.ok(lecteurs.includes("/api/moniteur"), `extraction cassée : ${lecteurs.join(", ") || "aucun lecteur"}`);
+  assert.deepEqual(fautes, [], "ces routes lisent NOTRE pipe et répondent à n'importe quelle session :\n  " + fautes.join("\n  "));
 });

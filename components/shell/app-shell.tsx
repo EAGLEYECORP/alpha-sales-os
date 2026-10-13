@@ -622,7 +622,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="glass-chrome fixed bottom-0 inset-x-0 z-40 flex border-t border-ink-700 md:hidden pb-[env(safe-area-inset-bottom)]"
         aria-label={`Navigation — mode ${mode.label}`}
       >
-        {barreDuMode(mode).map(({ href, label, icon: Icon }) => {
+        {/* ⚠ Ce qui est MASQUÉ sort aussi de la barre, comme du rail. Elle ne
+            filtrait rien parce qu'aucun mode visible d'un client ne portait
+            d'écran maître — jusqu'à ce que `/moniteur` le devienne : le mode
+            par défaut aurait offert un lien vers une porte qui n'existe pas
+            pour lui. Une entrée GRISÉE reste, elle : c'est une porte à vendre. */}
+        {barreDuMode(mode).filter((i) => visible(i.href)).map(({ href, label, icon: Icon }) => {
           /**
            * ⚠ UNE ENTRÉE VERROUILLÉE RESTE UN LIEN, comme dans le rail : elle
            * mène à l'explication, pas nulle part. Un `<button disabled>` aurait

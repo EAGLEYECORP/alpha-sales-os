@@ -181,3 +181,15 @@ test("⚠⚠ LE MODULE EST BRANCHÉ — un export que rien n'importe est mort", 
     "l'ancienne barre figée est encore là — deux définitions de « ce que le pouce atteint »"
   );
 });
+
+test("⚠ un écran MASQUÉ sort aussi de la barre du pouce, pas seulement du rail", () => {
+  /**
+   * La barre ne filtrait rien : aucun mode visible d'un client ne portait
+   * d'écran maître. Depuis que `/moniteur` l'est (13/10/2026 — il lisait notre
+   * pipe), le mode par DÉFAUT d'un client en porte un. Sans filtre, il offrait
+   * un lien vers une porte qui n'existe pas pour lui.
+   */
+  const shell = readFileSync(join(process.cwd(), "components/shell/app-shell.tsx"), "utf8")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+  assert.match(shell, /barreDuMode\(mode\)\s*\.filter\(\(i\) => visible\(i\.href\)\)/, "la barre affiche des écrans masqués");
+});
