@@ -53,6 +53,8 @@ const INTERNAL = [
   "/api/audit/generate",
   "/api/email/preview",
   "/api/import/sheet",
+  // Lecture du site de l'inscrit : elle sort des requêtes depuis notre serveur.
+  "/api/onboarding/site",
   "/api/track/stats",
   "/api/track/contacted",
   "/api/crm/patch",

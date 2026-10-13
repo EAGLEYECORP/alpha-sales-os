@@ -67,6 +67,12 @@ export const CHEMINS_COMMUNS = [
   "/offre-brique",
   "/demarrage",
   /**
+   * « Donne ton site, Alpha se configure devant toi. » Le premier écran d'un
+   * inscrit : il ne peut pas être derrière une brique qu'il n'a pas encore.
+   * La route qu'il appelle (`/api/onboarding/site`) exige, elle, une session.
+   */
+  "/bienvenue",
+  /**
    * Les prompts sont un réglage de la MACHINE, pas une brique vendue : ils
    * décident de ce que l'IA a le droit de dire pour ce compte. Les ouvrir à
    * tout compte authentifié suit la même logique que `/settings` — sauf que la

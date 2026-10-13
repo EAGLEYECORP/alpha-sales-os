@@ -530,6 +530,12 @@ export interface AppSettings {
   };
   /** First-run choice made (demo vs real data) */
   onboarded: boolean;
+  /**
+   * L'écran « donne ton site » (`/bienvenue`) a-t-il déjà été montré ? Il ne
+   * s'ouvre tout seul qu'UNE fois (`proposerBienvenue`) : on ne ramène pas de
+   * force quelqu'un qui a choisi « plus tard ».
+   */
+  bienvenueVue?: boolean;
   /** Tarifs du compte (white-label). Absent = modèle EAGLEYE par défaut. */
   pricing?: import("./pricing").PricingConfig;
   /**

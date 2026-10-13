@@ -12,6 +12,7 @@ import {
 } from "@/lib/profil-operateur";
 import type { Clientele, PropositionConfig } from "@/lib/lecture-site";
 import { LireMonSite } from "@/components/lire-mon-site";
+import { patchReglages } from "@/lib/bienvenue";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -93,21 +94,9 @@ export function ProfilIcp({ onFini, compact }: { onFini?: () => void; compact?: 
 
   const appliquer = () => {
     appliquerProfil(p);
-    const base = offer ?? { city: "", whatYouSell: "", valueProp: "" };
-    patchSettings({
-      bookingUrl: lien.trim(),
-      ...(identite && garderIdentite
-        ? {
-            agencyName: identite.agencyName || agencyName,
-            offer: {
-              city: identite.offer.city || base.city,
-              whatYouSell: identite.offer.whatYouSell || base.whatYouSell,
-              valueProp: identite.offer.valueProp || base.valueProp,
-            },
-          }
-        : {}),
-      ...(cestMoi && dirigeant.trim() ? { closerName: dirigeant.trim() } : {}),
-    });
+    // ⚠ La règle « qu'est-ce qu'une lecture de site a le droit d'écraser ? »
+    // vit dans `lib/bienvenue.ts`, partagée avec l'écran de bienvenue.
+    patchSettings(patchReglages({ agencyName, offer }, { identite, garderIdentite, lien, dirigeant, cestMoi }));
     setFait(true);
     onFini?.();
   };

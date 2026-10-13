@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Globe, Loader2 } from "lucide-react";
-import type { Clientele, LectureSite, PropositionConfig, Provenance, Trouvaille } from "@/lib/lecture-site";
+import { LIBELLE_PROVENANCE, type Clientele, type LectureSite, type PropositionConfig, type Trouvaille } from "@/lib/lecture-site";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -23,14 +23,7 @@ import type { Clientele, LectureSite, PropositionConfig, Provenance, Trouvaille 
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const SOURCE: Record<Provenance, string> = {
-  "donnees-structurees": "données du site",
-  balise: "description du site",
-  titre: "titre de page",
-  texte: "texte du site",
-  lien: "lien du site",
-  registre: "registre national",
-};
+const SOURCE = LIBELLE_PROVENANCE;
 
 function Ligne({ label, t }: { label: string; t: Trouvaille | null }) {
   if (!t) return null;

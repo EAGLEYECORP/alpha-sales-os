@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { resoudreDroits } from "@/lib/entitlements";
 import { fetchSitePage, safePublicUrl, type PageBrute } from "@/lib/site-fetch";
 import { lireSite, pagesUtiles, propositionDepuisLecture, type Registre } from "@/lib/lecture-site";
 
@@ -25,6 +26,14 @@ export const dynamic = "force-dynamic";
  *
  * ⚠ ELLE N'ÉCRIT RIEN. Elle rend une lecture et une proposition ; c'est
  * l'écran qui les montre, l'inscrit qui valide, le store qui applique.
+ *
+ * ⚠⚠ ELLE EXIGE UNE SESSION (13/10/2026). Son chemin métier est `/settings`,
+ * commun — donc ouvert à TOUTE requête, même sans compte. Mesuré en relisant
+ * `peutOuvrir` : un chemin commun ne demande rien. N'importe qui pouvait donc
+ * faire lire n'importe quel site public PAR NOTRE SERVEUR : notre IP qui
+ * frappe, notre bande passante, sans compte ni limite. C'est exactement ce
+ * que le freemium refuse d'offrir à un inconnu. Un inscrit (ou notre poste
+ * en mode solo) passe ; une requête anonyme reçoit 401.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -53,7 +62,15 @@ async function lireRegistre(siren: string): Promise<Registre | null> {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const droits = await resoudreDroits(req);
+  if (!droits.tenantId && !droits.solo) {
+    return NextResponse.json(
+      { error: "Connecte-toi d'abord : la lecture de site est réservée aux comptes.", code: "sans-session" },
+      { status: 401 }
+    );
+  }
+
   let url = "";
   try {
     const body = (await req.json()) as { url?: unknown };

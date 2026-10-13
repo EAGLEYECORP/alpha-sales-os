@@ -1508,6 +1508,31 @@ au plus (contact, mentions légales, à propos — MÊME hôte, garde-fou SSRF r
   valide (clé de Luhn) y est écrit.
 - **Limite** : un site rendu en JavaScript (sans HTML serveur) se lit mal par
   `fetch` direct ; `SCRAPE_ENDPOINT` ne s'applique pas à cette voie aujourd'hui.
+### LE PREMIER ÉCRAN D'UN INSCRIT : `/bienvenue` (13/10/2026)
+`lib/bienvenue.ts` · `app/(app)/bienvenue/page.tsx` · `tests/bienvenue.test.ts`.
+La lecture existait, rangée dans un bandeau replié : personne ne l'ouvrait le
+premier jour. Un client connecté, sans profil, est désormais emmené UNE fois
+(`proposerBienvenue`, depuis `/` ou `/aujourdhui` seulement) sur un écran à
+une question — son site — puis voit chaque réglage se poser, avec sa source
+et ce qu'il change, avant de valider.
+- **Une étape n'existe que si elle règle quelque chose** : l'email et le
+  téléphone lus ne s'affichent pas, aucun réglage ne les reçoit. Un test
+  exige que chaque `reglage` annoncé soit écrit par la validation.
+- **Pendant la lecture, on DIT ce que fait le serveur, on ne coche rien** :
+  une barre de progression inventée est une petite preuve fabriquée.
+- **`patchReglages` est la seule définition** de « qu'est-ce qu'une lecture
+  a le droit d'écraser ? » — partagée avec le formulaire « À qui vends-tu ? ».
+  Une valeur non lue n'efface jamais une valeur posée.
+- **Le maître est prévenu avant de valider** : montrer la lecture devant un
+  prospect est un usage voulu ; la valider depuis notre compte remplacerait
+  notre raison sociale par la sienne.
+- ⚠⚠ **`/api/onboarding/site` exige une session** : son chemin métier
+  (`/settings`) est commun, donc ouvert à TOUTE requête. N'importe qui
+  faisait lire n'importe quel site par notre serveur. 401 sans compte,
+  testé par mutation.
+- **Vu au rendu, pas déduit** : le champ écrasé à dix caractères sur mobile,
+  et les réglages qui se posaient sous la ligne de flottaison — l'écran suit
+  désormais chaque étape (sauf en mouvement réduit).
 
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il

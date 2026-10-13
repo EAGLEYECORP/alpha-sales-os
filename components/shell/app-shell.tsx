@@ -17,6 +17,7 @@ import {
   Cpu,
   FileText,
   Footprints,
+  Globe,
   Gauge,
   Gem,
   Handshake,
@@ -183,6 +184,7 @@ const NAV_GROUPES: NavGroup[] = [
     id: "regler",
     label: "Régler la machine",
     items: [
+      { href: "/bienvenue", label: "Configurer par mon site", icon: Globe },
       { href: "/demarrage", label: "Prise en main", icon: Footprints },
       { href: "/prompts", label: "Prompts", icon: Sparkles },
       { href: "/compte", label: "Compte", icon: UserCog },

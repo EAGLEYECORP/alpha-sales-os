@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Sparkles, X } from "lucide-react";
+import { Globe, Sparkles, X } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { profilExploitable } from "@/lib/profil-operateur";
 import { ProfilIcp } from "@/components/profil-icp";
@@ -50,7 +50,15 @@ export function BandeauDemo() {
               : "Ce ne sont pas tes chiffres. Dis-nous à qui tu vends et on refait la démonstration avec des fiches qui ressemblent à ton marché — trente secondes."}
           </span>
         </p>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {/* La sortie la plus courte d'abord : donner son site, et voir Alpha
+              se régler dessus (`/bienvenue`). Le formulaire reste, pour qui
+              n'a pas de site ou veut tout saisir à la main. */}
+          {!cible && (
+            <Link href="/bienvenue" className="btn-bronze">
+              <Globe size={14} /> Configurer depuis mon site
+            </Link>
+          )}
           <button onClick={() => setOuvert((v) => !v)} className="btn-ghost">
             {ouvert ? (
               <>

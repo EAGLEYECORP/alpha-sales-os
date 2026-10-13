@@ -1,7 +1,9 @@
 import { test } from "node:test";
+import { createHmac } from "node:crypto";
 import assert from "node:assert/strict";
 import { lireSite, pagesUtiles, propositionDepuisLecture, type PageLue } from "../lib/lecture-site";
 import { POST } from "../app/api/onboarding/site/route";
+import { NextRequest } from "next/server";
 
 /**
  * « Donne ton site, Alpha se configure » — `lib/lecture-site.ts`.
@@ -149,10 +151,10 @@ function avecReseau(routes: Record<string, string>, appels: string[]) {
   };
 }
 
-const requete = (url: string) =>
-  new Request("http://local/api/onboarding/site", {
+const requete = (url: string, cookie?: string) =>
+  new NextRequest("http://local/api/onboarding/site", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
     body: JSON.stringify({ url }),
   });
 
@@ -206,3 +208,68 @@ test("un site injoignable rend une erreur lisible, pas une page blanche", async 
     restaurer();
   }
 });
+
+// ── La route sort des requêtes depuis NOTRE serveur : jamais pour un inconnu ──
+
+function avecEnv(vars: Record<string, string | undefined>, fn: () => Promise<void>): () => Promise<void> {
+  return async () => {
+    const avant: Record<string, string | undefined> = {};
+    for (const k of Object.keys(vars)) {
+      avant[k] = process.env[k];
+      if (vars[k] === undefined) delete process.env[k];
+      else process.env[k] = vars[k];
+    }
+    try {
+      await fn();
+    } finally {
+      for (const k of Object.keys(vars)) {
+        if (avant[k] === undefined) delete process.env[k];
+        else process.env[k] = avant[k];
+      }
+    }
+  };
+}
+
+const SECRET = "secret-de-test-hs256-0123456789abcdef";
+const COMPTES = {
+  SUPABASE_JWT_SECRET: SECRET,
+  NEXT_PUBLIC_SUPABASE_URL: "https://exemple.supabase.co",
+  SUPABASE_SERVICE_ROLE_KEY: undefined,
+  SITE_PASSWORD: undefined,
+  REQUIRE_AUTH: undefined,
+  OWNER_EMAILS: undefined,
+};
+
+function jeton(sub: string, email: string): string {
+  const b64 = (x: string | Buffer) => Buffer.from(x).toString("base64").replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const h = b64(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const p = b64(JSON.stringify({ sub, email, exp: Math.floor(Date.now() / 1000) + 3600 }));
+  const sig = b64(createHmac("sha256", SECRET).update(`${h}.${p}`).digest());
+  return `${h}.${p}.${sig}`;
+}
+
+test(
+  "⚠⚠ sans compte, la route REFUSE avant toute requête — notre IP n'est pas un aspirateur public",
+  avecEnv(COMPTES, async () => {
+    /**
+     * Son chemin métier (`/settings`) est commun, donc ouvert à toute requête
+     * par le middleware. C'est la route qui doit poser la question — et la
+     * poser AVANT de sortir sur le réseau.
+     */
+    const appels: string[] = [];
+    const restaurer = avecReseau({ [`${BASE}/`]: ACCUEIL }, appels);
+    try {
+      const res = await POST(requete("menuiserie-demo.test"));
+      assert.equal(res.status, 401);
+      assert.deepEqual(appels, [], "une requête anonyme a fait sortir notre serveur");
+
+      // Contre-test : un inscrit connecté passe.
+      const ok = await POST(
+        requete("menuiserie-demo.test", `alpha-jwt=${jeton("11111111-1111-4111-8111-111111111111", "client@exemple.fr")}`)
+      );
+      assert.equal(ok.status, 200);
+    } finally {
+      restaurer();
+    }
+  })
+);

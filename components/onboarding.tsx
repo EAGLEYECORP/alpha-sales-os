@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAlpha, useHydrated } from "@/lib/store";
+import { proposerBienvenue } from "@/lib/bienvenue";
 import { SetupWizard } from "@/components/setup-wizard";
 import { chargerProgression, doitSOuvrirSeul } from "@/lib/wizard-progress";
 import { chargerDroits } from "@/lib/use-droits";
@@ -60,18 +62,40 @@ export function Onboarding() {
    * tout seul — l'assistant se serait ouvert pendant le chargement, et serait
    * resté. On lit donc la promesse, pas la valeur d'attente.
    */
+  const router = useRouter();
+  const pathname = usePathname();
+  const aUnProfil = useAlpha((s) => Boolean(s.settings.profil));
+  const bienvenueVue = useAlpha((s) => Boolean(s.settings.bienvenueVue));
+
   useEffect(() => {
     if (!hydrated) return;
     let vivant = true;
     void chargerDroits().then((d) => {
       if (!vivant) return;
+      /**
+       * ⚠ LE CLIENT A SON PROPRE PREMIER ÉCRAN : « donne ton site ».
+       *
+       * Un inscrit tombait sur la démo — les fiches de quelqu'un d'autre —
+       * avec, replié dans un bandeau, la question qui rend le produit à lui.
+       * Il est désormais emmené UNE fois sur `/bienvenue`, seulement depuis
+       * l'accueil ou sa journée (jamais arraché à un écran qu'il a ouvert
+       * exprès), et seulement tant qu'il n'a ni profil ni vu l'écran.
+       * « Plus tard » y marche vraiment, et l'écran se marque vu en s'ouvrant.
+       */
+      if (
+        (pathname === "/" || pathname === "/aujourdhui") &&
+        proposerBienvenue({ session: d.session, maitre: d.maitre, solo: d.solo, aUnProfil, dejaVu: bienvenueVue })
+      ) {
+        router.replace("/bienvenue");
+        return;
+      }
       if (!(d.maitre || d.solo)) return;
       if (doitSOuvrirSeul(onboarded, chargerProgression())) setOpen(true);
     });
     return () => {
       vivant = false;
     };
-  }, [hydrated, onboarded]);
+  }, [hydrated, onboarded, pathname, aUnProfil, bienvenueVue, router]);
 
   // Réouverture manuelle depuis n'importe où.
   useEffect(() => {

@@ -38,6 +38,21 @@ import { nettoyerProfil, type ProfilOperateur } from "./profil-operateur";
 
 export type Provenance = "donnees-structurees" | "balise" | "titre" | "texte" | "lien" | "registre";
 
+/**
+ * Comment une provenance se DIT à l'inscrit. Une seule définition : l'encart
+ * « Lire mon site » et l'écran de bienvenue montrent la même source avec les
+ * mêmes mots — deux libellés pour la même provenance finiraient par se
+ * contredire sous les yeux de la même personne.
+ */
+export const LIBELLE_PROVENANCE: Record<Provenance, string> = {
+  "donnees-structurees": "données du site",
+  balise: "description du site",
+  titre: "titre de page",
+  texte: "texte du site",
+  lien: "lien du site",
+  registre: "registre national",
+};
+
 export interface Trouvaille {
   valeur: string;
   source: Provenance;
