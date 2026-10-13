@@ -1564,6 +1564,21 @@ personne : il fabrique des comptes morts.
 >   `/campaigns` · `/newsletter` (notre SMTP), `/outbox` (notre boîte IMAP),
 >   `/audits` (notre egress), `/recette` (notre tracking).
 
+> ⚠⚠ **L'ÉCRAN DU REFUS DIT POURQUOI, ET OÙ ALLER** (13/10/2026,
+> `/offre-brique` · `lib/verrous.ts` · `tests/verrous.test.ts`). Ordre imposé :
+> la raison (notre dépense) → **l'issue gratuite** → le prix. Un refus qui
+> enchaîne sur l'offre se lit comme une rançon.
+> · `ALTERNATIVE_GRATUITE` : une issue par brique payante, faite à la main,
+>   qui dit ce qui reste payant. Chaque lien est rejoué sur le VRAI contrôle
+>   d'accès d'un compte gratuit — une issue vers une autre porte fermée serait
+>   un deuxième refus.
+> · `clesQuiOuvrent` : l'écran affirmait « aucun moyen de passer par TES
+>   identifiants » — faux depuis le BYOK. Il dérive maintenant la réponse de
+>   `cheminOuvertParCle` (`lib/capacites-cle.ts`, extrait pour ne pas tirer
+>   Supabase dans le bundle), la fonction même du middleware.
+> · Des libellés, jamais des identifiants (« agent-alpha ») ; aucun nombre de
+>   briques écrit à la main (« Quatre », il y en a cinq).
+
 > ⚠ **On ne crée pas une 7ᵉ brique pour ça** : une brique de plus se recopie
 > dans huit fichiers (catalogue, offres, provisionnement, vitrine, relevé de
 > marché) et n'aurait rien à vendre. C'est le **CHEMIN** qu'on reclasse, sur

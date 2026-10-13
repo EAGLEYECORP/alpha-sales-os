@@ -3,11 +3,19 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Lock, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, KeyRound, Lock, Sparkles, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { useAlpha } from "@/lib/store";
 import { useDroits } from "@/lib/use-droits";
-import { briquesPayantes, offrePourBrique, POURQUOI_PAYANT } from "@/lib/verrous";
+import {
+  ALTERNATIVE_GRATUITE,
+  briquesPayantes,
+  clesQuiOuvrent,
+  libelleBrique,
+  offrePourBrique,
+  POURQUOI_PAYANT,
+} from "@/lib/verrous";
+import { SOCLE_GRATUIT } from "@/lib/public-catalogue";
 import { signalAbonnement } from "@/lib/peut-se-payer";
 import { BRIQUES_GRATUITES } from "@/lib/entitlements";
 
@@ -23,8 +31,10 @@ import { BRIQUES_GRATUITES } from "@/lib/entitlements";
  * ⚠⚠ ELLE DIT LA VRAIE RAISON, PAS UN ARGUMENTAIRE. La ligne
  * gratuit/payant n'est pas un arbitrage commercial : elle est imposée par un
  * fait technique. Envoyer part de NOTRE serveur mail, appeler consomme NOS
- * minutes, l'agent brûle NOS jetons — il n'existe aucun chemin
- * d'identifiants par locataire. Dit comme ça, le gratuit devient crédible :
+ * minutes, l'agent brûle NOS jetons. (« Aucun chemin d'identifiants par
+ * locataire » était écrit ici : faux depuis le BYOK, et l'écran le servait
+ * au client — `clesQuiOuvrent` le dit maintenant brique par brique.) Dit
+ * comme ça, le gratuit devient crédible :
  * il est illimité dans le temps précisément parce qu'il ne nous coûte rien.
  * Un « passez au premium » sans motif se lit, lui, comme une rançon sur une
  * fonctionnalité retenue exprès.
@@ -49,16 +59,26 @@ function Contenu() {
   const vise = payantes.find((p) => p.brique === brique) ?? null;
   const offre = brique ? offrePourBrique(brique) : null;
   const signal = signalAbonnement(prospects, droits.bricks, brique || "alpha-voice");
+  const alternative = vise ? ALTERNATIVE_GRATUITE[vise.brique] : undefined;
+  const cles = vise ? clesQuiOuvrent(vise.brique) : [];
+  /**
+   * ⚠ Le socle s'affiche par ses LIBELLÉS et dans l'ordre de
+   * `BRIQUES_GRATUITES`. La page disait « Quatre briques sont gratuites » en
+   * dur — il y en a cinq depuis le 12/09 — et listait les identifiants
+   * (`crm · closer · alpha-live`) : un chiffre faux et une liste illisible,
+   * sur la page qui sert à rendre le gratuit crédible.
+   */
+  const socle = BRIQUES_GRATUITES.map((id) => SOCLE_GRATUIT.find((s) => s.id === id) ?? { id, label: id, what: "" });
 
   return (
     <div className="page">
       <PageHeader
-        eyebrow="Ton offre"
-        title={vise ? `« ${brique} » n'est pas incluse` : "Ce que ton offre n'ouvre pas"}
+        eyebrow={vise ? "Pas dans ton offre" : "Ton offre"}
+        title={vise ? libelleBrique(vise.brique) : "Ce qui est gratuit, ce qui se paie"}
         subtitle={
           vise
-            ? "Voici pourquoi, et ce que ça coûte de l'ouvrir. Pas de mystère : la raison est technique, pas commerciale."
-            : "Quatre briques sont gratuites sans limite de durée. Les autres consomment des ressources facturées à l'usage — voici lesquelles et pourquoi."
+            ? "Pourquoi c'est payant, ce que tu peux faire à la place sans payer, et ce que ça coûte de l'ouvrir."
+            : "Tout ce qui tourne chez toi est gratuit, sans limite de durée. Ce qui se paie dépense chez nous — voici quoi, et pourquoi."
         }
         actions={
           de ? (
@@ -104,40 +124,87 @@ function Contenu() {
       {vise && (
         <section className="card p-5">
           <p className="flex items-center gap-2 text-sm font-medium text-paper">
-            <Lock size={15} className="text-bronze-400" /> Pourquoi « {brique} » est payante
+            <Lock size={15} className="text-bronze-400" /> Pourquoi c&apos;est payant
           </p>
           <p className="mt-2 text-[13px] leading-relaxed text-paper-dim">{vise.pourquoi}</p>
-          <p className="mt-3 text-[12px] leading-relaxed text-paper-faint">
-            Ce n&apos;est pas une fonctionnalité qu&apos;on retient : il n&apos;existe pas, aujourd&apos;hui, de
-            moyen de faire passer ces appels par TES identifiants plutôt que les nôtres. Le jour où ce sera le cas,
-            la ligne se rediscutera.
+          <p className="mt-2 text-[12px] leading-relaxed text-paper-faint">
+            Ce n&apos;est pas une fonctionnalité qu&apos;on retient : c&apos;est une dépense qui tombe chez nous à
+            chaque usage. Tout ce qui ne nous coûte rien est gratuit, sans limite de durée.
           </p>
-          {offre && (
-            <div className="panel mt-3 p-3">
-              <p className="text-[12px] font-medium text-paper">
-                {offre.nom}
-                {offre.prixHT !== null && (
-                  <span className="ml-2 font-mono text-bronze-400">
-                    {offre.prixHT.toLocaleString("fr-FR")} € HT{offre.cadence === "mensuel" ? "/mois" : ""}
-                  </span>
-                )}
-              </p>
-              <p className="mt-1 text-[11.5px] text-paper-faint">{offre.sousTitre}</p>
-              <Link href={`/souscrire?offre=${offre.id}`} className="btn-bronze mt-2.5 inline-flex">
-                Ouvrir cette brique
+        </section>
+      )}
+
+      {/*
+        ⚠⚠ L'ISSUE AVANT LE PRIX. Un refus qui enchaîne sur « voici l'offre »
+        se lit comme une rançon ; un refus qui enchaîne sur « voici comment
+        faire sans payer » se lit comme une explication. Et c'est vrai : le
+        travail existe, gratuit, fait à la main — ce qui se paie, c'est que la
+        machine le fasse.
+      */}
+      {vise && (alternative || cles.length > 0) && (
+        <section className="card p-5">
+          <p className="flex items-center gap-2 text-sm font-medium text-paper">
+            <Sparkles size={15} className="text-signal-green" /> Sans payer, tout de suite
+          </p>
+          {alternative && (
+            <div className="mt-2">
+              <p className="text-[13px] leading-relaxed text-paper-dim">{alternative.texte}</p>
+              <Link href={alternative.href} className="btn-ghost mt-2.5 inline-flex">
+                {alternative.lien} <ArrowRight size={14} />
               </Link>
             </div>
           )}
+          {cles.map((c) => (
+            <div key={c.capacite} className="panel mt-3 p-3">
+              <p className="flex items-center gap-2 text-[12.5px] font-medium text-paper">
+                <KeyRound size={13} className="text-bronze-400" /> Ou branche {c.libelle}
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-paper-faint">
+                Tu paies ton fournisseur directement, pas nous — et la brique s&apos;ouvre pour toi, gratuitement de
+                notre côté.
+              </p>
+              <Link href={c.href} className="btn-ghost mt-2 inline-flex">
+                Brancher {c.libelle} <ArrowRight size={14} />
+              </Link>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {vise && offre && (
+        <section className="card p-5">
+          <p className="text-sm font-medium text-paper">La faire tourner par Alpha</p>
+          <div className="panel mt-2 p-3">
+            <p className="text-[12px] font-medium text-paper">
+              {offre.nom}
+              {offre.prixHT !== null && (
+                <span className="ml-2 font-mono text-bronze-400">
+                  {offre.prixHT.toLocaleString("fr-FR")} € HT{offre.cadence === "mensuel" ? "/mois" : ""}
+                </span>
+              )}
+            </p>
+            <p className="mt-1 text-[11.5px] text-paper-faint">{offre.sousTitre}</p>
+            <Link href={`/souscrire?offre=${offre.id}`} className="btn-bronze mt-2.5 inline-flex">
+              Ouvrir cette brique
+            </Link>
+          </div>
         </section>
       )}
 
       <section className="card p-5">
-        <p className="text-sm font-medium text-paper">Ce qui est gratuit, sans limite de durée</p>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-paper-dim">
-          <strong className="text-paper">{BRIQUES_GRATUITES.join(" · ")}</strong> — tes données, ton organisation.
-          Elles ne nous coûtent rien à servir : c&apos;est pour ça qu&apos;elles sont gratuites pour de vrai, et
-          pas quatorze jours.
+        <p className="text-sm font-medium text-paper">Gratuit, sans limite de durée</p>
+        <p className="mt-1 text-[12px] leading-relaxed text-paper-faint">
+          Tes données, ton organisation. Ça ne nous coûte rien à servir — c&apos;est pour ça que c&apos;est gratuit
+          pour de vrai, et pas quatorze jours.
         </p>
+        <ul className="mt-3 space-y-2">
+          {socle.map((b) => (
+            <li key={b.id} className="panel p-3">
+              <p className="text-[12.5px] font-medium text-paper">{b.label}</p>
+              {b.what && <p className="mt-0.5 text-[11.5px] leading-relaxed text-paper-faint">{b.what}</p>}
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="card p-5">
@@ -146,10 +213,11 @@ function Contenu() {
           {payantes.map((b) => {
             const o = offrePourBrique(b.brique);
             const possede = droits.bricks.includes(b.brique) || droits.maitre || droits.solo;
+            const parCle = clesQuiOuvrent(b.brique);
             return (
               <li key={b.brique} className="panel p-3">
                 <p className="flex flex-wrap items-center gap-2 text-[12px] font-medium text-paper">
-                  {b.brique}
+                  {libelleBrique(b.brique)}
                   {possede ? (
                     <span className="font-mono text-[10px] uppercase tracking-wider text-signal-green">incluse</span>
                   ) : (
@@ -162,6 +230,11 @@ function Contenu() {
                   )}
                 </p>
                 <p className="mt-1 text-[11.5px] leading-relaxed text-paper-faint">{POURQUOI_PAYANT[b.brique]}</p>
+                {!possede && parCle.length > 0 && (
+                  <p className="mt-1 text-[11.5px] text-signal-green">
+                    Gratuit avec {parCle.map((c) => c.libelle).join(" ou ")}.
+                  </p>
+                )}
               </li>
             );
           })}

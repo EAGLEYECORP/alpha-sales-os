@@ -99,7 +99,7 @@ export function CleIA() {
   };
 
   return (
-    <section className="card p-4">
+    <section id="cle-ia" className="card scroll-mt-20 p-4">
       <p className="flex items-center gap-2 text-sm font-medium text-paper">
         <KeyRound size={15} className="text-bronze-400" /> Ta clé IA
       </p>
@@ -294,7 +294,7 @@ export function BoiteEnvoi() {
   );
 
   return (
-    <section className="card p-4">
+    <section id="boite-envoi" className="card scroll-mt-20 p-4">
       <p className="flex items-center gap-2 text-sm font-medium text-paper">
         <Mail size={15} className="text-bronze-400" /> Ta boîte d&apos;envoi
       </p>

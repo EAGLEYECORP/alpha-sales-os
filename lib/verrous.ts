@@ -1,7 +1,8 @@
 import { BRIQUES_GRATUITES } from "./entitlements";
-import { briquesPourChemin, type BrickId } from "./bricks-access";
+import { ACCES_PAR_CHEMIN, briquesPourChemin, type BrickId } from "./bricks-access";
 import { OFFRES, type OffrePublique } from "./offres-publiques";
-import { SOCLE_GRATUIT } from "./public-catalogue";
+import { CAPACITES as CATALOGUE_PUBLIC, SOCLE_GRATUIT } from "./public-catalogue";
+import { CAPACITES as CAPACITES_CLE, cheminOuvertParCle, type Capacite } from "./capacites-cle";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -56,8 +57,9 @@ export type EtatVerrou =
  * ⚠ CE NE SONT PAS DES ARBITRAGES COMMERCIAUX, et c'est ce qui rend ces
  * phrases dicibles. La ligne gratuit/payant est imposée par un fait
  * technique : `/api/send` lit `SMTP_*` dans l'environnement du SERVEUR,
- * `/api/voice/call` lit `LIVEKIT_*`, `/api/ai` brûle NOS jetons. Il n'existe
- * aucun chemin d'identifiants par locataire. Ouvrir une de ces briques au
+ * `/api/voice/call` lit `LIVEKIT_*`, `/api/ai` brûle NOS jetons. (« Aucun
+ * chemin d'identifiants par locataire » : vrai à l'écriture, faux pour l'IA
+ * et l'email depuis le BYOK — voir `clesQuiOuvrent` plus bas.) Ouvrir une de ces briques au
  * gratuit revient à donner notre carte de crédit et notre nom de domaine à
  * des inconnus — et ça ne se voit que sur la facture, un mois plus tard.
  *
@@ -103,9 +105,128 @@ export const POURQUOI_PAYANT: Record<string, string> = {
    */
   audits:
     "L'audit va chercher les pages du prospect par notre infrastructure : c'est notre adresse IP qui frappe, et c'est elle qui se fait bloquer.",
+  /**
+   * ⚠ Réécrite le 13/10/2026. L'ancienne phrase finissait sur « sans lui, on
+   * ne peut pas isoler ce qui vient de quel compte » — un argument
+   * d'architecture, pas un coût, et illisible pour qui la reçoit. Ce qui
+   * coûte est concret : chaque ouverture et chaque clic frappent NOTRE
+   * serveur (`/api/track/open`, `/api/track/click`) et s'écrivent dans NOTRE
+   * base.
+   */
   tracking:
-    "Le suivi d'ouverture et de clic tourne sur notre domaine de traçage. Sans lui, on ne peut pas isoler ce qui vient de quel compte.",
+    "Chaque ouverture et chaque clic passent par notre serveur et s'écrivent dans notre base, sous notre domaine. Un domaine de traçage signalé l'est pour tous les comptes qui le partagent.",
 };
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE NOM QU'UN HUMAIN LIT — jamais l'identifiant.
+ *
+ * ⚠ L'écran du refus titrait « « agent-alpha » n'est pas incluse » : un
+ * identifiant de code, servi tel quel à quelqu'un qui n'a jamais vu le code,
+ * au moment précis où on lui demande de comprendre. Les libellés viennent du
+ * catalogue PUBLIC (`lib/public-catalogue.ts`), pas de `lib/bricks` — lui
+ * est serveur, il porte nos marges.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function libelleBrique(id: string): string {
+  return CATALOGUE_PUBLIC.find((c) => c.id === id)?.label ?? id;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QU'IL PEUT FAIRE À LA PLACE, GRATUITEMENT, TOUT DE SUITE.
+ *
+ * ⚠⚠ UN REFUS SANS ISSUE EST UN CUL-DE-SAC, MÊME BIEN EXPLIQUÉ. La raison
+ * dit pourquoi la porte est fermée ; elle ne dit pas où aller. Quelqu'un sans
+ * budget qui lit « ça consomme nos minutes » repart avec un non — alors que
+ * le même travail existe, gratuit, fait à la main, deux écrans plus loin.
+ * C'est la doctrine « si Alpha ne le fait pas pour toi, tu le fais à la main,
+ * et l'outil t'y aide », appliquée à la porte même.
+ *
+ * ⚠ Chaque `href` est vérifié GRATUIT par un test : une alternative qui
+ * mènerait à une autre porte fermée serait un deuxième refus, déguisé en
+ * solution.
+ * ⚠ Chaque phrase dit ce qui RESTE à la main. « Fais pareil gratuitement »
+ * serait faux : ce qui se paie, c'est précisément que la machine le fasse.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const ALTERNATIVE_GRATUITE: Record<string, { texte: string; href: string; lien: string }> = {
+  campagnes: {
+    texte:
+      "Écris tes messages ici — modèles, aperçu, file LinkedIn — et envoie-les depuis ta propre boîte. Ce qui se paie, c'est que l'envoi parte de notre serveur, en séquence, sans toi.",
+    href: "/templates",
+    lien: "Écrire mes messages",
+  },
+  "alpha-voice": {
+    texte:
+      "La liste d'appels du matin est gratuite : c'est toi qui composes, depuis ton téléphone, avec le script et les objections sous les yeux. Ce qui se paie, c'est le robot qui compose à ta place.",
+    href: "/appels",
+    lien: "Ouvrir ma liste d'appels",
+  },
+  "agent-alpha": {
+    texte:
+      "Le Cerveau répond à tes objections sans IA payante : il cherche dans ta propre doctrine, dans ton navigateur. Ce qui se paie, c'est l'agent qui rédige et décide à ta place.",
+    href: "/cerveau",
+    lien: "Ouvrir le Cerveau",
+  },
+  audits: {
+    texte:
+      "Ouvre son site toi-même et note sur sa fiche ce que tu y vois : c'est exactement ce que l'audit automatise. Ce qui se paie, c'est que notre serveur aille le lire et le rédige pour toi.",
+    href: "/pipeline",
+    lien: "Ouvrir mon pipeline",
+  },
+  tracking: {
+    texte:
+      "Sans traçage, la réponse reste le meilleur signal : consigne-la sur la fiche, et le fil d'activité — gratuit — te montre tout ce qui bouge. Ce qui se paie, c'est de savoir qui a ouvert sans avoir répondu.",
+    href: "/activity",
+    lien: "Ouvrir le fil d'activité",
+  },
+};
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * CE QU'UNE CLÉ À LUI OUVRE — sans rien nous payer.
+ *
+ * ⚠⚠ L'ÉCRAN AFFIRMAIT L'INVERSE : « il n'existe pas, aujourd'hui, de moyen
+ * de faire passer ces appels par TES identifiants ». Vrai le jour où la
+ * phrase a été écrite, faux depuis le BYOK (`lib/capacites-cle.ts`) : une
+ * clé IA ouvre l'agent, une boîte SMTP ouvre les campagnes. On disait non à
+ * quelqu'un qui pouvait entrer gratuitement — sur la page même qui existe
+ * pour lui dire comment entrer.
+ *
+ * ⚠ RIEN N'EST ÉCRIT À LA MAIN : la réponse vient de `cheminOuvertParCle`,
+ * la fonction que le MIDDLEWARE appelle pour accorder l'accès. Deux
+ * définitions de « sa clé ouvre-t-elle ce chemin ? » finiraient par
+ * diverger, et c'est l'écran qui promettrait une porte que le serveur
+ * refuse.
+ * ⚠ `Record<Capacite, …>` : une capacité ajoutée demain ne compile pas tant
+ * qu'on n'a pas dit où se branche sa clé.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const REGLAGE_DE_LA_CLE: Record<Capacite, { href: string; libelle: string }> = {
+  ia: { href: "/settings#cle-ia", libelle: "ta propre clé IA" },
+  email: { href: "/settings#boite-envoi", libelle: "ta propre boîte d'envoi" },
+};
+
+export interface PorteParCle {
+  capacite: Capacite;
+  /** Ce qu'il branche, en mots. */
+  libelle: string;
+  /** Où il la branche. */
+  href: string;
+  /** Les écrans de la brique que cette clé ouvre — jamais vide. */
+  chemins: string[];
+}
+
+export function clesQuiOuvrent(brique: string): PorteParCle[] {
+  const chemins = Object.entries(ACCES_PAR_CHEMIN)
+    .filter(([, briques]) => briques.includes(brique as BrickId))
+    .map(([chemin]) => chemin);
+  return CAPACITES_CLE.flatMap((capacite) => {
+    const ouverts = chemins.filter((c) => cheminOuvertParCle(c, [capacite]));
+    return ouverts.length ? [{ capacite, ...REGLAGE_DE_LA_CLE[capacite], chemins: ouverts }] : [];
+  });
+}
 
 /**
  * L'offre qui ouvre une brique — la MOINS CHÈRE qui la contient.
@@ -170,7 +291,7 @@ const libelleGratuit = (brique: string, premier: boolean): string => {
   return premier ? label : label.charAt(0).toLowerCase() + label.slice(1);
 };
 
-const RAISON_SANS_COMPTE =
+export const RAISON_SANS_COMPTE =
   "Il faut d'abord créer ton compte — c'est gratuit et sans limite de durée. " +
   `${enumereEnFrancais(BRIQUES_GRATUITES.map((b, i) => libelleGratuit(b, i === 0)))} s'ouvrent immédiatement.`;
 

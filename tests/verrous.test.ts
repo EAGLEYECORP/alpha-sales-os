@@ -2,7 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { briquesPayantes, etatChemin, offrePourBrique, POURQUOI_PAYANT } from "../lib/verrous";
+import {
+  ALTERNATIVE_GRATUITE, briquesPayantes, clesQuiOuvrent, etatChemin, libelleBrique, offrePourBrique, POURQUOI_PAYANT,
+} from "../lib/verrous";
+import { autorise, droitGratuit } from "../lib/entitlements";
+import { ACCES_PAR_CHEMIN } from "../lib/bricks-access";
+import { cheminOuvertParCle } from "../lib/capacites-cle";
 import { signalAbonnement, MULTIPLE_SEUIL } from "../lib/peut-se-payer";
 import { BRIQUES_GRATUITES } from "../lib/entitlements";
 import { OFFRES } from "../lib/offres-publiques";
@@ -354,4 +359,102 @@ test("⚠ la distinction descend bien du SERVEUR — sinon l'écran la devine", 
 
   const shell = readFileSync(join(process.cwd(), "components/shell/app-shell.tsx"), "utf8");
   assert.match(shell, /droits\.solo, droits\.session\)/, "le rail doit transmettre la session au calcul de verrou");
+});
+
+// ══ L'ÉCRAN DU REFUS DIT POURQUOI, ET OÙ ALLER (13/10/2026) ══
+
+const sansCommentaires = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+
+test("⚠⚠ CHAQUE BRIQUE PAYANTE A UNE ISSUE GRATUITE — et elle mène à une porte OUVERTE", () => {
+  /**
+   * Un refus sans issue est un cul-de-sac, même bien expliqué. Et une issue
+   * qui mène à un autre écran payant serait un deuxième refus déguisé en
+   * solution : on la joue sur le VRAI contrôle d'accès d'un compte gratuit.
+   */
+  const g = droitGratuit("t-neuf");
+  const payantes = briquesPayantes().map((b) => b.brique);
+  assert.ok(payantes.length >= 4, `extraction cassée : ${payantes.length} brique(s) payante(s)`);
+  for (const b of payantes) {
+    const alt = ALTERNATIVE_GRATUITE[b];
+    assert.ok(alt, `${b} n'a pas d'issue gratuite : le refus est un cul-de-sac`);
+    assert.equal(autorise(g, alt.href), true, `${b} → ${alt.href} est FERMÉ à un compte gratuit`);
+    // Elle dit ce qui reste payant : « fais pareil gratuitement » serait faux.
+    assert.match(alt.texte, /Ce qui se paie/, `${b} : l'issue ne dit pas ce qui reste payant`);
+  }
+  // Pas d'issue orpheline : une brique devenue gratuite n'en a plus besoin.
+  for (const b of Object.keys(ALTERNATIVE_GRATUITE)) {
+    assert.ok(payantes.includes(b), `${b} a une issue gratuite alors qu'elle n'est plus payante`);
+  }
+});
+
+test("⚠⚠ L'ÉCRAN DIT QUELLE CLÉ OUVRE QUOI — et la même règle que le middleware", () => {
+  /**
+   * L'écran affirmait « il n'existe pas de moyen de passer par TES
+   * identifiants » — faux depuis le BYOK. Les attentes sont écrites ici en
+   * clair, parce que c'est ce que le client LIT : une clé IA ouvre l'agent,
+   * une boîte d'envoi ouvre les campagnes, rien n'ouvre la téléphonie.
+   */
+  const par = (b: string) => clesQuiOuvrent(b).map((c) => `${c.capacite}:${c.chemins.join(",")}`);
+  assert.deepEqual(par("agent-alpha"), ["ia:/agent"]);
+  assert.deepEqual(par("campagnes"), ["email:/campaigns"]);
+  assert.deepEqual(par("alpha-voice"), [], "aucune clé n'apporte nos minutes");
+  assert.deepEqual(par("audits"), [], "aucune clé n'apporte notre egress");
+  assert.deepEqual(par("tracking"), [], "aucune clé n'apporte notre domaine de traçage");
+
+  // Et chaque chemin annoncé est bien ouvert par la fonction du middleware.
+  for (const b of briquesPayantes().map((x) => x.brique)) {
+    for (const c of clesQuiOuvrent(b)) {
+      for (const chemin of c.chemins) {
+        assert.ok(ACCES_PAR_CHEMIN[chemin]?.includes(b as never), `${chemin} n'appartient pas à ${b}`);
+        assert.equal(cheminOuvertParCle(chemin, [c.capacite]), true, `${chemin} annoncé ouvert par ${c.capacite}`);
+      }
+      assert.match(c.href, /^\/settings#/, "la clé se branche dans les réglages");
+    }
+  }
+  const reglages = readFileSync(join(process.cwd(), "components/settings/cle-ia.tsx"), "utf8");
+  for (const ancre of ["cle-ia", "boite-envoi"]) {
+    assert.match(reglages, new RegExp(`id="${ancre}"`), `l'ancre #${ancre} n'existe pas : le lien tombe en haut de page`);
+  }
+});
+
+test("⚠⚠ LA PAGE NE PEUT PLUS DIRE « AUCUN MOYEN » TANT QU'UNE CLÉ OUVRE QUELQUE CHOSE", () => {
+  /**
+   * Même forme que le garde de `voice-script` : on ne cherche pas une phrase
+   * interdite dans l'absolu, on refuse une phrase que la DONNÉE contredit.
+   * Le jour où aucune brique ne s'ouvre plus par clé, l'écrire redevient
+   * licite et ce test se tait.
+   */
+  const ouvertesParCle = briquesPayantes().filter((b) => clesQuiOuvrent(b.brique).length > 0);
+  if (ouvertesParCle.length === 0) return;
+  const page = sansCommentaires(readFileSync(join(process.cwd(), "app/(app)/offre-brique/page.tsx"), "utf8"));
+  assert.ok(
+    !/il n&apos;existe pas[^.]*identifiants|aucun (moyen|chemin)[^.]*identifiants/i.test(page),
+    "la page affirme qu'on ne peut pas passer par ses identifiants — faux pour " +
+      ouvertesParCle.map((b) => b.brique).join(", ")
+  );
+  assert.match(page, /clesQuiOuvrent\(/, "la page doit DIRE quelle clé ouvre la brique");
+});
+
+test("⚠ on montre des NOMS, jamais des identifiants de code — et aucun compte écrit à la main", () => {
+  for (const b of briquesPayantes()) {
+    assert.notEqual(libelleBrique(b.brique), b.brique, `${b.brique} n'a pas de libellé public`);
+  }
+  const page = sansCommentaires(readFileSync(join(process.cwd(), "app/(app)/offre-brique/page.tsx"), "utf8"));
+  assert.match(page, /title=\{vise \? libelleBrique\(/, "le titre doit nommer la brique, pas son identifiant");
+  assert.ok(!/(Quatre|Cinq|Six) briques/.test(page), "un nombre de briques écrit à la main ment au premier changement");
+  assert.ok(!/BRIQUES_GRATUITES\.join/.test(page), "le socle s'affichait en identifiants (« crm · closer »)");
+});
+
+test("⚠ le refus du SERVEUR (/compte?bloque=…) mène à la raison et à l'issue", () => {
+  /**
+   * Arrivé par une adresse tapée, on lisait « n'est pas inclus » et rien
+   * d'autre. Et la phrase sans compte énumérait quatre briques à la main,
+   * le copilote en moins — corrigée dans `lib/verrous.ts`, oubliée ici.
+   */
+  const src = sansCommentaires(readFileSync(join(process.cwd(), "components/billing/mon-offre.tsx"), "utf8"));
+  assert.match(src, /\/offre-brique\?b=/, "le refus ne mène pas à l'explication");
+  assert.match(src, /POURQUOI_PAYANT\[/, "le refus ne dit pas pourquoi");
+  assert.match(src, /RAISON_SANS_COMPTE/, "la phrase sans compte doit venir de la source unique");
+  assert.ok(!/le\s+CRM, le Closer OS, le Cerveau et le pilotage/.test(src), "énumération à la main revenue");
 });

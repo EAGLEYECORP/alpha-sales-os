@@ -5,6 +5,7 @@ import { Lock, PackageCheck, ShoppingCart, TimerReset } from "lucide-react";
 import { useDroits } from "@/lib/use-droits";
 import { CAPACITES } from "@/lib/public-catalogue";
 import { briquesPourChemin } from "@/lib/bricks-access";
+import { POURQUOI_PAYANT, RAISON_SANS_COMPTE } from "@/lib/verrous";
 import type { RaisonRefus } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +89,8 @@ export function MonOffre() {
 
   const possede = (id: string) => d.maitre || d.bricks.includes(id);
   const briquesDuBloc = bloque ? briquesPourChemin(bloque) : undefined;
+  // La brique qu'on explique : la première qui a une raison écrite (donc payante).
+  const briqueVendue = briquesDuBloc?.find((b) => POURQUOI_PAYANT[b]) ?? null;
   const manquantes = CAPACITES.filter((c) => !possede(c.id));
 
   const fin = d.essaiJusquA ? new Date(d.essaiJusquA) : null;
@@ -118,8 +121,11 @@ export function MonOffre() {
         <div className="mt-3 rounded-lg border border-bronze-700/40 bg-bronze-900/20 px-3 py-2 text-[12px] text-paper">
           <p className="font-medium">Tu n&apos;as pas encore de compte sur cette installation.</p>
           <p className="mt-1 text-paper-dim">
-            Ce que tu vois est une démonstration. Crée ton compte — c&apos;est gratuit et sans limite de durée : le
-            CRM, le Closer OS, le Cerveau et le pilotage s&apos;ouvrent immédiatement, avec TES données.
+            {/* ⚠ Énumérait QUATRE briques à la main — le copilote d'appel, gratuit
+                depuis le 12/09, n'y était pas. Même phrase, même défaut que celle
+                de `lib/verrous.ts`, corrigée là-bas et pas ici : elle vient
+                désormais de la même source. */}
+            Ce que tu vois est une démonstration. {RAISON_SANS_COMPTE.replace(/\.$/, "")}, avec TES données.
           </p>
           <a href="/compte" className="btn-bronze mt-2.5 inline-flex">
             Créer mon compte
@@ -146,6 +152,25 @@ export function MonOffre() {
               {briquesDuBloc?.length === 0 && <> Cette page est réservée à l&apos;équipe.</>}
             </span>
           </p>
+          {/*
+            ⚠ LE REFUS DISAIT QUOI, JAMAIS POURQUOI NI QUOI FAIRE. Arrivé ici par
+            le serveur (une adresse tapée, un lien gardé), on lisait « n'est pas
+            inclus » et rien d'autre : pas la dépense qui justifie la porte, pas
+            le chemin gratuit qui fait le même travail à la main. La raison et
+            l'issue vivent dans `/offre-brique` — on y mène, on ne les recopie
+            pas.
+          */}
+          {briqueVendue && (
+            <p className="mt-1.5 pl-[22px] text-[12px] text-paper-dim">
+              {POURQUOI_PAYANT[briqueVendue]}{" "}
+              <a
+                href={`/offre-brique?b=${encodeURIComponent(briqueVendue)}&de=${encodeURIComponent(bloque)}`}
+                className="text-bronze-300 underline-offset-2 hover:underline"
+              >
+                Ce que tu peux faire sans payer →
+              </a>
+            </p>
+          )}
         </div>
       )}
 
