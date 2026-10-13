@@ -63,6 +63,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
    * qu'elle sert des données de pipe. Elle n'en sert aucune.
    */
   "/api/organisation": "/compte",
+  /**
+   * « Donne ton site, Alpha se configure » (`lib/lecture-site.ts`).
+   *
+   * ⚠ Chemin GRATUIT, et c'est le point : c'est le premier geste d'un compte
+   * qui vient d'arriver. Elle ne dépense rien chez nous — aucun modèle, des
+   * requêtes HTTP vers le site de l'inscrit et le registre public — donc
+   * hors `API_QUI_DEPENSENT`.
+   */
+  "/api/onboarding": "/settings",
   // File de propositions : c'est du pilotage du pipe, donc du CRM.
   "/api/propositions": "/pipeline",
 

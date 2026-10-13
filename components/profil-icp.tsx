@@ -10,6 +10,8 @@ import {
   profilExploitable,
   type ProfilOperateur,
 } from "@/lib/profil-operateur";
+import type { Clientele, PropositionConfig } from "@/lib/lecture-site";
+import { LireMonSite } from "@/components/lire-mon-site";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -41,18 +43,71 @@ export function ProfilIcp({ onFini, compact }: { onFini?: () => void; compact?: 
   const appliquerProfil = useAlpha((s) => s.appliquerProfil);
   const patchSettings = useAlpha((s) => s.patchSettings);
 
+  const agencyName = useAlpha((s) => s.settings.agencyName);
+  const offer = useAlpha((s) => s.settings.offer);
+
   const [p, setP] = useState<ProfilOperateur>(enregistre ?? PROFIL_VIDE);
   const [lien, setLien] = useState(bookingUrl);
   const [fait, setFait] = useState(false);
+  /**
+   * Ce que la lecture du site propose pour l'IDENTITÉ du compte (nom affiché,
+   * ville, offre). Appliqué au clic sur le bouton, case cochée par défaut —
+   * c'est la raison pour laquelle l'inscrit a donné son site.
+   */
+  const [identite, setIdentite] = useState<Pick<PropositionConfig, "agencyName" | "offer"> | null>(null);
+  const [garderIdentite, setGarderIdentite] = useState(true);
+  /**
+   * ⚠ Le dirigeant lu sur les mentions légales n'est PAS posé comme
+   * signataire d'office : celui qui s'inscrit n'est pas forcément lui, et on
+   * ne devine jamais l'identité d'un humain (`lib/signature.ts`). Il faut un
+   * acte — la case « c'est moi » — décochée par défaut.
+   */
+  const [dirigeant, setDirigeant] = useState("");
+  const [cestMoi, setCestMoi] = useState(false);
 
   const set = (patch: Partial<ProfilOperateur>) => {
     setP((v) => ({ ...v, ...patch }));
     setFait(false);
   };
 
+  // La lecture du site REMPLIT le formulaire, valeur lue par valeur lue :
+  // une case que le site n'a pas su remplir garde ce que l'inscrit y avait mis.
+  const recevoir = (prop: PropositionConfig) => {
+    setP((v) => ({
+      ...v,
+      metier: prop.profil.metier || v.metier,
+      cibleSecteur: prop.profil.cibleSecteur || v.cibleSecteur,
+      cibleRole: prop.profil.cibleRole || v.cibleRole,
+      cibleZone: prop.profil.cibleZone || v.cibleZone,
+    }));
+    if (prop.bookingUrl) setLien(prop.bookingUrl);
+    const lu = Boolean(prop.agencyName || prop.offer.city || prop.offer.whatYouSell || prop.offer.valueProp);
+    setIdentite(lu ? { agencyName: prop.agencyName, offer: prop.offer } : null);
+    setGarderIdentite(true);
+    setDirigeant(prop.dirigeant);
+    setCestMoi(false);
+    setFait(false);
+  };
+
+  const choisirClientele = (c: Clientele) => set({ cibleSecteur: c.libelle, cibleRole: c.role });
+
   const appliquer = () => {
     appliquerProfil(p);
-    patchSettings({ bookingUrl: lien.trim() });
+    const base = offer ?? { city: "", whatYouSell: "", valueProp: "" };
+    patchSettings({
+      bookingUrl: lien.trim(),
+      ...(identite && garderIdentite
+        ? {
+            agencyName: identite.agencyName || agencyName,
+            offer: {
+              city: identite.offer.city || base.city,
+              whatYouSell: identite.offer.whatYouSell || base.whatYouSell,
+              valueProp: identite.offer.valueProp || base.valueProp,
+            },
+          }
+        : {}),
+      ...(cestMoi && dirigeant.trim() ? { closerName: dirigeant.trim() } : {}),
+    });
     setFait(true);
     onFini?.();
   };
@@ -69,6 +124,47 @@ export function ProfilIcp({ onFini, compact }: { onFini?: () => void; compact?: 
             Dis-nous ta cible et on refait la démonstration avec des fiches qui ressemblent à TON marché. Rien
             n&apos;est obligatoire, et tu peux revenir le changer.
           </p>
+        </div>
+      )}
+
+      <LireMonSite onProposition={recevoir} onClientele={choisirClientele} />
+
+      {identite && (
+        <div className="panel space-y-2 p-3">
+          <label className="flex items-start gap-2 text-[12px] text-paper-dim">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={garderIdentite}
+              onChange={(e) => {
+                setGarderIdentite(e.target.checked);
+                setFait(false);
+              }}
+            />
+            <span>
+              Utiliser l&apos;identité lue sur mon site pour mes envois et mes documents :{" "}
+              <strong className="text-paper">{identite.agencyName || agencyName}</strong>
+              {identite.offer.city ? ` — ${identite.offer.city}` : ""}
+              {identite.offer.whatYouSell ? ` — « ${identite.offer.whatYouSell} »` : ""}
+            </span>
+          </label>
+          {dirigeant && (
+            <label className="flex items-start gap-2 text-[12px] text-paper-dim">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={cestMoi}
+                onChange={(e) => {
+                  setCestMoi(e.target.checked);
+                  setFait(false);
+                }}
+              />
+              <span>
+                C&apos;est moi, <strong className="text-paper">{dirigeant}</strong>, qui signe les messages{" "}
+                <span className="text-paper-faint">(nom lu sur tes mentions légales — ne coche que si c&apos;est toi)</span>
+              </span>
+            </label>
+          )}
         </div>
       )}
 

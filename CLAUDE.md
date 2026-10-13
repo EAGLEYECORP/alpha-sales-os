@@ -1488,6 +1488,27 @@ le produit n'est pas pour soi.
 > ne se lisent pas comme une redite, elles se lisent comme un bug. L'encadré
 > général est passé `hidden md:block`.
 
+## « DONNE TON SITE, ALPHA SE CONFIGURE » (13/10/2026)
+`lib/lecture-site.ts` · `app/api/onboarding/site` · `components/lire-mon-site.tsx`
+(dans « À qui vends-tu ? ») · `tests/lecture-site.test.ts`.
+
+L'inscrit colle l'adresse de son site ; le serveur lit l'accueil + trois pages
+au plus (contact, mentions légales, à propos — MÊME hôte, garde-fou SSRF rejoué
+à chaque redirection) et pré-remplit profil, identité, ville, lien de RDV.
+- **On lit, on n'invente pas.** Chaque valeur porte sa source et l'extrait où
+  elle a été lue ; ce qui manque se DIT (`manques`). Pas de clientèle nommée sur
+  le site → le secteur reste vide et le bouton dit pourquoi.
+- **La clientèle est une suggestion avec preuve**, comptée, jamais un verdict ;
+  « entreprise de … » nu ne range personne en B2B.
+- **⚠⚠ Le dirigeant lu sur les mentions légales n'est JAMAIS signataire
+  d'office** : case « c'est moi » décochée par défaut. Celui qui s'inscrit n'est
+  pas forcément lui (`lib/signature.ts` : on ne devine pas l'identité d'un humain).
+- **Gratuit** (`/api/onboarding` → `/settings`) : aucun modèle, aucun crédit —
+  des requêtes vers le site de l'inscrit et le registre public si un SIREN
+  valide (clé de Luhn) y est écrit.
+- **Limite** : un site rendu en JavaScript (sans HTML serveur) se lit mal par
+  `fetch` direct ; `SCRAPE_ENDPOINT` ne s'applique pas à cette voie aujourd'hui.
+
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il
 démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiants**.

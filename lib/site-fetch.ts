@@ -113,6 +113,35 @@ async function fetchNoRedirect(url: string, init: RequestInit): Promise<Response
   throw new Error("Trop de redirections.");
 }
 
+/** Une page publique, en HTML BRUT, avec l'URL réellement servie. */
+export interface PageBrute {
+  url: string;
+  html: string;
+}
+
+/**
+ * Le HTML brut d'une page publique — pour lire le site d'un inscrit
+ * (`lib/lecture-site.ts`).
+ *
+ * ⚠ LE TEXTE NETTOYÉ NE SUFFIT PAS POUR CET USAGE. Le nom d'une entreprise
+ * vit dans les balises (`og:site_name`, données structurées, `<title>`), son
+ * lien de rendez-vous dans un `href`, son téléphone dans un `tel:`. `stripHtml`
+ * jette précisément tout ça. Même garde-fou SSRF que `fetchSiteText` : chaque
+ * saut de redirection est revalidé.
+ */
+export async function fetchSitePage(url: string, maxChars = 600_000): Promise<PageBrute> {
+  const safe = safePublicUrl(url);
+  if (!safe) throw new Error("URL non valide ou non autorisée.");
+  const res = await fetchNoRedirect(safe, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; AlphaSalesOS/1.0; lecture du site)", Accept: "text/html" },
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!res.ok) throw new Error(`Page injoignable (HTTP ${res.status}).`);
+  const ct = res.headers.get("content-type") ?? "";
+  if (!/text\/html|application\/xhtml/i.test(ct)) throw new Error("Le lien ne renvoie pas une page web lisible.");
+  return { url: res.url || safe, html: (await res.text()).slice(0, maxChars) };
+}
+
 export interface SiteText {
   text: string;
   source: "endpoint" | "fetch";
