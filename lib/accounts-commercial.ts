@@ -329,50 +329,67 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
     accountId: "nuwacom",
     identite: {
       name: "Nuwacom",
-      city: "Lyon",
-      sites: ["https://nuwacom.fr/", "https://nuwacom.com/en"],
-      whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",
+      /**
+       * ⚠ CETTE ENTRÉE DÉCRIVAIT UN AUTRE MÉTIER (corrigé le 15/10/2026).
+       * Elle disait « refonte des parcours assurance », à Lyon. Leurs propres
+       * annonces disent : plateforme IA d'entreprise (« AI operating system for
+       * work ») — connaissances internes, équipes et agents IA dans un même
+       * espace —, siège en Allemagne, pôle au Luxembourg orienté secteurs
+       * régulés (finance, administration), grands comptes européens cités
+       * publiquement comme clients.
+       * Personne ne l'avait vérifié : l'ICP, l'angle et le script servis sous ce
+       * compte en héritaient, et un assureur aurait entendu parler d'un produit
+       * que Nuwacom ne vend pas.
+       */
+      city: "Luxembourg",
+      sites: ["https://nuwacom.ai/", "https://nuwacom.fr/", "https://nuwacom.com/en"],
+      whatYouSell: "Plateforme IA d'entreprise — connaissances internes, équipes et agents IA dans un même espace",
       valueProp:
-        "On transforme un process assurance manuel et lent en parcours digital mesurable : moins de friction, plus de contrats traités.",
+        "Vos équipes travaillent avec l'IA sur vos propres connaissances, dans un espace sécurisé — au lieu de coller vos données dans des outils grand public.",
       // GROS chantiers seulement (> 40 k) : en dessous, c'est faisable par nous
       // et ça reste chez EAGLEYE. Au-dessus, c'est trop lourd pour nous.
       offers: ["visibilite-growth", "alpha-sales-os"],
+      // Le schéma convenu avec leur CEO : NOUS amenons le client → visio de
+      // cadrage / chiffrage À TROIS → contrat de commission APRÈS → nous tenons
+      // le rôle de PO pendant le delivery.
       closingAction:
-        "Caler le RDV de CADRAGE avec le CEO de Nuwacom. Le contrat se dresse APRÈS ce cadrage — " +
-        "c'est là qu'est le levier de négociation.",
+        "Caler la visio de CADRAGE / CHIFFRAGE à trois : le CEO de Nuwacom, le client et nous. " +
+        "Le contrat de commission se dresse APRÈS — c'est là qu'est le levier de négociation.",
     },
     icp: {
-      label: "Assureur en transformation digitale (compagnie, courtier, mutuelle)",
-      buyer: "Directeur transformation / DSI / directeur général / responsable innovation",
+      // L'assurance reste la porte d'entrée : secteur régulé, celui que vise leur
+      // pôle luxembourgeois. Ce qui change, c'est la DOULEUR — leur produit ne
+      // refait pas un parcours, il met l'IA sur les connaissances de la maison.
+      label: "Assureur, mutuelle ou courtier — secteur régulé, beaucoup de connaissances internes",
+      buyer: "Directeur général / DSI / directeur des opérations / responsable innovation",
       sector: "Assurance — compagnies, courtiers grossistes, mutuelles, bancassurance",
-      companySize: "25 à 2 000 salariés (cœur de cible ~1 500)",
-      geo: "Lyon puis national",
+      companySize: "50 à 5 000 salariés (à confirmer avec leur CEO pour le marché français)",
+      geo: "Auvergne-Rhône-Alpes puis national",
       pains: [
-        "Process encore manuels (souscription, sinistres, relances) — lents et coûteux",
-        "Systèmes hérités qui ne parlent pas entre eux",
-        "Parcours client fragmenté, sans mesure de bout en bout",
-        "Pression réglementaire et concurrence des assurtechs",
+        "Des équipes qui utilisent déjà des outils d'IA grand public — sur des données qu'elles ne devraient pas y coller",
+        "Une connaissance dispersée (garanties, procédures, sinistres, conformité) que personne ne retrouve vite",
+        "Pression réglementaire : chaque usage de l'IA doit pouvoir se justifier",
+        "Des tâches répétitives que des agents pourraient prendre, sans projet informatique de deux ans",
       ],
       triggers: [
-        "Nomination d'un directeur transformation / innovation",
-        "Programme de digitalisation annoncé ou budget voté",
-        "Fusion / rapprochement (mutuelles) → besoin d'unifier les outils",
-        "Publie qu'il recrute sur la data / le digital",
+        "Nomination d'un DSI, d'un directeur des opérations ou d'un responsable innovation / IA",
+        "Recrutements data / IA publiés",
+        "Fusion ou rapprochement (mutuelles) → connaissances et outils à unifier",
+        "Programme IA ou charte d'usage de l'IA annoncés",
       ],
       channels: [
-        "LinkedIn (comité de direction, transformation)",
-        "Introduction par prescripteur (cabinet, éditeur)",
-        "Email cadre + audit de parcours",
-        "Événements assurance / assurtech",
+        "LinkedIn (comité de direction)",
+        "Introduction par prescripteur (cabinet, éditeur, insurtech de services)",
+        "Visio à trois avec le CEO de Nuwacom dès que l'intérêt est qualifié",
       ],
       disqualifiers: [
         "Budget projet < 40 000 € HT → faisable par nous, ça reste chez EAGLEYE",
-        "Moins de 25 salariés (rarement le budget d'un projet de transformation)",
+        "Moins de 50 salariés (rarement le budget d'une plateforme IA d'entreprise)",
         "Aucun sponsor au comité de direction",
-        "Chantier gelé / DSI en refonte de core system bloquante",
+        "Insurtech qui construit sa propre IA : concurrent ou prescripteur, pas client",
       ],
       angle:
-        "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
+        "« Vos équipes utilisent déjà l'IA. La question, c'est sur quelles données — et où elles partent. »",
     },
     offerings: [
       {
@@ -395,7 +412,7 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
         minHT: 40000,
         note:
           "Au-delà de 40 000 € HT : trop lourd pour nous → plateforme Nuwacom, 15 % MINIMUM sur le devis. " +
-          "PUIS 100 % de tous les services de maintenance mensuels. " +
+          "PUIS 100 % de tous les services de maintenance mensuels. Pendant le delivery, nous tenons le rôle de PO. " +
           "En dessous : EAGLEYE le fait (meilleur levier). Contrat dressé APRÈS le cadrage = c'est là qu'on remonte le taux.",
       },
     ],
@@ -405,9 +422,11 @@ export const ACCOUNTS_COMMERCIAL: AccountCommercial[] = [
       timezone: "Europe/Luxembourg",
     },
     note:
-      "Entrée sur le marché FR (déjà fort en Allemagne + Benelux). CEO Christophe (visio faite, réglo). " +
-      "Chantiers > 40 k, 15 %. Contrat dressé APRÈS le cadrage = levier. Si un open-source ou nous-mêmes " +
-      "pouvons le faire vite → on le fait nous ; si trop lourd (ou refusé par eux) → leur plateforme.",
+      "Entrée sur le marché FR (déjà fort en Allemagne + Benelux). CEO Christophe (accord de principe donné). " +
+      "Schéma : nous amenons le client → visio cadrage / chiffrage à trois → contrat de commission 15 % APRÈS " +
+      "→ nous sommes PO pendant le delivery. Leur plateforme accepte des serveurs MCP personnalisés : Alpha " +
+      "peut s'y brancher (non testé). Si un open-source ou nous-mêmes pouvons le faire vite → on le fait nous ; " +
+      "si trop lourd (ou refusé par eux) → leur plateforme.",
   },
 ];
 

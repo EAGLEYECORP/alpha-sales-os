@@ -6,6 +6,7 @@ import { ACCOUNTS, getAccount, masterAccount, applyAccount, accountICP, routeAcc
 import { ACCOUNTS_COMMERCIAL, commercialFor, commissionFor } from "../lib/accounts-commercial";
 import { tauxVitrinePct } from "../lib/taux-vitrine";
 import { matchOffer } from "../lib/offer-match";
+import { SEGMENTS } from "../lib/segments";
 
 test("accounts — le portefeuille contient EAGLEYE (maître) et Nuwacom", () => {
   const ids = ACCOUNTS.map((a) => a.id);
@@ -198,9 +199,29 @@ test("accounts — l'ICP d'un partenaire a quitté le NAVIGATEUR, pas le produit
   assert.ok(nuwa?.icp, "le ciblage d'un partenaire doit vivre côté serveur");
   const icp = nuwa.icp;
   assert.match((icp.sector ?? "").toLowerCase(), /assur/);
-  assert.match(icp.companySize ?? "", /25/);
-  assert.match(icp.companySize ?? "", /2\s?000|2000/);
-  assert.match(`${icp.label} ${icp.angle}`.toLowerCase(), /transformation|digital|parcours/);
+  assert.match(icp.companySize ?? "", /50/);
+  assert.match(icp.companySize ?? "", /5\s?000/);
+  assert.match(`${icp.label} ${icp.angle}`.toLowerCase(), /connaissances|données|\bia\b/);
+});
+
+test("⚠ Nuwacom — on ne vend plus sous leur nom un produit qu'ils ne font pas", () => {
+  /**
+   * Le dépôt décrivait Nuwacom comme « refonte des parcours assurance », à
+   * Lyon. Leurs propres annonces disent : plateforme IA d'entreprise, pôle au
+   * Luxembourg. Personne ne l'avait vérifié — et l'identité, l'ICP, l'angle et
+   * le segment des chantiers > 40 k servaient ce pitch à des assureurs.
+   * Ce test refuse son retour aux QUATRE endroits où il vivait.
+   */
+  const nuwa = ACCOUNTS_COMMERCIAL.find((c) => c.accountId === "nuwacom")!;
+  const client = ACCOUNTS.find((a) => a.id === "nuwacom")!;
+  const segment = SEGMENTS.find((s) => s.id === "assurance-transformation")!;
+  const textes = [
+    nuwa.identite?.whatYouSell, nuwa.identite?.valueProp, nuwa.icp?.label, nuwa.icp?.angle,
+    client.whatYouSell, client.valueProp, segment.label, segment.angle, segment.corePain,
+  ].join(" ").toLowerCase();
+  assert.doesNotMatch(textes, /refonte des parcours|parcours refait|process assurance manuel|dossier en minutes/);
+  assert.notEqual(client.city, "Lyon", "Nuwacom n'est pas lyonnais");
+  assert.match(`${nuwa.identite?.whatYouSell} ${client.whatYouSell}`.toLowerCase(), /plateforme ia/);
 });
 
 test("⚠ accounts — le registre CLIENT ne porte plus le dossier d'un partenaire", () => {
@@ -238,8 +259,8 @@ test("accounts — applyAccount produit un patch d'identité restreint (pas de f
    * plus porter de taux.
    */
   assert.equal(patch.commissionPct, undefined, "le taux ne voyage plus dans le patch d'identité");
-  assert.equal(patch.offer?.city, "Lyon");
-  assert.match(patch.offer?.whatYouSell ?? "", /[Tt]ransformation/);
+  assert.equal(patch.offer?.city, "Luxembourg");
+  assert.match(patch.offer?.whatYouSell ?? "", /Plateforme IA/);
   // Ne doit JAMAIS toucher aux données/sécurité en basculant de compte.
   assert.equal((patch as Record<string, unknown>).prospects, undefined);
   assert.equal((patch as Record<string, unknown>).security, undefined);

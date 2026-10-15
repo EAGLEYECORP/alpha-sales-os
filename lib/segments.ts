@@ -300,39 +300,42 @@ export const SEGMENTS: Segment[] = [
   },
   {
     id: "assurance-transformation",
-    label: "Assurance & services financiers en transformation",
-    who: "Une compagnie, un courtier ou une mutuelle dont les process de souscription et de relance sont encore largement manuels.",
-    teamSize: "25 à 2 000 salariés",
+    // ⚠ Ce segment porte les chantiers > 40 k qui partent chez Nuwacom. Il
+    // vendait une « refonte de parcours » — ce que Nuwacom ne fait pas (corrigé
+    // le 15/10/2026, cf. `lib/accounts-commercial.ts`). L'id reste : il route.
+    label: "Assurance & services financiers — l'IA sur les connaissances internes",
+    who: "Une compagnie, un courtier ou une mutuelle dont les équipes travaillent sur beaucoup de connaissances internes, dans un secteur où chaque usage de l'IA doit se justifier.",
+    teamSize: "50 à 5 000 salariés",
     examples: [
       "Compagnies d'assurance et mutuelles",
       "Courtiers grossistes",
       "Bancassurance et services financiers",
     ],
     corePain:
-      "Les parcours sont fragmentés entre des systèmes qui ne se parlent pas, et chaque friction coûte des contrats sans qu'on puisse la chiffrer.",
+      "Les équipes utilisent déjà l'IA grand public, sur des données qu'elles ne devraient pas y coller — et la connaissance de la maison reste dispersée.",
     pains: [
-      "Souscription, sinistres et relances encore manuels — lents et coûteux",
-      "Systèmes hérités qui ne communiquent pas",
-      "Aucune mesure de bout en bout du parcours client",
-      "Pression réglementaire et concurrence des assurtechs",
+      "Usage d'outils d'IA grand public sur des données sensibles, sans cadre",
+      "Garanties, procédures et historique sinistres que personne ne retrouve vite",
+      "Pression réglementaire : chaque usage de l'IA doit pouvoir se justifier",
+      "Tâches répétitives que des agents pourraient prendre sans projet de deux ans",
     ],
     entryBricks: ["crm", "cerveau", "pilotage"],
     offer: "visibilite-growth",
     triggers: [
-      "Nomination d'un directeur transformation ou innovation",
-      "Programme de digitalisation annoncé ou budget voté",
+      "Nomination d'un DSI, d'un directeur des opérations ou d'un responsable IA",
+      "Recrutements data / IA publiés",
       "Fusion ou rapprochement de mutuelles",
-      "Recrutements data / digital publiés",
+      "Programme IA ou charte d'usage de l'IA annoncés",
     ],
     angle:
-      "« Votre concurrent traite un dossier en minutes, vous en jours. La transformation, ce n'est pas un logiciel de plus — c'est le parcours refait. »",
+      "« Vos équipes utilisent déjà l'IA. La question, c'est sur quelles données — et où elles partent. »",
     disqualifiers: [
       "Budget projet sous 40 000 € HT → c'est faisable par nous, ça reste chez EAGLEYE",
       "Aucun sponsor au comité de direction",
-      "Refonte de core system en cours qui gèle tout le reste",
+      "Insurtech qui construit sa propre IA : concurrent ou prescripteur, pas client",
     ],
     dealRange: "> 40 000 € HT via Nuwacom (15 %), sinon EAGLEYE",
-    buyer: "Directeur transformation · DSI · directeur général",
+    buyer: "Directeur général · DSI · directeur des opérations",
   },
 ];
 

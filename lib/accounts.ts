@@ -144,10 +144,13 @@ export const ACCOUNTS: Account[] = [
     name: "Nuwacom",
     kind: "client",
     tier: "vip",
-    city: "Lyon",
-    whatYouSell: "Transformation digitale — refonte des parcours et automatisation IA",
+    // ⚠ Ce compte décrivait « refonte des parcours assurance » à Lyon : ni leur
+    // produit, ni leur ville (corrigé le 15/10/2026 sur leurs propres annonces).
+    // Le pitch servi sous ce compte en héritait.
+    city: "Luxembourg",
+    whatYouSell: "Plateforme IA d'entreprise — connaissances internes, équipes et agents IA dans un même espace",
     valueProp:
-      "On transforme un process assurance manuel et lent en parcours digital mesurable : moins de friction, plus de contrats traités.",
+      "Vos équipes travaillent avec l'IA sur vos propres connaissances, dans un espace sécurisé — au lieu de coller vos données dans des outils grand public.",
     // GROS chantiers seulement (> 40 k) : en dessous, c'est faisable par nous
     // et ça reste chez EAGLEYE. Au-dessus, c'est trop lourd pour nous.
     offers: ["visibilite-growth", "alpha-sales-os"],
@@ -155,8 +158,8 @@ export const ACCOUNTS: Account[] = [
       // Le NOM du CEO est dans `lib/accounts-commercial.ts` : l'acte se dit
       // sans lui, et cette chaîne-ci part dans le navigateur.
       action:
-        "Caler le RDV de CADRAGE avec le CEO de Nuwacom. Le contrat se dresse APRÈS ce cadrage — " +
-        "c'est là qu'est le levier de négociation.",
+        "Caler la visio de CADRAGE / CHIFFRAGE à trois : le CEO de Nuwacom, le client et nous. " +
+        "Le contrat de commission se dresse APRÈS — c'est là qu'est le levier de négociation.",
     },
   },
 ];
@@ -201,7 +204,7 @@ export function applyAccount(id: string): Partial<AppSettings> {
 
 /**
  * L'ICP du compte : le squelette déduit de son offre, enrichi de l'ICP
- * curé du registre (Nuwacom : assurance / transformation digitale). Sans
+ * curé du registre (Nuwacom : secteurs régulés, IA sur les connaissances internes). Sans
  * surcharge, on retombe sur la déduction déterministe (lib/icp.ts) — donc
  * chaque compte a toujours un client parfait cohérent, affiné ou non.
  */

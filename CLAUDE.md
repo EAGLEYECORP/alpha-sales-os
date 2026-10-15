@@ -163,9 +163,20 @@ coup.
 4. **Trop gros pour nous (> 40 k)** → **NUWACOM** : le gros devis justifie les
    **15 %**, puis **100 % de toute la maintenance mensuelle**.
 
-**Nuwacom** : sites `nuwacom.fr` / `nuwacom.com/en`. CEO **Christophe** (visio
-faite, réglo). Fort en Allemagne + Benelux, **entre sur le marché FR**. Le
-contrat se dresse **après le cadrage** → levier de négociation. Doctrine :
+**Nuwacom** : `nuwacom.ai` (+ `nuwacom.fr` / `nuwacom.com/en`). CEO **Christophe**
+(accord de principe donné). Fort en Allemagne + Benelux, **entre sur le marché FR**.
+> ⚠ **Ce qu'ils vendent — corrigé le 15/10/2026.** Le dépôt les décrivait
+> comme « refonte des parcours assurance », à Lyon. Leurs annonces disent :
+> **plateforme IA d'entreprise** (connaissances internes, équipes et agents IA
+> dans un même espace), pôle au Luxembourg orienté **secteurs régulés**.
+> L'assurance reste la porte d'entrée ; l'angle devient « vos équipes utilisent
+> déjà l'IA — sur quelles données ? ». Leur plateforme accepte des **serveurs
+> MCP personnalisés** : Alpha peut s'y brancher (non testé).
+
+**Le schéma convenu** : nous amenons le client → **visio de cadrage / chiffrage
+à trois** (Christophe + client + nous) → **contrat de commission 15 % APRÈS** →
+nous tenons le rôle de **PO pendant le delivery**. Le contrat se dresse **après
+le cadrage** → levier de négociation. Doctrine :
 **si un open-source GitHub ou nous-mêmes pouvons le faire vite → on le fait
 nous** (meilleur levier) ; si trop lourd, ou si on leur a présenté et qu'ils
 n'en veulent pas → on passe par leur plateforme.
@@ -922,8 +933,9 @@ outil jamais installé).
 ## Rituels de closing (par compte) — `Account.closing`
 Se tromper de rituel = perdre le deal au dernier mètre.
 - **EAGLEYE** → DEVIS EAGLEYE CORP, envoyé depuis `contact@eagleyecorp.fr`.
-- **Nuwacom** → RDV de CADRAGE avec **Christophe (CEO)**, fuseau
-  **Europe/Luxembourg**. Le contrat se dresse APRÈS ce cadrage (= le levier).
+- **Nuwacom** → visio de CADRAGE / CHIFFRAGE **à trois** (Christophe, CEO + le
+  client + nous), fuseau **Europe/Luxembourg**. Le contrat de commission se
+  dresse APRÈS (= le levier) ; nous sommes PO pendant le delivery.
 
 ### LE CADRAGE EST EXÉCUTABLE SUR LE CHEMIN VIVANT — 17/09/2026
 `lib/cadrage.ts` · `Prospect.cadrage` · `components/prospects/cadrage-panel.tsx` ·
