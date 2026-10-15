@@ -557,5 +557,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Tout SAUF les assets statiques Next et les fichiers publics à extension.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|txt)$).*)"],
+  // ⚠ `mp4|webm` manquaient (15/10/2026) : la vidéo de la vitrine passait par
+  // la porte et rendait `307 → /compte` à tout visiteur sans compte — la page
+  // de VENTE montrait son affiche, jamais sa vidéo. Rien ne le signalait : un
+  // <video> qui reçoit du HTML retombe en silence sur son `poster`.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|txt|mp4|webm)$).*)"],
 };

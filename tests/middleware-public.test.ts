@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { MAITRE_SEULEMENT } from "../lib/api-access";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** Un test de FORME doit juger le code, jamais la prose qui l'explique. */
@@ -24,7 +24,12 @@ const sansCommentaires = (src: string) =>
  * Edge) : ça suffit pour verrouiller la liste elle-même.
  */
 const src = readFileSync(join(process.cwd(), "middleware.ts"), "utf8");
-const bloc = src.slice(src.indexOf("const PUBLIC_PREFIXES"), src.indexOf("function startsWithAny"));
+// ⚠ Bornée à la LISTE (jusqu'au `];`), pas à la fonction suivante : le code
+// entre les deux contient `prefixe + "/"`, et ce "/" lu comme un chemin public
+// déclarait TOUT public — le test des fichiers publics passait sur une mutation
+// qui rebloquait la vidéo de la vitrine.
+const debut = src.indexOf("const PUBLIC_PREFIXES");
+const bloc = src.slice(debut, src.indexOf("\n];", debut));
 const publics = [...bloc.matchAll(/"(\/[^"]*)"/g)].map((m) => m[1]);
 
 test("chemins publics — tout ce qui est appelé SANS navigateur y figure", () => {
@@ -51,6 +56,33 @@ test("chemins publics — le service worker et le manifeste passent", () => {
   // Le manifeste conditionne « ajouter à l'écran d'accueil » — seul chemin
   // vers les notifications sur iPhone.
   assert.ok(publics.includes("/manifest.webmanifest"));
+});
+
+test("⚠ tout fichier de public/ est servi SANS session — la vidéo de la vitrine ne l'était pas", () => {
+  /**
+   * Le filtre du middleware laissait passer les images, pas les vidéos :
+   * `/media/hero.mp4` rendait `307 → /compte` à tout visiteur anonyme, en
+   * production. Un <video> qui reçoit du HTML retombe sur son affiche sans
+   * erreur visible — mesuré par une requête réelle, pas vu à l'écran.
+   *
+   * On joue le VRAI filtre (celui de `config.matcher`) contre CHAQUE fichier
+   * de public/ : une extension oubliée demain tombe ici, pas chez un prospect.
+   */
+  const brut = src.match(/matcher:\s*\["([^"]+)"\]/);
+  assert.ok(brut, "config.matcher introuvable");
+  const filtre = new RegExp(`^${brut[1].replace(/\\\\/g, "\\")}$`);
+  const fichiers: string[] = [];
+  const parcourir = (dossier: string) => {
+    for (const e of readdirSync(join(process.cwd(), "public", dossier), { withFileTypes: true })) {
+      const chemin = `${dossier}/${e.name}`;
+      if (e.isDirectory()) parcourir(chemin);
+      else fichiers.push(chemin);
+    }
+  };
+  parcourir("");
+  assert.ok(fichiers.some((f) => f.endsWith(".mp4")), "public/ ne porte plus de vidéo : le test ne mesure plus rien");
+  const bloques = fichiers.filter((f) => filtre.test(f) && !publics.some((p) => f.startsWith(p)));
+  assert.deepEqual(bloques, [], `ces fichiers publics passent par la porte et sont refusés sans compte : ${bloques.join(", ")}`);
 });
 
 test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () => {
