@@ -41,6 +41,8 @@ export interface Droits {
   essaiJusquA?: string;
   maitre: boolean;
   solo: boolean;
+  /** Exploitant de sa propre installation (« chez vous ») : ALPHA CEO lui est ouvert. */
+  exploitant: boolean;
   /**
    * L'état de l'essai, `null` quand ce compte n'en a pas.
    *
@@ -53,7 +55,7 @@ export interface Droits {
 }
 
 /** Optimiste : tout ouvert tant qu'on ne sait pas. */
-const OPTIMISTE: Droits = { session: true, bricks: [], statut: "actif", maitre: true, solo: true, essai: null };
+const OPTIMISTE: Droits = { session: true, bricks: [], statut: "actif", maitre: true, solo: true, exploitant: false, essai: null };
 
 let cache: Droits | null = null;
 let enCours: Promise<Droits> | null = null;

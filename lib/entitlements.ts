@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getTenant } from "./tenant";
-import { peutOuvrir, type BrickId } from "./bricks-access";
+import { estCheminExploitation, peutOuvrir, type BrickId } from "./bricks-access";
 import { serverAuthEnforced } from "./supabase-jwt";
 import { etatEssai, HORS_ESSAI, type EtatEssai } from "./essai";
 import { coutGlobalEssais } from "./compteur-essai";
@@ -65,6 +65,19 @@ export interface Entitlement {
    * Distinct de `maitre` : l'un est un mode, l'autre est un rôle.
    */
   solo: boolean;
+  /**
+   * L'EXPLOITANT DE SA PROPRE INSTALLATION (20/10/2026 — ALPHA CEO livré aux
+   * clients). Vrai seulement sur une installation « chez vous »
+   * (`ALPHA_INSTALLATION=client`).
+   *
+   * ⚠ Ce n'est PAS `maitre`. Sur notre cloud, la console d'exploitation parle
+   * de NOTRE déploiement (notre SMTP, notre pipe opérateur) : elle reste au
+   * maître. Sur le serveur d'un client, le déploiement, le SMTP et le pipe
+   * opérateur SONT les siens — la même console parle de SON système. Seule
+   * cette console s'ouvre (`CHEMINS_EXPLOITATION`, `API_EXPLOITATION`) ;
+   * notre économie (marges, playbook, `/payouts`) reste fermée partout.
+   */
+  exploitant?: boolean;
   /**
    * ─────────────────────────────────────────────────────────────────────
    * L'ÉTAT DE L'ESSAI — présent MÊME QUAND L'ESSAI EST FERMÉ.
@@ -268,7 +281,7 @@ export function installationClient(): boolean {
 
 /** Le droit d'une installation chez un client : tout le produit, rien de notre économie. */
 export function droitInstallationClient(tenantId: string | null): Entitlement {
-  return { tenantId, bricks: [...BRIQUES_CONNUES], statut: "actif", maitre: false, solo: false };
+  return { tenantId, bricks: [...BRIQUES_CONNUES], statut: "actif", maitre: false, solo: false, exploitant: true };
 }
 
 export function deploiementSansSerrure(): boolean {
@@ -379,6 +392,8 @@ export function statutEffectif(ent: Entitlement, now: Date = new Date()): Statut
  */
 export function autorise(ent: Entitlement, chemin: string, now: Date = new Date()): boolean {
   if (ent.solo) return true;
+  // ALPHA CEO chez le client : sa console d'exploitation, et rien d'autre de réservé.
+  if (ent.exploitant && estCheminExploitation(chemin)) return true;
   // Un compte suspendu garde l'accès aux chemins COMMUNS : il doit pouvoir se
   // connecter, voir pourquoi il est bloqué, et payer. L'enfermer dehors ne
   // récupère aucun impayé.

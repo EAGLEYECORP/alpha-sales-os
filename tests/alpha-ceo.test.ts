@@ -6,10 +6,13 @@ import {
   anglesMorts,
   diagnostiquer,
   PANNES,
+  pannesPour,
   parNature,
   POINTS,
+  pointsPour,
   type EtatSysteme,
 } from "../lib/alpha-ceo";
+import { etatDepuisSondes } from "../lib/ceo-sondes";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -283,4 +286,39 @@ test("⚠ la carte est CITÉE quelque part — sinon c'est un module mort de plu
   for (const n of ["automatisable", "humain-par-decision", "humain-par-contrainte"]) {
     assert.match(doc, new RegExp(n), `le doc doit expliquer la nature « ${n} »`);
   }
+});
+
+// ═══════════ ALPHA CEO CHEZ LE CLIENT (20/10/2026) ═══════════
+
+test("⚠ chez un client, ALPHA CEO se tait sur ce qui n'est qu'à nous", () => {
+  // Une alarme qu'aucun geste du client ne peut éteindre lui apprend à ne plus lire la console.
+  const chezNous = diagnostiquer({ ...VIDE, prixStripeConfigures: false });
+  assert.ok(chezNous.some((a) => a.id === "prix-stripe-absent"), "chez nous, des prix absents sont une panne");
+  const chezLeClient = diagnostiquer({ ...VIDE, prixStripeConfigures: false, installation: "client" });
+  assert.ok(!chezLeClient.some((a) => a.id === "prix-stripe-absent"), "chez le client, il ne vend pas nos abonnements");
+
+  const aveuglesClient = anglesMorts({ ...VIDE, installation: "client" }).join(" ");
+  assert.doesNotMatch(aveuglesClient, /Stripe|enveloppe/i);
+  assert.match(anglesMorts(VIDE).join(" "), /Stripe/, "contre-test : chez nous, l'angle mort reste dit");
+});
+
+test("…et la carte comme le relevé n'affichent pas nos points à nous", () => {
+  const nos = POINTS.filter((p) => p.seulementChezNous).map((p) => p.id);
+  assert.deepEqual(nos, ["statut-apporteur"], "nos apporteurs et nos commissions ne regardent pas le client");
+  assert.ok(!pointsPour("client").some((p) => p.seulementChezNous));
+  assert.equal(pointsPour("nous").length, POINTS.length);
+  const nosPannes = PANNES.filter((p) => p.seulementChezNous).map((p) => p.id).sort();
+  assert.deepEqual(nosPannes, ["enveloppe-ouverture-pleine", "module-mort", "prix-stripe-absent"]);
+  assert.ok(!pannesPour("client").some((p) => p.seulementChezNous));
+  // Le reste — SMTP, agent vocal, plafond du décret, pipe — est SON système : il reste.
+  for (const id of ["smtp-absent", "agent-absent", "plafond-decret", "ordonnanceur-muet"]) {
+    assert.ok(pannesPour("client").some((p) => p.id === id), `${id} concerne aussi le client`);
+  }
+});
+
+test("l'installation se lit sur /api/health, et une valeur inconnue n'ouvre pas le mode client", () => {
+  const base = { stockage: null, pipeServeur: false, hydratation: "locale" as const, brouillons: [], prospects: [], palierPret: false, moniteur: null, presence: null };
+  assert.equal(etatDepuisSondes({ ...base, sante: { installation: "client" } }).installation, "client");
+  assert.equal(etatDepuisSondes({ ...base, sante: null }).installation, "nous");
+  assert.equal(etatDepuisSondes({ ...base, sante: { installation: "nous" } }).installation, "nous");
 });

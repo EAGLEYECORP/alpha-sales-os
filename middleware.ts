@@ -327,7 +327,7 @@ const ADMIN_PREFIXES = ["/payouts", "/offre", "/api/sync"];
  * ─────────────────────────────────────────────────────────────────────
  */
 // La liste vit dans lib/api-access.ts : le BYOK la lit aussi.
-import { MAITRE_SEULEMENT } from "@/lib/api-access";
+import { API_EXPLOITATION, MAITRE_SEULEMENT } from "@/lib/api-access";
 
 /**
  * ⚠ LA GARDE QUI EMPÊCHE D'OUVRIR L'APP PAR INADVERTANCE.
@@ -495,7 +495,9 @@ export async function middleware(req: NextRequest) {
      *
      * `estMaitre()` lit l'email du JETON, jamais un paramètre client.
      */
-    if (startsWithAny(pathname, MAITRE_SEULEMENT) && !droits.maitre) {
+    // ALPHA CEO chez le client : l'exploitant lit SA console, jamais notre économie.
+    const consoleDeSonInstallation = Boolean(droits.exploitant) && startsWithAny(pathname, API_EXPLOITATION);
+    if (startsWithAny(pathname, MAITRE_SEULEMENT) && !droits.maitre && !consoleDeSonInstallation) {
       return NextResponse.json(
         { error: "Réservé au compte propriétaire.", code: "maitre_requis" },
         { status: 403 }

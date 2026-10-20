@@ -472,7 +472,11 @@ test("les routes qui servent NOTRE patrimoine exigent le compte maître", () => 
   assert.match(mw, /code: "maitre_requis"/);
   // La liste n'est plus REDÉCLARÉE dans le middleware : il l'importe.
   assert.ok(!/const MAITRE_SEULEMENT\s*=/.test(mw), "une seconde définition finirait par diverger");
-  assert.match(mw, /import \{ MAITRE_SEULEMENT \} from "@\/lib\/api-access"/);
+  // Importée, jamais redéfinie — à côté d'API_EXPLOITATION (ALPHA CEO chez le client, 20/10/2026).
+  assert.match(mw, /import \{[^}]*\bMAITRE_SEULEMENT\b[^}]*\} from "@\/lib\/api-access"/);
+  // La seule exception à « maître seul » est la console de SON installation, et elle se nomme.
+  assert.match(mw, /!droits\.maitre && !consoleDeSonInstallation/);
+  assert.match(mw, /Boolean\(droits\.exploitant\) && startsWithAny\(pathname, API_EXPLOITATION\)/);
 });
 
 test("la garde maître est POSÉE AVANT le contrôle par brique", () => {

@@ -4,7 +4,7 @@ import { aiAvailable, aiEngineName, aiEngines } from "@/lib/ai-engine";
 import { ACCESS_COOKIE, accessToken, safeEqual } from "@/lib/access";
 import { verifierProprietaire } from "@/lib/proprietaire-coherence";
 import { serverAuthEnforced, serverAuthMisconfigured } from "@/lib/supabase-jwt";
-import { resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
+import { installationClient, resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
 import { etatEnveloppe } from "@/lib/essai";
 import { coutGlobalEssais } from "@/lib/compteur-essai";
 import { OFFRES_EN_VENTE } from "@/lib/offres-publiques";
@@ -224,5 +224,12 @@ export async function GET(req: NextRequest) {
      * ─────────────────────────────────────────────────────────────────
      */
     enveloppe: droits.maitre ? etatEnveloppe(await coutGlobalEssais()) : null,
+    /**
+     * Sur quelle installation tourne-t-on ? ALPHA CEO en a besoin pour se taire
+     * sur ce qui n'est qu'à nous (prix Stripe, enveloppe d'essais) quand il
+     * tourne chez un client : une alarme qu'aucun geste ne peut éteindre
+     * apprend à ne plus lire la console.
+     */
+    installation: installationClient() ? "client" : "nous",
   });
 }

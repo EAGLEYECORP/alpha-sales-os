@@ -262,6 +262,15 @@ export const CHEMIN_PAR_API: Record<string, string> = {
  *   ne le permet aujourd'hui, vérifié), cette entrée se rediscute — pas avant.
  * ─────────────────────────────────────────────────────────────────────
  */
+/**
+ * Les API de la console d'exploitation (ALPHA CEO) qu'un EXPLOITANT d'installation
+ * client peut lire — sur SON serveur, `lireProspectsOperateur` lit SON pipe.
+ * ⚠ Sous-ensemble strict de `MAITRE_SEULEMENT` (testé) : sur notre cloud, elles
+ * restent au maître. Ni `/api/voice-costs`, ni `/api/knowledge`, ni `/api/pipeline`
+ * n'y entrent : nos marges, notre playbook, nos fiches, partout et toujours.
+ */
+export const API_EXPLOITATION: readonly string[] = ["/api/moniteur"];
+
 export const MAITRE_SEULEMENT: readonly string[] = [
   "/api/pipeline",
   "/api/voice-costs",

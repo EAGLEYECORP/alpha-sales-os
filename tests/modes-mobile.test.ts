@@ -164,7 +164,8 @@ test("⚠⚠ LE MODULE EST BRANCHÉ — un export que rien n'importe est mort", 
    */
   assert.match(shell, /from "@\/lib\/modes-mobile"/, "la coquille n'importe pas les modes");
   assert.match(shell, /barreDuMode\(mode\)/, "la barre du bas ne suit pas le mode actif");
-  assert.match(shell, /modesVisibles\(droits\.maitre\)/, "le sélecteur ne filtre pas selon le compte");
+  // Le maître, ou l'exploitant d'une installation client (ALPHA CEO livré le 20/10/2026).
+  assert.match(shell, /modesVisibles\(droits\.maitre \|\| droits\.exploitant\)/, "le sélecteur ne filtre pas selon le compte");
   /**
    * ⚠ ON CHERCHE LA CONSTANTE, PAS SA VALEUR — et la première rédaction
    * cherchait la valeur, donc elle a fait tomber un câblage CORRECT. Exiger

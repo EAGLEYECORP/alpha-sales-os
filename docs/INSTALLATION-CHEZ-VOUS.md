@@ -62,8 +62,10 @@ SMTP_HOST= SMTP_PORT=587 SMTP_USER= SMTP_PASS= SMTP_FROM=   # SA boîte
 OLLAMA_MODEL=qwen2.5:3b
 ```
 
-- `ALPHA_INSTALLATION=client` ouvre **toutes** les briques et **refuse** nos
-  pages d'économie (`/payouts`, `/offre`, nos coûts et marges, notre playbook).
+- `ALPHA_INSTALLATION=client` ouvre **toutes** les briques, **ALPHA CEO**
+  (`/ceo`, `/moniteur` : la console d'exploitation de SON serveur), et
+  **refuse** nos pages d'économie (`/payouts`, `/offre`, nos coûts et marges,
+  notre playbook).
   Ne JAMAIS la poser sur notre production : on y perdrait nos propres pages.
 - Sans `SITE_PASSWORD` ni comptes, l'installation retombe **au socle gratuit** :
   joignable sans serrure, son SMTP enverrait pour n'importe qui. C'est voulu.
@@ -115,6 +117,9 @@ l'hôte SIP de LiveKit a un préfixe aléatoire).
 - [ ] Une fois entré : `/campaigns` et `/voice` s'ouvrent.
 - [ ] `https://alpha.client.fr/api/voice-costs` répond **403** (nos marges).
 - [ ] `/payouts` ne s'ouvre pas.
+- [ ] `/ceo` s'ouvre (ALPHA CEO) et ne parle ni de Stripe ni d'essais : ce
+      n'est pas son affaire. Les pannes qui restent (SMTP, agent vocal,
+      ordonnanceur) sont les siennes — les lire avec lui le premier jour.
 - [ ] Un email de test vers SA propre adresse : il part de SA boîte, porte le
       signataire et le moyen de refus (« STOP »).
 - [ ] Son domaine d'envoi a SPF, DKIM et DMARC (`/deliverability`).

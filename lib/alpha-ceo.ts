@@ -89,6 +89,13 @@ export interface PointCEO {
   /** Où l'humain va quand il veut mettre la main dedans. */
   ecran: string;
   gravite: Gravite;
+  /**
+   * Ne concerne que NOTRE exploitation (EAGLEYE), jamais une installation
+   * client. ALPHA CEO tourne aussi chez les clients depuis le 20/10/2026 : un
+   * point qu'ils ne peuvent pas traiter (nos apporteurs, nos prix Stripe) y
+   * serait une alarme qu'aucun geste n'éteint.
+   */
+  seulementChezNous?: boolean;
 }
 
 /**
@@ -219,6 +226,7 @@ export const POINTS: PointCEO[] = [
   },
   {
     id: "statut-apporteur",
+    seulementChezNous: true,
     quoi: "Obtenir le SIRET et le contrat signé avant de verser une commission.",
     nature: "humain-par-contrainte",
     pourquoi:
@@ -258,11 +266,14 @@ export interface PanneCEO {
   detection: string;
   gravite: Gravite;
   module: string;
+  /** Voir `PointCEO.seulementChezNous`. */
+  seulementChezNous?: boolean;
 }
 
 export const PANNES: PanneCEO[] = [
   {
     id: "enveloppe-ouverture-pleine",
+    seulementChezNous: true,
     symptome:
       "Les nouveaux inscrits reçoivent un essai dégradé : le produit s'ouvre, mais rien de ce qui part de notre infrastructure ne fonctionne.",
     pourquoiInvisible:
@@ -319,6 +330,7 @@ export const PANNES: PanneCEO[] = [
   },
   {
     id: "module-mort",
+    seulementChezNous: true,
     symptome: "Une règle juste, testée, que personne ne consulte.",
     pourquoiInvisible:
       "C'est LE défaut récurrent du dépôt. Le module rend la bonne réponse, aucun appelant ne la lit. Rien n'échoue, donc rien n'alerte — et les tests du module passent tous.",
@@ -356,6 +368,7 @@ export const PANNES: PanneCEO[] = [
   },
   {
     id: "prix-stripe-absent",
+    seulementChezNous: true,
     symptome: "Le bouton « payer » tombe dans le vide.",
     pourquoiInvisible:
       "L'offre s'affiche normalement avec son prix : c'est la grille publique qui le porte. La variable `STRIPE_PRICE_*` manquante ne se voit qu'au clic, sur la dernière étape du tunnel.",
@@ -453,6 +466,11 @@ export interface EtatSysteme {
    * exactement le risque qu'on porte.
    */
   ciblesAuPlafond: number | null;
+  /**
+   * Où tourne ALPHA CEO : chez nous (notre cloud) ou sur le serveur d'un
+   * client. Absent = chez nous, le comportement d'avant.
+   */
+  installation?: "nous" | "client";
 }
 
 export interface Alerte {
@@ -487,6 +505,7 @@ export function diagnostiquer(etat: EtatSysteme): Alerte[] {
   const out: Alerte[] = [];
   const pousser = (source: PointCEO | PanneCEO | undefined, action: string, humain = false) => {
     if (!source) return;
+    if (etat.installation === "client" && source.seulementChezNous) return;
     out.push({
       id: source.id,
       quoi: "quoi" in source ? source.quoi : source.symptome,
@@ -615,13 +634,14 @@ export function diagnostiquer(etat: EtatSysteme): Alerte[] {
 export function anglesMorts(etat: EtatSysteme): string[] {
   const out: string[] = [];
   if (etat.smtpConfigure === null) out.push("On ne sait pas si le SMTP délivre — donc pas si les inscriptions aboutissent.");
-  if (etat.prixStripeConfigures === null) out.push("On ne sait pas si les prix Stripe sont branchés.");
+  const chezNous = etat.installation !== "client";
+  if (chezNous && etat.prixStripeConfigures === null) out.push("On ne sait pas si les prix Stripe sont branchés.");
   if (etat.stockage === null) out.push("Le stockage local n'a pas été mesuré.");
   if (etat.pipeSynchronisable === null) out.push("Le mode pipe serveur n'est pas actif, ou son état n'a pas été lu.");
   if (etat.autopilote === null) out.push("On ne sait pas si l'autopilote tourne — donc pas si la machine appelle.");
   if (etat.agentVocal === null) out.push("On ne sait pas si l'agent vocal écoute — donc pas si un appel composé aboutirait à une voix.");
   if (etat.ciblesAuPlafond === null) out.push("Les sollicitations sur 30 jours glissants n'ont pas été comptées (décret n° 2022-1313).");
-  if (etat.enveloppe === null || etat.enveloppe.niveau === null)
+  if (chezNous && (etat.enveloppe === null || etat.enveloppe.niveau === null))
     out.push("On ne sait pas où en est l'enveloppe d'ouverture — donc pas si les nouveaux essais partent déjà dégradés.");
 
   return out;
@@ -688,4 +708,14 @@ export const SANS_SONDE_POSSIBLE: { id: string; pourquoi: string; commentVerifie
  */
 export function parNature(nature: NaturePoint): PointCEO[] {
   return POINTS.filter((p) => p.nature === nature);
+}
+
+/** Les points qu'ALPHA CEO montre sur CETTE installation — chez un client, rien de ce qui n'est qu'à nous. */
+export function pointsPour(installation: EtatSysteme["installation"]): PointCEO[] {
+  return installation === "client" ? POINTS.filter((p) => !p.seulementChezNous) : POINTS;
+}
+
+/** Même règle pour le relevé des pannes silencieuses. */
+export function pannesPour(installation: EtatSysteme["installation"]): PanneCEO[] {
+  return installation === "client" ? PANNES.filter((p) => !p.seulementChezNous) : PANNES;
 }

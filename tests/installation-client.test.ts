@@ -5,7 +5,9 @@ import { join } from "node:path";
 import { NextRequest } from "next/server";
 import { middleware } from "../middleware";
 import { ACCESS_COOKIE, accessToken } from "../lib/access";
-import { BRIQUES_CONNUES, resoudreDroits } from "../lib/entitlements";
+import { autorise, BRIQUES_CONNUES, resoudreDroits, type Entitlement } from "../lib/entitlements";
+import { API_EXPLOITATION, MAITRE_SEULEMENT } from "../lib/api-access";
+import { CHEMINS_EXPLOITATION } from "../lib/bricks-access";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -71,9 +73,9 @@ test(
 );
 
 test(
-  "⚠ chez le client, nos marges et notre playbook répondent 403",
+  "⚠ chez le client, nos marges, notre playbook et nos fiches répondent 403",
   avecEnv(CHEZ_LE_CLIENT, async () => {
-    for (const api of ["/api/voice-costs", "/api/knowledge", "/api/pipeline", "/api/moniteur"]) {
+    for (const api of ["/api/voice-costs", "/api/knowledge", "/api/pipeline", "/api/references", "/api/autopilote"]) {
       const r = await middleware(await requete(api));
       assert.equal(r.status, 403, `${api} doit être refusée chez un client`);
     }
@@ -146,4 +148,50 @@ test("la procédure d'installation existe et nomme la serrure et le mode", () =>
   assert.match(doc, /ALPHA_INSTALLATION=client/);
   assert.match(doc, /SITE_PASSWORD/);
   assert.match(doc, /\/api\/voice-costs[^\n]*403/, "la vérification de nos marges refusées doit être dans la checklist");
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ALPHA CEO LIVRÉ AUX CLIENTS — 20/10/2026.
+ *
+ * Sur le serveur d'un client, le déploiement, le SMTP et le pipe opérateur
+ * sont les siens : la console d'exploitation aussi. Sur notre cloud, rien ne
+ * bouge — elle reste au maître.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test(
+  "ALPHA CEO s'ouvre chez le client : /ceo, /moniteur et l'API qui les nourrit",
+  avecEnv(CHEZ_LE_CLIENT, async () => {
+    const d = await resoudreDroits(await requete("/ceo"));
+    assert.equal(d.exploitant, true, "le client est l'exploitant de SA installation");
+    for (const page of ["/ceo", "/moniteur"]) {
+      const r = await middleware(await requete(page));
+      assert.equal(r.headers.get("location"), null, `${page} doit s'ouvrir chez le client`);
+      assert.notEqual(r.status, 403);
+    }
+    const api = await middleware(await requete("/api/moniteur"));
+    assert.notEqual(api.status, 403, "/api/moniteur lit SON pipe sur SON serveur");
+  })
+);
+
+test("⚠ l'exploitant n'ouvre QUE la console : jamais notre économie", () => {
+  const exploitant: Entitlement = { tenantId: null, bricks: [...BRIQUES_CONNUES], statut: "actif", maitre: false, solo: false, exploitant: true };
+  assert.equal(autorise(exploitant, "/ceo"), true);
+  assert.equal(autorise(exploitant, "/moniteur"), true);
+  for (const notreEconomie of ["/payouts", "/offre"]) {
+    assert.equal(autorise(exploitant, notreEconomie), false, `${notreEconomie} est à nous, même chez un client`);
+    assert.ok(!CHEMINS_EXPLOITATION.includes(notreEconomie));
+  }
+  // Un client de NOTRE cloud n'est pas exploitant : la console reste au maître.
+  const clientDuCloud: Entitlement = { ...exploitant, tenantId: "t1", exploitant: false };
+  assert.equal(autorise(clientDuCloud, "/ceo"), false);
+  assert.equal(autorise(clientDuCloud, "/moniteur"), false);
+});
+
+test("⚠ l'API de la console est un SOUS-ENSEMBLE de ce qui est réservé au maître", () => {
+  // Hors de MAITRE_SEULEMENT, elle serait ouverte à tout le cloud par simple brique.
+  for (const api of API_EXPLOITATION) assert.ok(MAITRE_SEULEMENT.includes(api), `${api} doit rester maître seul sur notre cloud`);
+  for (const jamais of ["/api/voice-costs", "/api/knowledge", "/api/pipeline", "/api/references"]) {
+    assert.ok(!API_EXPLOITATION.includes(jamais), `${jamais} ne s'ouvre à aucun client`);
+  }
 });

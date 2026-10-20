@@ -32,7 +32,9 @@ const mission = readFileSync(join(process.cwd(), "components/vitrine/mission-sec
 const sansCommentaires = (src: string) =>
   src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
-const publique = sansCommentaires(vitrine) + sansCommentaires(mission);
+// Les textes des agents d'ALPHA s'affichent sur la vitrine : ils passent les mêmes gardes.
+const agents = readFileSync(join(process.cwd(), "lib/agents-alpha.ts"), "utf8");
+const publique = sansCommentaires(vitrine) + sansCommentaires(mission) + sansCommentaires(agents);
 
 /**
  * ⚠ CES TROIS ASSERTIONS LISAIENT LA SOURCE BRUTE, COMMENTAIRES COMPRIS —

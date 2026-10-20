@@ -14,6 +14,7 @@ import {
   PRIX_PUBLICS,
   SOCLE_GRATUIT,
 } from "@/lib/public-catalogue";
+import { AGENTS_ALPHA, LIBELLE_CAMP, LIBELLE_DISPONIBILITE, REGLE_DES_AGENTS } from "@/lib/agents-alpha";
 import { HeroVideo } from "@/components/vitrine/hero-video";
 import { MissionSection } from "@/components/vitrine/mission-section";
 import { EstimationPublique } from "@/components/vitrine/estimation-publique";
@@ -438,6 +439,49 @@ export default function VitrinePage() {
             On ne vous promet pas un chiffre. On compte le vôtre pendant le cadrage — sur vos contacts,
             pas sur une moyenne de marché — et si la perte est négligeable, on vous le dira.
           </p>
+        </section>
+
+        <Rule />
+
+        {/*
+          ── LES AGENTS D'ALPHA — l'ombrelle (20/10/2026) ──
+
+          Les noms viennent de `lib/agents-alpha.ts`, en capitales, jamais
+          réécrits ici. Chaque agent dit ce qu'il n'a PAS le droit de faire :
+          c'est ce qui rend crédible ce qu'il fait. La disponibilité affichée
+          est vérifiée contre le vrai contrôle d'accès (`tests/agents-alpha`).
+        */}
+        <section id="agents" className="scroll-mt-28 py-20">
+          <SectionLabel>Les agents d&apos;ALPHA</SectionLabel>
+          <h2 className="mt-4 max-w-2xl font-serif text-[34px] leading-[1.15] tracking-[-0.02em] sm:text-[42px]">
+            {REGLE_DES_AGENTS}
+          </h2>
+          <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
+            Ceux qui agissent n&apos;improvisent pas. Ceux qui réfléchissent n&apos;envoient rien. Et chacun
+            nomme ce qu&apos;il n&apos;a pas le droit de faire.
+          </p>
+          <div className="mt-12 grid gap-5 sm:grid-cols-2">
+            {AGENTS_ALPHA.map((a) => (
+              <div key={a.nom} className="rounded-2xl border p-6" style={{ borderColor: LINE }}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-[17px] font-semibold tracking-[0.06em]">{a.nom}</h3>
+                  <span className="text-[12px] uppercase tracking-[0.12em]" style={{ color: ACCENT }}>
+                    {LIBELLE_CAMP[a.camp]}
+                  </span>
+                </div>
+                <p className="mt-3 text-[15px] leading-[1.6]" style={{ color: MUTED }}>
+                  {a.fait}
+                </p>
+                <p className="mt-3 text-[15px] leading-[1.6]">
+                  <span className="font-semibold">Interdit :</span>{" "}
+                  <span style={{ color: MUTED }}>{a.interdit}</span>
+                </p>
+                <p className="mt-4 text-[12px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>
+                  {LIBELLE_DISPONIBILITE[a.disponibilite]}
+                </p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <Rule />

@@ -60,6 +60,8 @@ export interface ReponseSante {
    * non-maître.
    */
   enveloppe?: EtatEnveloppe | null;
+  /** Où tourne-t-on : notre cloud, ou le serveur d'un client (ALPHA CEO livré le 20/10/2026). */
+  installation?: "nous" | "client";
 }
 
 /** La part de `/api/voice/presence` dont Alpha CEO a besoin. */
@@ -183,6 +185,8 @@ export function etatDepuisSondes(e: EntreeSondes): EtatSysteme {
         ? e.presence.etat
         : null,
     ciblesAuPlafond: ciblesAuPlafond(e.prospects),
+    // Une valeur inconnue n'ouvre pas le mode client : on retombe sur « chez nous ».
+    installation: e.sante?.installation === "client" ? "client" : "nous",
   };
 }
 

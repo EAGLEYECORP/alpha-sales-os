@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
     essaiJusquA: d.essaiJusquA,
     maitre: d.maitre,
     solo: d.solo,
+    // L'exploitant d'une installation client voit SA console (ALPHA CEO).
+    exploitant: Boolean(d.exploitant),
     /**
      * ⚠⚠ L'ÉTAT DE L'ESSAI DESCEND ICI, ET IL DESCEND MÊME FERMÉ.
      *

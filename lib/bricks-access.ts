@@ -323,6 +323,26 @@ export function normaliser(pathname: string): string {
  * `maitre` : notre compte EAGLEYE. Il voit tout, par définition — c'est nous
  * qui vendons. C'est le SEUL contournement, et il est explicite.
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA CONSOLE D'EXPLOITATION — ALPHA CEO (20/10/2026 : livrée aux clients).
+ *
+ * Réservée au maître sur NOTRE cloud (`"/ceo": []`, `"/moniteur": []`) : elle
+ * y parle de notre déploiement. Sur une installation « chez vous », elle
+ * s'ouvre à l'EXPLOITANT (`Entitlement.exploitant`), parce que le déploiement,
+ * le SMTP et le pipe opérateur y sont les siens.
+ *
+ * ⚠ Liste FERMÉE et courte. Y ajouter un chemin, c'est l'ouvrir à tout client
+ * installé : `/payouts` ou `/offre` n'y entreront jamais — c'est notre
+ * économie, pas l'exploitation de son serveur. Un test l'exige.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const CHEMINS_EXPLOITATION: readonly string[] = ["/ceo", "/moniteur"];
+
+export function estCheminExploitation(chemin: string): boolean {
+  return CHEMINS_EXPLOITATION.some((c) => chemin === c || chemin.startsWith(c + "/"));
+}
+
 export function peutOuvrir(chemin: string, possedees: readonly string[], maitre = false): boolean {
   if (maitre) return true;
   const requises = briquesPourChemin(chemin);

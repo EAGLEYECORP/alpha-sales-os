@@ -1,5 +1,5 @@
 import { BRIQUES_GRATUITES } from "./entitlements";
-import { ACCES_PAR_CHEMIN, briquesPourChemin, type BrickId } from "./bricks-access";
+import { ACCES_PAR_CHEMIN, briquesPourChemin, estCheminExploitation, type BrickId } from "./bricks-access";
 import { OFFRES_EN_VENTE, type OffrePublique } from "./offres-publiques";
 import { CAPACITES as CATALOGUE_PUBLIC, SOCLE_GRATUIT } from "./public-catalogue";
 import { CAPACITES as CAPACITES_CLE, cheminOuvertParCle, type Capacite } from "./capacites-cle";
@@ -308,9 +308,12 @@ export function etatChemin(
    * « inscris-toi » à des comptes parfaitement connectés dont l'appelant n'a
    * simplement pas transmis l'information.
    */
-  session = true
+  session = true,
+  /** Exploitant de sa propre installation : sa console d'exploitation (ALPHA CEO) s'ouvre. */
+  exploitant = false
 ): EtatVerrou {
   if (maitre || solo) return { type: "ouvert" };
+  if (exploitant && estCheminExploitation(chemin)) return { type: "ouvert" };
 
   const requises = briquesPourChemin(chemin);
   // Chemin commun (`null`) : toujours ouvert.

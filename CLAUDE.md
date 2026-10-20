@@ -1351,8 +1351,10 @@ ordi, sans qu'aucune machine reste allumée chez nous.
 - **Stripe Connect : formule EXPRESS** (décidé le 09/09/2026). On garde la main
   sur le parcours ; le client n'a pas de tableau de bord Stripe à lui.
 - **`/ceo`** (`lib/alpha-ceo.ts` + `lib/ceo-sondes.ts`) diagnostique tout ça.
-  Maître seul, **masqué** et non grisé : griser, c'est annoncer, et cette
-  console parle de NOTRE exploitation, pas d'une brique à vendre.
+  Sur notre cloud : maître seul, **masqué** et non grisé — griser, c'est
+  annoncer, et cette console y parle de NOTRE exploitation. **Livrée aux
+  installations client le 20/10/2026** (voir « L'ombrelle des agents ») : là,
+  l'exploitation est la sienne.
 
 ## Les quatre règles d'écran (elles ont toutes coûté un bug)
 1. **`prospectDefaults` (`lib/seed.ts`) est le socle de TOUS les imports**, pas
@@ -1641,6 +1643,40 @@ et ce qu'il change, avant de valider.
   suivant. Le premier mur n'est pas le marketing : **les emails de
   confirmation d'inscription**, plafonnés par Supabase et partis de la boîte
   de prospection.
+
+## L'OMBRELLE DES AGENTS — et ALPHA CEO livré aux clients (20/10/2026)
+`lib/agents-alpha.ts` · `tests/agents-alpha.test.ts` · `Entitlement.exploitant` ·
+`CHEMINS_EXPLOITATION` / `API_EXPLOITATION` · `tests/installation-client.test.ts`.
+
+- **Les noms des agents sont TOUJOURS EN CAPITALES** (décision de Zakaria) :
+  ALPHA SCOUT · ALPHA VOICE · ALPHA CAMPAGNES · AGENT ALPHA · ALPHA LIVE ·
+  ALPHA CERVEAU · ALPHA CEO. Une seule définition, que la vitrine importe et
+  que posts et vidéos recopient à la lettre.
+- **⚠ L'ombrelle NE RENOMME AUCUN ÉCRAN** (« renomme pas dans l'app »). Les
+  écrans gardent « Le Cerveau », « Campagnes » ; chaque agent DÉSIGNE des
+  écrans existants, et un test refuse un écran inconnu du contrôle d'accès.
+- **Chaque agent dit ce qu'il n'a pas le droit de faire, et nomme le fichier
+  qui l'en empêche** — la règle « plus un agent réfléchit, moins il a le
+  droit d'agir ». ALPHA SCOUT trie ce qu'on lui donne et ne collecte jamais.
+- **La disponibilité est DÉCLARÉE (le module n'importe rien : la vitrine est
+  un composant client) et VÉRIFIÉE** contre `peutOuvrir` et
+  `cheminOuvertParCle`. ⚠ Elle a mordu au premier passage : j'avais annoncé
+  ALPHA CAMPAGNES « chez vous » seulement, alors que la clé email du client
+  l'ouvre en ligne. Une vitrine qui sous-vend une porte ouverte ment aussi.
+- **ALPHA CEO est livré aux installations client.** Sur NOTRE cloud,
+  `/ceo` et `/moniteur` restent au maître : ils parlent de notre
+  déploiement. Sur le serveur d'un client (`ALPHA_INSTALLATION=client`), le
+  déploiement, le SMTP et le pipe opérateur SONT les siens — `exploitant:
+  true` ouvre sa console (`/ceo`, `/moniteur`, `/api/moniteur`) et RIEN
+  d'autre : marges, playbook, fiches, `/payouts`, `/offre` restent fermés
+  partout. Prouvé en appelant le middleware, et par quatre mutations.
+  > ⚠ **Une console livrée doit se taire sur ce qui n'est qu'à nous**
+  > (`seulementChezNous`) : prix Stripe, enveloppe d'essais, modules morts,
+  > statut des apporteurs. Sans ça, le client recevait « renseigne
+  > STRIPE_PRICE_* » sur sa propre console — une alarme qu'aucun de ses
+  > gestes n'éteint, donc une console qu'il apprend à ne plus lire.
+  > `/api/health` dit l'installation ; une valeur inconnue retombe sur « chez
+  > nous », jamais sur le mode client.
 
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il

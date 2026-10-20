@@ -367,7 +367,7 @@ test("⚠ la distinction descend bien du SERVEUR — sinon l'écran la devine", 
   assert.match(route, /session: Boolean\(d\.tenantId\)/, "la session se déduit du locataire, jamais d'autre chose");
 
   const shell = readFileSync(join(process.cwd(), "components/shell/app-shell.tsx"), "utf8");
-  assert.match(shell, /droits\.solo, droits\.session\)/, "le rail doit transmettre la session au calcul de verrou");
+  assert.match(shell, /droits\.solo, droits\.session, droits\.exploitant\)/, "le rail doit transmettre la session (et l'exploitant) au calcul de verrou");
 });
 
 // ══ L'ÉCRAN DU REFUS DIT POURQUOI, ET OÙ ALLER (13/10/2026) ══

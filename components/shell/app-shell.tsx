@@ -314,7 +314,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
    * (`/payouts`, `/offre` — griser reviendrait à annoncer notre économie à
    * un client, et à l'inviter à demander notre part).
    */
-  const etat = (href: string) => etatChemin(href, droits.bricks, droits.maitre, droits.solo, droits.session);
+  const etat = (href: string) => etatChemin(href, droits.bricks, droits.maitre, droits.solo, droits.session, droits.exploitant);
   const visible = (href: string) => etat(href).type !== "masque";
   const verrouDe = (href: string) => {
     const e = etat(href);
@@ -347,7 +347,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [modeMemorise, setModeMemorise] = useState<string | null>(
     () => (typeof window === "undefined" ? null : localStorage.getItem(CLE_MODE))
   );
-  const mode = modeActif(modeMemorise, droits.maitre);
+  const mode = modeActif(modeMemorise, droits.maitre || droits.exploitant);
   const choisirMode = (id: string) => {
     setModeMemorise(id);
     if (typeof window !== "undefined") localStorage.setItem(CLE_MODE, id);
@@ -573,7 +573,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             dit CE QU'IL SERT, et un intitulé seul ne le dit pas. */}
         {selecteurOuvert && (
           <div className="glass-chrome sticky top-[52px] z-40 border-b border-ink-700 p-2 md:hidden" role="menu">
-            {modesVisibles(droits.maitre).map((m) => (
+            {modesVisibles(droits.maitre || droits.exploitant).map((m) => (
               <button
                 key={m.id}
                 role="menuitemradio"

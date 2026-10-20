@@ -18,8 +18,8 @@ import { useAlpha } from "@/lib/store";
 import {
   anglesMorts,
   diagnostiquer,
-  PANNES,
-  POINTS,
+  pannesPour,
+  pointsPour,
   type Alerte,
   type Gravite,
   type NaturePoint,
@@ -48,10 +48,13 @@ import { PageHeader } from "@/components/ui/page-header";
  * `/api/health` (réponse tronquée sans le cookie d'accès → `null`, jamais
  * `false`) est précisément ce qu'un test doit tenir.
  *
- * ⚠ Écran réservé au compte MAÎTRE (`ACCES_PAR_CHEMIN` → `"/ceo": []`), et
- * MASQUÉ plutôt que grisé chez les autres : c'est l'exploitation de NOTRE
- * déploiement, rien n'y est à vendre. Ce qui concerne le client — son
- * stockage, ses brouillons, ses fiches sans suite — vit déjà sur ses écrans.
+ * ⚠ Sur NOTRE cloud, écran réservé au compte MAÎTRE (`ACCES_PAR_CHEMIN` →
+ * `"/ceo": []`), et MASQUÉ plutôt que grisé chez les autres : c'est
+ * l'exploitation de notre déploiement.
+ * ⚠⚠ LIVRÉ AUX INSTALLATIONS CLIENT le 20/10/2026 (`Entitlement.exploitant`) :
+ * sur le serveur d'un client, le déploiement est le sien, et la console aussi.
+ * Ce qui n'est qu'à nous (`seulementChezNous`) y est tu — `pointsPour`,
+ * `pannesPour`, et `diagnostiquer` qui lit `etat.installation`.
  * ─────────────────────────────────────────────────────────────────────
  */
 
@@ -263,7 +266,7 @@ export default function CeoPage() {
 
         <div className="grid gap-3 lg:grid-cols-3">
           {NATURES.map((n) => {
-            const points = POINTS.filter((p) => p.nature === n.id);
+            const points = pointsPour(etat.installation).filter((p) => p.nature === n.id);
             const Icone = n.icone;
             return (
               <div key={n.id} className="card p-4">
@@ -309,7 +312,7 @@ export default function CeoPage() {
         </p>
 
         <ul className="mt-3 space-y-2">
-          {PANNES.map((p) => {
+          {pannesPour(etat.installation).map((p) => {
             const active = alertes.some((a) => a.id === p.id);
             return (
               <li
