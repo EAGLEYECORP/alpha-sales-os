@@ -4,6 +4,7 @@ import { resoudreDroits } from "@/lib/entitlements";
 import { runAI } from "@/lib/ai-engine";
 import { CAPACITES, moteurUtilisable, type Capacite } from "@/lib/credentials";
 import { chiffrer, empreinteVisible, moteurDepuisValeurs } from "@/lib/credentials-secret";
+import { lireCleIA, nettoyerSecret, verifierBoite } from "@/lib/identifiants-assistes";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -105,10 +106,34 @@ export async function POST(req: NextRequest) {
   const valeurs: Record<string, string> = {};
   for (const champ of CHAMPS_ATTENDUS[capacite]) {
     const v = brut[champ];
-    if (typeof v === "string" && v.trim()) valeurs[champ] = v.trim();
+    // `nettoyerSecret` : guillemets, saut de ligne, `export CLE=…` collés avec la
+    // clé ne sont pas une raison de la refuser.
+    if (typeof v === "string" && v.trim()) valeurs[champ] = capacite === "ia" ? nettoyerSecret(v) : v.trim();
   }
   if (Object.keys(valeurs).length === 0) {
     return NextResponse.json({ error: "Aucune valeur exploitable." }, { status: 400 });
+  }
+
+  /**
+   * ⚠ UNE CLÉ IA COLLÉE DANS LE MAUVAIS CHAMP EST RANGÉE DANS LE BON.
+   *
+   * L'écran n'a plus qu'un champ : le fournisseur se lit sur la forme de la clé
+   * (`lireCleIA`), pas sur le champ que l'inscrit a choisi. Et une clé qu'ALPHA
+   * ne sait pas servir (OpenAI, Gemini…) est refusée ICI, tout de suite, avec
+   * la phrase qui dit quoi faire — pas après un appel de quinze secondes qui
+   * échouerait chez un fournisseur qui n'est pas le sien.
+   */
+  if (capacite === "ia") {
+    for (const champ of ["ANTHROPIC_API_KEY", "NVIDIA_API_KEY"] as const) {
+      const v = valeurs[champ];
+      if (!v) continue;
+      const lecture = lireCleIA(v);
+      if (!lecture?.branchable || !lecture.champ) {
+        return NextResponse.json({ error: lecture?.message ?? "Clé non reconnue.", aide: lecture?.aide ?? null }, { status: 400 });
+      }
+      delete valeurs[champ];
+      valeurs[lecture.champ] = lecture.valeur;
+    }
   }
 
   /**
@@ -140,34 +165,58 @@ export async function POST(req: NextRequest) {
       echec = e instanceof Error ? e.message : "appel refusé";
     }
   } else {
-    if (!valeurs.SMTP_HOST || !valeurs.SMTP_USER || !valeurs.SMTP_PASS) {
+    /**
+     * ⚠ UNE ADRESSE ET UN MOT DE PASSE SUFFISENT. Le serveur et le port se
+     * DÉDUISENT (`lib/identifiants-assistes.ts`) — ils ne se demandent que si
+     * l'hébergeur n'est pas reconnu — et la connexion AUTHENTIFIÉE est tentée
+     * port par port. `verifierBoite` ne rend `ok` qu'après une vraie connexion :
+     * `verifie_le`, qui OUVRE la capacité, ne vaut jamais une signature sans
+     * lecture.
+     */
+    if (!valeurs.SMTP_USER || !valeurs.SMTP_PASS) {
+      return NextResponse.json({ error: "Il manque l'adresse ou le mot de passe." }, { status: 400 });
+    }
+    const nodemailer = (await import("nodemailer")).default;
+    const dns = await import("node:dns/promises");
+    const verdict = await verifierBoite(
+      {
+        adresse: valeurs.SMTP_FROM || valeurs.SMTP_USER,
+        identifiant: valeurs.SMTP_USER,
+        motDePasse: valeurs.SMTP_PASS,
+        host: valeurs.SMTP_HOST,
+        port: valeurs.SMTP_PORT ? Number(valeurs.SMTP_PORT) || undefined : undefined,
+      },
+      {
+        creer: (o) =>
+          nodemailer.createTransport({
+            host: o.host,
+            port: o.port,
+            secure: o.secure,
+            auth: { user: o.user, pass: o.pass },
+            connectionTimeout: 12_000,
+            greetingTimeout: 12_000,
+          }),
+        resoudreMx: async (domaine) => {
+          // Un DNS qui traîne ne doit pas bloquer l'écran : quatre secondes, sinon on demande le serveur.
+          const mx = await Promise.race([
+            dns.resolveMx(domaine),
+            new Promise<never>((_, rejette) => setTimeout(() => rejette(new Error("DNS trop lent")), 4_000)),
+          ]);
+          return mx.sort((x, y) => x.priority - y.priority).map((m) => m.exchange);
+        },
+      }
+    );
+    if (!verdict.ok) {
       return NextResponse.json(
-        { error: "Il manque l'hôte, l'identifiant ou le mot de passe SMTP — les trois ensemble, ou rien." },
-        { status: 400 }
+        { error: verdict.conseil, conseil: verdict.conseil, aide: verdict.aide, classe: verdict.classe, detail: verdict.detail },
+        { status: 422 }
       );
     }
-    try {
-      /**
-       * ⚠ `transporter.verify()` ouvre la connexion et s'AUTHENTIFIE — il ne
-       * se contente pas de résoudre l'hôte. C'est ce qui attrape le mot de
-       * passe faux, le port fermé et le certificat refusé, c'est-à-dire les
-       * trois pannes que `docs/SMTP-SUPABASE-AMEN.md` décrit comme
-       * silencieuses en production.
-       */
-      const nodemailer = (await import("nodemailer")).default;
-      const port = Number(valeurs.SMTP_PORT ?? 587) || 587;
-      await nodemailer
-        .createTransport({
-          host: valeurs.SMTP_HOST,
-          port,
-          secure: port === 465,
-          auth: { user: valeurs.SMTP_USER, pass: valeurs.SMTP_PASS },
-          connectionTimeout: 15_000,
-        })
-        .verify();
-    } catch (e) {
-      echec = e instanceof Error ? e.message : "connexion refusée";
-    }
+    // Ce qui est CHIFFRÉ est ce qui a été PROUVÉ : l'hôte et le port qui ont authentifié.
+    valeurs.SMTP_HOST = verdict.reglages.host;
+    valeurs.SMTP_PORT = String(verdict.reglages.port);
+    valeurs.SMTP_USER = verdict.reglages.user;
+    valeurs.SMTP_FROM = verdict.reglages.from;
   }
   if (echec) {
     return NextResponse.json(

@@ -1696,6 +1696,39 @@ et ce qu'il change, avant de valider.
     « connectés » est dit **sous-compté** (`last_sign_in_at` = dernière saisie
     du mot de passe, pas dernière visite). Sept mutations mordent.
 
+### BRANCHER SES COMPTES EN DEUX CHAMPS (20/10/2026)
+`lib/identifiants-assistes.ts` · `app/api/credentials` (+ `/detect`) ·
+`components/settings/cle-ia.tsx` · `tests/identifiants-assistes.test.ts`.
+
+Décision de Zakaria : « le moins de friction possible ». Mesuré avant d'écrire :
+la boîte d'envoi demandait QUATRE champs techniques (serveur, port, identifiant,
+mot de passe), l'IA deux champs de clé sans dire lequel sert à quoi. Sans
+identifiants rien ne s'ouvre — c'est l'écran où un inscrit abandonne.
+- **IA : UNE clé, collée n'importe où.** Elle se reconnaît à sa forme
+  (`sk-ant-` Anthropic, `nvapi-` NVIDIA), se nettoie (guillemets, saut de
+  ligne, `export CLE=…`, bloc `.env` entier) et, si elle est valide, se vérifie
+  au COLLER, sans second clic. **Une clé qu'ALPHA ne sait pas servir (OpenAI,
+  Gemini, Groq) est refusée tout de suite**, avec la phrase qui dit quoi faire —
+  pas après quinze secondes d'un refus d'un fournisseur qui n'est pas le sien.
+- **Envoi : UNE adresse + UN mot de passe.** L'hébergeur se déduit de l'adresse
+  (Gmail, Outlook, Orange…) puis, pour un domaine perso, de son enregistrement
+  MX (`/api/credentials/detect`, session exigée : sinon c'est un résolveur DNS
+  ouvert). Le serveur et le port se déduisent ; **le port se REPLIE** (587 puis
+  465, ou l'inverse selon l'hébergeur) et on enregistre celui qui a authentifié.
+- **⚠⚠ LA TABLE DES HÉBERGEURS EST ÉCRITE DE MÉMOIRE ET NE FAIT JAMAIS FOI.**
+  Aucune de ses adresses n'a été jointe d'ici (le proxy sortant refuse le
+  SMTP). Elle PROPOSE ; `verifierBoite` se connecte ET s'authentifie vraiment
+  avant d'accepter : `ok` veut dire « une connexion authentifiée a eu lieu ».
+  Une ligne fausse produit un refus lisible, jamais une boîte enregistrée à tort.
+- **Hébergeur inconnu → on DEMANDE le serveur**, on ne devine pas
+  « smtp.<domaine> » : réussir une fois sur deux fabrique des échecs inexplicables.
+- **Un mot de passe REFUSÉ arrête tout** : le serveur est joint, un autre port
+  n'y change rien (et marteler un serveur qui a dit non brûle une réputation).
+  Le conseil dit CE QU'IL FAUT FAIRE (« mot de passe d'APPLICATION, pas celui de
+  ta messagerie » + le lien pour le créer), jamais le message brut seul.
+- **Le secret ne revient toujours JAMAIS du serveur** (empreinte seulement).
+  Sept mutations mordent.
+
 ### « ALPHA A BESOIN DE TOI » — la présence d'un agent, et ce qu'elle ne prétend pas (20/10/2026)
 `lib/presence-alpha.ts` · `components/shell/alpha-presence.tsx` (monté dans la
 coquille) · `tests/presence-alpha.test.ts`.
