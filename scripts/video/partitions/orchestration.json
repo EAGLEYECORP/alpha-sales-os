@@ -1,6 +1,6 @@
 {
- "_note": "Vidéo LinkedIn « orchestration des agents » du 21/10/2026 — ré mineur (la règle) → si bémol → sol mineur → la (l'attente) → ré majeur sur le logo. Calée sur la composition HyperFrames.",
- "duree": 23.6,
+ "_note": "Vidéo LinkedIn « les agents d'Alpha » du 20/10/2026 — ré mineur (la règle) → si bémol (deux camps, une mémoire) → sol mineur → la (l'attente) → ré majeur sur le logo. Calée sur la composition HyperFrames.",
+ "duree": 24.8,
  "accords": [
   [
    0.0,
@@ -23,7 +23,7 @@
    ]
   ],
   [
-   10.2,
+   11.4,
    [
     98.0,
     146.83,
@@ -33,7 +33,7 @@
    ]
   ],
   [
-   15.2,
+   16.4,
    [
     110.0,
     146.83,
@@ -43,7 +43,7 @@
    ]
   ],
   [
-   19.4,
+   20.6,
    [
     73.42,
     146.83,
@@ -75,35 +75,35 @@
    "type": "souffle"
   },
   {
-   "t": 10.1,
+   "t": 11.3,
    "type": "souffle"
   },
   {
-   "t": 15.1,
+   "t": 16.3,
    "type": "souffle"
   },
   {
-   "t": 19.3,
+   "t": 20.5,
    "type": "souffle"
   },
   {
-   "t": 4.95,
+   "t": 5.05,
    "type": "appui"
   },
   {
-   "t": 5.25,
+   "t": 5.35,
    "type": "tic",
    "hz": 587.33,
    "pan": -0.4
   },
   {
-   "t": 5.55,
+   "t": 5.65,
    "type": "tic",
    "hz": 659.25,
    "pan": -0.3
   },
   {
-   "t": 5.95,
+   "t": 6.05,
    "type": "declic",
    "pan": -0.3,
    "gain": 0.6
@@ -117,21 +117,27 @@
    "t": 7.45,
    "type": "tic",
    "hz": 739.99,
+   "pan": 0.3
+  },
+  {
+   "t": 7.75,
+   "type": "tic",
+   "hz": 880.0,
    "pan": 0.4
   },
   {
-   "t": 7.8,
-   "type": "declic",
-   "pan": 0.4,
-   "gain": 0.6
+   "t": 8.05,
+   "type": "tic",
+   "hz": 987.77,
+   "pan": 0.5
   },
   {
-   "t": 8.4,
+   "t": 8.45,
    "type": "declic",
    "pan": 0.4
   },
   {
-   "t": 8.47,
+   "t": 8.52,
    "type": "tinte",
    "hz": 440.0,
    "pan": 0.4,
@@ -139,100 +145,119 @@
    "decay": 0.3
   },
   {
-   "t": 11.3,
+   "t": 9.2,
+   "type": "air",
+   "gain": 0.7
+  },
+  {
+   "t": 9.35,
+   "type": "tinte",
+   "hz": 293.66,
+   "gain": 1.1,
+   "decay": 0.4
+  },
+  {
+   "t": 9.5,
+   "type": "tinte",
+   "hz": 587.33,
+   "gain": 0.7,
+   "decay": 0.35
+  },
+  {
+   "t": 12.5,
    "type": "appui"
   },
   {
-   "t": 11.55,
+   "t": 12.75,
    "type": "tic",
    "hz": 587.33,
    "pan": -0.5
   },
   {
-   "t": 11.67,
+   "t": 12.87,
    "type": "tic",
    "hz": 659.25,
    "pan": -0.3
   },
   {
-   "t": 11.79,
+   "t": 12.99,
    "type": "tic",
    "hz": 739.99,
    "pan": -0.1
   },
   {
-   "t": 11.91,
+   "t": 13.11,
    "type": "tic",
    "hz": 880.0,
    "pan": 0.1
   },
   {
-   "t": 12.03,
+   "t": 13.23,
    "type": "tic",
    "hz": 987.77,
    "pan": 0.3
   },
   {
-   "t": 12.15,
+   "t": 13.35,
    "type": "tic",
    "hz": 1174.66,
    "pan": 0.5
   },
   {
-   "t": 12.75,
+   "t": 13.95,
    "type": "declic",
    "gain": 0.9
   },
   {
-   "t": 12.83,
+   "t": 14.03,
    "type": "tinte",
    "hz": 293.66,
    "decay": 0.35
   },
   {
-   "t": 16.2,
+   "t": 17.4,
    "type": "appui"
   },
   {
-   "t": 16.9,
+   "t": 18.1,
    "type": "air",
    "gain": 0.6,
    "pan": 0.3
   },
   {
-   "t": 17.65,
+   "t": 18.85,
    "type": "declic",
    "gain": 1.2,
    "pan": 0.2
   },
   {
-   "t": 17.7,
+   "t": 18.9,
    "type": "pop",
    "gain": 0.8
   },
   {
-   "t": 17.95,
+   "t": 19.15,
    "type": "tinte",
    "hz": 880.0,
    "pan": 0.2
   },
   {
-   "t": 18.07,
+   "t": 19.27,
    "type": "tinte",
    "hz": 1174.66,
    "pan": 0.3,
    "decay": 0.28
   },
   {
-   "t": 19.4,
+   "t": 20.6,
    "type": "impact"
   },
   {
-   "t": 20.7,
+   "t": 21.9,
    "type": "pop"
   },
   {
-   "t": 21.3,
+   "t": 22.5,
    "type": "brillance",
    "notes": [
     880.0,
