@@ -6,14 +6,11 @@ import { useState } from "react";
 // navigateur — visible en trois secondes de devtools, même si rien ne
 // l'affiche. Voir lib/public-catalogue.ts.
 import {
-  ALPHA_VOICE_PUBLIC,
   BUSINESS_PUBLIC,
   CAPACITES,
   DEUX_FORMES,
   FRONTIERE_PAYANT,
-  GARANTIE,
   PALIERS_LABELS,
-  LIFETIME_PUBLIC,
   PRIX_PUBLICS,
   SOCLE_GRATUIT,
 } from "@/lib/public-catalogue";
@@ -609,106 +606,27 @@ export default function VitrinePage() {
           </div>
 
           {/*
-            ── LIFETIME ──
+            ── RETIRÉS LE 20/10/2026 : le Lifetime, les grilles Alpha Voice
+            (accueil 149/349 €, garantie du setup) et le sortant au millier ──
 
-            Ce qu'un lifetime est vraiment : on échange tout le revenu futur
-            d'un client contre de l'argent maintenant. La page ne le dit pas au
-            prospect — ce n'est pas son sujet — mais elle dit les deux choses
-            qui l'engagent, LUI : ce qui est à vie (le logiciel) et ce qui ne
-            l'est pas (la consommation). Une offre « à vie » dont le périmètre
-            n'est pas écrit se discute au premier dépassement.
-          */}
-          <div className="mt-16 rounded-2xl p-8" style={{ border: `1px solid ${ACCENT}` }}>
-            <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>
-              Lifetime — {LIFETIME_PUBLIC.placesTotal} places, puis l&apos;offre ferme
-            </p>
-            <p className="mt-4 font-serif text-[46px] leading-none tracking-[-0.02em]">
-              {LIFETIME_PUBLIC.paliers[0].prixHT.toLocaleString("fr-FR")}{" "}
-              <span className="text-[22px]" style={{ color: MUTED }}>€ HT</span>
-            </p>
-            <p className="mt-2 text-[15px]" style={{ color: MUTED }}>
-              pour les {LIFETIME_PUBLIC.paliers[0].places} premiers — le prix monte ensuite
-            </p>
-            <p className="mt-5 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-              Le <strong style={{ color: INK }}>logiciel à vie</strong>, payé une fois, mises à jour
-              comprises, avec {LIFETIME_PUBLIC.appelsInclus.toLocaleString("fr-FR")} appels inclus.
-              Ce qui se consomme ensuite — les appels, les envois — reste facturé à l&apos;usage :
-              une minute coûte quelque chose à quelqu&apos;un, tous les mois, et prétendre le
-              contraire finirait par se voir.
-            </p>
-            <ul className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-[15px]" style={{ color: MUTED }}>
-              {LIFETIME_PUBLIC.paliers.map((t) => (
-                <li key={t.rang}>
-                  <span style={{ color: INK }}>{t.prixHT.toLocaleString("fr-FR")} € HT</span> — {t.places} places
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 text-[15px] leading-[1.55]" style={{ color: MUTED }}>
-              Le nombre de places n&apos;est pas un argument : l&apos;installation se fait à la main,
-              par une seule personne.
-            </p>
-          </div>
-
-          {/*
-            ── ALPHA VOICE, ACCUEIL TÉLÉPHONIQUE ──
-
-            ⚠ La page n'affichait QUE le palier d'entrée du SORTANT (364 € le
-            millier d'appels). La grille de l'accueil — celle qui est décidée,
-            documentée et que nous annonçons par ailleurs — n'était nulle part.
-            Un prospect lisait donc « 364 € » et repartait avec un ordre de
-            grandeur qui n'est pas celui de l'offre qu'on lui vendra.
-
-            Publier ces prix nets est une décision : ça qualifie les demandes
-            et ça évite les rendez-vous hors budget.
+            Décision de Zakaria : deux formes seulement. En ligne gratuit —
+            un logiciel « à vie » payé une fois n'y a plus rien à vendre — et
+            chez vous payant, où la téléphonie est comprise. Un abonnement
+            cloud qui facture NOS minutes contredisait les deux à la fois.
+            Les définitions restent dans `OFFRES` (`OFFRES_RETIREES`) ; c'est
+            la VENTE qui s'arrête. Ce qui reste vrai de la voix — l'article 50,
+            prononcé par le code — reste dit, parce que c'est un fait.
           */}
           <div className="mt-16">
             <h3 className="font-serif text-[26px] tracking-[-0.01em]">
-              Alpha Voice — l&apos;accueil qui décroche à votre place
+              Alpha Voice — compris dans Alpha chez vous
             </h3>
             <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-              <strong style={{ color: INK }}>{ALPHA_VOICE_PUBLIC.setupHT} € HT d&apos;installation</strong>, puis
-              un abonnement au volume :
+              L&apos;agent vocal qui décroche et qui appelle s&apos;installe avec le reste, sur votre
+              serveur et avec votre propre ligne. Le volume d&apos;appels se fixe au cadrage : il
+              n&apos;a de valeur qu&apos;une fois le ciblage et la conversation réglés.
             </p>
-            <ul className="mt-5 grid gap-6 sm:grid-cols-2">
-              {ALPHA_VOICE_PUBLIC.paliers.map((t) => (
-                <li key={t.nom} className="rounded-xl p-5" style={{ border: `1px solid ${LINE}` }}>
-                  <p className="text-[13px] uppercase tracking-[0.12em]" style={{ color: MUTED }}>{t.nom}</p>
-                  <p className="mt-2 font-serif text-[34px] leading-none tracking-[-0.02em]">
-                    {t.prixHT} € <span className="text-[16px]" style={{ color: MUTED }}>HT / mois</span>
-                  </p>
-                  <p className="mt-3 text-[15px] leading-[1.55]" style={{ color: MUTED }}>{t.ce}</p>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 max-w-2xl text-[15px] leading-[1.6]" style={{ color: MUTED }}>
-              Au-delà : {ALPHA_VOICE_PUBLIC.minuteSupHT.toFixed(2).replace(".", ",")} € HT la minute. Pas de coupure,
-              pas de palier caché.
-            </p>
-
-            {/*
-              LA GARANTIE, AVEC SES BORDS. Les taire n'est pas une
-              simplification : c'est un litige à retardement. Une garantie sans
-              durée s'active au bout de trois jours de ligne coupée.
-            */}
-            <div className="mt-8 rounded-xl p-6" style={{ background: "#FFFFFF", border: `1px solid ${ACCENT}` }}>
-              <p className="font-serif text-[24px] leading-[1.25] tracking-[-0.01em]">{GARANTIE.promesse}</p>
-              <ul className="mt-4 space-y-1.5">
-                {GARANTIE.bords.map((b) => (
-                  <li key={b} className="text-[15px] leading-[1.55]" style={{ color: MUTED }}>— {b}</li>
-                ))}
-              </ul>
-            </div>
-
-            {/*
-              ── L'ARTICLE 50, SERVI COMME ARGUMENT ──
-
-              La divulgation est prononcée par le CODE, hors du modèle, avant
-              qu'il ait la parole, et sans interruption possible. C'est un fait
-              vérifiable et daté — le seul de cette page qui ne demande aucune
-              confiance. Le taire pour « ne pas faire peur » reviendrait à
-              laisser un concurrent en faire un reproche.
-            */}
-            <div className="mt-10">
+            <div className="mt-8">
               <h4 className="text-[15px] font-semibold">L&apos;agent annonce qu&apos;il est une IA. Toujours.</h4>
               <p className="mt-2 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                 Première phrase de chaque appel : il dit qu&apos;il est une intelligence artificielle, pas
@@ -718,24 +636,6 @@ export default function VitrinePage() {
                 L&apos;article 50 du règlement européen sur l&apos;IA s&apos;applique depuis le 2 août 2026.
               </p>
             </div>
-          </div>
-
-          {/* Alpha Voice sortant — l'entrée seulement, les paliers se disent au cadrage */}
-          <div className="mt-16">
-            <h3 className="font-serif text-[26px] tracking-[-0.01em]">
-              Alpha Voice — au volume d&apos;appels, sans engagement
-            </h3>
-            <p className="mt-3 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-              Vous payez les appels passés, pas une licence. On commence à{" "}
-              <strong style={{ color: INK }}>{PRIX_PUBLICS.sortantMensuelHT} € HT/mois pour {PRIX_PUBLICS.sortantAppels.toLocaleString("fr-FR")} appels</strong>,
-              et on ne monte qu&apos;une fois que ça convertit.
-            </p>
-            <p className="mt-4 max-w-2xl text-[16px] leading-[1.65]" style={{ color: MUTED }}>
-              <strong style={{ color: INK }}>Le volume n&apos;a de valeur qu&apos;après le réglage.</strong>{" "}
-              Tant que le ciblage et la conversation ne sont pas au point, multiplier les appels ne fait
-              que brûler votre fichier plus vite. Les paliers supérieurs existent — on les ouvre quand
-              les chiffres le justifient, pas avant.
-            </p>
           </div>
 
           {/* Les capacités — ce que ça FAIT, pas la grille tarifaire */}
@@ -915,7 +815,7 @@ export default function VitrinePage() {
               },
               {
                 q: "Et si ça ne marche pas chez moi ?",
-                r: "C'est pour ça que le cadrage est obligatoire et qu'il est gratuit. On regarde vos chiffres à vous avant d'annoncer quoi que ce soit, et il nous arrive de dire que ça ne vaut pas le coup. Sur l'accueil téléphonique, l'installation ne se paie qu'au premier rendez-vous obtenu — les bords de cette garantie sont écrits plus bas, pas cachés.",
+                r: "C'est pour ça que le cadrage est obligatoire et qu'il est gratuit. On regarde vos chiffres à vous avant d'annoncer quoi que ce soit, et il nous arrive de dire que ça ne vaut pas le coup. Et la version en ligne est gratuite : vous pouvez juger Alpha sur vos propres fiches avant qu'on parle d'installation.",
               },
               {
                 q: "Pourquoi pas moins cher ?",

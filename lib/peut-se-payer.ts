@@ -104,7 +104,15 @@ export function signalAbonnement(
   if (mrrSigne <= 0) return { ...RIEN, fiches: signees.length };
 
   const offre = offrePourBrique(brique);
-  const prix = offre?.prixHT ?? null;
+  /**
+   * ⚠ LE PRIX COMPARÉ EST UN PRIX MENSUEL, et `prixHT` n'en est un que sur une
+   * offre « mensuel ». Depuis le 20/10/2026, l'issue payante est « Alpha chez
+   * vous » (Business) : son `prixHT` est l'INSTALLATION, 10 000 €. Le lire
+   * comme un mensuel aurait comparé un chiffre d'affaires mensuel à une
+   * somme payée une fois — et écrit au client « coûte 10 000 €/mois ». On
+   * prend l'abonnement du plan, sinon on se tait.
+   */
+  const prix = offre ? (offre.cadence === "mensuel" ? offre.prixHT : offre.plan?.abonnementHT ?? null) : null;
   const base: SignalAbonnement = {
     source: "fiches-signees",
     mrrSigne,
@@ -130,6 +138,8 @@ export function signalAbonnement(
      */
     message:
       `D'après tes fiches, tu as signé ${mrrSigne.toLocaleString("fr-FR")} €/mois sur ${signees.length} client(s) — ` +
-      `avec la partie gratuite. ${offre.nom} coûte ${prix.toLocaleString("fr-FR")} €/mois, soit ${part} % de ce montant.`,
+      `avec la partie gratuite. ${offre.nom} coûte ${prix.toLocaleString("fr-FR")} €/mois` +
+      (offre.cadence === "mensuel" ? "" : " d'abonnement, après l'installation") +
+      `, soit ${part} % de ce montant.`,
   };
 }

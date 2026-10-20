@@ -10,7 +10,7 @@ import { ACCES_PAR_CHEMIN } from "../lib/bricks-access";
 import { cheminOuvertParCle } from "../lib/capacites-cle";
 import { signalAbonnement, MULTIPLE_SEUIL } from "../lib/peut-se-payer";
 import { BRIQUES_GRATUITES } from "../lib/entitlements";
-import { OFFRES } from "../lib/offres-publiques";
+import { OFFRES_EN_VENTE, type OffrePublique } from "../lib/offres-publiques";
 import { SOCLE_GRATUIT } from "../lib/public-catalogue";
 import { prospectDefaults, PREFIXE_DEMO } from "../lib/seed";
 import type { Prospect } from "../lib/types";
@@ -98,7 +98,8 @@ test("…et c'est la MOINS CHÈRE de celles qui la contiennent", () => {
   for (const b of briquesPayantes()) {
     const choisie = offrePourBrique(b.brique);
     if (!choisie || choisie.prixHT === null) continue;
-    for (const autre of OFFRES) {
+    // Parmi les offres EN VENTE : une offre retirée n'est plus une alternative.
+    for (const autre of OFFRES_EN_VENTE) {
       if (!autre.capacites.includes(b.brique) || autre.prixHT === null) continue;
       assert.ok(
         choisie.prixHT! <= autre.prixHT,
@@ -173,8 +174,16 @@ test("⚠ LES FICHES DE DÉMO NE COMPTENT PAS DANS SON REVENU", () => {
   assert.equal(r.mrrSigne, null);
 });
 
+/**
+ * Le prix MENSUEL de l'offre proposée — `prixHT` sur une offre mensuelle,
+ * l'abonnement du plan sinon. Depuis le 20/10/2026 l'issue payante est
+ * « Alpha chez vous », dont `prixHT` est l'installation : la comparer à un
+ * revenu mensuel serait le défaut que `peut-se-payer` vient de corriger.
+ */
+const mensuel = (o: OffrePublique) => (o.cadence === "mensuel" ? o.prixHT! : o.plan!.abonnementHT);
+
 test("on propose quand le revenu SIGNÉ dépasse le seuil — et pas avant", () => {
-  const prix = offrePourBrique("alpha-voice")!.prixHT!;
+  const prix = mensuel(offrePourBrique("alpha-voice")!);
 
   // Juste en dessous : on se tait.
   const sous = signalAbonnement([fiche("a", "signe", prix * MULTIPLE_SEUIL - 1)], [], "alpha-voice");
@@ -194,7 +203,7 @@ test("⚠ on ne propose PAS ce que le compte possède déjà", () => {
    * exactement le genre de relance qui fait passer un produit pour un
    * publipostage.
    */
-  const prix = offrePourBrique("alpha-voice")!.prixHT!;
+  const prix = mensuel(offrePourBrique("alpha-voice")!);
   const r = signalAbonnement([fiche("a", "signe", prix * 100)], ["alpha-voice"], "alpha-voice");
   assert.equal(r.proposer, false);
   assert.equal(r.source, "aucune", "on ne calcule même pas : il n'y a rien à proposer");

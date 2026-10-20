@@ -191,7 +191,7 @@ export const BRICKS: Brick[] = [
      */
     label: "Alpha Voice — volume sortant",
     what:
-      "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant ET sortant, 24/7. Périmètre VOLUME : le sortant à la cadence est inclus. L'accueil seul se prend en Essentiel ou Intensif, moins cher.",
+      "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant ET sortant, 24/7. Installé chez vous, avec votre propre ligne : le volume se fixe au cadrage.",
     setupHT: OUTBOUND_SETUP_HT,
     // Palier d'entrée du sortant : 1 000 appels/mois. Au-delà, voir
     // OUTBOUND_TIERS — le prix suit le volume, sans engagement.

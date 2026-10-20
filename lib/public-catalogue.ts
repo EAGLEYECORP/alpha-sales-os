@@ -165,30 +165,19 @@ export const DEUX_FORMES = {
 } as const;
 
 /**
- * La grille Alpha Voice, décidée le 02/09/2026.
- *
- * ⚠ Publier des prix nets est une DÉCISION, pas une évidence : ça qualifie les
- * demandes entrantes et ça évite les rendez-vous hors budget. Les paliers
- * supérieurs du sortant, eux, restent au cadrage — voir `OUTBOUND_TIERS`,
- * qu'un test interdit d'afficher ici.
+ * ⚠ RETIRÉS LE 20/10/2026 : `ALPHA_VOICE_PUBLIC` (accueil 149/349 €),
+ * `LIFETIME_PUBLIC` et `GARANTIE` (le setup Alpha Voice payé au premier RDV).
+ * Les offres qu'ils affichaient ne sont plus en vente (`OFFRES_RETIREES`), et
+ * ce module part dans le navigateur : une grille retirée qui y reste se lit
+ * en trois secondes de devtools, comme le catalogue l'a déjà été.
  */
-export const ALPHA_VOICE_PUBLIC = {
-  setupHT: 1490,
-  paliers: [
-    { nom: "Essentiel", prixHT: 149, ce: "500 minutes, environ 200 appels par mois" },
-    { nom: "Intensif", prixHT: 349, ce: "1 500 minutes, environ 600 appels par mois" },
-  ],
-  minuteSupHT: 0.2,
-};
 
 /**
- * ── BUSINESS ET LIFETIME, CÔTÉ PUBLIC ──
+ * ── BUSINESS (« ALPHA CHEZ VOUS »), CÔTÉ PUBLIC ──
  *
- * Recopiés à la main comme le reste de ce fichier ; un test les compare à
- * `lib/offres-publiques.ts`, qui fait foi. Les afficher est une décision : une
- * offre que personne ne peut voir n'existe pas, et les deux répondent à des
- * objections précises — « 10 000 € d'un coup, c'est trop » et « je ne veux pas
- * d'un abonnement de plus ».
+ * Recopié à la main comme le reste de ce fichier ; un test le compare à
+ * `lib/offres-publiques.ts`, qui fait foi. L'étalement répond à l'objection
+ * « 10 000 € d'un coup, c'est trop ».
  */
 export const BUSINESS_PUBLIC = {
   prixHT: 10_000,
@@ -196,32 +185,6 @@ export const BUSINESS_PUBLIC = {
   mensualites: 10,
   mensualiteHT: 800,
   abonnementHT: 1_000,
-};
-
-export const LIFETIME_PUBLIC = {
-  paliers: [
-    { rang: 1, prixHT: 4_900, places: 5 },
-    { rang: 2, prixHT: 6_900, places: 7 },
-    { rang: 3, prixHT: 8_900, places: 8 },
-  ],
-  placesTotal: 20,
-  appelsInclus: 1_200,
-};
-
-/**
- * La garantie, avec ses trois bords.
- *
- * Sans bords écrits, elle s'active au bout de trois jours de ligne coupée. La
- * durée, le périmètre et le critère font partie de la garantie — les taire
- * n'est pas une simplification, c'est un litige à retardement.
- */
-export const GARANTIE = {
-  promesse: "L'installation ne se paie qu'au premier rendez-vous obtenu.",
-  bords: [
-    "Sur 30 jours de ligne active.",
-    "Elle porte sur l'installation, pas sur l'abonnement déjà consommé.",
-    "Un rendez-vous PRIS — qui vient et qui signe ne dépend plus de nous.",
-  ],
 };
 
 /**
@@ -239,7 +202,7 @@ export const CAPACITES: CapacitePublique[] = [
     // « Alpha Voice », et celle-ci est la plus chère des trois. Un nom nu
     // faisait lire 3 500 € là où la vitrine annonce 1 490 €.
     label: "Alpha Voice — volume sortant",
-    what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant ET sortant, 24/7. Périmètre VOLUME : le sortant à la cadence est inclus. L'accueil seul se prend en Essentiel ou Intensif, moins cher.",
+    what: "L'agent vocal IA qui décroche, qualifie, relance et passe la main — entrant ET sortant, 24/7. Installé chez vous, avec votre propre ligne : le volume se fixe au cadrage.",
     palier: "coeur",
   },
   {

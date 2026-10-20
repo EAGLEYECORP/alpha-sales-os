@@ -873,6 +873,34 @@ export const offreParId = (id: string): OffrePublique | undefined => OFFRES.find
  */
 export const OFFRE_CHEZ_VOUS = "business";
 
+/**
+ * ── RETIRÉES DE LA VENTE LE 20/10/2026 (décision de Zakaria) ──
+ *
+ * Deux formes seulement : en ligne gratuit, chez vous payant. Ce qui suit les
+ * contredisait — un abonnement cloud qui facture NOS minutes, ou un « logiciel
+ * à vie » payé une fois pour un logiciel en ligne devenu gratuit.
+ *
+ * ⚠ ON DÉSACTIVE, ON NE SUPPRIME PAS. Les définitions restent dans `OFFRES` :
+ * le webhook Stripe et le provisionnement des droits les lisent encore, et
+ * une offre retirée dont un ancien achat reviendrait doit rester lisible.
+ * Ce qui change, c'est qu'AUCUNE surface de vente ne les propose plus —
+ * vitrine, `/souscrire`, paiement, écran de refus, grille apporteur. Elles
+ * lisent toutes `OFFRES_EN_VENTE`, et `tests/deux-formes.test.ts` refuse
+ * qu'une d'elles revienne à `OFFRES`.
+ */
+const MOTIF_VOIX_CLOUD =
+  "Abonnement cloud qui facture nos minutes de téléphonie : la téléphonie se vend désormais installée chez le client, dans Alpha chez vous.";
+export const OFFRES_RETIREES: Readonly<Record<string, string>> = {
+  "voix-essentiel": MOTIF_VOIX_CLOUD,
+  "voix-intensif": MOTIF_VOIX_CLOUD,
+  omnicanal: MOTIF_VOIX_CLOUD,
+  "voix-1000": MOTIF_VOIX_CLOUD,
+  lifetime: "Le logiciel en ligne est gratuit : un logiciel « à vie » payé une fois n'a plus rien à vendre.",
+};
+
+/** Ce qui se vend vraiment. Toute surface de vente lit CETTE liste, jamais `OFFRES`. */
+export const OFFRES_EN_VENTE: OffrePublique[] = OFFRES.filter((o) => !(o.id in OFFRES_RETIREES));
+
 /** Prix affichés au public — sert au test qui verrouille la vitrine. */
 export const PRIX_PUBLICS: number[] = OFFRES.map((o) => o.prixHT).filter((p): p is number => p !== null);
 

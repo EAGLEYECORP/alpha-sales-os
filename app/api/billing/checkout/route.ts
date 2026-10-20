@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckoutSession, stripeConfigured } from "@/lib/stripe";
-import { OFFRES, offreParId } from "@/lib/offres-publiques";
+import { OFFRES_EN_VENTE, OFFRES_RETIREES, offreParId } from "@/lib/offres-publiques";
 import { getTenant } from "@/lib/tenant";
 
 export const runtime = "nodejs";
@@ -37,12 +37,19 @@ export async function POST(req: NextRequest) {
   }
   const offreId = String(body.offre ?? body.plan ?? "");
   const offre = offreParId(offreId);
-  const payables = OFFRES.filter((o) => o.cadence !== "devis").map((o) => o.id);
+  const payables = OFFRES_EN_VENTE.filter((o) => o.cadence !== "devis").map((o) => o.id);
 
   if (!offre) {
     return NextResponse.json(
       { error: `Offre inconnue. Offres payables : ${payables.join(", ")}.` },
       { status: 400 }
+    );
+  }
+  // Une offre retirée de la vente ne s'encaisse plus, même par un vieux lien.
+  if (offre.id in OFFRES_RETIREES) {
+    return NextResponse.json(
+      { error: `« ${offre.nom} » n'est plus en vente. ${OFFRES_RETIREES[offre.id]}` },
+      { status: 410 }
     );
   }
   // Une offre sur devis n'a PAS de bouton payer : la doctrine impose le

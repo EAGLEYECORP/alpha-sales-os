@@ -7,7 +7,7 @@ import { serverAuthEnforced, serverAuthMisconfigured } from "@/lib/supabase-jwt"
 import { resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
 import { etatEnveloppe } from "@/lib/essai";
 import { coutGlobalEssais } from "@/lib/compteur-essai";
-import { OFFRES } from "@/lib/offres-publiques";
+import { OFFRES_EN_VENTE } from "@/lib/offres-publiques";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
          * variable qui porte son prix Stripe. Une offre ajoutée demain est
          * couverte sans toucher à ce fichier.
          */
-        prices: OFFRES.some((o) => o.priceEnv !== null && has(o.priceEnv)),
+        prices: OFFRES_EN_VENTE.some((o) => o.priceEnv !== null && has(o.priceEnv)),
         // Abonnement exigé pour envoyer (garde-fou opt-in).
         enforced: /^(1|true|yes)$/i.test(String(env.REQUIRE_SUBSCRIPTION ?? "")),
       },

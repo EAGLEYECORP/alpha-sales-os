@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 // Tout ce qu'une page publique importe part dans le bundle du navigateur,
 // même si rien ne l'affiche (voir tests/vitrine-fuite.test.ts). N'importer
 // depuis cette page aucun module qui touche aux coûts ou aux marges.
-import { OFFRES, offreParId, type OffrePublique } from "@/lib/offres-publiques";
+import { OFFRES_EN_VENTE, type OffrePublique } from "@/lib/offres-publiques";
 import { parcours, ESSAI_JOURS } from "@/lib/client-onboarding";
 import { authAvailable, getCurrentUser, onAuthChange, signIn, signUp, type AuthUser } from "@/lib/auth";
 
@@ -33,9 +33,9 @@ const ACCENT = "#B45309";
 const PAPER = "#FBF8F3";
 
 /** Les offres qu'on peut réellement encaisser en ligne. */
-const PAYABLES = OFFRES.filter((o) => o.cadence !== "devis" && o.priceEnv);
+const PAYABLES = OFFRES_EN_VENTE.filter((o) => o.cadence !== "devis" && o.priceEnv);
 /** Celles qui passent par le cadrage — la doctrine l'impose avant tout devis. */
-const SUR_DEVIS = OFFRES.filter((o) => o.cadence === "devis" || !o.priceEnv);
+const SUR_DEVIS = OFFRES_EN_VENTE.filter((o) => o.cadence === "devis" || !o.priceEnv);
 
 const prix = (o: OffrePublique) =>
   o.prixHT === null
@@ -214,7 +214,8 @@ export default function SouscrirePage() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const id = q.get("offre");
-    if (id) setChoisie(offreParId(id) ?? null);
+    // Une offre retirée de la vente (lien ancien, post partagé) ne se présélectionne pas.
+    if (id) setChoisie(OFFRES_EN_VENTE.find((o) => o.id === id) ?? null);
     setAchat(q.get("achat"));
   }, []);
 

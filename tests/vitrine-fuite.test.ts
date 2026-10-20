@@ -87,10 +87,10 @@ test("vitrine — le levier de négociation sur les paliers d'appels n'est pas d
   // qu'il en a 4 000 au même prix.
   assert.doesNotMatch(publique, /millier offert|4ᵉ millier/);
   assert.doesNotMatch(vitrine, /OUTBOUND_TIERS/, "la table des paliers ne s'affiche pas");
-  // Le prix d'ENTRÉE, lui, doit être là : sans lui, aucune qualification.
-  // Il vient du module PUBLIC, pas du catalogue interne — importer ce dernier
-  // rembarquerait tous les prix dans le bundle du navigateur.
-  assert.match(vitrine, /PRIX_PUBLICS\.sortantMensuelHT/);
+  // ⚠ Le prix d'entrée du sortant (364 €/1 000 appels) s'affichait ici pour
+  // qualifier les demandes. Retiré le 20/10/2026 avec l'offre elle-même : la
+  // téléphonie se vend installée chez le client (`OFFRES_RETIREES`).
+  assert.doesNotMatch(vitrine, /PRIX_PUBLICS\.sortant/, "une offre retirée n'a plus de prix d'entrée à afficher");
 });
 
 test("vitrine — aucun aveu qui se sabote", () => {
@@ -774,42 +774,22 @@ test("vitrine — la page PARLE du gratuit : le socle existait sans être annonc
   assert.match(vitrine, /href="\/souscrire"/, "annoncer le gratuit sans porte pour y entrer ne sert à rien");
 });
 
-test("vitrine — les prix Alpha Voice affichés sont ceux qui sont décidés", async () => {
-  const { ALPHA_VOICE_PUBLIC } = await import("../lib/public-catalogue");
-  const { ALPHA_VOICE_SETUP_HT, ALPHA_VOICE_MINUTE_SUP_HT, ALPHA_VOICE_PALIERS } = await import(
-    "../lib/offres-publiques"
-  );
-
-  assert.equal(ALPHA_VOICE_PUBLIC.setupHT, ALPHA_VOICE_SETUP_HT, "le setup public a divergé de la grille décidée");
-  assert.equal(ALPHA_VOICE_PUBLIC.minuteSupHT, ALPHA_VOICE_MINUTE_SUP_HT, "le prix à la minute a divergé");
-  assert.deepEqual(
-    ALPHA_VOICE_PUBLIC.paliers.map((t) => [t.nom, t.prixHT]),
-    ALPHA_VOICE_PALIERS.map((t) => [t.nom, t.prixHT]),
-    "les paliers publics ont divergé de la grille — c'est le prix affiché qui engage"
-  );
-});
-
-test("vitrine — la garantie porte ses TROIS bords, sinon elle s'active toute seule", async () => {
-  const { GARANTIE } = await import("../lib/public-catalogue");
+test("⚠ vitrine — aucune offre RETIRÉE le 20/10/2026 n'y est vendue", () => {
   /**
-   * Une durée, un périmètre, un critère. Sans eux, « le setup ne se paie qu'au
-   * premier RDV » s'active au bout de trois jours de ligne coupée, et la
-   * discussion se tient après coup — c'est-à-dire trop tard.
+   * Deux formes seulement : en ligne gratuit, chez vous payant. Le Lifetime,
+   * les grilles Alpha Voice (accueil 149/349 €, garantie du setup) et le
+   * sortant au millier sont retirés de la vente (`OFFRES_RETIREES`). Une page
+   * publique qui les afficherait encore vendrait ce que `/api/billing/checkout`
+   * refuse (410) — la pire façon de perdre quelqu'un qui voulait payer.
    */
-  assert.ok(GARANTIE.bords.length >= 3, "les trois bords font partie de la garantie, pas des petits caractères");
-  const texte = GARANTIE.bords.join(" ");
-  assert.match(texte, /30 jours/i, "la DURÉE doit être écrite");
-  assert.match(texte, /installation|setup/i, "le PÉRIMÈTRE doit être écrit");
-  assert.match(texte, /PRIS/, "le CRITÈRE doit être écrit : un rendez-vous pris, pas honoré");
-  /**
-   * ⚠ Première version de cette assertion : chercher la PHRASE dans la source
-   * de la page. Elle échouait — et elle avait tort. La page rend
-   * `{GARANTIE.promesse}`, donc la phrase littérale n'y est pas, et c'est
-   * exactement le comportement voulu : une source unique, pas une copie.
-   * On vérifie donc le RENDU de la constante, ce qui est plus fort.
-   */
-  assert.match(vitrine, /GARANTIE\.promesse/, "la garantie doit être rendue depuis le catalogue public");
-  assert.match(vitrine, /GARANTIE\.bords/, "les bords se rendent aussi : une promesse sans ses bords est un litige");
+  for (const retire of ["LIFETIME_PUBLIC", "ALPHA_VOICE_PUBLIC", "GARANTIE"]) {
+    assert.doesNotMatch(vitrine, new RegExp(`\\b${retire}\\b(?!_)`), `${retire} ne doit plus être rendu`);
+  }
+  assert.doesNotMatch(publique, /lifetime|logiciel à vie/i, "le Lifetime est retiré");
+  assert.doesNotMatch(publique, /\b(149|349)\s*€/, "les abonnements Alpha Voice du cloud sont retirés");
+  assert.doesNotMatch(publique, /ne se paie qu'au premier rendez-vous/i, "la garantie portait sur un setup qui n'est plus vendu seul");
+  // Ce qui reste vrai de la voix reste dit : elle est comprise chez vous.
+  assert.match(publique, /compris dans Alpha chez vous/i);
 });
 
 test("vitrine — l'article 50 est servi comme argument, et sans nommer la pile", () => {
@@ -824,17 +804,16 @@ test("vitrine — l'article 50 est servi comme argument, et sans nommer la pile"
   // CE QU'ON FAIT, jamais avec quel fournisseur on le fait.
 });
 
-test("vitrine — Business et Lifetime affichés = ceux qui sont décidés", async () => {
+test("vitrine — Business (« Alpha chez vous ») affiché = celui qui est décidé", async () => {
   /**
    * Recopiés à la main dans `public-catalogue` (ce module ne doit importer ni
    * `bricks` ni `offres-publiques`, qui portent nos coûts). La copie est sûre
    * parce qu'elle est comparée, pas parce qu'on fait attention.
    */
-  const { BUSINESS_PUBLIC, LIFETIME_PUBLIC } = await import("../lib/public-catalogue");
+  const { BUSINESS_PUBLIC } = await import("../lib/public-catalogue");
   const {
     PACK_SETUP_HT, PACK_ACOMPTE_HT, PACK_MENSUALITES, PACK_MENSUALITE_HT, PACK_MONTHLY_HT,
     SOCLE_PLATEFORME_HT, PRIX_SIEGE_HT, SIEGES_REFERENCE,
-    LIFETIME_PALIERS, LIFETIME_PLACES_TOTAL, LIFETIME_APPELS_INCLUS,
   } = await import("../lib/offres-publiques");
 
   /**
@@ -861,24 +840,6 @@ test("vitrine — Business et Lifetime affichés = ceux qui sont décidés", asy
   assert.equal(BUSINESS_PUBLIC.mensualiteHT, PACK_MENSUALITE_HT);
   assert.equal(BUSINESS_PUBLIC.abonnementHT, PACK_MONTHLY_HT);
 
-  assert.deepEqual(
-    LIFETIME_PUBLIC.paliers.map((t) => [t.rang, t.prixHT, t.places]),
-    LIFETIME_PALIERS.map((t) => [t.rang, t.prixHT, t.places]),
-    "les paliers publics ont divergé — c'est le prix affiché qui engage"
-  );
-  assert.equal(LIFETIME_PUBLIC.placesTotal, LIFETIME_PLACES_TOTAL);
-  assert.equal(LIFETIME_PUBLIC.appelsInclus, LIFETIME_APPELS_INCLUS);
-});
-
-test("vitrine — « à vie » dit AUSSI ce qui ne l'est pas", () => {
-  /**
-   * Une offre « à vie » dont le périmètre n'est pas écrit se discute au
-   * premier dépassement — et on a alors tort, quel que soit le contrat, parce
-   * que c'est nous qui avons employé le mot.
-   */
-  assert.match(publique, /logiciel à vie/i, "ce qui est à vie doit être nommé");
-  assert.match(publique, /reste factur[ée]/i, "…et ce qui reste facturé aussi");
-  assert.match(vitrine, /LIFETIME_PUBLIC\.appelsInclus/, "le crédit d'appels vient du catalogue, pas d'un nombre retapé");
 });
 
 test("vitrine — l'étalement est sous le prix, pas en note de bas de page", () => {

@@ -83,3 +83,32 @@ test("l'écran de refus offre l'issue « chez toi » à côté du prix", () => {
   assert.match(page, /offreParId\(OFFRE_CHEZ_VOUS\)/);
   assert.match(page, /DEUX_FORMES\.chezVous/);
 });
+
+test("⚠ les offres RETIRÉES le 20/10/2026 ne se vendent plus nulle part", async () => {
+  const { OFFRES, OFFRES_EN_VENTE, OFFRES_RETIREES } = await import("../lib/offres-publiques");
+  const { offrePourBrique, briquesPayantes } = await import("../lib/verrous");
+  // La liste ne ment pas : chaque retrait vise une offre qui existe, et aucune
+  // retirée ne reste en vente.
+  for (const id of Object.keys(OFFRES_RETIREES)) {
+    assert.ok(OFFRES.some((o) => o.id === id), `${id} : retrait d'une offre inconnue — entrée périmée`);
+    assert.ok(!OFFRES_EN_VENTE.some((o) => o.id === id), `${id} est retirée mais toujours en vente`);
+    assert.ok(OFFRES_RETIREES[id].length > 30, `${id} : un retrait sans motif se fait annuler par la session suivante`);
+  }
+  assert.ok(OFFRES_EN_VENTE.some((o) => o.id === OFFRE_CHEZ_VOUS), "« chez vous » doit rester en vente");
+  // L'écran de refus ne propose jamais une offre que le paiement refuserait.
+  for (const b of briquesPayantes()) {
+    const o = offrePourBrique(b.brique);
+    assert.ok(o && !(o.id in OFFRES_RETIREES), `${b.brique} : l'écran de refus propose une offre retirée`);
+  }
+  // Toute surface de VENTE lit la liste en vente, jamais `OFFRES` entière.
+  for (const fichier of [
+    "app/souscrire/page.tsx",
+    "app/api/billing/checkout/route.ts",
+    "lib/verrous.ts",
+    "components/payouts/grille-apporteur.tsx",
+  ]) {
+    assert.doesNotMatch(src(fichier), /\bOFFRES\b(?!_)/, `${fichier} relit OFFRES : une offre retirée y redeviendrait vendable`);
+  }
+  // Et le paiement refuse une offre retirée, même par un vieux lien.
+  assert.match(src("app/api/billing/checkout/route.ts"), /in OFFRES_RETIREES[\s\S]{0,300}status: 410/);
+});

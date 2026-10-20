@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronRight, Handshake, ShieldAlert } from "lucide-react";
-import { OFFRES } from "@/lib/offres-publiques";
+import { OFFRES_EN_VENTE } from "@/lib/offres-publiques";
 import {
   MOIS_COMMISSIONNES,
   TAUX_MENSUEL,
@@ -45,7 +45,7 @@ export function GrilleApporteur() {
   const [contrat, setContrat] = useState(false);
 
   const lignes = useMemo(
-    () => OFFRES.map((o) => ({ offre: o, commission: commissionPour(o) })),
+    () => OFFRES_EN_VENTE.map((o) => ({ offre: o, commission: commissionPour(o) })),
     []
   );
 

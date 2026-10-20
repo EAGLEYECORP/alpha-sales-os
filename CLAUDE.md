@@ -627,7 +627,9 @@ faire des mesures.
   Il ne voit QUE sa brique ; nous voyons tout.
 - **OS personnalisé** : un OS taillé sur le métier du client, pas une
   déclinaison du nôtre. Chiffré au cadrage.
-- **Alpha Voice** — grille DÉCIDÉE le 02/09/2026 (`lib/offres-publiques.ts`) :
+- **Alpha Voice** — ⚠ **retirée de la vente en ligne le 20/10/2026** (voir « Deux
+  formes ») : elle se vend installée chez le client. La grille ci-dessous reste
+  la référence de coût et de marge. Grille DÉCIDÉE le 02/09/2026 (`lib/offres-publiques.ts`) :
   **1 490 € HT** de setup (relevé le 12/09, voir plus bas), puis **deux** paliers — **Essentiel 149 €/mois**
   (500 min, ~200 appels) et **Intensif 349 €/mois** (1 500 min, ~600 appels).
   Au-delà : **0,20 €/min** (descendu de 0,25 le 04/09/2026), pas de
@@ -1570,15 +1572,23 @@ et ce qu'il change, avant de valider.
 - `FRONTIERE_PAYANT` affirmait encore « aucun chemin d'identifiants par
   locataire » — faux depuis le BYOK, et servi sur la page publique. Réécrite.
 
-> ⚠⚠ **CE QUI N'EST PAS TRANCHÉ, et qui contredit la décision tant que ça ne
-> l'est pas** :
-> · **Les offres cloud payantes existent encore** (Alpha Voice 149/349,
->   omnicanal, 1 000 appels) et l'écran de refus propose toujours la moins
->   chère. « Chez vous » s'affiche À CÔTÉ, il ne la remplace pas : retirer des
->   offres vendables se décide, ça ne se déduit pas.
-> · **Le Lifetime** (« le logiciel à vie, payé une fois ») n'a plus de sens si
->   le logiciel en ligne est gratuit. À retirer, ou à transformer en « chez
->   vous à vie ».
+> ⚠⚠ **TRANCHÉ LE MÊME JOUR : retirés de la VENTE** (`OFFRES_RETIREES`) —
+> les abonnements Alpha Voice du cloud (149/349, omnicanal, 1 000 appels) et
+> le Lifetime. **On désactive, on ne supprime pas** : les définitions restent
+> dans `OFFRES` (webhook Stripe, provisionnement), mais vitrine, `/souscrire`,
+> paiement (**410**), écran de refus et grille apporteur lisent
+> `OFFRES_EN_VENTE`. Un test refuse qu'une de ces surfaces relise `OFFRES`.
+> · L'écran de refus propose donc « chez vous » pour Alpha Voice.
+>   `peut-se-payer` comparait `prixHT` à un CA MENSUEL : sur « chez vous » ce
+>   prix est l'installation (10 000 €) — il lit désormais l'abonnement du plan.
+> · Le garde-fou neuf a mordu au premier passage : la FAQ promettait encore
+>   « l'installation ne se paie qu'au premier rendez-vous », renvoyant à des
+>   bords « écrits plus bas » qui venaient d'être retirés.
+> · `eagleyecorp.fr` (`site/`) suit : plus de « Voir l'offre » Alpha Voice,
+>   les deux formes dites. **Il se publie à la main** (glisser `site/` sur
+>   Netlify Drop) — rien ne part tant que ce geste n'est pas fait.
+>
+> ⚠ **Ce qui reste ouvert** :
 > · **La procédure d'installation sur un serveur client n'est pas écrite.**
 >   On vend une installation que personne n'a encore faite hors de chez nous.
 > · **Hébergement « sans argent »** : le site tourne sur Vercel. Le plan Hobby

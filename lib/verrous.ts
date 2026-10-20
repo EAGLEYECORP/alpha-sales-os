@@ -1,6 +1,6 @@
 import { BRIQUES_GRATUITES } from "./entitlements";
 import { ACCES_PAR_CHEMIN, briquesPourChemin, type BrickId } from "./bricks-access";
-import { OFFRES, type OffrePublique } from "./offres-publiques";
+import { OFFRES_EN_VENTE, type OffrePublique } from "./offres-publiques";
 import { CAPACITES as CATALOGUE_PUBLIC, SOCLE_GRATUIT } from "./public-catalogue";
 import { CAPACITES as CAPACITES_CLE, cheminOuvertParCle, type Capacite } from "./capacites-cle";
 
@@ -237,8 +237,10 @@ export function clesQuiOuvrent(brique: string): PorteParCle[] {
  * plus ce qu'on vient de promettre.
  */
 export function offrePourBrique(brique: string): OffrePublique | null {
-  const candidates = OFFRES.filter((o) => o.capacites.includes(brique) && o.prixHT !== null);
-  if (!candidates.length) return OFFRES.find((o) => o.capacites.includes(brique)) ?? null;
+  // ⚠ Parmi les offres EN VENTE : proposer une offre retirée mènerait à un
+  // paiement que le serveur refuse (410).
+  const candidates = OFFRES_EN_VENTE.filter((o) => o.capacites.includes(brique) && o.prixHT !== null);
+  if (!candidates.length) return OFFRES_EN_VENTE.find((o) => o.capacites.includes(brique)) ?? null;
   return candidates.reduce((a, b) => ((a.prixHT ?? 0) <= (b.prixHT ?? 0) ? a : b));
 }
 
