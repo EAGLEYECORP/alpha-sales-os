@@ -1620,6 +1620,28 @@ et ce qu'il change, avant de valider.
 >   `eagleyecorp.fr` compris. Déployer depuis une branche dédiée, pas à chaque
 >   commit.
 
+## LES VIDÉOS, ET L'OBJECTIF DES 10 M (20/10/2026)
+`.claude/skills/alpha-motion/SKILL.md` · `scripts/video/` · `docs/OBJECTIF-10M.md`.
+
+- **Une vidéo se fabrique avec HyperFrames**, installé HORS du produit
+  (`scripts/video/hyperframes-bac-a-sable.sh` : Chromium local, ffprobe, GSAP
+  copié — le CDN est refusé ici —, télémétrie coupée). Prouvé sur deux rendus
+  d'essai, pas encore sur une vidéo complète. Le son : `bande-son.mjs`,
+  synthétisé et **déterministe** (testé).
+- **Nos vidéos d'octobre portaient les trois défauts** qu'HyperFrames nomme
+  comme signature du « diaporama d'agent » : ressort qui dépasse, cartes qui
+  oscillent en boucle, poussée lente en fin de scène — plus une ligne de huit
+  mots lisible 0,55 s. Corrigés sur la vidéo du 21/10 ; la règle est dans la
+  compétence, pas dans ma mémoire.
+- **« Montre la chose »** (/brag) : les vrais écrans, capturés par
+  `scripts/pub/capturer.mjs` sur le jeu de démo, battent des cartes dessinées.
+- **10 M ne se met pas dans un `/goal`** : l'évaluateur ne lit que la
+  conversation, et ce conteneur ne joint pas Supabase. Le nord vit dans
+  `docs/OBJECTIF-10M.md` ; chaque `/goal` vise un livrable prouvable du palier
+  suivant. Le premier mur n'est pas le marketing : **les emails de
+  confirmation d'inscription**, plafonnés par Supabase et partis de la boîte
+  de prospection.
+
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il
 démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiants**.

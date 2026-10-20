@@ -20,6 +20,11 @@
 > consulte au lieu de lire le code.
 
 ## Le but, dit franchement
+> **20/10/2026** — Zakaria fixe le cap à **10 millions d'utilisateurs**. Le
+> découpage en paliers, les murs et les `/goal` prêts à coller :
+> `docs/OBJECTIF-10M.md`. Le but ci-dessous (le premier virement) reste
+> celui qui décide de la journée : c'est lui qui paie les murs.
+
 Zakaria a besoin de **ventes encaissées**, pas de fonctionnalités. Tout ce qui
 suit est classé par « ça rapproche d'un virement bancaire ».
 

@@ -1,5 +1,12 @@
 # Lancement viral — ALPHA SALES OS
 
+> ⚠ **ANTÉRIEUR À LA DOCTRINE DES VIDÉOS (20/10/2026)** — lire d'abord
+> `.claude/skills/alpha-motion/SKILL.md`. Ici, la palette vermillon n'est pas
+> celle du produit (`app/globals.css` : bronze `#E8C98A`), et trois éléments
+> sont désormais INTERDITS : l'accroche n°4 (« le X de Y », `lib/promesse.ts`),
+> le plan 5 (« +RDV. +Closing. ») et « Zéro deal perdu » — des performances
+> affirmées à zéro vente. Le FORMAT (accroche → tension → révélation) reste bon.
+
 Cadré sur la mécanique des comptes vus en veille (syntaix.ai, coderss_world,
 futurewalt.ai, nick_saraev) : **carrousels value-bomb + hook choc + preuve +
 CTA « commente X »**, énergie Cluely. Adapté à NOTRE ICP et NOTRE marque.
