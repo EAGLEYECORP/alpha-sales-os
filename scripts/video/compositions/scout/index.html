@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>ALPHA SCOUT — trier les permis</title>
+    <!--
+      Vidéo LinkedIn du 20/10/2026 — ALPHA SCOUT. Chaque phrase s'appuie sur le code :
+      lib/permis-construire.ts (exclusions sèches, zone lue sur un code, phase → angle,
+      DEPARTEMENTS_ZONE = Auvergne-Rhône-Alpes) et lib/playbook.ts (citer le permis à froid
+      est interdit). Rendu : voir scripts/video/compositions/orchestration/index.html.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      /* Polices de la marque, servies avec la composition (le CDN est refusé ici). */
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      /* Fond partagé, IMMOBILE : la doctrine refuse la dérive d'ambiance. */
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.13); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.1); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 21px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #e8c98a; }
+
+
+      .etiquette { font-family: "JetBrains Mono"; font-weight: 600; font-size: 22px; letter-spacing: 0.14em; color: #7a5d30; }
+      .panneau { position: absolute; left: 80px; width: 920px; border-radius: 36px; background: #f7f2ea; color: #1e1914; box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.8); }
+
+      /* Scène 2 — le tri */
+      #lot { top: 430px; padding: 18px 0; }
+      .rang { position: relative; height: 112px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; border-bottom: 1.5px solid rgba(30, 25, 20, 0.08); }
+      .rang:last-child { border-bottom: 0; }
+      .objet { position: relative; font-family: "Inter Tight"; font-weight: 600; font-size: 36px; letter-spacing: -0.01em; }
+      .objet .rature { position: absolute; left: -6px; right: -6px; top: 52%; height: 3px; background: #8c5a3c; transform-origin: left center; }
+      .pastille-tri { font-family: "JetBrains Mono"; font-weight: 600; font-size: 23px; padding: 10px 18px; border-radius: 999px; }
+      .ecarte { background: #ece4d7; color: #5f574d; }
+      .garde { background: #e3efd9; color: #2f5a22; }
+      #compte { position: absolute; left: 80px; top: 950px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 24px; letter-spacing: 0.04em; color: #a79f92; }
+
+      /* Scène 3 — la phase */
+      .phase { position: absolute; left: 80px; width: 920px; height: 150px; border-radius: 28px; padding: 26px 34px; background: rgba(243, 238, 228, 0.06); border: 1.5px solid rgba(243, 238, 228, 0.14); }
+      #p1 { top: 430px; } #p2 { top: 600px; } #p3 { top: 770px; }
+      .phase .duree { display: block; font-family: "JetBrains Mono"; font-weight: 600; font-size: 22px; letter-spacing: 0.08em; color: #a79f92; }
+      .phase b { display: block; margin-top: 12px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 42px; letter-spacing: -0.02em; color: #f3eee4; }
+      .ici { position: absolute; right: 34px; top: 50%; margin-top: -24px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 22px; color: #0a0807; background: #e8c98a; padding: 12px 18px; border-radius: 999px; }
+
+      /* Scène 4 — le premier message */
+      #message { top: 470px; height: 300px; padding: 40px 44px; }
+      .phrase { position: relative; margin-top: 26px; font-size: 34px; font-weight: 600; line-height: 1.3; }
+      .interdite span { position: relative; color: #8c5a3c; }
+      .interdite .rature { position: absolute; left: -4px; right: -4px; top: 52%; height: 3px; background: #b0412e; transform-origin: left center; }
+      #motif { position: absolute; left: 80px; top: 815px; width: 920px; font-size: 30px; font-weight: 500; color: #cbbfa9; }
+
+      /* Scène 5 — la fin */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 300px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 500px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 110px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 660px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #appel { top: 860px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+      #pied { top: 1214px; font-family: "JetBrains Mono"; font-size: 23px; letter-spacing: 0.08em; color: #a79f92; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="25" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">ALPHA SCOUT</div>
+      </div>
+
+      <!-- 1 · L'accroche -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.6" data-track-index="1">
+        <div class="titre" id="t1" style="top: 440px; font-size: 92px">
+          <span class="ligne"><span class="mot">Un</span> <span class="mot">secteur</span> <span class="mot">dit</span> <span class="mot">qui.</span></span>
+          <span class="ligne"><span class="mot or">Un</span> <span class="mot or">déclencheur</span></span>
+          <span class="ligne"><span class="mot or">dit</span> <span class="mot or">quand.</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · Il commence par écarter -->
+      <section id="s2" class="scene clip" data-start="3.6" data-duration="7" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="surtitre" id="k2" style="top: 150px">ALPHA SCOUT · PERMIS DE CONSTRUIRE</div>
+          <div class="titre" id="t2" style="top: 198px; font-size: 84px">
+            <span class="ligne"><span class="mot">Il</span> <span class="mot">commence</span></span>
+            <span class="ligne"><span class="mot or">par</span> <span class="mot or">écarter.</span></span>
+          </div>
+          <div id="lot" class="panneau">
+            <div class="rang" id="r1"><span class="objet">Maison individuelle<i class="rature"></i></span><span class="pastille-tri ecarte">particulier</span></div>
+            <div class="rang" id="r2"><span class="objet">40 logements sociaux<i class="rature"></i></span><span class="pastille-tri ecarte">rien à vendre</span></div>
+            <div class="rang" id="r3"><span class="objet">18 logements · Marseille<i class="rature"></i></span><span class="pastille-tri ecarte">hors zone</span></div>
+            <div class="rang retenu" id="r4"><span class="objet">34 logements · Lyon</span><span class="pastille-tri garde">retenu</span></div>
+          </div>
+          <div id="compte">1 retenu sur 4 · fiche de démo</div>
+        </div>
+      </section>
+
+      <!-- 3 · Puis il nomme la phase -->
+      <section id="s3" class="scene clip" data-start="10.6" data-duration="6" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="k3" style="top: 150px">LA PHASE DÉCIDE DE L'ANGLE</div>
+          <div class="titre" id="t3" style="top: 198px; font-size: 84px">
+            <span class="ligne"><span class="mot">Puis</span> <span class="mot">il</span> <span class="mot">nomme</span></span>
+            <span class="ligne"><span class="mot or">la</span> <span class="mot or">phase.</span></span>
+          </div>
+          <div class="phase" id="p1"><span class="duree">0 – 2 mois</span><b>Se faire connaître. Ne rien vendre.</b></div>
+          <div class="phase vive" id="p2"><span class="duree">2 – 12 mois</span><b>La meilleure fenêtre.</b><span class="ici" id="ici">ICI</span></div>
+          <div class="phase" id="p3"><span class="duree">+ 12 mois sans chantier</span><b>Vérifier qu'elle vit encore.</b></div>
+        </div>
+      </section>
+
+      <!-- 4 · Il n'ouvre jamais l'appel -->
+      <section id="s4" class="scene clip" data-start="16.6" data-duration="5" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="titre" id="t4" style="top: 190px; font-size: 76px">
+            <span class="ligne"><span class="mot">Il</span> <span class="mot">choisit</span> <span class="mot">qui</span> <span class="mot">appeler.</span></span>
+            <span class="ligne"><span class="mot or">Il</span> <span class="mot or">n'ouvre</span> <span class="mot or">pas</span> <span class="mot or">l'appel.</span></span>
+          </div>
+          <div id="message" class="panneau">
+            <div class="etiquette">PREMIER MESSAGE · LINKEDIN</div>
+            <div class="phrase interdite" id="mauvaise"><span>« J'ai vu votre permis de construire… »<i class="rature" id="raturePhrase"></i></span></div>
+            <div class="phrase" id="bonne">« Bonjour, je m'adresse aux promoteurs de la région… »</div>
+          </div>
+          <div id="motif">La donnée est publique. L'annoncer à froid sonne fliqué.</div>
+        </div>
+      </section>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="21.6" data-duration="3.4" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SCOUT</span></div>
+        <div id="devise" class="centre"><span class="ligne">Il trie. Il ne collecte rien.</span><b class="ligne">En ligne, gratuit.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+        <div id="pied" class="centre">Scène illustrative · données fictives</div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="25" data-track-index="5" data-volume="1"></audio>
+
+    </div>
+
+    <script>
+      // Doctrine : .claude/skills/alpha-motion/SKILL.md — longue décélération, aucun rebond,
+      // révélation dans l'ordre de lecture, tenues immobiles, l'ancien sort AVANT l'entrée du nouveau.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.06 }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+      // Une rature se trace de gauche à droite, puis la ligne s'efface à moitié : écartée, pas effacée.
+      const rature = (rang, t) => {
+        tl.fromTo(rang + " .rature", { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.inOut" }, t);
+        tl.fromTo(rang + " .objet", { opacity: 1 }, { opacity: 0.45, duration: 0.3, ease: "power2.out" }, t + 0.1);
+      };
+
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 21.3);
+
+      // 1 · L'accroche
+      titre("#t1", 0.1);
+      sort("#t1", 3.25);
+
+      // 2 · Il commence par écarter — chaque ligne arrive, puis le tri tombe.
+      arrive("#k2", 3.8, 20, 0.6);
+      titre("#t2", 3.85);
+      arrive("#lot", 4.5);
+      arrive("#r1", 5.0, 20, 0.5);
+      rature("#r1", 5.45);
+      arrive("#r2", 5.55, 20, 0.5);
+      rature("#r2", 6.0);
+      arrive("#r3", 6.1, 20, 0.5);
+      rature("#r3", 6.55);
+      arrive("#r4", 6.65, 20, 0.5);
+      tl.fromTo("#r4", { backgroundColor: "rgba(232, 201, 138, 0)" }, { backgroundColor: "rgba(232, 201, 138, 0.28)", duration: 0.5, ease: ENTREE }, 7.1);
+      arrive("#compte", 7.6, 14, 0.6);
+      sort("#s2in", 10.25);
+
+      // 3 · Puis il nomme la phase — la bonne fenêtre s'allume en dernier.
+      arrive("#k3", 10.8, 20, 0.6);
+      titre("#t3", 10.85);
+      arrive("#p1", 11.5, 30, 0.7);
+      arrive("#p2", 12.1, 30, 0.7);
+      arrive("#p3", 12.7, 30, 0.7);
+      tl.fromTo("#p2", { borderColor: "rgba(243, 238, 228, 0.14)", backgroundColor: "rgba(243, 238, 228, 0.06)" },
+        { borderColor: "rgba(232, 201, 138, 0.85)", backgroundColor: "rgba(232, 201, 138, 0.12)", duration: 0.5, ease: ENTREE, immediateRender: false }, 13.5);
+      tl.fromTo("#ici", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: ENTREE }, 13.6);
+      sort("#s3in", 16.25);
+
+      // 4 · Il n'ouvre jamais l'appel — la phrase interdite se rature, la juste arrive.
+      titre("#t4", 16.75);
+      arrive("#message", 17.45);
+      tl.fromTo("#raturePhrase", { scaleX: 0 }, { scaleX: 1, duration: 0.4, ease: "power2.inOut" }, 18.1);
+      tl.fromTo("#mauvaise", { opacity: 1 }, { opacity: 0.55, duration: 0.3, ease: "power2.out" }, 18.2);
+      arrive("#bonne", 18.6, 18, 0.6);
+      arrive("#motif", 19.3, 14, 0.6);
+      sort("#s4in", 21.25);
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 21.6);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 21.65);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 21.9);
+      arrive("#devise", 22.35, 22, 0.7);
+      arrive("#appel", 22.9, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 23.5);
+      arrive("#pied", 23.2, 10, 0.6);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
