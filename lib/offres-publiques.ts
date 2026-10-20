@@ -756,9 +756,9 @@ export const OFFRES: OffrePublique[] = [
      * un total, dans une commission, dans une prévision.
      */
     setupHT: null,
-    sousTitre: "L'installation complète, étalée. Puis l'abonnement prend le relais.",
+    sousTitre: "Alpha chez toi : installé sur ton serveur, l'installation étalée. Puis l'abonnement prend le relais.",
     inclus: [
-      "Les dix briques installées et paramétrées, à ton nom",
+      "Les dix briques installées sur ton serveur et paramétrées, à ton nom",
       `${PACK_ACOMPTE_HT} € HT à la signature, puis ${PACK_MENSUALITES} × ${PACK_MENSUALITE_HT} € HT`,
       `Puis ${PACK_MONTHLY_HT} € HT/mois d'abonnement, à partir du mois ${PACK_MENSUALITES + 1}`,
       "Marque blanche, multi-utilisateurs, formation terrain",
@@ -861,6 +861,17 @@ export const BRIQUES_CONSOMMATRICES: readonly string[] = ["campagnes", "agent-al
  * du client une fois CONNECTÉ ; l'entrée, elle, doit être publique.
  */
 export const offreParId = (id: string): OffrePublique | undefined => OFFRES.find((o) => o.id === id);
+
+/**
+ * L'offre qui porte la forme « Alpha chez vous » (décidé le 20/10/2026 :
+ * en ligne gratuit, installé chez le client payant, au prix de la grille
+ * complète). C'est Business — les dix briques, l'installation, l'abonnement
+ * au siège — et pas une offre de plus : une 8ᵉ offre au même prix aurait
+ * créé deux définitions du même produit, qu'une session suivante aurait
+ * fait diverger. `tests/deux-formes.test.ts` vérifie qu'elle existe, qu'elle
+ * ouvre TOUTES les briques et que son prix est celui de la grille.
+ */
+export const OFFRE_CHEZ_VOUS = "business";
 
 /** Prix affichés au public — sert au test qui verrouille la vitrine. */
 export const PRIX_PUBLICS: number[] = OFFRES.map((o) => o.prixHT).filter((p): p is number => p !== null);

@@ -1546,6 +1546,45 @@ et ce qu'il change, avant de valider.
   et les réglages qui se posaient sous la ligne de flottaison — l'écran suit
   désormais chaque étape (sauf en mouvement réduit).
 
+## DEUX FORMES : EN LIGNE GRATUIT, CHEZ VOUS PAYANT (20/10/2026)
+`DEUX_FORMES` (`lib/public-catalogue.ts`) · `OFFRE_CHEZ_VOUS` (`lib/offres-publiques.ts`) ·
+`tests/deux-formes.test.ts`. Décision de Zakaria, en trois choix :
+
+| | En ligne (le cloud) | Chez vous |
+|---|---|---|
+| Prix | **gratuit**, sans durée | **la grille complète** : 10 000 € + socle + siège |
+| Ce qui consomme (IA, email) | s'ouvre **avec les comptes du client** (BYOK) | les comptes du client |
+| Téléphonie | **pas de clé par locataire** → pas en ligne | comprise |
+| Où ça tourne | chez nous | **sur LE serveur du client**, installé à la main |
+
+- **« Chez vous » n'est pas une 8ᵉ offre** : c'est `business` (dix briques,
+  installation, abonnement au siège). Deux définitions du même produit au même
+  prix auraient divergé. Un test exige qu'elle ouvre TOUTES les briques.
+- **On ne promet une clé que pour ce que le produit sait servir** : `ia` et
+  `email` (`lib/capacites-cle.ts`). Un test refuse « appels / téléphonie avec
+  vos comptes » tant que la capacité n'existe pas — sinon l'écran envoie le
+  client vers une porte que le serveur refuse.
+- **« Vos données ne quittent jamais votre serveur » est INTERDIT** : une clé
+  d'IA envoie du texte au fournisseur du modèle. On dit où tournent
+  l'application et sa base, et à qui sont les comptes.
+- `FRONTIERE_PAYANT` affirmait encore « aucun chemin d'identifiants par
+  locataire » — faux depuis le BYOK, et servi sur la page publique. Réécrite.
+
+> ⚠⚠ **CE QUI N'EST PAS TRANCHÉ, et qui contredit la décision tant que ça ne
+> l'est pas** :
+> · **Les offres cloud payantes existent encore** (Alpha Voice 149/349,
+>   omnicanal, 1 000 appels) et l'écran de refus propose toujours la moins
+>   chère. « Chez vous » s'affiche À CÔTÉ, il ne la remplace pas : retirer des
+>   offres vendables se décide, ça ne se déduit pas.
+> · **Le Lifetime** (« le logiciel à vie, payé une fois ») n'a plus de sens si
+>   le logiciel en ligne est gratuit. À retirer, ou à transformer en « chez
+>   vous à vie ».
+> · **La procédure d'installation sur un serveur client n'est pas écrite.**
+>   On vend une installation que personne n'a encore faite hors de chez nous.
+> · **Hébergement « sans argent »** : le site tourne sur Vercel. Le plan Hobby
+>   (gratuit) est réservé à un usage NON commercial — un produit gratuit
+>   d'une société reste commercial. Vérifier le plan avant d'y compter.
+
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il
 démarre à **zéro + le jeu de démonstration**, avec **ses propres identifiants**.

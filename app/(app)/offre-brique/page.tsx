@@ -15,7 +15,8 @@ import {
   offrePourBrique,
   POURQUOI_PAYANT,
 } from "@/lib/verrous";
-import { SOCLE_GRATUIT } from "@/lib/public-catalogue";
+import { DEUX_FORMES, SOCLE_GRATUIT } from "@/lib/public-catalogue";
+import { OFFRE_CHEZ_VOUS, PACK_SETUP_HT, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT, offreParId } from "@/lib/offres-publiques";
 import { signalAbonnement } from "@/lib/peut-se-payer";
 import { BRIQUES_GRATUITES } from "@/lib/entitlements";
 
@@ -58,6 +59,8 @@ function Contenu() {
   const payantes = briquesPayantes();
   const vise = payantes.find((p) => p.brique === brique) ?? null;
   const offre = brique ? offrePourBrique(brique) : null;
+  // La forme installée chez le client : l'offre au prix de la grille complète.
+  const chezVous = offreParId(OFFRE_CHEZ_VOUS);
   const signal = signalAbonnement(prospects, droits.bricks, brique || "alpha-voice");
   const alternative = vise ? ALTERNATIVE_GRATUITE[vise.brique] : undefined;
   const cles = vise ? clesQuiOuvrent(vise.brique) : [];
@@ -188,6 +191,28 @@ function Contenu() {
               Ouvrir cette brique
             </Link>
           </div>
+          {/*
+            ⚠ DEUX FORMES (20/10/2026) : en ligne gratuit, chez toi payant. La
+            forme « chez toi » contient TOUTES les briques — c'est la seule
+            issue qui ouvre aussi la téléphonie, qu'aucune clé par locataire
+            n'ouvre aujourd'hui. Les montants viennent de la grille, jamais
+            recopiés ici.
+          */}
+          {chezVous && (
+            <div className="panel mt-3 p-3">
+              <p className="text-[12px] font-medium text-paper">
+                Ou tout Alpha chez toi — {DEUX_FORMES.chezVous.sousTitre.toLowerCase()}
+              </p>
+              <p className="mt-1 text-[11.5px] leading-relaxed text-paper-faint">{DEUX_FORMES.chezVous.promesse}</p>
+              <p className="mt-1 font-mono text-[11.5px] text-bronze-400">
+                {PACK_SETUP_HT.toLocaleString("fr-FR")} € HT d&apos;installation, puis {SOCLE_PLATEFORME_HT} € HT/mois +{" "}
+                {PRIX_SIEGE_HT} € HT par utilisateur
+              </p>
+              <Link href={chezVous.cta.href} className="btn-ghost mt-2.5 inline-flex">
+                {chezVous.cta.label} <ArrowRight size={14} />
+              </Link>
+            </div>
+          )}
         </section>
       )}
 

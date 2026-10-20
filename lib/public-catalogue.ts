@@ -118,12 +118,51 @@ export const SOCLE_GRATUIT: { id: string; label: string; what: string }[] = [
  * La frontière, dite en une phrase parce qu'elle se conteste sinon.
  *
  * Ce n'est pas un arbitrage commercial mais une contrainte technique : envoyer
- * un email, passer un appel ou faire écrire un modèle consomme NOS identifiants
- * et NOS crédits, et il n'existe aucun chemin d'identifiants par locataire.
- * Le dire franchement vaut mieux qu'un « premium » sans justification.
+ * un email, passer un appel ou faire écrire un modèle consomme des
+ * identifiants et des crédits — les NÔTRES, sauf si le client apporte les
+ * siens.
+ *
+ * ⚠ Réécrite le 20/10/2026 (deux formes, voir `DEUX_FORMES`). L'ancienne
+ * phrase affirmait « il n'existe aucun chemin d'identifiants par locataire »
+ * — faux depuis le BYOK, qui ouvre l'IA et l'email (`lib/capacites-cle.ts`).
+ * Elle ne nomme QUE ces deux-là : la téléphonie n'a pas de clé par locataire,
+ * et `tests/deux-formes.test.ts` refuse qu'on promette une clé qui n'existe
+ * pas.
  */
 export const FRONTIERE_PAYANT =
-  "Écrire est gratuit, envoyer depuis notre infrastructure se paie. Vous pouvez prospecter entièrement sans payer : cibler, écrire, approcher sur LinkedIn, appeler depuis votre téléphone, décrocher vos rendez-vous. Ce qui se paie, c'est le jour où la machine envoie à votre place — notre serveur d'emails, nos minutes d'appel, nos jetons d'IA.";
+  "En ligne, Alpha est gratuit et le reste : cibler, écrire, approcher sur LinkedIn, appeler depuis votre téléphone, décrocher vos rendez-vous. Ce qui consomme — l'IA, l'envoi d'emails — s'ouvre avec vos propres comptes : vous payez votre fournisseur, pas nous. Et si vous voulez tout Alpha, téléphonie comprise, on l'installe chez vous, sur votre serveur.";
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * DEUX FORMES D'ALPHA — décidé par Zakaria le 20/10/2026.
+ *
+ * · **En ligne** : gratuit, sans durée. Il ne nous coûte rien à servir —
+ *   ce qui dépense chez un tiers (IA, email) s'ouvre avec les comptes du
+ *   client (BYOK), jamais avec les nôtres.
+ * · **Chez vous** : tout Alpha, installé à la main sur LE serveur du client.
+ *   C'est l'offre qui se vend, au prix de la grille complète
+ *   (`PRIX_PUBLICS.pack*`) — aucun montant n'est recopié ici.
+ *
+ * ⚠ Ce qui n'est PAS promis, exprès : « vos données ne quittent jamais votre
+ * serveur ». Une clé d'IA branchée envoie du texte au fournisseur du modèle ;
+ * la phrase juste dit où tournent l'application et sa base, et à qui sont les
+ * comptes.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const DEUX_FORMES = {
+  enLigne: {
+    nom: "Alpha en ligne",
+    prix: "Gratuit",
+    promesse:
+      "Sans durée, sans carte bancaire. L'IA et l'envoi d'emails s'ouvrent avec vos propres comptes : vous payez votre fournisseur, pas nous.",
+  },
+  chezVous: {
+    nom: "Alpha chez vous",
+    sousTitre: "Installé sur votre serveur",
+    promesse:
+      "Tout Alpha, téléphonie comprise, installé à la main sur votre serveur et à votre nom. L'application et sa base tournent chez vous ; les comptes d'IA, d'emails et de téléphonie sont les vôtres.",
+  },
+} as const;
 
 /**
  * La grille Alpha Voice, décidée le 02/09/2026.

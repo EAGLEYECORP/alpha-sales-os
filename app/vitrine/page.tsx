@@ -9,6 +9,7 @@ import {
   ALPHA_VOICE_PUBLIC,
   BUSINESS_PUBLIC,
   CAPACITES,
+  DEUX_FORMES,
   FRONTIERE_PAYANT,
   GARANTIE,
   PALIERS_LABELS,
@@ -521,14 +522,40 @@ export default function VitrinePage() {
             Un prix, annoncé après vous avoir écouté
           </h2>
           <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-            On ne vend pas un abonnement sorti d&apos;un catalogue. Le périmètre se décide au cadrage,
-            et le chiffre tombe ensuite — c&apos;est la seule façon d&apos;annoncer un montant qu&apos;on
-            tiendra.
+            Deux formes. En ligne, c&apos;est gratuit et ça le reste. Chez vous, sur votre serveur,
+            c&apos;est l&apos;offre complète : le périmètre se décide au cadrage, et le chiffre tombe
+            ensuite — c&apos;est la seule façon d&apos;annoncer un montant qu&apos;on tiendra.
           </p>
 
-          <div className="mt-12 grid gap-10 sm:grid-cols-2">
+          {/*
+            ── DEUX FORMES (20/10/2026) ──
+
+            En ligne = gratuit, sans rien qui nous coûte : ce qui consomme
+            s'ouvre avec les comptes du client. Chez vous = tout Alpha sur SON
+            serveur, et c'est ce qui se vend. La carte gratuite vient EN
+            PREMIER : c'est la porte qui ne demande que dix secondes, et la
+            carte payante se lit mieux quand on sait ce qu'elle ajoute.
+          */}
+          <div className="mt-12 rounded-2xl p-8" style={{ background: "#FFFFFF", border: `1px solid ${LINE}` }}>
+            <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: MUTED }}>{DEUX_FORMES.enLigne.nom}</p>
+            <p className="mt-4 font-serif text-[46px] leading-none tracking-[-0.02em]">{DEUX_FORMES.enLigne.prix}</p>
+            <p className="mt-5 max-w-2xl text-[16px] leading-[1.6]" style={{ color: MUTED }}>
+              {DEUX_FORMES.enLigne.promesse}
+            </p>
+            <a
+              href="/souscrire"
+              className="mt-6 inline-block rounded-full px-6 py-3 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ background: INK }}
+            >
+              Créer mon compte
+            </a>
+          </div>
+
+          <div className="mt-10 grid gap-10 sm:grid-cols-2">
             <div className="rounded-2xl p-8" style={{ background: "#FFFFFF", border: `1px solid ${ACCENT}` }}>
-              <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>L&apos;installation complète</p>
+              <p className="text-[13px] uppercase tracking-[0.14em]" style={{ color: ACCENT }}>
+                {DEUX_FORMES.chezVous.nom} — {DEUX_FORMES.chezVous.sousTitre.toLowerCase()}
+              </p>
               <p className="mt-4 font-serif text-[46px] leading-none tracking-[-0.02em]">
                 10 000 <span className="text-[22px]" style={{ color: MUTED }}>€ HT</span>
               </p>
@@ -550,8 +577,8 @@ export default function VitrinePage() {
                 quand votre équipe double.
               </p>
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
-                Tout est posé, paramétré sur votre métier, vos équipes formées. C&apos;est l&apos;offre où
-                l&apos;on prend tout en charge — et celle qui va le plus loin.
+                {DEUX_FORMES.chezVous.promesse} Tout est posé, paramétré sur votre métier, vos équipes
+                formées. C&apos;est l&apos;offre où l&apos;on prend tout en charge — et celle qui va le plus loin.
               </p>
               {/*
                 ⚠ L'ÉTALEMENT SE DIT ICI, sous le prix, pas dans une note de bas
