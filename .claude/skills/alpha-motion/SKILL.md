@@ -39,8 +39,15 @@ cd ma-video && npx hyperframes lint && npx hyperframes render
 - Une composition = du HTML avec `data-start` / `data-duration` / `data-track-index`,
   une timeline GSAP **en pause** enregistrée dans `window.__timelines`. Le
   rendu cherche chaque image dans Chromium headless et encode avec ffmpeg.
-- **Prouvé ici le 20/10/2026 sur deux rendus d'essai (2 s et 3 s)**, pas
-  encore sur une vidéo complète : la première vraie vidéo est le test.
+- **Prouvé ici le 20/10/2026** : deux rendus d'essai, puis une vidéo complète
+  (`scripts/video/compositions/orchestration/` — 23,6 s, 708 images, son
+  compris, **rendue en 60 s** contre une dizaine de minutes pour l'ancien
+  pipeline). `npx hyperframes check` a refusé ce que l'œil aurait laissé
+  passer : 12 textes sous le contraste WCAG AA, deux tweens qui se
+  chevauchaient sur le curseur. On ne rend pas sans un `check` à 0 erreur.
+- Les 6 avertissements « sous-composition » sur un fichier unique sont une
+  préférence d'organisation, pas un défaut d'image : un fichier par vidéo
+  courte reste plus simple à relire.
 - **Rien dans `package.json`.** C'est un outil d'atelier ; dans le dépôt, il
   monterait dans l'image Docker livrée au client.
 - **Télémétrie coupée** par le script — rien de ce qui se fabrique ici n'a à sortir.

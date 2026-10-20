@@ -20,7 +20,7 @@ import type { EagleyeOffer } from "./offer-match";
  * Toutes les portes existantes sont réutilisées, jamais recodées :
  *   · droit d'opposition + cible professionnelle → outboundComplianceGate
  *   · fenêtre horaire → callAllowedNow
- *   · cadence 5 rappels / 2 jours → cadenceFor
+ *   · cadence 1er appel + 3 rappels sur 2 jours → cadenceFor
  *   · saturation → vitalSigns
  *   · numéro valide → toE164
  *

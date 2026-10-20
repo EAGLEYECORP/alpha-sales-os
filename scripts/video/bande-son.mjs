@@ -123,7 +123,8 @@ const SONS = {
     bruitFiltre(at(e.t), 0.5, 1800, 300, 0.7, 0.35, 0, 0.6, (x) => Math.exp(-x * 6));
   },
   pop: (e) => sinus(at(e.t), 0.2, 600, 900, 0.05, 0.22 * (e.gain ?? 1), e.pan ?? 0, 0.3),
-  brillance: (e) => [783.99, 1046.5, 1567.98, 2093.0].forEach((hz, k) => tinte(e.t + k * 0.06, hz, 0.075 * (e.gain ?? 1), -0.3 + 0.2 * k, 0.35)),
+  // Les quatre notes suivent la tonalité de la nappe quand la partition les donne.
+  brillance: (e) => (e.notes ?? [783.99, 1046.5, 1567.98, 2093.0]).forEach((hz, k) => tinte(e.t + k * 0.06, hz, 0.075 * (e.gain ?? 1), -0.3 + 0.2 * k, 0.35)),
 };
 for (const e of evenements) {
   const son = SONS[e.type];

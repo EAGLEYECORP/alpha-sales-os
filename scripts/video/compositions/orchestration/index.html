@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — orchestration des agents</title>
+    <!--
+      Vidéo LinkedIn du 21/10/2026 — l'orchestration des agents d'Alpha.
+      Doctrine : .claude/skills/alpha-motion/SKILL.md. Chaque phrase est vraie
+      dans le code : lib/propositions.ts (six actes, liste fermée),
+      app/api/mcp/route.ts (le seul outil d'écriture est « proposer »),
+      lib/mail-autopilote.ts (texte fixe + mention IA), voice/agent.py (art. 50).
+
+      Refaire le rendu (depuis la racine du dépôt) :
+        bash scripts/video/hyperframes-bac-a-sable.sh && source "${ALPHA_VIDEO_OUTILS:-$HOME/.cache/alpha-video}/env.sh"
+        cp -r scripts/video/compositions/orchestration /tmp/orch && gsap_local /tmp/orch
+        node scripts/video/bande-son.mjs scripts/video/partitions/orchestration.json /tmp/orch/bande.wav
+        cd /tmp/orch && npx hyperframes check && npx hyperframes render
+      Puis l'image d'affiche : l'image à 2,2 s remplace l'image 0 (voir la compétence, § 2).
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      /* Polices de la marque, servies avec la composition (le CDN est refusé ici). */
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      /* Fond partagé, IMMOBILE : la doctrine refuse la dérive d'ambiance. */
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.13); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.1); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 21px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #e8c98a; }
+
+      /* Scène 2 — deux sortes d'agents */
+      .colonne { position: absolute; top: 430px; width: 440px; height: 620px; border-radius: 36px; padding: 40px 36px; }
+      #agissent { left: 80px; background: #f7f2ea; color: #1e1914; box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.8); }
+      #reflechit { left: 560px; background: #16120e; border: 2px solid rgba(232, 201, 138, 0.45); box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.8); }
+      .etiquette { font-family: "JetBrains Mono"; font-weight: 600; font-size: 22px; letter-spacing: 0.14em; }
+      #agissent .etiquette { color: #896a38; }
+      #reflechit .etiquette { color: #e8c98a; }
+      .agent { margin-top: 34px; display: flex; align-items: center; gap: 18px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 44px; letter-spacing: -0.02em; line-height: 1.1; }
+      .agent svg { width: 52px; height: 52px; flex: none; }
+      .regles { position: absolute; left: 36px; right: 36px; bottom: 40px; display: flex; flex-direction: column; gap: 12px; }
+      .regle { font-family: "JetBrains Mono"; font-weight: 500; font-size: 23px; color: #5f574d; padding: 12px 18px; border-radius: 14px; background: #ece4d7; }
+      .verrou { position: absolute; left: 36px; right: 36px; bottom: 40px; display: flex; align-items: center; gap: 16px; padding: 22px 22px; border-radius: 18px; background: rgba(232, 201, 138, 0.1); border: 1.5px solid rgba(232, 201, 138, 0.35); font-family: "JetBrains Mono"; font-weight: 600; font-size: 25px; color: #e8c98a; }
+      .verrou svg { width: 40px; height: 40px; flex: none; }
+      .taches { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+      .tache { font-family: "JetBrains Mono"; font-weight: 500; font-size: 23px; color: #d9cdb6; padding: 12px 18px; border-radius: 14px; background: rgba(232, 201, 138, 0.08); }
+
+      /* Scène 3 — la file de propositions */
+      #file { position: absolute; left: 80px; top: 530px; width: 920px; height: 450px; border-radius: 36px; background: #f7f2ea; color: #1e1914; padding: 40px 40px; box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.8); }
+      #file .etiquette { color: #896a38; }
+      #puces { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .puce { height: 132px; border-radius: 22px; background: #ece4d7; display: flex; flex-direction: column; justify-content: center; padding: 0 24px; }
+      .puce b { font-family: "Inter Tight"; font-weight: 700; font-size: 36px; letter-spacing: -0.01em; }
+      .puce span { margin-top: 6px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 21px; color: #645d54; }
+      #interdit { position: absolute; left: 80px; top: 1030px; width: 920px; display: flex; align-items: center; gap: 18px; font-size: 34px; font-weight: 600; color: #f3eee4; }
+      #interdit svg { width: 46px; height: 46px; flex: none; }
+      #interdit em { font-style: normal; color: #a79f92; font-weight: 500; }
+
+      /* Scène 4 — vous dites oui */
+      #proposition { position: absolute; left: 80px; top: 470px; width: 920px; height: 470px; border-radius: 36px; background: #f7f2ea; color: #1e1914; padding: 44px 46px; box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.8); }
+      #proposition .etiquette { color: #896a38; }
+      #proposition h3 { margin-top: 22px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 50px; letter-spacing: -0.02em; line-height: 1.08; }
+      #proposition h3 .ligne { white-space: normal; }
+      #proposition p { margin-top: 18px; font-size: 32px; font-weight: 500; color: #645d54; }
+      #boutons { position: absolute; left: 46px; right: 46px; bottom: 46px; height: 104px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .bouton { border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 700; }
+      #refuser { border: 2.5px solid rgba(30, 25, 20, 0.18); color: #6f665b; }
+      #approuver { background: #1e1914; color: #f3eee4; position: relative; overflow: hidden; }
+      #onde { position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%; background: rgba(232, 201, 138, 0.45); }
+      #approuve { position: absolute; left: 46px; right: 46px; bottom: 46px; height: 104px; border-radius: 22px; background: #e3efd9; color: #2f5a22; display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 34px; font-weight: 700; }
+      #approuve svg { width: 44px; height: 44px; }
+      #trace { position: absolute; left: 80px; top: 975px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 23px; color: #a79f92; letter-spacing: 0.04em; }
+      #curseur { position: absolute; left: 0; top: 0; width: 62px; height: 62px; }
+
+      /* Scène 5 — la fin */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 300px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 505px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 650px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #appel { top: 860px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+      #pied { top: 1214px; font-family: "JetBrains Mono"; font-size: 23px; letter-spacing: 0.08em; color: #a79f92; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="23.6" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">ORCHESTRATION</div>
+      </div>
+
+      <!-- 1 · L'accroche -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.8" data-track-index="1">
+        <div class="titre" id="t1" style="top: 420px; font-size: 90px">
+          <span class="ligne"><span class="mot">Plus</span> <span class="mot">un</span> <span class="mot">agent</span></span>
+          <span class="ligne"><span class="mot">réfléchit,</span></span>
+          <span class="ligne"><span class="mot or">moins</span> <span class="mot or">il</span> <span class="mot or">a</span> <span class="mot or">le</span> <span class="mot or">droit</span></span>
+          <span class="ligne"><span class="mot or">d'agir.</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · Deux sortes d'agents -->
+      <section id="s2" class="scene clip" data-start="3.8" data-duration="6.4" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="surtitre" id="k2" style="top: 175px">LES AGENTS D'ALPHA</div>
+          <div class="titre" id="t2" style="top: 225px; font-size: 84px">
+            <span class="ligne"><span class="mot">Deux</span> <span class="mot">sortes</span> <span class="mot or">d'agents.</span></span>
+          </div>
+          <div id="agissent" class="colonne">
+            <div class="etiquette">ILS AGISSENT</div>
+            <div class="agent" id="a1"><svg viewBox="0 0 24 24" fill="none" stroke="#b98f4b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Agent vocal</div>
+            <div class="agent" id="a2"><svg viewBox="0 0 24 24" fill="none" stroke="#b98f4b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Envoi à froid</div>
+            <div class="regles" id="regles">
+              <div class="regle">texte fixe</div>
+              <div class="regle">se dit IA d'emblée</div>
+              <div class="regle">fenêtres et plafonds</div>
+            </div>
+          </div>
+          <div id="reflechit" class="colonne">
+            <div class="etiquette">IL RÉFLÉCHIT</div>
+            <div class="agent" id="a3"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="2"/><circle cx="19.5" cy="6" r="2"/><circle cx="4.5" cy="18" r="2"/><circle cx="19.5" cy="18" r="2"/><path d="m6.2 7.1 3.4 2.8M17.8 7.1l-3.4 2.8M6.2 16.9l3.4-2.8M17.8 16.9l-3.4-2.8"/></svg>Orchestrateur</div>
+            <div class="taches" id="taches">
+              <div class="tache">lit tout le pipe</div>
+              <div class="tache">repère les blocages</div>
+              <div class="tache">prépare la suite</div>
+            </div>
+            <div class="verrou" id="v3"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>propose seulement</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 · Une seule chose : proposer -->
+      <section id="s3" class="scene clip" data-start="10.2" data-duration="5" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="titre" id="t3" style="top: 175px; font-size: 84px">
+            <span class="ligne"><span class="mot">Il</span> <span class="mot">ne</span> <span class="mot">peut</span> <span class="mot">faire</span></span>
+            <span class="ligne"><span class="mot">qu'une</span> <span class="mot">chose :</span></span>
+            <span class="ligne"><span class="mot or">proposer.</span></span>
+          </div>
+          <div id="file">
+            <div class="etiquette">SIX ACTES · LISTE FERMÉE</div>
+            <div id="puces">
+              <div class="puce"><b>Un email</b><span>texte fourni</span></div>
+              <div class="puce"><b>Un appel</b><span>script fourni</span></div>
+              <div class="puce"><b>Une étape</b><span>la fiche avance</span></div>
+              <div class="puce"><b>Un RDV</b><span>posé, déplacé</span></div>
+              <div class="puce"><b>Une note</b><span>dans le Cerveau</span></div>
+              <div class="puce"><b>Une alerte</b><span>un simple signal</span></div>
+            </div>
+          </div>
+          <div id="interdit"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Envoyer seul <em>: aucun outil ne le permet.</em></span></div>
+        </div>
+      </section>
+
+      <!-- 4 · Vous dites oui -->
+      <section id="s4" class="scene clip" data-start="15.2" data-duration="4.2" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="titre" id="t4" style="top: 200px; font-size: 90px">
+            <span class="ligne"><span class="mot">Vous</span> <span class="mot">dites</span> <span class="mot">oui.</span></span>
+            <span class="ligne"><span class="mot or">Ou</span> <span class="mot or">non.</span></span>
+          </div>
+          <div id="proposition">
+            <div class="etiquette">PROPOSITION · EMAIL · FICHE DE DÉMO</div>
+            <h3><span class="ligne">Écrire au Programme Belvédère</span></h3>
+            <p>Texte prêt. Rien n'est parti.</p>
+            <div id="boutons">
+              <div class="bouton" id="refuser">Refuser</div>
+              <div class="bouton" id="approuver"><div id="onde"></div><span>Approuver</span></div>
+            </div>
+            <div id="approuve" data-layout-allow-overlap><svg viewBox="0 0 24 24" fill="none" stroke="#2f5a22" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Approuvé par vous</div>
+          </div>
+          <div id="trace">proposé par l'orchestrateur · décidé par un humain</div>
+          <svg id="curseur" viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.2 1.3L10 19z" fill="#f3eee4" stroke="#0a0807" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        </div>
+      </section>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="19.4" data-duration="4.2" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">Les humains closent.</span><b class="ligne">Alpha fait tourner la machine.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+        <div id="pied" class="centre">Scène illustrative</div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="23.6" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond ;
+      // révélation dans l'ordre de lecture ; tenues IMMOBILES ; sortie de l'ancien
+      // AVANT l'entrée du nouveau.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.06 }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+
+      // En-tête : il cède la place au logo final.
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 19.1);
+
+      // 1 · L'accroche
+      titre("#t1", 0.1);
+      sort("#t1", 3.45);
+
+      // 2 · Deux sortes d'agents
+      arrive("#k2", 4.0, 20, 0.6);
+      titre("#t2", 4.05);
+      arrive("#agissent", 4.7);
+      arrive("#a1", 5.05, 24, 0.6);
+      arrive("#a2", 5.35, 24, 0.6);
+      tl.fromTo("#regles .regle", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: ENTREE, stagger: 0.15 }, 5.75);
+      arrive("#reflechit", 6.9);
+      arrive("#a3", 7.25, 24, 0.6);
+      tl.fromTo("#taches .tache", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: ENTREE, stagger: 0.15 }, 7.6);
+      arrive("#v3", 8.3, 18, 0.6);
+      sort("#s2in", 9.85);
+
+      // 3 · Une seule chose : proposer
+      titre("#t3", 10.35);
+      arrive("#file", 11.05);
+      tl.fromTo("#puces .puce", { opacity: 0, y: 24, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: ENTREE, stagger: 0.12 }, 11.5);
+      arrive("#interdit", 12.7, 20, 0.6);
+      sort("#s3in", 14.85);
+
+      // 4 · Vous dites oui — le curseur vient, appuie, la carte change d'état.
+      titre("#t4", 15.35);
+      arrive("#proposition", 15.95);
+      arrive("#trace", 16.4, 14, 0.6);
+      // Un seul tween porte l'arrivée (position + apparition) : deux tweens sur x/y se chevauchaient.
+      tl.fromTo("#curseur", { x: 960, y: 1300, opacity: 0 }, { x: 760, y: 835, opacity: 1, duration: 0.9, ease: "power2.inOut" }, 16.7);
+      tl.fromTo("#curseur", { scale: 1 }, { scale: 0.86, duration: 0.1, ease: "power2.out", immediateRender: false }, 17.62);
+      tl.to("#curseur", { scale: 1, duration: 0.2, ease: "power2.out" }, 17.72);
+      tl.fromTo("#approuver", { scale: 1 }, { scale: 0.97, duration: 0.1, ease: "power2.out", immediateRender: false }, 17.62);
+      tl.to("#approuver", { scale: 1, duration: 0.25, ease: "power2.out" }, 17.72);
+      tl.fromTo("#onde", { scale: 0.3, opacity: 0.6 }, { scale: 2.4, opacity: 0, duration: 0.55, ease: "power2.out" }, 17.66);
+      tl.fromTo("#boutons", { opacity: 1 }, { opacity: 0, duration: 0.18, ease: "power2.in" }, 17.8);
+      tl.fromTo("#approuve", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: ENTREE }, 17.9);
+      tl.to("#curseur", { opacity: 0, duration: 0.3, ease: "power2.in" }, 18.15);
+      sort("#s4in", 19.05);
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 19.4);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 19.45);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 19.7);
+      arrive("#devise", 20.15, 22, 0.7);
+      arrive("#appel", 20.7, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 21.3);
+      arrive("#pied", 21.0, 10, 0.6);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
