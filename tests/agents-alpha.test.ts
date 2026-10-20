@@ -72,3 +72,13 @@ test("le module ne tire rien dans le navigateur, et la vitrine le BRANCHE", () =
     assert.ok(LIBELLE_CAMP[a.camp] && LIBELLE_DISPONIBILITE[a.disponibilite]);
   }
 });
+
+test("typographie : jamais un deux-points seul en début de ligne", () => {
+  // Vu au rendu sur téléphone : « lisent / : vos documents ». Une espace
+  // insécable avant « : » garde la ponctuation avec son mot.
+  for (const a of AGENTS_ALPHA) {
+    for (const texte of [a.fait, a.interdit]) {
+      assert.doesNotMatch(texte, / :/, `${a.nom} : « ${texte} » — espace ordinaire avant un deux-points`);
+    }
+  }
+});

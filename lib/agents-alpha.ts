@@ -75,9 +75,9 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     camp: "reflechit",
     ecrans: ["/linkedin", "/audits"],
     fait:
-      "Trie ce que vous lui donnez — un export de permis de construire ou de profils : il écarte qui n'a rien à vendre, nomme la phase de l'affaire et dit quand appeler.",
+      "Trie ce que vous lui donnez — un export de permis de construire ou de profils : il écarte qui n'a rien à vendre, nomme la phase de l'affaire et dit quand appeler.",
     interdit:
-      "Collecter lui-même. La collecte reste dehors, sous la responsabilité de celui qui la fait : un fichier, une feuille partagée.",
+      "Collecter lui-même. La collecte reste dehors, sous la responsabilité de celui qui la fait : un fichier, une feuille partagée.",
     preuve: "lib/permis-construire.ts",
     disponibilite: "en-ligne",
   },
@@ -99,7 +99,7 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     fait: "Envoie les premiers messages à froid, au rythme d'un palier quotidien qui ne monte qu'avec les semaines.",
     interdit: "Écrire à la volée. Le texte est fixe, porte la mention IA, et ne part pas sans moyen de refus.",
     preuve: "lib/mail-autopilote.ts",
-    // Vérifié par le contrôle d'accès, pas supposé : la clé email du client l'ouvre en ligne.
+    // Vérifié par le contrôle d'accès, pas supposé : la clé email du client l'ouvre en ligne.
     disponibilite: "en-ligne-avec-vos-cles",
   },
   {
@@ -107,7 +107,7 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     camp: "reflechit",
     ecrans: ["/agent"],
     fait: "Lit tout le pipe, prépare votre journée, analyse une affaire et écrit le message.",
-    interdit: "Envoyer quoi que ce soit lui-même : il prépare, vous relisez, vous envoyez.",
+    interdit: "Envoyer quoi que ce soit lui-même : il prépare, vous relisez, vous envoyez.",
     preuve: "lib/os-map.ts",
     disponibilite: "en-ligne-avec-vos-cles",
   },
@@ -116,7 +116,7 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     camp: "reflechit",
     ecrans: ["/overlay"],
     fait: "Pendant le rendez-vous, reconnaît l'objection et vous souffle la réponse à l'écran.",
-    interdit: "Parler à votre interlocuteur : rien ne s'affiche de son côté, c'est vous qui parlez.",
+    interdit: "Parler à votre interlocuteur : rien ne s'affiche de son côté, c'est vous qui parlez.",
     preuve: "components/live/alpha-live.tsx",
     disponibilite: "en-ligne",
   },
@@ -124,8 +124,8 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     nom: "ALPHA CERVEAU",
     camp: "memoire",
     ecrans: ["/cerveau"],
-    fait: "La mémoire que tous les agents lisent : vos documents, vos objections, ce que vos débriefs ont appris.",
-    interdit: "Mettre une phrase de livre au rang d'un fait mesuré : chaque source externe porte son niveau de preuve.",
+    fait: "La mémoire que tous les agents lisent : vos documents, vos objections, ce que vos débriefs ont appris.",
+    interdit: "Mettre une phrase de livre au rang d'un fait mesuré : chaque source externe porte son niveau de preuve.",
     preuve: "lib/references.ts",
     disponibilite: "en-ligne",
   },
@@ -135,7 +135,7 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     ecrans: ["/ceo"],
     fait:
       "Sépare ce qui peut s'automatiser de ce qui doit rester une décision humaine, et cherche ce qui est en panne sans le dire.",
-    interdit: "Prendre une décision humaine à votre place : il la prépare et s'arrête avant.",
+    interdit: "Prendre une décision humaine à votre place : il la prépare et s'arrête avant.",
     preuve: "lib/alpha-ceo.ts",
     disponibilite: "chez-vous",
   },
