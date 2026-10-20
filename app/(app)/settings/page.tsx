@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAlpha } from "@/lib/store";
 import { SyncProspects } from "@/components/sync-prospects";
 import { ValidationPartenairePanel } from "@/components/settings/validation-partenaire-panel";
-import { importerFiches, ressembleAuTerrain } from "@/lib/sourcing-terrain-import";
+import { importerPourCrm, messageImport, phraseColonnesIgnorees, ressembleAuTerrain } from "@/lib/sourcing-terrain-import";
 import { ProfilIcp } from "@/components/profil-icp";
 import {
   pushSnapshot,
@@ -196,32 +196,29 @@ export default function SettingsPage() {
 
   const applyCsv = (text: string) => {
     /**
-     * ⚠ Un relevé TERRAIN ne passe pas par l'import CRM générique.
+     * ⚠ Un relevé TERRAIN est lu par l'import générique ET par le tri.
      *
-     * Le flux réel est : relevé sur une carte → Google Sheet → ici. Or
-     * `csvToProspects` ignore les colonnes qui portent tout le tri (avis,
-     * extraits d'avis, code APE) : les fiches entraient et la plainte
-     * d'injoignabilité, la verticale confirmée et le plan d'appels ne
-     * sortaient jamais. L'import annonçait quand même « ✓ 200 nouveaux ».
+     * Le tri répond à « qui appeler ? », pas à « qu'est-ce qui entre dans le
+     * CRM ? » : l'import générique crée TOUTES les lignes (email, décideur,
+     * étape, historique), le tri y ajoute ses signaux. Avant, il tenait lieu
+     * de porte : une PME complète mais sans avis sortait « écartée » et
+     * l'écran annonçait « ✓ 0 nouveau(x) ». Détail : `importerPourCrm`.
      */
     if (ressembleAuTerrain(text)) {
-      const r = importerFiches(text);
-      if (r.retenus.length || r.ecartes.length) {
-        const fiches = r.retenus.map((x) => x.prospect);
-        if (!passeLeMurDuStockage(fiches)) {
+      const r = importerPourCrm(text);
+      if (r.aCreer.length || r.horsSujet.length) {
+        if (!passeLeMurDuStockage(r.aCreer)) {
           setImportMsg("Import annulé — rien n'a été écrit.");
           return;
         }
-        const { added, updated } = importProspects(fiches);
-        setImportMsg(
-          `✓ Relevé terrain : ${added} nouveau(x), ${updated} mis à jour, ${r.ecartes.length} écartée(s). ${r.resume.join(" ")}`
-        );
-        setTriage(triageImport(fiches, settings.accountId));
+        const ecrit = r.aCreer.length ? importProspects(r.aCreer) : { added: 0, updated: 0 };
+        setImportMsg(messageImport(ecrit, r).texte);
+        if (r.aCreer.length) setTriage(triageImport(r.aCreer, settings.accountId));
         return;
       }
     }
 
-    const { prospects: parsed, skipped, headersFound } = csvToProspects(text);
+    const { prospects: parsed, skipped, headersFound, headersIgnored } = csvToProspects(text);
     if (parsed.length === 0) {
       setImportMsg(
         `Aucun prospect reconnu (${skipped} ligne(s) ignorée(s)). Colonnes détectées : ${headersFound.join(", ") || "aucune"}. Il faut au minimum une colonne « company / commerce ».`
@@ -233,7 +230,10 @@ export default function SettingsPage() {
       return;
     }
     const { added, updated } = importProspects(parsed);
-    setImportMsg(`✓ Import réussi : ${added} nouveau(x), ${updated} mis à jour, ${skipped} ligne(s) ignorée(s).`);
+    setImportMsg(
+      `✓ Import réussi : ${added} nouveau(x), ${updated} mis à jour, ${skipped} ligne(s) ignorée(s).` +
+        (headersIgnored.length ? ` ${phraseColonnesIgnorees(headersIgnored)}` : "")
+    );
     // Deep-dive immédiat : le verdict du lot AVANT de lancer quoi que ce soit.
     setTriage(triageImport(parsed, settings.accountId));
   };

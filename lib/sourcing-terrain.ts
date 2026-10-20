@@ -91,6 +91,14 @@ export interface CiblageTerrain {
   manque: string[];
   /** Les exclusions sèches. Le score ne les rattrape pas. */
   exclusions: string[];
+  /**
+   * L'offre n'a pas d'OBJET ici (enseigne nationale, standard déjà en place).
+   * Ce n'est pas la même chose qu'une fiche INCOMPLÈTE (pas de numéro, pas
+   * d'avis) : la seconde se complète, la première n'a pas sa place dans le
+   * CRM. `exclusions` les mélange ; ce drapeau les sépare, parce que c'est
+   * lui qui décide si une fiche est créée.
+   */
+  horsSujet: boolean;
   /** Le miroir du playbook : ce qu'on montre au prospect, pas ce qu'on vend. */
   miroir: string | null;
 }
@@ -248,6 +256,7 @@ export function qualifierTerrain(f: FicheTerrain): CiblageTerrain {
   if (equipe) {
     exclusions.push("dispose déjà d'un standard ou d'un secrétariat externalisé — notre offre n'a plus d'objet");
   }
+  const horsSujet = ENSEIGNE_NATIONALE.test(texte) || Boolean(equipe);
 
   let score = 0;
 
@@ -367,6 +376,7 @@ export function qualifierTerrain(f: FicheTerrain): CiblageTerrain {
     signaux: signaux.sort((a, b) => poids(b.force) - poids(a.force)),
     manque,
     exclusions,
+    horsSujet,
     miroir: verticale?.mirror ?? null,
   };
 }

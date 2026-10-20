@@ -78,7 +78,10 @@ const HEADER_MAP: Record<string, string> = {
   website: "websiteState", siteweb: "websiteState", site: "websiteState",
   social: "socialState", reseaux: "socialState", reseauxsociaux: "socialState",
   competition: "localCompetition", concurrence: "localCompetition",
-  process: "currentProcess", processus: "currentProcess", audit: "currentProcess",
+  process: "currentProcess", processus: "currentProcess", audit: "currentProcess", auditcommercial: "currentProcess",
+  // Colonnes d'un export préparé par un assistant : lues, plus jetées en silence.
+  problemeprobable: "problems", problemesprobables: "problems",
+  prochaineaction: "nextAction", prochaineetape: "nextAction", nextaction: "nextAction", nextstep: "nextAction",
   // colonnes « process » du CRM Sheets (fichier régies)
   history: "history", historique: "history",
   deadline: "deadline", echeance: "deadline",
@@ -104,15 +107,22 @@ export interface CsvImportResult {
   prospects: Prospect[];
   skipped: number;
   headersFound: string[];
+  /**
+   * Les colonnes que l'import n'a PAS su lire, telles qu'écrites dans la
+   * feuille. Elles étaient jetées sans un mot : « Prochaine action » ou
+   * « Problème probable » disparaissaient et l'import annonçait « ✓ réussi ».
+   */
+  headersIgnored: string[];
 }
 
 /** Map CSV text → Prospect[]. Rows without a company name are skipped. */
 export function csvToProspects(text: string): CsvImportResult {
   const rows = parseCsv(text);
-  if (rows.length < 2) return { prospects: [], skipped: 0, headersFound: [] };
+  if (rows.length < 2) return { prospects: [], skipped: 0, headersFound: [], headersIgnored: [] };
 
   const headers = rows[0].map((h) => HEADER_MAP[strip(h)] ?? null);
   const headersFound = headers.filter(Boolean) as string[];
+  const headersIgnored = rows[0].map((h) => h.trim()).filter((h, i) => h && !headers[i]);
   const prospects: Prospect[] = [];
   let skipped = 0;
 
@@ -161,7 +171,12 @@ export function csvToProspects(text: string): CsvImportResult {
       objections: parseObjections(rec.objectionsRaw ?? ""),
       events: parseHistory(rec.history ?? ""),
       demoShownBeforePrice: false,
-      nextStep: parseDeadline(rec.deadline ?? "") ?? { date: daysAhead(3), action: "Premier contact terrain" },
+      // Une « prochaine action » écrite sans date garde SON texte (la date par
+      // défaut reste celle d'avant : J+3) au lieu d'être remplacée par une
+      // action que personne n'a choisie.
+      nextStep:
+        parseDeadline(rec.deadline ?? "", rec.nextAction ?? "") ??
+        { date: daysAhead(3), action: rec.nextAction?.trim() || "Premier contact terrain" },
       tags: [
         ...(rec.tags ?? "").split(/[|,]/).map((t) => t.trim()).filter(Boolean),
         ...(rec.typeTag ? [rec.typeTag.replace(/^[·\s]+/, "")] : []),
@@ -189,7 +204,7 @@ export function csvToProspects(text: string): CsvImportResult {
       updatedAt: now,
     });
   }
-  return { prospects, skipped, headersFound };
+  return { prospects, skipped, headersFound, headersIgnored };
 }
 
 /** Template the business can copy into a Google Sheet (first row). */

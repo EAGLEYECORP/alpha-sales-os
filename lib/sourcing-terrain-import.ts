@@ -1,5 +1,7 @@
 import { prospectDefaults } from "./seed";
-import { champsReconnus, lireTableau, type Lecture } from "./tabulaire";
+import { csvToProspects } from "./csv";
+import { champsReconnus, lireTableau, normCle, type Lecture } from "./tabulaire";
+import { toE164 } from "./voice-script";
 import type { Prospect, Sector } from "./types";
 import {
   qualifierTerrain, trierTerrain, type CiblageTerrain, type FicheTerrain,
@@ -33,9 +35,16 @@ const ALIAS: Record<string, keyof FicheTerrain> = {
   numero: "telephone", mobile: "telephone",
   siteweb: "siteWeb", site: "siteWeb", website: "siteWeb", web: "siteWeb", url: "siteWeb",
   avis: "avis", nombreavis: "avis", reviews: "avis", reviewcount: "avis", usertotal: "avis",
+  // « Nombre d'avis » et « Note Google » sont les en-têtes les plus naturels en
+  // français — et ils n'étaient PAS lus : l'apostrophe donne « nombredavis ».
+  // `ressembleAuTerrain` les voyait (\b), le parseur non : la feuille était
+  // aiguillée vers le tri, qui jugeait alors sur des colonnes vides.
+  nombredavis: "avis", avisgoogle: "avis", googlereviews: "avis",
   note: "note", rating: "note", etoiles: "note", stars: "note", score: "note",
+  notegoogle: "note", googlerating: "note",
   horaires: "horaires", hours: "horaires", openinghours: "horaires", ouverture: "horaires",
   extraitsavis: "extraitsAvis", avistexte: "extraitsAvis", commentaires: "extraitsAvis",
+  extraitdavis: "extraitsAvis", extraitsdavis: "extraitsAvis", extraitavis: "extraitsAvis",
   reviewtext: "extraitsAvis", extraits: "extraitsAvis", verbatim: "extraitsAvis",
   taille: "taille", effectif: "taille", employees: "taille", size: "taille",
   // Croisement avec le registre des entreprises : le code APE prime sur
@@ -203,8 +212,26 @@ export function ficheVersProspect(f: FicheTerrain, c: CiblageTerrain, now = new 
 export interface ImportTerrain {
   parse: ParseTerrain;
   retenus: { fiche: FicheTerrain; ciblage: CiblageTerrain; prospect: Prospect }[];
+  /**
+   * Les fiches de `ecartes` qui ne sont PAS hors sujet : trop peu de preuve
+   * de demande, ou un numéro à recollecter. Elles sont COMPLÉTABLES, pas
+   * mortes — un sous-ensemble de `ecartes` (que l'écran de tri terrain
+   * continue d'afficher avec ses motifs), jamais un second décompte.
+   */
+  aQualifier: { fiche: FicheTerrain; ciblage: CiblageTerrain; prospect: Prospect }[];
   ecartes: { fiche: FicheTerrain; ciblage: CiblageTerrain }[];
   resume: string[];
+}
+
+/** Les écartées qui ne sont pas hors sujet, converties en fiches « à qualifier ». */
+function aQualifierDepuis(ecartes: ImportTerrain["ecartes"], now: Date): ImportTerrain["aQualifier"] {
+  return ecartes
+    .filter((e) => !e.ciblage.horsSujet)
+    .map(({ fiche, ciblage }) => {
+      const prospect = ficheVersProspect(fiche, ciblage, now);
+      prospect.tags = Array.from(new Set([...prospect.tags, "a-qualifier"]));
+      return { fiche, ciblage, prospect };
+    });
 }
 
 /** Le parcours complet : texte → fiches → tri → prospects appelables. */
@@ -223,7 +250,168 @@ export function importerFiches(texte: string, now = new Date()): ImportTerrain {
     resume.push(`${parse.rejets.length} ligne(s) illisibles — voir le détail avant de conclure que le lot est mauvais.`);
   }
 
-  return { parse, retenus, ecartes: lot.ecartes, resume };
+  return { parse, retenus, aQualifier: aQualifierDepuis(lot.ecartes, now), ecartes: lot.ecartes, resume };
+}
+
+// ── L'IMPORT CRM : le tri DÉCIDE QUI ON APPELLE, il ne décide pas qui existe ──
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ UN TRI D'APPELS TENAIT LIEU DE PORTE D'ENTRÉE DU CRM.
+ *
+ * Mesuré (20/10/2026) sur un export de trois PME lyonnaises — téléphone, email,
+ * site, secteur, audit, tous renseignés ; les seules colonnes vides étaient
+ * « note » et « avis » : `ressembleAuTerrain` voyait deux marqueurs, aiguillait
+ * l'import vers le tri terrain, et chaque fiche sortait à 20/100 pour un seuil
+ * de 45. Elles étaient « écartées » — jamais créées. L'écran répondait
+ * « ✓ Relevé terrain : 0 nouveau(x) », et comme `ecartes.length > 0` le repli
+ * vers l'import générique ne se déclenchait pas non plus.
+ *
+ * Le fond du défaut : le tri répond à « QUI APPELER dans ce relevé ? » (une
+ * question de file d'appels, calibrée sur l'avis Google d'un artisan), et on
+ * lui avait confié « QU'EST-CE QUI ENTRE dans le CRM ? ». Une donnée facultative
+ * manquante — un avis — fermait la porte à une fiche par ailleurs complète.
+ * C'est exactement ce que le tri a le droit de dire sur une file, et pas sur
+ * une fiche.
+ *
+ * Désormais :
+ *  · la lecture GÉNÉRIQUE (`csvToProspects`) crée TOUTES les lignes — elle
+ *    lit email, décideur, étape, historique, que le parseur terrain ignore ;
+ *  · le tri terrain est une SURCOUCHE : une fiche qu'il juge appelable gagne
+ *    ses signaux (avis, plainte, trou horaire) ; une fiche qu'il juge faible
+ *    reçoit le tag `a-qualifier` — elle existe, elle n'a simplement pas de
+ *    preuve de demande ;
+ *  · SEULES les fiches HORS SUJET ne sont pas créées (enseigne nationale,
+ *    standard déjà en place) : l'offre n'y a pas d'objet, et ce n'est pas un
+ *    champ qu'on complète. Elles sont COMPTÉES et nommées, jamais tues ;
+ *  · le seuil de 45 reste une DÉCISION non validée : il ordonne la file, il
+ *    ne l'interdit pas (même principe que `LOGEMENTS_MIN` : on COMPTE).
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface ImportCrm {
+  /** Ce qui s'écrit dans le CRM : la lecture générique, enrichie, hors-sujet retirés. */
+  aCreer: Prospect[];
+  /** Combien le tri terrain juge appelables (signaux de demande relevés). */
+  nbAppelables: number;
+  /** Combien existent sans preuve de demande — créées, tag `a-qualifier`. */
+  nbAQualifier: number;
+  /** Non créées, avec le motif : la seule porte qui reste fermée. */
+  horsSujet: { entreprise: string; motif: string }[];
+  /** Colonnes de la feuille que NI l'import générique NI le tri n'ont lues. */
+  colonnesIgnorees: string[];
+  /** Lignes sans nom d'entreprise : rien à créer, et on le dit. */
+  lignesSansNom: number;
+  resume: string[];
+}
+
+const nomNorm = (s?: string) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
+export function importerPourCrm(texte: string, now = new Date()): ImportCrm {
+  const gen = csvToProspects(texte);
+  const terrain = importerFiches(texte, now);
+  // `aQualifier` est un sous-ensemble d'`ecartes` : on part de `ecartes` pour ne
+  // rien compter deux fois.
+  const jugees = [
+    ...terrain.retenus.map((r) => ({ fiche: r.fiche, ciblage: r.ciblage, prospect: r.prospect as Prospect | null })),
+    ...terrain.ecartes.map((r) => ({ fiche: r.fiche, ciblage: r.ciblage, prospect: null as Prospect | null })),
+  ];
+
+  // Le prospect générique qui correspond à une fiche : par numéro d'abord (un
+  // numéro est unique, un nom ne l'est pas), puis par nom.
+  const parTel = new Map<string, Prospect>();
+  const parNom = new Map<string, Prospect>();
+  for (const p of gen.prospects) {
+    const tel = p.phone ? toE164(p.phone) : null;
+    if (tel && !parTel.has(tel)) parTel.set(tel, p);
+    if (!parNom.has(nomNorm(p.company))) parNom.set(nomNorm(p.company), p);
+  }
+  const retrouver = (f: FicheTerrain, c: CiblageTerrain): Prospect | undefined =>
+    (c.telephone ? parTel.get(c.telephone) : undefined) ?? parNom.get(nomNorm(f.entreprise));
+
+  const horsSujet: ImportCrm["horsSujet"] = [];
+  const retires = new Set<Prospect>();
+  const surcouche = new Map<Prospect, "appelable" | "a-qualifier">();
+  let nbAppelables = 0;
+  let nbAQualifier = 0;
+
+  for (const j of jugees) {
+    const base = retrouver(j.fiche, j.ciblage);
+    if (j.ciblage.horsSujet) {
+      horsSujet.push({
+        entreprise: (j.fiche.entreprise ?? "").trim() || "Établissement sans nom",
+        motif: j.ciblage.exclusions.find((e) => /nationale|standard/.test(e))?.split(" — ")[0] ?? "l'offre n'a pas d'objet ici",
+      });
+      if (base) retires.add(base);
+      continue;
+    }
+    const retenu = j.ciblage.retenu;
+    if (retenu) nbAppelables++;
+    else nbAQualifier++;
+    if (!base) continue;
+    surcouche.set(base, retenu ? "appelable" : "a-qualifier");
+    if (retenu && j.prospect) {
+      // La fiche générique reste la base (étape, historique, email, décideur) ;
+      // le tri y ajoute ce qu'il est seul à savoir.
+      base.tags = Array.from(new Set([...base.tags, ...j.prospect.tags]));
+      base.notes = [base.notes, j.prospect.notes].filter(Boolean).join(" ");
+      if (base.sector === "autre") base.sector = j.prospect.sector;
+      base.preferredChannel = base.preferredChannel ?? j.prospect.preferredChannel;
+      base.deepAudit = {
+        ...base.deepAudit,
+        ...Object.fromEntries(Object.entries(j.prospect.deepAudit).filter(([, v]) => v !== undefined && v !== "")),
+      };
+    } else {
+      base.tags = Array.from(new Set([...base.tags, "a-qualifier"]));
+    }
+  }
+
+  let aCreer = gen.prospects.filter((p) => !retires.has(p));
+
+  // Aucune colonne « entreprise » reconnue par la lecture générique (« nom »
+  // y désigne le décideur) alors que le tri a lu des fiches : on les crée
+  // depuis le tri plutôt que de ne rien créer.
+  if (gen.prospects.length === 0) {
+    aCreer = [...terrain.retenus, ...terrain.aQualifier].map((r) => r.prospect);
+  }
+
+  // Une colonne que le tri sait lire n'est pas « ignorée ».
+  const colonnesIgnorees = gen.headersIgnored.filter((h) => !(normCle(h) in ALIAS));
+
+  const resume: string[] = [];
+  const lues = terrain.parse.fiches.length;
+  let ligne = `${lues} fiche(s) lue(s) — ${nbAppelables} appelable(s) selon le tri terrain, ${nbAQualifier} à qualifier`;
+  if (nbAQualifier) ligne += " (aucune preuve de demande relevée : créées quand même, tag « a-qualifier »)";
+  ligne += ".";
+  resume.push(ligne);
+  if (horsSujet.length) {
+    resume.push(
+      `${horsSujet.length} NON créée(s) — l'offre n'y a pas d'objet : ${horsSujet.slice(0, 5).map((h) => `${h.entreprise} (${h.motif})`).join(", ")}${horsSujet.length > 5 ? ", …" : ""}.`
+    );
+  }
+  if (colonnesIgnorees.length) resume.push(phraseColonnesIgnorees(colonnesIgnorees));
+  if (gen.skipped) resume.push(`${gen.skipped} ligne(s) sans nom d'entreprise, ignorée(s).`);
+
+  return { aCreer, nbAppelables, nbAQualifier, horsSujet, colonnesIgnorees, lignesSansNom: gen.skipped, resume };
+}
+
+/** La phrase unique : l'import générique et l'import terrain la disent pareil. */
+export function phraseColonnesIgnorees(colonnes: string[]): string {
+  return `Colonnes NON lues (ignorées) : ${colonnes.join(", ")}. Renomme-les en « notes » ou « tags » si elles comptent.`;
+}
+
+/**
+ * Ce que l'écran affiche une fois l'import écrit.
+ *
+ * ⚠ Le « ✓ » ne se pose QUE si quelque chose a été écrit. Il s'affichait sur
+ * « 0 nouveau(x), 3 écartée(s) » : une coche verte sur un import vide est une
+ * panne qui a l'air d'un succès.
+ */
+export function messageImport(ecrit: { added: number; updated: number }, r: ImportCrm): { ok: boolean; texte: string } {
+  const total = ecrit.added + ecrit.updated;
+  const tete = total > 0
+    ? `✓ Import : ${ecrit.added} nouveau(x), ${ecrit.updated} mis à jour.`
+    : "⚠ RIEN n'a été écrit.";
+  return { ok: total > 0, texte: [tete, ...r.resume].join(" ") };
 }
 
 /** Qualification d'une fiche unique, pour la saisie à la main. */
@@ -374,6 +562,7 @@ export function importerPlaces(json: string, now = new Date()): ImportTerrain {
     return {
       parse: { entrees: [], fiches: [], rejets: [{ ligne: 1, raison: "JSON invalide", extrait: json.slice(0, 60) }], avertissements: [], format: "aucun" },
       retenus: [],
+      aQualifier: [],
       ecartes: [],
       resume: ["JSON invalide — colle la réponse complète de l'API, accolades comprises."],
     };
@@ -398,6 +587,7 @@ export function importerPlaces(json: string, now = new Date()): ImportTerrain {
   return {
     parse: { entrees: fiches, fiches, rejets: [], avertissements: [], format: "json" },
     retenus,
+    aQualifier: aQualifierDepuis(lot.ecartes, now),
     ecartes: lot.ecartes,
     resume,
   };
