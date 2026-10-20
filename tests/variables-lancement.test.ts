@@ -60,6 +60,8 @@ const HORS_PROCEDURE: Record<string, string> = {
     "optionnelle et documentée à part : elle mure l'admin, elle n'ouvre aucune session",
   VERCEL_URL: "posée seule par la plateforme — c'est le repli de `lib/url-publique.ts`",
   VERCEL_ENV: "posée seule par la plateforme, elle distingue aperçu et production",
+  ALPHA_INSTALLATION:
+    "ne concerne QUE l'installation chez un client (docs/INSTALLATION-CHEZ-VOUS.md) — la poser sur notre production nous retirerait nos propres pages",
 };
 
 function variablesDuCheminDeConnexion(): string[] {

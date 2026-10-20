@@ -1588,12 +1588,37 @@ et ce qu'il change, avant de valider.
 >   les deux formes dites. **Il se publie à la main** (glisser `site/` sur
 >   Netlify Drop) — rien ne part tant que ce geste n'est pas fait.
 >
+> ⚠⚠ **LIVRER « CHEZ VOUS » : `ALPHA_INSTALLATION=client`** (20/10/2026,
+> `installationClient()` · `tests/installation-client.test.ts` · procédure
+> `docs/INSTALLATION-CHEZ-VOUS.md`). Trois défauts trouvés en suivant le
+> chemin RÉEL d'une installation, tous fermés le même jour :
+> · **Sans serrure** une installation retombait au socle gratuit (le client
+>   payait tout, les briques vendues restaient fermées) ; **avec mot de passe**
+>   le solo la rendait MAÎTRE — nos marges (`/api/voice-costs`), notre playbook,
+>   `/payouts`, ouverts sur SON serveur. Le mode client rend TOUTES les briques
+>   et `maitre: false`, et le middleware contrôle les droits dans ce mode (sans
+>   ça, aucun contrôle ne s'exécutait). Il **exige une serrure** : sans
+>   mot de passe ni comptes, le repli gratuit reste. Testé en APPELANT le
+>   middleware, vérifié par mutation.
+> · **`.dockerignore` n'excluait pas `donnees-privees/`** : une image construite
+>   sur ta machine pouvait embarquer nos fiches réelles chez un tiers.
+> · **`docker-compose.yml` ne transmettait ni `SITE_PASSWORD` ni le mode**, et
+>   publiait Ollama (aucune authentification) et n8n sur toutes les
+>   interfaces. Les trois services sont liés à `127.0.0.1` ; Caddy devant.
+> · Une équipe exige des comptes (Supabase à SON nom) : sans eux, chaque
+>   navigateur garde son CRM. Et l'appel sortant en autopilote refuse de
+>   composer sans battement de présence, qui s'écrit en base.
+>
 > ⚠ **Ce qui reste ouvert** :
-> · **La procédure d'installation sur un serveur client n'est pas écrite.**
->   On vend une installation que personne n'a encore faite hors de chez nous.
-> · **Hébergement « sans argent »** : le site tourne sur Vercel. Le plan Hobby
->   (gratuit) est réservé à un usage NON commercial — un produit gratuit
->   d'une société reste commercial. Vérifier le plan avant d'y compter.
+> · **Aucune installation n'a encore été faite hors de chez nous** : la
+>   première est le test (une demi-journée, retour arrière prévu).
+> · **Hébergement « sans argent »** : le site tourne sur Vercel, dont le plan
+>   gratuit (Hobby) est réservé au NON commercial. Netlify gratuit l'autorise
+>   (sources tierces) mais plafonne à **300 crédits/mois, ~15 par mise en
+>   production** — un déploiement à chaque push vide le quota en vingt
+>   commits, et **tous les sites du compte sont alors mis en pause**,
+>   `eagleyecorp.fr` compris. Déployer depuis une branche dédiée, pas à chaque
+>   commit.
 
 ## FREEMIUM — qui entre, et ce qu'il obtient (`lib/entitlements.ts`)
 **L'inscription est LIBRE** : n'importe qui crée son compte quand il veut. Il

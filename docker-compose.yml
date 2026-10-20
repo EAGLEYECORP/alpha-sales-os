@@ -20,9 +20,19 @@ services:
   app:
     build: .
     container_name: alpha-app
+    # ⚠ 20/10/2026 — liés à 127.0.0.1, les TROIS services. Cette pile part sur
+    # le serveur d'un client (« Alpha chez vous ») : publiés sur toutes les
+    # interfaces, Ollama (aucune authentification) et n8n seraient utilisables
+    # par n'importe qui sur internet. L'app se sert derrière un proxy HTTPS
+    # (docs/INSTALLATION-CHEZ-VOUS.md) ; en local, http://localhost marche pareil.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
+      # La serrure et le mode d'installation. Sans ces deux lignes, le .env les
+      # contenait et l'app ne les voyait JAMAIS : Compose ne transmet que ce
+      # qui est déclaré ici.
+      SITE_PASSWORD: ${SITE_PASSWORD:-}
+      ALPHA_INSTALLATION: ${ALPHA_INSTALLATION:-}
       # IA 100 % locale — le conteneur Ollama ci-dessous.
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
@@ -53,7 +63,7 @@ services:
     image: docker.n8n.io/n8nio/n8n
     container_name: alpha-n8n
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
     environment:
       GENERIC_TIMEZONE: Europe/Paris
       TZ: Europe/Paris
@@ -77,7 +87,7 @@ services:
     image: ollama/ollama
     container_name: alpha-ollama
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped

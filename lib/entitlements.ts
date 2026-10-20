@@ -241,6 +241,36 @@ export function droitGratuit(tenantId: string): Entitlement {
  * y échappait.
  * ─────────────────────────────────────────────────────────────────────
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ALPHA CHEZ VOUS — L'INSTALLATION SUR LE SERVEUR D'UN CLIENT (20/10/2026)
+ *
+ * Déclarée par le déploiement : `ALPHA_INSTALLATION=client`. Deux défauts
+ * que ce mode ferme, trouvés en lisant le chemin d'une installation réelle :
+ *
+ *  · SANS MOT DE PASSE ni comptes, une production retombe au socle gratuit
+ *    (`deploiementSansSerrure`) : le client payait le produit complet et
+ *    recevait les briques fermées. Ce repli RESTE — une installation
+ *    joignable sans serrure enverrait des emails depuis SON domaine pour
+ *    n'importe qui. Le mode client ne l'assouplit pas : il exige une serrure.
+ *  · AVEC MOT DE PASSE, le mode solo rendait `maitre: true` — donc NOTRE
+ *    économie (`/payouts`, `/offre`, coûts et marges de `/api/voice-costs`,
+ *    notre playbook `/api/knowledge`) ouverte au client, sur SON serveur.
+ *
+ * Le droit rendu : TOUTES les briques (il a payé le produit entier), et
+ * `maitre: false` (rien de ce qui est à nous). Pas de `solo` : `autorise()`
+ * ouvre TOUT à un droit solo, `/payouts` compris.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function installationClient(): boolean {
+  return (process.env.ALPHA_INSTALLATION ?? "").trim().toLowerCase() === "client";
+}
+
+/** Le droit d'une installation chez un client : tout le produit, rien de notre économie. */
+export function droitInstallationClient(tenantId: string | null): Entitlement {
+  return { tenantId, bricks: [...BRIQUES_CONNUES], statut: "actif", maitre: false, solo: false };
+}
+
 export function deploiementSansSerrure(): boolean {
   const enProduction = process.env.NODE_ENV === "production";
   const motDePasse = Boolean((process.env.SITE_PASSWORD ?? "").trim());
@@ -440,6 +470,17 @@ export async function resoudreDroits(req: NextRequest): Promise<Entitlement> {
    * rendait tout le monde maître sur une production sans serrure.
    */
   if (deploiementSansSerrure()) return { ...DROIT_GRATUIT, bricks: [...BRIQUES_GRATUITES] };
+  /**
+   * Installation chez un client : APRÈS la garde (elle exige toujours une
+   * serrure), AVANT le solo (qui rendrait maître). Avec ses propres comptes,
+   * toute session reconnue reçoit le produit entier ; sans session, refus —
+   * et jamais `estMaitre` : nos adresses n'ont rien à faire sur son serveur.
+   */
+  if (installationClient()) {
+    if (!comptesActifs()) return droitInstallationClient(null);
+    const client = await getTenant(req);
+    return client?.id ? droitInstallationClient(client.id) : DROIT_REFUSE;
+  }
   if (!comptesActifs()) return DROIT_SOLO;
 
   const tenant = await getTenant(req);

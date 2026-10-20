@@ -11,6 +11,7 @@ import {
   autorise,
   comptesActifs,
   deploiementSansSerrure,
+  installationClient,
   raisonDuRefus,
   resoudreDroits,
   verrouDeComptesActif,
@@ -462,7 +463,10 @@ export async function middleware(req: NextRequest) {
   // briques qui DÉPENSENT chez nous répondent 403. Une page blanche sur une
   // prod en ligne serait une panne, et on n'en crée pas une pour fermer une
   // faille.
-  if ((comptesActifs() || deploiementSansSerrure()) && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
+  // ⚠ `installationClient()` : sans lui, une installation chez un client
+  // (mot de passe, sans comptes) ne passerait par AUCUN contrôle de droits —
+  // et ses pages vers NOTRE économie (`MAITRE_SEULEMENT`) resteraient ouvertes.
+  if ((comptesActifs() || deploiementSansSerrure() || installationClient()) && !startsWithAny(pathname, PUBLIC_PREFIXES)) {
     const droits = await resoudreDroits(req);
 
     /**

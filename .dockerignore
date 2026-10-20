@@ -9,3 +9,19 @@ docs
 integrations/google-apps-script
 *.md
 tsconfig.tsbuildinfo
+
+# ⚠ 20/10/2026 — « Alpha chez vous » : cette image part sur le SERVEUR D'UN
+# CLIENT. Rien de ce qui suit ne doit y entrer :
+#  · donnees-privees/ — des fiches prospects RÉELLES (données de tiers). Un
+#    module les lit au runtime : le traçage du build standalone pourrait les
+#    embarquer dans l'image si elles sont dans le contexte de build.
+#  · tests/, site/, scripts/, desktop/, marketing/ — inutiles au runtime ;
+#    les tests et les scripts décrivent notre ciblage et notre économie.
+# `tests/installation-client.test.ts` exige ces exclusions.
+donnees-privees
+tests
+.test-build
+site
+scripts
+desktop
+marketing
