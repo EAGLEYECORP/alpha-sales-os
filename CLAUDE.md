@@ -1674,9 +1674,27 @@ et ce qu'il change, avant de valider.
 
 - **On remplit la limite d'abord** (décision du 20/10/2026) : pas de boîte de
   confirmation dédiée, pas de plan d'hébergement avant que le mur des emails
-  soit atteint. **Le compteur de comptes existe** (`lib/comptes-crees.ts`,
-  tuile de `/ceo`, maître seul) : deux entiers, `null` et un tiret quand la base
-  ne répond pas, aucune adresse. Le mur de ~30/h y est **SUPPOSÉ et dit tel**.
+  soit atteint. Le coût de ce choix est écrit dans `docs/OBJECTIF-10M.md`.
+- **⚠⚠ LE TABLEAU D'ADOPTION EST CELUI DES PROPRIÉTAIRES, PAS CELUI DES
+  COMPTES** (20/10/2026 — « alpha sales os dépasse EAGLEYE CORP maintenant »).
+  `/adoption` (`lib/adoption.ts` · `017-adoption.sql` · `/api/adoption`) : maître
+  seul, **masqué** chez les autres, **absent des installations client**
+  (`CHEMINS_EXPLOITATION` ne l'ouvre pas). Il a quitté `/ceo` — console qu'on
+  LIVRE — où une première version l'avait logé : un test refuse qu'il y revienne.
+  · **Il compte des COMPTES, jamais ce qu'ils font** : le serveur ne voit rien
+    des fiches d'un compte gratuit, et c'est la promesse. Mesurer l'usage serait
+    une télémétrie — elle se DÉCIDE.
+  · **L'agrégat se calcule EN BASE** (`adoption_stats`, jouée sur un Postgres 16
+    réel : `anon` et `authenticated` refusés, `service_role` accepté, rejouable).
+    Lire la liste des comptes page par page tient à cent inscrits, pas à dix
+    millions. Sans la migration, la lecture REPLIE sur l'API d'administration
+    (total + dernière heure seulement) et **nomme la migration manquante**.
+  · **Nos comptes sont exclus** (`OWNER_EMAILS` passé à chaque appel, jamais
+    stocké) : le palier « 10 » dit « dix comptes qui ne sont pas les nôtres ».
+    Quand l'exclusion n'a pas eu lieu, l'écran le dit.
+  · **`null` n'est pas `0`**, jamais un taux nu (« 41 confirmés sur 50 »), et
+    « connectés » est dit **sous-compté** (`last_sign_in_at` = dernière saisie
+    du mot de passe, pas dernière visite). Sept mutations mordent.
 
 ## L'OMBRELLE DES AGENTS — et ALPHA CEO livré aux clients (20/10/2026)
 `lib/agents-alpha.ts` · `tests/agents-alpha.test.ts` · `Entitlement.exploitant` ·

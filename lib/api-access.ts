@@ -81,12 +81,8 @@ export const CHEMIN_PAR_API: Record<string, string> = {
 
   // Le moniteur suit la même porte que l'écran qu'il alimente.
   "/api/moniteur": "/moniteur",
-  // Le compteur de comptes alimente /ceo, maître seul sur notre cloud.
-  // ⚠ Rangé sous "/moniteur" et NON "/ceo" : une API qui « sert » /ceo ferait
-  // dire à `cheminOuvertParCle` que ALPHA CEO s'ouvre en ligne avec une clé
-  // (toutes ses API sont maître seul → « atteignables par personne »), ce que
-  // `tests/agents-alpha.test.ts` a refusé. /moniteur est la même porte : maître seul.
-  "/api/comptes-crees": "/moniteur",
+  // L'adoption d'ALPHA SALES OS : l'écran des PROPRIÉTAIRES, maître seul.
+  "/api/adoption": "/adoption",
 
   // ── CRM & Pipeline ──
   "/api/crm": "/pipeline",
@@ -291,8 +287,7 @@ export const MAITRE_SEULEMENT: readonly string[] = [
   // et rend le nom de chaque société à rappeler — notre pipe, pas celui du
   // locataire. Elle était ouverte à tout client `campagnes` et à tout essai.
   "/api/moniteur",
-  // Combien de comptes existent : notre tableau de bord d'acquisition.
-  // Volontairement ABSENTE de `API_EXPLOITATION` — le total d'un client est le
-  // sien, mais l'écran qui l'affiche parle de NOTRE croissance.
-  "/api/comptes-crees",
+  // L'adoption : combien de comptes — notre tableau de bord d'acquisition, pas
+  // celui d'un locataire. Volontairement ABSENTE de `API_EXPLOITATION`.
+  "/api/adoption",
 ];

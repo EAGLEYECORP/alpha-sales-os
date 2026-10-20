@@ -93,8 +93,12 @@ livrable vérifiable qui rapproche du palier suivant.**
 veut qu'il tourne sans demander. Une condition = un état final, une preuve,
 des contraintes, une borne.
 
-> ✅ **Objectif 0 LIVRÉ le 20/10/2026** (`lib/comptes-crees.ts` · `/api/comptes-crees` ·
-> tuile « Comptes créés » dans `/ceo` · `tests/comptes-crees.test.ts`). Le texte
+> ✅ **Objectif 0 LIVRÉ le 20/10/2026, puis DÉPLACÉ le même jour** : la tuile
+> d'abord logée dans `/ceo` est devenue un écran de propriétaires, `/adoption`
+> (`lib/adoption.ts` · `/api/adoption` · `supabase/migrations/017-adoption.sql`),
+> parce que `/ceo` est la console qu'on livre aux installations client et que le
+> compteur d'acquisition n'a rien à y faire. `lib/comptes-crees.ts` reste : c'est
+> le REPLI quand la fonction SQL n'est pas posée. Le texte
 > ci-dessous reste comme trace de la demande. Deux entiers (le total, les
 > inscrits de la dernière heure), `null` et un tiret si la base est
 > injoignable, aucune adresse qui remonte, maître seul (403 sinon, jouée).

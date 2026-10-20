@@ -29,8 +29,6 @@ import { readStorageHealth, type StorageLevel } from "@/lib/storage-health";
 import { evaluerProgression } from "@/lib/paliers-campagne";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
-import { CompteurComptes } from "@/components/ceo/compteur-comptes";
-import type { ComptesCrees } from "@/lib/comptes-crees";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -106,8 +104,6 @@ export default function CeoPage() {
    */
   const [stockage, setStockage] = useState<StorageLevel | null>(null);
   const [presence, setPresence] = useState<ReponsePresence | null>(null);
-  /** Le compteur de comptes — `null` = le serveur n'a pas répondu, jamais « zéro ». */
-  const [comptes, setComptes] = useState<ComptesCrees | null>(null);
 
   const sonder = () => {
     setChargement(true);
@@ -134,11 +130,6 @@ export default function CeoPage() {
      * personne ne l'appelait. Un cron qui compose sans agent fait sonner dans
      * le vide : fiche brûlée, numéro grillé, minutes facturées, journaux verts.
      */
-    fetch("/api/comptes-crees")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: ComptesCrees | null) => setComptes(j))
-      .catch(() => setComptes(null));
-
     fetch("/api/voice/presence")
       .then((r) => (r.ok ? r.json() : null))
       .then((j: ReponsePresence | null) => setPresence(j))
@@ -204,9 +195,6 @@ export default function CeoPage() {
           </button>
         }
       />
-
-      {/* Notre croissance : sur le serveur d'un client, ce compteur parlerait d'un autre déploiement. */}
-      {etat.installation !== "client" && <CompteurComptes comptes={comptes} />}
 
       {/* ══ 1. CE QUI DEMANDE UNE MAIN ══ */}
       <section className="card p-4">

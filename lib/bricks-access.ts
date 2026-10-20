@@ -263,6 +263,13 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
   // partenaires. Aucune brique ne les ouvre : seul le compte MAÎTRE y accède.
   "/payouts": [],
   "/offre": [],
+  /**
+   * L'ADOPTION d'ALPHA SALES OS — l'écran des PROPRIÉTAIRES du produit.
+   * ⚠ Hors `CHEMINS_EXPLOITATION` : sur un serveur client l'exploitant ouvre sa
+   * console (`/ceo`, `/moniteur`), pas NOTRE tableau d'acquisition. Il a quitté
+   * `/ceo` pour cette raison : celui-ci part chez les clients, celui-là non.
+   */
+  "/adoption": [],
 
   /**
    * NOS JEUX DE DONNÉES RÉELS — protégés par le middleware, et désormais

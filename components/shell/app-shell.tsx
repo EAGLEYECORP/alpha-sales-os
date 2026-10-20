@@ -45,6 +45,7 @@ import {
   TrendingUp,
   Swords,
   Trophy,
+  Users,
   UserCog,
   ChevronRight,
   LayoutGrid,
@@ -176,6 +177,7 @@ const NAV_GROUPES: NavGroup[] = [
     items: [
       { href: "/moniteur", label: "Moniteur", icon: Radio },
       { href: "/ceo", label: "Alpha CEO", icon: Stethoscope },
+      { href: "/adoption", label: "Adoption", icon: Users },
       { href: "/pilote", label: "Pilote", icon: Cpu },
       { href: "/recette", label: "Recette", icon: ClipboardCheck },
     ],

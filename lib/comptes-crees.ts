@@ -152,31 +152,3 @@ export async function lireComptesCrees(
 
   return { total, derniereHeure, derniereHeureMinimum: minimum, raison };
 }
-
-/**
- * Ce que l'écran affiche, décidé ICI pour être testable : un composant client
- * n'est pas atteignable par un test, et c'est dans le rendu que `null` devient
- * facilement `0`.
- */
-export interface AffichageComptes {
-  total: string;
-  heure: string;
-  mur: string;
-  etat: EtatMur;
-  /** La phrase qui dit pourquoi une valeur manque, ou `null`. */
-  reserve: string | null;
-}
-
-export function affichageComptes(c: ComptesCrees | null): AffichageComptes {
-  const reserveMur = `Mur supposé : ~${MUR_EMAILS_PAR_HEURE_SUPPOSE} inscriptions par heure — chiffre secondaire, non lu dans Supabase (Authentication → Rate Limits).`;
-  if (!c) {
-    return { total: "—", heure: "—", mur: reserveMur, etat: "inconnu", reserve: "Le compteur n'a pas répondu — ce n'est pas « zéro compte »." };
-  }
-  return {
-    total: c.total === null ? "—" : String(c.total),
-    heure: c.derniereHeure === null ? "—" : `${c.derniereHeureMinimum ? "≥ " : ""}${c.derniereHeure}`,
-    mur: reserveMur,
-    etat: etatDuMur(c),
-    reserve: c.raison,
-  };
-}
