@@ -1696,6 +1696,38 @@ et ce qu'il change, avant de valider.
     « connectés » est dit **sous-compté** (`last_sign_in_at` = dernière saisie
     du mot de passe, pas dernière visite). Sept mutations mordent.
 
+### « ALPHA A BESOIN DE TOI » — la présence d'un agent, et ce qu'elle ne prétend pas (20/10/2026)
+`lib/presence-alpha.ts` · `components/shell/alpha-presence.tsx` (monté dans la
+coquille) · `tests/presence-alpha.test.ts`.
+
+Décision de Zakaria : ALPHA doit se vivre comme un agent qui travaille et qui
+PRÉVIENT quand un humain est nécessaire (« comme Manus ou Cowork »), pas comme
+un tableau qu'on ouvre pour chercher quoi faire. Première tranche : une bande
+sur chaque écran, un « (3) » dans l'onglet, une notification quand un point
+URGENT apparaît.
+- **Une seule définition de « ce qui attend un humain » : `computeRoutines`**
+  (celle de l'accueil, de `/pilote` et de l'Agent ALPHA). La bande ne recompte
+  rien ; un test refuse que `lib/presence-alpha.ts` relise les fiches. `/decisions`,
+  `lib/priorites`, `lib/push-digest` et `lib/alpha-ceo` posent chacun une
+  variante de la même question — **dette connue, non réparée ici.**
+- **Les règles de la notification sont celles de `lib/push-digest.ts`** : hors
+  fenêtre utile on se tait (la même `fenetreOuverte`), UNE notification par
+  passage, seules les routines HAUTES interrompent, un intervalle minimal.
+  Plus deux, trouvées en écrivant : **le premier passage est une ligne de base**
+  (sinon chaque ouverture rejouait l'arriéré) et **une nouveauté tue — hors
+  fenêtre — reste nouvelle** (la marquer « vue » sans l'avoir dite la perdait).
+  Sept mutations mordent.
+- **La permission ne se demande JAMAIS toute seule** : un bouton, un geste.
+- **⚠⚠ CE QUE ÇA NE FAIT PAS, ET IL FAUT LE DIRE À UN INSCRIT.** Tout tourne
+  DANS LE NAVIGATEUR, onglet ouvert. Le serveur ne voit pas le CRM d'un compte
+  gratuit (la promesse de souveraineté) : il ne peut ni travailler à sa place ni
+  le prévenir app fermée. **Un agent qui agit SANS l'onglet exige que le pipe
+  vive sur un serveur (`pipeServeur`, opt-in) ET un tick par locataire** — ce
+  qui n'existe aujourd'hui que pour NOTRE pipe (`/api/push/tick` lit
+  `lireProspectsOperateur`) et pour une installation « chez vous ». C'est le
+  vrai chantier de l'autonomie, et une décision de souveraineté : **elle n'est
+  pas prise, et la bande ne la fait pas semblant.**
+
 ## L'OMBRELLE DES AGENTS — et ALPHA CEO livré aux clients (20/10/2026)
 `lib/agents-alpha.ts` · `tests/agents-alpha.test.ts` · `Entitlement.exploitant` ·
 `CHEMINS_EXPLOITATION` / `API_EXPLOITATION` · `tests/installation-client.test.ts`.

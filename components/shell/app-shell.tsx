@@ -62,6 +62,7 @@ import { SessionCompte } from "@/components/security/session-compte";
 import { RetourLien } from "@/components/security/retour-lien";
 import { Onboarding } from "@/components/onboarding";
 import { OperatorTour } from "@/components/tour/operator-tour";
+import { AlphaPresence } from "@/components/shell/alpha-presence";
 import { PageGuide } from "@/components/page-guide";
 import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -613,6 +614,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             chargé. Une liste vide en cours de chargement ressemble trait pour
             trait à un pipe perdu — c'est la confusion qui fait réimporter. */}
         <PipeServeur />
+        {/* Puis, en une ligne : ALPHA a-t-il besoin d'un humain ? C'est la
+            moitié « prévenir » d'un agent qui travaille — elle lit la même
+            définition que l'accueil et `/pilote` (`computeRoutines`). */}
+        <AlphaPresence />
         {/* Le socle du Cerveau arrive du serveur : il ne peut plus être compilé
             dans le bundle, où il était lisible sans mot de passe. */}
         <KnowledgeSeedLoader />
