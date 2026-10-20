@@ -38,12 +38,27 @@ export type CampAgent = "agit" | "reflechit" | "memoire" | "pilote";
  */
 export type DisponibiliteAgent = "en-ligne" | "en-ligne-avec-vos-cles" | "chez-vous";
 
+/**
+ * Par où l'agent ENTRE :
+ *  · `ecran` (défaut) — on l'ouvre en cliquant ; la disponibilité se déduit des
+ *    écrans, que le contrôle d'accès sait classer ;
+ *  · `cle-de-l-hote` — il ne s'ouvre pas, on le BRANCHE : une clé d'API ou un
+ *    jeton OAuth, posés par celui qui héberge. L'écran où l'on relit son travail
+ *    est ouvert à tous, mais ce n'est pas lui la porte — le déduire de l'écran
+ *    annoncerait « en ligne, gratuit » pour un agent qu'un inscrit ne peut pas
+ *    brancher (les clés vivent dans l'environnement du serveur, le jeton OAuth
+ *    n'est donné qu'au compte maître).
+ */
+export type EntreeAgent = "ecran" | "cle-de-l-hote";
+
 export interface AgentAlpha {
   /** Le nom de marque. TOUJOURS EN CAPITALES — un test l'exige. */
   nom: string;
   camp: CampAgent;
   /** Les écrans où il vit — des chemins qui EXISTENT, jamais renommés. */
   ecrans: string[];
+  /** Absent = `ecran`. Voir `EntreeAgent`. */
+  entree?: EntreeAgent;
   /** Ce qu'il fait. Vrai dans le code, dit sans promesse de résultat. */
   fait: string;
   /** Ce qu'il n'a pas le droit de faire. */
@@ -119,6 +134,19 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
     interdit: "Parler à votre interlocuteur : rien ne s'affiche de son côté, c'est vous qui parlez.",
     preuve: "components/live/alpha-live.tsx",
     disponibilite: "en-ligne",
+  },
+  {
+    nom: "ALPHA ASSIST",
+    camp: "reflechit",
+    // L'écran où l'on relit ce qu'il propose — pas sa porte (voir `EntreeAgent`).
+    ecrans: ["/controle"],
+    entree: "cle-de-l-hote",
+    fait:
+      "Votre propre IA, branchée à ALPHA par un serveur MCP ou une clé d'API : elle lit l'état du pipe et dépose ses propositions dans la file que vous relisez.",
+    interdit:
+      "Agir. Elle ne peut que déposer une proposition, d'un type choisi dans une liste fermée — rien ne part avant qu'un humain l'approuve dans l'app.",
+    preuve: "lib/propositions.ts",
+    disponibilite: "chez-vous",
   },
   {
     nom: "ALPHA CERVEAU",

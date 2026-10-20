@@ -1010,6 +1010,34 @@ et copié depuis la fiche — ne posait la question à personne.
 > ressuscitant un mort. Le module ne garde que sa voie vivante : `renderPreDevis`
 > et `emailPreDevis` (le pré-devis).
 
+### L'IMPORT CRM : LE TRI DÉCIDE QUI ON APPELLE, PAS QUI EXISTE (20/10/2026)
+`importerPourCrm` (`lib/sourcing-terrain-import.ts`) · `tests/import-crm.test.ts` ·
+brief et réponses confrontés au code : `docs/BRIEF-AUTONOMIE.md`.
+
+Reproduit sur trois PME lyonnaises **complètes** (téléphone, email, site,
+secteur, audit) dont seules « note » et « avis » étaient vides : deux marqueurs
+suffisent à `ressembleAuTerrain`, la feuille allait au tri terrain, chaque
+fiche sortait à **20/100 pour un seuil de 45**, n'était jamais créée, et l'écran
+annonçait « ✓ 0 nouveau(x) ». Le repli vers l'import générique ne se
+déclenchait pas non plus, parce que `ecartes.length > 0`.
+- **Le tri répond à « qui appeler ? » (une file), on lui avait confié « qu'est-
+  ce qui entre dans le CRM ? » (un registre).** Un champ facultatif absent
+  fermait la porte à une fiche complète. 45 est une DÉCISION non validée : il
+  ordonne, il n'interdit pas (même principe que `LOGEMENTS_MIN` — on COMPTE).
+- **La lecture générique crée toutes les lignes ; le tri est une surcouche.**
+  Une fiche appelable gagne ses signaux, une fiche faible reçoit le tag
+  `a-qualifier`. **Seules les fiches HORS SUJET ne sont pas créées**
+  (`CiblageTerrain.horsSujet` : enseigne nationale, standard déjà en place) —
+  nommées avec leur motif, jamais tues. Un numéro manquant n'est PAS hors sujet.
+- **Deux défauts cachés derrière le premier** : « Nombre d'avis » et « Extrait
+  d'avis » (les en-têtes les plus naturels en français) n'étaient **pas** dans
+  la table d'alias du tri — l'apostrophe donne `nombredavis` ; et « Audit
+  commercial », « Problème probable », « Prochaine action » étaient jetés sans
+  un mot. Les colonnes non lues sont désormais **nommées** dans le résumé.
+- **Le « ✓ » ne se pose que si quelque chose a été écrit** (`messageImport`).
+- Mesuré par mutation : traiter tout non-retenu comme à retirer fait tomber 7
+  tests sur 12 ; une coche inconditionnelle en fait tomber un.
+
 ### UNE ROUTE PEUT ENFIN S'EXÉCUTER DANS UN TEST (`tests/resolution-alias.mjs`)
 `npm test` compile avec `tsc` puis lance `node --test`. `tsc` **ne réécrit pas
 les alias `paths`** : le fichier compilé garde `require("@/lib/…")`, que Node ne
@@ -1650,8 +1678,16 @@ et ce qu'il change, avant de valider.
 
 - **Les noms des agents sont TOUJOURS EN CAPITALES** (décision de Zakaria) :
   ALPHA SCOUT · ALPHA VOICE · ALPHA CAMPAGNES · AGENT ALPHA · ALPHA LIVE ·
-  ALPHA CERVEAU · ALPHA CEO. Une seule définition, que la vitrine importe et
-  que posts et vidéos recopient à la lettre.
+  ALPHA ASSIST · ALPHA CERVEAU · ALPHA CEO. Une seule définition, que la
+  vitrine importe et que posts et vidéos recopient à la lettre.
+  > ⚠ **ALPHA ASSIST = l'IA DU CLIENT, branchée par MCP ou clé d'API** (« Votre
+  > IA » dans la vidéo d'orchestration). Elle ne se confond pas avec AGENT
+  > ALPHA, qui est NOTRE IA dans l'app : deux noms proches, deux pouvoirs
+  > différents. **Elle entre par la clé de l'hôte, pas par un écran**
+  > (`entree: "cle-de-l-hote"`) : `/controle`, où l'on relit ses propositions,
+  > est gratuit — jugée sur lui, elle serait annoncée « en ligne, gratuit »
+  > alors qu'un inscrit ne peut pas la brancher (clés dans l'environnement du
+  > serveur, jeton OAuth réservé au maître). Elle est donc « chez vous ».
 - **⚠ L'ombrelle NE RENOMME AUCUN ÉCRAN** (« renomme pas dans l'app »). Les
   écrans gardent « Le Cerveau », « Campagnes » ; chaque agent DÉSIGNE des
   écrans existants, et un test refuse un écran inconnu du contrôle d'accès.

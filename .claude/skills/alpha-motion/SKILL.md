@@ -141,7 +141,8 @@ corrige plus.
   sur la vitrine.
 - **Les noms des agents viennent de `lib/agents-alpha.ts`, TOUJOURS EN
   CAPITALES** : ALPHA SCOUT, ALPHA VOICE, ALPHA CAMPAGNES, AGENT ALPHA,
-  ALPHA LIVE, ALPHA CERVEAU, ALPHA CEO. Recopiés à la lettre, avec ce que
+  ALPHA LIVE, ALPHA ASSIST (l'IA du client branchée par MCP — « Votre IA »
+  dans l'ancienne vidéo d'orchestration), ALPHA CERVEAU, ALPHA CEO. Recopiés à la lettre, avec ce que
   chacun n'a pas le droit de faire. ⚠ Le post du 20/10 les a écrits en
   minuscules (« Alpha Voice ») : la règle est née juste après.
 - **Le lien pointe vers `/vitrine`** : la racine du domaine ouvre le tableau
