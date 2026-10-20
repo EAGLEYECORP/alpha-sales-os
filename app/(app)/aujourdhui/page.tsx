@@ -18,6 +18,7 @@ import { useAlpha } from "@/lib/store";
 import { construireJournee, parQuadrant, pourEcran, QUADRANT_META, type Quadrant, type Tache } from "@/lib/priorites";
 import { REGLES, regleFor } from "@/lib/conformite";
 import { cn, eur } from "@/lib/utils";
+import { LancerAlpha } from "@/components/mission/lancer-alpha";
 import { PageHeader } from "@/components/ui/page-header";
 import { BandeauTraction } from "@/components/traction/bandeau-traction";
 
@@ -114,6 +115,10 @@ export default function AujourdhuiPage() {
       />
 
       <BandeauTraction />
+
+      {/* Le bouton qui enchaîne le travail devant l'opérateur. Placé ICI, sur
+          l'écran où l'on commence la journée : c'est la question de ce matin. */}
+      <LancerAlpha />
 
       {digestMsg && <p className="px-1 text-[12px] text-paper-dim">{digestMsg}</p>}
 

@@ -122,6 +122,10 @@ export function AlphaPresence() {
         <p className="flex items-center gap-2 px-1 text-[12px] text-paper-faint">
           <CheckCircle2 size={13} className="text-signal-green" />
           {presence.phrase}
+          {/* Le geste suivant quand rien n'attend : laisser ALPHA préparer la suite. */}
+          <Link href="/aujourdhui#alpha" className="ml-1 text-bronze-400 underline decoration-dotted underline-offset-2 hover:text-bronze-300">
+            Lancer ALPHA
+          </Link>
         </p>
       )}
 

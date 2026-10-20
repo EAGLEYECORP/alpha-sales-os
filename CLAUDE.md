@@ -1729,6 +1729,40 @@ identifiants rien ne s'ouvre — c'est l'écran où un inscrit abandonne.
 - **Le secret ne revient toujours JAMAIS du serveur** (empreinte seulement).
   Sept mutations mordent.
 
+### « LANCER ALPHA » — LA MISSION EN UN BOUTON (20/10/2026)
+`lib/mission-alpha.ts` · `components/mission/lancer-alpha.tsx` (monté en haut de
+`/aujourdhui`) · `tests/mission-alpha.test.ts` · analyse complète :
+`docs/STATION-AUTONOME.md`.
+
+Décision de Zakaria : ALPHA doit travailler « comme Cowork ou Manus » devant
+l'utilisateur. **Aucun des projets open source de la liste n'est une dépendance**
+(licences, langage, et surtout parce que leur pouvoir — navigateur, exécution de
+code — est ce que la doctrine refuse) ; on prend leurs PATRONS, déjà écrits ici.
+⚠ **Suna/Kortix est sous Elastic License 2.0 : interdit comme base d'un SaaS.**
+- **Six étapes RÉELLES**, rendues à mesure qu'elles finissent : lire le pipe,
+  trier (`triageImport`, le verdict est celui de l'import mot pour mot), décider
+  (`computeRoutines`), préparer les messages, constituer la liste d'appels,
+  bilan. **Aucun délai d'ambiance, aucune barre de progression** : une étape
+  instantanée est instantanée (une progression inventée est une petite preuve
+  fabriquée). Le décalage entre les cartes est une animation d'entrée.
+- **⚠⚠ UN SEUL GESTE QUI ÉCRIT : préparer des brouillons.** `ActionsMission` n'a
+  aucune fonction d'envoi, d'appel ou de suppression : ce n'est pas une
+  consigne, il n'existe rien à appeler. Un test lit l'interface. Le bilan dit
+  « rien n'est parti » en toutes lettres, et le résultat porte `envoyes: 0`.
+- **⚠⚠ UNE MISSION RELANCÉE N'ÉCRASE JAMAIS LES BROUILLONS.**
+  `prepareCampaignDrafts` REMPLACE ceux d'une campagne ; sans la garde
+  « cette campagne a déjà des brouillons : on n'y touche pas », relancer le bouton
+  perdait la relecture de la veille. Trouvé en lisant la fonction, tenu par mutation.
+- **Une seule définition de « ce qui t'attend »** : le bilan et la bande de
+  présence lisent `computeRoutines`, le bilan APRÈS la préparation (il relit
+  l'état à chaque étape — un état figé au départ compterait à rebours).
+- **La boîte d'envoi se branche SUR PLACE** quand c'est ce qui manque (et
+  seulement à un compte locataire, seulement s'il y a des messages à envoyer).
+- **Ça tourne dans le navigateur, onglet ouvert, et l'écran le dit.** ALPHA qui
+  travaille pendant que l'inscrit dort exige que son pipe vive chez nous : une
+  décision de souveraineté, **non prise** (`docs/STATION-AUTONOME.md`, § 4-5).
+  Sept mutations mordent.
+
 ### « ALPHA A BESOIN DE TOI » — la présence d'un agent, et ce qu'elle ne prétend pas (20/10/2026)
 `lib/presence-alpha.ts` · `components/shell/alpha-presence.tsx` (monté dans la
 coquille) · `tests/presence-alpha.test.ts`.
