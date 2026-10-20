@@ -1672,6 +1672,12 @@ et ce qu'il change, avant de valider.
   confirmation d'inscription**, plafonnés par Supabase et partis de la boîte
   de prospection.
 
+- **On remplit la limite d'abord** (décision du 20/10/2026) : pas de boîte de
+  confirmation dédiée, pas de plan d'hébergement avant que le mur des emails
+  soit atteint. **Le compteur de comptes existe** (`lib/comptes-crees.ts`,
+  tuile de `/ceo`, maître seul) : deux entiers, `null` et un tiret quand la base
+  ne répond pas, aucune adresse. Le mur de ~30/h y est **SUPPOSÉ et dit tel**.
+
 ## L'OMBRELLE DES AGENTS — et ALPHA CEO livré aux clients (20/10/2026)
 `lib/agents-alpha.ts` · `tests/agents-alpha.test.ts` · `Entitlement.exploitant` ·
 `CHEMINS_EXPLOITATION` / `API_EXPLOITATION` · `tests/installation-client.test.ts`.

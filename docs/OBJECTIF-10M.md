@@ -93,6 +93,14 @@ livrable vérifiable qui rapproche du palier suivant.**
 veut qu'il tourne sans demander. Une condition = un état final, une preuve,
 des contraintes, une borne.
 
+> ✅ **Objectif 0 LIVRÉ le 20/10/2026** (`lib/comptes-crees.ts` · `/api/comptes-crees` ·
+> tuile « Comptes créés » dans `/ceo` · `tests/comptes-crees.test.ts`). Le texte
+> ci-dessous reste comme trace de la demande. Deux entiers (le total, les
+> inscrits de la dernière heure), `null` et un tiret si la base est
+> injoignable, aucune adresse qui remonte, maître seul (403 sinon, jouée).
+> La fenêtre d'une heure est un **plancher** (« ≥ ») quand les 100 comptes
+> lus sont tous dedans. **Le mur de 30/h reste SUPPOSÉ** et l'écran le dit.
+
 **Objectif 0 — compter (palier 10)**
 
 ```
@@ -111,6 +119,15 @@ tableau de bord que Claude ne peut pas faire d'ici. Ils s'écriront quand la
 décision existera — un `/goal` sur une décision non prise tourne à vide.
 
 ## 7. Ce qui est sur Zakaria, dans l'ordre
+
+> **Décision du 20/10/2026 : on remplit la limite d'abord.** Les points 1 et 3
+> ci-dessous attendent qu'elle soit atteinte (« on verra le reste quand le
+> moment viendra »). Ce n'est pas un oubli : c'est un ordre. Le compteur de
+> `/ceo` dit quand on s'en approche, au lieu de l'apprendre par un inscrit qui
+> n'a pas reçu son lien. **Le coût de ce choix**, écrit pour ne pas être
+> redécouvert : les inscrits au-delà du mur n'ont pas leur email de
+> confirmation, et ces emails partent de `contact@` — une plainte sur une
+> campagne coupe aussi les inscriptions.
 
 1. Lire la limite d'emails dans Supabase (Authentication → Rate Limits) et me
    la donner : c'est le premier mur, et son chiffre exact n'est pas connu ici.
