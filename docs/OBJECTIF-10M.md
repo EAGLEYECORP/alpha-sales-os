@@ -11,14 +11,21 @@
 | Clients payants | **0** | `JUILLET_REEL.gagnes` |
 | Comptes créés | **inconnu** | aucune sonde ne les compte (voir objectif 0) |
 | Utilisateurs actifs | **inconnu, et c'est voulu** | le CRM vit dans le navigateur ; le serveur ne voit rien d'un compte gratuit (`lib/valeur-produite.ts`) |
-| Marché ICP actuel | **842 groupes** de permis en Auvergne-Rhône-Alpes sur 24 mois | relevé Sitadel, 30/09/2026 |
+| Marché visé | **toute entreprise qui vend** — la cible permis est retirée le 21/10/2026 | décision de Zakaria |
 
-**10 M, c'est quatre ordres de grandeur au-dessus du marché qu'on prospecte.**
-Ce chiffre ne viendra pas des promoteurs. Il ne peut venir que de la **forme
-en ligne gratuite** devenue un outil que n'importe quel vendeur adopte seul —
-c'est-à-dire d'un produit **horizontal**, en plusieurs langues, qui se propage
-sans nous. Les promoteurs restent la porte d'entrée et la vente « chez vous »
-reste ce qui paie.
+**10 M ne viendra que de la forme en ligne gratuite** devenue un outil que
+n'importe quel vendeur adopte seul — un produit **horizontal**, en plusieurs
+langues, qui se propage sans nous. La vente « chez vous » reste ce qui paie.
+
+> ⚠⚠ **Le 21/10/2026, le produit n'était PAS horizontal, et ce n'était pas une
+> question de discours.** Mesuré en exécutant le code avec le profil d'un
+> inscrit qui vend un logiciel de paie : son script d'appel était le pitch
+> d'Alpha Voice, ses emails partaient signés « EAGLEYE CORP » avec notre logo,
+> ses prompts IA portaient notre escalier de commission, sa démo d'accueil était
+> nos huit promoteurs. Six endroits corrigés le jour même (CLAUDE.md, « Alpha
+> est horizontal ») ; le routage d'offre et les textes écrits qui en dépendent
+> restent à faire. **Un inscrit qui lit le pitch d'un autre produit ne reste
+> pas** — c'était le premier mur, avant tout chiffre d'infrastructure.
 
 ## 1. Ce qui compte comme « un utilisateur » — à trancher
 
@@ -35,7 +42,8 @@ porte sur les **comptes créés**, et on le dit à chaque fois qu'on l'annonce.
 
 | Palier | Le mur | Pourquoi il tombe là |
 |---|---|---|
-| **⚠ 2 inscriptions / heure — LU le 21/10/2026** (`rate_limit_email_sent` = 2, `smtp_host` = null : aucun SMTP personnalisé, c'est l'expéditeur intégré de Supabase) | les emails de confirmation. *Le texte qui suit supposait ~30/h et des emails partis de `contact@` : les deux sont faux, corrigés par la lecture de la config.* | Supabase Auth plafonne par défaut l'envoi de ses emails (≈ 30/h avec un SMTP perso — **chiffre secondaire, à lire dans le tableau de bord**, Authentication → Rate Limits). Un post qui marche amène 50 inscrits en une heure : 20 n'ont pas leur lien. Et ces emails partent de `contact@`, la **boîte de prospection** — une campagne qui prend des plaintes fait tomber les inscriptions (CLAUDE.md, « ce que ça coûte »). |
+| **✅ LEVÉ le 21/10/2026 : SMTP Amen posé, limite à 30/h, envoi réel prouvé** (spf/dkim/dmarc = pass, boîte de réception). **Le mur suivant est chez Amen : 500 envois/JOUR pour `contact@`, PARTAGÉS entre confirmations et prospection.** Plafond théorique ≈ 500 inscriptions/jour (≈ 180 000/an) à condition de n'envoyer AUCUNE prospection depuis cette boîte — chaque email de campagne est une inscription de moins. Le lever : un fournisseur transactionnel sur un sous-domaine dédié, ou l'offre Amen supérieure (à chiffrer, décision Zakaria). | *(historique)* |
+| **⚠ 2 inscriptions / heure — LU le 21/10/2026, avant le SMTP** (`rate_limit_email_sent` = 2, `smtp_host` = null : aucun SMTP personnalisé, c'est l'expéditeur intégré de Supabase) | les emails de confirmation. *Le texte qui suit supposait ~30/h et des emails partis de `contact@` : les deux sont faux, corrigés par la lecture de la config.* | Supabase Auth plafonne par défaut l'envoi de ses emails (≈ 30/h avec un SMTP perso — **chiffre secondaire, à lire dans le tableau de bord**, Authentication → Rate Limits). Un post qui marche amène 50 inscrits en une heure : 20 n'ont pas leur lien. Et ces emails partent de `contact@`, la **boîte de prospection** — une campagne qui prend des plaintes fait tomber les inscriptions (CLAUDE.md, « ce que ça coûte »). |
 | **Tout de suite** | l'hébergement | le site tourne sur Vercel Hobby, réservé au non-commercial. Le jour où ça se voit, ce n'est pas une facture : c'est une coupure. |
 | **~50 000 actifs / mois** | le plan gratuit Supabase | plafond d'utilisateurs actifs de l'offre gratuite (**source secondaire**). Au-delà, l'offre Pro + un coût par utilisateur. « Le cloud sans argent » s'arrête là, au plus tard. |
 | **~100 000** | le support | des inconnus gratuits posent des questions ; « on est là si besoin » sans borne devient du travail gratuit illimité. |
@@ -182,7 +190,10 @@ décision existera — un `/goal` sur une décision non prise tourne à vide.
 > confirmation, et ces emails partent de `contact@` — une plainte sur une
 > campagne coupe aussi les inscriptions.
 
-1. Lire la limite d'emails dans Supabase (Authentication → Rate Limits) et me
-   la donner : c'est le premier mur, et son chiffre exact n'est pas connu ici.
+1. ~~Lire la limite d'emails dans Supabase~~ — **fait le 21/10/2026** (lue :
+   2/h sans SMTP ; SMTP Amen posé, relevée à 30/h, envoi réel prouvé). Le mur
+   suivant est le plafond Amen de 500 envois/jour : **choisir un fournisseur
+   transactionnel (sous-domaine dédié) avant ~300 inscriptions/jour**, sinon la
+   prospection et les confirmations se mangent le même quota.
 2. Trancher la définition d'« utilisateur » (§ 1).
 3. Régler l'hébergement commercial avant le palier 100.

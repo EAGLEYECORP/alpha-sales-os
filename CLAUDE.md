@@ -181,9 +181,46 @@ le cadrage** → levier de négociation. Doctrine :
 nous** (meilleur levier) ; si trop lourd, ou si on leur a présenté et qu'ils
 n'en veulent pas → on passe par leur plateforme.
 
-## NOTRE CIBLE — le maître d'ouvrage à permis actif (09/09/2026 · zone AURA le 30/09)
+## ⚠⚠ ALPHA EST HORIZONTAL — la cible est celle de l'INSCRIT (21/10/2026)
+Décision de Zakaria : « il faut qu'Alpha soit utilisé par n'importe quelle
+entreprise ». Objectif : 10 M d'utilisateurs. La cible permis n'est plus la
+nôtre ; le module reste, comme **source** optionnelle (section suivante).
+
+**LA RÈGLE : nos verticales, nos offres, nos marques, nos prix et notre
+doctrine ne servent qu'au compte MAÎTRE.** Tout ce qu'un inscrit voit, dit ou
+envoie vient de SON profil (`ProfilOperateur` : ce qu'il vend, à qui, où).
+Le verdict « maître ? » vient du **serveur** (`resoudreDroits`) partout où il
+décide de ce qui part ; `useDroits()` (optimiste) ne sert qu'à l'affichage.
+
+Mesuré le jour même, en exécutant le vrai code — six endroits servaient NOTRE
+produit à un inscrit qui vend autre chose :
+| Ce qu'il voyait | Corrigé par |
+|---|---|
+| script d'appel = pitch Alpha Voice (« un accueil qui décroche ») | `lib/script-operateur.ts` (`scriptAServir`) |
+| assistant d'appel / ALPHA LIVE soufflant nos réponses, notre « offre à pousser » | `OBJECTION_CUES.universel` (inventaire gelé) |
+| emails signés « EAGLEYE CORP », notre aigle — dès qu'il saisissait son prénom | `habillageEnvoi({ maitre })`, refus 422 |
+| prompts IA : « tu agis pour EAGLEYE CORP », escalier Nuwacom 15 %, nos offres | réglages d'usine vides · `REGLES_DE_METHODE` |
+| démo d'accueil : huit promoteurs, nos campagnes, nos prix | `demoDeDepart` (six métiers, zéro montant) |
+| fiche saisie à la main : « maîtrise d'ouvrage, Lyon, 290 €/mois » · aperçu de valeur sur nos offres | `nouvelleFiche` · `apercuInscrit` |
+
+> ⚠ **Ce qui sert encore NOTRE offre à un inscrit, mesuré mais pas réparé** :
+> le routage d'offre (`matchOffer`, `deepDive`, l'escalier) range ses fiches
+> dans nos familles (`alpha-voice`, `visibilite-growth`…) et les textes écrits
+> qui en dépendent (aimant, approche) ; les gabarits de la bibliothèque ;
+> `playbookPrompt` dans `/api/ai` et `/api/agent`. Même défaut, même remède :
+> le profil de l'inscrit, pas nos verticales.
+> ⚠ **Un navigateur d'inscrit déjà persisté** garde « EAGLEYE CORP » dans ses
+> réglages : l'envoi est refusé avec la consigne, ses prompts IA restent sous
+> notre nom tant qu'il ne corrige pas.
+> ⚠ **La doctrine du MAÎTRE** (`DEFAULT_BUSINESS_RULES`) récite encore le pack
+> « 10 000 € + 1 000 €/mois » au forfait et l'offre « 1 000 appels » retirée le
+> 20/10 — `tests/doctrine.test.ts` l'y épingle. À trancher, pas à recopier.
+
+## LE MODULE PERMIS — ex-cible (09/09 → 21/10/2026), désormais une SOURCE parmi d'autres
 `lib/permis-construire.ts` · ICP dans `lib/accounts-commercial.ts` (serveur) ·
-`docs/PERMIS-LYON.md`.
+`docs/PERMIS-LYON.md`. Tout ce qui suit reste **vrai du module** : un export
+de permis importé est encore reconnu et trié ainsi. Ce n'est plus la cible du
+produit, ni le contenu de la démo d'accueil.
 
 **Le maître d'ouvrage PROFESSIONNEL dont le permis de construire est actif, en
 Auvergne-Rhône-Alpes** (Lyon + Villeurbanne seuls jusqu'au 30/09/2026). ICP à **déclencheur**, pas à secteur : « les
@@ -440,6 +477,10 @@ DÉTERMINISTE ; un mot dans une note est une devinette qui se trompe en silence.
 > raison d'être conditionnée à la première. Les deux restent **serveur**.
 
 ### Le jeu de démonstration EN DESCEND (`lib/seed.ts`)
+> ⚠ **Depuis le 21/10/2026, ce jeu n'est plus la démo d'accueil** : un
+> navigateur neuf part de `demoDeDepart` (`lib/demo-icp.ts`). Il reste le banc
+> d'essai du module permis — d'où les tests qui le rejouent.
+
 Il décrivait encore un bouchon, un pub irlandais et deux sociétés
 d'ambulances — le marché d'AVANT. Le premier bouton de l'app étant « Explorer
 la démo », **la première chose qu'un prospect apprenait du produit décrivait
