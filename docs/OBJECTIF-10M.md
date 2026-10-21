@@ -46,6 +46,24 @@ presque rien au serveur (le CRM est dans le navigateur, l'IA et l'email
 passent par les clés du client). Le coût d'un gratuit est **un compte**, pas
 une base. C'est ce qui rend un très grand gratuit pensable — pas gratuit.
 
+### 2bis. Ce qui a été MESURÉ côté SQL (21/10/2026) — `scripts/mesure-echelle.sh`
+
+Postgres 16 réel, migrations rejouées, **jusqu'à 1 000 000 de comptes**. Ce n'est PAS
+Supabase hébergé : c'est la couche SQL que nous écrivons.
+
+| À 1 M de comptes | Avant | Après |
+|---|---|---|
+| Inscription (trigger d'essai) | 52 µs/compte | 60 µs — plate de 1 k à 1 M |
+| Somme de l'enveloppe, par requête d'un inscrit en essai | 112 ms, **et fausse au-delà de ~1 000 essais** (réponses PostgREST bornées) | **1,6 ms**, exacte |
+| `adoption_stats` (écran propriétaires) | 4,2 s | 2,1 s — **encore linéaire** (≈ 20 s à 10 M, extrapolé) |
+| Débits d'essai concurrents (16 clients) | — | 64 000, **aucun perdu**, ≈ 5 000/s sur la ligne unique du compteur |
+| Limiteur de débit, 100 000 IP distinctes | 925 µs/requête | 1,2 µs |
+
+**Ce qui n'est PAS mesuré et reste le vrai mur** : le nombre d'appels REST par page
+(~17, un par requête qui traverse le middleware), la limite réelle de lignes de
+PostgREST (Settings → API → Max rows), les limites d'Auth, le SMTP, l'hébergement.
+Rien de cela ne se mesure depuis ce conteneur.
+
 ## 3. Les paliers — 10 · 100 · 1 000 · 10 000 · 100 000 · 1 M · 10 M
 
 Même logique que `lib/paliers-campagne.ts` : **un palier borne, il ne décore

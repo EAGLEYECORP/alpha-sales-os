@@ -17,6 +17,7 @@ import {
   verrouDeComptesActif,
 } from "@/lib/entitlements";
 import { CHEMIN_PAR_API } from "@/lib/api-access";
+import { creerLimiteur } from "@/lib/limiteur";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -253,30 +254,20 @@ function isInternal(path: string): boolean {
  *  · PORTE D'ACCÈS — /api/gate est la seule surface de force brute :
  *    budget volontairement bas, indépendant du général.
  */
-const hits = new Map<string, { count: number; start: number }>();
-const gateHits = new Map<string, { count: number; start: number }>();
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 1200;
 const MAX_GATE_PER_WINDOW = 20;
 
-function bump(map: Map<string, { count: number; start: number }>, ip: string, max: number): boolean {
-  const now = Date.now();
-  const e = map.get(ip);
-  if (!e || now - e.start > WINDOW_MS) {
-    map.set(ip, { count: 1, start: now });
-    if (map.size > 10_000) {
-      for (const [k, v] of map) if (now - v.start > WINDOW_MS) map.delete(k);
-    }
-    return false;
-  }
-  e.count += 1;
-  return e.count > max;
-}
+// ⚠ Voir `lib/limiteur.ts` : l'ancienne version balayait toute la table à CHAQUE
+// nouvelle IP au-delà de 10 000 entrées — quadratique sous un afflux (mesuré :
+// 925 µs par requête à 100 000 IP distinctes). Un balayage toutes les 10 s, et un plafond dur.
+const hits = creerLimiteur({ fenetreMs: WINDOW_MS });
+const gateHits = creerLimiteur({ fenetreMs: WINDOW_MS });
 
 function rateLimited(ip: string, pathname: string): boolean {
   // La porte d'accès porte SON budget en plus du budget général.
-  if (pathname === "/api/gate" && bump(gateHits, ip, MAX_GATE_PER_WINDOW)) return true;
-  return bump(hits, ip, MAX_PER_WINDOW);
+  if (pathname === "/api/gate" && gateHits.bump(ip, MAX_GATE_PER_WINDOW)) return true;
+  return hits.bump(ip, MAX_PER_WINDOW);
 }
 
 /**

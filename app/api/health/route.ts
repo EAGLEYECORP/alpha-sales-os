@@ -6,7 +6,7 @@ import { verifierProprietaire } from "@/lib/proprietaire-coherence";
 import { serverAuthEnforced, serverAuthMisconfigured } from "@/lib/supabase-jwt";
 import { installationClient, resoudreDroits, verrouDeComptesActif } from "@/lib/entitlements";
 import { etatEnveloppe } from "@/lib/essai";
-import { coutGlobalEssais } from "@/lib/compteur-essai";
+import { coutGlobalEssais, ecartEnveloppeEssais } from "@/lib/compteur-essai";
 import { OFFRES_EN_VENTE } from "@/lib/offres-publiques";
 
 export const runtime = "nodejs";
@@ -224,6 +224,12 @@ export async function GET(req: NextRequest) {
      * ─────────────────────────────────────────────────────────────────
      */
     enveloppe: droits.maitre ? etatEnveloppe(await coutGlobalEssais()) : null,
+    /**
+     * ⚠ LA DÉRIVE du compteur de l'enveloppe (migration 018) : le compteur est
+     * une COPIE tenue par trigger, la somme est la définition. Maître seul, comme
+     * l'enveloppe. `null` = non mesuré (fonction absente), jamais « écart 0 ».
+     */
+    enveloppeEcart: droits.maitre ? await ecartEnveloppeEssais() : null,
     /**
      * Sur quelle installation tourne-t-on ? ALPHA CEO en a besoin pour se taire
      * sur ce qui n'est qu'à nous (prix Stripe, enveloppe d'essais) quand il

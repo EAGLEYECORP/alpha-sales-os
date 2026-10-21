@@ -216,16 +216,114 @@ function serviceClient(): SupabaseClient | null {
  * qui PAIE ne consomme pas l'enveloppe d'acquisition : l'y inclure ferait
  * fermer l'ouverture d'autant plus vite qu'on vend mieux.
  */
-export async function coutGlobalEssais(): Promise<number | null> {
-  const sb = serviceClient();
+export async function coutGlobalEssais(deps: DepsEnveloppe = {}): Promise<number | null> {
+  const maintenant = deps.maintenant ?? Date.now;
+  const t = maintenant();
+  const cache = deps.cache ?? cacheModule;
+  if (cache.entree && t < cache.entree.jusqua) return cache.entree.valeur;
+
+  const sb = deps.client !== undefined ? deps.client : (serviceClient() as unknown as ClientEnveloppe | null);
   if (!sb) return null;
-  const { data, error } = await sb
-    .from("entitlements")
-    .select("cout_consomme_eur")
-    .eq("statut", "essai");
+
+  /**
+   * ⚠⚠ DEUX CHEMINS, ET LE SECOND NE MENT PLUS (21/10/2026, migration 018).
+   *
+   * 1. LE COMPTEUR, en base : une ligne, tenue par trigger. Mesuré sur un vrai
+   *    Postgres : la somme coûtait 245 ms à un million de comptes (≈ 2,5 s à
+   *    dix millions) **à chaque requête d'un inscrit en essai** ; le compteur
+   *    coûte une lecture par clé.
+   * 2. LE REPLI, quand la migration n'est pas encore posée : l'ancienne somme.
+   *    Elle rapatriait toutes les lignes d'essai ET les additionnait en
+   *    JavaScript — or PostgREST borne ses réponses (1 000 par défaut). Au-delà,
+   *    elle additionnait les 1 000 premières et ignorait le reste : le plafond
+   *    de 300 € ne se refermait plus, sans rien dire. **Un total tronqué a
+   *    l'air exact** — c'est le pire état d'une garde. Le repli refuse donc de
+   *    conclure dès qu'il touche le plafond : `null`, et `null` FERME l'essai.
+   */
+  const compteur = await lireCompteur(sb);
+  let valeur: number | null;
+  if (compteur.etat === "ok") valeur = compteur.valeur;
+  else if (compteur.etat === "absente") valeur = await sommeDeRepli(sb);
+  else valeur = null;
+
+  // ⚠ Seul un chiffre se garde. Un `null` (inconnu) ne se met JAMAIS en cache :
+  // il ferait fermer les essais dix secondes de plus que la panne.
+  if (valeur !== null) cache.entree = { valeur, jusqua: t + DUREE_CACHE_ENVELOPPE_MS };
+  return valeur;
+}
+
+/**
+ * Combien de temps une lecture de l'enveloppe vaut dans une instance.
+ *
+ * ⚠ Dix secondes, et c'est un arbitrage écrit : l'enveloppe est un BUDGET
+ * (300 €), pas un compteur de sécurité à la milliseconde — le plafond PAR COMPTE
+ * (`cout_consomme_eur`) reste lu frais à chaque résolution de droits. Ce qu'on
+ * économise : une requête par navigation de chaque inscrit en essai.
+ * Le cache vit dans l'instance (serverless : il ne se partage pas, et c'est
+ * sans importance — au pire une lecture par instance et par fenêtre).
+ */
+export const DUREE_CACHE_ENVELOPPE_MS = 10_000;
+
+/**
+ * Le plafond de lignes d'une réponse PostgREST. 1 000 par défaut chez Supabase
+ * (Settings → API → Max rows : à lire dans le tableau de bord, pas supposé ici).
+ * Une réponse qui l'ATTEINT est peut-être tronquée : on ne conclut rien.
+ */
+export const PLAFOND_LIGNES_POSTGREST = 1000;
+
+/**
+ * Le cache est un OBJET passé en paramètre, pas un état caché derrière une
+ * fonction de remise à zéro réservée aux tests : une telle fonction n'aurait
+ * aucun appelant de production, et c'est exactement ce que `exports-morts`
+ * refuse. Chaque test fournit le sien ; la production partage `cacheModule`.
+ */
+export interface CacheEnveloppe {
+  entree: { valeur: number; jusqua: number } | null;
+}
+const cacheModule: CacheEnveloppe = { entree: null };
+
+/** Ce que cette lecture exige d'un client — celui de Supabase, ou un faux dans un test. */
+export interface ClientEnveloppe {
+  rpc(nom: string): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
+  from(table: string): {
+    select(colonnes: string): {
+      eq(colonne: string, valeur: string): PromiseLike<{ data: unknown[] | null; error: { message?: string } | null }>;
+    };
+  };
+}
+
+export interface DepsEnveloppe {
+  /** `null` = pas de client (configuration absente) ; absent = le vrai. */
+  client?: ClientEnveloppe | null;
+  maintenant?: () => number;
+  /** Absent = le cache de l'instance. Un test passe le sien. */
+  cache?: CacheEnveloppe;
+}
+
+type LectureCompteur = { etat: "ok"; valeur: number } | { etat: "absente" } | { etat: "inconnu" };
+
+/** La fonction SQL n'existe pas encore : la migration 018 n'est pas posée. */
+function fonctionAbsente(e: { code?: string; message?: string }): boolean {
+  return e.code === "PGRST202" || e.code === "42883" || /could not find the function|does not exist/i.test(e.message ?? "");
+}
+
+async function lireCompteur(sb: ClientEnveloppe): Promise<LectureCompteur> {
+  const { data, error } = await sb.rpc("cout_global_essais");
+  if (error) return fonctionAbsente(error) ? { etat: "absente" } : { etat: "inconnu" };
+  // PostgREST rend un `numeric` en CHAÎNE (voir plus bas) ; `null` = ligne absente = inconnu.
+  if (data === null || data === undefined || data === "") return { etat: "inconnu" };
+  const n = Number(data);
+  return Number.isFinite(n) ? { etat: "ok", valeur: Math.round(n * 100) / 100 } : { etat: "inconnu" };
+}
+
+async function sommeDeRepli(sb: ClientEnveloppe): Promise<number | null> {
+  const { data, error } = await sb.from("entitlements").select("cout_consomme_eur").eq("statut", "essai");
   if (error) return null;
+  const lignes = data ?? [];
+  // ⚠ Plafond atteint ⇒ peut-être tronqué ⇒ on ne sait pas. L'inconnu vaut refus.
+  if (lignes.length >= PLAFOND_LIGNES_POSTGREST) return null;
   let total = 0;
-  for (const l of data ?? []) {
+  for (const l of lignes) {
     const brut = (l as { cout_consomme_eur?: number | string | null }).cout_consomme_eur;
     // ⚠ PostgREST rend un `numeric` en CHAÎNE. Additionner sans convertir
     // concatènerait — « 10 » + « 20 » = « 1020 », un total qui explose au
@@ -235,6 +333,26 @@ export async function coutGlobalEssais(): Promise<number | null> {
     if (Number.isFinite(n)) total += n;
   }
   return Math.round(total * 100) / 100;
+}
+
+/**
+ * Le compteur et la SOMME côte à côte — la sonde de dérive. La somme est LA
+ * définition ; le compteur n'en est que la copie tenue par trigger. Si les deux
+ * divergent (trigger désarmé, `truncate`, écriture avec les triggers coupés),
+ * l'écart se lit ici au lieu de se supposer. `null` si la fonction est absente
+ * ou illisible : on ne rend jamais « écart 0 » par défaut.
+ */
+export async function ecartEnveloppeEssais(): Promise<{ compteur: number; somme: number; ecart: number } | null> {
+  const sb = serviceClient();
+  if (!sb) return null;
+  const { data, error } = await sb.rpc("ecart_enveloppe_essais");
+  if (error) return null;
+  const l = (Array.isArray(data) ? data[0] : data) as { compteur?: unknown; somme?: unknown; ecart?: unknown } | null | undefined;
+  if (!l) return null;
+  const compteur = Number(l.compteur);
+  const somme = Number(l.somme);
+  const ecart = Number(l.ecart);
+  return [compteur, somme, ecart].every(Number.isFinite) ? { compteur, somme, ecart } : null;
 }
 
 /**

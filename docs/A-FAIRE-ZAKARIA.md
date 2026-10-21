@@ -10,6 +10,32 @@
 
 ---
 
+## ⚠ 21/10/2026 (soir) — ÉCHELLE : UNE MIGRATION À POSER, DEUX CHIFFRES À LIRE
+
+**Pas posé en production, et c'est voulu : il me faut ton « go ».** La migration
+`supabase/migrations/018-echelle.sql` (comprise dans `LOT-A-COLLER.sql`, régénéré)
+remplace deux lectures qui grandissaient avec le nombre de comptes — voir
+`docs/OBJECTIF-10M.md` § 2bis pour les chiffres mesurés.
+- **Ce que j'ai vérifié AVANT de te le demander** : la base de production, lue en
+  lecture seule, a le schéma attendu (mêmes colonnes d'`entitlements`, un seul
+  trigger — `entitlements_attribution_immuable`, en `BEFORE UPDATE`, qui coexiste
+  avec le nouveau, prouvé sur le lot rejoué DEUX fois), aucun objet de la 018 déjà posé,
+  6 comptes et 6 essais pour une somme de **0,00 €** : le recalage donnera 0.
+  Rejouable : `bash scripts/rejouer-lot.sh`.
+- **Pourquoi elle compte avant 1 000 inscrits** : la somme de l'enveloppe est
+  tronquée par PostgREST au-delà de ~1 000 lignes, et le plafond de 300 € ne se
+  refermerait plus. Tant qu'elle n'est pas posée, le code **ferme l'essai** au lieu de
+  rendre un total faux (repli sûr, testé) — mais il ne peut plus compter au-delà.
+- **Deux chiffres que seul ton tableau de bord donne** : *Settings → API → Max rows*
+  (j'ai supposé 1 000, c'est le défaut) et *Authentication → Rate Limits* (le mur des
+  emails de confirmation, ≈ 30/h supposé dans `OBJECTIF-10M.md`).
+- **Une décision que je ne prends pas à ta place** : un cache de droits par instance
+  (~17 appels REST par page aujourd'hui) fixe combien de temps un compte déclassé ou
+  suspendu garde ses droits. Ma recommandation : **15 s**, clé = le couple
+  jeton + en-tête d'autorisation (jamais un tenant déduit), **jamais** sur les routes
+  qui dépensent, **jamais** sur un repli d'erreur. Dis « 15 s » (ou un autre chiffre)
+  et je le fais, avec ses mutations.
+
 ## ⚠ 21/10/2026 — LA BASE LUE, ET ELLE NE PORTE PAS LE LOT
 
 Lue par Composio (voir « Contraintes d'environnement » de `CLAUDE.md`), pas

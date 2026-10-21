@@ -2379,6 +2379,65 @@ section mission, trois commentaires — et aucun ne faisait autorité.
 - **Elle n'est recopiée nulle part** — la vitrine l'importe. C'est la recopie
   qui a fait dériver ce positionnement en quatre versions.
 
+## L'ÉCHELLE — ce qu'on a MESURÉ, et ce qu'on ne peut pas dire (21/10/2026)
+`scripts/mesure-echelle.sh` · `scripts/rejouer-lot.sh` · `supabase/migrations/018-echelle.sql` ·
+`lib/limiteur.ts` · `tests/echelle.test.ts` · `tests/limiteur.test.ts`.
+
+Demande : « que ce soit prêt pour 10 M d'utilisateurs ». **On ne dit pas « prêt ».**
+On ne peut tester d'ici ni Supabase hébergé, ni Vercel, ni le SMTP. On a mesuré
+ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de comptes**.
+
+- **L'inscription est plate** (52–61 µs par compte, de 1 k à 1 M) : le démarreur
+  d'essai est en O(1). Rien à réparer, et il faut que ça reste vrai — c'est le chemin
+  de chaque arrivant. Le trigger du compteur ne touche sa ligne que si le delta
+  n'est pas nul, sinon l'inscription se mettrait en file derrière une seule ligne.
+- **⚠⚠ LA SOMME DE L'ENVELOPPE ÉTAIT FAUSSE, pas seulement lente.** Elle rapatriait
+  toutes les lignes d'essai et les additionnait en JavaScript ; PostgREST borne ses
+  réponses (1 000 par défaut chez Supabase — **à lire dans Settings → API → Max
+  rows, pas supposé**). Au-delà, on additionnait les 1 000 premières et le plafond de
+  300 € **ne se refermait plus, en silence** : la garde de sécurité qui s'ouvre sous
+  la charge, l'inverse de l'invariant du dépôt. Désormais un compteur tenu par trigger
+  (1,6 ms à 1 M au lieu de 112 ms), et **le repli refuse de conclure dès qu'il touche
+  le plafond de lignes** : `null`, donc l'essai ferme. **Un total tronqué a l'air
+  exact** — c'est le pire état d'une garde.
+  · La SOMME reste LA définition ; le compteur n'en est que la copie.
+    `ecart_enveloppe_essais()` les rend côte à côte, lue par `/api/health` (maître seul).
+    Ça renverse un principe écrit dans `lib/compteur-essai.ts` (« pas de table de
+    compteurs ») : il était juste tant que la somme coûtait quelques lignes.
+- **`adoption_stats` : ×2, pas ×10.** Une passe au lieu de douze relectures d'une
+  CTE matérialisée (4,2 s → 2,1 s à 1 M). **Elle reste LINÉAIRE** (≈ 2 µs par
+  compte, soit ~20 s à 10 M — extrapolé) : tolérable pour un écran de propriétaires,
+  pas au-delà de quelques millions. Le palier suivant est une table d'agrégats tenue
+  au fil de l'eau — décision, pas un index sur le schéma `auth` de Supabase.
+- **Le limiteur de débit était quadratique sous un afflux** (`middleware.ts`) : un
+  balayage de toute la table à CHAQUE nouvelle IP au-delà de 10 000. Mesuré en
+  rejouant sa logique à l'identique : 1,4 → 226 → 925 µs par requête à 10 k → 30 k →
+  100 k IP distinctes — exactement le trafic d'un post qui marche. Réparé (un balayage
+  au plus toutes les 10 s, plafond dur) : 1,2 µs à 100 k et à 1 M.
+- **⚠⚠ LES TROIS ERREURS DE CETTE SÉANCE, et ce qu'elles disent :**
+  · **Un chiffre gonflé que j'avais écrit** (« 7,3 s, pire que linéaire ») venait
+    d'une première passe où les `VACUUM` avaient échoué sans bruit (deux instructions
+    dans un même `-c` = un bloc de transaction). Refait proprement : c'est linéaire.
+    Corrigé dans la migration et les tests ; une mesure se REJOUE, elle ne se cite pas.
+  · **Un test d'équivalence mal construit** comparait un JSON figé à l'étape 3 avec
+    un JSON calculé plus tard : `now()` avait avancé. L'hypothèse (mon test, pas la
+    fonction) a été **vérifiée** — comparer les deux versions dans UNE instruction —
+    avant de conclure. Même famille : une preuve de sécurité « ✗ » qui venait de
+    `set -o pipefail` (psql refuse, donc sort non nul) alors que la base répondait
+    bien `permission denied`. **On lit la réponse de la base avant d'accuser le code.**
+  · **Un test réécrit par script a perdu sa dent en silence** : le cache partagé entre
+    deux lectures est devenu deux caches neufs, et la mutation « un inconnu mis en
+    cache » a survécu. Repéré parce qu'on remute après CHAQUE refactor de test.
+- **Ce qui reste, sans fard** : (1) **chaque requête qui traverse le middleware relit
+  les droits par un appel REST** — ~17 par page, d'après le commentaire du middleware.
+  Le cache de droits par instance (jamais sur les routes qui dépensent, jamais sur un
+  repli d'erreur) règle l'essentiel, mais il fixe combien de temps un compte déclassé
+  garde ses droits : **un arbitrage de sécurité qui se décide**, pas une ligne glissée
+  dans la porte qui protège l'argent. (2) Les murs d'infrastructure de
+  `docs/OBJECTIF-10M.md` § 2 (emails de confirmation, hébergement commercial, plan
+  Supabase) ne se réparent pas dans le code. (3) **La migration 018 n'est PAS posée
+  en production** — le code la tolère absente (repli qui ferme au lieu de tronquer).
+
 ## Contraintes d'environnement (sandbox)
 **Re-mesuré le 17/09/2026** — cette liste avait dérivé, et une contrainte fausse
 coûte plus cher qu'une contrainte absente : elle fait renoncer sans essayer.
