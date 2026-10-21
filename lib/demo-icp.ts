@@ -168,6 +168,68 @@ export function demoDepuisProfil(profil: ProfilOperateur): Prospect[] | null {
   const zone = profil.cibleZone.trim();
   const g = graine(`${secteur}|${role}|${zone}|${profil.poste}`);
 
+  return fabriquer(g, zone, (i, forme) => ({
+    secteur,
+    role,
+    company: `${forme} ${secteur} ${i + 1} (démo)`,
+    note:
+      `Fiche FABRIQUÉE pour te montrer les écrans avec ton marché à toi. ` +
+      `Le numéro est dans une tranche réservée à la fiction (ARCEP) et l'adresse sur un domaine réservé ` +
+      `(RFC 2606) : ni l'un ni l'autre ne peut joindre qui que ce soit, même par accident.`,
+  }));
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA DÉMO DE DÉPART — ce que voit quelqu'un qui n'a encore rien dit de lui.
+ *
+ * ⚠⚠ DÉCIDÉ LE 21/10/2026 (Zakaria) : Alpha s'adresse à N'IMPORTE QUELLE
+ * entreprise. Le jeu de départ était le nôtre — huit promoteurs lyonnais, nos
+ * prix, nos rendez-vous de closing, notre offre Alpha Voice dans chaque
+ * campagne. Un inscrit qui vend autre chose découvrait le produit à travers
+ * NOTRE pipe. Le jeu écrit à la main (`lib/seed.ts`) reste dans le dépôt : il
+ * est le banc d'essai du module permis, plus la vitrine d'accueil.
+ *
+ * Six métiers différents, un par fiche : la démo dit « Alpha marche pour
+ * n'importe quel métier » au lieu d'en choisir un. Mêmes quatre garanties que
+ * la démo par profil, et le même refus d'inventer : aucun montant, aucune
+ * douleur sectorielle, aucun nom propre — le nom est le MÉTIER + un numéro + « (démo) »,
+ * qui ne peut désigner aucune société réelle.
+ *
+ * Dès que l'inscrit dit à qui il vend, `appliquerProfil` remplace ces fiches
+ * par celles de SON marché.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const METIERS_DEPART: readonly { secteur: string; role: string }[] = [
+  { secteur: "Cabinet d'expertise comptable", role: "associé" },
+  { secteur: "Agence immobilière", role: "directeur d'agence" },
+  { secteur: "PME industrielle", role: "directeur général" },
+  { secteur: "Éditeur de logiciel", role: "directeur commercial" },
+  { secteur: "Clinique vétérinaire", role: "gérant" },
+  { secteur: "Transporteur régional", role: "responsable d'exploitation" },
+];
+
+export function demoDeDepart(): Prospect[] {
+  return fabriquer(graine("demo-de-depart"), "", (i) => {
+    const m = METIERS_DEPART[i % METIERS_DEPART.length];
+    return {
+      secteur: m.secteur,
+      role: m.role,
+      company: `${m.secteur} ${i + 1} (démo)`,
+      note:
+        `Fiche FABRIQUÉE pour te montrer les écrans. Dis à qui tu vends (Réglages, ou l'écran de bienvenue) ` +
+        `et la démonstration se refait sur TON marché. Numéro dans une tranche réservée à la fiction (ARCEP), ` +
+        `adresse sur un domaine réservé (RFC 2606) : rien ne peut joindre qui que ce soit.`,
+    };
+  });
+}
+
+/** Le moule commun : tout ce qui protège (identifiant, numéro, adresse, montants) vit ICI, une fois. */
+function fabriquer(
+  g: number,
+  zone: string,
+  decor: (i: number, forme: string) => { secteur: string; role: string; company: string; note: string }
+): Prospect[] {
   return Array.from({ length: FICHES_DEMO }, (_, i) => {
     // Décalages dérivés de la graine : stables, et différents d'un profil
     // à l'autre. `i` seul donnerait les mêmes six fiches à tout le monde.
@@ -177,6 +239,7 @@ export function demoDepuisProfil(profil: ProfilOperateur): Prospect[] | null {
     const nom = NOMS[p(13, NOMS.length)];
     const forme = FORMES[p(5, FORMES.length)];
     const stage = ETAPES[i % ETAPES.length];
+    const { secteur, role, company, note } = decor(i, forme);
 
     /**
      * ⚠ « (démo) » EST DANS LE NOM, pas dans un champ à côté. Un marqueur
@@ -184,8 +247,6 @@ export function demoDepuisProfil(profil: ProfilOperateur): Prospect[] | null {
      * dans un email, à la première capture d'écran envoyée à un collègue —
      * c'est-à-dire exactement là où la confusion coûte quelque chose.
      */
-    const company = `${forme} ${secteur} ${i + 1} (démo)`;
-
     return {
       ...prospectDefaults,
       id: `${PREFIXE_DEMO}${g.toString(36)}-${i}`,
@@ -229,10 +290,7 @@ export function demoDepuisProfil(profil: ProfilOperateur): Prospect[] | null {
           summary: `Fiche de démonstration — ${role} dans ${secteur}. Remplace-la par une vraie fiche quand tu importes ton fichier.`,
         },
       ],
-      notes:
-        `Fiche FABRIQUÉE pour te montrer les écrans avec ton marché à toi, pas avec des restaurants lyonnais. ` +
-        `Le numéro est dans une tranche réservée à la fiction (ARCEP) et l'adresse sur un domaine réservé ` +
-        `(RFC 2606) : ni l'un ni l'autre ne peut joindre qui que ce soit, même par accident.`,
+      notes: note,
     } as Prospect;
   });
 }

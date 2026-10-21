@@ -1,5 +1,7 @@
 import { VERTICALS, offreDeLaVerticale, type VerticalPlaybook } from "./playbook";
 import type { EagleyeOffer } from "./offer-match";
+import type { ProfilOperateur } from "./profil-operateur";
+import { scriptOperateur } from "./script-operateur";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -67,5 +69,34 @@ export function apercuPour(verticaleId: string): ApercuValeur | null {
     angle: v.structuralPain,
     message: messageDeValeur(v),
     offre: offreDeLaVerticale(v) ?? "alpha-voice",
+  };
+}
+
+/**
+ * L'aperçu d'un INSCRIT : tiré de SON script (`scriptOperateur`), pas d'une
+ * de nos verticales.
+ *
+ * ⚠⚠ MESURÉ LE 21/10/2026 : « la première chose que voit un inscrit » était
+ * un choix parmi NOS marchés, qui lui montrait NOTRE bascule (« on installe
+ * un accueil qui décroche… ») et NOS offres (Alpha Voice, OS de vente,
+ * Visibilité). Quelqu'un qui vend un logiciel de paie voyait en vitrine
+ * l'argumentaire d'un autre produit. Ici, le marché est celui qu'il a déclaré,
+ * l'offre est la sienne, et ce qui manque se nomme au lieu d'être comblé.
+ */
+export function apercuInscrit(profil: ProfilOperateur | null | undefined): {
+  apercu: Omit<ApercuValeur, "offre"> & { offre: string };
+  manques: string[];
+} {
+  const { vertical, manques } = scriptOperateur(profil);
+  return {
+    apercu: {
+      verticaleId: vertical.id,
+      label: vertical.label,
+      criterion: vertical.criterion,
+      angle: vertical.structuralPain,
+      message: messageDeValeur(vertical),
+      offre: profil?.metier.trim() || "ton offre",
+    },
+    manques,
   };
 }

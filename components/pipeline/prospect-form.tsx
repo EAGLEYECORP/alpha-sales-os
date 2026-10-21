@@ -4,44 +4,11 @@ import { useState } from "react";
 import type { Prospect, Sector } from "@/lib/types";
 import { LIBELLE_SECTEUR, ORDRE_SECTEURS } from "@/lib/secteurs";
 import { STAGES } from "@/lib/hormozi";
-import { daysAhead, uid } from "@/lib/utils";
+import { nouvelleFiche } from "@/lib/nouvelle-fiche";
+import { daysAhead } from "@/lib/utils";
 import { useAlpha } from "@/lib/store";
 import { Modal } from "@/components/ui/modal";
 
-const emptyProspect = (): Prospect => ({
-  id: uid(),
-  name: "",
-  company: "",
-  sector: "maitrise-ouvrage",
-  city: "Lyon",
-  stage: "prospect",
-  trust: 10,
-  auditScore: 0,
-  conviction: 8,
-  monthlyValue: 290,
-  setupValue: 1800,
-  probability: 5,
-  ignoranceTax: 1500,
-  croyances: { produit: 5, soutien: 5, pourLui: 3 },
-  obstacles: [],
-  objections: [],
-  events: [],
-  demoShownBeforePrice: false,
-  nextStep: { date: daysAhead(2), action: "Premier contact terrain" },
-  tags: [],
-  attachments: [],
-  notes: "",
-  likeness: 50,
-  deepAudit: { websiteState: "", socialState: "", localCompetition: "", currentProcess: "" },
-  problems: [],
-  solution: "",
-  personalizedOffer: "",
-  payments: [],
-  contract: { status: "aucun" },
-  delivery: "non-demarre",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
 
 export function ProspectFormModal({
   open,
@@ -53,7 +20,8 @@ export function ProspectFormModal({
   initial?: Prospect;
 }) {
   const upsert = useAlpha((s) => s.upsertProspect);
-  const [form, setForm] = useState<Prospect>(initial ?? emptyProspect());
+  const zone = useAlpha((s) => s.settings.profil?.cibleZone ?? "");
+  const [form, setForm] = useState<Prospect>(initial ?? nouvelleFiche(zone));
 
   const set = <K extends keyof Prospect>(key: K, value: Prospect[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -62,7 +30,7 @@ export function ProspectFormModal({
     if (!form.company.trim() || !form.name.trim()) return;
     upsert(form);
     onClose();
-    if (!initial) setForm(emptyProspect());
+    if (!initial) setForm(nouvelleFiche(zone));
   };
 
   return (

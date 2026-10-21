@@ -24,16 +24,13 @@ import type {
 } from "./types";
 import { fillTemplate } from "./templates";
 import {
-  seedActivities,
-  seedCampaigns,
   seedCompetitors,
-  seedMeetings,
   seedNurture,
-  seedProspects,
   prospectDefaults,
   isDemoProspect,
+  isDemoCampaign,
 } from "./seed";
-import { demoDepuisProfil } from "./demo-icp";
+import { demoDeDepart, demoDepuisProfil } from "./demo-icp";
 import { nettoyerProfil } from "./profil-operateur";
 import { stageById, signingBlockers } from "./hormozi";
 // ⚠ Le SOCLE de notes n'est plus importé ici. Il portait le playbook en clair
@@ -462,12 +459,20 @@ export const useAlpha = create<AlphaState>()(
     (set, get) => ({
       hydrated: false,
       hydratationPipe: etatInitial(Boolean(defaultSettings.pipeServeur)),
-      prospects: seedProspects,
-      campaigns: seedCampaigns,
-      meetings: seedMeetings,
+      /**
+       * ⚠ LA DÉMO DE DÉPART EST MULTI-SECTEURS (21/10/2026). Ce n'est plus le
+       * jeu écrit à la main de `lib/seed.ts` — huit promoteurs, nos prix, nos
+       * campagnes Alpha Voice, nos rendez-vous de closing — que tout inscrit
+       * découvrait comme premier écran. Campagnes, rendez-vous, concurrents
+       * et journal de démo décrivaient NOTRE marché : ils partent avec lui.
+       * Voir `demoDeDepart` (`lib/demo-icp.ts`).
+       */
+      prospects: demoDeDepart(),
+      campaigns: [],
+      meetings: [],
       nurture: seedNurture,
-      competitors: seedCompetitors,
-      activities: seedActivities,
+      competitors: [],
+      activities: [],
       auditLog: [],
       settledPayouts: [],
       settings: defaultSettings,
@@ -1126,13 +1131,24 @@ export const useAlpha = create<AlphaState>()(
           if (!fabriquees) return { settings };
 
           const reelles = s.prospects.filter((p) => !isDemoProspect(p.id));
+          /**
+           * ⚠ Un navigateur ouvert AVANT le 21/10/2026 porte encore le monde
+           * de démo « promoteurs » : campagnes Alpha Voice, closings, journal,
+           * concurrents de notre marché. Remplacer les fiches sans eux laissait
+           * « Closing — Terrasses des Canuts (démo) » au-dessus de fiches de
+           * SON marché. On ne retire QUE ce qui est démo par construction.
+           */
+          const demoConcurrents = new Set(seedCompetitors.map((c) => c.id));
           return {
             settings,
             prospects: [...fabriquees, ...reelles],
+            campaigns: s.campaigns.filter((c) => !isDemoCampaign(c.id)),
+            meetings: s.meetings.filter((m) => !(m.prospectId && isDemoProspect(m.prospectId))),
+            competitors: s.competitors.filter((c) => !demoConcurrents.has(c.id)),
             // Le plafond des journaux vit à UN seul endroit — un `...s.activities`
             // nu est la signature exacte de l'empilement sans borne, et les
             // journaux partagent le quota localStorage avec le CRM lui-même.
-            activities: pousserActivite(s.activities, {
+            activities: pousserActivite(s.activities.filter((a) => !(a.prospectId && isDemoProspect(a.prospectId))), {
               id: uid(),
               date: new Date().toISOString(),
               kind: "systeme" as const,
@@ -1141,14 +1157,15 @@ export const useAlpha = create<AlphaState>()(
           };
         }),
 
+      // Même départ qu'un navigateur neuf : la démo multi-secteurs.
       resetToSeed: () =>
         set({
-          prospects: seedProspects,
-          campaigns: seedCampaigns,
-          meetings: seedMeetings,
+          prospects: demoDeDepart(),
+          campaigns: [],
+          meetings: [],
           nurture: seedNurture,
-          competitors: seedCompetitors,
-          activities: seedActivities,
+          competitors: [],
+          activities: [],
           settings: defaultSettings,
           drafts: [],
           partners: [],

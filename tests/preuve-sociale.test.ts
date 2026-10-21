@@ -694,6 +694,10 @@ test("aucune surface d'envoi ne compose une liste envoyable de fiches de démo",
    * l'opérateur TAPE, pas à une fiche : rien à filtrer.
    */
   // ── La revue de campagne : aucun brouillon « pending » sur une fiche de démo.
+  // Le jeu est POSÉ, plus supposé : depuis le 21/10/2026 un store neuf part de
+  // la démo multi-secteurs, sans campagne (`demoDeDepart`). Le verrou se
+  // vérifie sur le jeu écrit à la main, qui a des campagnes à préparer.
+  useAlpha.setState({ prospects: seedProspects, campaigns: seedCampaigns, drafts: [] });
   const store = useAlpha.getState();
   const campagne = seedCampaigns.find((c) => c.sector === "restaurant") ?? seedCampaigns[0];
   store.prepareCampaignDrafts(campagne.id);

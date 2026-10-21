@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { apercuPour, secteursDisponibles } from "@/lib/premier-resultat";
+import { apercuInscrit, apercuPour, secteursDisponibles } from "@/lib/premier-resultat";
+import { useDroits } from "@/lib/use-droits";
+import { useAlpha } from "@/lib/store";
 
 /**
  * LA VALEUR EN 30 SECONDES — la première chose que voit un inscrit.
@@ -25,6 +28,14 @@ const NOM_OFFRE: Record<string, string> = {
 };
 
 export function ApercuValeur({ onBrancher }: { onBrancher?: () => void }) {
+  /**
+   * ⚠ Nos marchés et nos offres ne servent qu'au compte MAÎTRE, qui vend
+   * Alpha. Un inscrit voit l'aperçu de SA cible et de SON offre
+   * (`apercuInscrit`) — même règle que le script d'appel.
+   */
+  const { maitre } = useDroits();
+  const profil = useAlpha((s) => s.settings.profil);
+  const inscrit = useMemo(() => apercuInscrit(profil), [profil]);
   const secteurs = useMemo(() => secteursDisponibles(), []);
   const [id, setId] = useState<string>(() => {
     try {
@@ -33,11 +44,13 @@ export function ApercuValeur({ onBrancher }: { onBrancher?: () => void }) {
     } catch {
       /* stockage indisponible : on retombe sur le défaut */
     }
-    // Défaut = notre ICP en cours, pour que le premier écran soit pertinent.
-    return secteurs.some((s) => s.id === "maitrise-ouvrage") ? "maitrise-ouvrage" : secteurs[0]?.id ?? "";
+    return secteurs[0]?.id ?? "";
   });
 
-  const apercu = apercuPour(id);
+  const duMarche = apercuPour(id);
+  const apercu = maitre
+    ? duMarche && { ...duMarche, offre: NOM_OFFRE[duMarche.offre] ?? duMarche.offre }
+    : inscrit.apercu;
 
   const choisir = (v: string) => {
     setId(v);
@@ -55,20 +68,31 @@ export function ApercuValeur({ onBrancher }: { onBrancher?: () => void }) {
         En 30 secondes — ce qu&apos;Alpha écrit pour ton marché
       </div>
 
-      <label className="block space-y-1">
-        <span className="text-xs uppercase tracking-wide text-paper/50">Ton marché</span>
-        <select
-          value={id}
-          onChange={(e) => choisir(e.target.value)}
-          className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-paper"
-        >
-          {secteurs.map((s) => (
-            <option key={s.id} value={s.id} className="bg-neutral-900">
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {!maitre && inscrit.manques.length > 0 && (
+        <p className="text-[13px] leading-relaxed text-paper/70">
+          Il manque {inscrit.manques.join(", ")} : l&apos;aperçu reste générique tant que ce n&apos;est pas dit.{" "}
+          <Link href="/bienvenue" className="text-bronze-400 hover:underline">
+            Le renseigner →
+          </Link>
+        </p>
+      )}
+
+      {maitre && (
+        <label className="block space-y-1">
+          <span className="text-xs uppercase tracking-wide text-paper/50">Ton marché</span>
+          <select
+            value={id}
+            onChange={(e) => choisir(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-paper"
+          >
+            {secteurs.map((s) => (
+              <option key={s.id} value={s.id} className="bg-neutral-900">
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {apercu && (
         <div className="space-y-3">
@@ -84,7 +108,7 @@ export function ApercuValeur({ onBrancher }: { onBrancher?: () => void }) {
             <div className="flex items-center justify-between">
               <div className="text-xs uppercase tracking-wide text-paper/50">Le message qu&apos;Alpha écrit</div>
               <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-paper/70">
-                {NOM_OFFRE[apercu.offre] ?? apercu.offre}
+                {apercu.offre}
               </span>
             </div>
             <p className="whitespace-pre-line text-sm text-paper/90">{apercu.message}</p>
