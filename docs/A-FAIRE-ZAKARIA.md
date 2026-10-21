@@ -28,9 +28,27 @@ base du projet `alpha-sales-os`** :
   (`tenant_credentials`), aucun forfait ne s'écrit (`entitlements` : tout le
   monde retombe au gratuit, par l'invariant), l'autopilote refuse de composer
   (pas de `agent_presence`).
-- Ce qui a été posé ce jour, à la demande : `017-adoption.sql` seulement.
-- **À trancher** : rejouer le lot sur CETTE base (idempotent, additif) — ou
-  dire dans quel autre projet il a été collé le 22/09.
+- **✅ POSÉ LE 21/10/2026, sur « go » de Zakaria** (« no client yeet » : aucun
+  client réel — `tazi.zkr` c'est lui, `jonathan…` un ami, les deux `+alphatest`
+  des essais). Le lot a été rejoué **section par section par Composio**, chaque
+  section atomique, puis **comparé objet par objet** au fichier : 21 tables,
+  28 index, 5 fonctions, 12 politiques — rien de manquant, **aucune table sans
+  RLS**. Sections 001, 005, 010 et 015 : sans effet (déjà couvertes par
+  `schema.sql`). Rien de destructeur : les seuls `drop` du lot visent ses
+  propres politiques et triggers, recréés dans la foulée.
+- **⚠ Ce que ça a CHANGÉ en production, et il faut le savoir** : la section
+  012 pose un trigger sur `auth.users` qui ouvre un **essai de 30 jours** à
+  chaque inscription — et a rempli les six comptes existants (statut `essai`,
+  pas notre `entitlements` vide d'avant). D'après `lib/essai.ts`, l'essai ouvre
+  toutes les briques sauf Alpha Voice, plafonné à **30 €/compte** et **300 €
+  au total**. Le trigger a été **testé dans une transaction annulée** (compte
+  neuf → `essai`, 30 jours, coût 0, rien créé) ; **l'inscription réelle en
+  production, elle, n'a pas pu être rejouée d'ici** (Vercel injoignable).
+- **Reste sur toi, dans cet ordre** : (1) une inscription réelle + coller une
+  clé/boîte dans Réglages, pour prouver la chaîne que je ne peux pas jouer ;
+  (2) `CRON_SECRET` de Vercel = secret `alpha_cron_secret` du Vault (les ticks
+  répondent 401) ; (3) une clé de modèle côté serveur si tu veux que le tri
+  des réponses tourne (503 « IA indisponible »).
 
 ## ✅ 22/09/2026 — SOCLE COMPLET, EMAIL PROUVÉ EN BOÎTE DE RÉCEPTION
 
