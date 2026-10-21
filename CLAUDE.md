@@ -2428,6 +2428,13 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
   · **Un test réécrit par script a perdu sa dent en silence** : le cache partagé entre
     deux lectures est devenu deux caches neufs, et la mutation « un inconnu mis en
     cache » a survécu. Repéré parce qu'on remute après CHAQUE refactor de test.
+- **1 000 utilisateurs sur le SERVEUR D'APPLICATION — mesuré le 21/10, rejouable**
+  (`scripts/charge-locale.mjs`, chiffres et limites dans `docs/OBJECTIF-10M.md` § 2ter) :
+  1 000 connexions simultanées, une IP chacune, routes publiques → 8 524 requêtes toutes
+  en 200, p95 29 ms serveur chaud, p95 ~2 s à froid ; saturation ≈ 325–375 req/s pour un
+  processus, puis file (p95 12–20 s, `ECONNRESET`). **Ce n'est PAS un test d'inscription ni
+  de comptes connectés** : aucun appel Supabase (les ~17 REST par page restent le vrai
+  plafond d'un connecté, non mesuré), pas Vercel, aucun email de confirmation.
 - **Ce qui reste, sans fard** : (1) **chaque requête qui traverse le middleware relit
   les droits par un appel REST** — ~17 par page, d'après le commentaire du middleware.
   Le cache de droits par instance (jamais sur les routes qui dépensent, jamais sur un

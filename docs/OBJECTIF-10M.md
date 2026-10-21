@@ -68,6 +68,33 @@ une dépense réelle n'y est pas encore vu — il l'est sur Postgres local, deux
 PostgREST (Settings → API → Max rows), les limites d'Auth, le SMTP, l'hébergement.
 Rien de cela ne se mesure depuis ce conteneur.
 
+### 2ter. Ce qui a été MESURÉ côté serveur d'application (21/10/2026) — `scripts/charge-locale.mjs`
+
+1 000 utilisateurs virtuels, chacun avec SA propre IP, sur `next start` (build de
+production, 4 vCPU partagés avec le générateur de charge). Routes publiques seulement.
+
+| Scénario | Résultat mesuré |
+|---|---|
+| **1 000 simultanés, une page toutes les ~3 s, 25 s** (≈ 290 req/s) | 8 524 requêtes, **toutes en 200**, aucune erreur. Serveur chaud : p50 **4 ms**, p95 **29 ms**, p99 **62 ms**, max 197 ms |
+| **Même scénario, serveur froid** (première rafale) | 8 155 requêtes, toutes en 200, mais p95 **2 015 ms**, p99 2 496 ms : 1 000 arrivées d'un coup sur un serveur dont rien n'est chaud |
+| **Saturation : 1 000 connexions, AUCUNE pause** | plafond ≈ **325–375 req/s** pour UN processus. Au-delà, ça fait la queue : p50 156–191 ms mais **p95 12–20 s**, et **60 `ECONNRESET`** sur 6 154 requêtes à la 2ᵉ passe. Le serveur répond de nouveau en ~4 ms dès la tempête passée (relevé après la 1ʳᵉ passe) |
+| **Le limiteur** (1 300 requêtes d'UNE seule IP en une minute) | 1 200 passent, **100 reçoivent 429** — le plafond tient exactement |
+
+⚠ **Ce que ces chiffres ne disent PAS** — c'est la moitié du résultat :
+- **Aucun appel Supabase n'a eu lieu** (hôtes bloqués d'ici, aucun compte configuré).
+  Or `resoudreDroits` relit les droits par un appel REST à chaque requête d'un
+  inscrit (~17 par page, d'après le commentaire du middleware) : **c'est le vrai
+  plafond d'un utilisateur connecté, et il n'est pas mesuré.** 4 ms pour `/vitrine`
+  ne dit rien de `/aujourdhui` pour quelqu'un de connecté.
+- **Ce n'est pas Vercel** : là, la charge s'étale sur des instances serverless
+  (autre mécanique, autres démarrages à froid, autre coût).
+- **Personne ne s'est inscrit.** Aucun email de confirmation n'est parti : le mur
+  des ~30 inscriptions/heure (§ 2) est **intact et non testé**.
+- **« 1 000 utilisateurs » = 1 000 connexions simultanées**, pas 1 000 comptes
+  actifs sur une journée. Les 1 M de comptes du § 2bis sont une mesure SQL.
+- Le générateur et le serveur partagent 4 cœurs : le plafond réel est **plus haut**,
+  la queue de latence à saturation peut en partie venir du générateur.
+
 ## 3. Les paliers — 10 · 100 · 1 000 · 10 000 · 100 000 · 1 M · 10 M
 
 Même logique que `lib/paliers-campagne.ts` : **un palier borne, il ne décore
