@@ -1,4 +1,5 @@
 import { doctrineOrDefault } from "@/lib/business-rules";
+import { resoudreDroits } from "@/lib/entitlements";
 import { NextRequest, NextResponse } from "next/server";
 import { runAIJson } from "@/lib/ai-engine";
 import { moteurIADeLaRequete } from "@/lib/credentials-secret";
@@ -23,7 +24,9 @@ export async function POST(request: NextRequest) {
 
   const offer: OfferInput = body.offer ?? {};
 
-  const system = [body.identity?.trim(), icpSystemPrompt(), `Doctrine du compte :\n${clipDoctrine(doctrineOrDefault(body.businessRules))}`]
+  // Même règle que les autres routes IA : notre doctrine au maître seul.
+  const { maitre } = await resoudreDroits(request);
+  const system = [body.identity?.trim(), icpSystemPrompt(), `Doctrine du compte :\n${clipDoctrine(doctrineOrDefault(body.businessRules, maitre))}`]
     .filter(Boolean)
     .join("\n\n");
 

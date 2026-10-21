@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { SEED_PROSPECT_IDS, DEMO_PROSPECT_IDS, isDemoProspect, seedProspects } from "../lib/seed";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DEFAULT_BUSINESS_RULES, doctrineOrDefault } from "../lib/business-rules";
+import { DEFAULT_BUSINESS_RULES, REGLES_DE_METHODE, doctrineOrDefault } from "../lib/business-rules";
 import { clipDoctrine, DOCTRINE_MAX_CHARS } from "../lib/identity";
 import { NUWACOM_THRESHOLD_HT } from "../lib/accounts";
 import { PACK_SETUP_HT, PACK_MONTHLY_HT, OUTBOUND_TIERS } from "../lib/bricks";
@@ -73,11 +73,12 @@ test("doctrine — le serveur ne fait plus confiance au client pour la porter", 
   // Régression possible depuis que le socle descend du serveur : un store neuf
   // envoie `businessRules: ""`. Sans repli, l'IA perdait « jamais de prix avant
   // la démo » sans qu'aucune réponse ne le signale.
-  assert.equal(doctrineOrDefault(""), DEFAULT_BUSINESS_RULES);
-  assert.equal(doctrineOrDefault("   \n  "), DEFAULT_BUSINESS_RULES);
-  assert.equal(doctrineOrDefault(undefined), DEFAULT_BUSINESS_RULES);
+  assert.equal(doctrineOrDefault("", true), DEFAULT_BUSINESS_RULES);
+  assert.equal(doctrineOrDefault("   \n  ", true), DEFAULT_BUSINESS_RULES);
+  assert.equal(doctrineOrDefault(undefined, true), DEFAULT_BUSINESS_RULES);
   // Mais la doctrine ÉDITÉE par l'opérateur gagne toujours : c'est la sienne.
-  assert.equal(doctrineOrDefault("1. Ma règle à moi."), "1. Ma règle à moi.");
+  assert.equal(doctrineOrDefault("1. Ma règle à moi.", true), "1. Ma règle à moi.");
+  assert.equal(doctrineOrDefault("1. Ma règle à moi.", false), "1. Ma règle à moi.");
 });
 
 test("doctrine — chaque route IA applique le repli", () => {
@@ -86,5 +87,42 @@ test("doctrine — chaque route IA applique le repli", () => {
   for (const f of ["ai", "sparring", "agent", "icp"]) {
     const src = readFileSync(join(process.cwd(), `app/api/${f}/route.ts`), "utf8");
     assert.match(src, /doctrineOrDefault\(/, `/api/${f} n'applique pas le repli de doctrine`);
+  }
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * ⚠⚠ UN INSCRIT NE REÇOIT JAMAIS NOTRE ÉCONOMIE DANS SES PROMPTS.
+ *
+ * Mesuré le 21/10/2026 : `/api/knowledge` est réservé au maître, donc un
+ * inscrit envoie une doctrine vide — et le repli lui servait la nôtre :
+ * l'escalier EAGLEYE → Nuwacom à 15 %, nos offres et nos prix, nos cibles.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+test("⚠⚠ hors compte maître, la doctrine par défaut est la MÉTHODE, sans notre économie", () => {
+  const d = doctrineOrDefault("", false);
+  assert.equal(d, REGLES_DE_METHODE);
+  assert.doesNotMatch(d, /eagleye|nuwacom|alpha voice|alpha sales os|escalier|commission|\d+\s*%|€/i, "notre économie ne descend pas chez un inscrit");
+  // La méthode, elle, tient : ce sont les règles qui coûtent le plus cher à oublier.
+  const tete = d.split("\n").slice(0, 3).join(" ").toLowerCase();
+  assert.match(tete, /prix avant la démo/);
+  assert.match(tete, /art\.?\s*50|ai act/, "la divulgation IA est une obligation légale pour TOUT vendeur");
+  assert.match(d, /n'invente ni prix, ni client/i, "le modèle ne sait de son offre que ce qu'il en a dit");
+  assert.equal(clipDoctrine(d), d.trim(), "elle tient sans être coupée");
+});
+
+test("la doctrine de méthode est un sous-ensemble honnête : chaque règle porte un numéro, aucune ne parle de nous", () => {
+  for (const ligne of REGLES_DE_METHODE.split("\n")) {
+    assert.match(ligne, /^\d+\. \S/, `règle mal formée : ${ligne}`);
+  }
+});
+
+test("⚠ les quatre routes IA demandent au SERVEUR de quel côté elles parlent", () => {
+  for (const r of ["ai", "agent", "sparring", "icp"]) {
+    const src = readFileSync(join(process.cwd(), `app/api/${r}/route.ts`), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    assert.match(src, /const \{ maitre \} = await resoudreDroits\(request\)/, `${r} : le maître doit venir de resoudreDroits`);
+    assert.match(src, /doctrineOrDefault\(body\.businessRules, maitre\)/, `${r} : la doctrine doit dépendre de ce verdict`);
   }
 });

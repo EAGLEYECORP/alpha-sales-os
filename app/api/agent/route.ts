@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { doctrineOrDefault } from "@/lib/business-rules";
+import { resoudreDroits } from "@/lib/entitlements";
 import { ollamaChat, ollamaConfigured, ollamaModel } from "@/lib/ollama";
 import { nvidiaChat, nvidiaConfigured, nvidiaModel } from "@/lib/nvidia";
 import { playbookPrompt } from "@/lib/playbook";
@@ -44,7 +45,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "messages requis" }, { status: 400 });
   }
   // Repli serveur : voir lib/business-rules.ts.
-  body.businessRules = doctrineOrDefault(body.businessRules);
+  // Notre doctrine (escalier, comptes, offres) ne sert qu'au maître ; un
+  // inscrit sans doctrine reçoit la méthode seule (`REGLES_DE_METHODE`).
+  const { maitre } = await resoudreDroits(request);
+  body.businessRules = doctrineOrDefault(body.businessRules, maitre);
 
   // Un assistant vaut ce que vaut son contexte : la méthode terrain (qui le
   // fait parler comme la maison), la carte de l'app, ses limites, et l'état

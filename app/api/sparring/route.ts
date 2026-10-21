@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { doctrineOrDefault } from "@/lib/business-rules";
+import { resoudreDroits } from "@/lib/entitlements";
 import { aiAvailable, runAI } from "@/lib/ai-engine";
 import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { verticalById, verticalForSector } from "@/lib/playbook";
@@ -50,7 +51,10 @@ export async function POST(request: NextRequest) {
   }
   // Repli serveur : voir lib/business-rules.ts. Un coach sans doctrine
   // entraîne à mal vendre, et ça ne se voit pas dans la réponse.
-  body.businessRules = doctrineOrDefault(body.businessRules);
+  // Notre doctrine (escalier, comptes, offres) ne sert qu'au maître ; un
+  // inscrit sans doctrine reçoit la méthode seule (`REGLES_DE_METHODE`).
+  const { maitre } = await resoudreDroits(request);
+  body.businessRules = doctrineOrDefault(body.businessRules, maitre);
 
   /**
    * ⚠⚠ CETTE ROUTE REFAISAIT SA PROPRE CASCADE — supprimée le 16/09/2026.

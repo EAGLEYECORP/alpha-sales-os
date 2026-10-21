@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { audiencePrompt } from "@/lib/audience";
 import { doctrineOrDefault } from "@/lib/business-rules";
+import { resoudreDroits } from "@/lib/entitlements";
 import type { Prospect } from "@/lib/types";
 import { runAI } from "@/lib/ai-engine";
 import { moteurIADeLaRequete } from "@/lib/credentials-secret";
@@ -238,7 +239,10 @@ export async function POST(request: NextRequest) {
   // La doctrine ne dépend plus de ce que le navigateur veut bien envoyer :
   // une chaîne vide donnait une IA qui ignore « jamais de prix avant la démo »,
   // sans que rien ne le signale. Le repli est côté serveur.
-  body.businessRules = doctrineOrDefault(body.businessRules);
+  // Notre doctrine (escalier, comptes, offres) ne sert qu'au maître ; un
+  // inscrit sans doctrine reçoit la méthode seule (`REGLES_DE_METHODE`).
+  const { maitre } = await resoudreDroits(request);
+  body.businessRules = doctrineOrDefault(body.businessRules, maitre);
 
   // Le playbook terrain entre dans le système : c'est lui qui fait la
   // différence entre un conseil générique et la méthode maison.

@@ -33,9 +33,38 @@
  * envoie une (l'opérateur l'a éditée dans ses réglages), elle gagne ; sinon,
  * c'est celle-ci.
  */
-export function doctrineOrDefault(depuisClient?: string): string {
-  return (depuisClient ?? "").trim() || DEFAULT_BUSINESS_RULES;
+export function doctrineOrDefault(depuisClient: string | undefined, maitre: boolean): string {
+  return (depuisClient ?? "").trim() || (maitre ? DEFAULT_BUSINESS_RULES : REGLES_DE_METHODE);
 }
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA DOCTRINE D'UN INSCRIT — la méthode, sans notre économie.
+ *
+ * ⚠⚠ MESURÉ LE 21/10/2026 : `/api/knowledge` (d'où descend la doctrine) est
+ * réservé au maître, donc un inscrit a `businessRules: ""` — et le repli
+ * ci-dessus lui servait la NÔTRE, dans chacune de ses requêtes IA : l'escalier
+ * EAGLEYE → Nuwacom à 15 %, nos offres, nos cibles. Son IA écrivait à SES
+ * prospects avec notre routage de commission en consigne. Le paramètre `maitre`
+ * est OBLIGATOIRE : chaque route doit dire de quel côté elle parle.
+ *
+ * Ces règles valent pour n'importe quel vendeur. Ce qui est à nous (Alpha
+ * Voice, l'escalier, les comptes, nos prix, nos cibles) n'y est pas, et un test
+ * le refuse. La dernière règle est celle qu'un inscrit ne peut pas écrire
+ * lui-même : le modèle ne sait de son offre que ce qu'il en a dit.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const REGLES_DE_METHODE = `1. Jamais de prix avant la démo. Un chiffre lâché trop tôt transforme la conversation en négociation.
+2. Toute IA qui parle à un prospect annonce qu'elle est une IA dès la première phrase (AI Act, art. 50). Jamais contourné, jamais adouci.
+3. On vend une décision, pas un outil.
+4. Chiffrer ce que coûte l'inaction — avec SES chiffres à lui. Jamais un montant inventé : un chiffre faux détruit la confiance plus vite qu'un silence.
+5. OBSTACLES (avant l'offre) ≠ OBJECTIONS (après l'offre). On épluche : circonstances → les autres → soi. On n'argumente pas.
+6. Les 3 croyances à 10/10 avant de demander la signature : ça fonctionne, tu me soutiens, ça marche POUR MOI.
+7. Chaque contact se termine par une prochaine étape DATÉE. Sans exception.
+8. Pas de devis à froid : un échange de cadrage daté d'abord (visio, appel), le chiffrage ensuite.
+9. La fréquence de relance suit SA réactivité, jamais le calendrier. 3 touches ignorées = changer de canal, pas insister.
+10. Un perdu se recontacte avec une raison NEUVE, jamais « je me permets de relancer ».
+11. Tu ne connais de l'offre de ce vendeur que ce qu'il en a écrit : n'invente ni prix, ni client, ni résultat, ni référence.`;
 
 export const DEFAULT_BUSINESS_RULES = `1. Jamais de prix avant la démo. Un chiffre lâché trop tôt transforme la conversation en négociation.
 2. Alpha Voice annonce qu'il est une IA dès la première phrase (AI Act, art. 50). Jamais contourné, jamais adouci.
