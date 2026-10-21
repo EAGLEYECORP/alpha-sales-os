@@ -10,6 +10,28 @@
 
 ---
 
+## ⚠ 21/10/2026 — LA BASE LUE, ET ELLE NE PORTE PAS LE LOT
+
+Lue par Composio (voir « Contraintes d'environnement » de `CLAUDE.md`), pas
+déduite. La ligne « B1 fait » du 22/09 ci-dessous **n'est pas reflétée dans la
+base du projet `alpha-sales-os`** :
+- `public` ne contient que **4 tables**, toutes étrangères au dépôt
+  (`autopilot_logs`, `companies`, `icp_intelligence`, `qualification_scripts`),
+  et **0 politique RLS**. Aucune des ~21 tables de `LOT-A-COLLER.sql`
+  (`prospects`, `entitlements`, `tenant_credentials`, `agent_presence`…).
+- L'ordonnanceur, lui, est posé : 4 jobs `pg_cron` actifs, 2 secrets Vault. Il
+  tourne, « succeeded » 742 fois — et **les réponses reçues disent pourquoi
+  rien n'en sort** : `500 Could not find the table 'public.prospects'`,
+  `401 CRON_SECRET absent ou invalide`, `503 IA indisponible` (le tri des
+  réponses exige un modèle côté serveur). Vert, silencieux, inutile.
+- Conséquences directes : un inscrit ne peut **pas enregistrer ses identifiants**
+  (`tenant_credentials`), aucun forfait ne s'écrit (`entitlements` : tout le
+  monde retombe au gratuit, par l'invariant), l'autopilote refuse de composer
+  (pas de `agent_presence`).
+- Ce qui a été posé ce jour, à la demande : `017-adoption.sql` seulement.
+- **À trancher** : rejouer le lot sur CETTE base (idempotent, additif) — ou
+  dire dans quel autre projet il a été collé le 22/09.
+
 ## ✅ 22/09/2026 — SOCLE COMPLET, EMAIL PROUVÉ EN BOÎTE DE RÉCEPTION
 
 Délégation CEO reçue de Zakaria (« make the best decisions, don't call unless

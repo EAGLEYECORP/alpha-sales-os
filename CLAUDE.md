@@ -2328,6 +2328,24 @@ coûte plus cher qu'une contrainte absente : elle fait renoncer sans essayer.
 | Clés live NVIDIA / Stripe · récupération de page tarifaire | bloquées |
 | pypi | passe |
 
+- **SUPABASE SE LIT ET S'ÉCRIT D'ICI PAR COMPOSIO, pas par le réseau** (21/10/2026).
+  Les hôtes restent bloqués en direct (403 au CONNECT : une POLITIQUE de
+  l'environnement, pas une panne de Supabase — réglage « Network access » de
+  l'environnement cloud). Mais la connexion Composio « supabase » est active :
+  `SUPABASE_RUN_READ_ONLY_QUERY` · `SUPABASE_BETA_RUN_SQL_QUERY` ·
+  `SUPABASE_APPLY_A_MIGRATION` sur le projet `alpha-sales-os`. Avant, toute
+  décision sur la base se prenait sur le CODE, jamais sur la base.
+  · **Lire l'état, pas le supposer** : `pg_class` / `pg_proc` / `pg_policies`,
+    **jamais `information_schema`** — il masque les tables que le rôle de
+    lecture n'a pas le droit de voir (la plupart des nôtres : `revoke … from
+    anon, authenticated`). Mesuré le jour même : mes deux premières lectures
+    annonçaient « quatre tables » par le mauvais catalogue.
+  · **Limites mesurées** : `SET ROLE service_role` est refusé — on ne peut pas
+    appeler `adoption_stats` comme le fait la route ; on rejoue son corps en
+    lecture seule. `cron.job_run_details` dit « succeeded » dès que l'appel
+    HTTP est PARTI : la vraie réponse est dans `net._http_response` (courte
+    mémoire), c'est elle qui dit si le tick a servi à quelque chose.
+  · **Ce qui ne passe toujours pas** : la production Vercel (même politique).
 - **La ligne « github.com bloqué » était FAUSSE.** Elle a survécu à un
   changement de politique du proxy, et personne ne la retestait — on ne teste
   pas ce qu'on croit savoir. Ce qui reste vrai : **aucune source open-data
