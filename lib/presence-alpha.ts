@@ -24,8 +24,11 @@ import type { Routine } from "./routines";
  * (c'est la promesse de souveraineté), donc il ne peut ni travailler à sa
  * place ni le prévenir app fermée. Un agent qui agit SANS l'onglet exige que
  * le pipe vive sur un serveur (`pipeServeur`, opt-in) et qu'un tick tourne par
- * locataire — ce qui n'existe aujourd'hui que pour notre pipe (opérateur) et
- * pour une installation « chez vous ». Ne pas le promettre à un inscrit.
+ * locataire — ce qui n'existe que pour notre pipe (opérateur) et pour une
+ * installation « chez vous », où le serveur est le sien.
+ * TRANCHÉ le 21/10/2026 (Zakaria) : NON, le pipe d'un inscrit en ligne ne vit
+ * pas chez nous. L'onglet ouvert n'est donc pas un manque provisoire, c'est la
+ * frontière. Ne pas le promettre à un inscrit.
  *
  * ── LES RÈGLES DE LA NOTIFICATION (celles de `lib/push-digest.ts`) ──
  *

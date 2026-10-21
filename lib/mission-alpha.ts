@@ -31,9 +31,9 @@ import { isDemoProspect } from "./seed";
  * ⚠ ELLE TOURNE DANS LE NAVIGATEUR, onglet ouvert. Le CRM d'un compte gratuit
  * vit dans son `localStorage` : le serveur ne le voit pas, donc il ne peut pas
  * lancer cette mission à sa place pendant qu'il dort. Un ALPHA qui travaille
- * app fermée exige que le pipe vive sur un serveur (`pipeServeur`, opt-in) et
- * un déclencheur par locataire — un chantier à part, qui est une décision de
- * souveraineté. Voir `lib/presence-alpha.ts`.
+ * app fermée exige que le pipe vive sur un serveur : TRANCHÉ le 21/10/2026
+ * (Zakaria), non pour un inscrit en ligne — il le fait sur l'installation
+ * « chez vous », où le serveur est le sien. Voir `lib/presence-alpha.ts`.
  *
  * ⚠ LES ÉTAPES NE SE DÉDOUBLENT PAS : « ce qui attend un humain » vient de
  * `computeRoutines`, comme la bande de présence — une définition de plus aurait

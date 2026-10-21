@@ -48,7 +48,7 @@ ligne de ces projets n'entre dans le dépôt.
 
 | Ce qui manque | Pourquoi | Ce que ça exigerait |
 |---|---|---|
-| **ALPHA qui travaille pendant que l'inscrit dort** | Le CRM d'un compte gratuit vit dans son navigateur ; le serveur ne le voit pas. C'est la promesse de souveraineté. Un agent ne peut pas travailler sur ce qu'il ne voit pas. | Le pipe de l'inscrit sur NOTRE serveur (`pipeServeur`, opt-in) **et** un déclencheur par locataire. Aujourd'hui seul NOTRE pipe a ça (`/api/push/tick` lit `lireProspectsOperateur`). **C'est une décision de souveraineté, pas un ticket.** |
+| **ALPHA qui travaille pendant que l'inscrit dort** | Le CRM d'un compte gratuit vit dans son navigateur ; le serveur ne le voit pas. C'est la promesse de souveraineté. Un agent ne peut pas travailler sur ce qu'il ne voit pas. | Le pipe de l'inscrit sur NOTRE serveur (`pipeServeur`, opt-in) **et** un déclencheur par locataire. Aujourd'hui seul NOTRE pipe a ça (`/api/push/tick` lit `lireProspectsOperateur`). **Décision de souveraineté, TRANCHÉE le 21/10/2026 par Zakaria : NON.** Le pipe d'un inscrit en ligne ne vit pas chez nous ; l'onglet ouvert est la frontière. Ça existe app fermée sur l'installation « chez vous » (son serveur, son tick) — c'est une raison d'acheter la grille complète. |
 | **Envoi automatique depuis la boîte de l'inscrit** | Possible techniquement (ses identifiants sont chiffrés, `tenant_credentials`), mais c'est sa réputation de domaine qui est en jeu, et aucune règle d'armement par locataire n'existe : l'autopilote est global, maître seul (`015-autopilote-reglage.sql`). | Un interrupteur et un palier d'envoi par locataire, les mêmes gardes que `/api/send` (mentions, palier du jour, présence). |
 | **Appel téléphonique depuis la version en ligne** | Pas de clé par locataire pour la téléphonie : ça brûlerait NOTRE ligne. | Un lot « BYOK téléphonie » (`docs/BYOK-CHIFFRAGE.md`) — ou l'installation « chez vous ». |
 | **LinkedIn envoyé par ALPHA** | Aucune API légitime pour cet usage ; l'automatiser, c'est du faux comportement humain. | Rien : on le fait à la main, et on le dit (« troisième colonne »). |
@@ -63,12 +63,15 @@ ligne de ces projets n'entre dans le dépôt.
    pures qui tournent telles quelles sur un serveur (`triageImport`,
    `computeRoutines`, `buildCallSession`). La sixième (les brouillons) est liée au
    store du navigateur : sa logique (`fillTemplate`) est à extraire.
-4. **Décider** si le pipe d'un inscrit peut vivre chez nous (option).
-5. Un déclencheur par locataire (même modèle que `004-ordonnanceur.sql`, mais
-   par `tenant_id`), qui joue la mission et DÉPOSE ses résultats comme
-   propositions — jamais comme envois.
-6. Les notifications push par locataire (le dispositif existe pour nous seuls).
-7. Seulement après : un interrupteur d'envoi par locataire, derrière les gardes.
+4. ✅ **Décidé le 21/10/2026 : NON** — le pipe d'un inscrit en ligne ne vit pas
+   chez nous. Les marches 5 à 7 ne se construisent donc **pas sur le cloud**.
+5. *(installation « chez vous » seulement)* Un déclencheur sur le serveur du
+   client (même modèle que `004-ordonnanceur.sql`), qui joue la mission et
+   DÉPOSE ses résultats comme propositions — jamais comme envois.
+6. *(idem)* Les notifications push depuis son serveur (le dispositif existe
+   pour nous seuls).
+7. *(idem)* Seulement après : un interrupteur d'envoi, derrière les gardes.
 
-Chaque marche est livrable seule. La 4 est la seule qui n'est pas une affaire
-de code.
+Chaque marche est livrable seule. Le « non » du 21/10 déplace le chantier : de
+« un tick par inscrit en ligne » (abandonné) à « un tick dans l'installation du
+client » (la marche 3 reste le prérequis, et elle sert les deux).

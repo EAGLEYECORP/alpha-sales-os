@@ -1759,8 +1759,8 @@ code — est ce que la doctrine refuse) ; on prend leurs PATRONS, déjà écrits
 - **La boîte d'envoi se branche SUR PLACE** quand c'est ce qui manque (et
   seulement à un compte locataire, seulement s'il y a des messages à envoyer).
 - **Ça tourne dans le navigateur, onglet ouvert, et l'écran le dit.** ALPHA qui
-  travaille pendant que l'inscrit dort exige que son pipe vive chez nous : une
-  décision de souveraineté, **non prise** (`docs/STATION-AUTONOME.md`, § 4-5).
+  travaille pendant que l'inscrit dort exige que son pipe vive chez nous :
+  **TRANCHÉ le 21/10/2026 (Zakaria) — NON** (`docs/STATION-AUTONOME.md`, § 4-5).
   Sept mutations mordent.
 
 ### « ALPHA A BESOIN DE TOI » — la présence d'un agent, et ce qu'elle ne prétend pas (20/10/2026)
@@ -1791,9 +1791,22 @@ URGENT apparaît.
   le prévenir app fermée. **Un agent qui agit SANS l'onglet exige que le pipe
   vive sur un serveur (`pipeServeur`, opt-in) ET un tick par locataire** — ce
   qui n'existe aujourd'hui que pour NOTRE pipe (`/api/push/tick` lit
-  `lireProspectsOperateur`) et pour une installation « chez vous ». C'est le
-  vrai chantier de l'autonomie, et une décision de souveraineté : **elle n'est
-  pas prise, et la bande ne la fait pas semblant.**
+  `lireProspectsOperateur`) et pour une installation « chez vous ». C'était le
+  vrai chantier de l'autonomie, et une décision de souveraineté : **TRANCHÉE le
+  21/10/2026 — NON, le pipe d'un inscrit en ligne ne vit pas chez nous.**
+  · **L'onglet ouvert est donc la frontière, plus un manque provisoire** : la
+    bande ne promet jamais le contraire à un inscrit, et personne ne code « un
+    tick par locataire » sur le cloud. La promesse « rien de ce qui touche la
+    donnée MÉTIER ne passe par un tiers » reste entière — c'est elle qui tient
+    la vitrine.
+  · **Conséquence commerciale, à dire telle quelle** : un ALPHA qui travaille
+    app fermée existe, mais seulement sur l'installation « chez vous » (le
+    pipe est sur SON serveur, le tick est le sien — `ALPHA_INSTALLATION=client`).
+    C'est une raison d'acheter la grille complète, pas une fonction gratuite
+    qui attend d'être codée.
+  · `pipeServeur` reste ce qu'il est (volume, opt-in) et ne sert PAS de porte
+    dérobée vers l'autonomie : l'ouvrir à un inscrit en ligne rouvrirait la
+    décision, en une ligne qui se verrait au diff.
 
 ## L'OMBRELLE DES AGENTS — et ALPHA CEO livré aux clients (20/10/2026)
 `lib/agents-alpha.ts` · `tests/agents-alpha.test.ts` · `Entitlement.exploitant` ·
