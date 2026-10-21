@@ -8,7 +8,7 @@ import { deciderTypee } from "@/lib/decision-typee";
 import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
 import { autoReponseAttestee, doitEnvoyerReponse } from "@/lib/reply-autosend";
 import { DROIT_SOLO } from "@/lib/entitlements";
-import { habillageEnvoi } from "@/lib/expediteur";
+import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
 
   // ── Ce qu'il faut pour ENVOYER (résolu une fois, utilisé seulement si live). ──
   const base = baseUrlFrom(req);
-  const habillage = habillageEnvoi({ accountId: "eagleye", base });
+  const habillage = habillageOperateur(base);
   const smtp = envoiLive ? await resoudreSmtp(null, DROIT_SOLO) : null;
   const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
   const envoyes24h = envoiLive ? await countRecentSends("email", 86_400_000, null) : 0;

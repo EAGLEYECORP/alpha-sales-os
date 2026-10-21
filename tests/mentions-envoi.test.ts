@@ -135,11 +135,11 @@ test("⚠ l'aperçu et l'envoi passent par la MÊME résolution d'expéditeur", 
 });
 
 test("habillageEnvoi : la marque, l'adresse et le logo suivent le compte", () => {
-  const maitre = habillageEnvoi({ accountId: "eagleye", base: "https://x.fr" });
+  const maitre = habillageEnvoi({ maitre: true, accountId: "eagleye", base: "https://x.fr" });
   assert.equal(maitre.marque, "EAGLEYE CORP");
   assert.ok(maitre.logoUrl, "notre aigle sur notre compte");
 
-  const revendeur = habillageEnvoi({ accountId: "nuwacom", base: "https://x.fr" });
+  const revendeur = habillageEnvoi({ maitre: true, accountId: "nuwacom", base: "https://x.fr" });
   assert.equal(revendeur.marque, "Nuwacom");
   assert.equal(revendeur.logoUrl, undefined, "notre aigle ne part pas sur un compte revendeur");
   assert.ok(!/EAGLEYE/i.test(revendeur.addressLine), "ni notre raison sociale au pied");

@@ -217,17 +217,30 @@ export function normaliserCompte(settings: AppSettings): AppSettings {
 
 const defaultSettings: AppSettings = {
   accountId: "eagleye",
-  agencyName: "EAGLEYE CORP",
+  /**
+   * ⚠⚠ VIDE, ET C'EST UNE CORRECTION (21/10/2026). Ce réglage valait « EAGLEYE
+   * CORP » et l'offre ci-dessous « Alpha Sales OS » : chaque inscrit démarrait
+   * sous NOTRE identité. Ses prompts IA disaient « Tu agis pour le compte
+   * d'EAGLEYE CORP… ce qu'EAGLEYE CORP vend : Alpha Sales OS », et ses emails
+   * partaient signés de notre raison sociale dès qu'il saisissait son prénom.
+   * Le serveur refuse désormais l'envoi (`habillageEnvoi`, hors maître) ; ici,
+   * on cesse de le lui fabriquer. Le compte maître pose son identité par le
+   * sélecteur de comptes (`applyAccount`), un inscrit par `/bienvenue` ou les
+   * Réglages. Un champ vide se voit et se remplit ; un champ pré-rempli par
+   * nous ne se relit jamais.
+   *
+   * `accountId` reste « eagleye » : il ROUTE (familles d'offres), il ne signe
+   * plus rien hors du compte maître.
+   */
+  agencyName: "",
   // Le nom d'usine vient de `lib/signature` : c'est LUI que les contrôles
   // reconnaissent comme « personne n'est identifié ». Une copie de la chaîne
   // ici dériverait, et le détecteur cesserait de l'attraper en silence.
   closerName: CLOSER_USINE,
-  // Défaut EAGLEYE : Alpha Sales OS se vend lui-même. Un revendeur remplace.
-  offer: {
-    city: "Lyon",
-    whatYouSell: "Alpha Sales OS — l'OS de vente terrain",
-    valueProp: "On outille les forces de vente avec l'automatisation IA : zéro lead perdu, la machine tourne 24/7.",
-  },
+  // Vide pour la même raison que `agencyName` : ce que L'INSCRIT vend, lu sur
+  // son site (`/bienvenue`) ou saisi par lui. Notre offre vit dans le compte
+  // maître (`lib/accounts.ts`) et revient par `applyAccount`.
+  offer: { city: "", whatYouSell: "", valueProp: "" },
   targetMRR: 5000,
   // Le compte par défaut est EAGLEYE — notre société. Rien à reverser, donc
   // 100 %. À 30 %, un store neuf affichait dans les payouts un tiers du CA de

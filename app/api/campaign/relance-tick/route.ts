@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { safeEqual } from "@/lib/access";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { DROIT_SOLO } from "@/lib/entitlements";
-import { habillageEnvoi } from "@/lib/expediteur";
+import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
   const envoyes1h = await countRecentSends("email", 3_600_000, null);
   let capacite = Math.max(0, Math.min(ramp.today - envoyes24h, maxSendsPerHour() - envoyes1h, MAX_RELANCES_PAR_TICK));
 
-  const habillage = habillageEnvoi({ accountId: "eagleye", base });
+  const habillage = habillageOperateur(base);
   const lignes: LigneRelance[] = [];
 
   for (const p of enJeu) {

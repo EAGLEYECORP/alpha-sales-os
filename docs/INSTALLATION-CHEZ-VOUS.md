@@ -55,9 +55,9 @@ Puis sur SON serveur : `docker load < alpha-AAAA-MM-JJ.tar.gz`.
 
 ```bash
 ALPHA_INSTALLATION=client          # tout le produit, rien de notre économie
+ALPHA_SOCIETE=                     # SA raison sociale — signe les emails de l'autopilote
 SITE_PASSWORD=<long, à lui>         # la serrure — SANS elle, l'app retombe au gratuit
 APP_BASE_URL=https://alpha.client.fr
-CLOSER_NAME=<son nom ou sa société> # le signataire : on ne le devine jamais
 SMTP_HOST= SMTP_PORT=587 SMTP_USER= SMTP_PASS= SMTP_FROM=   # SA boîte
 OLLAMA_MODEL=qwen2.5:3b
 ```
@@ -67,6 +67,11 @@ OLLAMA_MODEL=qwen2.5:3b
   **refuse** nos pages d'économie (`/payouts`, `/offre`, nos coûts et marges,
   notre playbook).
   Ne JAMAIS la poser sur notre production : on y perdrait nos propres pages.
+- **La signature** : à la main, elle vient des Réglages de chaque utilisateur
+  (son nom + `agencyName`) ; pour l'autopilote d'emails, de `ALPHA_SOCIETE`.
+  Ni l'une ni l'autre ne retombe sur « EAGLEYE CORP » : sans société, rien ne
+  part (`lib/expediteur.ts`, 21/10/2026). `CLOSER_NAME`, que cette procédure
+  demandait, a été retirée du code — la poser ne réglait rien.
 - Sans `SITE_PASSWORD` ni comptes, l'installation retombe **au socle gratuit** :
   joignable sans serrure, son SMTP enverrait pour n'importe qui. C'est voulu.
 

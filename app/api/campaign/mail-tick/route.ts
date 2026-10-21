@@ -4,7 +4,7 @@ import { safeEqual } from "@/lib/access";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { DROIT_SOLO } from "@/lib/entitlements";
 import { eligibleColdMail, construireMailCold } from "@/lib/mail-autopilote";
-import { habillageEnvoi } from "@/lib/expediteur";
+import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
   for (const p of file) {
     const to = (p.email ?? "").trim();
     const { subject, body } = construireMailCold(p);
-    const habillage = habillageEnvoi({ accountId: "eagleye", base });
+    const habillage = habillageOperateur(base);
     const emailOpts = { subject, body, closerName: habillage.closerName, addressLine: habillage.addressLine, logoUrl: habillage.logoUrl };
     const html = renderEmail(emailOpts);
     const text = plainText(emailOpts);

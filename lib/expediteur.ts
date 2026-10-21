@@ -21,7 +21,7 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
-import { getAccount } from "./accounts";
+import { ACCOUNTS, getAccount } from "./accounts";
 import { signataire } from "./signature";
 
 /** Le triplet que toute requête vers `/api/send` doit porter. */
@@ -93,9 +93,32 @@ export interface HabillageEnvoi {
   marque: string;
   /** Vrai si personne n'est identifié : l'envoi doit être refusé. */
   usine: boolean;
+  /**
+   * Pourquoi la SOCIÉTÉ ne peut pas signer — `null` si elle le peut.
+   * `absente` : rien n'est saisi. `portefeuille` : le nom saisi est celui d'un
+   * compte de NOTRE portefeuille. Hors compte maître, l'un ou l'autre REFUSE
+   * l'envoi (voir `habillageEnvoi`).
+   */
+  marqueRefusee: "absente" | "portefeuille" | null;
 }
 
+/** Les raisons sociales du portefeuille, normalisées pour la comparaison. */
+const MARQUES_DU_PORTEFEUILLE = new Set(ACCOUNTS.map((a) => a.name.trim().toLowerCase()));
+
 export function habillageEnvoi(opts: {
+  /**
+   * L'expéditeur est-il le compte MAÎTRE ? Prouvé par le SERVEUR
+   * (`resoudreDroits`), jamais annoncé par le navigateur.
+   *
+   * ⚠⚠ MESURÉ LE 21/10/2026 : un store neuf porte `agencyName: "EAGLEYE CORP"`
+   * et `accountId: "eagleye"`. Un inscrit qui saisissait son prénom et rien
+   * d'autre envoyait donc, depuis SA boîte, un email signé de notre raison
+   * sociale, avec notre adresse en pied et notre aigle — et `usine: false`,
+   * parce que la société « identifiait » quelqu'un. Le compte annoncé par le
+   * client décidait de la marque. Obligatoire, sans défaut : chaque appelant
+   * doit dire de quel côté il envoie.
+   */
+  maitre: boolean;
   accountId?: string;
   closerName?: string;
   agencyName?: string;
@@ -105,6 +128,29 @@ export function habillageEnvoi(opts: {
   base?: string;
 }): HabillageEnvoi {
   const compte = getAccount(opts.accountId);
+
+  /**
+   * HORS COMPTE MAÎTRE : la société est celle que l'expéditeur a SAISIE, et
+   * elle ne peut être aucune des nôtres. Pas de repli sur le nom du compte
+   * (c'est le client qui l'annonce), pas de logo. Une société absente ou
+   * empruntée ne se corrige pas en douce : elle se refuse, et `/api/send` dit
+   * quoi faire.
+   */
+  if (!opts.maitre) {
+    const saisie = opts.agencyName?.trim() ?? "";
+    const marqueRefusee = !saisie ? "absente" : MARQUES_DU_PORTEFEUILLE.has(saisie.toLowerCase()) ? "portefeuille" : null;
+    const marque = marqueRefusee ? "" : saisie;
+    const qui = signataire(opts.closerName, marque);
+    return {
+      closerName: qui.nom,
+      addressLine: opts.addressLine?.trim() || marque,
+      logoUrl: undefined,
+      marque,
+      usine: qui.usine,
+      marqueRefusee,
+    };
+  }
+
   const marque = opts.agencyName?.trim() || compte.name;
   const qui = signataire(opts.closerName, marque);
   return {
@@ -113,5 +159,13 @@ export function habillageEnvoi(opts: {
     logoUrl: compte.kind === "master" && opts.base ? `${opts.base}/email-eagle.png` : undefined,
     marque,
     usine: qui.usine,
+    marqueRefusee: null,
   };
 }
+
+/** Ce que l'écran dit quand la société ne peut pas signer. */
+export const QUOI_FAIRE_SOCIETE: Record<"absente" | "portefeuille", string> = {
+  absente: "Renseigne le nom de TA société dans Réglages → Identité : un message commercial dit qui l'envoie.",
+  portefeuille:
+    "Le nom de société enregistré est celui d'un compte Alpha, pas le tien (réglage d'usine). Remplace-le par le nom de TA société dans Réglages → Identité.",
+};

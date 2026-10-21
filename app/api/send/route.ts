@@ -18,7 +18,7 @@ import { isDemoProspect, estAdresseDeDemo } from "@/lib/seed";
 import { estPartenaire } from "@/lib/validation-partenaire";
 import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
-import { habillageEnvoi } from "@/lib/expediteur";
+import { habillageEnvoi, QUOI_FAIRE_SOCIETE } from "@/lib/expediteur";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { resoudreDroits } from "@/lib/entitlements";
 import { resoudreSmtp, resoudreSms, smtpUtilisable } from "@/lib/credentials-secret";
@@ -231,13 +231,39 @@ export async function POST(request: NextRequest) {
    * bas au lieu de partir en silence.
    * ─────────────────────────────────────────────────────────────────────
    */
+  // Les droits servent à trancher QUI PAIE l'envoi (`resoudreSmtp`) et sous
+  // quelle MARQUE il part — jamais à décider seul de l'accès : ça, c'est le
+  // middleware, en amont. Résolus ici, avant l'habillage, qui en dépend.
+  const droits = await resoudreDroits(request);
   const habillage = habillageEnvoi({
+    maitre: droits.maitre,
     accountId: body.accountId,
     closerName: body.closerName,
     agencyName: body.agencyName,
     base: baseUrlFrom(request),
   });
   const marque = habillage.marque;
+
+  /**
+   * ⚠⚠ UNE SOCIÉTÉ QUI N'EST PAS LA SIENNE NE SIGNE PAS — et une société
+   * absente non plus. Hors compte maître, `habillageEnvoi` ne retombe plus sur
+   * le compte annoncé par le navigateur : un store neuf annonçait le nôtre, et
+   * un inscrit qui n'avait saisi que son prénom envoyait sous « EAGLEYE CORP »
+   * (mesuré le 21/10/2026). `verifieMentions` ne l'attraperait pas : une
+   * société vide n'y est pas exigée. On refuse ici, avant tout le reste.
+   */
+  if (habillage.marqueRefusee) {
+    return NextResponse.json(
+      {
+        error:
+          habillage.marqueRefusee === "absente"
+            ? "Société de l'expéditeur non renseignée — rien ne part."
+            : "Ce message partirait sous le nom d'une société qui n'est pas la tienne — rien ne part.",
+        quoiFaire: QUOI_FAIRE_SOCIETE[habillage.marqueRefusee],
+      },
+      { status: 422 }
+    );
+  }
 
   /**
    * ─────────────────────────────────────────────────────────────────────
@@ -297,9 +323,6 @@ export async function POST(request: NextRequest) {
   // Locataire courant (multi-compte) : identité + accès. Résolu une fois, réutilisé.
   const tenant = await getTenant(request);
   const tenantId = tenant?.id ?? null;
-  // Les droits servent à trancher QUI PAIE l'envoi (`resoudreSmtp`), jamais à
-  // décider seul de l'accès — ça, c'est le middleware, en amont.
-  const droits = await resoudreDroits(request);
 
   // Freemium (opt-in REQUIRE_SUBSCRIPTION). Envoyer est l'action à valeur :
   //  · unmetered/owner/active → illimité (usage loyal) ;

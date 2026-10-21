@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { construireMailCold, eligibleColdMail, TAG_DEJA_ECRIT } from "@/lib/mail-autopilote";
 import { prospectDefaults } from "@/lib/seed";
-import { habillageEnvoi } from "@/lib/expediteur";
+import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions } from "@/lib/conformite";
 import { verifieDivulgation } from "@/lib/signature-ia";
@@ -25,9 +25,10 @@ const promoteur = (over: Partial<Prospect> = {}): Prospect => ({
 
 // Rend l'email EXACTEMENT comme le ferait le serveur (habillage maître).
 function rendreTexte(p: Prospect): { text: string; closer: string; marque: string } {
-  // Rendu à l'identique du tick : compte maître, signataire résolu par défaut
-  // (la société — pas de nom humain en dur).
-  const hab = habillageEnvoi({ accountId: "eagleye", base: "https://alpha.test" });
+  // Rendu à l'identique du tick : la MÊME fonction (`habillageOperateur`) —
+  // compte maître sur notre cloud, signataire résolu par défaut (la société,
+  // pas de nom humain en dur).
+  const hab = habillageOperateur("https://alpha.test");
   const { subject, body } = construireMailCold(p);
   const text = plainText({ subject, body, closerName: hab.closerName, addressLine: hab.addressLine, logoUrl: hab.logoUrl });
   return { text, closer: hab.closerName, marque: hab.marque };

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { lintForSpam } from "@/lib/deliverability";
 import { habillageEnvoi } from "@/lib/expediteur";
+import { resoudreDroits } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
 
@@ -42,7 +43,11 @@ export async function POST(request: NextRequest) {
    *
    * Une seule source pour les deux routes : `habillageEnvoi`.
    */
+  // Même arbitre que l'envoi : sans ça, l'aperçu d'un inscrit montrerait
+  // notre aigle et notre raison sociale qu'aucun envoi ne portera plus.
+  const { maitre } = await resoudreDroits(request);
   const habillage = habillageEnvoi({
+    maitre,
     accountId: b.accountId,
     closerName: b.closerName,
     agencyName: b.agencyName,
