@@ -27,6 +27,9 @@ import { LeconsVerticale } from "@/components/appels/lecons-verticale";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
 import { PageHeader } from "@/components/ui/page-header";
+import { useDroits } from "@/lib/use-droits";
+import { scriptAServir } from "@/lib/script-operateur";
+import { verticalById } from "@/lib/playbook";
 
 /**
  * Session d'appels — la « liste du matin ». Une verticale, son script
@@ -60,9 +63,20 @@ export default function AppelsPage() {
   const [reouvert, setReouvert] = useState<Set<string>>(() => new Set());
 
   const verticalId = activeId || verticals[0]?.vertical.id || "";
-  const { vertical, targets } = useMemo(
-    () => buildCallSession(prospects, verticalId),
-    [prospects, verticalId]
+  /**
+   * ⚠ LE SCRIPT N'EST PAS LA VERTICALE. Nos verticales vendent ALPHA ; un
+   * inscrit vend SON offre. Le maître garde nos scripts, tout autre compte
+   * reçoit celui de son profil (`lib/script-operateur.ts`).
+   */
+  const { maitre } = useDroits();
+  const profil = useAlpha((s) => s.settings.profil);
+  const servi = useMemo(
+    () => scriptAServir(maitre, profil, verticalById(verticalId)),
+    [maitre, profil, verticalId]
+  );
+  const { vertical, script, targets } = useMemo(
+    () => buildCallSession(prospects, verticalId, new Date(), servi.vertical),
+    [prospects, verticalId, servi.vertical]
   );
 
   /**
@@ -216,7 +230,12 @@ export default function AppelsPage() {
       {/* Assistant d'appel en direct — il écoute POUR toi, il ne parle qu'à toi */}
       <div>
         {assistOpen ? (
-          <LiveAssist verticalId={verticalId} onClose={() => setAssistOpen(false)} />
+          <LiveAssist
+            verticalId={verticalId}
+            playbook={script}
+            catalogue={servi.catalogue}
+            onClose={() => setAssistOpen(false)}
+          />
         ) : (
           <button className="btn-ghost px-3 py-2 text-[13px]" onClick={() => setAssistOpen(true)}>
             <Ear size={14} /> Assistant d&apos;appel — l&apos;IA souffle la réponse du playbook
@@ -229,15 +248,25 @@ export default function AppelsPage() {
           Ne s'affiche que s'il y a quelque chose de vrai à dire. */}
       <LeconsVerticale vertical={vertical} targets={targets.map((t) => t.prospect)} />
 
-      {/* Le script de la verticale */}
-      {vertical && (
+      {/* Ce qui manque pour que le script parle de TOI — dit, pas comblé. */}
+      {servi.manques.length > 0 && (
+        <p className="card border-signal-amber/40 px-4 py-3 text-[13px] leading-relaxed text-paper-dim">
+          Ton script est générique tant qu&apos;il manque {servi.manques.join(", ")}.{" "}
+          <Link href="/bienvenue" className="text-bronze-400 hover:underline">
+            Le renseigner →
+          </Link>
+        </p>
+      )}
+
+      {/* Le script — celui de TON offre, ou le nôtre pour le compte maître */}
+      {script && (
         <section className="card overflow-hidden">
           <button
             className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
             onClick={() => setScriptOpen((o) => !o)}
           >
             <span className="flex items-center gap-2 font-display text-sm font-bold text-paper">
-              <ScrollText size={15} className="text-bronze-400" /> Le script — {vertical.label}
+              <ScrollText size={15} className="text-bronze-400" /> Le script — {script.label}
             </span>
             <ChevronDown size={16} className={cn("shrink-0 text-paper-faint transition-transform", scriptOpen && "rotate-180")} />
           </button>
@@ -246,11 +275,11 @@ export default function AppelsPage() {
             <div className="space-y-4 border-t border-ink-700 px-4 py-4 animate-fade-up">
               <p className="text-[13px] leading-relaxed text-paper-dim">
                 <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-bronze-400">Critère · </span>
-                {vertical.criterion}
+                {script.criterion}
               </p>
 
               <ol className="space-y-2.5 border-l border-ink-700 pl-4">
-                {vertical.opener.map((s, i) => (
+                {script.opener.map((s, i) => (
                   <li key={i}>
                     <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-bronze-400">
                       {i + 1} · {s.label}
@@ -264,7 +293,7 @@ export default function AppelsPage() {
               <div>
                 <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-paper-faint">Diagnostic — poser, puis se taire</p>
                 <ul className="mt-1 space-y-1">
-                  {vertical.diagnostic.map((q, i) => (
+                  {script.diagnostic.map((q, i) => (
                     <li key={i} className="text-[13.5px] text-paper-dim">« {q} »</li>
                   ))}
                 </ul>
@@ -272,7 +301,7 @@ export default function AppelsPage() {
 
               <p className="rounded-xl border border-bronze-700/50 bg-bronze-900/20 px-3.5 py-2.5 text-[13px] leading-relaxed text-bronze-300">
                 <span className="font-mono text-[9.5px] uppercase tracking-[0.16em]">Le miroir · </span>
-                « {vertical.mirror} »
+                « {script.mirror} »
               </p>
 
               <div className="rounded-xl border border-signal-red/40 bg-signal-red/5 px-3.5 py-2.5">
@@ -280,7 +309,7 @@ export default function AppelsPage() {
                 <ul className="mt-1.5 space-y-1 text-[12.5px] leading-relaxed text-paper-dim">
                   <li>Les euros perdus, la note Google, la liste des fonctionnalités.</li>
                   <li>« J&apos;appelle toutes les entreprises du secteur » — le critère, jamais le volume.</li>
-                  {vertical.forbidden.map((f, i) => (
+                  {script.forbidden.map((f, i) => (
                     <li key={i}>{f.regle}</li>
                   ))}
                 </ul>
@@ -289,7 +318,7 @@ export default function AppelsPage() {
               <div>
                 <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-paper-faint">Red Zone — ce qu&apos;ils vont dire</p>
                 <ul className="mt-1.5 space-y-2">
-                  {vertical.objections.map((o, i) => (
+                  {script.objections.map((o, i) => (
                     <li key={i} className="border-l-2 border-ink-600 pl-3">
                       <p className="text-[13px] font-medium italic text-paper">« {o.q} »</p>
                       <p className="text-[13px] leading-relaxed text-paper-dim">→ {o.a}</p>

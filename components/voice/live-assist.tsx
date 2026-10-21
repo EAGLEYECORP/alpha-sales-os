@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Ear, Radio, ShieldAlert, Square, X } from "lucide-react";
-import { matchAlarms, matchObjections, verticalById, type AssistMatch, type DoctrineAlarm } from "@/lib/live-assist";
+import {
+  matchAlarms,
+  matchObjections,
+  verticalById,
+  type AssistMatch,
+  type CatalogueObjections,
+  type DoctrineAlarm,
+} from "@/lib/live-assist";
+import type { VerticalPlaybook } from "@/lib/playbook";
 import { useSpeech } from "@/components/voice/use-speech";
 import { cn } from "@/lib/utils";
 
@@ -29,9 +37,14 @@ const WINDOW_CHARS = 260;
 
 export function LiveAssist({
   verticalId,
+  playbook,
+  catalogue = "complet",
   onClose,
 }: {
   verticalId?: string | null;
+  /** Le script servi (`scriptAServir`) — l'emporte sur `verticalId` quand il est passé. */
+  playbook?: VerticalPlaybook | null;
+  catalogue?: CatalogueObjections;
   onClose?: () => void;
 }) {
   const speech = useSpeech({ lang: "fr-FR", continuous: true });
@@ -40,13 +53,16 @@ export function LiveAssist({
   // Ce qui a déjà été soufflé : on ne re-affiche pas la même chose en boucle.
   const seen = useRef<Set<string>>(new Set());
 
-  const vertical = useMemo(() => verticalById(verticalId), [verticalId]);
+  const vertical = useMemo(
+    () => (playbook !== undefined ? playbook : verticalById(verticalId)),
+    [playbook, verticalId]
+  );
 
   const heard = `${speech.transcript} ${speech.interim}`.slice(-WINDOW_CHARS);
 
   useEffect(() => {
     if (!heard.trim()) return;
-    const found = matchObjections(heard, vertical);
+    const found = matchObjections(heard, vertical, catalogue);
     if (found.length) {
       setMatches((prev) => {
         const fresh = found.filter((f) => !prev.some((p) => p.id === f.id));
@@ -58,7 +74,7 @@ export function LiveAssist({
       for (const a of al) seen.current.add(a.id);
       setAlarms((prev) => [...al, ...prev].slice(0, 3));
     }
-  }, [heard, vertical]);
+  }, [heard, vertical, catalogue]);
 
   const clear = () => {
     setMatches([]);

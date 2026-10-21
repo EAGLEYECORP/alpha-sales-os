@@ -54,6 +54,8 @@ const REDACTEURS = [
   "lib/playbook.ts",
   "lib/prescripteurs.ts",
   "lib/live-assist.ts",
+  // Le script d'appel d'un inscrit (21/10/2026) : il se prononce aussi.
+  "lib/script-operateur.ts",
   "lib/hormozi.ts",
   "lib/templates.ts",
   "lib/mail-compose.ts",

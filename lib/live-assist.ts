@@ -30,7 +30,25 @@ export interface ObjectionCue {
   answer: string;
   /** La croyance cassée (1 le produit marche, 2 tu le soutiens, 3 pour LUI). */
   belief?: 1 | 2 | 3;
+  /**
+   * La réponse tient-elle quel que soit ce qu'on vend ?
+   *
+   * ⚠ Ce catalogue a été écrit pour vendre ALPHA VOICE : « elle ne prend
+   * qu'un appel à la fois », « le téléphone sonne dans le vide », « démo
+   * mobile ». Soufflé à un inscrit qui vend un logiciel de paie, il lui fait
+   * prononcer NOTRE argumentaire. Seules les réponses marquées ici sont
+   * servies hors du compte maître (`CatalogueObjections`).
+   */
+  universel?: true;
 }
+
+/**
+ * Quelle part du catalogue général souffler.
+ * `complet` = le compte maître, qui vend Alpha. `universel` = tout autre compte :
+ * seules les réponses qui ne disent rien de l'offre (`ObjectionCue.universel`).
+ * Décidé par `scriptAServir` (`lib/script-operateur.ts`), jamais par l'écran.
+ */
+export type CatalogueObjections = "complet" | "universel";
 
 /**
  * Catalogue générique — ce qui se dit dans tous les métiers. Les
@@ -63,6 +81,7 @@ export const OBJECTION_CUES: ObjectionCue[] = [
   },
   {
     id: "envoyez-mail",
+    universel: true,
     label: "« Envoyez-moi un mail »",
     cues: [["envoyez", "mail"], ["envoyez", "email"], ["envoyer", "mail"], ["documentation"], ["plaquette"], ["par", "mail"]],
     answer:
@@ -77,6 +96,7 @@ export const OBJECTION_CUES: ObjectionCue[] = [
   },
   {
     id: "en-parler",
+    universel: true,
     label: "« Je dois en parler à mon associé »",
     cues: [["parler", "associe"], ["parler", "femme"], ["parler", "equipe"], ["voir", "associe"], ["decide", "pas", "seul"], ["mon", "associe"]],
     answer:
@@ -101,6 +121,7 @@ export const OBJECTION_CUES: ObjectionCue[] = [
   },
   {
     id: "rappelez-moi",
+    universel: true,
     label: "« Rappelez-moi plus tard »",
     cues: [["rappelez"], ["rappeler", "plus", "tard"], ["plus", "tard"], ["autre", "moment"], ["pas", "maintenant"]],
     answer:
@@ -123,6 +144,7 @@ export const OBJECTION_CUES: ObjectionCue[] = [
   },
   {
     id: "essai",
+    universel: true,
     label: "« On verra plus tard / ce n'est pas le moment »",
     cues: [["plus", "tard"], ["pas", "moment"], ["annee", "prochaine"], ["apres", "ete"], ["on", "verra"]],
     answer:
@@ -146,13 +168,13 @@ const ALARMS: AlarmRule[] = [
   {
     id: "prix-avant-demo",
     label: "Tu parles prix avant la démo",
-    fix: "Le prix ne se donne jamais avant que la démo mobile ait été vue. « Je préfère vous montrer 2 minutes, puis on parle chiffres. »",
+    fix: "Le prix vient après qu'il a vu ce que ça change pour lui, jamais avant. « Je préfère vous montrer d'abord, puis on parle chiffres. »",
     cues: [["euros"], ["ca", "coute"], ["tarif"], ["abonnement", "mois"], ["prix", "est"]],
   },
   {
     id: "euros-perdus-a-froid",
     label: "Tu chiffres les € perdus à froid",
-    fix: "Interdit à froid : ça déclenche un débat sur ta méthode au lieu de la douleur. Garde le chiffrage pour l'audit, sur place.",
+    fix: "Interdit à froid : ça déclenche un débat sur ta méthode au lieu de la douleur. Garde le chiffrage pour le rendez-vous.",
     cues: [["vous", "perdez"], ["euros", "mois"], ["manque", "gagner"], ["vous", "coute", "par"]],
   },
   {
@@ -164,7 +186,7 @@ const ALARMS: AlarmRule[] = [
   {
     id: "ciblage-volume",
     label: "Tu dis ton ciblage en volume, pas en critère",
-    fix: "« Je m'adresse aux métiers où le téléphone EST le chiffre d'affaires » — un critère, jamais « j'appelle toutes les agences de Lyon ».",
+    fix: "Dis un critère — « je m'adresse aux … qui … » —, jamais un volume comme « j'appelle toutes les agences de Lyon ».",
     cues: [["toutes", "agences"], ["tous", "garages"], ["tous", "restaurants"], ["appelle", "tout", "monde"], ["toutes", "entreprises"]],
   },
   {
@@ -205,11 +227,16 @@ export const MATCH_FLOOR = 0.5;
  * Les objections propres à la verticale l'emportent à score égal : elles
  * sont écrites pour ce métier-là.
  */
-export function matchObjections(heard: string, vertical?: VerticalPlaybook | null): AssistMatch[] {
+export function matchObjections(
+  heard: string,
+  vertical?: VerticalPlaybook | null,
+  catalogue: CatalogueObjections = "complet"
+): AssistMatch[] {
   const set = tokenSet(heard);
   const out: AssistMatch[] = [];
 
   for (const o of OBJECTION_CUES) {
+    if (catalogue === "universel" && !o.universel) continue;
     if (o.cues.some((c) => hits(set, c))) {
       out.push({ id: o.id, label: o.label, answer: o.answer, belief: o.belief, source: "général", score: 1 });
     }

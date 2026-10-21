@@ -8,6 +8,8 @@ import { matchObjections, matchAlarms, verticalById } from "@/lib/live-assist";
 import { verticalForProspect } from "@/lib/playbook";
 import { matchOffer, OFFER_LABELS } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
+import { useDroits } from "@/lib/use-droits";
+import { scriptAServir } from "@/lib/script-operateur";
 import { search } from "@/lib/knowledge";
 import type { Prospect } from "@/lib/types";
 
@@ -89,16 +91,29 @@ export function LiveCopilot({ prospect, onClose }: { prospect?: Prospect; onClos
   const [listening, setListening] = useState(false);
   const recRef = useRef<{ stop: () => void } | null>(null);
 
-  const vertical = useMemo(
-    () => (prospect ? verticalForProspect(prospect) : null) ?? verticalById(undefined),
-    [prospect]
+  /**
+   * ⚠ Même verdict que `/appels` (`scriptAServir`) : nos verticales et le
+   * catalogue général vendent ALPHA. Un inscrit reçoit les réponses de SON
+   * script et la part universelle du catalogue, jamais notre argumentaire.
+   */
+  const { maitre } = useDroits();
+  const profil = useAlpha((s) => s.settings.profil);
+  const servi = useMemo(
+    () => scriptAServir(maitre, profil, (prospect ? verticalForProspect(prospect) : null) ?? verticalById(undefined)),
+    [maitre, profil, prospect]
   );
+  const vertical = servi.vertical;
 
-  const objections = useMemo(() => (heard.trim() ? matchObjections(heard, vertical).slice(0, 2) : []), [heard, vertical]);
+  const objections = useMemo(
+    () => (heard.trim() ? matchObjections(heard, vertical, servi.catalogue).slice(0, 2) : []),
+    [heard, vertical, servi.catalogue]
+  );
   const alarms = useMemo(() => (heard.trim() ? matchAlarms(heard).slice(0, 2) : []), [heard]);
   const brain = useMemo(() => (heard.trim() ? search(heard, notes, 2).map((s) => s.note) : []), [heard, notes]);
   const offer = useMemo(() => {
-    if (!prospect) return null;
+    // « L'offre à pousser » est choisie dans NOTRE catalogue (comptes du
+    // portefeuille) : elle n'a de sens que pour le compte maître.
+    if (!prospect || !maitre) return null;
     const a = prospect.deepAudit;
     return matchOffer(
       {
@@ -113,7 +128,7 @@ export function LiveCopilot({ prospect, onClose }: { prospect?: Prospect; onClos
       },
       getAccount(accountId).offers
     );
-  }, [prospect, accountId]);
+  }, [prospect, accountId, maitre]);
 
   // Dictée (Web Speech API) — feature-detect, sinon on tape.
   const toggleMic = () => {

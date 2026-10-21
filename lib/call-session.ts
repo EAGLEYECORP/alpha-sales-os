@@ -3,6 +3,7 @@ import { heat } from "./closer";
 import { stageById } from "./hormozi";
 import { VERTICALS, type VerticalPlaybook, verticalForProspect } from "./playbook";
 import { aRefuseTouteRelance } from "./voice-script";
+import { ID_SCRIPT_OPERATEUR } from "./script-operateur";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -86,7 +87,10 @@ export function callAngle(p: Prospect, v: VerticalPlaybook | null, daysSince: nu
   }
 
   // 7. Signal réputation : le framing « on protège, on ne répare pas ».
-  if (d.googleRating !== undefined && d.googleRating >= 4.7 && (d.googleReviews ?? 0) >= 80) {
+  // ⚠ C'est un angle d'ALPHA VOICE (« ceux qui sonnent dans le vide »). Sur
+  // le script d'un inscrit, qui vend autre chose, la note Google de son
+  // prospect ne dit rien de son sujet : on ne l'en fait pas parler.
+  if (v?.id !== ID_SCRIPT_OPERATEUR && d.googleRating !== undefined && d.googleRating >= 4.7 && (d.googleReviews ?? 0) >= 80) {
     return {
       angle: `Excellente réputation (${d.googleReviews} avis) : angle « on protège », jamais « on répare » — ceux qui sonnent dans le vide ne laissent pas d'avis.`,
       hot: false,
@@ -123,13 +127,23 @@ export function appeleAujourdhui(p: Prospect, now: Date = new Date()): boolean {
   return (p.events ?? []).some((e) => e.kind === "appel" && (e.date ?? "").slice(0, 10) === jour);
 }
 
-/** Construit la session : la verticale, puis les cibles triées. */
+/**
+ * Construit la session : la verticale, puis les cibles triées.
+ *
+ * ⚠ DEUX RÔLES QUI ÉTAIENT CONFONDUS. `vertical` (le métier du PROSPECT)
+ * regroupe la file et porte les leçons du terrain. `script` (ce que DIT
+ * l'appelant) n'est la même chose que pour le compte maître : un inscrit vend
+ * son offre, pas la nôtre (`lib/script-operateur.ts`). Sans ce second
+ * paramètre, l'angle de chaque ligne reprenait la douleur de NOTRE pitch.
+ */
 export function buildCallSession(
   prospects: Prospect[],
   verticalId: string,
-  now: Date = new Date()
-): { vertical: VerticalPlaybook | null; targets: CallTarget[] } {
+  now: Date = new Date(),
+  scriptServi?: VerticalPlaybook | null
+): { vertical: VerticalPlaybook | null; script: VerticalPlaybook | null; targets: CallTarget[] } {
   const vertical = VERTICALS.find((v) => v.id === verticalId) ?? null;
+  const script = scriptServi === undefined ? vertical : scriptServi;
 
   const targets = prospects
     .filter((p) => p.stage !== "signe" && p.stage !== "perdu")
@@ -144,7 +158,7 @@ export function buildCallSession(
     .map((p) => {
       const last = lastContactAt(p);
       const daysSinceContact = last === null ? null : Math.floor((now.getTime() - last) / DAY);
-      const { angle, hot } = callAngle(p, vertical, daysSinceContact);
+      const { angle, hot } = callAngle(p, script, daysSinceContact);
       return { prospect: p, heat: heat(p), angle, hot, daysSinceContact, faitAujourdhui: appeleAujourdhui(p, now) };
     })
     // Les fiches déjà traitées aujourd'hui descendent, elles ne disparaissent
@@ -157,7 +171,7 @@ export function buildCallSession(
         b.heat - a.heat
     );
 
-  return { vertical, targets };
+  return { vertical, script, targets };
 }
 
 /** Les verticales qui ont réellement des cibles — pour les onglets. */
