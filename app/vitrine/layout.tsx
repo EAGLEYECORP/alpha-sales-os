@@ -23,24 +23,24 @@ import type { Metadata } from "next";
  * ─────────────────────────────────────────────────────────────────────
  */
 export const metadata: Metadata = {
-  title: "Alpha Sales OS — votre machine de vente tourne, vous vivez",
+  title: "Alpha Sales OS — les humains closent, Alpha fait tourner la machine",
   description:
-    "On trouve vos clients, on les appelle, on les relance et on remplit votre agenda — pendant que vous êtes sur le terrain. Installation sur mesure, cadrage obligatoire avant tout devis. Lyon.",
+    "Alpha trie qui appeler et quand, écrit le message, tient la relance et applique les règles françaises du démarchage. Gratuit en ligne ; complet chez vous, installé sur votre serveur. Cadrage obligatoire avant tout devis. Lyon.",
   robots: { index: true, follow: true },
   alternates: { canonical: "/vitrine" },
   openGraph: {
     type: "website",
     locale: "fr_FR",
     siteName: "EAGLEYE CORP",
-    title: "Votre machine de vente tourne. Vous, vous vivez.",
+    title: "Les humains closent. Alpha fait tourner la machine.",
     description:
-      "Trouver, appeler, relancer, remplir l'agenda — sans vous. Cadrage obligatoire avant tout devis : on regarde votre cas avant d'annoncer un prix.",
+      "Trier, écrire, relancer, rester dans les règles — vous gardez la conversation. Gratuit en ligne, complet chez vous.",
     images: [{ url: "/media/hero-poster.jpg", width: 1280, height: 720, alt: "Alpha Sales OS" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Votre machine de vente tourne. Vous, vous vivez.",
-    description: "Trouver, appeler, relancer, remplir l'agenda — sans vous.",
+    title: "Les humains closent. Alpha fait tourner la machine.",
+    description: "Trier, écrire, relancer, rester dans les règles — vous gardez la conversation.",
     images: ["/media/hero-poster.jpg"],
   },
 };

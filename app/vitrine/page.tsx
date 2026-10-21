@@ -152,15 +152,15 @@ export default function VitrinePage() {
             Alpha Sales OS
           </p>
           <h1 className="max-w-3xl font-serif text-[44px] leading-[1.08] tracking-[-0.02em] sm:text-[64px]">
-            Votre machine de vente tourne.
+            Les humains closent.
             <br />
-            <span style={{ color: MUTED }}>Vous, vous vivez.</span>
+            <span style={{ color: MUTED }}>Alpha fait tourner la machine.</span>
           </h1>
           <p className="mt-8 max-w-2xl text-[18px] leading-[1.65]" style={{ color: MUTED }}>
-            Pas un logiciel de plus à apprendre. Une machine qui trouve vos clients, les appelle, les
-            relance et remplit votre agenda — pendant que vous êtes sur le terrain, en famille, ou en
-            train de dormir. Vous ne récupérez pas du temps : vous récupérez le choix de ce que vous
-            en faites.
+            Alpha trie qui appeler et quand, écrit le message, tient la relance et applique les règles
+            françaises du démarchage. Vous gardez ce qu&apos;aucun logiciel ne fait : la conversation et
+            la poignée de main. En ligne, c&apos;est gratuit et ça tourne dans votre navigateur. Chez
+            vous, installé sur votre serveur, il travaille aussi quand l&apos;onglet est fermé.
           </p>
 
           {/*
@@ -264,7 +264,7 @@ export default function VitrinePage() {
             écran — la carte est juste au-dessus.
           */}
           <HeroVideo
-            line="10 secondes — ce que l'OS fait pendant que vous êtes ailleurs."
+            line="10 secondes — ce que l'OS prépare pour que vous n'ayez plus qu'à décider."
             muted="Lecture automatique désactivée (mouvement réduit). Le film dure 10 secondes."
             href="#ecrans"
             cta="Voir les écrans"
