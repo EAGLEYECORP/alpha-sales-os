@@ -425,7 +425,7 @@ export default function VitrinePage() {
               },
               {
                 t: "Ce que la machine change",
-                d: "Chaque personne qui entre chez vous porte une prochaine action, avec une date. Ce qui a pris du retard remonte tout seul, un lundi matin, avant que ce soit trop tard.",
+                d: "Chaque personne qui entre chez vous porte une prochaine action, avec une date. Ce qui a pris du retard remonte en tête de votre plan du matin, avant qu'il soit trop tard.",
               },
             ].map((x) => (
               <div key={x.t}>
@@ -644,7 +644,7 @@ export default function VitrinePage() {
               </p>
               <p className="mt-5 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                 Vous n&apos;avez besoin que d&apos;une partie ? On installe cette partie-là, et rien
-                d&apos;autre. Beaucoup commencent comme ça.
+                d&apos;autre. On peut commencer par là.
               </p>
             </div>
           </div>
@@ -724,7 +724,7 @@ export default function VitrinePage() {
                 </p>
                 <p className="mt-3 text-[16px] leading-[1.6]" style={{ color: MUTED }}>
                   {picked.length >= 4
-                    ? "À ce niveau, l'installation complète revient presque toujours moins cher que la somme des parties. On vous le dira au cadrage, chiffres à l'appui — y compris si c'est en votre faveur de prendre moins."
+                    ? "À ce niveau, on compare au cadrage la somme des parties et l'installation complète, chiffres à l'appui — y compris si c'est en votre faveur de prendre moins."
                     : "Le chiffrage se fait après vingt minutes d'échange : on regarde votre cas, et on annonce un montant qu'on tient."}
                 </p>
                 <a
@@ -786,11 +786,11 @@ export default function VitrinePage() {
             <span style={{ color: MUTED }}>— et ne prétendra jamais faire.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-            Trois limites, écrites ici plutôt qu&apos;au premier jalon. C&apos;est le seul moyen
+            Nos limites, écrites ici plutôt qu&apos;au premier jalon. C&apos;est le seul moyen
             honnête de vous laisser juger ce que vous achetez avant d&apos;en parler.
           </p>
 
-          <div className="mt-12 grid gap-10 sm:grid-cols-3">
+          <div className="mt-12 grid gap-10 sm:grid-cols-2">
             {[
               {
                 t: "La livraison",
@@ -851,7 +851,7 @@ export default function VitrinePage() {
               },
               {
                 q: "Je n'ai pas le temps de m'occuper d'un outil de plus.",
-                r: "C'est la bonne objection, et c'est pour ça que l'installation se fait à la main, par nous. Vous ne paramétrez rien. Le seul temps qu'on vous demande est celui du cadrage, et celui de nous dire ce qui se passe réellement chez vous — que personne d'autre ne sait.",
+                r: "C'est la bonne objection. Chez vous, l'installation se fait à la main, par nous : vous ne paramétrez rien, et le seul temps qu'on vous demande est celui du cadrage. En ligne, une seule question pour démarrer — l'adresse de votre site — et Alpha pose ses réglages devant vous, que vous validez.",
               },
               {
                 q: "Un agent qui appelle mes clients, ça va mal passer.",
@@ -859,7 +859,7 @@ export default function VitrinePage() {
               },
               {
                 q: "Et si ça ne marche pas chez moi ?",
-                r: "C'est pour ça que le cadrage est obligatoire et qu'il est gratuit. On regarde vos chiffres à vous avant d'annoncer quoi que ce soit, et il nous arrive de dire que ça ne vaut pas le coup. Et la version en ligne est gratuite : vous pouvez juger Alpha sur vos propres fiches avant qu'on parle d'installation.",
+                r: "C'est pour ça que le cadrage est obligatoire et qu'il est gratuit. On regarde vos chiffres à vous avant d'annoncer quoi que ce soit, et si ça ne vaut pas le coup, on vous le dit. Et la version en ligne est gratuite : vous pouvez juger Alpha sur vos propres fiches avant qu'on parle d'installation.",
               },
               {
                 q: "Pourquoi pas moins cher ?",

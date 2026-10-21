@@ -1269,6 +1269,14 @@ Règles dures :
   > ⚠ Le garde « aucun montant » a dû être resserré le jour même : écrit
   > `\d{3,}`, il faisait tomber ma propre phrase sur « jusqu'au 17/10/**2026** »
   > — une DATE, qui est justement ce qui rend la raison défendable.
+  > ⚠⚠ **ET CETTE DATE A EXPIRÉ : depuis le 18/10/2026, le cycle de relance est
+  > À L'ARRÊT** (mesuré le 21/10, `docs/GTM-CYCLE-ECART.md` § 2). La source
+  > « prix honoré » exige `PRIX_HONORE_JUSQU_AU ≥ maintenant` ; l'autre
+  > (ouverture tracée) n'existe que côté serveur, pour notre pipe. Jeu de démo :
+  > 0 raison sur 8. **Ne PAS repousser la date pour relancer la machine** : ce
+  > serait fabriquer une échéance. Une nouvelle source honnête se TRANCHE (date
+  > d'arrêté structurée qui choisit le moment sans jamais affirmer « purgé de
+  > recours », engagement daté pris par le prospect, ou relance humaine assumée).
 - Le compteur de saturation **repart à zéro dès qu'il répond**.
 - 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré)…
   **sauf s'il OUVRE** (`lib/reactivite.ts`) : là le canal passe, c'est la
