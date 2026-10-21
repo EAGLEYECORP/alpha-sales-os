@@ -2435,6 +2435,14 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
   processus, puis file (p95 12–20 s, `ECONNRESET`). **Ce n'est PAS un test d'inscription ni
   de comptes connectés** : aucun appel Supabase (les ~17 REST par page restent le vrai
   plafond d'un connecté, non mesuré), pas Vercel, aucun email de confirmation.
+- **⚠⚠ LE PREMIER MUR EST À 2 INSCRIPTIONS PAR HEURE, LU (pas supposé) le 21/10/2026** par la
+  config Auth du projet : `rate_limit_email_sent` = **2**, `smtp_host` = **null**. Aucun SMTP
+  n'est branché côté Supabase : les confirmations partent de son expéditeur intégré, pas de
+  `contact@` (la doctrine disait l'inverse, et « ~30/h »). `max_rows` PostgREST = 1 000
+  (hypothèse confirmée). Un post qui marche = des inscrits sans lien de confirmation dès le
+  3ᵉ de l'heure. Le lever exige un SMTP personnalisé dans Supabase, puis relever la limite :
+  c'est le geste de `docs/SMTP-SUPABASE-AMEN.md`, et il est PRIORITAIRE sur tout le reste.
+  (La lecture de cette config renvoie aussi le `jwt_secret` : ne jamais la recopier.)
 - **Ce qui reste, sans fard** : (1) **chaque requête qui traverse le middleware relit
   les droits par un appel REST** — ~17 par page, d'après le commentaire du middleware.
   Le cache de droits par instance (jamais sur les routes qui dépensent, jamais sur un
