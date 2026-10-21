@@ -1808,6 +1808,51 @@ URGENT apparaît.
     dérobée vers l'autonomie : l'ouvrir à un inscrit en ligne rouvrirait la
     décision, en une ligne qui se verrait au diff.
 
+### « ALPHA AU TRAVAIL » — ce que la machine fait, étape par étape, en mouvement (21/10/2026)
+`lib/circuit-alpha.ts` · `lib/alpha-ici.ts` · `app/(app)/travail` ·
+`components/alpha/` · `components/shell/alpha-ici.tsx` ·
+`tests/circuit-alpha.test.ts` · `tests/alpha-ici.test.ts`.
+
+Décision de Zakaria : un tableau de bord pour l'UTILISATEUR qui montre ce
+qu'ALPHA fait, « toutes les pages donnent l'info détaillée de chaque étape », et
+en mouvement comme la lecture du site à l'inscription. Deux surfaces :
+`/travail` (pouls · circuit des huit étapes · garde-fous armés · journal) et, sur
+les écrans que le registre a lus, une ligne « Ce qu'ALPHA fait ici » montée UNE
+fois dans la coquille, sous la bande de présence.
+- **⚠⚠ Chaque ligne « ce qu'ALPHA fait » NOMME son fichier et son symbole, et un
+  test les ouvre.** Une description qui dérive du code ne casse rien : elle
+  ment, à l'endroit où l'on vient lire ce que fait le produit. Même règle que
+  `lib/promesse.ts` pour les preuves de la vitrine. Il a mordu dès le premier
+  passage — **sur son propre outil** : mon retrait de commentaires par
+  expressions régulières a avalé la déclaration de `STAGES`, parce qu'un
+  commentaire de LIGNE de `lib/hormozi.ts` contient une étoile entre deux barres
+  (`app/(app)/*/page`) que l'expression prenait pour l'ouverture d'un bloc. Un
+  vrai lecteur (chaînes, `//`, bloc) l'a remplacé (`tests/citations-alpha.ts`).
+- **Le mouvement n'accompagne que des FAITS** : une carte qui entre à l'écran,
+  un nombre qui CHANGE, une ligne neuve du journal. **Aucune animation qui
+  boucle** (un test refuse `animate-pulse`, `spin`, `infinite`… dans ces
+  composants) : un écran qui dit « ALPHA agit » avec un voyant qui clignote est
+  une petite preuve fabriquée. Les nombres s'animent en JavaScript — le réglage
+  « réduire les animations » est donc respecté DEUX fois (feuille de style +
+  `useReduitMouvement`), et un test exige la branche.
+- **Aucune définition de plus** : « ce qui attend un humain » est
+  `attendentUnHumain` (extrait de `presenceAlpha`, que la bande utilise
+  toujours) ; les étapes sont `STAGES` ; la fenêtre, le plafond et le refus
+  viennent de leurs modules. « À toi » compte des **fiches**, pas des routines
+  (trois choses sur une fiche = une fiche), rangées par l'étape de LA FICHE
+  visée — aucune table « catégorie → étape » à tenir.
+- **Un écran absent du registre n'affiche RIEN**, jamais un texte générique :
+  on ne décrit pas ce qu'on n'a pas lu. **Tranche 1 = sept écrans**
+  (`/aujourdhui`, `/pipeline`, `/decisions`, `/appels`, `/campaigns`,
+  `/linkedin`, `/cerveau`) ; les autres s'ajoutent un par un, avec la même
+  preuve, et le test refuse une route qui n'existe pas. « Toutes les pages » est
+  un programme, pas un commit.
+- **La frontière reste dite** : tout lit le CRM du NAVIGATEUR, onglet ouvert
+  (décision du 21/10). L'écran écrit que l'ALPHA qui travaille app fermée
+  n'existe que sur l'installation « chez vous ».
+- Vu au rendu (mobile et bureau, aucun débordement) ; **treize mutations
+  mordent**.
+
 ## L'OMBRELLE DES AGENTS — et ALPHA CEO livré aux clients (20/10/2026)
 `lib/agents-alpha.ts` · `tests/agents-alpha.test.ts` · `Entitlement.exploitant` ·
 `CHEMINS_EXPLOITATION` / `API_EXPLOITATION` · `tests/installation-client.test.ts`.

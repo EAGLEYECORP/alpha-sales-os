@@ -61,10 +61,20 @@ export interface PresenceAlpha {
 
 const RANG = { haute: 0, moyenne: 1, basse: 2 } as const;
 
-export function presenceAlpha(routines: Routine[]): PresenceAlpha {
-  const attendent = routines
+/**
+ * Ce qui attend un humain : les routines de priorité haute ou moyenne, la plus
+ * urgente d'abord. **La seule définition** — la bande de présence, la mission
+ * et le tableau « ALPHA au travail » la lisent ici au lieu de refiltrer
+ * `computeRoutines` chacun à sa façon (« 4 choses t'attendent » ici, « 6 » là).
+ */
+export function attendentUnHumain(routines: Routine[]): Routine[] {
+  return routines
     .filter((r) => r.priority !== "basse")
     .sort((a, b) => RANG[a.priority] - RANG[b.priority]);
+}
+
+export function presenceAlpha(routines: Routine[]): PresenceAlpha {
+  const attendent = attendentUnHumain(routines);
   const urgentes = attendent.filter((r) => r.priority === "haute").length;
   const n = attendent.length;
 

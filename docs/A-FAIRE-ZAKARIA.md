@@ -46,8 +46,9 @@ base du projet `alpha-sales-os`** :
   production, elle, n'a pas pu être rejouée d'ici** (Vercel injoignable).
 - **Reste sur toi, dans cet ordre** : (1) une inscription réelle + coller une
   clé/boîte dans Réglages, pour prouver la chaîne que je ne peux pas jouer ;
-  (2) `CRON_SECRET` de Vercel = secret `alpha_cron_secret` du Vault (les ticks
-  répondent 401) ; (3) une clé de modèle côté serveur si tu veux que le tri
+  (2) `CRON_SECRET` de l'hébergeur qui sert l'URL du Vault (**Netlify**, lu dans
+  les en-têtes de ses réponses — pas Vercel) = secret `alpha_cron_secret` du Vault
+  (les ticks répondent 401) ; (3) une clé de modèle côté serveur si tu veux que le tri
   des réponses tourne (503 « IA indisponible »).
 
 ## ✅ 22/09/2026 — SOCLE COMPLET, EMAIL PROUVÉ EN BOÎTE DE RÉCEPTION

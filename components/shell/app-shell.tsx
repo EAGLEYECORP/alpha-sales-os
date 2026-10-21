@@ -46,6 +46,7 @@ import {
   Swords,
   Trophy,
   Users,
+  Workflow,
   UserCog,
   ChevronRight,
   LayoutGrid,
@@ -63,6 +64,7 @@ import { RetourLien } from "@/components/security/retour-lien";
 import { Onboarding } from "@/components/onboarding";
 import { OperatorTour } from "@/components/tour/operator-tour";
 import { AlphaPresence } from "@/components/shell/alpha-presence";
+import { AlphaIci } from "@/components/shell/alpha-ici";
 import { PageGuide } from "@/components/page-guide";
 import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -176,6 +178,7 @@ const NAV_GROUPES: NavGroup[] = [
     id: "verifier",
     label: "Vérifier que ça tourne",
     items: [
+      { href: "/travail", label: "ALPHA au travail", icon: Workflow },
       { href: "/moniteur", label: "Moniteur", icon: Radio },
       { href: "/ceo", label: "Alpha CEO", icon: Stethoscope },
       { href: "/adoption", label: "Adoption", icon: Users },
@@ -618,6 +621,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             moitié « prévenir » d'un agent qui travaille — elle lit la même
             définition que l'accueil et `/pilote` (`computeRoutines`). */}
         <AlphaPresence />
+        {/* Et, sur les écrans que le registre a lus, ce que la machine y fait —
+            fermé par défaut, une ligne. Un écran absent du registre n'affiche rien. */}
+        <AlphaIci />
         {/* Le socle du Cerveau arrive du serveur : il ne peut plus être compilé
             dans le bundle, où il était lisible sans mot de passe. */}
         <KnowledgeSeedLoader />

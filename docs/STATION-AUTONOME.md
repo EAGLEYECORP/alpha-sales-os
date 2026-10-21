@@ -43,6 +43,10 @@ ligne de ces projets n'entre dans le dépôt.
 - **« ALPHA a besoin de toi »** (`lib/presence-alpha.ts`) : la bande sur chaque
   écran, le « (3) » dans l'onglet, la notification.
 - **Brancher ses comptes en deux champs** (`lib/identifiants-assistes.ts`).
+- **« ALPHA au travail »** (`/travail`, `lib/circuit-alpha.ts`) : ce que la
+  machine fait à chaque étape, avec la règle qui l'applique (fichier + symbole,
+  vérifiés par un test), l'état des garde-fous et le journal réel. Et, sur sept
+  écrans, « Ce qu'ALPHA fait ici » (`lib/alpha-ici.ts`).
 
 ## 4. Où ça ne se fait PAS aujourd'hui, et pourquoi
 
