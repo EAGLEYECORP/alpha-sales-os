@@ -46,10 +46,16 @@ base du projet `alpha-sales-os`** :
   production, elle, n'a pas pu être rejouée d'ici** (Vercel injoignable).
 - **Reste sur toi, dans cet ordre** : (1) une inscription réelle + coller une
   clé/boîte dans Réglages, pour prouver la chaîne que je ne peux pas jouer ;
-  (2) `CRON_SECRET` de l'hébergeur qui sert l'URL du Vault (**Netlify**, lu dans
-  les en-têtes de ses réponses — pas Vercel) = secret `alpha_cron_secret` du Vault
-  (les ticks répondent 401) ; (3) une clé de modèle côté serveur si tu veux que le tri
-  des réponses tourne (503 « IA indisponible »).
+  (2) **dire quel hébergeur est le vrai** : DEUX déploiements de l'app répondent
+  (mesuré le 21/10 à 12:34 UTC). Le domaine public `alphasalesos.eagleyecorp.fr`
+  est servi par **Vercel** (GitHub : déploiement « Production » de `2a74ba1`
+  terminé) ; le cron Supabase, lui, tape un déploiement **Netlify** (en-têtes
+  lus dans `net._http_response`). Une variable posée sur l'un ne fait rien sur
+  l'autre. Le secret du cron concorde désormais (plus aucun 401 sur les 14
+  derniers retours : 200 sur le tick d'envoi, `armed:false` — rien ne part) ;
+  (3) il reste deux 503 sur le déploiement que le cron atteint : « Clés VAPID non
+  configurées » (push) et « IA indisponible » (tri des réponses — une clé de
+  modèle côté serveur, si tu veux que ça tourne).
 
 ## ✅ 22/09/2026 — SOCLE COMPLET, EMAIL PROUVÉ EN BOÎTE DE RÉCEPTION
 

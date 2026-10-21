@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — le cycle, agent par agent</title>
+    <!--
+      Film LinkedIn du 21/10/2026 — le cycle de vente, agent par agent, et les
+      moments où l'humain entre. SANS EXEMPLE : il vaut pour tout type de client.
+      Doctrine : .claude/skills/alpha-motion/SKILL.md. Garde : tests/film-cycle.test.ts.
+
+      Chaque phrase est vraie dans le code :
+        · les huit noms, EN CAPITALES        → lib/agents-alpha.ts (AGENTS_ALPHA)
+        · « ALPHA a besoin de toi », la bande, le « (3) » de l'onglet,
+          « seulement l'urgent / aux heures utiles / une à la fois »,
+          « uniquement si l'onglet reste ouvert »  → lib/presence-alpha.ts,
+                                                      components/shell/alpha-presence.tsx
+        · « on vous passe la main sur intérêt qualifié » → lib/call-cadence.ts (handoffToHuman)
+        · « pas de devis sans cadrage »          → lib/cadrage.ts (peutEmettreDevis)
+        · « Le journal dit ce qui s'est fait » → lib/circuit-alpha.ts (journalRecent : les
+          12 derniers événements du CRM — PAS « chaque action », que rien ne garantit)
+        · la devise                                → lib/promesse.ts (PROMESSE_COURTE)
+
+      Les seuls NOMBRES du film (« 3 », « dont 1 urgente ») sont ceux d'une interface
+      dessinée : « SCÈNE ILLUSTRATIVE » est à l'écran dès qu'ils apparaissent.
+
+      Refaire le rendu (depuis la racine du dépôt) :
+        bash scripts/video/hyperframes-bac-a-sable.sh && source "${ALPHA_VIDEO_OUTILS:-$HOME/.cache/alpha-video}/env.sh"
+        cp -r scripts/video/compositions/cycle /tmp/cycle && gsap_local /tmp/cycle
+        node scripts/video/bande-son.mjs scripts/video/partitions/cycle.json /tmp/cycle/bande.wav
+        cd /tmp/cycle && npx hyperframes check && npx hyperframes render
+      Puis l'image d'affiche : l'image à 3,2 s remplace l'image 0 (voir la compétence, § 2).
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      /* Fond partagé, IMMOBILE : la doctrine refuse la dérive d'ambiance. */
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.13); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.1); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 21px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #e8c98a; }
+
+      /* ── Scène 2 · la machine : sombre et bronze ── */
+      .seg { position: absolute; left: 117px; width: 2px; height: 112px; background: linear-gradient(180deg, rgba(232, 201, 138, 0.75), rgba(232, 201, 138, 0.35)); transform-origin: 50% 0; }
+      .rang { position: absolute; left: 80px; width: 920px; height: 96px; }
+      .disque { position: absolute; left: 25px; top: 35px; width: 26px; height: 26px; border-radius: 50%; background: #e8c98a; box-shadow: 0 0 28px rgba(232, 201, 138, 0.55); }
+      .onde { position: absolute; left: 25px; top: 35px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #e8c98a; }
+      .nom { position: absolute; left: 90px; top: 12px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 54px; letter-spacing: -0.01em; line-height: 1.1; white-space: nowrap; }
+      .verbe { position: absolute; right: 0; top: 27px; font-weight: 600; font-size: 38px; color: #e8c98a; white-space: nowrap; }
+      .bande { position: absolute; left: 80px; width: 920px; height: 82px; border-radius: 22px; display: flex; align-items: center; gap: 18px; padding: 0 30px; background: rgba(232, 201, 138, 0.08); border: 1.5px solid rgba(232, 201, 138, 0.35); white-space: nowrap; }
+      .bande svg { width: 38px; height: 38px; flex: none; }
+      .bande b { font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 38px; letter-spacing: -0.01em; color: #f3eee4; }
+      .bande span { font-size: 30px; font-weight: 500; color: #cbbfa9; }
+
+      /* ── Scène 3 · l'humain : papier clair ── */
+      .carte { position: absolute; left: 80px; width: 920px; height: 128px; border-radius: 30px; background: #f7f2ea; color: #1e1914; box-shadow: 0 50px 100px -40px rgba(0, 0, 0, 0.85); }
+      .pastille-i { position: absolute; left: 28px; top: 32px; width: 64px; height: 64px; border-radius: 50%; background: #ece4d7; display: flex; align-items: center; justify-content: center; }
+      .pastille-i svg { width: 32px; height: 32px; }
+      .onde-c { position: absolute; left: 28px; top: 32px; width: 64px; height: 64px; border-radius: 50%; border: 2.5px solid #896a38; }
+      .libelle { position: absolute; left: 118px; top: 18px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 46px; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
+      .legende { position: absolute; left: 118px; top: 74px; font-size: 29px; font-weight: 500; color: #645d54; white-space: nowrap; }
+      .rang-c { position: absolute; right: 30px; top: 22px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.1em; color: #896a38; }
+
+      /* ── Scène 4 · l'interface qui prévient ── */
+      .etq { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #a79f92; }
+      #bandeUI { position: absolute; left: 80px; top: 464px; width: 920px; height: 96px; border-radius: 22px; display: flex; align-items: center; gap: 16px; padding: 0 28px; white-space: nowrap;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03)); border: 1.5px solid rgba(243, 238, 228, 0.15);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 40px 70px -35px rgba(0, 0, 0, 0.9); }
+      #bandeUI svg.cloche { width: 36px; height: 36px; flex: none; }
+      #bandeUI b { font-weight: 700; font-size: 33px; color: #f3eee4; }
+      #bandeUI .badge { font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; padding: 3px 14px; border-radius: 999px; border: 1.5px solid rgba(229, 86, 78, 0.55); color: #e5564e; }
+      #bandeUI .titreR { font-size: 29px; font-weight: 500; color: #a79f92; flex: 1; overflow: hidden; text-overflow: ellipsis; }
+      #bandeUI svg.chev { width: 28px; height: 28px; flex: none; }
+
+      #onglet { position: absolute; left: 80px; top: 640px; width: 560px; height: 64px; border-radius: 18px 18px 0 0; display: flex; align-items: center; gap: 14px; padding: 0 22px;
+        background: #2a231b; border: 1.5px solid rgba(243, 238, 228, 0.16); border-bottom: none; white-space: nowrap; }
+      #onglet .fav { width: 28px; height: 22px; flex: none; }
+      #onglet span { font-weight: 600; font-size: 28px; color: #f3eee4; }
+      #barre { position: absolute; left: 80px; top: 704px; width: 920px; height: 2px; background: rgba(243, 238, 228, 0.16); transform-origin: 0 50%; }
+
+      #toast { position: absolute; left: 80px; top: 786px; width: 700px; height: 124px; border-radius: 28px; display: flex; align-items: center; gap: 22px; padding: 0 28px; white-space: nowrap;
+        background: rgba(36, 30, 24, 0.94); border: 1.5px solid rgba(243, 238, 228, 0.14); box-shadow: 0 50px 90px -30px rgba(0, 0, 0, 0.95); }
+      #toast .ico { width: 68px; height: 68px; border-radius: 18px; background: #14100c; border: 1.5px solid rgba(232, 201, 138, 0.35); display: flex; align-items: center; justify-content: center; flex: none; }
+      #toast .ico div { width: 40px; height: 32px; }
+      #toast b { display: block; font-weight: 700; font-size: 32px; color: #f3eee4; }
+      #toast em { display: block; margin-top: 4px; font-style: normal; font-size: 27px; font-weight: 500; color: #a79f92; }
+
+      .reg { position: absolute; left: 80px; display: flex; align-items: center; gap: 18px; font-weight: 600; font-size: 36px; color: #f3eee4; white-space: nowrap; }
+      .reg svg { width: 34px; height: 34px; flex: none; }
+      #journal { position: absolute; left: 80px; top: 1198px; display: flex; align-items: center; gap: 18px; font-weight: 600; font-size: 38px; color: #f3eee4; white-space: nowrap; }
+      #journal svg { width: 34px; height: 34px; flex: none; }
+      #journal em { font-style: normal; color: #a79f92; font-weight: 500; }
+
+      #illustr { position: absolute; left: 0; width: 1080px; top: 1282px; text-align: center; font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; color: #a79f92; }
+
+      /* ── Scène 5 · la fin ── */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 300px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 505px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 650px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #appel { top: 860px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="27.7" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">LE CYCLE</div>
+      </div>
+
+      <!-- 1 · L'accroche -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3" data-track-index="1">
+        <div class="titre" id="t1" style="top: 430px; font-size: 104px">
+          <span class="ligne"><span class="mot">Les</span> <span class="mot">agents</span></span>
+          <span class="ligne"><span class="mot">travaillent.</span></span>
+          <span class="ligne"><span class="mot or">Vous</span> <span class="mot or">décidez.</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · La machine : chaque étape a son agent (huit noms, dans l'ordre du cycle) -->
+      <section id="s2" class="scene clip" data-start="3" data-duration="8" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="surtitre" id="k2" style="top: 150px">LE CYCLE, AGENT PAR AGENT</div>
+          <div class="titre" id="t2" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Chaque</span> <span class="mot">étape</span></span>
+            <span class="ligne"><span class="mot or">a</span> <span class="mot or">son</span> <span class="mot or">agent.</span></span>
+          </div>
+
+          <div class="seg" id="g1" style="top: 500px"></div>
+          <div class="seg" id="g2" style="top: 612px"></div>
+          <div class="seg" id="g3" style="top: 724px"></div>
+          <div class="seg" id="g4" style="top: 836px"></div>
+
+          <div class="rang" id="r1" style="top: 452px"><div class="onde" id="o1"></div><div class="disque"></div><div class="nom">ALPHA SCOUT</div><div class="verbe">trie</div></div>
+          <div class="rang" id="r2" style="top: 564px"><div class="onde" id="o2"></div><div class="disque"></div><div class="nom">AGENT ALPHA</div><div class="verbe">prépare</div></div>
+          <div class="rang" id="r3" style="top: 676px"><div class="onde" id="o3"></div><div class="disque"></div><div class="nom">ALPHA CAMPAGNES</div><div class="verbe">envoie</div></div>
+          <div class="rang" id="r4" style="top: 788px"><div class="onde" id="o4"></div><div class="disque"></div><div class="nom">ALPHA VOICE</div><div class="verbe">appelle</div></div>
+          <div class="rang" id="r5" style="top: 900px"><div class="onde" id="o5"></div><div class="disque"></div><div class="nom">ALPHA LIVE</div><div class="verbe">souffle la réponse</div></div>
+
+          <div class="bande" id="b1" style="top: 1034px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3h0V4z"/><path d="M14.5 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3h0V4z"/></svg><b>ALPHA CERVEAU</b><span>la mémoire que tous lisent</span></div>
+          <div class="bande" id="b2" style="top: 1128px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="2"/><circle cx="19.5" cy="6" r="2"/><circle cx="4.5" cy="18" r="2"/><circle cx="19.5" cy="18" r="2"/><path d="m6.2 7.1 3.4 2.8M17.8 7.1l-3.4 2.8M6.2 16.9l3.4-2.8M17.8 16.9l-3.4-2.8"/></svg><b>ALPHA ASSIST</b><span>votre propre IA, branchée</span></div>
+          <div class="bande" id="b3" style="top: 1222px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><b>ALPHA CEO</b><span>sépare machine et humain</span></div>
+        </div>
+      </section>
+
+      <!-- 3 · L'humain : ce qui reste à vous -->
+      <section id="s3" class="scene clip" data-start="11" data-duration="7" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="k3" style="top: 150px">OÙ L'HUMAIN ENTRE</div>
+          <div class="titre" id="t3" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Ce</span> <span class="mot">qui</span> <span class="mot">reste</span></span>
+            <span class="ligne"><span class="mot or">à</span> <span class="mot or">vous.</span></span>
+          </div>
+
+          <div class="carte" id="c1" style="top: 470px"><div class="onde-c" id="q1"></div><div class="pastille-i"><svg viewBox="0 0 24 24" fill="none" stroke="#1e1914" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></div><div class="libelle">Vous apportez la liste.</div><div class="legende">la collecte reste de votre côté</div><div class="rang-c">01</div></div>
+          <div class="carte" id="c2" style="top: 612px"><div class="onde-c" id="q2"></div><div class="pastille-i"><svg viewBox="0 0 24 24" fill="none" stroke="#1e1914" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="libelle">Vous relisez.</div><div class="legende">approuver ou refuser</div><div class="rang-c">02</div></div>
+          <div class="carte" id="c3" style="top: 754px"><div class="onde-c" id="q3"></div><div class="pastille-i"><svg viewBox="0 0 24 24" fill="none" stroke="#1e1914" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8l4 4-4 4"/></svg></div><div class="libelle">On vous passe la main.</div><div class="legende">sur intérêt qualifié, jamais avant</div><div class="rang-c">03</div></div>
+          <div class="carte" id="c4" style="top: 896px"><div class="onde-c" id="q4"></div><div class="pastille-i"><svg viewBox="0 0 24 24" fill="none" stroke="#1e1914" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div><div class="libelle">Vous cadrez.</div><div class="legende">pas de devis sans cadrage</div><div class="rang-c">04</div></div>
+          <div class="carte" id="c5" style="top: 1038px"><div class="onde-c" id="q5"></div><div class="pastille-i"><svg viewBox="0 0 24 24" fill="none" stroke="#1e1914" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14 7l3 3"/></svg></div><div class="libelle">Vous signez.</div><div class="legende">la poignée de main, c'est vous</div><div class="rang-c">05</div></div>
+        </div>
+      </section>
+
+      <!-- 4 · ALPHA vous prévient : la bande, l'onglet, la notification, le journal -->
+      <section id="s4" class="scene clip" data-start="18" data-duration="5.9" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="surtitre" id="k4" style="top: 150px">VOUS RESTEZ AU COURANT</div>
+          <div class="titre" id="t4" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">ALPHA</span> <span class="mot">vous</span></span>
+            <span class="ligne"><span class="mot or">prévient.</span></span>
+          </div>
+
+          <div class="etq" id="la" style="top: 422px">DANS L'APPLICATION</div>
+          <div id="bandeUI"><svg class="cloche" viewBox="0 0 24 24" fill="none" stroke="#e5564e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M22 8c0-2.3-.8-4.3-2-6"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/></svg><b>ALPHA a besoin de toi</b><span class="badge">3</span><span class="titreR">Relire une campagne</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="#a79f92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+
+          <div class="etq" id="lb" style="top: 592px">DANS L'ONGLET</div>
+          <div id="onglet"><div class="fav aigle"></div><span>(3) ALPHA SALES OS®</span></div>
+          <div id="barre"></div>
+
+          <div class="etq" id="lc" style="top: 750px">EN NOTIFICATION</div>
+          <div id="toast"><div class="ico"><div class="aigle"></div></div><div><b>ALPHA a besoin de toi</b><em>Une décision vous attend.</em></div></div>
+
+          <div class="reg" id="rg1" style="top: 936px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>seulement l'urgent</div>
+          <div class="reg" id="rg2" style="top: 988px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>aux heures utiles</div>
+          <div class="reg" id="rg3" style="top: 1040px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>une à la fois</div>
+          <div class="reg" id="rg4" style="top: 1092px"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>uniquement si l'onglet reste ouvert</div>
+          <div class="etq" id="ld" style="top: 1160px">DANS LE JOURNAL</div>
+          <div id="journal"><svg viewBox="0 0 24 24" fill="none" stroke="#e8c98a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 10h16M4 15h10"/><path d="M17 17l2 2 3-4"/></svg>Le journal dit ce qui s'est fait.</div>
+        </div>
+      </section>
+
+      <div id="illustr">SCÈNE ILLUSTRATIVE</div>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="23.9" data-duration="3.8" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">Les humains closent.</span><b class="ligne">Alpha fait tourner la machine.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="27.7" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond ;
+      // révélation dans l'ordre de lecture ; tenues IMMOBILES ; sortie de l'ancien
+      // AVANT l'entrée du nouveau. Chaque mouvement accompagne un FAIT (un agent qui
+      // entre, un fil qui se trace, une carte qui se pose) — rien ne boucle.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.06 }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+      // Une onde, UNE fois, quand le point se pose : c'est l'instant du fait, pas une respiration.
+      const onde = (cible, t, fin = 2.6) =>
+        tl.fromTo(cible, { scale: 1, opacity: 0.6 }, { scale: fin, opacity: 0, duration: 0.75, ease: "power2.out" }, t);
+
+      // En-tête : il cède la place au logo final.
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 23.55);
+
+      // 1 · L'accroche
+      titre("#t1", 0.1);
+      sort("#t1", 2.7);
+
+      // 2 · La machine — un agent par étape, le fil se trace jusqu'à lui.
+      arrive("#k2", 3.3, 20, 0.6);
+      titre("#t2", 3.35);
+      [4.2, 4.9, 5.6, 6.3, 7.0].forEach((t, i) => {
+        if (i > 0) tl.fromTo("#g" + i, { scaleY: 0 }, { scaleY: 1, duration: 0.45, ease: "power2.inOut" }, t - 0.3);
+        arrive("#r" + (i + 1), t, 24, 0.6);
+        onde("#o" + (i + 1), t + 0.15);
+      });
+      arrive("#b1", 7.3, 24, 0.6);
+      arrive("#b2", 7.7, 24, 0.6);
+      arrive("#b3", 8.1, 24, 0.6);
+      sort("#s2in", 10.7);
+
+      // 3 · L'humain — cinq cartes papier, l'une après l'autre.
+      arrive("#k3", 11.3, 20, 0.6);
+      titre("#t3", 11.35);
+      [12.0, 12.6, 13.2, 13.8, 14.4].forEach((t, i) => {
+        arrive("#c" + (i + 1), t, 34, 0.7);
+        onde("#q" + (i + 1), t + 0.2, 2.2);
+      });
+      sort("#s3in", 17.7);
+
+      // 4 · ALPHA vous prévient — la bande, l'onglet, la notification, le journal.
+      arrive("#k4", 18.3, 20, 0.6);
+      titre("#t4", 18.35);
+      arrive("#illustr", 18.4, 10, 0.6);
+      arrive("#la", 18.7, 14, 0.5);
+      arrive("#bandeUI", 18.75, 28, 0.7);
+      arrive("#lb", 19.2, 14, 0.5);
+      arrive("#onglet", 19.25, 20, 0.6);
+      tl.fromTo("#barre", { scaleX: 0, opacity: 0 }, { scaleX: 1, opacity: 1, duration: 0.6, ease: "power2.out" }, 19.3);
+      arrive("#lc", 19.7, 14, 0.5);
+      arrive("#toast", 19.75, 36, 0.7);
+      ["#rg1", "#rg2", "#rg3", "#rg4"].forEach((s, i) => arrive(s, 20.15 + i * 0.18, 16, 0.5));
+      arrive("#ld", 20.95, 14, 0.5);
+      arrive("#journal", 21.0, 16, 0.55);
+      sort("#s4in", 23.65);
+      // « SCÈNE ILLUSTRATIVE » reste posée jusqu'à la dernière image : le bas de l'écran final est libre.
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 23.9);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 23.95);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 24.2);
+      arrive("#devise", 24.45, 22, 0.7);
+      arrive("#appel", 25.1, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 25.7);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>

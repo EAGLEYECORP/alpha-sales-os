@@ -1665,6 +1665,24 @@ et ce qu'il change, avant de valider.
   compétence, pas dans ma mémoire.
 - **« Montre la chose »** (/brag) : les vrais écrans, capturés par
   `scripts/pub/capturer.mjs` sur le jeu de démo, battent des cartes dessinées.
+- **⚠⚠ LE FILM « LE CYCLE » (21/10/2026)** — `scripts/video/compositions/cycle/` ·
+  `marketing/post-cycle-agents-2026-10-21.md` · `tests/film-cycle.test.ts`. Sans
+  exemple, les huit agents dans l'ordre du cycle, les cinq moments qui reviennent
+  à l'humain, les quatre surfaces qui le préviennent (bande, onglet, notification,
+  journal). Le code visuel EST l'argument : machine = sombre et bronze, humain =
+  papier clair. **Prêt, pas publié** (zéro envoi LinkedIn sans ton « go »).
+  · **Le test JOUE la timeline** (GSAP simulé, aucune dépendance) et mesure le
+    plancher de lecture : cinq textes tenaient trop peu sur une composition que je
+    croyais conforme. La règle « 0,3 s par mot » vivait en prose.
+  · **J'y avais écrit deux universels faux** — « chaque action est consignée »
+    (le journal = les 12 derniers événements du CRM) et « sur chaque écran » (pas
+    sur `/login`, ni `/overlay`). Trouvés en relisant, avant publication ; le garde
+    refuse désormais la forme « chaque / tous les X est… ».
+  · **Le post dit la frontière que le film ne peut pas tenir en 27 s** : en ligne,
+    tout tourne dans le navigateur, onglet ouvert ; ALPHA VOICE, ALPHA ASSIST et
+    ALPHA CEO s'installent chez vous. Cette phrase est dérivée de `AGENTS_ALPHA`.
+  · « Ton 100 M » = l'exécution (retenue, rythme, son), jamais un chiffre, un logo
+    ou un label qu'on ne pourrait pas défendre en rendez-vous.
 - **10 M ne se met pas dans un `/goal`** : l'évaluateur ne lit que la
   conversation, et ce conteneur ne joint pas Supabase. Le nord vit dans
   `docs/OBJECTIF-10M.md` ; chaque `/goal` vise un livrable prouvable du palier

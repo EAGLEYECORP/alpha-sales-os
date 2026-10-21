@@ -1,0 +1,263 @@
+{
+  "_note": "Film LinkedIn « le cycle, agent par agent » du 21/10/2026 — ré mineur (accroche) → si bémol (la machine) → sol mineur (l'humain) → la (l'alerte) → ré majeur sur le logo. Calée sur la composition HyperFrames scripts/video/compositions/cycle.",
+  "duree": 27.7,
+  "accords": [
+    [
+      0.0,
+      [
+        73.42,
+        146.83,
+        220.0,
+        261.63,
+        329.63
+      ]
+    ],
+    [
+      3.0,
+      [
+        116.54,
+        146.83,
+        174.61,
+        220.0,
+        293.66
+      ]
+    ],
+    [
+      11.0,
+      [
+        98.0,
+        146.83,
+        233.08,
+        293.66,
+        220.0
+      ]
+    ],
+    [
+      18.0,
+      [
+        110.0,
+        146.83,
+        164.81,
+        220.0,
+        293.66
+      ]
+    ],
+    [
+      23.9,
+      [
+        73.42,
+        146.83,
+        220.0,
+        293.66,
+        369.99,
+        329.63
+      ]
+    ]
+  ],
+  "evenements": [
+    {
+      "t": 0.3,
+      "type": "tinte",
+      "hz": 587.33,
+      "pan": -0.2
+    },
+    {
+      "t": 1.0,
+      "type": "tinte",
+      "hz": 880,
+      "pan": 0.2
+    },
+    {
+      "t": 2.95,
+      "type": "souffle"
+    },
+    {
+      "t": 4.2,
+      "type": "appui"
+    },
+    {
+      "t": 4.2,
+      "type": "tic",
+      "hz": 587.33,
+      "pan": -0.5
+    },
+    {
+      "t": 4.9,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": -0.3
+    },
+    {
+      "t": 5.6,
+      "type": "tic",
+      "hz": 739.99,
+      "pan": -0.1
+    },
+    {
+      "t": 6.3,
+      "type": "tic",
+      "hz": 880,
+      "pan": 0.2
+    },
+    {
+      "t": 7.0,
+      "type": "tic",
+      "hz": 987.77,
+      "pan": 0.4
+    },
+    {
+      "t": 7.3,
+      "type": "declic",
+      "pan": -0.3
+    },
+    {
+      "t": 7.7,
+      "type": "declic",
+      "pan": 0.0
+    },
+    {
+      "t": 8.1,
+      "type": "declic",
+      "pan": 0.3
+    },
+    {
+      "t": 8.4,
+      "type": "tinte",
+      "hz": 293.66
+    },
+    {
+      "t": 10.95,
+      "type": "souffle"
+    },
+    {
+      "t": 12.0,
+      "type": "appui"
+    },
+    {
+      "t": 12.0,
+      "type": "tinte",
+      "hz": 392,
+      "pan": -0.4
+    },
+    {
+      "t": 12.6,
+      "type": "appui"
+    },
+    {
+      "t": 12.6,
+      "type": "tinte",
+      "hz": 466.16,
+      "pan": -0.2
+    },
+    {
+      "t": 13.2,
+      "type": "appui"
+    },
+    {
+      "t": 13.2,
+      "type": "tinte",
+      "hz": 587.33,
+      "pan": 0.0
+    },
+    {
+      "t": 13.8,
+      "type": "appui"
+    },
+    {
+      "t": 13.8,
+      "type": "tinte",
+      "hz": 698.46,
+      "pan": 0.2
+    },
+    {
+      "t": 14.4,
+      "type": "appui"
+    },
+    {
+      "t": 14.4,
+      "type": "tinte",
+      "hz": 783.99,
+      "pan": 0.4
+    },
+    {
+      "t": 16.4,
+      "type": "air"
+    },
+    {
+      "t": 17.95,
+      "type": "souffle"
+    },
+    {
+      "t": 18.75,
+      "type": "declic",
+      "pan": -0.2
+    },
+    {
+      "t": 19.25,
+      "type": "declic",
+      "pan": 0.0
+    },
+    {
+      "t": 19.75,
+      "type": "tinte",
+      "hz": 880,
+      "pan": 0.2
+    },
+    {
+      "t": 19.87,
+      "type": "tinte",
+      "hz": 1174.66,
+      "pan": 0.3
+    },
+    {
+      "t": 20.15,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": -0.3
+    },
+    {
+      "t": 20.33,
+      "type": "tic",
+      "hz": 739.99,
+      "pan": -0.1
+    },
+    {
+      "t": 20.51,
+      "type": "tic",
+      "hz": 880,
+      "pan": 0.1
+    },
+    {
+      "t": 20.69,
+      "type": "tic",
+      "hz": 987.77,
+      "pan": 0.3
+    },
+    {
+      "t": 21.0,
+      "type": "declic",
+      "pan": 0.2
+    },
+    {
+      "t": 22.4,
+      "type": "air",
+      "pan": 0.3
+    },
+    {
+      "t": 23.85,
+      "type": "souffle"
+    },
+    {
+      "t": 23.9,
+      "type": "impact"
+    },
+    {
+      "t": 25.1,
+      "type": "pop"
+    },
+    {
+      "t": 25.7,
+      "type": "brillance"
+    }
+  ]
+}

@@ -168,6 +168,42 @@ corrige plus.
    Programmer = `send_later` avec le texte ENTIER dans le message : le
    conteneur peut être recyclé avant.
 
+### Ce que le film « le cycle » (21/10/2026) a appris — `tests/film-cycle.test.ts`
+
+`scripts/video/compositions/cycle/` · `scripts/video/partitions/cycle.json` ·
+`marketing/post-cycle-agents-2026-10-21.md`. Sans exemple, huit agents dans l'ordre
+du cycle, les cinq moments qui reviennent à l'humain, les quatre surfaces qui le
+préviennent. Il a coûté trois corrections que la compétence aurait dû empêcher :
+
+- **⚠⚠ LE PLANCHER DE LECTURE SE MESURE, il ne se coche pas.** Le test JOUE le
+  script de la composition avec un GSAP simulé (aucune dépendance) et compte,
+  pour chaque texte, le temps où il est entré ET pas encore sorti. À la première
+  exécution : **cinq textes** sous leur plancher sur une composition que je
+  croyais conforme (la dernière carte : 1,5 s posée pour 2,4 s requises ; la
+  notification : 2,5 s pour 3,3 s). On allonge la tenue ou on avance l'entrée,
+  jamais l'inverse. Le plancher vaut pour la PHRASE ENTIÈRE d'un bloc (libellé +
+  légende), pas pour ses lignes une à une.
+- **⚠⚠ UN UNIVERSEL SE VÉRIFIE DANS LE CODE.** « Chaque action est consignée »
+  était écrit, tourné, testé… et faux : le journal est `journalRecent`, les 12
+  derniers événements du CRM. Même famille : « sur chaque écran » (la bande n'est
+  pas sur `/login` ni `/overlay`). Les formes « chaque / tous les / toutes les X
+  est/sont … » et « sur chaque écran » sont désormais refusées par le garde.
+- **Le post et le film passent par la MÊME liste d'interdits** (`INTERDITS`), et
+  la phrase de disponibilité du post est dérivée de `AGENTS_ALPHA` : si
+  l'ombrelle change, le texte public cesse d'être vrai et le test tombe.
+- **Piège d'outil — la version épinglée.** `npx hyperframes` lancé HORS de
+  l'installation (un `env.sh` sans `node_modules/.bin` dans le `PATH`) télécharge
+  la dernière version (0.8.183) : son filtre audio (`adelay … all=1`) est refusé
+  par le ffmpeg 4.x de l'atelier et le rendu s'arrête (`audio_processing_failed`).
+  Le script `hyperframes-bac-a-sable.sh` met bien `.bin` dans le `PATH` : n'en
+  improvise pas un autre. Vérifier `hyperframes --version` = 0.8.181 avant de rendre.
+- **Piège d'affiche — une seule image.** `overlay=…:enable='lt(t,0.034)'` attrape
+  aussi l'image 1 (à 0,0333 s) : l'affiche restait deux images. Seuil : `0.02`.
+  Se prouve par PSNR : image 0 ≈ affiche (> 40 dB), images 1 et 2 ≪ (≈ 5 dB).
+- `check` signale parfois un contraste sur un texte **à 0,05 s du début de son
+  fondu** (échantillon à opacité ≈ 0). Recalculer le rapport sur les couleurs
+  posées avant de conclure à un défaut — dans les deux sens.
+
 ## 6. Avant de dire « c'est prêt »
 
 - [ ] L'accroche se comprend en 2 s, sans le son.
