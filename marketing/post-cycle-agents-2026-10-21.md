@@ -43,16 +43,28 @@ Scène illustrative : les écrans du film sont dessinés, aucun chiffre n'est un
 #vente #automatisation #IA
 ```
 
-## Avant de publier
+## Publié le 21/10/2026, vers 15 h (heure de Paris), sur « go post de suite »
 
-- **Rien n'est publié.** Le film est dans le dépôt ; LinkedIn n'a rien reçu. Publication =
-  après ton « go », par le chemin de `.claude/skills/alpha-motion/SKILL.md` § 5.
-- **Un post par jour au plus.** Un post « agents » est déjà parti (20–21/10) : celui-ci vaut
-  mieux **demain 22/10, 8 h 30 heure de Paris**, sinon il mange la portée du premier.
+- **Post** : `urn:li:ugcPost:7518659925041008640` — visibilité publique, compte de Zakaria Tazi.
+  https://www.linkedin.com/feed/update/urn:li:ugcPost:7518659925041008640/
+- **Vidéo LinkedIn** : `urn:li:video:D4E10AQFL9K264JMdNA` (3 867 205 octets, empreinte
+  `897748fb…` identique entre le dépôt, l'URL publique et le fichier reçu par LinkedIn).
+- **Vérifié sur la page publique** : texte identique au bloc ci-dessus, parenthèses rendues,
+  aucun backslash ni `{hashtag` visible, hashtags actifs, lien raccourci par LinkedIn.
+  La relecture par l'API a répondu 403 (piège connu sur un post tout neuf : le droit
+  d'écrire n'apporte pas celui de lire).
+- **Écart avec la recommandation** : j'avais conseillé demain 8 h 30 (un post « agents » est
+  déjà parti, le second mange une partie de la portée du premier). Décision de Zakaria : tout
+  de suite. À mesurer plutôt qu'à deviner : comparer les deux posts à J+2.
+- **Supprimer le post** (si besoin) : `LINKEDIN_DELETE_POST` avec l'URN ci-dessus.
+
+## À savoir (conservé de l'avant-publication)
+
 - **Le lien pointe vers `/vitrine`** (vérifié le 21/10 : 200). La racine du domaine ouvre
   l'app, pas l'offre.
-- **Little Text Format** à la publication : échapper `\ | { } @ [ ] ( ) < > # * _ ~` ;
-  hashtags en `{hashtag|\#|mot}`. Les flèches `→` et `•` passent telles quelles.
+- **Little Text Format** : échapper `\ | { } @ [ ] ( ) < > # * _ ~` ; hashtags en
+  `{hashtag|\#|mot}`. Les flèches `→` et `•` passent telles quelles. Le texte a été
+  produit PAR SCRIPT depuis le bloc ci-dessus, pas retapé.
 - **Ce que le post ne dit pas, volontairement** : aucun prix, aucun chiffre de performance,
   aucun client, aucun superlatif. Zéro vente à ce jour ; le film vend un fonctionnement,
   pas un résultat.
