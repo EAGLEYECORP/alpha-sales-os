@@ -10,6 +10,23 @@
 
 ---
 
+## ✅ 21/10/2026 (soir) — SMTP REPOSÉ ET PROUVÉ PAR UN ENVOI RÉEL
+
+**Le 16/09 « fait » ne tenait plus** : la config Auth lue le 21/10 montrait `smtp_host` vide et
+`rate_limit_email_sent` = **2/h** — personne ne pouvait recevoir son lien. Reposé le même soir
+(`smtp-fr.securemail.pro:465`, `contact@eagleyecorp.fr`, nom « Alpha Sales OS »), relu après
+sauvegarde : limite passée à **30/h**.
+- **Preuve par un envoi RÉEL, pas par la config** : inscription test vers un alias Gmail, arrivée
+  en **INBOX en 2 s**, en-tête brut lu : `dkim=pass` (`header.i=@eagleyecorp.fr`, `s=key-dxy9fgigss`) ·
+  `spf=pass` (Return-Path = `contact@eagleyecorp.fr`, donc il S'ALIGNE) · `dmarc=pass`
+  (`p=QUARANTINE`). **L'hypothèse « le Return-Path est réécrit par Amen » est fausse** : SPF et
+  DKIM tiennent chacun leur jambe.
+- Le compte test a été supprimé par son identifiant ; le compteur d'enveloppe est resté à 0,00.
+- **Reste ouvert** : la limite est à 30/h, à monter vers ~100 avant un post, **sans dépasser le
+  plafond d'Amen** (offre non relevée). Et la cause de la disparition de la config n'est pas connue.
+
+---
+
 ## ⚠ DÉCISION DU 10/09/2026 — ON PART SUR `contact@eagleyecorp.fr`
 
 Ce document était bâti sur une boîte `noreply@` à créer. **Elle ne l'a pas
