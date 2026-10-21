@@ -10,12 +10,17 @@
 
 ---
 
-## ⚠ 21/10/2026 (soir) — ÉCHELLE : UNE MIGRATION À POSER, DEUX CHIFFRES À LIRE
+## ⚠ 21/10/2026 (soir) — ÉCHELLE : MIGRATION POSÉE, DEUX CHIFFRES À LIRE
 
-**Pas posé en production, et c'est voulu : il me faut ton « go ».** La migration
-`supabase/migrations/018-echelle.sql` (comprise dans `LOT-A-COLLER.sql`, régénéré)
+**✅ POSÉE EN PRODUCTION le 21/10/2026, sur ton « go ».** Relue après coup : table à
+une ligne = 0,00 = la somme, RLS fermée, `anon` / `authenticated` sans aucun droit,
+les deux triggers côte à côte. **Pas vu en production** : le trigger sur une dépense
+réelle (je n'ai débité aucun vrai compte) — le premier essai qui dépense le montrera,
+via `/api/health` → `enveloppeEcart` (doit valoir 0), une fois ce commit déployé.
+La migration `supabase/migrations/018-echelle.sql` (comprise dans `LOT-A-COLLER.sql`, régénéré)
 remplace deux lectures qui grandissaient avec le nombre de comptes — voir
-`docs/OBJECTIF-10M.md` § 2bis pour les chiffres mesurés.
+`docs/OBJECTIF-10M.md` § 2bis pour les chiffres mesurés. Le texte ci-dessous
+décrit l'état d'AVANT la pose et reste comme trace.
 - **Ce que j'ai vérifié AVANT de te le demander** : la base de production, lue en
   lecture seule, a le schéma attendu (mêmes colonnes d'`entitlements`, un seul
   trigger — `entitlements_attribution_immuable`, en `BEFORE UPDATE`, qui coexiste

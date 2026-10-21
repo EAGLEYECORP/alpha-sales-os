@@ -59,6 +59,10 @@ Supabase hébergé : c'est la couche SQL que nous écrivons.
 | Débits d'essai concurrents (16 clients) | — | 64 000, **aucun perdu**, ≈ 5 000/s sur la ligne unique du compteur |
 | Limiteur de débit, 100 000 IP distinctes | 925 µs/requête | 1,2 µs |
 
+**Posée en production le 21/10/2026** (sur « go ») et relue par le catalogue : compteur
+= somme = 0,00, droits fermés à `anon` / `authenticated`. Le comportement du trigger sur
+une dépense réelle n'y est pas encore vu — il l'est sur Postgres local, deux fois.
+
 **Ce qui n'est PAS mesuré et reste le vrai mur** : le nombre d'appels REST par page
 (~17, un par requête qui traverse le middleware), la limite réelle de lignes de
 PostgREST (Settings → API → Max rows), les limites d'Auth, le SMTP, l'hébergement.

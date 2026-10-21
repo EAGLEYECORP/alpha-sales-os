@@ -2435,8 +2435,27 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
   garde ses droits : **un arbitrage de sécurité qui se décide**, pas une ligne glissée
   dans la porte qui protège l'argent. (2) Les murs d'infrastructure de
   `docs/OBJECTIF-10M.md` § 2 (emails de confirmation, hébergement commercial, plan
-  Supabase) ne se réparent pas dans le code. (3) **La migration 018 n'est PAS posée
-  en production** — le code la tolère absente (repli qui ferme au lieu de tronquer).
+  Supabase) ne se réparent pas dans le code. (3) ~~La migration 018 n'est pas posée~~
+  **POSÉE EN PRODUCTION le 21/10/2026, sur « go » de Zakaria** (voir ci-dessous).
+- **⚠ Ce que la pose a prouvé, et ce qu'elle n'a PAS prouvé.** Lue AVANT (pas de table,
+  6 comptes, 6 essais, somme 0,00, un seul trigger) et APRÈS par le catalogue
+  (`pg_class` / `pg_proc` / `pg_trigger` / `has_*_privilege`, jamais `information_schema`) :
+  table à une ligne = **0,00 = la somme**, RLS active et zéro politique, `anon` et
+  `authenticated` **sans** droit sur la table ni sur les trois fonctions, `service_role`
+  les exécute, les deux triggers (`entitlements_attribution_immuable` +
+  `entitlements_enveloppe`) coexistent, `adoption_stats` est la nouvelle version.
+  · **Non prouvé en production : le trigger sur une dépense RÉELLE.** Je n'ai pas
+    débité un vrai compte pour le voir (même annulé, c'est une écriture que personne
+    n'avait autorisée). Il est prouvé sur Postgres 16 local, lot rejoué deux fois ; en
+    production il l'est par le catalogue (actif, `security definer`). Le premier essai
+    réel qui dépense est le test vivant, et `/api/health` (`enveloppeEcart`, maître
+    seul) dit si compteur et somme divergent — **ça se lit, ça ne se suppose pas.**
+  · **La réponse de l'outil n'affichait que `BEGIN`** pour un lot de 240 lignes. Elle
+    ne disait ni « passé » ni « échoué » : c'est la relecture de la base qui l'a dit.
+    Ne jamais conclure sur l'accusé d'un outil d'écriture.
+  · Le code déployé peut encore être l'ANCIEN (il somme côté application, le lot est
+    compatible avec lui) : `enveloppeEcart` n'apparaît dans `/api/health` qu'une fois
+    ce commit déployé.
 
 ## Contraintes d'environnement (sandbox)
 **Re-mesuré le 17/09/2026** — cette liste avait dérivé, et une contrainte fausse
