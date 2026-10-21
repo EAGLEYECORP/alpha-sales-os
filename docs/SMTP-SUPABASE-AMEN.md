@@ -22,7 +22,12 @@ sauvegarde : limite passée à **30/h**.
   (`p=QUARANTINE`). **L'hypothèse « le Return-Path est réécrit par Amen » est fausse** : SPF et
   DKIM tiennent chacun leur jambe.
 - Le compte test a été supprimé par son identifiant ; le compteur d'enveloppe est resté à 0,00.
-- **Reste ouvert** : la limite est à 30/h, à monter vers ~100 avant un post, **sans dépasser le
+- **Plafond d'Amen RELEVÉ le 21/10 dans l'espace client : `ENVOI 1/500`** (boîte `contact@eagleyecorp.fr`,
+  offre incluse avec le domaine gratuit, quota 2 Go). **500 envois/jour**, partagés entre les
+  confirmations d'inscription ET la prospection. Au-delà, Amen REFUSE (pas de file) : ~500 inscrits
+  par jour est donc le mur suivant, et il se franchit en passant à l'offre supérieure (5 000/j,
+  `[SOURCE-PRIMAIRE]` plus haut) ou en sortant les confirmations vers un fournisseur transactionnel.
+- **Reste ouvert (ancienne ligne)** : la limite est à 30/h, à monter vers ~100 avant un post, **sans dépasser le
   plafond d'Amen** (offre non relevée). Et la cause de la disparition de la config n'est pas connue.
 
 ---
