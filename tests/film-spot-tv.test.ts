@@ -225,3 +225,32 @@ test("le spot rendu est dans public/media/tv, et ses captures ne sont PAS commit
   assert.match(readFileSync(join(DOSSIER, ".gitignore"), "utf8"), /^caps\/$/m);
   assert.ok(existsSync(join(RACINE, "docs/SPOT-TV.md")), "la procédure de livraison TV a disparu");
 });
+
+// ── 5 · LE POST ─────────────────────────────────────────────────────────
+
+const postMd = readFileSync(join(RACINE, "marketing/post-spot-tv-2026-10-22.md"), "utf8");
+const post = /## Texte du post[\s\S]*?```\n([\s\S]*?)\n```/.exec(postMd)?.[1] ?? "";
+
+test("le post tient dans LinkedIn, s'ouvre sur l'accroche du film, et passe par les MÊMES interdits", () => {
+  assert.ok(post.length > 400 && post.length <= 3000, `${post.length} caractères`);
+  assert.ok(post.startsWith("Qui appeler ce matin ?"));
+  for (const [motif, raison] of INTERDITS) assert.doesNotMatch(post, motif, raison);
+  verifierNomsEnCapitales(post);
+  assert.ok(post.includes(PROMESSE_COURTE), "la devise du film doit être celle du post, mot pour mot");
+  assert.match(post, /données fictives/);
+  assert.match(post, /alphasalesos\.eagleyecorp\.fr\/vitrine/);
+});
+
+test("⚠⚠ le post ne prétend ni une diffusion, ni une lecture de TOUTES les fiches, ni des données qui ne sortent jamais", () => {
+  // Diffusé = un avis ARPP et une régie. Tant que le statut ne le dit pas, le post non plus.
+  if (!/Statut : DIFFUSÉ/.test(postMd)) {
+    assert.doesNotMatch(post, /\bbientôt (?:à la|en) télé|\bà l'antenne\b|\best diffusé\b/i, "aucune diffusion à annoncer");
+    assert.match(post, /n'est pas diffusé/);
+  }
+  assert.match(post, /par le SIREN de la fiche/, "la lecture BODACC dépend du SIREN porté par la fiche : le dire");
+  assert.match(post, /dans une campagne, rien ne part/, "« rien ne part » n'est vrai que DANS la relecture de campagne");
+  assert.match(post, /CRM vit dans ton navigateur/);
+  assert.match(post, /onglet est ouvert/);
+  assert.doesNotMatch(post, /ne quitte(?:nt)? jamais|ne passe(?:nt)? (?:jamais )?par nos serveurs/i, "une clé d'IA envoie du texte à son fournisseur");
+  assert.match(postMd, /\*\*Statut : (?:PRÊT, PAS PUBLIÉ|PUBLIÉ le \d{2}\/\d{2}\/\d{4}[^*]*\*\*[\s\S]{0,40}urn:li:ugcPost:\d+)/);
+});

@@ -4,9 +4,10 @@ Fichier de visionnage : `public/media/tv/alpha-spot-30s-2026-10-22.mp4`.
 Source : `scripts/video/compositions/spot-tv/` · son : `scripts/video/partitions/spot-tv.json` ·
 garde : `tests/film-spot-tv.test.ts` · mastering : `scripts/video/mastering-tv.sh`.
 
-**Statut : PRÊT POUR L'AVIS ARPP, PAS DIFFUSÉ.** Rien ne passe à l'antenne sans l'avis
-favorable de l'ARPP et une régie qui l'a programmé. Ce document dit ce qui est fait, ce qui
-est mesuré, et ce qui reste à faire, par qui.
+**Statut : CRÉATION VALIDÉE (« go » de Zakaria, 22/10/2026) — PAS ENCORE SOUMISE À L'ARPP,
+PAS DIFFUSÉE.** Rien ne passe à l'antenne sans l'avis favorable de l'ARPP et une régie qui
+l'a programmé. Ce document dit ce qui est fait, ce qui est mesuré, et ce qui reste à faire,
+par qui. Le dossier à recopier dans ARPP.Pub est plus bas (« Dossier ARPP »).
 
 ## Le film, plan par plan
 
@@ -69,7 +70,8 @@ bash scripts/video/mastering-tv.sh <rendu.mp4> <dossier> alpha-spot-30s-2026-10-
 ## Ce qui reste, et à qui
 
 1. **L'avis ARPP avant diffusion** — obligatoire pour toute publicité télévisée ; les
-   régies ne programment pas sans lui. Il se demande avec le fichier de visionnage. Il
+   régies ne programment pas sans lui. Il se demande sur ARPP.Pub, avec le fichier de
+   visionnage et le carton d'identification que la plateforme génère (« Dossier ARPP »). Il
    jugera notamment « Gratuit en ligne* » et sa mention : elle dit que l'IA et les emails
    passent par les comptes du client, ce qui est vrai et vérifié par le test.
 2. **La régie et son format** — chaque régie (et la plateforme de livraison qu'elle
@@ -79,6 +81,45 @@ bash scripts/video/mastering-tv.sh <rendu.mp4> <dossier> alpha-spot-30s-2026-10-
 3. **La date de diffusion** — « Gratuit en ligne » doit rester vrai le jour où ça passe.
    Si l'offre gratuite change, le spot ment ; le test relie la mention au contrôle d'accès
    (`cheminOuvertParCle`), mais il ne voit pas une décision commerciale prise ailleurs.
+
+## Dossier ARPP — à recopier dans ARPP.Pub
+
+**Le carton d'identification est obligatoire** (ARPP, « Carton d'identification », 2025) :
+chaque film soumis porte en tête, de −10 s à −3 s, un carton avec SCID, IDcrea, agence,
+annonceur, produit, titre et durée, numéro de version, mentions sanitaires ou automobile le
+cas échéant, type de diffusion — puis du noir jusqu'au film. **Il se génère gratuitement
+sur ARPP.Pub / IDcrea, qui peut l'ajouter lui-même au film.** On ne le fabrique donc pas ici :
+un SCID ou un IDcrea écrit à la main serait un faux identifiant, et un film dont le carton
+ne concorde pas avec ARPP.Pub est déclaré irrecevable.
+
+| Champ | Valeur proposée |
+|---|---|
+| Annonceur | EAGLEYE CORP |
+| Agence | aucune (production interne) — à confirmer selon ce qu'ARPP.Pub accepte |
+| Produit | Alpha Sales OS |
+| Titre du film | « Qui appeler ce matin ? » |
+| Durée | 30 s |
+| Version | 1 |
+| Mention sanitaire / automobile | aucune (logiciel) |
+| Type de diffusion | nationale |
+| Fichier | `public/media/tv/alpha-spot-30s-2026-10-22.mp4` |
+
+**Les allégations du film et ce qui les prouve** — ce que l'ARPP peut demander de justifier :
+
+| À l'écran | Justificatif |
+|---|---|
+| « Alpha trie la file. Qui appeler, qui laisser. » | Une société sous procédure collective (moins de 24 mois), radiée ou dissoute sort de la file d'appels ; un changement récent (moins de 60 jours) la fait remonter. Lu au BODACC par le SIREN de la fiche — **quand la fiche le porte**. Code : `lib/signaux-publics.ts`, `lib/call-session.ts`. |
+| « Il écrit le script. Sur ce que vous vendez. » | Le script est construit sur le profil saisi par l'utilisateur (ce qu'il vend, à qui, où), sans modèle d'IA. Code : `lib/script-operateur.ts`. |
+| « Il prépare les messages. Vous les relisez. » | Dans une campagne, l'envoi reste bloqué tant que chaque message n'a pas été approuvé ou écarté par l'utilisateur. Code : `components/campaigns/campaign-review.tsx`. |
+| « Les humains closent. Alpha fait tourner la machine. » | Formule de positionnement, pas une performance (`lib/promesse.ts`). |
+| « Gratuit en ligne* » + mention | Inscription libre, version en ligne sans limite de durée. Rien de ce que le film montre n'utilise l'IA ; la seule chose qui demande un compte de l'utilisateur est l'envoi d'emails (sa propre boîte, par ex. une messagerie gratuite). Code : `lib/entitlements.ts` (`BRIQUES_GRATUITES`), `lib/capacites-cle.ts`. |
+| « Écrans réels · données fictives » | Captures de l'application réelle (`capturer.mjs`) ; sociétés « (démo) », adresses `.example`, téléphones de la plage ARCEP réservée à la fiction. |
+
+> ⚠ **Le point que l'ARPP peut discuter : « gratuit ».** Le mot n'est sans réserve que si
+> rien n'est exigé en échange. Ici rien n'est payé à nous ; l'envoi d'emails demande la
+> boîte de l'utilisateur, et l'IA (que le film ne montre pas) sa propre clé, qui peut être
+> payante chez son fournisseur. La mention le dit. Si l'ARPP demande une autre formulation,
+> on la change dans la composition, le test et ce tableau — pas à un seul endroit.
 
 ## Mesuré
 
