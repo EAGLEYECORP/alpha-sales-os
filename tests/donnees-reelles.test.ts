@@ -43,8 +43,14 @@ const RACINE = process.cwd();
 /**
  * Un numéro français : 0X suivi de huit chiffres, séparés ou non.
  * On accepte aussi la forme internationale `+33 X …`.
+ *
+ * ⚠ ENTRE DES BORNES : ni chiffre juste avant, ni juste après. Sans elles, la forme se
+ * trouvait DANS des suites plus longues — un identifiant de post LinkedIn à 19 chiffres
+ * (l'identifiant d'un post en contient un, à cheval), une coordonnée à 16 décimales — deux
+ * faux positifs le 22/10/2026. Un vrai numéro n'est jamais collé à d'autres chiffres ;
+ * un garde qui crie sur un identifiant est un garde qu'on finit par désarmer.
  */
-const NUMERO_FR = /(?:\+33[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}/g;
+const NUMERO_FR = /(?<!\d)(?:\+33[\s.-]?|0)[1-9](?:[\s.-]?\d{2}){4}(?!\d)/g;
 
 /**
  * Les plages RÉSERVÉES à la fiction par l'ARCEP (décision 2018-0881). Ces
@@ -187,6 +193,18 @@ test("⚠ AUCUN NUMÉRO DE TÉLÉPHONE RÉEL DANS LE DÉPÔT", () => {
     "numéro(s) de téléphone réel(s) dans le dépôt. Un dépôt se clone : ce qui est ici est publiable.\n" +
       fautes.join("\n")
   );
+});
+
+test("la forme d'un numéro se cherche ENTRE des bornes — un identifiant long n'en est pas un, un vrai numéro l'est toujours", () => {
+  const trouve = (t: string) => [...t.matchAll(NUMERO_FR)].map((m) => m[0]);
+  // Ce qui ne doit PAS mordre : des chiffres pris au milieu d'une suite plus longue.
+  assert.deepEqual(trouve("urn:li:ugcPost:7519082695130279936"), []);
+  assert.deepEqual(trouve('"x": 0.08675356894150418'), []);
+  // Ce qui DOIT mordre, toujours : les formes d'écriture réelles d'un numéro.
+  // Plage ARCEP réservée à la fiction : le garde principal la laisse passer, la FORME doit mordre.
+  for (const t of ["06 39 98 12 34", "0639981234", "+33 6 39 98 12 34", "tel:0639981234", "appel au 06.39.98.12.34.", "Mobile0639981234"]) {
+    assert.equal(trouve(t).length, 1, `« ${t} » n'est plus reconnu comme un numéro`);
+  }
 });
 
 test(
