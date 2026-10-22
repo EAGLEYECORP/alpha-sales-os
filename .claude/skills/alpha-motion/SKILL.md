@@ -262,6 +262,9 @@ réelle qui flotte, texte qui passe du gris à l'encre).
   file entière. Masquer une ligne au montage aurait montré un état que l'app n'a jamais eu.
 - **L'image 0 n'est PAS une affiche à la télévision** : le master commence sur la toile.
   L'affiche ne sert qu'aux versions web.
+  ⚠⚠ **Et le master TV ne se publie JAMAIS tel quel sur le web** : publié sur LinkedIn le
+  22/10, sa vignette est sortie VIDE (aplat crème, l'image 0). Deux fichiers, deux usages :
+  `public/media/tv/` pour la régie, `public/media/linkedin/` (image 0 = affiche) pour le web.
 
 ## 6. Avant de dire « c'est prêt »
 

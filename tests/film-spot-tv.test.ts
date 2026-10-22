@@ -224,6 +224,9 @@ test("le spot rendu est dans public/media/tv, et ses captures ne sont PAS commit
   assert.ok(existsSync(join(RACINE, "public/media/tv/alpha-spot-30s-2026-10-22.mp4")));
   assert.match(readFileSync(join(DOSSIER, ".gitignore"), "utf8"), /^caps\/$/m);
   assert.ok(existsSync(join(RACINE, "docs/SPOT-TV.md")), "la procédure de livraison TV a disparu");
+  // Le master TV commence sur la toile nue : publié tel quel sur le web, sa vignette est vide
+  // (LinkedIn, 22/10/2026). La version web, image 0 = affiche, est un fichier à part.
+  assert.ok(existsSync(join(RACINE, "public/media/linkedin/spot-tv-2026-10-22.mp4")), "la version web (image 0 = affiche) a disparu");
 });
 
 // ── 5 · LE POST ─────────────────────────────────────────────────────────
