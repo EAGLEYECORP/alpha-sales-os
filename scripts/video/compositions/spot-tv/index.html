@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Alpha — Spot TV</title>
+    <!--
+      Spot TV de 30 secondes du 22/10/2026 — 16:9, 1920×1080, 25 images/s.
+      Doctrine : .claude/skills/alpha-motion/SKILL.md. Garde : tests/film-spot-tv.test.ts.
+      Brief suivi : le « film produit niveau Apple » (un plan = une idée, le produit
+      est le héros, retenue, transitions portées par l'objet, aucune particule) —
+      et la référence Mercury relevée sur whatships.com : toile chaude, interface
+      réelle qui flotte, texte qui passe du gris à l'encre.
+
+      ⚠ LES ÉCRANS SONT RÉELS. `capturer.mjs` (à côté) sert l'app construite en mode
+      INSCRIT et y fait les vrais gestes : la file d'appels de trois restaurants, un
+      clic sur « Lire 3 fiches au BODACC », le script écrit pour « un logiciel de
+      caisse », la relecture d'une campagne et un clic sur « Approuver ». La seule
+      chose remplacée est la RÉPONSE du réseau : l'API du BODACC reçoit des annonces
+      FICTIVES (`donnees.json`). Sociétés « (démo) », données fictives — c'est à l'écran.
+
+      Chaque phrase est vraie dans le code :
+        · « Alpha trie la file. »           → lib/call-session.ts (dansLaFile, tri `hot`)
+                                              lib/signaux-publics.ts (exclusionPublique, momentFrais)
+        · « Il écrit le script. Sur ce que vous vendez. » → lib/script-operateur.ts (scriptOperateur)
+        · « Il prépare les messages. Vous les relisez. »  → lib/store.ts (prepareCampaignDrafts)
+                                              components/campaigns/campaign-review.tsx (envoi bloqué avant relecture)
+        · la devise                         → lib/promesse.ts (PROMESSE_COURTE)
+        · « Gratuit en ligne* » et sa mention → lib/public-catalogue.ts (DEUX_FORMES)
+                                              lib/capacites-cle.ts (IA et email : les comptes du client)
+
+      ⚠ DIFFUSION TÉLÉVISÉE (France) — ce que la composition tient elle-même :
+        · zone de sécurité graphique EBU R95 : tout texte dans 5 % de chaque bord ;
+        · mentions lisibles au sens de l'ARPP : minuscule à tête plate ≥ 22 px réels
+          en HD (2 % de la hauteur) — mesuré par le test sur la POLICE, pas estimé ;
+        · tout le texte à l'écran est en français (loi n° 94-665).
+      Ce qu'elle ne tient PAS : l'avis de l'ARPP avant diffusion, la livraison au
+      format de la régie, le volume (−23 LUFS, fait au mastering — voir le test).
+
+      Refaire le rendu (depuis la racine du dépôt) :
+        npm run build && (ALPHA_INSTALLATION=client SITE_PASSWORD=spot npx next start -p 3114 &)
+        node scripts/video/compositions/spot-tv/capturer.mjs
+        bash scripts/video/hyperframes-bac-a-sable.sh && source "${ALPHA_VIDEO_OUTILS:-$HOME/.cache/alpha-video}/env.sh"
+        cp -r scripts/video/compositions/spot-tv /tmp/spot && gsap_local /tmp/spot
+        node scripts/video/bande-son.mjs scripts/video/partitions/spot-tv.json /tmp/spot/bande.wav
+        cd /tmp/spot && hyperframes check && hyperframes render --fps 25 -q delivery
+      Puis le mastering du son et les deux fichiers de livraison : docs/SPOT-TV.md.
+      Polices : Bricolage Grotesque, Inter Tight — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+
+      :root { --encre: #17120d; --gris: #8c8273; --pale: #cfc6b6; --bronze: #9a6b2e; --carte: #f7f2ea; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #ece6da; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: var(--encre); }
+
+      /* La toile : chaude, IMMOBILE. Une lumière douce en haut, rien qui dérive. */
+      #toile { position: absolute; inset: 0; background: radial-gradient(110% 85% at 50% 18%, #f5f0e7 0%, #ece6da 58%, #e4dccd 100%); }
+
+      .scene { position: absolute; inset: 0; }
+      /* Zone de sécurité graphique : x ∈ [96, 1824], y ∈ [54, 1026]. */
+      .titre { position: absolute; left: 96px; width: 1728px; text-align: center; font-weight: 700; letter-spacing: -0.026em; line-height: 1.08; }
+      .ligne { display: block; }
+      .mot { display: inline-block; color: var(--pale); }
+
+      /* L'interface réelle : découpée à ses propres coins, posée sur une ombre longue et douce. */
+      .ui { position: absolute; overflow: hidden; background: var(--carte);
+        box-shadow: 0 1px 2px rgba(60, 44, 24, 0.06), 0 22px 44px -22px rgba(60, 44, 24, 0.22), 0 60px 120px -60px rgba(60, 44, 24, 0.28); }
+      .ui img { display: block; width: 100%; height: auto; }
+      .ui .apres { position: absolute; left: 0; top: 0; opacity: 0; }
+
+      /* 2 · la file */
+      .rang { left: 310px; width: 1300px; border-radius: 21px; }
+      #x-fer { left: 332.6px; top: 493.8px; width: 1254.7px; border-radius: 11px; background: transparent; }
+      /* La pile se recentre et grandit une fois la file triée : deux lignes au lieu de trois. */
+      #pile { transform-origin: 960px 461px; }
+      #anneau { position: absolute; left: 310px; top: 268px; width: 1300px; height: 186.5px; border-radius: 21px;
+        box-shadow: 0 0 0 2.5px rgba(154, 107, 46, 0.7), 0 0 48px rgba(201, 150, 63, 0.3); }
+
+      /* 3 · le script — une seule image, révélée ligne à ligne */
+      #script { left: 210px; top: 300px; width: 1500px; height: 461px; border-radius: 25px; }
+      #script img { clip-path: inset(0px 0px 330px 0px); }
+      #surligne { position: absolute; left: 525.5px; top: 171.8px; width: 186.4px; height: 32.6px; border-radius: 6px;
+        background: rgba(201, 150, 63, 0.3); mix-blend-mode: multiply; clip-path: inset(0% 100% 0% 0%); }
+
+      /* 4 · la relecture */
+      #compteurs { left: 385px; top: 205px; width: 1150px; border-radius: 19px; }
+      #verrou { left: 391.3px; top: 363.4px; width: 1137.3px; border-radius: 12.7px; }
+      #brouillon { left: 391.3px; top: 441px; width: 1137.3px; border-radius: 19px; }
+      #curseur { position: absolute; left: 0; top: 0; width: 34px; height: 40px; transform-origin: 3px 2px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25)); }
+
+      /* 6 · la fin */
+      .centre { position: absolute; left: 96px; width: 1728px; text-align: center; }
+      #aigle { position: absolute; left: 900px; top: 250px; width: 120px; height: 96px; background: var(--bronze);
+        -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #nom { top: 372px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 92px; letter-spacing: 0.02em; }
+      #nom .mot { color: var(--encre); }
+      #nom .mot.bronze { color: var(--bronze); }
+      #gratuit { top: 528px; font-size: 54px; font-weight: 600; letter-spacing: -0.02em; }
+      #adresse { top: 606px; font-size: 44px; font-weight: 500; color: #5f574b; }
+
+      /*
+       * ⚠ LES MENTIONS ONT LEUR TAILLE MINIMALE, ET ELLE N'EST PAS UNE AFFAIRE DE GOÛT.
+       * ARPP (fiche « Lisibilité des mentions », 2025) : la minuscule à tête plate
+       * (u, v, w) d'une mention TV atteint 2 % de la hauteur de l'écran, soit 22 px
+       * réels en 1920×1080. Le test la calcule depuis la hauteur d'x DÉCLARÉE dans
+       * le fichier de police × la taille ici — il ne croit pas ce commentaire.
+       */
+      .mention { position: absolute; left: 96px; width: 1728px; text-align: center; font-weight: 500; font-size: 42px; line-height: 1.24; letter-spacing: 0.005em; color: #4e473d; }
+      #etiquette { top: 972px; color: #6e6658; }
+      #legal { top: 872px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1920" data-height="1080">
+      <div id="toile"></div>
+
+      <!-- 1 · L'accroche : la question de chaque matin -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3" data-track-index="1">
+        <div id="s1in" class="scene">
+          <div class="titre" id="t1" style="top: 468px; font-size: 128px">
+            <span class="mot a">Qui</span> <span class="mot a">appeler</span> <span class="mot a">ce</span> <span class="mot a">matin&nbsp;?</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 · Alpha trie : l'annonce légale sort une société de la file, en remonte une autre -->
+      <section id="s2" class="scene clip" data-start="3" data-duration="6.4" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="titre" id="t2" style="top: 104px; font-size: 64px">
+            <span class="mot a">Alpha</span> <span class="mot a">trie</span> <span class="mot a">la</span> <span class="mot a">file.</span>
+            <span class="mot b">Qui</span> <span class="mot b">appeler,</span> <span class="mot b">qui</span> <span class="mot b">laisser.</span>
+          </div>
+          <div id="pile" class="scene">
+          <div class="ui rang" id="r-bri" style="top: 268px"><img src="caps/file-avant-spot-brisaume.png" alt="" /></div>
+          <div class="ui rang" id="r-fer" style="top: 472.5px"><img src="caps/file-avant-spot-ferlane.png" alt="" /></div>
+          <div class="ui rang" id="r-olv" style="top: 677px">
+            <img src="caps/file-avant-spot-olvere.png" alt="" />
+            <img class="apres" id="r-olv2" src="caps/file-apres-spot-olvere.png" alt="" />
+          </div>
+          <div class="ui" id="x-fer"><img src="caps/fiche-exclue.png" alt="" /></div>
+          <div id="anneau"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 · Il écrit le script, sur ce que l'inscrit vend -->
+      <section id="s3" class="scene clip" data-start="9.4" data-duration="5.2" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="titre" id="t3" style="top: 104px; font-size: 64px">
+            <span class="mot a">Il</span> <span class="mot a">écrit</span> <span class="mot a">le</span> <span class="mot a">script.</span>
+            <span class="mot b">Sur</span> <span class="mot b">ce</span> <span class="mot b">que</span> <span class="mot b">vous</span> <span class="mot b">vendez.</span>
+          </div>
+          <div class="ui" id="script">
+            <img id="script-img" src="caps/script.png" alt="" data-layout-allow-overflow />
+            <div id="surligne"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 · Il prépare les messages ; un humain les relit et clique -->
+      <section id="s4" class="scene clip" data-start="14.6" data-duration="6.4" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="titre" id="t4" style="top: 92px; font-size: 64px">
+            <span class="mot a">Il</span> <span class="mot a">prépare</span> <span class="mot a">les</span> <span class="mot a">messages.</span>
+            <span class="mot b">Vous</span> <span class="mot b">les</span> <span class="mot b">relisez.</span>
+          </div>
+          <div class="ui" id="compteurs">
+            <img src="caps/revue-compteurs-avant.png" alt="" />
+            <img class="apres" id="compteurs2" src="caps/revue-compteurs-apres.png" alt="" />
+          </div>
+          <div class="ui" id="verrou"><img src="caps/revue-verrou.png" alt="" /></div>
+          <div class="ui" id="brouillon">
+            <img src="caps/revue-carte-avant.png" alt="" />
+            <img class="apres" id="brouillon2" src="caps/revue-carte-apres.png" alt="" />
+          </div>
+          <svg id="curseur" viewBox="0 0 34 40" aria-hidden="true">
+            <path d="M3 2 L3 31 L10.5 24.5 L15.5 36 L20.5 33.8 L15.6 22.6 L25.5 22.6 Z" fill="#17120d" stroke="#fffaf2" stroke-width="2.2" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- La mention des écrans : entre avec le premier, sort avec le dernier -->
+      <div class="mention" id="etiquette">Écrans réels · données fictives</div>
+
+      <!-- 5 · La promesse -->
+      <section id="s5" class="scene clip" data-start="21" data-duration="3.7" data-track-index="1">
+        <div id="s5in" class="scene">
+          <div class="titre" id="t5" style="top: 362px; font-size: 104px">
+            <span class="ligne"><span class="mot a">Les</span> <span class="mot a">humains</span> <span class="mot a">closent.</span></span>
+            <span class="ligne"><span class="mot a">Alpha</span> <span class="mot a">fait</span> <span class="mot a">tourner</span> <span class="mot a">la</span> <span class="mot a">machine.</span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 · La fin — puis l'immobilité -->
+      <section id="s6" class="scene clip" data-start="24.7" data-duration="5.3" data-track-index="1">
+        <div id="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot bronze">SALES OS</span></div>
+        <div id="gratuit" class="centre">Gratuit en ligne*</div>
+        <div id="adresse" class="centre">alphasalesos.eagleyecorp.fr</div>
+        <div class="mention" id="legal">*Version en ligne gratuite, sans durée limite.<br />IA et emails : avec vos propres comptes.</div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="30" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond ;
+      // révélation dans l'ordre de lecture ; tenues IMMOBILES ; sortie de l'ancien
+      // AVANT l'entrée du nouveau. Chaque mouvement accompagne un FAIT de l'app : une
+      // file qui se trie, une ligne de script qui arrive, un clic qui approuve.
+      // Rien ne boucle, rien ne dérive.
+      const ENTREE = "expo.out";
+      const ENCRE = "#17120d";
+      const GRIS = "#8c8273";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      // Les mots arrivent pâles, puis passent à l'encre dans l'ordre de lecture (référence Mercury).
+      const titre = (sel, t, pas = 0.06) => {
+        tl.fromTo(mots(sel), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: ENTREE, stagger: pas }, t);
+        tl.to(gsap.utils.toArray(sel + " .mot.a"), { color: ENCRE, duration: 0.45, ease: "power2.out", stagger: pas }, t + 0.18);
+        // Seulement s'il y a une seconde moitié : un tween sans cible est une alerte, pas un effet.
+        const b = gsap.utils.toArray(sel + " .mot.b");
+        if (b.length) tl.to(b, { color: GRIS, duration: 0.45, ease: "power2.out", stagger: pas }, t + 0.42);
+      };
+      const arrive = (cible, t, dy = 36, duree = 0.75) =>
+        tl.fromTo(cible, { opacity: 0, y: dy }, { opacity: 1, y: 0, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -24, filter: "blur(6px)", duration: 0.3, ease: "power2.in" }, t);
+
+      // 1 · L'accroche
+      titre("#t1", 0.15, 0.08);
+      sort("#s1in", 2.7);
+
+      // La mention des écrans entre AVANT le premier écran.
+      tl.fromTo("#etiquette", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 3.05);
+
+      // 2 · La file, puis le tri
+      titre("#t2", 3.0);
+      arrive("#r-bri", 3.25);
+      arrive("#r-fer", 3.33);
+      arrive("#r-olv", 3.41);
+      // L'annonce légale : l'encadré réel de la fiche se pose sur la ligne qu'il écarte.
+      tl.to("#r-fer", { opacity: 0.25, duration: 0.4, ease: "power2.out" }, 4.65);
+      tl.fromTo("#x-fer", { opacity: 0, y: 10, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: ENTREE }, 4.65);
+      // Elle sort de la file, et la file se resserre : la société au moment frais monte en tête.
+      tl.to(["#r-fer", "#x-fer"], { opacity: 0, x: 70, duration: 0.45, ease: "power2.in" }, 6.0);
+      tl.to("#r-olv", { y: -409, duration: 0.85, ease: "power3.inOut" }, 6.3);
+      tl.to("#r-bri", { y: 204.5, duration: 0.85, ease: "power3.inOut" }, 6.3);
+      tl.fromTo("#r-olv2", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 6.75);
+      tl.to("#pile", { y: 100, scale: 1.18, duration: 0.9, ease: "power3.inOut" }, 7.15);
+      tl.fromTo("#anneau", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 7.6);
+      tl.to("#r-bri", { opacity: 0.45, duration: 0.5, ease: "power2.out" }, 7.25);
+      sort("#s2in", 9.1);
+
+      // 3 · Le script : l'image entre, les lignes se découvrent dans l'ordre, le métier se surligne.
+      titre("#t3", 9.45);
+      arrive("#script", 9.7, 40, 0.8);
+      tl.to("#script-img", { clipPath: "inset(0px 0px 259px 0px)", duration: 0.3, ease: "power2.out" }, 10.35);
+      tl.to("#script-img", { clipPath: "inset(0px 0px 188px 0px)", duration: 0.3, ease: "power2.out" }, 10.65);
+      tl.to("#script-img", { clipPath: "inset(0px 0px 117px 0px)", duration: 0.3, ease: "power2.out" }, 10.95);
+      tl.to("#script-img", { clipPath: "inset(0px 0px 0px 0px)", duration: 0.3, ease: "power2.out" }, 11.25);
+      tl.to("#surligne", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "power2.inOut" }, 11.7);
+      sort("#s3in", 14.3);
+
+      // 4 · La relecture : rien ne part avant le clic d'un humain.
+      titre("#t4", 14.65);
+      arrive("#compteurs", 14.9);
+      arrive("#verrou", 14.98);
+      arrive("#brouillon", 15.06, 40, 0.8);
+      tl.set("#curseur", { x: 1180, y: 700 }, 16.2);
+      tl.fromTo("#curseur", { opacity: 0 }, { opacity: 1, duration: 0.15, ease: "power2.out" }, 16.2);
+      tl.to("#curseur", { x: 487, y: 879, duration: 0.95, ease: "power3.inOut" }, 16.35);
+      tl.to("#curseur", { scale: 0.88, duration: 0.08, ease: "power2.in" }, 17.3);
+      tl.to("#curseur", { scale: 1, duration: 0.14, ease: "power2.out" }, 17.38);
+      tl.fromTo("#brouillon2", { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out" }, 17.36);
+      tl.fromTo("#compteurs2", { opacity: 0 }, { opacity: 1, duration: 0.22, ease: "power2.out" }, 17.4);
+      tl.to("#curseur", { opacity: 0, duration: 0.4, ease: "power2.in" }, 18.4);
+      sort("#s4in", 20.7);
+      tl.to("#etiquette", { opacity: 0, duration: 0.3, ease: "power2.in" }, 20.7);
+
+      // 5 · La promesse
+      titre("#t5", 21.05, 0.06);
+      sort("#s5in", 24.45);
+
+      // 6 · La fin. La mention entre la première : c'est elle qui a le plus à lire.
+      tl.fromTo("#legal", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 24.85);
+      tl.fromTo("#aigle", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, ease: ENTREE }, 24.8);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.8, ease: ENTREE, stagger: 0.1 }, 24.95);
+      arrive("#gratuit", 25.35, 18, 0.7);
+      arrive("#adresse", 25.55, 18, 0.7);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>

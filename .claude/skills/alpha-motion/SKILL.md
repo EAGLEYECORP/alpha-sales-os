@@ -232,6 +232,37 @@ VRAI produit, frappe, curseur, mouvement de caméra. On l'a fait sans rien dessi
 - `check` exige **28 px** minimum sur 1 080 : la mention « EXEMPLES ILLUSTRATIFS » est
   justement celle qui doit se lire.
 
+### Ce que le spot TV (22/10/2026) a appris — `tests/film-spot-tv.test.ts` · `docs/SPOT-TV.md`
+
+`scripts/video/compositions/spot-tv/` (+ `capturer.mjs`, `donnees.json`) ·
+`scripts/video/partitions/spot-tv.json` · `scripts/video/mastering-tv.sh`.
+Le brief suivi : le « film produit niveau Apple » de la liste skillry (un plan = une idée,
+le produit est le héros, retenue) et le Mercury de whatships (toile chaude, interface
+réelle qui flotte, texte qui passe du gris à l'encre).
+
+- **La télévision a ses règles, et elles se MESURENT** :
+  · format 1920×1080, 25 i/s, 30,0 s pile ; tout texte dans la zone de sécurité
+    graphique EBU R95 (5 % de chaque bord) ;
+  · **mentions ARPP** : la minuscule à tête plate atteint 2 % de la hauteur, soit
+    **22 px réels en HD**. « Corps 22 » ne veut rien dire : le test lit la hauteur d'x
+    DÉCLARÉE dans le WOFF2 (`metriquesPolice`, Brotli de Node) — Inter Tight 500 à
+    42 px donne 22,9 px ; une mention ne reste à l'écran que le temps de la lire, et
+    jamais deux jeux de mentions à la fois ;
+  · **son à −23 LUFS, crête vraie ≤ −1 dBTP** (EBU R128, délibération CSA du
+    19/07/2011) : `mastering-tv.sh` fait deux passes et RELIT ce qu'il a écrit ;
+  · texte à l'écran en français (loi n° 94-665). L'avis ARPP avant diffusion et le
+    format exact de la régie ne se fabriquent pas ici.
+- **⚠⚠ FILMER LE PRODUIT, C'EST LE TESTER — troisième fois.** La relecture de campagne
+  cachait la raison d'un message mis de côté (liquidation, refus, démo) et un clic le
+  remettait dans la pile à envoyer (`lib/ne-pas-ecrire.ts`, corrigé avant le tournage).
+- **On remplace la RÉPONSE DU RÉSEAU, jamais l'app** : l'API du BODACC reçoit des
+  annonces fictives, et c'est le vrai bouton, le vrai tri, le vrai clic qui produisent
+  les écrans. Le test rejoue ces annonces dans `lireSignaux` et `buildCallSession`.
+- **On retire une fiche des DONNÉES, pas une ligne du MONTAGE** : la file filmée est la
+  file entière. Masquer une ligne au montage aurait montré un état que l'app n'a jamais eu.
+- **L'image 0 n'est PAS une affiche à la télévision** : le master commence sur la toile.
+  L'affiche ne sert qu'aux versions web.
+
 ## 6. Avant de dire « c'est prêt »
 
 - [ ] L'accroche se comprend en 2 s, sans le son.

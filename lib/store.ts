@@ -47,8 +47,7 @@ import { CLOSER_USINE } from "./signature";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
-import { aRefuseTouteRelance } from "./voice-script";
-import { exclusionPublique } from "./signaux-publics";
+import { raisonDeNePasEcrire } from "./ne-pas-ecrire";
 import { etatInitial, type EtatHydratation } from "./hydratation";
 
 interface AlphaState {
@@ -706,26 +705,15 @@ export const useAlpha = create<AlphaState>()(
            * « pending » qui échouera à l'envoi est un mensonge d'interface —
            * l'opérateur approuve quarante messages et en voit huit tomber.
            *
-           * On réutilise le mécanisme qui existe déjà pour « pas d'email sur
-           * la fiche » : statut `skipped` + raison écrite. L'écran de revue
-           * l'affiche sans une ligne de code de plus.
+           * Même mécanisme pour celui qui a dit « ne plus me contacter » et
+           * pour la société qu'une annonce légale écarte : `skipped` + la
+           * raison. UNE définition, partagée avec l'écran de revue qui la
+           * MONTRE et verrouille le brouillon (`lib/ne-pas-ecrire.ts`).
+           * ⚠ Ce commentaire affirmait que la revue l'affichait « sans une
+           * ligne de code de plus » : faux dès que la fiche avait un email
+           * (l'adresse passait devant la raison). Vu en tournant le spot TV.
            */
-          const demo = isDemoProspect(p.id);
-          /**
-           * ⚠ Ni celui qui a dit « ne plus me contacter », ni la société qu'une
-           * annonce légale écarte (liquidation, radiation, dissolution). La
-           * file d'appels les sortait déjà ; les brouillons d'email, non — même
-           * mécanisme que la démo : `skipped` + la raison, visible à la revue.
-           */
-          const refus = aRefuseTouteRelance(p);
-          const exclue = exclusionPublique(p);
-          const raison = demo
-            ? "fiche de démonstration — adresse inventée, rebond dur garanti"
-            : refus
-              ? "il a demandé à ne plus être contacté"
-              : exclue
-                ? `annonce légale — ${exclue.libelle}`
-                : null;
+          const raison = raisonDeNePasEcrire(p);
           return {
             id: uid(),
             campaignId,

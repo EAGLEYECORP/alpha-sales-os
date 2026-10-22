@@ -259,6 +259,12 @@ activité, nouveau nom — frais < 60 j, la fiche remonte en tête).
   trouvés AU RENDU : la file écartait la société pendant que la bande « ALPHA
   a besoin de toi » demandait de lui « poser un next step ». Les brouillons
   ignoraient aussi `aRefuseTouteRelance` — corrigé le même jour.
+  ⚠⚠ **Et la RELECTURE** (trouvé en tournant le spot TV, même jour) : la raison du
+  brouillon mis de côté ne s'affichait jamais (l'adresse passait devant), et un
+  clic sur « Ignoré » le remettait dans la pile à ENVOYER. `raisonDeNePasEcrire`
+  (`lib/ne-pas-ecrire.ts`) est la seule définition : la préparation l'écrit, la
+  relecture la MONTRE, verrouille le brouillon, et la redemande au moment de
+  partir — un brouillon d'hier ne sait rien de l'annonce lue ce matin.
 - **Le fait choisit le MOMENT, il ne se dit pas** — même interdit que citer
   son permis à froid. `phraseDuMoment` porte la consigne dans la phrase.
 - **⚠⚠ LA LECTURE PART DU NAVIGATEUR, jamais par notre serveur.** L'API répond
@@ -1805,6 +1811,13 @@ et ce qu'il change, avant de valider.
     ALPHA CEO s'installent chez vous. Cette phrase est dérivée de `AGENTS_ALPHA`.
   · « Ton 100 M » = l'exécution (retenue, rythme, son), jamais un chiffre, un logo
     ou un label qu'on ne pourrait pas défendre en rendez-vous.
+- **⚠⚠ LE SPOT TV (22/10/2026)** — `scripts/video/compositions/spot-tv/` ·
+  `docs/SPOT-TV.md` · `tests/film-spot-tv.test.ts`. 30 s, 1920×1080, 25 i/s, vrais
+  écrans en mode inscrit, données fictives ; on remplace la RÉPONSE du BODACC, jamais
+  l'app. **La télévision se mesure** : mentions ARPP à 22 px réels de hauteur d'x
+  (lue dans la police, revue sur l'image : 23 px), −23 LUFS relus sur le fichier
+  écrit (`scripts/video/mastering-tv.sh`). **Prêt pour l'avis ARPP, pas diffusé** —
+  l'avis et le format de la régie sont sur Zakaria.
 - **10 M ne se met pas dans un `/goal`** : l'évaluateur ne lit que la
   conversation, et ce conteneur ne joint pas Supabase. Le nord vit dans
   `docs/OBJECTIF-10M.md` ; chaque `/goal` vise un livrable prouvable du palier

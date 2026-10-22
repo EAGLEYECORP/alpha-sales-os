@@ -18,6 +18,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { identiteEnvoi } from "@/lib/expediteur";
 import { campagnePeutPartir } from "@/lib/validation-partenaire";
+import { brouillonsAMettreDeCote, raisonDeNePasEcrire } from "@/lib/ne-pas-ecrire";
 import type { Campaign, CampaignDraft, CampaignStepKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
@@ -47,6 +48,7 @@ interface Preview {
 export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onClose: () => void }) {
   const {
     drafts: allDrafts,
+    prospects,
     prepareCampaignDrafts,
     updateDraft,
     setDraftStatus,
@@ -107,6 +109,22 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drafts.length]);
 
+  /**
+   * ⚠ LA FICHE PEUT AVOIR CHANGÉ DEPUIS LA PRÉPARATION — une annonce légale lue
+   * ce matin, un « ne plus m'appeler » noté hier. Un brouillon encore en jeu
+   * vers une fiche qui refuse tout message est remis de côté, avec sa raison,
+   * à chaque fois que la relecture s'ouvre ou que la fiche bouge
+   * (`lib/ne-pas-ecrire.ts`). Rien ne le revérifie côté serveur.
+   */
+  useEffect(() => {
+    for (const { id, raison } of brouillonsAMettreDeCote(drafts, prospects)) setDraftStatus(id, "skipped", raison);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts, prospects]);
+  const raisonVerrou = (d: CampaignDraft): string | null => {
+    const p = prospects.find((x) => x.id === d.prospectId);
+    return p ? raisonDeNePasEcrire(p) : null;
+  };
+
   const regen = () => {
     const n = prepareCampaignDrafts(campaign.id);
     setPreviews({});
@@ -155,12 +173,13 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
   const skipped = drafts.filter((d) => d.status === "skipped");
   const sent = drafts.filter((d) => d.status === "sent");
   const errored = drafts.filter((d) => d.status === "error");
-  const sendableEmails = approved.filter((d) => d.channel === "email" && d.to);
+  // ⚠ Le filtre est redit ICI, au moment de partir : l'effet ci-dessus tourne APRÈS le rendu.
+  const sendableEmails = approved.filter((d) => d.channel === "email" && d.to && !raisonVerrou(d));
   const waApproved = approved.filter((d) => d.channel === "whatsapp" && d.to);
   const allReviewed = pending.length === 0 && drafts.length > 0;
 
   const approveAll = () =>
-    pending.filter((d) => d.to).forEach((d) => setDraftStatus(d.id, "approved"));
+    pending.filter((d) => d.to && !raisonVerrou(d)).forEach((d) => setDraftStatus(d.id, "approved"));
 
   const sendApproved = async () => {
     /**
@@ -310,6 +329,7 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
         <ul className="space-y-3">
           {drafts.map((d) => {
             const pv = previews[d.id];
+            const verrou = raisonVerrou(d);
             return (
               <li
                 key={d.id}
@@ -317,6 +337,8 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
                   "rounded-xl border p-3",
                   d.status === "approved" ? "border-signal-green/40 bg-signal-green/5"
                     : d.status === "sent" ? "border-signal-green/30 bg-ink-900 opacity-80"
+                    // Un verrou ne s'estompe pas : sa raison doit se LIRE (vu au rendu, 22/10/2026).
+                    : d.status === "skipped" && verrou ? "border-signal-red/40 bg-ink-900"
                     : d.status === "skipped" ? "border-ink-700 bg-ink-900 opacity-60"
                     : d.status === "error" ? "border-signal-red/40 bg-signal-red/5"
                     : "border-ink-600 bg-ink-850"
@@ -332,6 +354,16 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
                   </div>
                   <StatusChip d={d} />
                 </div>
+
+                {/* ⚠ LA RAISON SE LIT SUR LA CARTE. Avant, l'adresse passait devant
+                    elle : « ignoré », sans un mot, et un clic remettait le message
+                    dans la pile. Un verrou (démo, refus, annonce légale) ne se
+                    retire pas d'ici ; un « ignoré » posé à la main, si. */}
+                {d.status === "skipped" && (verrou ?? d.error) && (
+                  <p className={cn("mt-2 text-[12px] leading-snug", verrou ? "text-signal-red" : "text-paper-faint")}>
+                    {verrou ? "Ne part pas" : "Mis de côté"} : {verrou ?? d.error}
+                  </p>
+                )}
 
                 {!d.to ? (
                   <p className="mt-2 text-[12px] text-signal-red">Pas de coordonnée sur la fiche — ce message ne peut pas partir.</p>
@@ -392,7 +424,7 @@ export function CampaignReview({ campaign, onClose }: { campaign: Campaign; onCl
 
                     {/* Actions de relecture */}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {d.status !== "sent" && (
+                      {d.status !== "sent" && !verrou && (
                         <>
                           <button
                             className={d.status === "approved" ? "btn-bronze px-2.5 py-1.5 text-[12px]" : "btn-ghost px-2.5 py-1.5 text-[12px]"}

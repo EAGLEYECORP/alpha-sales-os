@@ -1,0 +1,37 @@
+{
+  "_note": "Spot TV du 22/10/2026 (30 s, 16:9). Retenue : une nappe basse, peu d'événements, aucun « jeu vidéo ». Ré majeur (la question) → si mineur (le tri) → sol (le script) → la (la relecture) → si mineur (la promesse) → ré majeur sur le logo. Le volume final se fait au mastering (−23 LUFS, voir docs/SPOT-TV.md), pas ici.",
+  "duree": 30,
+  "accords": [
+    [0.0, [73.42, 146.83, 220.0, 277.18, 329.63]],
+    [3.0, [61.74, 123.47, 185.0, 246.94, 293.66]],
+    [9.4, [98.0, 146.83, 196.0, 246.94, 293.66]],
+    [14.6, [110.0, 164.81, 220.0, 277.18, 329.63]],
+    [21.0, [61.74, 123.47, 185.0, 246.94, 293.66, 369.99]],
+    [24.7, [73.42, 146.83, 220.0, 293.66, 369.99, 440.0]]
+  ],
+  "evenements": [
+    { "t": 0.15, "type": "tinte", "hz": 587.33, "pan": -0.15, "gain": 0.8 },
+    { "t": 2.7, "type": "souffle", "gain": 0.7 },
+    { "t": 3.3, "type": "appui", "gain": 0.8 },
+    { "t": 4.65, "type": "tic", "hz": 369.99, "pan": 0.1 },
+    { "t": 6.0, "type": "souffle", "gain": 0.6 },
+    { "t": 6.3, "type": "air", "pan": -0.2 },
+    { "t": 7.25, "type": "tinte", "hz": 880.0, "pan": 0.15, "gain": 0.8 },
+    { "t": 9.1, "type": "souffle", "gain": 0.7 },
+    { "t": 9.75, "type": "appui", "gain": 0.8 },
+    { "t": 10.35, "type": "tic", "hz": 587.33, "pan": -0.3 },
+    { "t": 10.65, "type": "tic", "hz": 659.25, "pan": -0.1 },
+    { "t": 10.95, "type": "tic", "hz": 739.99, "pan": 0.1 },
+    { "t": 11.25, "type": "tic", "hz": 880.0, "pan": 0.3 },
+    { "t": 11.7, "type": "tinte", "hz": 1174.66, "pan": 0.2, "gain": 0.8 },
+    { "t": 14.3, "type": "souffle", "gain": 0.7 },
+    { "t": 14.95, "type": "appui", "gain": 0.8 },
+    { "t": 17.3, "type": "declic", "pan": -0.35 },
+    { "t": 17.36, "type": "tinte", "hz": 880.0, "pan": -0.2, "gain": 0.9 },
+    { "t": 20.7, "type": "souffle", "gain": 0.7 },
+    { "t": 21.15, "type": "air", "pan": 0.2 },
+    { "t": 24.45, "type": "souffle", "gain": 0.7 },
+    { "t": 24.8, "type": "impact", "gain": 0.55 },
+    { "t": 25.4, "type": "brillance", "notes": [587.33, 739.99, 880.0, 1174.66], "gain": 0.6 }
+  ]
+}

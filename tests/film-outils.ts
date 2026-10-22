@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { brotliDecompressSync } from "node:zlib";
 import { AGENTS_ALPHA } from "../lib/agents-alpha";
 
 /**
@@ -142,4 +143,51 @@ export function textesRetiresTropTot(html: string, duree: number): { fautifs: st
     }
   }
   return { fautifs, mesures };
+}
+
+/**
+ * La hauteur d'x et les unités par em DÉCLARÉES dans un fichier de police WOFF2
+ * (tables `head` et `OS/2`). Sert à prouver la taille des MENTIONS en pixels réels
+ * — l'ARPP la mesure sur la minuscule à tête plate, pas sur le corps de la police.
+ * Aucune dépendance : le WOFF2 est un flux Brotli, que Node décompresse seul.
+ */
+export function metriquesPolice(woff2: Buffer): { unitesParEm: number; hauteurX: number } {
+  assert.equal(woff2.toString("latin1", 0, 4), "wOF2", "ce n'est pas un fichier WOFF2");
+  const nbTables = woff2.readUInt16BE(12);
+  const tailleCompressee = woff2.readUInt32BE(20);
+  let o = 48;
+  const base128 = (): number => {
+    let v = 0;
+    for (let i = 0; i < 5; i++) {
+      const b = woff2[o++];
+      v = (v << 7) | (b & 0x7f);
+      if (!(b & 0x80)) return v;
+    }
+    throw new Error("entier UIntBase128 trop long");
+  };
+  // Index des tables connues (spécification WOFF2) : 1 = head, 3 = hmtx, 6 = OS/2, 10 = glyf, 11 = loca.
+  const tables: { index: number; longueur: number }[] = [];
+  for (let t = 0; t < nbTables; t++) {
+    const drapeaux = woff2[o++];
+    const index = drapeaux & 0x3f;
+    const version = drapeaux >> 6;
+    if (index === 63) o += 4;
+    const longueur = base128();
+    const transformee = ((index === 10 || index === 11) && version === 0) || (index === 3 && version === 1);
+    tables.push({ index, longueur: transformee ? base128() : longueur });
+  }
+  const flux = brotliDecompressSync(woff2.subarray(o, o + tailleCompressee));
+  const debut = (index: number): number => {
+    let d = 0;
+    for (const t of tables) {
+      if (t.index === index) return d;
+      d += t.longueur;
+    }
+    throw new Error(`table ${index} absente`);
+  };
+  const head = debut(1);
+  assert.equal(flux.readUInt32BE(head + 12), 0x5f0f3cf5, "nombre magique de `head` introuvable : la lecture du flux est fausse");
+  const os2 = debut(6);
+  assert.ok(flux.readUInt16BE(os2) >= 2, "table OS/2 trop ancienne : pas de hauteur d'x déclarée");
+  return { unitesParEm: flux.readUInt16BE(head + 18), hauteurX: flux.readInt16BE(os2 + 86) };
 }

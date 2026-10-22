@@ -27,6 +27,7 @@ import { prospectDefaults, seedCampaigns } from "../lib/seed";
 import { computeRoutines } from "../lib/routines";
 import { useAlpha } from "../lib/store";
 import { DO_NOT_CALL_TAG } from "../lib/voice-script";
+import { brouillonsAMettreDeCote, raisonDeNePasEcrire } from "../lib/ne-pas-ecrire";
 import type { Prospect } from "../lib/types";
 import { sansCommentaires } from "./citations-alpha";
 
@@ -388,4 +389,57 @@ test("⚠⚠ un brouillon de campagne n'est pas écrit pour une société liquid
   } finally {
     useAlpha.setState(avant, true);
   }
+});
+
+// ── LA RELECTURE — trouvé en tournant le spot TV du 22/10/2026 ───────────
+// La raison était bien écrite dans le brouillon, et l'écran ne la montrait
+// jamais (l'adresse passait devant). Un clic sur « Ignoré » remettait le
+// message dans la pile, et un brouillon préparé la veille ne savait rien de
+// l'annonce lue le matin.
+
+test("⚠⚠ un brouillon approuvé HIER vers une société lue liquidée AUJOURD'HUI est remis de côté, avec sa raison", () => {
+  const avant = useAlpha.getState();
+  try {
+    useAlpha.setState({
+      prospects: [fiche("hier", { email: "h@exemple.test", siren: A }), fiche("saine", { email: "s@exemple.test" })],
+      campaigns: [{ ...seedCampaigns[0], id: "camp-hier", sector: "tous", status: "active" }],
+      drafts: [],
+    });
+    useAlpha.getState().prepareCampaignDrafts("camp-hier");
+    const id = useAlpha.getState().drafts.find((d) => d.prospectId === "hier")!.id;
+    useAlpha.getState().setDraftStatus(id, "approved");
+    assert.deepEqual(brouillonsAMettreDeCote(useAlpha.getState().drafts, useAlpha.getState().prospects), [], "rien à remettre de côté tant que la fiche est saine");
+    // Le lendemain matin, la lecture du BODACC tombe.
+    useAlpha.getState().patchProspect("hier", { signauxPublics: liquidee });
+    const aRetirer = brouillonsAMettreDeCote(useAlpha.getState().drafts, useAlpha.getState().prospects);
+    assert.equal(aRetirer.length, 1);
+    assert.equal(aRetirer[0].id, id);
+    assert.match(aRetirer[0].raison, /annonce légale — Liquidation judiciaire/);
+  } finally {
+    useAlpha.setState(avant, true);
+  }
+});
+
+test("la raison de ne pas écrire : une définition, trois verrous, et ce qui n'en est pas un", () => {
+  assert.equal(raisonDeNePasEcrire(fiche("propre", { email: "p@exemple.test" })), null);
+  assert.match(raisonDeNePasEcrire(fiche("demo-x")) ?? "", /démonstration/);
+  assert.match(raisonDeNePasEcrire(fiche("r", { tags: [DO_NOT_CALL_TAG] })) ?? "", /ne plus être contacté/);
+  assert.match(raisonDeNePasEcrire(fiche("l", { siren: A, signauxPublics: liquidee })) ?? "", /annonce légale/);
+  // Un « ignoré » posé à la main, un brouillon déjà parti, une fiche disparue : on n'y touche pas.
+  const d = (prospectId: string, status: "skipped" | "sent" | "pending") =>
+    ({ id: `d-${prospectId}-${status}`, campaignId: "c", prospectId, company: "", channel: "email", to: "x@exemple.test", subject: "", body: "", status }) as const;
+  const liq = fiche("liq", { siren: A, signauxPublics: liquidee });
+  assert.deepEqual(brouillonsAMettreDeCote([d("liq", "skipped"), d("liq", "sent"), d("absente", "pending")], [liq]), []);
+});
+
+test("⚠⚠ l'écran de relecture MONTRE la raison, VERROUILLE le brouillon, et ne l'ENVOIE pas", () => {
+  const revue = sansCommentaires(readFileSync(join(process.cwd(), "components/campaigns/campaign-review.tsx"), "utf8"));
+  assert.match(revue, /brouillonsAMettreDeCote\(drafts, prospects\)\)\s*setDraftStatus\(id, "skipped", raison\)/, "un brouillon d'hier vers une fiche exclue n'est plus remis de côté");
+  assert.match(revue, /\{verrou \?\? d\.error\}/, "la raison ne s'affiche plus sur la carte");
+  assert.match(revue, /d\.status !== "sent" && !verrou &&/, "un verrou se retire de nouveau d'un clic");
+  assert.match(revue, /sendableEmails = approved\.filter\(\(d\) => [^\n]*&& !raisonVerrou\(d\)\)/, "l'envoi ne refiltre plus au moment de partir");
+  assert.match(revue, /const approveAll = \(\) =>\s*pending\.filter\(\(d\) => d\.to && !raisonVerrou\(d\)\)/, "« Tout approuver » approuve un brouillon verrouillé");
+  const store = sansCommentaires(readFileSync(join(process.cwd(), "lib/store.ts"), "utf8"));
+  assert.match(store, /const raison = raisonDeNePasEcrire\(p\);/, "la préparation a une deuxième définition de « ne pas écrire »");
+  assert.doesNotMatch(store, /exclusionPublique\(|aRefuseTouteRelance\(/, "une deuxième définition de « ne pas écrire » est revenue dans le store");
 });

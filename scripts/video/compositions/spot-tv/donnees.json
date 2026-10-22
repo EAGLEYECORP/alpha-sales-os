@@ -1,0 +1,82 @@
+{
+  "_note": "Spot TV du 22/10/2026. Tout ici est FICTIF : sociétés « (démo) », domaines RFC 2606 (.example), téléphones des plages ARCEP réservées à la fiction, SIREN hors de tout registre (vérifiés au BODACC et au registre national : zéro résultat), annonces inventées au FORMAT de l'API réelle. Le test (tests/film-spot-tv.test.ts) rejoue ces annonces dans le vrai lireSignaux.",
+  "tourneLe": "2026-10-22T09:00:00.000Z",
+  "profil": {
+    "poste": "solo",
+    "metier": "un logiciel de caisse",
+    "cibleSecteur": "restaurants",
+    "cibleRole": "gérants",
+    "cibleZone": "Lyon"
+  },
+  "closerName": "Camille",
+  "fiches": [
+    {
+      "id": "spot-brisaume",
+      "company": "Café Brisaume (démo)",
+      "name": "Hugo L.",
+      "siren": "000000042",
+      "phone": "06 39 98 10 04",
+      "email": "hugo@cafe-brisaume.example",
+      "role": "neutre"
+    },
+    {
+      "id": "spot-ferlane",
+      "company": "Table Ferlane (démo)",
+      "name": "Nora B.",
+      "siren": "000000034",
+      "phone": "06 39 98 10 02",
+      "email": "nora@table-ferlane.example",
+      "role": "exclue"
+    },
+    {
+      "id": "spot-olvere",
+      "company": "Maison Olvère (démo)",
+      "name": "Inès M.",
+      "siren": "000000018",
+      "phone": "06 39 98 10 01",
+      "email": "ines@maison-olvere.example",
+      "role": "moment"
+    }
+  ],
+  "annonces": {
+    "000000018": [
+      {
+        "dateparution": "2026-10-08",
+        "familleavis": "modification",
+        "typeavis": "annonce",
+        "modificationsgenerales": "{\"descriptif\": \"Modification survenue sur l'administration.\"}",
+        "jugement": null,
+        "acte": null,
+        "url_complete": "https://www.bodacc.fr/pages/annonces-commerciales-detail/?q.id=id:FICTION-SPOT-1",
+        "registre": [
+          "000000018",
+          "000 000 018"
+        ],
+        "listeprecedentproprietaire": null
+      }
+    ],
+    "000000034": [
+      {
+        "dateparution": "2026-09-15",
+        "familleavis": "collective",
+        "typeavis": "annonce",
+        "modificationsgenerales": null,
+        "jugement": "{\"nature\": \"Jugement d'ouverture de liquidation judiciaire\", \"complementJugement\": \"Jugement prononçant la liquidation judiciaire.\"}",
+        "acte": null,
+        "url_complete": "https://www.bodacc.fr/pages/annonces-commerciales-detail/?q.id=id:FICTION-SPOT-2",
+        "registre": [
+          "000000034",
+          "000 000 034"
+        ],
+        "listeprecedentproprietaire": null
+      }
+    ],
+    "000000042": []
+  },
+  "campagne": {
+    "id": "spot-campagne",
+    "name": "Restaurants — première approche",
+    "objet": "{commerce} : une question sur votre caisse",
+    "corps": "Bonjour {prenom},\n\nJe m'adresse aux gérants de restaurants de {ville}. Une question simple : à la fermeture, combien de temps vous prend la caisse ?\n\nSi le sujet vous parle, un court appel suffit pour voir si ça vaut la peine.\n\n{closer}\n\nPour ne plus recevoir de message : répondez STOP."
+  }
+}
