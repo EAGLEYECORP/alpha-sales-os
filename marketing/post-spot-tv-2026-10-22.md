@@ -1,18 +1,18 @@
 # Post LinkedIn — le spot TV « Qui appeler ce matin ? » (22/10/2026)
 
-**Statut : PUBLIÉ le 22/10/2026 vers 19 h 10 (Paris)**, sur « Post now » de Zakaria —
-`urn:li:ugcPost:7519082695130279936` (vidéo `urn:li:video:D4E10AQEDLuR7-G3Ggw`, 5 441 826 octets,
-téléversée depuis l'URL de production, vérifiée au même octet avant l'envoi). Deuxième post
-du jour : la règle « un par jour » a été levée par sa demande explicite.
+**Statut : PUBLIÉ le 22/10/2026 vers 20 h 35 (Paris)** — `urn:li:ugcPost:7519103338844717056`,
+republié sur « Republie » de Zakaria (vidéo `urn:li:video:D4E10AQGc51PpkSj0zA`, 3 730 633 octets,
+version WEB `public/media/linkedin/spot-tv-2026-10-22.mp4`, téléversée depuis la production
+vérifiée au même octet ; vignette RELUE avant publication : « Qui appeler ce matin ? »).
 
-> ⚠⚠ **LA VIGNETTE EST VIDE — mon erreur, vue après publication.** C'est le MASTER TV qui
-> est parti, et un master TV commence sur la toile nue (image 0 sans texte) : LinkedIn a pris
-> cette image comme couverture (relue : 1280 × 720, aplat crème). Dans le fil la vidéo se lance
-> seule et la question apparaît dès 0,15 s ; partout où elle ne se lance pas (profil,
-> partages, lecture automatique coupée), la carte est vide. La version web existe désormais —
-> `public/media/linkedin/spot-tv-2026-10-22.mp4`, image 0 = l'affiche « Qui appeler ce
-> matin ? » (PSNR 43,5 dB contre l'affiche ; 51 dB contre le master sur les images 1 et 50).
-> La remplacer en ligne veut dire SUPPRIMER le post et le republier : sa décision.
+> ⚠⚠ **Première publication supprimée** (`urn:li:ugcPost:7519082695130279936`, 19 h 10) : c'était
+> le MASTER TV, et sa vignette était vide. Deux causes, trouvées dans l'ordre :
+> · le master commence sur la toile nue — l'affiche n'est pas son image 0, exprès ;
+> · **LinkedIn prend l'IMAGE 3 (0,12 s), pas l'image 0** — mesuré avec une vidéo-sonde
+>   numérotée, téléversée sans être publiée. Une première version web (affiche sur l'image 0
+>   seule) donnait encore une vignette vide ; l'affiche couvre maintenant les images 0–23,
+>   jusqu'au raccord invisible avec l'animation (PSNR > 64 dB dès l'image 24).
+> Les likes et commentaires du premier post, s'il y en avait, sont perdus avec lui.
 
 - Vidéo : `public/media/tv/alpha-spot-30s-2026-10-22.mp4` (1920 × 1080, 25 i/s, 30 s, −23 LUFS).
 - Composition : `scripts/video/compositions/spot-tv/` · garde : `tests/film-spot-tv.test.ts` ·
