@@ -2516,14 +2516,20 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
   processus, puis file (p95 12–20 s, `ECONNRESET`). **Ce n'est PAS un test d'inscription ni
   de comptes connectés** : aucun appel Supabase (les ~17 REST par page restent le vrai
   plafond d'un connecté, non mesuré), pas Vercel, aucun email de confirmation.
-- **⚠⚠ LE PREMIER MUR EST À 2 INSCRIPTIONS PAR HEURE, LU (pas supposé) le 21/10/2026** par la
-  config Auth du projet : `rate_limit_email_sent` = **2**, `smtp_host` = **null**. Aucun SMTP
-  n'est branché côté Supabase : les confirmations partent de son expéditeur intégré, pas de
-  `contact@` (la doctrine disait l'inverse, et « ~30/h »). `max_rows` PostgREST = 1 000
-  (hypothèse confirmée). Un post qui marche = des inscrits sans lien de confirmation dès le
-  3ᵉ de l'heure. Le lever exige un SMTP personnalisé dans Supabase, puis relever la limite :
-  c'est le geste de `docs/SMTP-SUPABASE-AMEN.md`, et il est PRIORITAIRE sur tout le reste.
-  (La lecture de cette config renvoie aussi le `jwt_secret` : ne jamais la recopier.)
+- **✅ LE MUR DES 2 INSCRIPTIONS PAR HEURE EST LEVÉ** — lu le 21/10/2026
+  (`rate_limit_email_sent` = 2, `smtp_host` = null), reposé le soir même et **prouvé par un
+  envoi réel** (`docs/SMTP-SUPABASE-AMEN.md` : INBOX en 2 s, SPF/DKIM/DMARC `pass`), **relu le
+  22/10** : `smtp_host` = `smtp-fr.securemail.pro:465`, expéditeur `contact@eagleyecorp.fr`
+  (« Alpha Sales OS »), limite **30/h**. `max_rows` PostgREST = 1 000 (confirmé).
+  ⚠ **Ce paragraphe a dit « 2/h, PRIORITAIRE » une journée de trop** : la correction vivait
+  dans `docs/SMTP-SUPABASE-AMEN.md`, pas ici, et la session suivante a relancé Zakaria sur une
+  tâche faite. Une doctrine qui ne suit pas le geste fabrique du travail en double.
+  · **Le mur suivant** : 30 confirmations/heure (un post qui marche peut le toucher), puis le
+    plafond Amen de 500 envois/jour, partagé avec la prospection — `docs/OBJECTIF-10M.md` § 4.
+  · **Le coût écrit plus haut devient RÉEL** (« D'où partent nos emails ») : les confirmations
+    partent désormais de `contact@`, la boîte de prospection.
+  · (La lecture de cette config renvoie des secrets — `smtp_pass`, parfois `jwt_secret` : ne
+    jamais les recopier ; n'en extraire que les champs utiles.)
 - **Ce qui reste, sans fard** : (1) **chaque requête qui traverse le middleware relit
   les droits par un appel REST** — ~17 par page, d'après le commentaire du middleware.
   Le cache de droits par instance (jamais sur les routes qui dépensent, jamais sur un
@@ -2552,6 +2558,20 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
   · Le code déployé peut encore être l'ANCIEN (il somme côté application, le lot est
     compatible avec lui) : `enveloppeEcart` n'apparaît dans `/api/health` qu'une fois
     ce commit déployé.
+
+## OÙ TOURNE LA PRODUCTION — vérifié le 22/10/2026, pas supposé
+- **L'app (`alphasalesos.eagleyecorp.fr`) est sur VERCEL**, et **un push sur la branche de
+  travail arrive en production tout seul** : vu par les en-têtes (`server: Vercel`,
+  `x-vercel-cache`) et par le MP4 du commit du jour servi au bon octet quelques minutes après
+  le push. Conséquence : « tests + types verts avant push » n'est pas une politesse, c'est le
+  seul contrôle avant la production.
+- **Netlify ne sert que la vitrine `eagleyecorp.fr` (`site/`)**, publiée à la main
+  (`docs/NETLIFY-EAGLEYECORP-FR.md`). « Trigger deploy » ne concerne QUE ce site.
+  ⚠ Une session l'avait confondu et a demandé à Zakaria de « déployer sur Netlify » une app
+  déjà en ligne. Et le Netlify branché à cette session voit une AUTRE équipe : n'y rien déployer.
+- Ce qu'on publie sur LinkedIn pointe vers l'app : vérifier l'URL du média en production
+  (`curl -I` via Composio) AVANT `LINKEDIN_UPLOAD_VIDEO` — le contenu servi doit être celui du
+  commit qu'on annonce.
 
 ## Contraintes d'environnement (sandbox)
 **Re-mesuré le 17/09/2026** — cette liste avait dérivé, et une contrainte fausse

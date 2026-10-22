@@ -1,19 +1,21 @@
 # Post LinkedIn — « Tu vends quoi ? » (22/10/2026)
 
-**Statut : PRÊT, PAS PUBLIÉ.** Aucun envoi sans le « go » de Zakaria.
+**Statut : PUBLIÉ le 22/10/2026 vers 13 h 40 (Paris)**, sur le « go » de Zakaria —
+`urn:li:ugcPost:7518998791900004353` (vidéo `urn:li:video:D4E10AQG-KRykwCDTAw`, 3 828 571 octets,
+téléversée depuis l'URL de production). Relecture par l'API refusée (403, connu) : vérifier à l'œil.
 
 - Vidéo : `public/media/linkedin/tu-vends-quoi-2026-10-22.mp4` (1080 × 1350, 25,7 s, son synthétisé).
 - Composition : `scripts/video/compositions/tu-vends-quoi/` · garde : `tests/film-tu-vends-quoi.test.ts`.
 - Les écrans sont RÉELS (`capturer.mjs` : l'app servie en mode inscrit, le métier tapé
   dans le vrai champ, une capture par lettre). Les trois métiers sont des exemples.
 
-## ⚠ Avant de publier — dans cet ordre
+## Avant de publier — ce qui a été vérifié
 
-1. **Déployer.** Le film montre le comportement corrigé le 22/10 (script de l'inscrit,
-   verdict prouvé, grammaire). La production ne l'a qu'après « Trigger deploy ».
-2. **Lever le mur des inscriptions** (`docs/SMTP-SUPABASE-AMEN.md`) : Supabase envoie
-   **2 confirmations par heure**. Un post qui marche fabrique des inscrits sans lien de
-   confirmation dès le troisième de l'heure — le pire moment pour décevoir.
+1. **La production servait déjà le bon code** : l'app est sur Vercel et déploie au push ; le MP4
+   du commit du film était servi au bon octet (`server: Vercel`). Rien à déclencher.
+2. **Le mur des inscriptions était levé** : config Auth relue le 22/10 — SMTP personnalisé
+   (`contact@eagleyecorp.fr`), **30 confirmations/heure**. Ce n'est plus 2, mais un post qui
+   marche peut toucher 30 : à surveiller dans `/adoption`.
 
 ## Texte du post
 

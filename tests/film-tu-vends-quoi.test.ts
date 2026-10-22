@@ -164,5 +164,6 @@ test("⚠⚠ le post dit la frontière et refuse la promesse fausse sur les donn
   assert.match(post, /onglet est ouvert/);
   assert.match(post, /CRM vit dans ton navigateur/);
   assert.doesNotMatch(post, /ne quitte(?:nt)? jamais|ne passe(?:nt)? (?:jamais )?par nos serveurs/i, "une clé d'IA envoie du texte à son fournisseur");
-  assert.match(postMd, /PRÊT, PAS PUBLIÉ/);
+  // Le statut se DIT : prêt et non publié, ou publié avec sa date et son identifiant.
+  assert.match(postMd, /\*\*Statut : (?:PRÊT, PAS PUBLIÉ|PUBLIÉ le \d{2}\/\d{2}\/\d{4}[^*]*\*\*[\s\S]{0,40}urn:li:ugcPost:\d+)/);
 });
