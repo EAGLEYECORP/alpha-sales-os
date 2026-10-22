@@ -4,6 +4,7 @@ import { stageById } from "./hormozi";
 import { VERTICALS, type VerticalPlaybook, verticalForProspect } from "./playbook";
 import { aRefuseTouteRelance } from "./voice-script";
 import { ID_SCRIPT_OPERATEUR } from "./script-operateur";
+import { exclusionPublique, momentFrais, phraseDuMoment, type ExclusionPublique } from "./signaux-publics";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -49,7 +50,12 @@ function lastContactAt(p: Prospect): number | null {
  * au signal le plus actionnable — jamais un chiffre € (interdit à froid,
  * cf. DOCTRINE_TERRAIN) ni la note Google prononcée telle quelle.
  */
-export function callAngle(p: Prospect, v: VerticalPlaybook | null, daysSince: number | null): { angle: string; hot: boolean } {
+export function callAngle(
+  p: Prospect,
+  v: VerticalPlaybook | null,
+  daysSince: number | null,
+  now: Date = new Date()
+): { angle: string; hot: boolean } {
   const d = p.deepAudit;
 
   // 1. Une objection bloquante ouverte : c'est LE sujet de l'appel.
@@ -59,7 +65,7 @@ export function callAngle(p: Prospect, v: VerticalPlaybook | null, daysSince: nu
   }
 
   // 2. Un next step daté dépassé : la promesse n'a pas été tenue.
-  if (p.nextStep && new Date(p.nextStep.date).getTime() < Date.now()) {
+  if (p.nextStep && new Date(p.nextStep.date).getTime() < now.getTime()) {
     return { angle: `Next step dépassé : « ${p.nextStep.action} ». Rappelle en assumant le retard, puis redate.`, hot: true };
   }
 
@@ -71,6 +77,16 @@ export function callAngle(p: Prospect, v: VerticalPlaybook | null, daysSince: nu
   // 4. Démo faite mais pas d'offre : la fenêtre se referme vite.
   if (p.stage === "demo") {
     return { angle: "Démo faite, offre pas encore présentée — la fenêtre se referme vite, appelle pendant que l'émotion est fraîche.", hot: true };
+  }
+
+  // 4 bis. Un MOMENT PUBLIC frais (annonce légale de moins de deux mois) :
+  // nouvelle direction, déménagement, rachat… C'est la raison d'appeler
+  // MAINTENANT plutôt que le mois prochain — et la phrase rappelle qu'on ne
+  // la cite pas (`phraseDuMoment`). Derrière les étapes de l'affaire : une
+  // offre sur la table compte plus qu'un changement de gérant.
+  const moment = momentFrais(p, now);
+  if (moment) {
+    return { angle: phraseDuMoment(moment), hot: true };
   }
 
   // 5. Silence long après un contact : le rappel est le sujet.
@@ -128,6 +144,22 @@ export function appeleAujourdhui(p: Prospect, now: Date = new Date()): boolean {
 }
 
 /**
+ * Une fiche entre-t-elle dans la file ? UNE définition, lue par la file et par
+ * ses onglets (sinon l'onglet annonce « 12 » et la liste en montre 11).
+ * Ne la reçoivent pas : l'affaire close, le refus de toute relance, et la
+ * société qu'une annonce légale écarte (`lib/signaux-publics.ts`).
+ */
+export function dansLaFile(p: Prospect): boolean {
+  return p.stage !== "signe" && p.stage !== "perdu" && !aRefuseTouteRelance(p) && !exclusionPublique(p);
+}
+
+/** Une fiche que l'annonce légale a sortie de la file — comptée et nommée, jamais tue. */
+export interface FicheEcartee {
+  prospect: Prospect;
+  exclusion: ExclusionPublique;
+}
+
+/**
  * Construit la session : la verticale, puis les cibles triées.
  *
  * ⚠ DEUX RÔLES QUI ÉTAIENT CONFONDUS. `vertical` (le métier du PROSPECT)
@@ -141,24 +173,30 @@ export function buildCallSession(
   verticalId: string,
   now: Date = new Date(),
   scriptServi?: VerticalPlaybook | null
-): { vertical: VerticalPlaybook | null; script: VerticalPlaybook | null; targets: CallTarget[] } {
+): { vertical: VerticalPlaybook | null; script: VerticalPlaybook | null; targets: CallTarget[]; ecartees: FicheEcartee[] } {
   const vertical = VERTICALS.find((v) => v.id === verticalId) ?? null;
   const script = scriptServi === undefined ? vertical : scriptServi;
+  const duMetier = (p: Prospect) => !vertical || verticalForProspect(p)?.id === vertical.id;
+
+  // ⚠ Les écartées se comptent dans la MÊME verticale que la file : sinon
+  // l'onglet « restauration » annoncerait les liquidations des garages.
+  const ecartees: FicheEcartee[] = prospects
+    .filter((p) => p.stage !== "signe" && p.stage !== "perdu" && duMetier(p))
+    .flatMap((p) => {
+      const exclusion = exclusionPublique(p);
+      return exclusion ? [{ prospect: p, exclusion }] : [];
+    });
 
   const targets = prospects
-    .filter((p) => p.stage !== "signe" && p.stage !== "perdu")
-    // Il a dit « ne plus m'appeler ». La fiche revenait dans la file le
-    // lendemain matin, avec son angle et son script, comme si de rien n'était.
-    .filter((p) => !aRefuseTouteRelance(p))
-    .filter((p) => {
-      if (!vertical) return true;
-      const own = verticalForProspect(p);
-      return own?.id === vertical.id;
-    })
+    // Il a dit « ne plus m'appeler » : la fiche revenait dans la file le
+    // lendemain matin, comme si de rien n'était. Une société en liquidation,
+    // pareil — elle ne pourra pas payer, et l'appel le lui rappellerait.
+    .filter(dansLaFile)
+    .filter(duMetier)
     .map((p) => {
       const last = lastContactAt(p);
       const daysSinceContact = last === null ? null : Math.floor((now.getTime() - last) / DAY);
-      const { angle, hot } = callAngle(p, script, daysSinceContact);
+      const { angle, hot } = callAngle(p, script, daysSinceContact, now);
       return { prospect: p, heat: heat(p), angle, hot, daysSinceContact, faitAujourdhui: appeleAujourdhui(p, now) };
     })
     // Les fiches déjà traitées aujourd'hui descendent, elles ne disparaissent
@@ -171,16 +209,14 @@ export function buildCallSession(
         b.heat - a.heat
     );
 
-  return { vertical, script, targets };
+  return { vertical, script, targets, ecartees };
 }
 
 /** Les verticales qui ont réellement des cibles — pour les onglets. */
 export function verticalsWithTargets(prospects: Prospect[]): { vertical: VerticalPlaybook; count: number }[] {
   // Même filtre que la file elle-même : sans ça, l'onglet annonce « 12 » et
   // la liste en montre 11, ce qui donne l'impression d'un bug d'affichage.
-  const open = prospects.filter(
-    (p) => p.stage !== "signe" && p.stage !== "perdu" && !aRefuseTouteRelance(p)
-  );
+  const open = prospects.filter(dansLaFile);
   return VERTICALS.map((vertical) => ({
     vertical,
     count: open.filter((p) => verticalForProspect(p)?.id === vertical.id).length,

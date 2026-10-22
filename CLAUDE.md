@@ -241,6 +241,47 @@ produit à un inscrit qui vend autre chose :
 > un secteur à démarchage téléphonique interdit. Un test refuse le retour d'une
 > offre retirée.
 
+## LE SIGNAL DE TOUTE ENTREPRISE : LES ANNONCES LÉGALES (22/10/2026)
+`lib/signaux-publics.ts` · `lib/siren.ts` · `components/prospects/signaux-publics-panel.tsx` ·
+`components/appels/annonces-de-la-file.tsx` · `tests/signaux-publics.test.ts`.
+
+Après la bascule horizontale, un inscrit n'avait plus aucun signal (le permis
+ne dit rien d'un garage). Le BODACC dit, pour toute société, par son SIREN :
+**qui ne pas appeler** (procédure collective < 24 mois, radiation non suivie
+d'une recréation, dissolution — exclusion SÈCHE, comptée et nommée) et **quand appeler**
+(nouvelle direction, déménagement, rachat ou fusion, création, capital,
+activité, nouveau nom — frais < 60 j, la fiche remonte en tête).
+- **⚠⚠ QUATRE endroits posent « peut-on le démarcher ? », et tous lisent
+  `exclusionPublique`** : la file humaine (`dansLaFile`), le robot
+  (`buildCampaignRun`), la routine du matin (`computeRoutines` — une seule
+  routine « à trancher », priorité moyenne) et les brouillons de campagne
+  (`prepareCampaignDrafts`, `skipped` + raison). Les deux derniers ont été
+  trouvés AU RENDU : la file écartait la société pendant que la bande « ALPHA
+  a besoin de toi » demandait de lui « poser un next step ». Les brouillons
+  ignoraient aussi `aRefuseTouteRelance` — corrigé le même jour.
+- **Le fait choisit le MOMENT, il ne se dit pas** — même interdit que citer
+  son permis à froid. `phraseDuMoment` porte la consigne dans la phrase.
+- **⚠⚠ LA LECTURE PART DU NAVIGATEUR, jamais par notre serveur.** L'API répond
+  `access-control-allow-origin: *` et la CSP laisse sortir `https:`. Une route
+  à nous aurait reçu la liste des SIREN d'un inscrit, c'est-à-dire son pipe.
+  Un test refuse toute mention du BODACC sous `app/api/`.
+- **Rien n'est deviné** : SIREN exact, jamais un nom. Panne → `non-lu`, jamais
+  une lecture vide (qui se lirait « saine »). Clé de Luhn fausse → `invalide`,
+  sans requête. **`000000000` passe Luhn et porte 1 563 annonces** au BODACC
+  (remplissage) : refusé partout, cadence légale comprise.
+- **Mesuré sur de vraies annonces avant d'écrire les tests** (bac à sable,
+  rien commité) : « immatriculation » = déménagement hors ressort, pas une
+  création ; « Modification du capital » ne dit pas son sens ; une vente ou
+  une fusion range parfois l'ABSORBÉE en tête du registre — c'est la liste des
+  anciens propriétaires qui tranche. 22 mutations mordent.
+- **Fixtures** : SIREN de test HORS registre (vérifiés au BODACC et au registre
+  national). Un numéro à 9 chiffres qui passe Luhn appartient presque toujours
+  à une vraie société — cinq sur cinq au premier essai.
+- **Les fenêtres (24 mois, 180 j, 365 j, 60 j, 30 j) sont des DÉCISIONS.**
+- **Reste** : la plupart des fiches n'ont pas de SIREN, et on ne le devine pas.
+  Le retrouver par la recherche publique AVEC confirmation humaine est le
+  chantier suivant. Quota de l'API : 5 M d'appels/jour pour TOUT le domaine.
+
 ## LE MODULE PERMIS — ex-cible (09/09 → 21/10/2026), désormais une SOURCE parmi d'autres
 `lib/permis-construire.ts` · ICP dans `lib/accounts-commercial.ts` (serveur) ·
 `docs/PERMIS-LYON.md`. Tout ce qui suit reste **vrai du module** : un export

@@ -89,6 +89,16 @@ export const ALPHA_ICI: readonly PageAlpha[] = [
         fichier: "lib/call-session.ts",
         symbole: "buildCallSession",
       },
+      {
+        quoi: "Sort de la file une société en liquidation, radiée ou dissoute — lue au BODACC par son SIREN, comptée et nommée.",
+        fichier: "lib/call-session.ts",
+        symbole: "dansLaFile",
+      },
+      {
+        quoi: "Remonte en tête celle qui vient de changer de dirigeant, d'adresse ou de propriétaire — sans que tu le lui dises.",
+        fichier: "lib/signaux-publics.ts",
+        symbole: "momentFrais",
+      },
       { quoi: "N'indique un moment pour appeler que dans une fenêtre ouverte.", fichier: "lib/conformite.ts", symbole: "fenetreOuverte" },
       {
         quoi: `Compte tes sollicitations : jamais plus de ${PLAFOND_SOLLICITATIONS_B2C} en 30 jours.`,

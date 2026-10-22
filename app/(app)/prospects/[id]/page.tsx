@@ -82,6 +82,7 @@ import { ClosingMode } from "@/components/training/closing-mode";
 import { DeepdiveTools } from "@/components/prospects/deepdive-tools";
 import { PreDevisPanel } from "@/components/prospects/pre-devis-panel";
 import { CadragePanel } from "@/components/prospects/cadrage-panel";
+import { SignauxPublicsPanel } from "@/components/prospects/signaux-publics-panel";
 import { AlertePrixPerime } from "@/components/prospects/alerte-prix-perime";
 import { RecoveryProjection } from "@/components/prospects/recovery-projection";
 import { Sparring } from "@/components/training/sparring";
@@ -310,6 +311,11 @@ export default function ProspectDetailPage() {
           </div>
         )}
       </header>
+
+      {/* ⚠ HORS DES ONGLETS, EXPRÈS : une liquidation lue au BODACC sort la
+          fiche de la file d'appels. Rangée dans un onglet, elle se lirait
+          après avoir composé le numéro. */}
+      <SignauxPublicsPanel p={p} patch={patchProspect} />
 
       {/* Tabs */}
       <nav className="panel flex gap-1 overflow-x-auto p-1">

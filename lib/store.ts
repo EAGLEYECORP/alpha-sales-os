@@ -47,6 +47,8 @@ import { CLOSER_USINE } from "./signature";
 import type { StandardDay } from "./standard";
 import { auditCompleteness } from "./deep-dive";
 import { uid } from "./utils";
+import { aRefuseTouteRelance } from "./voice-script";
+import { exclusionPublique } from "./signaux-publics";
 import { etatInitial, type EtatHydratation } from "./hydratation";
 
 interface AlphaState {
@@ -709,6 +711,21 @@ export const useAlpha = create<AlphaState>()(
            * l'affiche sans une ligne de code de plus.
            */
           const demo = isDemoProspect(p.id);
+          /**
+           * ⚠ Ni celui qui a dit « ne plus me contacter », ni la société qu'une
+           * annonce légale écarte (liquidation, radiation, dissolution). La
+           * file d'appels les sortait déjà ; les brouillons d'email, non — même
+           * mécanisme que la démo : `skipped` + la raison, visible à la revue.
+           */
+          const refus = aRefuseTouteRelance(p);
+          const exclue = exclusionPublique(p);
+          const raison = demo
+            ? "fiche de démonstration — adresse inventée, rebond dur garanti"
+            : refus
+              ? "il a demandé à ne plus être contacté"
+              : exclue
+                ? `annonce légale — ${exclue.libelle}`
+                : null;
           return {
             id: uid(),
             campaignId,
@@ -718,9 +735,9 @@ export const useAlpha = create<AlphaState>()(
             to,
             subject: step.kind === "email" ? fillTemplate(step.subject, p, closer) : "",
             body: fillTemplate(step.body, p, closer),
-            status: demo || !to ? "skipped" : "pending",
-            error: demo
-              ? "fiche de démonstration — adresse inventée, rebond dur garanti"
+            status: raison || !to ? "skipped" : "pending",
+            error: raison
+              ? raison
               : to
                 ? undefined
                 : step.kind === "email"

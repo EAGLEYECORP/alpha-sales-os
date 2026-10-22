@@ -24,6 +24,7 @@ import { HEAT_HEX, heatTone } from "@/lib/closer";
 import { SourcingTerrainPanel } from "@/components/appels/sourcing-terrain-panel";
 import { CalibrationPanel } from "@/components/appels/calibration-panel";
 import { LeconsVerticale } from "@/components/appels/lecons-verticale";
+import { AnnoncesDeLaFile } from "@/components/appels/annonces-de-la-file";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
 import { PageHeader } from "@/components/ui/page-header";
@@ -82,7 +83,7 @@ export default function AppelsPage() {
     () => scriptAServir(maitre, profil, verticalById(verticalId)),
     [maitre, profil, verticalId]
   );
-  const { vertical, script, targets } = useMemo(
+  const { vertical, script, targets, ecartees } = useMemo(
     () => buildCallSession(prospects, verticalId, new Date(), servi.vertical),
     [prospects, verticalId, servi.vertical]
   );
@@ -250,6 +251,9 @@ export default function AppelsPage() {
           </button>
         ))}
       </div>
+
+      {/* Les annonces légales de la file : lire d'un clic, compter ce qui sort. */}
+      <AnnoncesDeLaFile fiches={targets.map((t) => t.prospect)} ecartees={ecartees} patch={patchProspect} />
 
       {/* Assistant d'appel en direct — il écoute POUR toi, il ne parle qu'à toi */}
       <div>

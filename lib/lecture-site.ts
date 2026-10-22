@@ -1,4 +1,5 @@
 import { stripHtml } from "./site-fetch";
+import { sirenValide } from "./siren";
 import { nettoyerProfil, type ProfilOperateur } from "./profil-operateur";
 
 /**
@@ -524,21 +525,6 @@ function lireDirigeant(pages: PageLue[], textes: string[]): Trouvaille | null {
     }
   }
   return null;
-}
-
-/** Clé de Luhn : un SIREN valide la vérifie. Un nombre lu au hasard, presque jamais. */
-function sirenValide(s: string): boolean {
-  if (!/^\d{9}$/.test(s)) return false;
-  let somme = 0;
-  for (let i = 0; i < 9; i++) {
-    let n = Number(s[8 - i]);
-    if (i % 2 === 1) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    somme += n;
-  }
-  return somme % 10 === 0;
 }
 
 function lireSiren(pages: PageLue[], textes: string[]): Trouvaille | null {

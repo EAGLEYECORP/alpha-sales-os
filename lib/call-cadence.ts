@@ -20,6 +20,7 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
+import { sirenDeLaFiche } from "./siren";
 import { fenetreOuverte } from "./conformite";
 
 /**
@@ -112,13 +113,6 @@ export interface RisqueCible {
 const MOBILE_FR = /^(?:\+33|0)\s*[67]/;
 
 /**
- * Le SIREN, tel que l'import terrain l'écrit dans les notes après croisement
- * au registre. Un seul motif, partagé — deux relectures différentes du même
- * champ finissent par donner deux plafonds différents pour la même fiche.
- */
-const SIREN_DANS_NOTES = /\bSIREN\s*:?\s*(\d{9})\b/i;
-
-/**
  * La cible de risque d'un prospect — LE point d'entrée unique.
  *
  * ⚠ Appeler `cadenceFor` sans cible retombe sur la cadence complète
@@ -127,10 +121,13 @@ const SIREN_DANS_NOTES = /\bSIREN\s*:?\s*(\d{9})\b/i;
  * annonçait « rappel 3/5 » pendant que l'autopilote, lui, s'arrêtait à 4.
  * Deux réponses pour la même fiche, et celle montrée était la mauvaise.
  */
-export function cibleDepuisProspect(p: { phone?: string; notes?: string }): RisqueCible {
+export function cibleDepuisProspect(p: { phone?: string; notes?: string; siren?: string }): RisqueCible {
+  // Le SIREN se lit à UN endroit (`lib/siren.ts`) : le champ structuré, puis
+  // les notes où l'import l'écrit. Deux relectures différentes du même champ
+  // finissent par donner deux plafonds différents pour la même fiche.
   return {
     telephone: p.phone,
-    siren: (p.notes ?? "").match(SIREN_DANS_NOTES)?.[1],
+    siren: sirenDeLaFiche(p),
   };
 }
 

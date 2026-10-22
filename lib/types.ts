@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────
 import type { ProfilOperateur } from "./profil-operateur";
 import type { EtatCadrage } from "./cadrage";
+import type { LectureSignaux } from "./signaux-publics";
 
 export type { ProfilOperateur };
 
@@ -302,6 +303,17 @@ export interface Prospect {
    * Absent = aucun cadrage. C'est l'état de départ, et il REFUSE le devis.
    */
   cadrage?: EtatCadrage;
+  /**
+   * Le SIREN, saisi ou importé. Absent = on ne sait pas, et on ne le devine
+   * jamais à partir d'un nom (`lib/siren.ts`). Les anciens imports l'écrivent
+   * dans les notes : `sirenDeLaFiche` lit les deux.
+   */
+  siren?: string;
+  /**
+   * La dernière lecture des annonces légales (BODACC) — `lib/signaux-publics.ts`.
+   * Absent = jamais lue, ce qui ne veut PAS dire « rien à signaler ».
+   */
+  signauxPublics?: LectureSignaux;
   /** Suivi de satisfaction 0–100 (post-livraison). */
   satisfaction?: number;
   /** Témoignage / avis obtenu. */

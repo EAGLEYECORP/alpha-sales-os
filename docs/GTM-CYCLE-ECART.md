@@ -28,21 +28,49 @@ affirmations reviennent dans ses réponses et ne tiennent pas.
 
 ---
 
-## 1. Qualification — solide, et déjà « à signal »
+## 1. Qualification — le signal est désormais celui de TOUTE entreprise (22/10/2026)
 
-**Ce qui existe et marche** : `lib/permis-construire.ts` (lecture d'un arrêté,
-exclusions sèches, zone, phase, saturation de la demande) · `lib/import-triage.ts`
-· `lib/ladder.ts` (l'escalier) · `lib/deep-dive.ts` · `lib/offer-match.ts`.
+> ⚠ **Cette section disait « notre ICP en est déjà un : le permis ».** C'était
+> vrai jusqu'au 21/10. Depuis la bascule horizontale, un inscrit vend
+> n'importe quoi à n'importe qui — et le permis ne dit rien d'un cabinet
+> comptable ou d'un garage. **Un inscrit n'avait plus AUCUN signal.**
 
-Gemini présente le « ciblage par signal » comme la frontière du marché. **Notre
-ICP en est déjà un** : un permis de construire est un signal public, daté,
-vérifiable, qui dit QUI et OÙ EN EST l'affaire au mois près. C'est plus fort
-qu'un changement de poste ou une levée de fonds pour ce marché-là.
+**Ce qui existe et marche** : `lib/signaux-publics.ts` (annonces légales, toute
+entreprise) · `lib/permis-construire.ts` (source optionnelle) ·
+`lib/import-triage.ts` · `lib/ladder.ts` · `lib/deep-dive.ts` · `lib/offer-match.ts`.
 
-**Ce qui manque vraiment** : l'**alimentation**. Alpha ne collecte rien (la
-troisième colonne, `docs/COLLECTEURS-EXTERIEURS.md`) et aucune source open-data
-n'est joignable d'ici. Un inscrit arrive sur un pipe vide + la démo. C'est la
-première friction du cycle, avant toute question d'écran.
+**Les annonces légales (BODACC), lues par SIREN** — l'équivalent du permis pour
+toutes les sociétés françaises : officiel, daté, vérifiable, gratuit, sans clé.
+- **Exclusion sèche et nommée** : procédure collective (24 mois), radiation
+  (sauf SIREN revenu à la vie), dissolution. La fiche sort de la file humaine
+  ET du robot (`dansLaFile`, `buildCampaignRun`) — comptée, jamais tue.
+- **Moment** : nouvelle direction, déménagement, rachat ou fusion, création,
+  capital, activité, nouveau nom. Frais (< 60 j), il remonte la fiche en tête
+  de la file — et **ne se cite pas** au prospect (`phraseDuMoment`).
+- **Mesuré sur de vraies annonces le 22/10** (bac à sable, rien de commité) :
+  10/10 liquidations exclues, 10/10 radiations, 10/10 transferts lus comme
+  déménagements. Trois hypothèses fausses trouvées AVANT d'écrire les tests :
+  « immatriculation » = déménagement hors ressort (pas une création),
+  « Modification du capital » ne dit pas « augmentation », et une vente /
+  fusion range parfois la société ABSORBÉE en tête du registre (3 cédants sur
+  10 sortaient « rachat » — c'est la liste des anciens propriétaires qui tranche).
+- **La liste des SIREN ne passe pas par notre serveur** : l'API répond
+  `access-control-allow-origin: *`, la lecture part du navigateur. La première
+  version passait par une route à nous — elle aurait vu le pipe de chaque
+  inscrit. Un test refuse son retour.
+- **« 000000000 » passe la clé de Luhn ET porte 1 563 annonces** (numéro de
+  remplissage) : refusé partout, cadence légale comprise.
+
+**Ce qui manque encore** :
+- **Le SIREN sur la fiche.** Une colonne « SIREN » ou « SIRET » est lue à
+  l'import, et la fiche a un champ. Mais la plupart des listes n'en ont pas, et
+  on ne le devine **jamais** par le nom (un faux rapprochement colle la
+  liquidation d'une société sur la fiche d'une autre). Le retrouver par la
+  recherche publique, avec confirmation humaine, est le chantier suivant.
+- **L'alimentation** : Alpha ne collecte rien (`docs/COLLECTEURS-EXTERIEURS.md`).
+  Un inscrit arrive sur un pipe vide + la démo.
+- **Les autres signaux publics** (marchés publics attribués, recrutements) : non
+  faits. Chacun se mesure sur l'API réelle avant d'être écrit, comme celui-ci.
 
 ---
 
@@ -126,7 +154,7 @@ Ce que le commercial a **sous les yeux au moment d'agir** :
 | Recommandation | Verdict | Pourquoi |
 |---|---|---|
 | Agents « par objectif » au lieu de séquences linéaires | **En partie là** | La cadence suit la réactivité, pas le calendrier (`master-rappel`). Un agent qui agit seul **en ligne** : refusé le 21/10. |
-| Signal / intention « dark funnel » (Reddit, Discord, GitHub, IP) | **Refusé** | Collecte embarquée, RGPD, et notre argument est la conformité. Notre signal (le permis) est public et suffit au marché visé. |
+| Signal / intention « dark funnel » (Reddit, Discord, GitHub, IP) | **Refusé** | Collecte embarquée, RGPD, et notre argument est la conformité. Nos signaux sont PUBLICS et officiels : les annonces légales de toute entreprise (`lib/signaux-publics.ts`, 22/10), le permis en option. |
 | Rotation automatique de domaines, réchauffement « auto-réparant » | **Refusé** | C'est contourner les filtres anti-spam. On a un palier d'envoi (5 → 40/j), une boîte, un DMARC strict prouvé (`spf/dkim/dmarc = pass`, 21/10). |
 | « Simuler Gmail avant d'envoyer, sinon basculer de canal » | **En partie là** | Le score anti-spam et les mentions obligatoires sont arbitrés par `/api/send`. La bascule automatique de canal : non, un humain décide. |
 | Rappel vocal immédiat des leads entrants, la nuit | **Refusé** | Fenêtres d'appel, décret 2022-1313, art. 50. L'entrant (on décroche) existe chez vous. |

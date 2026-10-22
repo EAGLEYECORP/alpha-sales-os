@@ -1,6 +1,7 @@
 import type { Campaign, CampaignDraft, Meeting, Prospect } from "./types";
 import { isOverdue } from "./utils";
 import { criticalGaps } from "./missing-info";
+import { exclusionPublique } from "./signaux-publics";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ export type RoutineCategory =
   | "relance"
   | "next-step"
   | "info-manquante"
+  | "annonce-legale"
   | "review"
   | "reply"
   | "meeting-confirm"
@@ -43,6 +45,7 @@ export const CATEGORY_META: Record<RoutineCategory, { label: string; tone: "red"
   relance: { label: "Relancer", tone: "red" },
   "next-step": { label: "Next step manquant", tone: "red" },
   "info-manquante": { label: "Info manquante", tone: "red" },
+  "annonce-legale": { label: "Annonce légale", tone: "red" },
   review: { label: "Relire & envoyer", tone: "bronze" },
   reply: { label: "Répondre", tone: "red" },
   "meeting-confirm": { label: "Confirmer un RDV", tone: "bronze" },
@@ -77,6 +80,19 @@ export function computeRoutines(input: RoutineInput): Routine[] {
 
   // Next step en retard / manquant (violations doctrine)
   for (const p of active) {
+    /**
+     * ⚠ Une société en liquidation, radiée ou dissoute ne reçoit ni « relancer »,
+     * ni « poser un next step », ni « closer » : vu au rendu le 22/10/2026, la
+     * file d'appels l'écartait pendant que la routine du matin demandait d'agir
+     * sur elle. Une seule chose attend l'humain : DÉCIDER (vérifier l'annonce,
+     * classer la fiche). Priorité moyenne — c'est un tri, pas une urgence.
+     */
+    const exclue = exclusionPublique(p);
+    if (exclue) {
+      out.push({ id: `annonce-${p.id}`, category: "annonce-legale", priority: "moyenne", company: p.company,
+        title: `${p.company} — annonce légale à trancher`, detail: `${exclue.libelle}. Vérifie l'annonce, puis classe la fiche.`, href: `/prospects/${p.id}` });
+      continue;
+    }
     if (p.nextStep && isOverdue(p.nextStep.date)) {
       out.push({ id: `relance-${p.id}`, category: "relance", priority: "haute", company: p.company,
         title: `Relancer ${p.company}`, detail: `Next step en retard : ${p.nextStep.action}`, href: `/prospects/${p.id}` });
@@ -95,6 +111,7 @@ export function computeRoutines(input: RoutineInput): Routine[] {
 
   // Closer (offre / red zone)
   for (const p of prospects) {
+    if (exclusionPublique(p)) continue;
     if (p.stage === "redzone") {
       out.push({ id: `close-${p.id}`, category: "close", priority: "haute", company: p.company,
         title: `Closer ${p.company}`, detail: "En Red Zone — traiter l'objection et décider.", href: `/prospects/${p.id}` });

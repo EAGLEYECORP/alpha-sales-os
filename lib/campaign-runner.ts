@@ -8,6 +8,7 @@ import { callAllowedNow, outboundComplianceGate, toE164, DO_NOT_CALL_TAG, type C
 import { CALL_DAILY_SAFE } from "./daily-plan";
 import { vecuAppels } from "./paliers-campagne";
 import type { EagleyeOffer } from "./offer-match";
+import { exclusionPublique } from "./signaux-publics";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -56,7 +57,8 @@ export type SkipReason =
   | "hors-icp"
   | "plafond-atteint"
   | "palier-atteint"
-  | "conformite";
+  | "conformite"
+  | "annonce-legale";
 
 export interface CallTask {
   prospectId: string;
@@ -207,6 +209,15 @@ export function buildCampaignRun(prospects: Prospect[], opts: RunOptions = {}): 
   for (const p of prospects) {
     if (p.stage === "signe" || p.stage === "perdu") continue;
 
+    // Une société en liquidation, radiée ou dissoute ne se démarche pas — ni
+    // à la main ni par le robot. Même source que la file humaine
+    // (`exclusionPublique`), sinon l'une des deux composerait le numéro.
+    const exclue = exclusionPublique(p);
+    if (exclue) {
+      push(p, "annonce-legale", exclue.libelle);
+      continue;
+    }
+
     // Droit d'opposition + cible professionnelle : porte dure, non contournable.
     const optedOut = (p.tags ?? []).includes(DO_NOT_CALL_TAG);
     const gate = outboundComplianceGate({ mode, isProfessional: true, optedOut, now });
@@ -353,11 +364,14 @@ export const SKIP_LABELS: Record<SkipReason, string> = {
   opposition: "Droit d'opposition — ne jamais rappeler",
   sature: "Saturé — laisser respirer",
   "cadence-attente": "Rappel pas encore dû",
-  "cadence-epuisee": "5 rappels épuisés — changer de canal",
+  // « 5 rappels » ici jusqu'au 22/10/2026 : la cadence en fait 3 depuis
+  // septembre (`RAPPELS_OFFSETS_H`). Le nombre ne s'écrit plus — il périmerait.
+  "cadence-epuisee": "Rappels épuisés — changer de canal",
   "a-repondu": "A répondu — la main est au closer",
   "numero-invalide": "Numéro absent ou inexploitable",
   "hors-icp": "Fiche trop pauvre — à compléter",
   "plafond-atteint": "Plafond quotidien atteint",
   "palier-atteint": "Palier de campagne atteint — mesurer avant de monter",
   conformite: "Bloqué par la conformité",
+  "annonce-legale": "Annonce légale — procédure collective, radiation ou dissolution",
 };

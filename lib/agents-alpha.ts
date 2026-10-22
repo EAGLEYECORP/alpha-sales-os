@@ -88,12 +88,12 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
   {
     nom: "ALPHA SCOUT",
     camp: "reflechit",
-    ecrans: ["/linkedin", "/audits"],
+    ecrans: ["/linkedin", "/audits", "/appels"],
     fait:
-      "Trie ce que vous lui donnez — un export de permis de construire ou de profils : il écarte qui n'a rien à vendre, nomme la phase de l'affaire et dit quand appeler.",
+      "Trie ce que vous lui donnez et lit les annonces légales de chaque entreprise par son SIREN : il écarte qui est en liquidation, radiée ou dissoute, et remonte celle qui vient de changer de dirigeant, d'adresse ou de propriétaire.",
     interdit:
-      "Collecter lui-même. La collecte reste dehors, sous la responsabilité de celui qui la fait : un fichier, une feuille partagée.",
-    preuve: "lib/permis-construire.ts",
+      "Collecter lui-même, ou rattacher une annonce par le nom. La collecte reste dehors ; une annonce ne s'attache qu'au SIREN exact, et le changement qu'elle révèle ne se cite pas au prospect.",
+    preuve: "lib/signaux-publics.ts",
     disponibilite: "en-ligne",
   },
   {

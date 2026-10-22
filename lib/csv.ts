@@ -4,6 +4,7 @@ import { prospectDefaults } from "./seed";
 import { daysAhead, uid } from "./utils";
 import { STAGES } from "./hormozi";
 import { sectorDepuisTexte } from "./secteurs";
+import { normaliserSiren } from "./siren";
 
 /**
  * CSV parsing + prospect mapping for real-data import.
@@ -92,6 +93,9 @@ const HEADER_MAP: Record<string, string> = {
   objections: "objectionsRaw",
   closedate: "closeDate",
   typedentreprise: "typeTag",
+  // Le SIREN ouvre les annonces légales (`lib/signaux-publics.ts`). Un SIRET
+  // se ramène au SIREN : ses neuf premiers chiffres.
+  siren: "siren", siret: "siren", numerosiren: "siren",
 };
 
 // ⚠ La table d'alias secteur VIVAIT ici, en privé. Elle est devenue
@@ -158,6 +162,7 @@ export function csvToProspects(text: string): CsvImportResult {
       phone: rec.phone || undefined,
       email: rec.email || undefined,
       linkedin: rec.linkedin || undefined,
+      siren: normaliserSiren(rec.siren) || undefined,
       stage,
       trust: 10,
       auditScore: 0,

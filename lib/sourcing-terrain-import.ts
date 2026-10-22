@@ -1,4 +1,5 @@
 import { prospectDefaults } from "./seed";
+import { normaliserSiren } from "./siren";
 import { csvToProspects } from "./csv";
 import { champsReconnus, lireTableau, normCle, type Lecture } from "./tabulaire";
 import { toE164 } from "./voice-script";
@@ -187,6 +188,7 @@ export function ficheVersProspect(f: FicheTerrain, c: CiblageTerrain, now = new 
     sector: (c.verticaleId && VERTICALE_SECTEUR[c.verticaleId]) ?? ("autre" as Sector),
     city: (f.ville ?? "").trim(),
     phone: c.telephone ?? undefined,
+    siren: normaliserSiren(f.siren) || undefined,
     stage: "prospect",
     preferredChannel: "tel",
     notes: notesDepuisFiche(f, c),
