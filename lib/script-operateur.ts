@@ -63,8 +63,16 @@ const TROU = {
  * « parler de » + ce qu'il vend, contracté comme on le dit : « d'un logiciel »,
  * « du recrutement », « des assurances ». Vu au rendu le 22/10/2026 : « parler
  * de un logiciel de paie », la première phrase de l'appel.
+ *
+ * ⚠ Et l'article PARTITIF ou pluriel tombe derrière « de » : « des cuisines »
+ * → « parler de cuisines », « du recrutement » → « parler de recrutement ».
+ * Trouvé le 22/10 en préparant le film « Tu vends quoi ? » — la première
+ * version écrivait « parler de des cuisines », c'est-à-dire la phrase qui
+ * ouvre l'appel, dite à voix haute, fautive.
  */
 function de(x: string): string {
+  if (/^(?:de\s|d['’])/i.test(x)) return x; // « de la formation », « de l'isolation » : déjà dit
+  if (/^(?:des|du)\s/i.test(x)) return `de ${x.replace(/^\S+\s+/, "")}`;
   if (/^le\s/i.test(x)) return `du ${x.slice(3)}`;
   if (/^les\s/i.test(x)) return `des ${x.slice(4)}`;
   if (/^[aeiouyàâéèêëîïôöûü]/i.test(x)) return `d'${x}`;

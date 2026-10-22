@@ -27,7 +27,7 @@ import { LeconsVerticale } from "@/components/appels/lecons-verticale";
 import { buildCallSession, verticalsWithTargets } from "@/lib/call-session";
 import { LiveAssist } from "@/components/voice/live-assist";
 import { PageHeader } from "@/components/ui/page-header";
-import { useDroits } from "@/lib/use-droits";
+import { useMaitreProuve } from "@/lib/use-droits";
 import { scriptAServir } from "@/lib/script-operateur";
 import { verticalById } from "@/lib/playbook";
 
@@ -67,8 +67,16 @@ export default function AppelsPage() {
    * ⚠ LE SCRIPT N'EST PAS LA VERTICALE. Nos verticales vendent ALPHA ; un
    * inscrit vend SON offre. Le maître garde nos scripts, tout autre compte
    * reçoit celui de son profil (`lib/script-operateur.ts`).
+   *
+   * ⚠⚠ Le verdict est celui PROUVÉ par le serveur (`useMaitreProuve`), jamais
+   * l'optimiste de `useDroits()` — qui dit « maître » tant que la réponse n'est
+   * pas arrivée et quand elle échoue. Vu le 22/10/2026 en filmant l'écran d'un
+   * inscrit : selon le moment de la réponse, il recevait NOTRE script (« les
+   * appels qui arrivent quand personne n'est disponible »). Un script se
+   * PRONONCE : même règle que les textes copiés à la main. Le maître voit le
+   * script générique une fraction de seconde ; l'inverse fait dire notre pitch.
    */
-  const { maitre } = useDroits();
+  const maitre = useMaitreProuve();
   const profil = useAlpha((s) => s.settings.profil);
   const servi = useMemo(
     () => scriptAServir(maitre, profil, verticalById(verticalId)),

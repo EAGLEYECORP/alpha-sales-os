@@ -1,0 +1,5 @@
+[
+  { "id": "p1", "poste": "solo", "metier": "un logiciel de paie", "cibleSecteur": "restaurants", "cibleRole": "gérants", "cibleZone": "Lyon", "ligne": 1, "citation": "parler d'un logiciel de paie" },
+  { "id": "p2", "poste": "solo", "metier": "des cuisines sur mesure", "cibleSecteur": "promoteurs immobiliers", "cibleRole": "directeurs de programmes", "cibleZone": "Rhône", "ligne": 1, "citation": "parler de cuisines sur mesure" },
+  { "id": "p3", "poste": "equipe", "metier": "du conseil en recrutement", "cibleSecteur": "PME industrielles", "cibleRole": "dirigeants", "cibleZone": "Isère", "ligne": 3, "citation": "Je m'adresse aux dirigeants" }
+]

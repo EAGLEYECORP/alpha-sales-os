@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { scriptOperateur, scriptAServir, ID_SCRIPT_OPERATEUR } from "../lib/script-operateur";
+import { approcheInscrit } from "../lib/approche-ecrite";
 import { buildCallSession, callAngle } from "../lib/call-session";
 import { matchObjections, OBJECTION_CUES } from "../lib/live-assist";
 import { VERTICALS, verticalById, type VerticalPlaybook } from "../lib/playbook";
@@ -229,4 +230,48 @@ test("« parler de » se contracte comme on le dit — la première phrase de l'
   assert.match(barrage("le recrutement"), /parler du recrutement/);
   assert.match(barrage("les assurances"), /parler des assurances/);
   assert.match(barrage("formation"), /parler de formation/);
+  // L'article partitif ou pluriel tombe derrière « de » (trouvé en préparant
+  // un film : « parler de des cuisines », la phrase qui ouvre l'appel).
+  assert.match(barrage("des cuisines sur mesure"), /parler de cuisines sur mesure/);
+  assert.match(barrage("du recrutement de commerciaux"), /parler de recrutement de commerciaux/);
+  assert.match(barrage("de la formation"), /parler de la formation/);
+  assert.match(barrage("de l'isolation"), /parler de l'isolation/);
+  for (const m of ["des cuisines", "du conseil", "de la formation", "un logiciel", "le recrutement"]) {
+    assert.doesNotMatch(barrage(m), /\bde (?:des|du|de|un|une|le|les)\b/, `« ${m} »`);
+  }
+});
+
+test("la question écrite d'un inscrit s'accorde avec un métier pluriel", () => {
+  const q = (metier: string) => approcheInscrit({ ...PROFIL_VIDE, metier }).question;
+  assert.equal(q("des cuisines sur mesure"), "Est-ce que des cuisines sur mesure, c'est un sujet chez vous en ce moment ?");
+  assert.equal(q("un logiciel de paie"), "Est-ce qu'un logiciel de paie, c'est un sujet chez vous en ce moment ?");
+  assert.doesNotMatch(q("des cuisines sur mesure"), /mesure est un sujet/);
+});
+
+/**
+ * ⚠⚠ LE VERDICT QUI CHOISIT LE SCRIPT EST CELUI QUE LE SERVEUR A PROUVÉ.
+ * Vu le 22/10/2026 en filmant l'écran d'un inscrit : `/appels` lisait
+ * `useDroits()`, optimiste (« maître » tant que la réponse n'est pas arrivée,
+ * et pour de bon si elle échoue). Selon le moment, l'inscrit recevait NOTRE
+ * script. La garde ne liste pas les écrans : elle les TROUVE — tout fichier qui
+ * appelle `scriptAServir` ou `apercuInscrit` est concerné, y compris le suivant.
+ */
+test("⚠⚠ tout écran qui choisit le script (ou l'aperçu) d'un inscrit lit le verdict PROUVÉ, jamais l'optimiste", () => {
+  const { readdirSync, statSync } = require("node:fs") as typeof import("node:fs");
+  const fichiers: string[] = [];
+  const parcourir = (d: string) => {
+    for (const n of readdirSync(d)) {
+      const p = join(d, n);
+      if (statSync(p).isDirectory()) parcourir(p);
+      else if (/\.tsx?$/.test(n)) fichiers.push(p);
+    }
+  };
+  for (const d of ["app", "components"]) parcourir(join(process.cwd(), d));
+  const concernes = fichiers.filter((f) => /\b(?:scriptAServir|apercuInscrit)\(/.test(sansCommentaires(readFileSync(f, "utf8"))));
+  assert.ok(concernes.length >= 3, `la garde ne trouve plus ses écrans (${concernes.length})`);
+  for (const f of concernes) {
+    const src = sansCommentaires(readFileSync(f, "utf8"));
+    assert.match(src, /useMaitreProuve\(\)/, `${f} : verdict prouvé absent`);
+    assert.doesNotMatch(src, /useDroits\(\)/, `${f} : useDroits() est optimiste — il sert notre script pendant le chargement`);
+  }
 });

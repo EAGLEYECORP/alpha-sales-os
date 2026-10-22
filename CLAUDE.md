@@ -223,6 +223,13 @@ produit à un inscrit qui vend autre chose :
 > l'archétype et la règle, jamais nos ouvertures sur l'accueil téléphonique ni
 > un potentiel chiffré sur notre setup — `PRESCRIPTEUR_UNIVERSEL`).
 > Chacun prouvé par mutation, les routes en interceptant le prompt envoyé.
+> ⚠⚠ **Ce qui se PRONONCE suit le verdict PROUVÉ, comme ce qui se copie**
+> (22/10/2026, trouvé en filmant l'écran d'un inscrit) : `/appels`, ALPHA LIVE et
+> l'aperçu de valeur lisaient `useDroits()`, optimiste — « maître » tant que la
+> réponse n'est pas arrivée, et pour de bon si elle échoue. Selon le moment,
+> l'inscrit recevait NOTRE script. Tout écran qui appelle `scriptAServir` ou
+> `apercuInscrit` lit `useMaitreProuve()` ; la garde les TROUVE
+> (`tests/script-operateur.test.ts`), elle ne les liste pas.
 > ⚠ **Ce qui reste à nous, servi à un inscrit, et c'est voulu** : le groupe
 > « Démo mobile » de la bibliothèque du MAÎTRE (il ne la voit pas), et les
 > noms des modules (« Alpha Voice » est un écran du produit qu'il utilise).

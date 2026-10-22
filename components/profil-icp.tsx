@@ -109,7 +109,7 @@ export function ProfilIcp({ onFini, compact }: { onFini?: () => void; compact?: 
         <div>
           <p className="text-sm font-medium text-paper">À qui vends-tu ?</p>
           <p className="mt-1 text-[13px] leading-relaxed text-paper-dim">
-            Les fiches que tu vois sont des exemples — des commerces lyonnais, parce qu&apos;il fallait bien choisir.
+            Les fiches que tu vois sont des exemples — six métiers inventés, parce qu&apos;il fallait bien choisir.
             Dis-nous ta cible et on refait la démonstration avec des fiches qui ressemblent à TON marché. Rien
             n&apos;est obligatoire, et tu peux revenir le changer.
           </p>

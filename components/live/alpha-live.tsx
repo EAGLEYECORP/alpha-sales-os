@@ -8,7 +8,7 @@ import { matchObjections, matchAlarms, verticalById } from "@/lib/live-assist";
 import { verticalForProspect } from "@/lib/playbook";
 import { matchOffer, OFFER_LABELS } from "@/lib/offer-match";
 import { getAccount } from "@/lib/accounts";
-import { useDroits } from "@/lib/use-droits";
+import { useMaitreProuve } from "@/lib/use-droits";
 import { scriptAServir } from "@/lib/script-operateur";
 import { search } from "@/lib/knowledge";
 import type { Prospect } from "@/lib/types";
@@ -95,8 +95,10 @@ export function LiveCopilot({ prospect, onClose }: { prospect?: Prospect; onClos
    * ⚠ Même verdict que `/appels` (`scriptAServir`) : nos verticales et le
    * catalogue général vendent ALPHA. Un inscrit reçoit les réponses de SON
    * script et la part universelle du catalogue, jamais notre argumentaire.
+   * Verdict PROUVÉ, comme `/appels` : ALPHA LIVE souffle des phrases qui se
+   * disent à voix haute, l'optimiste les ferait sortir sous notre nom.
    */
-  const { maitre } = useDroits();
+  const maitre = useMaitreProuve();
   const profil = useAlpha((s) => s.settings.profil);
   const servi = useMemo(
     () => scriptAServir(maitre, profil, (prospect ? verticalForProspect(prospect) : null) ?? verticalById(undefined)),

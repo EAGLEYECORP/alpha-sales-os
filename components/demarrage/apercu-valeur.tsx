@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { apercuInscrit, apercuPour, secteursDisponibles } from "@/lib/premier-resultat";
-import { useDroits } from "@/lib/use-droits";
+import { useMaitreProuve } from "@/lib/use-droits";
 import { useAlpha } from "@/lib/store";
 
 /**
@@ -31,9 +31,10 @@ export function ApercuValeur({ onBrancher }: { onBrancher?: () => void }) {
   /**
    * ⚠ Nos marchés et nos offres ne servent qu'au compte MAÎTRE, qui vend
    * Alpha. Un inscrit voit l'aperçu de SA cible et de SON offre
-   * (`apercuInscrit`) — même règle que le script d'appel.
+   * (`apercuInscrit`) — même règle que le script d'appel, verdict PROUVÉ
+   * compris : l'optimiste montrait nos offres à un inscrit pendant le chargement.
    */
-  const { maitre } = useDroits();
+  const maitre = useMaitreProuve();
   const profil = useAlpha((s) => s.settings.profil);
   const inscrit = useMemo(() => apercuInscrit(profil), [profil]);
   const secteurs = useMemo(() => secteursDisponibles(), []);

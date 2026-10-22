@@ -142,7 +142,9 @@ export function approcheInscrit(profil: ProfilOperateur | null | undefined): App
     phraseCritere: `je m'adresse ${critere.replace(/^les\b/, "aux")}`,
     critereMetier: null,
     question: metier
-      ? `Est-ce ${que(metier)} est un sujet chez vous en ce moment ?`
+      ? // « …, c'est un sujet » et non « … est un sujet » : le verbe s'accordait
+        // avec un métier PLURIEL (« des cuisines sur mesure est un sujet »).
+        `Est-ce ${que(metier)}, c'est un sujet chez vous en ce moment ?`
       : "Quel est le sujet qui vous occupe le plus en ce moment ?",
     signal: null,
     objet: "une question",

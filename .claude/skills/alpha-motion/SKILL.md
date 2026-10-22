@@ -204,6 +204,34 @@ préviennent. Il a coûté trois corrections que la compétence aurait dû empê
   fondu** (échantillon à opacité ≈ 0). Recalculer le rapport sur les couleurs
   posées avant de conclure à un défaut — dans les deux sens.
 
+### Ce que le film « Tu vends quoi ? » (22/10/2026) a appris — `tests/film-tu-vends-quoi.test.ts`
+
+`scripts/video/compositions/tu-vends-quoi/` (+ `capturer.mjs`, `profils.json`) ·
+`scripts/video/partitions/tu-vends-quoi.json` · `marketing/post-tu-vends-quoi-2026-10-22.md`.
+Le motif des meilleurs films faits par agent (liste « awesome-opus5-5-videos ») : le
+VRAI produit, frappe, curseur, mouvement de caméra. On l'a fait sans rien dessiner.
+
+- **⚠⚠ FILMER LE PRODUIT, C'EST LE TESTER.** Deux défauts du produit sont tombés en
+  préparant les captures, aucun test ne les voyait : le script écrivait « parler de des
+  cuisines » (`lib/script-operateur.ts`), et `/appels` servait NOTRE script à un inscrit
+  tant que le serveur n'avait pas répondu (verdict optimiste — `useMaitreProuve`
+  désormais). Les deux auraient été dans la vidéo.
+- **La frappe est réelle** : une capture du vrai champ PAR LETTRE (`capturer.mjs`), posée
+  par `tl.set`. Le test exige `longueur + 1` images, dans l'ordre, avant le script.
+- **Chaque citation est recalculée** par le test avec `scriptOperateur` : si le code change
+  la phrase, le film tombe au lieu de mentir.
+- **Les polices de l'app viennent de Google Fonts**, injoignable ici, et sa CSP
+  (`font-src 'self' https://fonts.gstatic.com`) refuse une police en `data:` : en
+  capture, elles se servent depuis l'adresse gstatic interceptée. Sinon : police système,
+  sans erreur visible.
+- **Le piège de version est revenu** : `npx hyperframes` dans le dossier de rendu a pris
+  0.8.185. Appeler le binaire (`hyperframes`, dans le `PATH` après `source env.sh`).
+- **Le plancher de lecture a mordu au premier passage** (une citation : 1,35 s pour 1,5 s
+  requises), calcul fait à la main juste avant. Les outils des tests de film sont
+  partagés (`tests/film-outils.ts`) — une seule définition du plancher et des interdits.
+- `check` exige **28 px** minimum sur 1 080 : la mention « EXEMPLES ILLUSTRATIFS » est
+  justement celle qui doit se lire.
+
 ## 6. Avant de dire « c'est prêt »
 
 - [ ] L'accroche se comprend en 2 s, sans le son.
