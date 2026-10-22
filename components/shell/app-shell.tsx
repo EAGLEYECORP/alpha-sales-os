@@ -72,6 +72,7 @@ import { N8nAutoSync } from "@/components/n8n-autosync";
 import { StorageAlert } from "@/components/security/storage-alert";
 import { PipeServeur } from "@/components/pipe-serveur";
 import { SyncMoteur } from "@/components/sync-moteur";
+import { IdentiteInscrit } from "@/components/shell/identite-inscrit";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
 import { useDroits } from "@/lib/use-droits";
 import { etatChemin } from "@/lib/verrous";
@@ -620,6 +621,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Puis, en une ligne : ALPHA a-t-il besoin d'un humain ? C'est la
             moitié « prévenir » d'un agent qui travaille — elle lit la même
             définition que l'accueil et `/pilote` (`computeRoutines`). */}
+        <IdentiteInscrit />
         <AlphaPresence />
         {/* Et, sur les écrans que le registre a lus, ce que la machine y fait —
             fermé par défaut, une ligne. Un écran absent du registre n'affiche rien. */}

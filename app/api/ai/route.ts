@@ -9,6 +9,7 @@ import { playbookPrompt } from "@/lib/playbook";
 import { prescripteurPrompt } from "@/lib/prescripteurs";
 import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
 import { clipDoctrine } from "@/lib/identity";
+import { identiteServie, pourInscrit, REPLI_SCRIPT_INSCRIT } from "@/lib/identite-inscrit";
 import { deepDive } from "@/lib/deep-dive";
 import { SYSTEME_COPILOTE } from "@/lib/prompts-textes";
 import {
@@ -53,7 +54,19 @@ interface AiRequest {
 // de la doctrine (voir l'en-tête de ce module).
 const SYSTEM = SYSTEME_COPILOTE;
 
-function buildPrompt(req: AiRequest): string {
+/**
+ * ⚠⚠ HORS COMPTE MAÎTRE, LE PROMPT NE PORTE RIEN QUI SOIT À NOUS (22/10/2026).
+ * Un inscrit recevait « OFFRE À REPRÉSENTER : Alpha Voice » (nos familles, via
+ * `deepDive`), le vocabulaire de NOTRE ICP (`audiencePrompt` lit
+ * `accountICP("eagleye")`) et « démo mobile » — notre démonstration. Son IA
+ * écrivait à ses prospects pour vendre notre produit. Le maître est arbitré par
+ * le SERVEUR (`resoudreDroits`), jamais par le corps de la requête.
+ */
+function buildPrompt(req: AiRequest, maitre: boolean): string {
+  return pourInscrit(buildPromptBrut(req, maitre), maitre);
+}
+
+function buildPromptBrut(req: AiRequest, maitre: boolean): string {
   // Un prescripteur n'a PAS le problème qu'on résout : il connaît des gens
   // qui l'ont. L'argumentaire prospect ne s'applique pas, et le servir
   // quand même fait perdre l'interlocuteur en une phrase.
@@ -91,7 +104,7 @@ function buildPrompt(req: AiRequest): string {
   const p = req.prospect!;
   // L'offre vient du MÊME calcul que le script déterministe, l'email et
   // l'argumentaire — sinon le chemin IA redevient une source parallèle.
-  const offreRoutee = deepDive(p, req.accountId);
+  const offreRoutee = maitre ? deepDive(p, req.accountId) : null;
   const ctx = [
     `## Prospect`,
     `- ${p.name}, ${p.company} (${p.sector}) — ${p.city}`,
@@ -119,8 +132,14 @@ function buildPrompt(req: AiRequest): string {
      * Même source que partout ailleurs : `deepDive`, contraint aux offres
      * autorisées du compte.
      */
-    `- OFFRE À REPRÉSENTER : ${offreRoutee.offerLabel}. Le script ne parle que de celle-là.`,
-    `- Pourquoi elle : ${offreRoutee.routingReason}`,
+    ...(offreRoutee
+      ? [
+          `- OFFRE À REPRÉSENTER : ${offreRoutee.offerLabel}. Le script ne parle que de celle-là.`,
+          `- Pourquoi elle : ${offreRoutee.routingReason}`,
+        ]
+      : [
+          `- OFFRE À REPRÉSENTER : celle de l'opérateur, décrite dans son identité en tête. Le script ne parle que de celle-là ; si elle n'y est pas, il la demande au lieu de l'inventer.`,
+        ]),
     ``,
     // Les champs LIBRES sont isolés du reste : notes importées d'un CSV,
     // résumés d'appels transcrits, problèmes recopiés d'un audit reçu. Rien
@@ -143,10 +162,12 @@ function buildPrompt(req: AiRequest): string {
     // À QUI on parle, déduit du segment du prospect. La fiche donne les faits ;
     // ce bloc donne le VOCABULAIRE de son métier — c'est ce qui fait la
     // différence entre « un texte sur lui » et « un texte pour lui ».
-    audiencePrompt({
-      accountId: req.accountId,
-      prospect: { sector: p.sector, company: p.company, notes: p.notes, problems: p.problems },
-    }),
+    maitre
+      ? audiencePrompt({
+          accountId: req.accountId,
+          prospect: { sector: p.sector, company: p.company, notes: p.notes, problems: p.problems },
+        })
+      : "",
     ``,
     `## Règles business de l'agence`,
     clipDoctrine(req.businessRules ?? ""),
@@ -171,6 +192,11 @@ function buildPrompt(req: AiRequest): string {
       // générée part vraiment. Encadré, et la tâche est rappelée APRÈS lui.
       return `${ctx}\n\n## Message entrant du prospect\n${wrapUntrusted("message-entrant", req.inboundMessage ?? "", { maxChars: 4_000 })}\n\n## Tâche\nRédige LA réponse à envoyer (email ou WhatsApp selon le ton). Objectif unique : verrouiller un next step DATÉ (audit ou démo mobile). Court, chaleureux, zéro pitch produit, jamais de prix par écrit avant la démo. Termine par une question fermée à deux créneaux.`;
   }
+}
+
+function fallbackServi(req: AiRequest, maitre: boolean): string {
+  if (!maitre && req.task === "script") return REPLI_SCRIPT_INSCRIT;
+  return pourInscrit(fallback(req), maitre);
 }
 
 function fallback(req: AiRequest): string {
@@ -246,18 +272,20 @@ export async function POST(request: NextRequest) {
 
   // Le playbook terrain entre dans le système : c'est lui qui fait la
   // différence entre un conseil générique et la méthode maison.
-  const idBlock = body.identity ? `${body.identity}\n\n` : "";
+  const identite = identiteServie(body.identity, maitre);
+  const idBlock = identite ? `${identite}\n\n` : "";
   const brainBlock = body.brainContext ? `\n\n## Cerveau — notes de l'opérateur (appuie-toi dessus)\n${body.brainContext}` : "";
   const system =
     (body.task === "prescripteur"
-      ? `${idBlock}${SYSTEM}\n\n${prescripteurPrompt(body.archetypeId)}`
-      : `${idBlock}${SYSTEM}\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}`) + brainBlock;
+      ? `${idBlock}${pourInscrit(SYSTEM, maitre)}\n\n${prescripteurPrompt(body.archetypeId)}`
+      : // Nos verticales sont NOTRE pitch : un inscrit a la méthode par sa doctrine.
+        `${idBlock}${pourInscrit(SYSTEM, maitre)}${maitre ? `\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}` : ""}`) + brainBlock;
 
   try {
     const { text, engine } = await runAI(
       [
         { role: "system", content: system },
-        { role: "user", content: buildPrompt(body) },
+        { role: "user", content: buildPrompt(body, maitre) },
       ],
       await moteurIADeLaRequete(request),
       { temperature: 0.3, maxTokens: 2000 }
@@ -266,6 +294,6 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     // Aucun moteur n'a répondu → moteur de templates. L'app marche sans IA.
     console.error("Cascade IA indisponible, repli templates:", e);
-    return NextResponse.json({ text: fallback(body), engine: "template" });
+    return NextResponse.json({ text: fallbackServi(body, maitre), engine: "template" });
   }
 }

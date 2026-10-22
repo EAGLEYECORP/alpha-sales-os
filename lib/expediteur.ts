@@ -21,7 +21,8 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
-import { ACCOUNTS, getAccount } from "./accounts";
+import { getAccount } from "./accounts";
+import { estMarqueDuPortefeuille } from "./identite-inscrit";
 import { signataire } from "./signature";
 
 /** Le triplet que toute requête vers `/api/send` doit porter. */
@@ -102,9 +103,6 @@ export interface HabillageEnvoi {
   marqueRefusee: "absente" | "portefeuille" | null;
 }
 
-/** Les raisons sociales du portefeuille, normalisées pour la comparaison. */
-const MARQUES_DU_PORTEFEUILLE = new Set(ACCOUNTS.map((a) => a.name.trim().toLowerCase()));
-
 export function habillageEnvoi(opts: {
   /**
    * L'expéditeur est-il le compte MAÎTRE ? Prouvé par le SERVEUR
@@ -138,7 +136,7 @@ export function habillageEnvoi(opts: {
    */
   if (!opts.maitre) {
     const saisie = opts.agencyName?.trim() ?? "";
-    const marqueRefusee = !saisie ? "absente" : MARQUES_DU_PORTEFEUILLE.has(saisie.toLowerCase()) ? "portefeuille" : null;
+    const marqueRefusee = !saisie ? "absente" : estMarqueDuPortefeuille(saisie) ? "portefeuille" : null;
     const marque = marqueRefusee ? "" : saisie;
     const qui = signataire(opts.closerName, marque);
     return {

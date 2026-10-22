@@ -32,6 +32,7 @@ import {
 } from "./seed";
 import { demoDeDepart, demoDepuisProfil } from "./demo-icp";
 import { nettoyerProfil } from "./profil-operateur";
+import { reglagesSansNotreIdentite } from "./identite-inscrit";
 import { stageById, signingBlockers } from "./hormozi";
 // ⚠ Le SOCLE de notes n'est plus importé ici. Il portait le playbook en clair
 // (adresses partenaires, prix de setup, taux par offre) et le store est importé
@@ -191,6 +192,13 @@ interface AlphaState {
   clearAllData: () => void;
   /** Enregistre le profil ICP et refabrique la démonstration avec (voir l'implémentation). */
   appliquerProfil: (profil: Partial<ProfilOperateur>) => void;
+  /**
+   * Efface des réglages ce qui parle en NOTRE nom (raison sociale du
+   * portefeuille, ancienne offre d'usine). À n'appeler que sur un verdict
+   * SERVEUR « pas maître » (`components/shell/identite-inscrit.tsx`).
+   * Rend vrai si quelque chose a été effacé.
+   */
+  purgerIdentiteUsine: () => boolean;
   exportData: () => string;
   resetToSeed: () => void;
   /** Charge le pipeline réel de juillet 2026 (Lyon) — remplace tout. */
@@ -1123,6 +1131,22 @@ export const useAlpha = create<AlphaState>()(
        * découvrir un pipeline vide.
        * ─────────────────────────────────────────────────────────────────
        */
+      purgerIdentiteUsine: () => {
+        const patch = reglagesSansNotreIdentite(get().settings);
+        if (!patch) return false;
+        set((s) => ({
+          settings: { ...s.settings, ...patch, offer: { ...s.settings.offer, ...patch.offer } } as AppSettings,
+          activities: pousserActivite(s.activities, {
+            id: uid(),
+            date: new Date().toISOString(),
+            kind: "systeme" as const,
+            message:
+              "Identité d'usine retirée de tes réglages (elle était celle de l'éditeur d'Alpha) — renseigne TA société dans Réglages → Identité.",
+          }),
+        }));
+        return true;
+      },
+
       appliquerProfil: (brut) =>
         set((s) => {
           const profil = nettoyerProfil(brut);

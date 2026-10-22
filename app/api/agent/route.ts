@@ -9,6 +9,7 @@ import { AGENT_LIMITS, OS_MAP } from "@/lib/os-map";
 import { compressContext } from "@/lib/ai-context";
 import { wrapUntrusted, UNTRUSTED_RULES } from "@/lib/untrusted";
 import { clipDoctrine } from "@/lib/identity";
+import { identiteServie, pourInscrit } from "@/lib/identite-inscrit";
 import { assemble, budgetPour } from "@/lib/token-budget";
 import { SYSTEME_AGENT } from "@/lib/prompts-textes";
 
@@ -65,9 +66,12 @@ export async function POST(request: NextRequest) {
   // données non fiables). Priorité 3 = sacrifié en premier.
   const assemblage = assemble(
     [
-      { nom: "base", texte: SYSTEM_BASE, priorite: 1 },
-      { nom: "identite", texte: body.identity ? "\n" + body.identity : "", priorite: 1 },
-      { nom: "playbook", texte: "\n" + playbookPrompt(), priorite: 2 },
+      // Hors maître : identité arbitrée par le serveur, pas de « démo mobile »
+      // (notre démonstration), et pas de méthode illustrée de NOS phrases
+      // d'appel — la doctrine d'un inscrit porte déjà la méthode.
+      { nom: "base", texte: pourInscrit(SYSTEM_BASE, maitre), priorite: 1 },
+      { nom: "identite", texte: identiteServie(body.identity, maitre) ? "\n" + identiteServie(body.identity, maitre) : "", priorite: 1 },
+      { nom: "playbook", texte: maitre ? "\n" + playbookPrompt() : "", priorite: 2 },
       { nom: "carte-os", texte: "\n" + OS_MAP, priorite: 3 },
       { nom: "limites", texte: "\n" + AGENT_LIMITS, priorite: 1 },
       { nom: "doctrine", texte: "\n## Règles business de l'agence\n" + clipDoctrine(body.businessRules ?? ""), priorite: 1 },

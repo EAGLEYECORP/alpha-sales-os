@@ -5,6 +5,7 @@ import { runAIJson } from "@/lib/ai-engine";
 import { moteurIADeLaRequete } from "@/lib/credentials-secret";
 import { deriveICP, mergeICP, icpSystemPrompt, icpUserPrompt, type ICP, type OfferInput } from "@/lib/icp";
 import { clipDoctrine } from "@/lib/identity";
+import { identiteServie } from "@/lib/identite-inscrit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   // Même règle que les autres routes IA : notre doctrine au maître seul.
   const { maitre } = await resoudreDroits(request);
-  const system = [body.identity?.trim(), icpSystemPrompt(), `Doctrine du compte :\n${clipDoctrine(doctrineOrDefault(body.businessRules, maitre))}`]
+  const system = [identiteServie(body.identity, maitre)?.trim(), icpSystemPrompt(), `Doctrine du compte :\n${clipDoctrine(doctrineOrDefault(body.businessRules, maitre))}`]
     .filter(Boolean)
     .join("\n\n");
 
