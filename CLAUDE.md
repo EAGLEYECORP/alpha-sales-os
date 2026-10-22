@@ -1326,6 +1326,13 @@ Règles dures :
   > serait fabriquer une échéance. Une nouvelle source honnête se TRANCHE (date
   > d'arrêté structurée qui choisit le moment sans jamais affirmer « purgé de
   > recours », engagement daté pris par le prospect, ou relance humaine assumée).
+  > ✅ **Remis en marche le 22/10/2026 par la seule source qui vaut pour tout
+  > métier : LA DATE QU'IL A DONNÉE** (`NextStep.demandePar: "prospect"`, saisie
+  > à l'écran d'appels après « Rappeler », `etapeASaDate`). Source `sa-date`,
+  > devant les deux autres, fenêtre de la veille à J+14
+  > (`FENETRE_SA_DATE_JOURS`, une décision). **Notre délai par défaut (3 j) n'est
+  > JAMAIS lu comme sa demande** — un test l'exige. La date d'arrêté de permis
+  > n'a pas été faite : ce n'est plus la cible.
 - Le compteur de saturation **repart à zéro dès qu'il répond**.
 - 3+ touches ignorées → **changer de canal** (le format a déjà été ignoré)…
   **sauf s'il OUVRE** (`lib/reactivite.ts`) : là le canal passe, c'est la

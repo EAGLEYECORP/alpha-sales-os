@@ -39,6 +39,13 @@ import { PRIX_HONORE_JUSQU_AU, prixPerime } from "./grille-perimee";
  * ⚠ Un troisième (« une actualité de son métier ») serait une INVENTION tant
  * qu'aucune source ne l'alimente. Il n'est pas écrit ici.
  *
+ * ⚠⚠ AJOUTÉ LE 22/10/2026 : **la date qu'IL a donnée** (« rappelez-moi en
+ * janvier »), consignée comme telle à l'écran d'appels (`etapeASaDate`,
+ * `NextStep.demandePar`). Le prix honoré a expiré le 17/10 et n'a jamais valu
+ * que pour NOTRE grille : depuis, aucune fiche d'aucun inscrit ne pouvait plus
+ * produire de raison. Sa date vaut pour n'importe quel métier, et elle passe
+ * devant les deux autres.
+ *
  * ══ POURQUOI LE PRIX EST LA MEILLEURE DES DEUX ══
  *
  * Il ne demande rien et n'accuse personne. « Je me permets de relancer » met
@@ -49,6 +56,8 @@ import { PRIX_HONORE_JUSQU_AU, prixPerime } from "./grille-perimee";
  */
 
 export type SourceRaison =
+  /** Il a DONNÉ une date (« rappelez-moi en janvier ») et elle arrive. */
+  | "sa-date"
   /** La grille a bougé, le prix annoncé est honoré jusqu'à une date. */
   | "prix-honore"
   /** Il a ouvert ou cliqué : le rappel se raccroche à ce qu'il a lu. */
@@ -76,7 +85,7 @@ export interface RaisonNeuve {
  */
 export const AUCUNE_RAISON =
   "Aucune raison neuve disponible sur cette fiche. Ne relance pas pour relancer : " +
-  "attends un fait daté (il ouvre, il clique, un prix bouge) ou passe à une autre fiche.";
+  "attends un fait daté (il te donne une date, il ouvre, il clique, un prix bouge) ou passe à une autre fiche.";
 
 export interface ContexteRaison {
   /** Dernière ouverture ou clic connu, en ISO. `null` = aucun. */
@@ -85,6 +94,14 @@ export interface ContexteRaison {
 
 /** Au-delà, « vous avez ouvert mon message » sonne comme de la surveillance. */
 export const OUVERTURE_FRAICHE_JOURS = 7;
+
+/**
+ * La fenêtre autour de SA date : la veille (on prépare) jusqu'à deux semaines
+ * après (il a pu être pris). Au-delà, « vous m'aviez dit de revenir vers le … »
+ * se lit comme un oubli de notre part, pas comme une parole tenue.
+ * Une DÉCISION, aucune vente ne l'a mesurée.
+ */
+export const FENETRE_SA_DATE_JOURS = { avant: 1, apres: 14 } as const;
 
 /**
  * La raison neuve disponible sur cette fiche, ou `null`.
@@ -103,6 +120,30 @@ export function raisonNeuve(
    * message » ne lui apprend rien et le met en position de devoir se
    * justifier. On ouvre sur ce qu'on donne, pas sur ce qu'on a observé.
    */
+  /**
+   * ⚠⚠ SA DATE PASSE DEVANT TOUT (22/10/2026). C'est la seule source qui vaille
+   * pour n'importe quel métier — le prix honoré n'existe que pour notre grille,
+   * et il a expiré le 17/10, laissant le cycle de relance à l'arrêt. Elle ne
+   * demande rien et n'accuse personne : c'est LUI qui a fixé le moment. Elle
+   * n'existe que si l'écran l'a consignée comme telle (`demandePar`), jamais
+   * déduite de notre délai par défaut.
+   */
+  const sa = p.nextStep?.demandePar === "prospect" ? Date.parse(p.nextStep.date) : NaN;
+  if (!Number.isNaN(sa)) {
+    const jours = (maintenant - sa) / 86_400_000;
+    if (jours >= -FENETRE_SA_DATE_JOURS.avant && jours <= FENETRE_SA_DATE_JOURS.apres) {
+      const quand = new Date(sa).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      return {
+        source: "sa-date",
+        fait: `Date donnée par le prospect : ${new Date(sa).toLocaleDateString("fr-FR")}.`,
+        phrase:
+          `Vous m'aviez dit de revenir vers vous vers le ${quand} : c'est ce que je fais. ` +
+          `Une seule question : est-ce que c'est toujours un sujet chez vous, oui ou non ? Un non me va très bien.`,
+        provenance: "lib/call-outcome.ts",
+      };
+    }
+  }
+
   const derniere = p.events?.length ? p.events[p.events.length - 1].date : null;
   const perime = prixPerime(p, derniere);
   if (perime && perime.certitude === "datee" && Date.parse(PRIX_HONORE_JUSQU_AU) >= maintenant) {

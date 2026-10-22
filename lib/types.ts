@@ -101,6 +101,13 @@ export type EventKind =
 export interface NextStep {
   date: string; // ISO — every contact ends with a DATED next step
   action: string;
+  /**
+   * La date a été DONNÉE PAR LE PROSPECT (« rappelez-moi en janvier »), pas
+   * choisie par nous. C'est un fait, et c'est la seule source de relance qui
+   * vaille pour n'importe quel métier (`raisonNeuve`, source `sa-date`).
+   * Absent = notre délai par défaut : ne JAMAIS le lire comme sa demande.
+   */
+  demandePar?: "prospect";
 }
 
 export interface TimelineEvent {

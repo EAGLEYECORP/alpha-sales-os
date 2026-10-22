@@ -1,4 +1,4 @@
-import type { Prospect, TimelineEvent } from "./types";
+import type { NextStep, Prospect, TimelineEvent } from "./types";
 import { extractInsights, transcriptText, type CallSession } from "./call-log";
 
 /**
@@ -76,6 +76,20 @@ export interface LectureManuelle {
   /** Délai du next step, en jours. */
   dansJours: number;
   action: string;
+}
+
+/**
+ * La prochaine étape quand le prospect a DONNÉ une date (« rappelez-moi le 15 »).
+ *
+ * `jourLocal` est la valeur d'un `<input type="date">` (AAAA-MM-JJ). On pose
+ * 9 h, heure LOCALE : sans heure, `new Date("2026-11-15")` est lu en UTC et
+ * recule d'un jour à l'ouest de Greenwich. `null` si la saisie n'est pas une date.
+ */
+export function etapeASaDate(jourLocal: string): NextStep | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(jourLocal)) return null;
+  const d = new Date(`${jourLocal}T09:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return { date: d.toISOString(), action: "Le rappeler à la date qu'il a donnée", demandePar: "prospect" };
 }
 
 export const RESULTATS_MANUELS: Record<ResultatManuel, LectureManuelle> = {

@@ -16,7 +16,7 @@ import {
   Target,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
-import { RESULTATS_MANUELS, type ResultatManuel } from "@/lib/call-outcome";
+import { RESULTATS_MANUELS, etapeASaDate, type ResultatManuel } from "@/lib/call-outcome";
 import { DO_NOT_CALL_TAG } from "@/lib/voice-script";
 import type { Prospect } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -127,6 +127,22 @@ export default function AppelsPage() {
       patchProspect(p.id, { tags: [...p.tags, DO_NOT_CALL_TAG] });
     }
     logActivity({ kind: "prospect", message: `${r.summary} — ${p.company}`, prospectId: p.id });
+  };
+
+  /**
+   * Il a DONNÉ une date (« rappelez-moi le 15 ») : on la consigne comme SIENNE.
+   * C'est elle, et elle seule, qui fera de la relance une parole tenue plutôt
+   * qu'un « je me permets de relancer » (`raisonNeuve`, source `sa-date`).
+   */
+  const poserSaDate = (p: Prospect, jour: string) => {
+    const step = etapeASaDate(jour);
+    if (!step) return;
+    setNextStep(p.id, step);
+    logActivity({
+      kind: "prospect",
+      message: `Rappel à la date qu'il a donnée (${new Date(step.date).toLocaleDateString("fr-FR")}) — ${p.company}`,
+      prospectId: p.id,
+    });
   };
 
   const undo = (id: string) =>
@@ -385,6 +401,17 @@ export default function AppelsPage() {
                 {outcome ? (
                   <>
                     <span className={cn("chip", OUTCOME_META[outcome].tone)}>{OUTCOME_META[outcome].label} · consigné ✓</span>
+                    {outcome === "rappeler" && (
+                      <label className="flex items-center gap-1.5 text-[11.5px] text-paper-dim">
+                        {p.nextStep?.demandePar === "prospect" ? "Sa date :" : "Il a donné une date ?"}
+                        <input
+                          type="date"
+                          className="input h-7 px-2 py-0 text-[11.5px]"
+                          aria-label="Date donnée par le prospect"
+                          onChange={(e) => poserSaDate(p, e.target.value)}
+                        />
+                      </label>
+                    )}
                     <button className="btn-ghost px-2.5 py-1.5 text-[11.5px]" onClick={() => undo(p.id)}>
                       Masquer
                     </button>

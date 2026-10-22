@@ -87,6 +87,12 @@ urgence, exactement ce que le module refuse.
 3. **Rien** : accepter que la relance après le premier contact soit humaine,
    et le dire à l'écran.
 
+> ✅ **22/10/2026 — l'option 2 est branchée** (`raisonNeuve`, source `sa-date`) :
+> l'écran d'appels propose « Il a donné une date ? » après « Rappeler », et
+> cette date — la SIENNE, consignée comme telle — produit la raison à
+> l'échéance. Elle vaut pour n'importe quel métier ; l'option 1 (permis) n'a
+> pas été faite, la cible permis ayant été retirée le 21/10.
+
 ---
 
 ## 3. Accompagnement du commercial — réel, et c'est le point fort
