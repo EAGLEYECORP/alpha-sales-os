@@ -31,6 +31,7 @@ import { useAlpha } from "@/lib/store";
 import { LIBELLE_SECTEUR } from "@/lib/secteurs";
 import { emailBody, emailSubject } from "@/lib/mail-compose";
 import { inviteText } from "@/lib/linkedin-sequence";
+import { useExpediteurInscrit } from "@/lib/use-expediteur";
 import { messageCourt } from "@/lib/approche-ecrite";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
@@ -1750,21 +1751,24 @@ function TemplatesTab({ p, closer }: { p: Prospect; closer: string }) {
    * ─────────────────────────────────────────────────────────────────────
    */
   const accountId = useAlpha((s) => s.settings.accountId);
+  // Hors compte maître PROUVÉ, ces textes parlent de SON offre et signent de SA
+  // société — ils se copient à la main, aucun serveur ne les relit.
+  const inscrit = useExpediteurInscrit();
   const templates = [
     {
       channel: "Email",
-      subject: emailSubject(p, accountId),
-      body: emailBody(p, { accountId, closerName: closer }),
+      subject: emailSubject(p, accountId, inscrit),
+      body: emailBody(p, { accountId, closerName: closer, inscrit }),
     },
     {
       channel: "WhatsApp",
       subject: "Prise de contact",
-      body: messageCourt(p, accountId),
+      body: messageCourt(p, accountId, inscrit),
     },
     {
       channel: "LinkedIn",
       subject: "Invitation (≤ 300 car.)",
-      body: inviteText(p, accountId, closer),
+      body: inviteText(p, accountId, closer, inscrit),
     },
   ];
 

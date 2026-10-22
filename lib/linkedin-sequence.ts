@@ -5,7 +5,7 @@ import { verticalForProspect } from "./playbook";
 import { PRESENCE_LINKEDIN } from "./linkedin-ciblage";
 // Le critère, la question et le signal d'audit viennent de l'aimant routé —
 // la même source que l'email, pour que les deux canaux ne se contredisent pas.
-import { approcheEcrite } from "./approche-ecrite";
+import { approcheEcrite, type ExpediteurInscrit } from "./approche-ecrite";
 // ⚠ Une seule source pour « qui signe ». Ce fichier était la CINQUIÈME
 // réponse : l'en-tête de `lib/signature.ts` en listait quatre, et le
 // balayage ne l'avait pas atteint.
@@ -70,7 +70,18 @@ const capitale = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * On n'élide PAS devant un h : « de Hxxx » est toujours correct, « d'Hxxx »
  * dépend du h aspiré, qu'aucune règle mécanique ne tranche.
  */
-function identite(accountId?: string, closerName?: string) {
+function identite(accountId?: string, closerName?: string, inscrit?: ExpediteurInscrit | null) {
+  // Un inscrit signe de SA société (ou de son nom seul), jamais du compte qu'il
+  // porte par défaut — voir `ExpediteurInscrit` (`lib/approche-ecrite.ts`).
+  if (inscrit) {
+    const agence = inscrit.agencyName.trim();
+    return {
+      nom: signataire(closerName, agence).nom,
+      agence,
+      presentation: presentation(closerName, agence),
+      ville: inscrit.city.trim(),
+    };
+  }
   const compte = getAccount(accountId);
   const nom = signataire(closerName, compte.name).nom;
   // ⚠ L'élision vivait ici ET allait être recopiée dans l'argumentaire.
@@ -127,9 +138,9 @@ export function villeEcrivable(p: Prospect): string | null {
   return brut.toLowerCase().replace(/(^|[\s'-])(\p{L})/gu, (_, sep: string, c: string) => sep + c.toUpperCase());
 }
 
-export function inviteText(p: Prospect, accountId?: string, closerName?: string): string {
-  const a = approcheEcrite(p, accountId);
-  const moi = identite(accountId, closerName);
+export function inviteText(p: Prospect, accountId?: string, closerName?: string, inscrit?: ExpediteurInscrit | null): string {
+  const a = approcheEcrite(p, accountId, inscrit);
+  const moi = identite(accountId, closerName, inscrit);
   const who = firstName(p) ? `Bonjour ${firstName(p)}, ` : "Bonjour, ";
   // Le secteur géographique vient de la FICHE quand elle en porte un qu'on
   // peut dire. Sinon, la ville du COMPTE — jamais « Lyon » en dur, qui faisait
@@ -157,7 +168,13 @@ export function inviteText(p: Prospect, accountId?: string, closerName?: string)
  * Le message post-connexion : le critère, UNE question de diagnostic,
  * et la proposition d'audit — proposée, jamais imposée.
  */
-export function messageText(p: Prospect, bookingUrl?: string, accountId?: string, closerName?: string): string {
+export function messageText(
+  p: Prospect,
+  bookingUrl?: string,
+  accountId?: string,
+  closerName?: string,
+  inscrit?: ExpediteurInscrit | null
+): string {
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
   /**
    * ⚠ CES TROIS PHRASES ÉTAIENT ÉCRITES EN DUR, ET DUPLIQUÉES MOT POUR MOT
@@ -170,8 +187,8 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
    * « Audit de votre visibilité locale ». Et corriger un des deux fichiers
    * laissait l'autre mentir.
    */
-  const a = approcheEcrite(p, accountId);
-  const moi = identite(accountId, closerName);
+  const a = approcheEcrite(p, accountId, inscrit);
+  const moi = identite(accountId, closerName, inscrit);
   const booking = bookingUrl?.trim()
     ? ["", `Mon agenda est ouvert si vous voulez en parler un jour : ${bookingUrl.trim()}`]
     : [];
@@ -188,16 +205,20 @@ export function messageText(p: Prospect, bookingUrl?: string, accountId?: string
     ``,
     // La ville vient du COMPTE : elle était en dur, donc un partenaire
     // ailleurs qu'à Lyon signait depuis une ville où il n'est pas.
-    `${moi.nom} — ${moi.agence}${moi.ville ? `, ${moi.ville}` : ""}`,
+    signature(moi),
   ].join("\n");
 }
+
+/** « Nom — Société, Ville », sans tiret orphelin quand la société n'est pas dite. */
+const signature = (moi: { nom: string; agence: string; ville: string }) =>
+  [moi.nom, [moi.agence, moi.ville].filter(Boolean).join(", ")].filter(Boolean).join(" — ");
 
 /**
  * La relance : le coup du méta appliqué à l'écrit — on assume le
  * silence, on ne culpabilise pas, et on ferme sur un choix binaire.
  */
-export function relanceText(p: Prospect, accountId?: string, closerName?: string): string {
-  const moi = identite(accountId, closerName);
+export function relanceText(p: Prospect, accountId?: string, closerName?: string, inscrit?: ExpediteurInscrit | null): string {
+  const moi = identite(accountId, closerName, inscrit);
   const hi = firstName(p) ? `${firstName(p)},` : "Bonjour,";
   /**
    * ⚠ « Vous êtes sur le terrain, pas sur LinkedIn » était écrit en dur.
@@ -213,7 +234,9 @@ export function relanceText(p: Prospect, accountId?: string, closerName?: string
    * en réécrire une deuxième ici garantissait qu'elles divergent.
    */
   const v = verticalForProspect(p);
-  const bienIci = v ? PRESENCE_LINKEDIN[v.id] === "forte" : false;
+  // « vous êtes sur le terrain… c'est exactement le problème dont je parlais »
+  // renvoie à NOTRE pitch : un inscrit n'en a parlé nulle part.
+  const bienIci = inscrit ? true : v ? PRESENCE_LINKEDIN[v.id] === "forte" : false;
   const meta = bienIci
     ? `Pas de réponse, et c'est normal : ce genre de message tombe rarement au bon moment.`
     : `Pas de réponse et c'est très bien — vous êtes sur le terrain, pas sur LinkedIn. C'est exactement le problème dont je parlais.`;
@@ -224,7 +247,7 @@ export function relanceText(p: Prospect, accountId?: string, closerName?: string
     ``,
     `Je ne relancerai pas : vous savez où me trouver si le sujet revient un jour. Bonne continuation à ${p.company}.`,
     ``,
-    `${moi.nom} — ${moi.agence}`,
+    signature({ ...moi, ville: "" }),
   ].join("\n");
 }
 
@@ -247,14 +270,15 @@ export function textForStep(
   step: LinkedinStep,
   bookingUrl?: string,
   accountId?: string,
-  closerName?: string
+  closerName?: string,
+  inscrit?: ExpediteurInscrit | null
 ): string {
-  if (step === "invitation") return inviteText(p, accountId, closerName);
-  if (step === "message") return messageText(p, bookingUrl, accountId, closerName);
+  if (step === "invitation") return inviteText(p, accountId, closerName, inscrit);
+  if (step === "message") return messageText(p, bookingUrl, accountId, closerName, inscrit);
   // ⚠ `relanceText(p)` NE RECEVAIT NI COMPTE NI SIGNATAIRE. C'est exactement
   // le défaut décrit au-dessus — le paramètre qui meurt au dernier saut —
   // toujours présent sur cette étape-ci quand l'autre a été corrigée.
-  if (step === "relance") return relanceText(p, accountId, closerName);
+  if (step === "relance") return relanceText(p, accountId, closerName, inscrit);
   return "";
 }
 
@@ -292,7 +316,7 @@ export function buildLinkedinQueue(
   // ⚠ `closerName` traverse jusqu'au texte. Sans lui, la file signe du
   // libellé d'usine (« Le Closer ») ou de la raison sociale — ce qui est
   // le repli VOULU, mais il faut pouvoir donner le vrai nom.
-  filter?: { city?: string; bookingUrl?: string; accountId?: string; closerName?: string }
+  filter?: { city?: string; bookingUrl?: string; accountId?: string; closerName?: string; inscrit?: ExpediteurInscrit | null }
 ): LinkedinTarget[] {
   const city = filter?.city?.trim().toLowerCase();
 
@@ -312,7 +336,7 @@ export function buildLinkedinQueue(
         step,
         touches,
         lastTouchDays,
-        text: textForStep(p, step, filter?.bookingUrl, filter?.accountId, filter?.closerName),
+        text: textForStep(p, step, filter?.bookingUrl, filter?.accountId, filter?.closerName, filter?.inscrit),
         ready,
         waitDays,
       };

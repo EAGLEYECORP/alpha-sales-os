@@ -13,6 +13,7 @@ import { STEP_LABEL, buildLinkedinQueue, type LinkedinStep } from "@/lib/linkedi
 import { LINKEDIN_WEEKLY_LIMIT, plafondSemaine, quotaDuJour } from "@/lib/linkedin-plan";
 import { SourcingPanel } from "@/components/linkedin/sourcing-panel";
 import { PageHeader } from "@/components/ui/page-header";
+import { useExpediteurInscrit } from "@/lib/use-expediteur";
 import { identiteDUsine, CLOSER_USINE } from "@/lib/signature";
 
 /**
@@ -37,6 +38,7 @@ export default function LinkedinPage() {
   const [city, setCity] = useState("Lyon 6");
   const [copied, setCopied] = useState<string | null>(null);
 
+  const inscrit = useExpediteurInscrit();
   const queue = useMemo(
     // Le compte actif décide des aimants disponibles, donc de l'angle du
     // message. Sans lui, chaque fiche recevait la proposition voix.
@@ -47,8 +49,11 @@ export default function LinkedinPage() {
         // ⚠ Sans ce nom, la file signait « Zakaria — EAGLEYE CORP » en dur,
         // y compris sur un compte revendeur. Voir `lib/signature.ts`.
         closerName: settings.closerName,
+        // Hors compte maître PROUVÉ : SON offre, SA société. Une invitation se
+        // copie à la main ; dans le doute, jamais notre nom.
+        inscrit,
       }),
-    [prospects, city, settings.bookingUrl, settings.accountId, settings.closerName]
+    [prospects, city, settings.bookingUrl, settings.accountId, settings.closerName, inscrit]
   );
   /**
    * ⚠ Le quota ne se lit plus à la journée seule.

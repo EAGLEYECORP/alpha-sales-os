@@ -3,7 +3,7 @@ import { estAdresseDeDemo, isDemoProspect } from "./seed";
 // L'angle du message vient de l'aimant routé par le deep-dive, pas d'une
 // phrase figée : voir l'en-tête de ce module pour ce que ça corrigeait.
 import { getAccount } from "./accounts";
-import { approcheEcrite } from "./approche-ecrite";
+import { approcheEcrite, type ExpediteurInscrit } from "./approche-ecrite";
 import { signataire } from "./signature";
 
 /**
@@ -39,8 +39,8 @@ const firstName = (p: Prospect): string => (p.name || "").trim().split(/\s+/)[0]
  * de routé vers la visibilité, l'objet parlait déjà d'autre chose que le
  * corps du message et que la pièce jointe.
  */
-export function emailSubject(p: Prospect, accountId?: string): string {
-  return `${p.company} — ${approcheEcrite(p, accountId).objet}`;
+export function emailSubject(p: Prospect, accountId?: string, inscrit?: ExpediteurInscrit | null): string {
+  return `${p.company} — ${approcheEcrite(p, accountId, inscrit).objet}`;
 }
 
 export interface ComposeOptions {
@@ -52,6 +52,8 @@ export interface ComposeOptions {
    * de ce qu'on a le droit d'annoncer. Absent, on retombe sur EAGLEYE.
    */
   accountId?: string;
+  /** Présent hors compte maître : le texte parle de SON offre, signe de SA société. */
+  inscrit?: ExpediteurInscrit | null;
 }
 
 /**
@@ -63,14 +65,16 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
   const hi = firstName(p) ? `Bonjour ${firstName(p)},` : "Bonjour,";
   // Critère, question et signal viennent tous les trois de l'aimant routé :
   // un seul endroit décide de QUOI parle ce message.
-  const a = approcheEcrite(p, opts.accountId);
+  const a = approcheEcrite(p, opts.accountId, opts.inscrit);
   /**
    * ⚠ LE REPLI ÉTAIT « EAGLEYE CORP » EN DUR, sur un produit white-label :
    * un revendeur qui ne passe pas son nom signait sous NOTRE raison sociale.
    * Le compte la connaît — c'est sa définition même. On la lui demande.
    */
   const compte = getAccount(opts.accountId);
-  const agency = opts.agencyName?.trim() || compte.name;
+  // Un inscrit : SA société ou rien — jamais le nom du compte qu'il porte par défaut.
+  const agency = opts.inscrit ? opts.inscrit.agencyName.trim() : opts.agencyName?.trim() || compte.name;
+  const ville = opts.inscrit ? opts.inscrit.city.trim() : (compte.city?.trim() ?? "");
   // Un seul endroit décide QUI signe (`lib/signature`). Le repli en dur qui
   // vivait ici signait « Zakaria » — le prénom du propriétaire de l'outil —
   // dans les emails d'un revendeur white-label.
@@ -93,7 +97,7 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
     "",
     // La ville vient du compte : « Lyon » était en dur, donc un partenaire
     // établi ailleurs signait depuis une ville où il n'est pas.
-    `${closer} — ${agency}${compte.city?.trim() ? `, ${compte.city.trim()}` : ""}`,
+    [closer, [agency, ville].filter(Boolean).join(", ")].filter(Boolean).join(" — "),
     "",
     `Si vous ne souhaitez plus recevoir de message de ma part, répondez STOP : je vous retire immédiatement.`,
   ].join("\n");

@@ -85,6 +85,32 @@ export function chargerDroits(): Promise<Droits> {
   return enCours;
 }
 
+/**
+ * Le compte est-il le MAÎTRE, PROUVÉ par le serveur ?
+ *
+ * ⚠ L'inverse de `useDroits()` : PESSIMISTE. Faux tant que la réponse n'est pas
+ * là, faux si elle échoue (`chargerDroits` rend alors `OPTIMISTE`, qu'on
+ * reconnaît à son identité). Il sert aux textes qui PARTENT sans serveur pour
+ * les relire — un message LinkedIn se copie à la main : dans le doute, il
+ * s'écrit pour l'inscrit, jamais sous notre nom. Le maître voit son texte
+ * générique une fraction de seconde ; l'inverse enverrait notre pitch.
+ */
+export function useMaitreProuve(): boolean {
+  const [m, setM] = useState<boolean>(cache?.maitre ?? false);
+  useEffect(() => {
+    if (cache) {
+      setM(cache.maitre);
+      return;
+    }
+    let vivant = true;
+    void chargerDroits().then((d) => vivant && setM(d !== OPTIMISTE && d.maitre));
+    return () => {
+      vivant = false;
+    };
+  }, []);
+  return m;
+}
+
 export function useDroits(): Droits {
   const [d, setD] = useState<Droits>(cache ?? OPTIMISTE);
 

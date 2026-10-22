@@ -203,15 +203,21 @@ produit à un inscrit qui vend autre chose :
 | démo d'accueil : huit promoteurs, nos campagnes, nos prix | `demoDeDepart` (six métiers, zéro montant) |
 | fiche saisie à la main : « maîtrise d'ouvrage, Lyon, 290 €/mois » · aperçu de valeur sur nos offres | `nouvelleFiche` · `apercuInscrit` |
 
-> ⚠ **Ce qui sert encore NOTRE offre à un inscrit, mesuré mais pas réparé** :
-> le routage d'offre (`matchOffer`, `deepDive`, l'escalier) range ses fiches
-> dans nos familles (`alpha-voice`, `visibilite-growth`…) et les textes écrits
-> qui en dépendent (aimant, approche) ; les gabarits de la bibliothèque ;
-> `playbookPrompt` dans `/api/ai` et `/api/agent`. Même défaut, même remède :
-> le profil de l'inscrit, pas nos verticales.
-> ⚠ **Un navigateur d'inscrit déjà persisté** garde « EAGLEYE CORP » dans ses
-> réglages : l'envoi est refusé avec la consigne, ses prompts IA restent sous
-> notre nom tant qu'il ne corrige pas.
+> ✅ **Fermé le 22/10/2026** : les **textes écrits** (invitation, message et
+> relance LinkedIn, email, WhatsApp — `ExpediteurInscrit`, `approcheInscrit`)
+> signaient du nom du COMPTE (« d'EAGLEYE CORP ») et posaient la question de
+> NOS aimants ; ils se copient à la main, aucun serveur ne les relit. Les
+> écrans les fabriquent désormais sur `useMaitreProuve` — **pessimiste** : dans
+> le doute (réponse pas arrivée, panne), le texte s'écrit pour l'inscrit. Les
+> **prompts IA** (`/api/ai`, `/api/agent`, `/api/icp`) : identité arbitrée par
+> le serveur (`identiteServie`), ni nos familles, ni notre ICP, ni notre
+> playbook — prouvé en interceptant le prompt réellement envoyé. Les
+> **réglages persistés** d'un ancien navigateur sont purgés sur verdict serveur
+> (`purgerIdentiteUsine`, monté dans la coquille).
+> ⚠ **Reste, mesuré mais pas réparé** : l'écran fiche (deep-dive, escalier,
+> « offre à pousser ») range encore les fiches d'un inscrit dans nos familles ;
+> les gabarits de la bibliothèque (`/templates`) ; le sparring (le prospect
+> simulé objecte à NOTRE pitch) ; `prescripteurPrompt`.
 > ✅ **La doctrine du MAÎTRE** (`DEFAULT_BUSINESS_RULES`) **dérive désormais ses
 > prix** (22/10/2026) : elle récitait le forfait mort, l'offre « 1 000 appels »
 > retirée et une fourchette à la carte périmée (AGENT ALPHA à 490), et visait

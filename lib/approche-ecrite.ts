@@ -2,6 +2,7 @@ import type { Prospect } from "./types";
 import { offreDeLaVerticale, verticalForProspect } from "./playbook";
 import { pickMagnet } from "./lead-magnet";
 import { OFFRES } from "./offer-match";
+import type { ProfilOperateur } from "./profil-operateur";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -100,7 +101,56 @@ function critereDepuisCiblage(targets: string): string {
   return avantListe.charAt(0).toLowerCase() + avantListe.slice(1);
 }
 
-export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcrite {
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * L'EXPÉDITEUR D'UN TEXTE ÉCRIT, QUAND CE N'EST PAS LE COMPTE MAÎTRE.
+ *
+ * ⚠⚠ MESURÉ LE 22/10/2026 avec le vrai code : l'invitation LinkedIn d'un
+ * inscrit qui vend un logiciel de paie disait « je suis Julie Martin,
+ * d'EAGLEYE CORP. Je m'adresse aux métiers où le téléphone EST le canal
+ * d'entrée ». La société venait du COMPTE (`accountId: "eagleye"`, que tout
+ * inscrit porte), le critère et la question de NOS aimants. Et une invitation
+ * se copie à la main : aucun serveur ne la relit.
+ *
+ * Présent ⇒ le texte parle de SON offre et signe de SA société (vide si elle
+ * n'est pas renseignée — le nom seul, jamais le nôtre). Absent ⇒ le compte
+ * maître, comme avant. C'est l'écran qui le décide, sur le verdict SERVEUR
+ * (`useMaitreProuve`).
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export interface ExpediteurInscrit {
+  profil: ProfilOperateur | null | undefined;
+  agencyName: string;
+  city: string;
+}
+
+/** « que » + voyelle → « qu' » (jamais devant un h : l'aspiré ne se devine pas). */
+const que = (suite: string) => (/^[aeiouyàâéèêëîïôöûü]/i.test(suite) ? `qu'${suite}` : `que ${suite}`);
+
+/**
+ * L'approche écrite d'un inscrit : SON critère, SA question, aucun aimant.
+ * Faute de profil, des formulations neutres — jamais des crochets : un texte
+ * copié à la main partirait avec.
+ */
+export function approcheInscrit(profil: ProfilOperateur | null | undefined): ApprocheEcrite {
+  const metier = profil?.metier.trim() ?? "";
+  const role = profil?.cibleRole.trim() ?? "";
+  const secteur = profil?.cibleSecteur.trim() ?? "";
+  const critere = role ? `les ${role}${secteur ? ` (${secteur})` : ""}` : secteur ? `les entreprises (${secteur})` : "les entreprises de votre taille, sur un sujet précis";
+  return {
+    critere,
+    phraseCritere: `je m'adresse ${critere.replace(/^les\b/, "aux")}`,
+    critereMetier: null,
+    question: metier
+      ? `Est-ce ${que(metier)} est un sujet chez vous en ce moment ?`
+      : "Quel est le sujet qui vous occupe le plus en ce moment ?",
+    signal: null,
+    objet: "une question",
+  };
+}
+
+export function approcheEcrite(p: Prospect, accountId = "eagleye", inscrit?: ExpediteurInscrit | null): ApprocheEcrite {
+  if (inscrit) return approcheInscrit(inscrit.profil);
   const v = verticalForProspect(p);
   const pick = pickMagnet(p, accountId);
   const offre = pick?.magnet.offer ?? null;
@@ -193,8 +243,8 @@ export function approcheEcrite(p: Prospect, accountId = "eagleye"): ApprocheEcri
  * REFUSE côté serveur — et c'est le bon endroit pour ce contrôle, pas ici.
  * ─────────────────────────────────────────────────────────────────────
  */
-export function messageCourt(p: Prospect, accountId?: string): string {
-  const a = approcheEcrite(p, accountId);
+export function messageCourt(p: Prospect, accountId?: string, inscrit?: ExpediteurInscrit | null): string {
+  const a = approcheEcrite(p, accountId, inscrit);
   const prenom = p.name.split(" ")[0]?.trim();
   const salut = prenom ? `Bonjour ${prenom},` : "Bonjour,";
   // Zéro pitch, zéro chiffre, zéro prix : une phrase de critère et UNE
