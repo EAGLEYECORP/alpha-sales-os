@@ -264,7 +264,14 @@ réelle qui flotte, texte qui passe du gris à l'encre).
   L'affiche ne sert qu'aux versions web.
   ⚠⚠ **Et le master TV ne se publie JAMAIS tel quel sur le web** : publié sur LinkedIn le
   22/10, sa vignette est sortie VIDE (aplat crème, l'image 0). Deux fichiers, deux usages :
-  `public/media/tv/` pour la régie, `public/media/linkedin/` (image 0 = affiche) pour le web.
+  `public/media/tv/` pour la régie, `public/media/linkedin/` (affiche en tête) pour le web.
+  ⚠⚠ **LINKEDIN NE PREND PAS L'IMAGE 0 : il prend l'IMAGE 3 (0,12 s à 25 i/s)** — mesuré le
+  22/10 avec une vidéo-sonde numérotée image par image, téléversée sans être publiée. La
+  première version web (affiche sur l'image 0 seule) est ressortie aussi vide que le master.
+  L'affiche couvre donc les premières images JUSQU'À ce que l'animation la rejoigne
+  (images 0–23 sur le spot : PSNR > 64 dB dès l'image 24, raccord invisible). « Image 0 =
+  affiche » (§ 2 et § 5) ne suffit pas : vérifier la vignette RENVOYÉE par LinkedIn
+  (`LINKEDIN_GET_VIDEOS` → `thumbnail`) AVANT de publier, jamais après.
 
 ## 6. Avant de dire « c'est prêt »
 
