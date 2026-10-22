@@ -85,7 +85,7 @@ test("prompt — la règle « ce n'est pas un prospect » est toujours présente
   // Sans elle, le modèle sert l'argumentaire appels manqués à un
   // expert-comptable et le perd en une phrase.
   for (const id of [undefined, "expert-comptable", "inconnu"]) {
-    const prompt = prescripteurPrompt(id);
+    const prompt = prescripteurPrompt(id, true);
     assert.match(prompt, /n'est PAS un prospect/);
     assert.match(prompt, /Ne JAMAIS lui servir l'argumentaire prospect/);
     assert.match(prompt, /fourchette/);
@@ -93,7 +93,7 @@ test("prompt — la règle « ce n'est pas un prospect » est toujours présente
 });
 
 test("prompt — un archétype connu injecte son économie complète", () => {
-  const prompt = prescripteurPrompt("assureur-pro");
+  const prompt = prescripteurPrompt("assureur-pro", true);
   const a = archetypeById("assureur-pro")!;
   assert.match(prompt, /Assureur \/ courtier pro/);
   assert.ok(prompt.includes(a.fear));
@@ -102,7 +102,7 @@ test("prompt — un archétype connu injecte son économie complète", () => {
 });
 
 test("prompt — un archétype inconnu ne fabrique pas de faux contexte", () => {
-  const prompt = prescripteurPrompt("archetype-qui-nexiste-pas");
+  const prompt = prescripteurPrompt("archetype-qui-nexiste-pas", true);
   assert.doesNotMatch(prompt, /## Archétype/);
   assert.match(prompt, /Doctrine prescripteurs/);
 });

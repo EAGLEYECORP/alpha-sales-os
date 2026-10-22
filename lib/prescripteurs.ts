@@ -191,7 +191,7 @@ export const PARTNER_ARCHETYPES: PartnerArchetype[] = [
       "Renvoyer l'ascenseur : elle cherche aussi des clients.",
       "Répondre à la question qu'on lui pose sans arrêt : « et les gens qui appellent ? »",
     ],
-    fear: "Qu'on lui prenne son client, ou qu'on le solliciter sur ce qu'elle vend déjà.",
+    fear: "Qu'on lui prenne son client, ou qu'on la sollicite sur ce qu'elle vend déjà.",
     deal: {
       structure:
         "Échange croisé, formalisé : elle t'envoie le téléphone, tu lui envoies les sites. Pas d'argent au départ, un décompte tenu des deux côtés.",
@@ -348,9 +348,17 @@ export function partnerPotential(
  * Doctrine injectée dans les prompts IA quand la conversation porte sur
  * un prescripteur. Sans elle, le modèle sert l'argumentaire prospect à un
  * expert-comptable — et le perd en une phrase.
+ *
+ * ⚠⚠ `maitre` est OBLIGATOIRE (22/10/2026). Les archétypes sont écrits pour
+ * NOTRE offre : chaque ouverture, demande et réponse parle d'accueil
+ * téléphonique, d'appels pris, de restaurants lyonnais, et la structure de
+ * deal chiffre notre setup. Un inscrit qui vend autre chose reçoit ce qui
+ * décrit le PRESCRIPTEUR (qui il est en général, sa peur) et la règle — jamais
+ * nos phrases. `PRESCRIPTEUR_UNIVERSEL` en est l'inventaire.
  */
-export function prescripteurPrompt(archetypeId?: string | null): string {
+export function prescripteurPrompt(archetypeId: string | null | undefined, maitre: boolean): string {
   const a = archetypeById(archetypeId);
+  if (!maitre) return prescripteurPromptInscrit(a);
   const base = [
     `## Doctrine prescripteurs (NON négociable)`,
     ``,
@@ -376,5 +384,33 @@ export function prescripteurPrompt(archetypeId?: string | null): string {
     `- Diagnostic : ${a.diagnostic.join(" | ")}`,
     `- La demande : « ${a.ask} »`,
     `- Objections et réponses : ${a.objections.map((o) => `« ${o.q} » → ${o.a}`).join(" ;; ")}`,
+  ].join("\n");
+}
+
+/** Ce qui, d'un archétype, décrit le prescripteur et vaut pour n'importe quelle offre. */
+export const PRESCRIPTEUR_UNIVERSEL = ["label", "fear"] as const satisfies readonly (keyof PartnerArchetype)[];
+
+/** La règle prescripteur, sans notre offre — `PRESCRIPTEUR_UNIVERSEL` seulement. */
+export const DOCTRINE_PRESCRIPTEUR_INSCRIT = [
+  `## Doctrine prescripteurs (NON négociable)`,
+  ``,
+  `- Un prescripteur n'est PAS un prospect. Il n'a pas le problème que résout l'offre : il connaît des gens qui l'ont.`,
+  `- Ne JAMAIS lui servir l'argumentaire prospect (ce que SON client perd). Ce n'est pas sa perte.`,
+  `- Partir de SON économie à lui : ce qu'il gagne, ce qu'il risque, ce que ça lui coûte en temps.`,
+  `- L'argent n'est pas l'argument premier pour tous. Le proposer au mauvais moment fait perdre les prescripteurs dont l'indépendance est le capital.`,
+  `- La demande doit être PETITE et concrète : trois noms, un client, une rencontre. Jamais « un partenariat ».`,
+  `- Le risque relationnel est la vraie objection, même quand elle est formulée autrement.`,
+  `- Toute projection chiffrée s'annonce en fourchette, avec ses hypothèses visibles.`,
+  `- Tu ne connais de l'offre de ce vendeur que ce qu'il en a écrit : n'invente ni prix, ni client, ni résultat, ni commission.`,
+].join("\n");
+
+function prescripteurPromptInscrit(a: PartnerArchetype | null): string {
+  if (!a) return DOCTRINE_PRESCRIPTEUR_INSCRIT;
+  return [
+    DOCTRINE_PRESCRIPTEUR_INSCRIT,
+    ``,
+    `## Archétype : ${a.label}`,
+    `- Sa peur : ${a.fear}`,
+    `- L'ouverture, la demande et les réponses s'écrivent à partir de l'offre du vendeur et de l'économie de ce prescripteur — il n'en existe pas de toutes faites.`,
   ].join("\n");
 }

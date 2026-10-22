@@ -196,6 +196,7 @@ function buildPromptBrut(req: AiRequest, maitre: boolean): string {
 
 function fallbackServi(req: AiRequest, maitre: boolean): string {
   if (!maitre && req.task === "script") return REPLI_SCRIPT_INSCRIT;
+  if (!maitre && req.task === "prescripteur") return prescripteurPrompt(req.archetypeId, false);
   return pourInscrit(fallback(req), maitre);
 }
 
@@ -203,8 +204,9 @@ function fallback(req: AiRequest): string {
   switch (req.task) {
     case "prescripteur": {
       // Sans IA, on rend la doctrine elle-même : elle est écrite, précise,
-      // et elle vaut mieux qu'une paraphrase générique.
-      return prescripteurPrompt(req.archetypeId);
+      // et elle vaut mieux qu'une paraphrase générique. Le repli est celui du
+      // MAÎTRE : `fallbackServi` sert celle d'un inscrit avant d'arriver ici.
+      return prescripteurPrompt(req.archetypeId, true);
     }
     case "briefing":
       // Le client affiche déjà son brief déterministe (lib/closer) ; ce repli
@@ -277,7 +279,7 @@ export async function POST(request: NextRequest) {
   const brainBlock = body.brainContext ? `\n\n## Cerveau — notes de l'opérateur (appuie-toi dessus)\n${body.brainContext}` : "";
   const system =
     (body.task === "prescripteur"
-      ? `${idBlock}${pourInscrit(SYSTEM, maitre)}\n\n${prescripteurPrompt(body.archetypeId)}`
+      ? `${idBlock}${pourInscrit(SYSTEM, maitre)}\n\n${prescripteurPrompt(body.archetypeId, maitre)}`
       : // Nos verticales sont NOTRE pitch : un inscrit a la méthode par sa doctrine.
         `${idBlock}${pourInscrit(SYSTEM, maitre)}${maitre ? `\n\n${playbookPrompt(body.prospect?.sector, body.verticalId)}` : ""}`) + brainBlock;
 

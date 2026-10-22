@@ -14,6 +14,7 @@ import { prospect } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sansCommentaires } from "./citations-alpha";
+import { commeInscrit, promptsEnvoyes } from "./capture-prompt";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -81,24 +82,6 @@ test("« démo mobile » est notre démonstration : un prompt d'inscrit dit « d
   assert.equal(pourInscrit("la démo mobile avant le prix", false), "la démonstration avant le prix");
   assert.equal(pourInscrit("la démo mobile avant le prix", true), "la démo mobile avant le prix");
 });
-
-/** L'environnement d'une installation client sans comptes : `maitre: false`, prouvé par le serveur. */
-async function commeInscrit<T>(env: Record<string, string | undefined>, f: () => Promise<T>): Promise<T> {
-  const avant: Record<string, string | undefined> = {};
-  for (const [k, v] of Object.entries(env)) {
-    avant[k] = process.env[k];
-    if (v === undefined) delete process.env[k];
-    else process.env[k] = v;
-  }
-  try {
-    return await f();
-  } finally {
-    for (const [k, v] of Object.entries(avant)) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-  }
-}
 
 const NON_MAITRE = { ALPHA_INSTALLATION: "client", SITE_PASSWORD: "serrure-de-test" };
 
@@ -171,29 +154,6 @@ test("⚠ /api/ai sans moteur : un inscrit reçoit le renvoi vers SON script, le
   );
   assert.match(maitre.text, /# Script terrain/, "le maître garde son repli (sinon le test ne prouve rien)");
 });
-
-/** Intercepte l'appel au modèle (branche NVIDIA, `fetch` global) et rend ce qui serait parti. */
-async function promptsEnvoyes(f: () => Promise<unknown>): Promise<string[]> {
-  const envoye: string[] = [];
-  const fetchReel = globalThis.fetch;
-  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    if (String(url).includes("/chat/completions")) {
-      const corps = JSON.parse(String(init?.body ?? "{}")) as { messages: { content: string }[] };
-      envoye.push(corps.messages.map((m) => m.content).join("\n\n"));
-      return new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    }
-    return fetchReel(url, init);
-  }) as typeof fetch;
-  try {
-    await f();
-  } finally {
-    globalThis.fetch = fetchReel;
-  }
-  return envoye;
-}
 
 test("⚠⚠ /api/agent : AGENT ALPHA d'un inscrit ne parle pas en notre nom ni avec nos phrases d'appel", async () => {
   const { POST } = await import("../app/api/agent/route");

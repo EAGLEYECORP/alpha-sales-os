@@ -21,6 +21,7 @@ import {
 import type { Partner, PartnerStatus } from "@/lib/types";
 import { cn, eur, uid } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { useMaitreProuve } from "@/lib/use-droits";
 
 /**
  * Prescripteurs — le seul canal qui compose.
@@ -56,6 +57,11 @@ export default function PrescripteursPage() {
 
   const setup = settings.role === "team" ? 2000 : 1500;
   const monthly = 200;
+  // ⚠ Les archétypes sont écrits pour NOTRE offre (ouvertures sur l'accueil
+  // téléphonique, potentiel chiffré sur notre setup). Un inscrit n'en reçoit
+  // que ce qui décrit le prescripteur (`PRESCRIPTEUR_UNIVERSEL`) — sur le
+  // verdict PROUVÉ du serveur : ces phrases se copient à la main.
+  const maitre = useMaitreProuve();
 
   const copy = (id: string, text: string) => {
     void navigator.clipboard.writeText(text);
@@ -71,7 +77,7 @@ export default function PrescripteursPage() {
       organisation: "Nouveau prescripteur",
       archetype: a.id,
       status: "identifie",
-      city: "Lyon",
+      city: maitre ? "Lyon" : (settings.profil?.cibleZone ?? ""),
       intros: [],
       nextStep: null,
       notes: "",
@@ -130,9 +136,19 @@ export default function PrescripteursPage() {
           une fois et il te ramène des affaires pendant des années.
         </p>
         <p className="mt-1.5 text-[12px] text-paper-dim">
-          <b className="text-paper">La faute qui tue ce canal :</b> approcher un prescripteur comme un prospect. Un
-          expert-comptable n&apos;a pas de problème d&apos;appels manqués — il a un problème de valeur perçue et de
-          risque relationnel. Lui parler de chiffre d&apos;affaires perdu ne produit rien : ce n&apos;est pas le sien.
+          <b className="text-paper">La faute qui tue ce canal :</b> approcher un prescripteur comme un prospect.{" "}
+          {maitre ? (
+            <>
+              Un expert-comptable n&apos;a pas de problème d&apos;appels manqués — il a un problème de valeur perçue et
+              de risque relationnel. Lui parler de chiffre d&apos;affaires perdu ne produit rien : ce n&apos;est pas le
+              sien.
+            </>
+          ) : (
+            <>
+              Il n&apos;a pas le problème que résout ton offre — il a un problème de valeur perçue et de risque
+              relationnel. Lui parler de ce que son client perd ne produit rien : ce n&apos;est pas sa perte.
+            </>
+          )}
         </p>
       </section>
 
@@ -184,17 +200,44 @@ export default function PrescripteursPage() {
               >
                 <span className="min-w-0">
                   <span className="block font-display text-sm font-bold text-paper">{a.label}</span>
-                  <span className="block truncate text-[11px] text-paper-faint">{a.who}</span>
+                  {maitre && <span className="block truncate text-[11px] text-paper-faint">{a.who}</span>}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <span className="chip border-ink-700 text-[10px] text-paper-faint">
-                    {pot.clientsLow}–{pot.clientsHigh} clients/an
-                  </span>
+                  {maitre && (
+                    <span className="chip border-ink-700 text-[10px] text-paper-faint">
+                      {pot.clientsLow}–{pot.clientsHigh} clients/an
+                    </span>
+                  )}
                   <ChevronDown size={16} className={cn("text-paper-faint transition-transform", isOpen && "rotate-180")} />
                 </span>
               </button>
 
-              {isOpen && (
+              {isOpen && !maitre && (
+                <div className="space-y-4 border-t border-ink-700 px-4 py-4">
+                  <Block title="Sa peur — non traitée, elle bloque tout">
+                    <p className="text-[13px] text-signal-amber">{a.fear}</p>
+                  </Block>
+
+                  <Block title="Ce que tu écris toi-même">
+                    <ul className="space-y-1 text-[13px] text-paper">
+                      <li>— Pars de SON économie : ce qu&apos;il gagne à te présenter, ce qu&apos;il risque, le temps que ça lui coûte.</li>
+                      <li>— Une demande petite et concrète : trois noms, un client, une rencontre. Jamais « un partenariat ».</li>
+                      <li>— Pas de commission au premier rendez-vous si son indépendance est son capital.</li>
+                    </ul>
+                    <p className="mt-1.5 text-[12px] text-paper-dim">
+                      Il n&apos;existe pas d&apos;ouverture toute faite : elle dépend de ce que tu vends et à qui. Les
+                      phrases d&apos;exemple de cet écran sont écrites pour une autre offre, elles ne te sont pas
+                      servies.
+                    </p>
+                  </Block>
+
+                  <button className="btn-bronze px-3 py-2 text-[13px]" onClick={() => addPartner(a)}>
+                    <Plus size={14} /> Ajouter un {a.label.toLowerCase()} à suivre
+                  </button>
+                </div>
+              )}
+
+              {isOpen && maitre && (
                 <div className="space-y-4 border-t border-ink-700 px-4 py-4">
                   <Block title="Ce qui le motive — dans SON ordre">
                     <ol className="space-y-1">

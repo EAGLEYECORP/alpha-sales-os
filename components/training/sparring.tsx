@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Dumbbell, Flame, Send, Sparkles, Trophy, X } from "lucide-react";
 import type { Prospect } from "@/lib/types";
 import { useAlpha } from "@/lib/store";
+import { useMaitreProuve } from "@/lib/use-droits";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -15,10 +16,12 @@ interface Msg {
 
 /**
  * Sparring — le prospect est joué par l'IA. Tu t'entraînes à décrocher
- * l'audit AVANT le vrai rendez-vous. Un coach commente chaque réponse.
+ * le rendez-vous AVANT le vrai appel. Un coach commente chaque réponse.
  */
 export function Sparring({ p, onClose }: { p: Prospect; onClose: () => void }) {
   const { settings, logActivity } = useAlpha();
+  // L'audit est NOTRE premier rendez-vous ; un inscrit vise un rendez-vous daté.
+  const maitre = useMaitreProuve();
   const opener = p.objections.find((o) => o.status !== "traitee")?.label ?? "Bof, j'ai pas vraiment le temps là.";
   const [msgs, setMsgs] = useState<Msg[]>([
     { role: "prospect", text: `*${p.name || "Le gérant"}, regard méfiant* « ${opener} »` },
@@ -90,7 +93,7 @@ export function Sparring({ p, onClose }: { p: Prospect; onClose: () => void }) {
           <div>
             <p className="font-display text-base font-extrabold text-paper">Sparring — {p.company}</p>
             <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-paper-faint">
-              Le prospect est joué par l&apos;IA{engine === "local" ? " (moteur local)" : ""} · Objectif : décrocher l&apos;audit
+              Le prospect est joué par l&apos;IA{engine === "local" ? " (moteur local)" : ""} · Objectif : {maitre ? <>décrocher l&apos;audit</> : <>décrocher un rendez-vous daté</>}
             </p>
           </div>
         </div>

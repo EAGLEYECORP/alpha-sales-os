@@ -214,10 +214,20 @@ produit à un inscrit qui vend autre chose :
 > playbook — prouvé en interceptant le prompt réellement envoyé. Les
 > **réglages persistés** d'un ancien navigateur sont purgés sur verdict serveur
 > (`purgerIdentiteUsine`, monté dans la coquille).
-> ⚠ **Reste, mesuré mais pas réparé** : l'écran fiche (deep-dive, escalier,
-> « offre à pousser ») range encore les fiches d'un inscrit dans nos familles ;
-> les gabarits de la bibliothèque (`/templates`) ; le sparring (le prospect
-> simulé objecte à NOTRE pitch) ; `prescripteurPrompt`.
+> ✅ **Fermés le 22/10/2026 aussi** : la **fiche** (segment, deep-dive,
+> escalier, devis, deck → une carte « ton offre » et le diagnostic seul) ;
+> la **bibliothèque** (`lib/modeles-inscrit.ts`) ; le **sparring**
+> (`lib/sparring.ts` — le prospect simulé était « un patron de commerce
+> local » à qui l'on proposait NOTRE audit gratuit) ; les **prescripteurs**
+> (`prescripteurPrompt(id, maitre)` et l'écran : un inscrit reçoit la peur de
+> l'archétype et la règle, jamais nos ouvertures sur l'accueil téléphonique ni
+> un potentiel chiffré sur notre setup — `PRESCRIPTEUR_UNIVERSEL`).
+> Chacun prouvé par mutation, les routes en interceptant le prompt envoyé.
+> ⚠ **Ce qui reste à nous, servi à un inscrit, et c'est voulu** : le groupe
+> « Démo mobile » de la bibliothèque du MAÎTRE (il ne la voit pas), et les
+> noms des modules (« Alpha Voice » est un écran du produit qu'il utilise).
+> Pas balayé : les guides de page (`lib/page-guides.ts`) et `lib/os-map.ts`,
+> qui décrivent notre méthode d'écran — à relire avec la même question.
 > ✅ **La doctrine du MAÎTRE** (`DEFAULT_BUSINESS_RULES`) **dérive désormais ses
 > prix** (22/10/2026) : elle récitait le forfait mort, l'offre « 1 000 appels »
 > retirée et une fourchette à la carte périmée (AGENT ALPHA à 490), et visait
