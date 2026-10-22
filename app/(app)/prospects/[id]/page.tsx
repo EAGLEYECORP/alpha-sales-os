@@ -32,6 +32,8 @@ import { LIBELLE_SECTEUR } from "@/lib/secteurs";
 import { emailBody, emailSubject } from "@/lib/mail-compose";
 import { inviteText } from "@/lib/linkedin-sequence";
 import { useExpediteurInscrit } from "@/lib/use-expediteur";
+import { scriptOperateur } from "@/lib/script-operateur";
+import type { ProfilOperateur } from "@/lib/profil-operateur";
 import { messageCourt } from "@/lib/approche-ecrite";
 import { buildIdentity } from "@/lib/identity";
 import { matchOffer, OFFER_LABELS, type EagleyeOffer } from "@/lib/offer-match";
@@ -404,6 +406,36 @@ export default function ProspectDetailPage() {
  * de 60 positions. Le module renvoie `null` quand il ne sait pas : on affiche
  * alors ce qu'il faut écrire pour qu'il sache, plutôt qu'un segment inventé.
  */
+/**
+ * Ce que voit un INSCRIT à la place de notre segment : SON offre, SA cible, et
+ * la douleur — qui se DEMANDE au diagnostic, jamais ne s'affirme. Notre carte
+ * de segment lui servait « un commerce où chaque appel manqué est un client
+ * perdu » et « Brique d'entrée : Alpha Voice » (vu au rendu le 22/10/2026).
+ */
+function OffreInscritCard({ profil }: { profil: ProfilOperateur | null | undefined }) {
+  const { vertical, manques } = scriptOperateur(profil);
+  return (
+    <section className="card p-4 lg:col-span-2">
+      <h2 className="font-display text-sm font-semibold text-paper">{vertical.label}</h2>
+      <p className="mt-2 text-[12px] text-paper">{vertical.criterion}</p>
+      <p className="mt-2 rounded-lg border border-ink-700 bg-ink-900 p-3 text-[12px] italic text-paper">{vertical.structuralPain}</p>
+      <ul className="mt-3 space-y-0.5 text-[12px] text-paper-dim">
+        {vertical.diagnostic.map((q) => (
+          <li key={q}>· « {q} »</li>
+        ))}
+      </ul>
+      {manques.length > 0 && (
+        <p className="mt-3 text-[12px] text-paper-faint">
+          Il manque {manques.join(", ")}.{" "}
+          <Link href="/bienvenue" className="text-bronze-400 hover:underline">
+            Le renseigner →
+          </Link>
+        </p>
+      )}
+    </section>
+  );
+}
+
 function SegmentCard({ p }: { p: Prospect }) {
   const seg = guessSegmentForProspect({ sector: p.sector, company: p.company, notes: p.notes, problems: p.problems });
 
@@ -471,6 +503,8 @@ function DoctrineTab({
   patch: (id: string, patch: Partial<Prospect>) => void;
 }) {
   const apprendre = useAlpha((s) => s.apprendre);
+  // Hors compte maître PROUVÉ : SON offre, et seulement ce qui vaut pour tout vendeur.
+  const inscrit = useExpediteurInscrit();
   const [newObstacle, setNewObstacle] = useState("");
   const [newObjection, setNewObjection] = useState("");
 
@@ -503,7 +537,7 @@ function DoctrineTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <SegmentCard p={p} />
+      {inscrit ? <OffreInscritCard profil={inscrit.profil} /> : <SegmentCard p={p} />}
 
       {/* 3 Croyances */}
       <section className="card p-4 lg:col-span-2">
@@ -545,7 +579,7 @@ function DoctrineTab({
               checked={p.demoShownBeforePrice}
               onChange={(e) => patch(p.id, { demoShownBeforePrice: e.target.checked })}
             />
-            Démo mobile montrée AVANT le prix
+            Démonstration faite AVANT le prix
           </label>
           <label className="flex items-center gap-2 text-paper-dim">
             Ma conviction :
@@ -623,7 +657,7 @@ function DoctrineTab({
           </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {OBSTACLE_LIBRARY.filter((o) => !p.obstacles.some((x) => x.label === o.label)).slice(0, 4).map((o) => (
+          {OBSTACLE_LIBRARY.filter((o) => (!inscrit || o.universel) && !p.obstacles.some((x) => x.label === o.label)).slice(0, 4).map((o) => (
             <button
               key={o.label}
               onClick={() => addObstacle(o.label, o.blameLayer)}
@@ -705,7 +739,7 @@ function DoctrineTab({
           </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {OBJECTION_LIBRARY.filter((o) => !p.objections.some((x) => x.label === o.label)).slice(0, 3).map((o) => (
+          {OBJECTION_LIBRARY.filter((o) => (!inscrit || o.universel) && !p.objections.some((x) => x.label === o.label)).slice(0, 3).map((o) => (
             <button
               key={o.label}
               onClick={() => addObjection(o.label)}
@@ -811,6 +845,14 @@ function AuditTab({
 }) {
   const [newProblem, setNewProblem] = useState("");
   const audit = p.deepAudit;
+  /**
+   * ⚠ Hors compte maître PROUVÉ, cet onglet ne chiffre plus rien sur NOTRE
+   * modèle : appels ratés, note Google, état du site, concurrence à 500 m,
+   * taxe d'ignorance de l'accueil téléphonique, recommandation d'offre EAGLEYE,
+   * barème et financement de notre offre. Vu au rendu le 22/10/2026 sur la
+   * fiche d'un inscrit qui vend un logiciel de paie.
+   */
+  const inscrit = useExpediteurInscrit();
 
   const patchAudit = (partial: Partial<Prospect["deepAudit"]>) =>
     patch(p.id, { deepAudit: { ...audit, ...partial, updatedAt: new Date().toISOString() } });
@@ -841,14 +883,28 @@ function AuditTab({
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      {inscrit && (
+        <section className="card p-4 lg:col-span-2">
+          <h2 className="font-display text-sm font-semibold text-paper">Diagnostic — poser, puis se taire</h2>
+          <ul className="mt-2 space-y-1 text-[13px] text-paper-dim">
+            {scriptOperateur(inscrit.profil).vertical.diagnostic.map((q) => (
+              <li key={q}>« {q} »</li>
+            ))}
+          </ul>
+          <label className="label mt-3">Ce qu&apos;il t&apos;a dit (comment il gère le sujet aujourd&apos;hui)</label>
+          <input className="input" value={audit.currentProcess} onChange={(e) => patchAudit({ currentProcess: e.target.value })} />
+        </section>
+      )}
+
       {/* Import de recherche externe + audit cadeau (lead magnet) */}
-      <DeepdiveTools p={p} patch={patch} />
+      {!inscrit && <DeepdiveTools p={p} patch={patch} />}
 
       {/* Projette-toi — projection de récupération sur ses propres chiffres (RDV) */}
-      <RecoveryProjection p={p} />
+      {!inscrit && <RecoveryProjection p={p} />}
 
 
       {/* Structured deep audit — real, measured data */}
+      {!inscrit && (
       <section className="card p-4 lg:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-display text-sm font-semibold text-paper">
@@ -913,6 +969,7 @@ function AuditTab({
           )}
         </div>
       </section>
+      )}
 
       {/* MASTER RAPPEL — quoi faire maintenant, qui le fait, est-ce que ça tourne */}
       <MasterPanel p={p} />
@@ -926,11 +983,11 @@ function AuditTab({
       {/* Déblocage des fonds — ce qui transforme un « oui » en virement */}
       {/* Structurer CETTE affaire : le barème dit ce qu'on vise, ici on
           négocie, et on voit en euros ce que coûte chaque point lâché. */}
-      <DealCalculator p={p} />
-      <FundingEditor p={p} />
+      {!inscrit && <DealCalculator p={p} />}
+      {!inscrit && <FundingEditor p={p} />}
 
       {/* Routage d'offre — quelle offre EAGLEYE pour ce prospect (lib/offer-match) */}
-      <OfferRecommendation p={p} />
+      {!inscrit && <OfferRecommendation p={p} />}
 
       <section className="card p-4">
         <h2 className="font-display text-sm font-semibold text-paper">
@@ -1189,6 +1246,8 @@ function CommercialTab({
 }) {
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState(0);
+  // Pré-devis, devis et deck chiffrent NOTRE catalogue : pas ceux d'un inscrit.
+  const inscrit = useExpediteurInscrit();
 
   const totalPaid = p.payments.filter((x) => x.status === "paye").reduce((s, x) => s + x.amount, 0);
   const totalDue = p.payments.filter((x) => x.status !== "paye").reduce((s, x) => s + x.amount, 0);
@@ -1214,7 +1273,13 @@ function CommercialTab({
           réécrit pas en douce. */}
       <AlertePrixPerime p={p} />
 
-      <PreDevisPanel p={p} />
+      {!inscrit && <PreDevisPanel p={p} />}
+      {inscrit && (
+        <p className="card px-4 py-3 text-[12px] leading-relaxed text-paper-dim">
+          Tes tarifs se saisissent sur la fiche (installation et mensuel, bouton « Modifier »). Les modules de devis et
+          de présentation d&apos;Alpha chiffrent l&apos;offre de l&apos;éditeur, pas la tienne : ils ne s&apos;affichent pas ici.
+        </p>
+      )}
 
       {/* ⚠ LE CADRAGE VIT À CÔTÉ DU DEVIS, PAS DANS L'ONGLET « RELATION ».
           C'est un fait sur la relation, mais sa seule CONSÉQUENCE est ici :
@@ -1224,8 +1289,8 @@ function CommercialTab({
       <CadragePanel p={p} patch={patch} />
 
       <OnboardingPanel p={p} />
-      <QuoteBuilder p={p} />
-      <DeckButton p={p} />
+      {!inscrit && <QuoteBuilder p={p} />}
+      {!inscrit && <DeckButton p={p} />}
 
       {/* Payments */}
       <section className="card p-4">

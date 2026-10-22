@@ -221,3 +221,12 @@ test("les deux écrans qui soufflent pendant un appel passent par scriptAServir"
   const assist = lire("components/voice/live-assist.tsx");
   assert.match(assist, /matchObjections\(heard,\s*vertical,\s*catalogue\)/);
 });
+
+test("« parler de » se contracte comme on le dit — la première phrase de l'appel", () => {
+  const barrage = (metier: string) =>
+    scriptOperateur({ ...PROFIL_VIDE, metier, cibleSecteur: "x", cibleRole: "y" }).vertical.opener[0].line;
+  assert.match(barrage("un logiciel de paie"), /parler d'un logiciel de paie/);
+  assert.match(barrage("le recrutement"), /parler du recrutement/);
+  assert.match(barrage("les assurances"), /parler des assurances/);
+  assert.match(barrage("formation"), /parler de formation/);
+});

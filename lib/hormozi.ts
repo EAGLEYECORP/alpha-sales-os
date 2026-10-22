@@ -28,7 +28,9 @@ export const STAGES: {
   { id: "prospect", label: "Prospect", probability: 5, hint: "Repéré, pas encore contacté" },
   { id: "contact", label: "Contact", probability: 15, hint: "Premier échange fait — next step daté obligatoire" },
   { id: "audit", label: "Audit", probability: 30, hint: "Diagnostic terrain : Taxe d'Ignorance chiffrée" },
-  { id: "demo", label: "Démo mobile", probability: 50, hint: "Émotion d'abord — la démo AVANT le prix" },
+  // « Démo mobile » était NOTRE démonstration (Alpha montré sur un téléphone).
+  // L'étape est la même pour tout vendeur : montrer avant de chiffrer (22/10/2026).
+  { id: "demo", label: "Démonstration", probability: 50, hint: "Émotion d'abord — montrer AVANT le prix" },
   { id: "offre", label: "Offre", probability: 65, hint: "Prix annoncé — la décision EST le produit" },
   { id: "redzone", label: "Red Zone", probability: 78, hint: "Objections post-offre — 3 Croyances à 10" },
   { id: "signe", label: "Signé", probability: 100, hint: "Conviction 10/10 validée" },
@@ -55,12 +57,17 @@ export const BLAME_LAYERS: Record<BlameLayer, { label: string; description: stri
   },
 };
 
-export const OBSTACLE_LIBRARY: { label: string; blameLayer: BlameLayer }[] = [
-  { label: "« Pas le moment, c'est la haute saison »", blameLayer: "circonstances" },
-  { label: "« La conjoncture est mauvaise »", blameLayer: "circonstances" },
-  { label: "« Je dois en parler à mon associé »", blameLayer: "autres" },
+/**
+ * ⚠ `universel` : ce que n'importe quel prospect dit à n'importe quel vendeur.
+ * Les autres entrées viennent de NOTRE marché (le site, la visibilité locale) :
+ * la fiche d'un inscrit ne les propose pas (22/10/2026). Inventaire testé.
+ */
+export const OBSTACLE_LIBRARY: { label: string; blameLayer: BlameLayer; universel?: true }[] = [
+  { label: "« Pas le moment, c'est la haute saison »", blameLayer: "circonstances", universel: true },
+  { label: "« La conjoncture est mauvaise »", blameLayer: "circonstances", universel: true },
+  { label: "« Je dois en parler à mon associé »", blameLayer: "autres", universel: true },
   { label: "« Mon neveu s'occupe déjà du site »", blameLayer: "autres" },
-  { label: "« Je suis nul avec la technologie »", blameLayer: "soi" },
+  { label: "« Je suis nul avec la technologie »", blameLayer: "soi", universel: true },
   { label: "« J'ai déjà payé pour un site qui n'a rien donné »", blameLayer: "soi" },
   { label: "« Les clients viennent par bouche-à-oreille »", blameLayer: "circonstances" },
 ];
@@ -70,6 +77,8 @@ export const OBJECTION_LIBRARY: {
   type: ObjectionType;
   croyance: 1 | 2 | 3;
   counter: string;
+  /** La RÉPONSE tient pour n'importe quelle offre (voir `OBSTACLE_LIBRARY`). */
+  universel?: true;
 }[] = [
   {
     label: "« C'est trop cher »",
@@ -80,6 +89,7 @@ export const OBJECTION_LIBRARY: {
   },
   {
     label: "« Je vais réfléchir »",
+    universel: true,
     type: "temps",
     croyance: 3,
     counter:
@@ -94,6 +104,7 @@ export const OBJECTION_LIBRARY: {
   },
   {
     label: "« Je dois valider avec le siège / la banque »",
+    universel: true,
     type: "autorite",
     croyance: 2,
     counter:
@@ -109,7 +120,7 @@ export const OBJECTION_LIBRARY: {
 ];
 
 export const CROYANCES_META: { key: keyof Croyances; num: 1 | 2 | 3; label: string; description: string }[] = [
-  { key: "produit", num: 1, label: "Le produit fonctionne", description: "Ce qu'on installe produit des résultats mesurables, point." },
+  { key: "produit", num: 1, label: "Le produit fonctionne", description: "Ce que tu vends produit des résultats mesurables, point." },
   { key: "soutien", num: 2, label: "Tu le soutiens", description: "Il croit que TOI tu seras là. Support, proximité, réactivité." },
   { key: "pourLui", num: 3, label: "Ça marche POUR LUI", description: "Pas en général — pour SON équipe, SON plateau, SON métier." },
 ];
@@ -122,8 +133,14 @@ export const weightedValue = (p: Prospect) =>
   p.stage === "perdu" ? 0 : (annualValue(p) * p.probability) / 100;
 
 export const ignoranceTaxTotal = (p: Prospect) => {
+  /**
+   * ⚠ Une fiche sans `createdAt` (générée, importée d'un vieux CSV) donnait
+   * `Math.max(1, NaN)` = NaN, et l'en-tête de la fiche affichait « −NaN € »
+   * (vu au rendu le 22/10/2026). Sans date connue, on compte un mois : le
+   * plancher qui existait déjà.
+   */
   const created = new Date(p.createdAt).getTime();
-  const months = Math.max(1, Math.round((Date.now() - created) / (30 * 864e5)));
+  const months = Number.isNaN(created) ? 1 : Math.max(1, Math.round((Date.now() - created) / (30 * 864e5)));
   return p.ignoranceTax * months;
 };
 

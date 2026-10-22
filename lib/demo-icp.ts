@@ -291,6 +291,9 @@ function fabriquer(
         },
       ],
       notes: note,
+      // Sans date de création, les calculs qui en dépendent rendaient NaN.
+      createdAt: jourDecale(-(3 + i * 2)),
+      updatedAt: jourDecale(-(3 + i * 2)),
     } as Prospect;
   });
 }

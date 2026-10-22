@@ -59,6 +59,18 @@ const TROU = {
   secteur: "[le secteur que vous visez]",
 } as const;
 
+/**
+ * « parler de » + ce qu'il vend, contracté comme on le dit : « d'un logiciel »,
+ * « du recrutement », « des assurances ». Vu au rendu le 22/10/2026 : « parler
+ * de un logiciel de paie », la première phrase de l'appel.
+ */
+function de(x: string): string {
+  if (/^le\s/i.test(x)) return `du ${x.slice(3)}`;
+  if (/^les\s/i.test(x)) return `des ${x.slice(4)}`;
+  if (/^[aeiouyàâéèêëîïôöûü]/i.test(x)) return `d'${x}`;
+  return `de ${x}`;
+}
+
 export interface ScriptOperateur {
   vertical: VerticalPlaybook;
   /** Les champs du profil qui manquent pour que le script parle de lui. */
@@ -89,7 +101,7 @@ export function scriptOperateur(profil: ProfilOperateur | null | undefined): Scr
     criterion: `Les ${qui} (${ou}) pour qui ${quoi} est un sujet maintenant.`,
     structuralPain: `Ce que ${secteur || "ce secteur"} perd tant que le sujet n'est pas traité : demande-le au diagnostic, ne l'affirme pas.`,
     opener: [
-      { label: "Barrage", line: `Bonjour, je cherche la bonne personne pour parler de ${quoi} — c'est vous, ou quelqu'un d'autre ?` },
+      { label: "Barrage", line: `Bonjour, je cherche la bonne personne pour parler ${de(quoi)} — c'est vous, ou quelqu'un d'autre ?` },
       { label: "Permission", line: "Appel à froid, trente secondes : si ce n'est pas pour vous, vous me le dites et je raccroche." },
       { label: "Ciblage", line: `Je m'adresse aux ${qui} (${ou}). C'est bien votre cas ?` },
       {
