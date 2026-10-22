@@ -35,7 +35,13 @@ const STEP_TONE: Record<LinkedinStep, string> = {
 
 export default function LinkedinPage() {
   const { prospects, addEvent, logActivity, settings } = useAlpha();
-  const [city, setCity] = useState("Lyon 6");
+  /**
+   * ⚠ LE PÉRIMÈTRE PAR DÉFAUT ÉTAIT « Lyon 6 », EN DUR — notre ancien quartier
+   * de prospection. Vu au rendu le 22/10/2026 : chez un inscrit, la file
+   * s'ouvrait vide (« Aucune fiche active dans Lyon 6 ») quel que soit son
+   * marché. Le défaut est maintenant la zone qu'IL vise, sinon tout.
+   */
+  const [city, setCity] = useState(() => settings.profil?.cibleZone?.trim() ?? "");
   const [copied, setCopied] = useState<string | null>(null);
 
   const inscrit = useExpediteurInscrit();
@@ -274,7 +280,7 @@ export default function LinkedinPage() {
 
         {queue.length === 0 && (
           <p className="card px-4 py-8 text-center text-sm text-paper-faint">
-            Aucune fiche active dans « {city} ». Élargis le périmètre ou importe la liste Lyon 6.
+            Aucune fiche active{city ? ` dans « ${city} »` : ""}. Élargis le périmètre ou importe ta liste.
           </p>
         )}
       </section>

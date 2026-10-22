@@ -56,6 +56,8 @@ const REDACTEURS = [
   "lib/live-assist.ts",
   // Le script d'appel d'un inscrit (21/10/2026) : il se prononce aussi.
   "lib/script-operateur.ts",
+  // La bibliothèque d'un inscrit (22/10/2026) : elle s'envoie et se prononce.
+  "lib/modeles-inscrit.ts",
   "lib/hormozi.ts",
   "lib/templates.ts",
   "lib/mail-compose.ts",

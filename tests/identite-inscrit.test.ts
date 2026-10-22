@@ -229,5 +229,5 @@ test("la purge d'identité est montée dans la coquille et n'agit que sur un « 
   const composant = sansCommentaires(readFileSync(join(process.cwd(), "components/shell/identite-inscrit.tsx"), "utf8"));
   assert.match(composant, /chargerDroits\(\)/, "la réponse du serveur, jamais la valeur optimiste de useDroits");
   assert.doesNotMatch(composant, /useDroits\(/);
-  assert.match(composant, /d\.session && !d\.maitre\) purger\(\)/);
+  assert.match(composant, /!d\.maitre && \(d\.session \|\| d\.exploitant\)\) purger\(\)/);
 });

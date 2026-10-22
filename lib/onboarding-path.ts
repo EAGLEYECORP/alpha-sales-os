@@ -155,7 +155,10 @@ export const STEPS: StepDef[] = [
     id: "identite",
     phase: "brancher",
     title: "Mettre TON nom sur l'outil",
-    why: "Par défaut, l'app signe « EAGLEYE CORP » — l'éditeur, pas toi. Tant que tu n'as pas changé ça, chaque email, chaque devis et chaque en-tête partent sous une autre raison sociale que la tienne. C'est la première chose qu'un prospect lit.",
+    // ⚠ Ce texte disait « par défaut, l'app signe EAGLEYE CORP ». Faux depuis le
+    // 21/10/2026 : le réglage d'usine est VIDE, et `/api/send` refuse un email
+    // sans société (`habillageEnvoi`). Ce qui reste vrai, c'est la conséquence.
+    why: "Tant que ta société n'est pas renseignée, tes emails ne partent pas — un message commercial doit dire qui l'envoie — et tes messages LinkedIn ne signent que de ton prénom. C'est la première chose qu'un prospect lit.",
     how: [
       "Le plus court : donne l'adresse de ton site — Alpha y lit ton nom, ta ville et ton activité, et te montre chaque réglage avant de le poser.",
       "Sinon, Réglages → Agence → mets ta raison sociale exacte, celle de tes factures.",

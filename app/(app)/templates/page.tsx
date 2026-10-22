@@ -19,12 +19,27 @@ import {
 } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { useExpediteurInscrit } from "@/lib/use-expediteur";
+import { GROUPES_INSCRIT, modelesInscrit } from "@/lib/modeles-inscrit";
 
 export default function TemplatesPage() {
   const { prospects, settings } = useAlpha();
   // Le nom de l'agence vient des réglages : l'OS est white-label, un revendeur
   // ne doit jamais envoyer un email signé du compte maître.
-  const ALL_TEMPLATES = useMemo(() => buildTemplates({ agency: settings.agencyName }), [settings.agencyName]);
+  /**
+   * ⚠ Hors compte maître PROUVÉ, la bibliothèque est celle de SON offre
+   * (`lib/modeles-inscrit.ts`) : les 108 gabarits de `buildTemplates` vendent
+   * la nôtre. Pessimiste, comme tous les textes qui se copient à la main.
+   */
+  const inscrit = useExpediteurInscrit();
+  const ALL_TEMPLATES = useMemo(
+    () =>
+      inscrit
+        ? modelesInscrit(inscrit.profil, inscrit.agencyName).map((t) => ({ ...t, sector: null as AngleKey | null }))
+        : buildTemplates({ agency: settings.agencyName }).map((t) => ({ ...t, sector: t.sector as AngleKey | null })),
+    [inscrit, settings.agencyName]
+  );
+  const groupes = inscrit ? GROUPES_INSCRIT : STAGE_GROUPS;
   const [sector, setSector] = useState<AngleKey>("restaurant");
   const [group, setGroup] = useState<StageGroup>("premier-contact");
   const [format, setFormat] = useState<TemplateFormat | "tous">("tous");
@@ -33,14 +48,14 @@ export default function TemplatesPage() {
   const [htmlBusy, setHtmlBusy] = useState<string | null>(null);
 
   const prospect = prospects.find((p) => p.id === prospectId) ?? null;
-  const groupMeta = STAGE_GROUPS.find((g) => g.id === group)!;
+  const groupMeta = groupes.find((g) => g.id === group)!;
 
   const templates = useMemo(
     () =>
       ALL_TEMPLATES.filter(
-        (t) => t.sector === sector && t.group === group && (format === "tous" || t.format === format)
+        (t) => (inscrit || t.sector === sector) && t.group === group && (format === "tous" || t.format === format)
       ),
-    [ALL_TEMPLATES, sector, group, format]
+    [ALL_TEMPLATES, inscrit, sector, group, format]
   );
 
   const copy = (id: string, text: string) => {
@@ -84,18 +99,19 @@ export default function TemplatesPage() {
       {/* Filtres */}
       <div className="card space-y-4 p-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="label">1 · Industrie</label>
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(SECTOR_LABELS) as AngleKey[]).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSector(s)}
-                  className={cn(
-                    "chip transition-colors",
-                    s === sector
-                      ? "border-gold bg-gold font-semibold text-goldink"
-                      : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
+          {!inscrit && (
+            <div>
+              <label className="label">1 · Industrie</label>
+              <div className="flex flex-wrap gap-1.5">
+                {(Object.keys(SECTOR_LABELS) as AngleKey[]).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSector(s)}
+                    className={cn(
+                      "chip transition-colors",
+                      s === sector
+                        ? "border-gold bg-gold font-semibold text-goldink"
+                        : "border-ink-600 text-paper-faint hover:border-bronze-700 hover:text-paper"
                   )}
                 >
                   {SECTOR_LABELS[s]}
@@ -103,6 +119,7 @@ export default function TemplatesPage() {
               ))}
             </div>
           </div>
+          )}
           <div>
             <label className="label">3 · Format</label>
             <div className="flex flex-wrap gap-1.5">
@@ -126,7 +143,7 @@ export default function TemplatesPage() {
         <div>
           <label className="label">2 · Moment du pipeline</label>
           <div className="flex flex-wrap gap-1.5">
-            {STAGE_GROUPS.map((g) => (
+            {groupes.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setGroup(g.id)}
