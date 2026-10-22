@@ -212,9 +212,11 @@ produit à un inscrit qui vend autre chose :
 > ⚠ **Un navigateur d'inscrit déjà persisté** garde « EAGLEYE CORP » dans ses
 > réglages : l'envoi est refusé avec la consigne, ses prompts IA restent sous
 > notre nom tant qu'il ne corrige pas.
-> ⚠ **La doctrine du MAÎTRE** (`DEFAULT_BUSINESS_RULES`) récite encore le pack
-> « 10 000 € + 1 000 €/mois » au forfait et l'offre « 1 000 appels » retirée le
-> 20/10 — `tests/doctrine.test.ts` l'y épingle. À trancher, pas à recopier.
+> ✅ **La doctrine du MAÎTRE** (`DEFAULT_BUSINESS_RULES`) **dérive désormais ses
+> prix** (22/10/2026) : elle récitait le forfait mort, l'offre « 1 000 appels »
+> retirée et une fourchette à la carte périmée (AGENT ALPHA à 490), et visait
+> un secteur à démarchage téléphonique interdit. Un test refuse le retour d'une
+> offre retirée.
 
 ## LE MODULE PERMIS — ex-cible (09/09 → 21/10/2026), désormais une SOURCE parmi d'autres
 `lib/permis-construire.ts` · ICP dans `lib/accounts-commercial.ts` (serveur) ·

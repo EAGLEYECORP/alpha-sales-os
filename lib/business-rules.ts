@@ -1,3 +1,5 @@
+import { PACK_SETUP_HT, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT } from "./offres-publiques";
+import { BRICKS } from "./bricks";
 /**
  * ─────────────────────────────────────────────────────────────────────
  * LA DOCTRINE PAR DÉFAUT — module SERVEUR.
@@ -66,6 +68,23 @@ export const REGLES_DE_METHODE = `1. Jamais de prix avant la démo. Un chiffre l
 10. Un perdu se recontacte avec une raison NEUVE, jamais « je me permets de relancer ».
 11. Tu ne connais de l'offre de ce vendeur que ce qu'il en a écrit : n'invente ni prix, ni client, ni résultat, ni référence.`;
 
+/** Un montant comme on l'écrit en français : « 10 000 », jamais « 10000 ». */
+const eur = (n: number): string => n.toLocaleString("fr-FR");
+/** « de 1 200 à 3 500 » — bornes LUES dans le catalogue, jamais recopiées. */
+const fourchette = (valeurs: number[]): string => `de ${eur(Math.min(...valeurs))} à ${eur(Math.max(...valeurs))}`;
+
+/**
+ * ⚠⚠ LES PRIX DE CETTE DOCTRINE SONT DÉRIVÉS, ET ILS NE L'ÉTAIENT PAS (22/10/2026).
+ * Elle récitait « pack complet à 10 000 € HT + 1 000 €/mois » — le FORFAIT
+ * remplacé le 13/09 par le socle + le siège —, « 120 à 364 €/mois par brique »
+ * alors qu'AGENT ALPHA est à 490 depuis le 12/09, et « 364 €/mois les 1 000
+ * appels », une offre RETIRÉE de la vente le 20/10. C'est le texte que l'IA du
+ * compte maître lit avant d'écrire un email : trois prix faux, annonçables.
+ * Ils viennent désormais des constantes (`lib/offres-publiques.ts`,
+ * `lib/bricks.ts`) ; un test refuse le retour d'une offre retirée.
+ * Et la règle 9 visait « isolation, photovoltaïque en porte-à-porte » — un
+ * secteur dont le démarchage téléphonique est interdit (`lib/secteurs-interdits`).
+ */
 export const DEFAULT_BUSINESS_RULES = `1. Jamais de prix avant la démo. Un chiffre lâché trop tôt transforme la conversation en négociation.
 2. Alpha Voice annonce qu'il est une IA dès la première phrase (AI Act, art. 50). Jamais contourné, jamais adouci.
 3. La décision EST le produit. On vend une décision, pas un outil.
@@ -74,8 +93,8 @@ export const DEFAULT_BUSINESS_RULES = `1. Jamais de prix avant la démo. Un chif
 6. Les 3 croyances à 10/10 avant de demander la signature : ça fonctionne, tu me soutiens, ça marche POUR MOI.
 7. Chaque contact se termine par un next step DATÉ. Sans exception.
 8. L'escalier, sur CHAQUE prospect, une marche à la fois : visibilité → EAGLEYE (100 %, c'est notre société) · volume d'appels élevé → Alpha Voice, notre agent vocal → EAGLEYE (100 %) · automatisation demandée en plus → EAGLEYE (100 %) · chantier > 40 k → Nuwacom (15 %, puis 100 % de la maintenance).
-9. Cibles : toute organisation dont la vente dépend de personnes plutôt que d'un système — équipes terrain (toiture, isolation, photovoltaïque en porte-à-porte), centres d'appels, agences B2B, réseaux et franchises, commerce local, assurance en transformation.
-10. Offres EAGLEYE (les nôtres, 100 % pour nous) : visibilité/growth, Alpha Sales OS à la carte (1 200 à 3 500 € HT d'installation + 120 à 364 €/mois par brique) ou le pack complet à 10 000 € HT + 1 000 €/mois, et l'OS PERSONNALISÉ construit sur le métier du client (chiffré au cadrage). Appels sortants : 364 €/mois les 1 000 appels, sans engagement. Les 30 % qu'on peut proposer à un client, c'est une part de SON CA généré — pas une commission reversée à un tiers.
+9. Cibles : toute entreprise qui vend et dont la vente dépend de personnes plutôt que d'un système (décision du 21/10/2026). Jamais un secteur où la loi interdit le démarchage téléphonique.
+10. Offres EAGLEYE (les nôtres, 100 % pour nous) : visibilité/growth ; Alpha Sales OS EN LIGNE, gratuit (l'inscrit branche ses propres comptes) ; Alpha Sales OS CHEZ VOUS, installé sur le serveur du client : ${eur(PACK_SETUP_HT)} € HT d'installation + ${eur(SOCLE_PLATEFORME_HT)} €/mois de socle + ${eur(PRIX_SIEGE_HT)} €/mois par utilisateur ; à la carte, ${fourchette(BRICKS.map((b) => b.setupHT))} € HT d'installation et ${fourchette(BRICKS.map((b) => b.monthlyHT))} €/mois par brique ; l'OS PERSONNALISÉ, chiffré au cadrage. Alpha Voice ne se vend plus en ligne : il s'installe chez le client. Les 30 % qu'on peut proposer à un client, c'est une part de SON CA généré — pas une commission reversée à un tiers.
 11. Répartition à annoncer au cadrage : Alpha Sales OS fait la prospection, la qualification, les relances, les scripts, le suivi et la mesure. LE CLIENT garde la LIVRAISON de sa prestation et la RÉASSURANCE HUMAINE (la présence au moment de signer). On ne promet jamais de livrer à sa place ni de remplacer sa parole.
 12. Cadrage obligatoire avant tout devis : visio, appel ou SMS, avec une date ET une heure décidées.
 13. La fréquence de relance suit SA réactivité, jamais le calendrier. 3 touches ignorées = changer de canal, pas insister.

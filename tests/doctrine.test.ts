@@ -6,20 +6,40 @@ import { join } from "node:path";
 import { DEFAULT_BUSINESS_RULES, REGLES_DE_METHODE, doctrineOrDefault } from "../lib/business-rules";
 import { clipDoctrine, DOCTRINE_MAX_CHARS } from "../lib/identity";
 import { NUWACOM_THRESHOLD_HT } from "../lib/accounts";
-import { PACK_SETUP_HT, PACK_MONTHLY_HT, OUTBOUND_TIERS } from "../lib/bricks";
+import { PACK_SETUP_HT, PACK_MONTHLY_HT, BRICKS } from "../lib/bricks";
+import { OFFRES, OFFRES_RETIREES, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT } from "../lib/offres-publiques";
+import { secteursInterditsDans } from "../lib/secteurs-interdits";
 
 // La doctrine part dans TOUTES les routes IA. Ce qui est faux ici devient une
 // phrase dite à un vrai prospect — et un prix faux devient un prix annoncé.
 test("doctrine — les prix cités correspondent au catalogue réel", () => {
   const r = DEFAULT_BUSINESS_RULES;
-  assert.match(r, new RegExp(`${PACK_SETUP_HT.toLocaleString("fr-FR").replace(/\s| /g, "\\s")}\\s*€`), "le pack doit être au prix du catalogue");
-  assert.match(r, new RegExp(`${PACK_MONTHLY_HT.toLocaleString("fr-FR").replace(/\s| /g, "\\s")}\\s*€/mois`), "le mensuel du pack doit être au prix du catalogue");
+  const fr = (n: number) => n.toLocaleString("fr-FR").replace(/\s| /g, "\\s");
+  assert.match(r, new RegExp(`${fr(PACK_SETUP_HT)}\\s*€ HT d'installation`), "l'installation « chez vous » au prix du catalogue");
+  assert.match(r, new RegExp(`\\b${fr(SOCLE_PLATEFORME_HT)}\\s*€/mois de socle`), "le socle au prix du catalogue");
+  assert.match(r, new RegExp(`\\b${fr(PRIX_SIEGE_HT)}\\s*€/mois par utilisateur`), "le siège au prix du catalogue");
 
-  const entry = OUTBOUND_TIERS[0];
-  assert.match(r, new RegExp(`${entry.monthlyHT}\\s*€/mois`), "le palier sortant d'entrée doit être cité au bon prix");
+  // La fourchette à la carte se LIT dans le catalogue : AGENT ALPHA est passé à
+  // 490 le 12/09, et la doctrine disait encore « 120 à 364 » le 22/10.
+  const mensuels = BRICKS.map((b) => b.monthlyHT);
+  assert.match(r, new RegExp(`${fr(Math.min(...mensuels))} à ${fr(Math.max(...mensuels))}\\s*€/mois par brique`));
 
   // Le seuil Nuwacom porte une commission : se tromper coûte de l'argent réel.
   assert.match(r, /40\s*k/, `le seuil Nuwacom (${NUWACOM_THRESHOLD_HT} €) doit apparaître dans le routage`);
+});
+
+test("⚠⚠ doctrine — aucune offre RETIRÉE de la vente, aucun forfait mort", () => {
+  const r = DEFAULT_BUSINESS_RULES;
+  for (const o of OFFRES.filter((x) => x.id in OFFRES_RETIREES)) {
+    assert.ok(!r.includes(o.nom), `offre retirée encore récitée à l'IA : ${o.nom}`);
+  }
+  assert.doesNotMatch(r, /1\s*000 appels/, "l'offre « 1 000 appels » est retirée depuis le 20/10/2026");
+  assert.doesNotMatch(r, new RegExp(`\\+\\s*${PACK_MONTHLY_HT.toLocaleString("fr-FR").replace(/\s| /g, "\\s")}\\s*€/mois`), "le pack n'est plus un forfait mensuel");
+});
+
+test("⚠ doctrine — elle ne vise aucun secteur où le démarchage téléphonique est interdit", () => {
+  assert.deepEqual(secteursInterditsDans(DEFAULT_BUSINESS_RULES).map((a) => a.extrait), []);
+  assert.doesNotMatch(DEFAULT_BUSINESS_RULES, /isolation|photovolta|pompe à chaleur/i);
 });
 
 test("doctrine — l'ancien positionnement a disparu", () => {
