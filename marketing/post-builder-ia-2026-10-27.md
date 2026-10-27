@@ -1,7 +1,19 @@
 # Post LinkedIn — « ce qui empêche l'IA de mentir » (27/10/2026)
 
-**Statut : PRÊT, PAS PUBLIÉ.** Écrit au retour d'un entretien de Zakaria : un post de PREUVE
-(ce qu'il construit, comment il le vérifie), pas une annonce. Il part sur un « go » explicite.
+**Statut : PUBLIÉ le 27/10/2026 vers 16 h (Paris)** — `urn:li:share:7520861629224402944`,
+sur « Go post » de Zakaria. Écrit au retour d'un entretien : un post de PREUVE (ce qu'il
+construit, comment il le vérifie), pas une annonce.
+https://www.linkedin.com/feed/update/urn:li:share:7520861629224402944/
+
+- **Publié en texte seul**, sans visuel : le spot est déjà parti le 22/10, le reposter aurait
+  fait doublon.
+- **Le texte envoyé est celui du bloc ci-dessous, au caractère près** : produit PAR SCRIPT
+  (Little Text Format : les deux parenthèses échappées, rien d'autre à échapper), empreinte
+  SHA-256 comparée avant l'envoi.
+- **Vérifié sur la page publique** : « (AI Act, article 50) » rendu avec ses parenthèses, aucun
+  backslash visible, fin du texte présente, lien raccourci par LinkedIn (`lnkd.in`). `/vitrine`
+  répondait 200 juste avant. La relecture par l'API a répondu 403 — même piège que le 21/10.
+- **Supprimer le post** (si besoin) : `LINKEDIN_DELETE_POST` avec l'URN ci-dessus.
 
 - Aucun visuel obligatoire. S'il en faut un : la vidéo du spot
   (`public/media/linkedin/spot-tv-2026-10-22.mp4`, vignette vérifiée).

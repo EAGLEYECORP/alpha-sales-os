@@ -54,5 +54,6 @@ test("⚠⚠ chaque garde-fou CITÉ existe dans le code qui l'applique", () => {
 });
 
 test("le statut se DIT : prêt et non publié, ou publié avec sa date et son identifiant", () => {
-  assert.match(postMd, /\*\*Statut : (?:PRÊT, PAS PUBLIÉ|PUBLIÉ le \d{2}\/\d{2}\/\d{4}[^*]*\*\*[\s\S]{0,40}urn:li:ugcPost:\d+)/);
+  // Un post TEXTE seul rend un `share` ; un post vidéo, un `ugcPost`. Les deux sont des posts.
+  assert.match(postMd, /\*\*Statut : (?:PRÊT, PAS PUBLIÉ|PUBLIÉ le \d{2}\/\d{2}\/\d{4}[^*]*\*\*[\s\S]{0,40}urn:li:(?:ugcPost|share):\d+)/);
 });
