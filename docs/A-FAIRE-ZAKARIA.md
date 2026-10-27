@@ -15,7 +15,9 @@
 Livré : un visiteur utilise les écrans gratuits sans compte (voir `CLAUDE.md`, « Essayer
 sans compte »). Mesuré avant : 6 comptes en tout, aucun depuis le 13/10.
 **Reste la création de compte**, qui exige un email confirmé (réglage Supabase lu :
-`mailer_autoconfirm: false`, Google désactivé). Une décision, deux sorties :
+`mailer_autoconfirm: false`, Google désactivé). **TRANCHÉ : Google.** Le bouton est codé et
+déployé ; il s'affichera dès que tu actives Google — les gestes sont dans
+`docs/CONNEXION-GOOGLE.md`. Les deux sorties, telles qu'elles avaient été posées :
 - **Recommandé — « Continuer avec Google »** : email vérifié par Google, aucun email envoyé
   (donc hors du plafond de 30/h). Geste : créer un identifiant OAuth dans Google Cloud
   (URI de retour = celle que Supabase affiche dans Authentication → Providers → Google),

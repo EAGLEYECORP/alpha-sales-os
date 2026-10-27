@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAlpha, useHydrated } from "@/lib/store";
-import { authAvailable, getCurrentUser, onAuthChange, resetPassword, signIn, signUp, type AuthUser } from "@/lib/auth";
+import {
+  authAvailable,
+  connexionGoogleDisponible,
+  getCurrentUser,
+  onAuthChange,
+  resetPassword,
+  signIn,
+  signInWithGoogle,
+  signUp,
+  type AuthUser,
+} from "@/lib/auth";
 import { DUREE_ESSAI_JOURS } from "@/lib/essai";
 import { Eagle } from "@/components/eagle";
 
@@ -225,6 +235,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [visiteur, pathname]);
 
   /**
+   * Google n'est proposé que si Supabase le sert (`connexionGoogleDisponible`) :
+   * demandé au moment où le formulaire s'affiche, une seule fois.
+   */
+  const [google, setGoogle] = useState(false);
+  const formulaireVisible = murFerme || formOuvert;
+  useEffect(() => {
+    if (!formulaireVisible || !authAvailable()) return;
+    let vivant = true;
+    void connexionGoogleDisponible().then((ok) => vivant && setGoogle(ok));
+    return () => {
+      vivant = false;
+    };
+  }, [formulaireVisible]);
+
+  /**
    * ⚠ L'IMPASSE, DITE AU LIEU D'ÊTRE SUBIE.
    *
    * Le serveur exige un compte, et ce navigateur n'a pas de quoi en ouvrir un
@@ -269,6 +294,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setInfo(null);
     // `/compte` n'a rien à montrer à quelqu'un qui n'a pas de compte.
     if (pathname?.startsWith("/compte")) router.push("/aujourdhui");
+  };
+
+  const versGoogle = async () => {
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    const res = await signInWithGoogle();
+    // Réussi, le navigateur part chez Google : il n'y a plus rien à faire ici.
+    if (!res.ok) {
+      setBusy(false);
+      setError(res.error ?? "Échec.");
+    }
   };
 
   const submit = async () => {
@@ -342,6 +379,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           </p>
         )}
 
+        {google && (
+          <>
+            <button className="btn-bronze mt-4 w-full" onClick={versGoogle} disabled={busy}>
+              Continuer avec Google
+            </button>
+            <p className="mt-3 text-[11px] text-paper-faint">ou avec un email</p>
+          </>
+        )}
+
         <input
           type="email"
           // Le curseur va au champ VIDE : sur une arrivée depuis la vitrine,
@@ -367,7 +413,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         {error && <p className="mt-2 text-[12px] text-signal-red">{error}</p>}
         {info && <p className="mt-2 text-[12px] text-signal-green">{info}</p>}
 
-        <button className="btn-bronze mt-4 w-full" onClick={submit} disabled={busy}>
+        {/* Google en premier quand il est servi : le chemin sans email à confirmer passe devant. */}
+        <button className={`${google ? "btn-ghost" : "btn-bronze"} mt-4 w-full`} onClick={submit} disabled={busy}>
           {busy ? "…" : mode === "in" ? "Se connecter" : "Créer le compte"}
         </button>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { getSupabase, supabaseEnabled } from "./supabase";
+import { getSupabase, getSupabaseConfig, supabaseEnabled } from "./supabase";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -124,6 +124,58 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   const sb = getSupabase();
   if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
   const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * « CONTINUER AVEC GOOGLE » (27/10/2026) — l'inscription sans email à confirmer.
+ *
+ * Mesuré en production : la création de compte exigeait un email confirmé
+ * (`mailer_autoconfirm: false`), plafonné à 30 envois/h et parti de la même
+ * boîte que la prospection. Google rend une adresse déjà VÉRIFIÉE : aucun
+ * email ne part, et l'essai ne s'ouvre pas à une adresse inventée — ce que
+ * couper la confirmation aurait fait (un essai sans boîte à lui envoie depuis
+ * la nôtre, `resoudreSmtp`). Décision de Zakaria : Google.
+ *
+ * ⚠ LE BOUTON NE S'AFFICHE QUE SI SUPABASE A GOOGLE ACTIVÉ. Le fournisseur se
+ * configure dans le tableau de bord (identifiants Google Cloud) : avant ce
+ * geste, un bouton visible renverrait « provider is not enabled » à un
+ * inscrit. On demande donc au serveur d'authentification ce qu'il sert
+ * (`/auth/v1/settings`, public), et une panne vaut « non » — on ne montre pas
+ * une porte qu'on n'a pas vue ouverte.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function googleActif(reglages: unknown): boolean {
+  if (!reglages || typeof reglages !== "object") return false;
+  const externes = (reglages as { external?: unknown }).external;
+  if (!externes || typeof externes !== "object") return false;
+  return (externes as { google?: unknown }).google === true;
+}
+
+export async function connexionGoogleDisponible(): Promise<boolean> {
+  const cfg = getSupabaseConfig();
+  if (!cfg) return false;
+  try {
+    const r = await fetch(`${cfg.url.replace(/\/+$/, "")}/auth/v1/settings`, { headers: { apikey: cfg.key } });
+    return r.ok ? googleActif(await r.json()) : false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Part chez Google, revient à l'accueil avec `?bienvenue=1` — la MÊME adresse
+ * de retour que la confirmation d'email (`urlRetourAuth`), donc la même entrée
+ * dans la liste blanche Supabase. Le client lit la session dans l'URL au retour.
+ */
+export async function signInWithGoogle(): Promise<AuthResult> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: "Supabase n'est pas lié — Réglages → Supabase." };
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: urlRetourAuth("?bienvenue=1") },
+  });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 

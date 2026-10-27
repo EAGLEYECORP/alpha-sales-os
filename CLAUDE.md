@@ -2260,11 +2260,13 @@ son email — **6 comptes en tout, aucun depuis le 13/10**. Décision de Zakaria
   l'assistant de NOTRE pile (« n8n = le cerveau ») en plein écran — trouvé au RENDU, comme
   notre plan de traction (taux de juillet) servi sur sa journée. Rien de ce qui barre
   l'écran ne s'ouvre sur un verdict non prouvé (`estProuve`).
-- **Reste ouvert, et c'est le mur suivant** : créer un compte exige encore un email
-  confirmé (`mailer_autoconfirm: false`, 30 envois/h partagés). Deux sorties, à trancher :
-  connexion Google (email vérifié, aucun envoi) ou confirmation coupée — or un essai sans
-  boîte à lui envoie depuis NOTRE `contact@` (`resoudreSmtp`, repli « maison ») : l'ouvrir
-  à des adresses jamais vérifiées, c'est prêter notre réputation d'envoi à des inconnus.
+- **Le mur suivant était l'email de confirmation** (`mailer_autoconfirm: false`, 30 envois/h
+  partagés). **TRANCHÉ (Zakaria) : « Continuer avec Google »** (`signInWithGoogle`, `lib/auth.ts`)
+  — adresse vérifiée, aucun envoi. Couper la confirmation était l'autre sortie, écartée : un
+  essai sans boîte à lui envoie depuis NOTRE `contact@` (`resoudreSmtp`, repli « maison »).
+  **Le bouton ne s'affiche que si Supabase sert Google** (`connexionGoogleDisponible`, panne =
+  non) : il apparaît sans redéploiement. L'activation (Google Cloud + Supabase) est sur Zakaria,
+  `docs/CONNEXION-GOOGLE.md`.
 
 **Notre compte** : `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste) =
 `contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com`. `estMaitre()` lit l'email du
