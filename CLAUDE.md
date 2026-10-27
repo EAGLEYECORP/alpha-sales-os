@@ -2619,6 +2619,10 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
   `x-vercel-cache`) et par le MP4 du commit du jour servi au bon octet quelques minutes après
   le push. Conséquence : « tests + types verts avant push » n'est pas une politesse, c'est le
   seul contrôle avant la production.
+- **⚖ DÉCIDÉ le 27/10/2026 : l'app reste sur Vercel, en plan PRO** (Hobby interdit l'usage
+  commercial ; un lien Stripe le rend flagrant). Mesuré le même jour : **le cron Supabase tape
+  encore une copie NETLIFY de l'app** (secret Vault `alpha_base_url`) — elle se retire, dans
+  l'ordre écrit en tête de `docs/A-FAIRE-ZAKARIA.md`.
 - **Netlify ne sert que la vitrine `eagleyecorp.fr` (`site/`)**, publiée à la main
   (`docs/NETLIFY-EAGLEYECORP-FR.md`). « Trigger deploy » ne concerne QUE ce site.
   ⚠ Une session l'avait confondu et a demandé à Zakaria de « déployer sur Netlify » une app

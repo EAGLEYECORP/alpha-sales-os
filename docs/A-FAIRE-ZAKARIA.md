@@ -10,6 +10,52 @@
 
 ---
 
+## 📍 27/10/2026 — LA LISTE À JOUR, MESURÉE (elle remplace l'ordre plus bas)
+
+Relevé le jour même, pas recopié des sections suivantes (plusieurs sont périmées : elles
+parlent de Netlify comme hôte de l'app, ou de tâches faites depuis).
+
+**Ce qui a été mesuré :**
+- L'app publique (`alphasalesos.eagleyecorp.fr`) est servie par **Vercel** (`/api/health` → 200,
+  `server: Vercel`) ; le DNS Amen pointe dessus.
+- **Le cron Supabase tape toujours une copie NETLIFY de l'app** : les huit derniers retours de
+  `net._http_response` portent `server: Netlify`. La cible vient du secret Vault
+  `alpha_base_url` (décrit « Identique a CRON_SECRET sur Netlify » pour son voisin). Réponses :
+  `200 armed:false` (rien ne part), et deux `503` (« IA indisponible », « Clés VAPID non
+  configurées »). Une variable posée sur Vercel ne fait rien pour ce cron.
+- **La vitrine `eagleyecorp.fr` n'a pas été republiée depuis le 20/10** : elle affiche encore
+  « Voir l'offre », retiré de `site/` ce jour-là.
+- **Le dépôt GitHub est toujours PUBLIC** (`gh api` → `visibility: public`).
+
+**⚖ DÉCISION HÉBERGEMENT (prise le 27/10 sur délégation de Zakaria) : l'app reste sur VERCEL,
+en plan Pro.** Le plan gratuit (Hobby) interdit l'usage commercial, et un lien de paiement Stripe
+le rend flagrant : le risque n'est pas une facture, c'est une suspension du site le jour où ça se
+voit. Pro = 20 $/mois pour un siège (source secondaire, à relire sur la page de Vercel).
+Écartés : Netlify gratuit pour l'app (300 crédits/mois ≈ 20 mises en production, et un quota
+vidé met en pause TOUS les sites du compte, `eagleyecorp.fr` compris ; un push n'y redéployait
+pas) · un VPS (exploitation à la main par une seule personne) · Cloudflare (migrer le middleware
+Next et l'envoi SMTP : des semaines de risque pour économiser 20 $). Conséquence : **la copie
+Netlify de l'app se retire**, Netlify ne garde que la vitrine.
+
+**L'ordre, et pourquoi :**
+1. Vercel → plan Pro, avec un plafond de dépense.
+2. Copier `CRON_SECRET` de la copie Netlify vers Vercel (même valeur, sans me la transmettre).
+3. Une session rebascule `alpha_base_url` vers `https://alphasalesos.eagleyecorp.fr` et relit
+   `net._http_response` (`server: Vercel` attendu). **Pas avant 2**, sinon chaque tick rend 401.
+4. Supprimer le site Netlify de l'APP (`alphasalesos`), jamais celui de `eagleyecorp.fr`.
+5. Stripe : produit « acompte » 2 500 € en paiement unique, puis `STRIPE_SECRET_KEY`,
+   `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_BUSINESS` sur Vercel ; point de webhook
+   `/api/webhooks/stripe`, évènement `checkout.session.completed`. HT ou TTC selon le statut
+   TVA d'EAGLEYE, que je ne connais pas.
+6. Dépôt GitHub en privé (n'annule rien de ce qui est sorti, arrête la suite).
+7. Republier `site/` sur Netlify Drop.
+8. **La clé `service_role` NE SE TOURNE PAS SEULE.** L'ancienne clé est un jeton signé : la
+   remplacer, c'est passer aux nouvelles clés secrètes de Supabase. Or quatre modules l'envoient
+   en `Authorization: Bearer` (`lib/entitlements.ts`, `lib/comptes-crees.ts`, `lib/stripe.ts`,
+   `app/api/organisation/route.ts`) — dont la lecture des DROITS. Changer la clé sans vérifier
+   que ce chemin l'accepte ferait retomber tout le monde au gratuit. Une session prépare le code
+   d'abord.
+
 ## ⚠ 21/10/2026 (soir) — ÉCHELLE : MIGRATION POSÉE, DEUX CHIFFRES À LIRE
 
 **✅ POSÉE EN PRODUCTION le 21/10/2026, sur ton « go ».** Relue après coup : table à
