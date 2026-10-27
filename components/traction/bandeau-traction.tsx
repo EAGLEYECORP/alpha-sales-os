@@ -6,6 +6,7 @@ import { useAlpha } from "@/lib/store";
 import { etatTraction, prochaineAction } from "@/lib/plan-traction";
 import { rhythmDays } from "@/lib/onboarding-path";
 import { cn } from "@/lib/utils";
+import { useMaitreProuve } from "@/lib/use-droits";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -73,6 +74,17 @@ export function BandeauTraction() {
   );
 
   const suivante = prochaineAction(etat);
+
+  /**
+   * ⚠ NOTRE PLAN, PAS LE SIEN (vu au rendu le 27/10/2026, sur l'écran d'un
+   * visiteur). Ce bandeau compte vers NOTRE cible (300 fiches de notre ICP) avec
+   * NOTRE taux de juillet : servi à un inscrit, il lui annonçait « Intérim &
+   * recrutement » et « obtenus à ce jour » sur les fiches de la démo. La règle
+   * horizontale du 21/10 : nos chiffres ne servent qu'au maître — PROUVÉ par
+   * le serveur, jamais l'optimisme d'attente.
+   */
+  const maitre = useMaitreProuve();
+  if (!maitre) return null;
 
   return (
     <section className="card p-4">

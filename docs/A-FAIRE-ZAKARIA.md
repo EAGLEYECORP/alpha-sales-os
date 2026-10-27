@@ -10,6 +10,22 @@
 
 ---
 
+## ⚡ 27/10/2026 (soir) — L'APP S'OUVRE SANS COMPTE ; LE MUR SUIVANT EST L'EMAIL DE CONFIRMATION
+
+Livré : un visiteur utilise les écrans gratuits sans compte (voir `CLAUDE.md`, « Essayer
+sans compte »). Mesuré avant : 6 comptes en tout, aucun depuis le 13/10.
+**Reste la création de compte**, qui exige un email confirmé (réglage Supabase lu :
+`mailer_autoconfirm: false`, Google désactivé). Une décision, deux sorties :
+- **Recommandé — « Continuer avec Google »** : email vérifié par Google, aucun email envoyé
+  (donc hors du plafond de 30/h). Geste : créer un identifiant OAuth dans Google Cloud
+  (URI de retour = celle que Supabase affiche dans Authentication → Providers → Google),
+  le coller dans Supabase, activer. Le bouton se code ensuite en une session.
+- **Rapide — couper la confirmation** : une inscription ouvre la session tout de suite.
+  Coût, vérifié dans le code : un essai sans boîte à lui envoie depuis NOTRE boîte
+  (`resoudreSmtp`, repli « maison », `contact@`). Couper la confirmation l'ouvre à des
+  adresses jamais vérifiées — l'enveloppe de 300 € borne la dépense, pas la réputation
+  de la boîte qui porte aussi nos confirmations et nos devis.
+
 ## 📍 27/10/2026 — LA LISTE À JOUR, MESURÉE (elle remplace l'ordre plus bas)
 
 Relevé le jour même, pas recopié des sections suivantes (plusieurs sont périmées : elles

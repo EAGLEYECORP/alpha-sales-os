@@ -303,13 +303,13 @@ test("⚠⚠ LE MIDDLEWARE A DEUX PORTES QUI ACCORDENT, ET LE REFUS EXIGE LES DE
   const src = sansCommentaires(lire("middleware.ts"));
   assert.match(
     src,
-    /const ouvert = autorise\(droits, chemin\) \|\| \(await cleOuvreLeChemin\(droits, chemin\)\)/,
-    "les deux portes doivent accorder, et être combinées par un OU"
+    /const ouvert = visiteur \|\| autorise\(droits, chemin\) \|\| \(await cleOuvreLeChemin\(droits, chemin\)\)/,
+    "les portes doivent accorder, et être combinées par un OU (le visiteur n'ouvre que des PAGES gratuites)"
   );
   assert.match(src, /if \(!ouvert\)/, "le refus porte sur la combinaison, pas sur une seule porte");
   // Et la garde maître reste AVANT : l'identité se vérifie avant les droits.
   const iMaitre = src.indexOf("MAITRE_SEULEMENT) && !droits.maitre");
-  const iOuvert = src.indexOf("const ouvert = autorise");
+  const iOuvert = src.indexOf("const ouvert = visiteur || autorise");
   assert.ok(iMaitre > 0 && iMaitre < iOuvert, "la garde maître passe avant la porte des droits");
 });
 

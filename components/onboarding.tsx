@@ -6,7 +6,7 @@ import { useAlpha, useHydrated } from "@/lib/store";
 import { proposerBienvenue } from "@/lib/bienvenue";
 import { SetupWizard } from "@/components/setup-wizard";
 import { chargerProgression, doitSOuvrirSeul } from "@/lib/wizard-progress";
-import { chargerDroits } from "@/lib/use-droits";
+import { chargerDroits, estProuve } from "@/lib/use-droits";
 
 /**
  * Assistant de configuration guidé. S'ouvre automatiquement au premier
@@ -71,7 +71,8 @@ export function Onboarding() {
     if (!hydrated) return;
     let vivant = true;
     void chargerDroits().then((d) => {
-      if (!vivant) return;
+      // Un verdict non prouvé (visiteur sans compte, panne) n'ouvre rien.
+      if (!vivant || !estProuve(d)) return;
       /**
        * ⚠ LE CLIENT A SON PROPRE PREMIER ÉCRAN : « donne ton site ».
        *

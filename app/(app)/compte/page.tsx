@@ -8,6 +8,8 @@ import { useAlpha } from "@/lib/store";
 import { BillingCard } from "@/components/billing/billing-card";
 import { MonOffre } from "@/components/billing/mon-offre";
 import { ChangePassword } from "@/components/security/change-password";
+import { ouvrirConnexion } from "@/components/security/auth-gate";
+import { DUREE_ESSAI_JOURS } from "@/lib/essai";
 import { ApresAchat } from "@/components/billing/apres-achat";
 import { PageHeader } from "@/components/ui/page-header";
 import { PartResultatPanel } from "@/components/billing/part-resultat-panel";
@@ -117,15 +119,16 @@ export default function ComptePage() {
           <p className="flex items-center gap-2 text-sm font-medium text-paper">
             <UserCog size={15} className="text-bronze-400" /> Aucune session ouverte
           </p>
+          {/* ⚠ Ce texte parlait à l'OPÉRATEUR (« active Exiger un compte ») alors
+              que c'est le visiteur qui arrive ici, renvoyé par un écran payant. */}
           <p className="mt-2 text-[13px] text-paper-dim">
-            Supabase est lié mais aucun compte n&apos;est connecté.{" "}
-            {requireAuth
-              ? "Le mur de connexion s'affiche à l'ouverture de l'app."
-              : "Active « Exiger un compte » dans Réglages → Sécurité pour afficher l'écran de connexion à l'ouverture."}
+            Aucun compte n&apos;est connecté dans ce navigateur. Tes fiches y restent ; un compte sert à brancher ta
+            boîte d&apos;envoi, ta clé d&apos;IA, et ouvre {DUREE_ESSAI_JOURS} jours d&apos;essai des écrans qui dépensent côté serveur.
+            {requireAuth ? " Ce poste exige un compte à l'ouverture." : ""}
           </p>
-          <Link href="/settings" className="btn-bronze mt-4 inline-flex">
-            <ShieldCheck size={14} /> Réglages → Sécurité
-          </Link>
+          <button className="btn-bronze mt-4 inline-flex" onClick={() => ouvrirConnexion("up")}>
+            <ShieldCheck size={14} /> Créer un compte ou se connecter
+          </button>
         </section>
       )}
 

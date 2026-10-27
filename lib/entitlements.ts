@@ -425,6 +425,34 @@ export function autorise(ent: Entitlement, chemin: string, now: Date = new Date(
 }
 
 /**
+ * ─────────────────────────────────────────────────────────────────────
+ * ESSAYER SANS COMPTE — les ÉCRANS gratuits s'ouvrent au visiteur (27/10/2026).
+ *
+ * Mesuré en production le jour même : un visiteur sans session était renvoyé
+ * vers `/compte` sur TOUTES les pages de l'application, puis devait créer un
+ * compte et confirmer son email avant de voir un seul écran. Six comptes en
+ * tout, aucun depuis le 13/10, malgré les posts. Décision de Zakaria : « ça doit
+ * être sans friction, comme ChatGPT ».
+ *
+ * ⚠ CE N'EST PAS UN RELÂCHEMENT DE `autorise`, et la différence est le sujet.
+ * `autorise` garde sa règle (« pas de session, pas de plancher ») : elle
+ * protège les ROUTES API, qui lisent et dépensent côté serveur. Ce qu'on
+ * ouvre ici, ce sont des PAGES, et seulement celles du socle gratuit. Une page
+ * gratuite ne contient aucune donnée serveur : elle lit le CRM du NAVIGATEUR,
+ * c'est-à-dire celui du visiteur. Le servir ne coûte rien et ne révèle rien.
+ *  · les API restent fermées sans session (401) — rien ne part de chez nous ;
+ *  · les écrans payants restent fermés (ils renvoient vers `/compte`) ;
+ *  · une installation « chez vous » reste réservée à SES comptes : c'est le
+ *    serveur privé d'une équipe, pas une vitrine.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function pageOuverteAuVisiteur(pathname: string): boolean {
+  if (pathname.startsWith("/api/")) return false;
+  if (installationClient()) return false;
+  return autorise(DROIT_GRATUIT, pathname);
+}
+
+/**
  * Les briques connues — pour valider ce qui vient de la base.
  *
  * ⚠ EXPORTÉE parce qu'un test en dérive la liste des PAYANTES (tout ce qui

@@ -2237,9 +2237,34 @@ au-dessus sans une ligne prouvée en base.*
 - **Impayé → gratuit, pas le néant.** Ses données lui appartiennent ; le mettre
   dehors ne récupère aucun impayé, ça fabrique un ancien client qui ne peut
   même pas exporter son CRM.
-- **Pas de `tenantId` = pas de session = pas de plancher.** `DROIT_REFUSE`
+- **Pas de `tenantId` = pas de session = pas de plancher — pour les API.** `DROIT_REFUSE`
   porte aussi `statut: "suspendu"` : sans ce discriminant, une requête sans
   aucune session héritait du socle. Trouvé par une assertion.
+
+### ⚠⚠ ESSAYER SANS COMPTE — l'app s'ouvre comme ChatGPT (27/10/2026)
+`pageOuverteAuVisiteur` (`lib/entitlements.ts`) · `middleware.ts` · `AuthGate` ·
+`VISITEUR` (`lib/use-droits.ts`) · `tests/visiteur-sans-compte.test.ts`.
+Mesuré en production : tout visiteur était renvoyé vers `/compte` puis devait confirmer
+son email — **6 comptes en tout, aucun depuis le 13/10**. Décision de Zakaria :
+« frictionless, sinon on est morts ».
+- **Le visiteur reçoit les ÉCRANS du socle gratuit, jamais une API.** Une page gratuite lit
+  le CRM du NAVIGATEUR (le sien) : la servir ne coûte rien, ne révèle rien. Les API
+  restent à 401, les écrans payants renvoient vers `/compte`, une installation « chez
+  vous » reste à SES comptes.
+- **Le mur ne protège plus « le serveur a des comptes », il protège un navigateur qui a
+  PORTÉ un compte** (`compteDejaVu` : notre marque + la clé de session Supabase) — c'est là
+  que dorment des fiches d'un compte après déconnexion. Seul un « pas de compte requis »
+  EXPLICITE du serveur le lève ; une panne ne le lève pas.
+- **Un 401 sur `/api/compte/droits` est une RÉPONSE (`VISITEUR`), pas une panne.** Lu comme
+  une panne (`OPTIMISTE`, maître), il montrait au visiteur nos entrées réservées et ouvrait
+  l'assistant de NOTRE pile (« n8n = le cerveau ») en plein écran — trouvé au RENDU, comme
+  notre plan de traction (taux de juillet) servi sur sa journée. Rien de ce qui barre
+  l'écran ne s'ouvre sur un verdict non prouvé (`estProuve`).
+- **Reste ouvert, et c'est le mur suivant** : créer un compte exige encore un email
+  confirmé (`mailer_autoconfirm: false`, 30 envois/h partagés). Deux sorties, à trancher :
+  connexion Google (email vérifié, aucun envoi) ou confirmation coupée — or un essai sans
+  boîte à lui envoie depuis NOTRE `contact@` (`resoudreSmtp`, repli « maison ») : l'ouvrir
+  à des adresses jamais vérifiées, c'est prêter notre réputation d'envoi à des inconnus.
 
 **Notre compte** : `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste) =
 `contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com`. `estMaitre()` lit l'email du

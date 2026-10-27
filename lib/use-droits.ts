@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 // recalcule jamais l'état d'un essai — deux définitions de « l'essai est-il
 // ouvert ? » finiraient par diverger, et c'est celle du navigateur qui ment.
 import type { EtatEssai } from "./essai";
+import { BRIQUES_GRATUITES } from "./entitlements";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -57,6 +58,23 @@ export interface Droits {
 /** Optimiste : tout ouvert tant qu'on ne sait pas. */
 const OPTIMISTE: Droits = { session: true, bricks: [], statut: "actif", maitre: true, solo: true, exploitant: false, essai: null };
 
+/**
+ * Le VISITEUR (27/10/2026) : le serveur a répondu 401 — ce n'est pas une panne,
+ * c'est une RÉPONSE : aucune session. Depuis que l'app s'ouvre sans compte, le
+ * lire comme une panne (donc `OPTIMISTE`, maître) montrait à un inconnu nos
+ * entrées réservées et ouvrait l'assistant de notre pile. Il reçoit le socle
+ * gratuit — la même liste que le middleware lui ouvre, importée, pas recopiée.
+ */
+const VISITEUR: Droits = {
+  session: false,
+  bricks: [...BRIQUES_GRATUITES],
+  statut: "actif",
+  maitre: false,
+  solo: false,
+  exploitant: false,
+  essai: null,
+};
+
 let cache: Droits | null = null;
 let enCours: Promise<Droits> | null = null;
 
@@ -69,8 +87,14 @@ export function chargerDroits(): Promise<Droits> {
   if (cache) return Promise.resolve(cache);
   if (!enCours) {
     enCours = fetch("/api/compte/droits")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((j: Droits) => {
+      .then(async (r) => {
+        if (r.status === 401) {
+          // Pas mis en cache : une connexion dans la page doit pouvoir le relire.
+          enCours = null;
+          return VISITEUR;
+        }
+        if (!r.ok) throw new Error(String(r.status));
+        const j = (await r.json()) as Droits;
         cache = j;
         return j;
       })
@@ -83,6 +107,19 @@ export function chargerDroits(): Promise<Droits> {
       });
   }
   return enCours;
+}
+
+/**
+ * La réponse vient-elle du SERVEUR, ou est-ce l'optimisme d'attente ?
+ *
+ * ⚠ Trouvé au rendu le 27/10/2026 : un visiteur sans compte reçoit un 401 sur
+ * `/api/compte/droits`, `chargerDroits` rend alors `OPTIMISTE` (maître, solo)
+ * — et l'assistant de configuration de NOTRE pile s'ouvrait en plein écran
+ * sur son premier écran. Rien de ce qui BARRE l'écran ne s'ouvre sur un
+ * verdict non prouvé.
+ */
+export function estProuve(d: Droits): boolean {
+  return d !== OPTIMISTE;
 }
 
 /**

@@ -1,9 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAlpha, useHydrated } from "@/lib/store";
 import { authAvailable, getCurrentUser, onAuthChange, resetPassword, signIn, signUp, type AuthUser } from "@/lib/auth";
+import { DUREE_ESSAI_JOURS } from "@/lib/essai";
 import { Eagle } from "@/components/eagle";
+
+/** Ouvre le formulaire de compte depuis n'importe quel écran (bandeau, `/compte`). */
+const EVT_OUVRIR_CONNEXION = "alpha:ouvrir-connexion";
+export function ouvrirConnexion(mode: "in" | "up" = "up"): void {
+  window.dispatchEvent(new CustomEvent(EVT_OUVRIR_CONNEXION, { detail: mode }));
+}
+
+/**
+ * ⚠ CE NAVIGATEUR A-T-IL PORTÉ UN COMPTE ? — la seule chose que le mur protège
+ * désormais (27/10/2026).
+ *
+ * Le visiteur sans compte utilise l'app : son CRM est dans SON navigateur.
+ * Mais un navigateur où un compte s'est connecté garde, après déconnexion,
+ * les fiches de ce compte dans le même stockage. Là, et là seulement, le mur
+ * se referme. Deux traces : notre marque, posée dès qu'une session est vue, et
+ * la clé de session de Supabase (présente pour qui s'est connecté avant que la
+ * marque n'existe). Un stockage illisible ne prouve rien : on ne mure pas.
+ */
+const CLE_COMPTE_VU = "alpha-compte-vu";
+function compteDejaVu(): boolean {
+  try {
+    if (localStorage.getItem(CLE_COMPTE_VU) === "1") return true;
+    for (let i = 0; i < localStorage.length; i++) {
+      if (/^sb-.+-auth-token$/.test(localStorage.key(i) ?? "")) return true;
+    }
+  } catch {
+    // Stockage refusé (navigation privée stricte) : rien n'y est gardé non plus.
+  }
+  return false;
+}
+function marquerCompteVu(): void {
+  try {
+    localStorage.setItem(CLE_COMPTE_VU, "1");
+  } catch {
+    // Sans stockage, aucune fiche ne survit à l'onglet : rien à protéger.
+  }
+}
 
 /**
  * Mur de connexion multi-locataire (SaaS).
@@ -29,16 +68,36 @@ import { Eagle } from "@/components/eagle";
  * client), puis on referme après hydratation si aucune session n'est ouverte.
  * Un script bloqué ne doit jamais blanchir l'app.
  *
+ * ⚠⚠ ET CE MUR FERMAIT L'APP À TOUT LE MONDE (27/10/2026). Le serveur exige un
+ * compte pour ses API, et l'écran en déduisait « personne n'entre sans
+ * compte » : le visiteur venu d'un post voyait deux champs, puis attendait un
+ * email de confirmation. Mesuré en production : six comptes en tout, aucun
+ * depuis deux semaines. Désormais :
+ *  · le VISITEUR (aucun compte n'a jamais porté ce navigateur) utilise l'app,
+ *    un bandeau lui dit que ses fiches restent dans ce navigateur et ce
+ *    qu'un compte ajoute — le middleware lui ouvre les écrans GRATUITS, les API
+ *    lui restent fermées ;
+ *  · le mur se referme sur un navigateur qui a PORTÉ un compte
+ *    (`compteDejaVu`) ou si l'opérateur l'exige sur son poste — c'est là que
+ *    des fiches d'un compte dorment dans le stockage ;
+ *  · une panne de `/api/gate` ne rouvre pas ce navigateur-là : seul un
+ *    « pas de compte requis » EXPLICITE du serveur lève le mur.
+ *
  * ⚠ Non vérifié contre un vrai projet Supabase dans l'environnement de build.
  * À tester à deux comptes avant de facturer (voir docs/SECURITE.md).
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrated = useHydrated();
   const requireAuth = useAlpha((s) => s.settings.security?.requireAuth);
+  const pathname = usePathname();
+  const router = useRouter();
 
   // Ouvert par défaut : le SSR et le premier rendu client montrent le contenu.
   const [user, setUser] = useState<AuthUser | null>(null);
   const [checked, setChecked] = useState(false);
+  const [dejaVu, setDejaVu] = useState(false);
+  /** Le formulaire ouvert À LA DEMANDE d'un visiteur (bandeau, `/compte`, lien de la vitrine). */
+  const [formOuvert, setFormOuvert] = useState(false);
 
   /**
    * Ce que le SERVEUR demande. `null` = pas encore répondu — et tant qu'on ne
@@ -78,6 +137,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(venu.trim())) return;
     setEmail(venu.trim());
     setMode("up");
+    // Il est venu créer un compte : le formulaire s'ouvre, l'app reste derrière.
+    setFormOuvert(true);
+  }, []);
+
+  useEffect(() => {
+    setDejaVu(compteDejaVu());
+    const ouvrir = (e: Event) => {
+      const m = (e as CustomEvent<"in" | "up">).detail;
+      setMode(m === "in" ? "in" : "up");
+      setError(null);
+      setInfo(null);
+      setFormOuvert(true);
+    };
+    window.addEventListener(EVT_OUVRIR_CONNEXION, ouvrir);
+    return () => window.removeEventListener(EVT_OUVRIR_CONNEXION, ouvrir);
   }, []);
 
   // Le serveur, une fois. Une panne réseau laisse `serveur` à null : on
@@ -97,11 +171,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * ⚠ OU, PAS ET. Le serveur ferme, ou l'opérateur ferme sur son poste. Un
-   * `&&` ici rendrait le mur serveur inopérant sur tout navigateur qui n'a pas
-   * le réglage — c'est exactement le bug qu'on vient de corriger.
+   * ⚠ OU, PAS ET — pour SAVOIR qui est là. Le serveur exige des comptes, ou
+   * l'opérateur l'exige sur son poste, ou ce navigateur en a porté un : dans
+   * les trois cas on lit la session. Un `&&` rendrait le serveur muet sur tout
+   * navigateur qui n'a pas le réglage — le bug corrigé le 02/09.
    */
-  const exige = Boolean(serveur?.compteRequis) || Boolean(requireAuth);
+  const exige = Boolean(serveur?.compteRequis) || Boolean(requireAuth) || dejaVu;
   const gateOn = Boolean(hydrated && exige && authAvailable());
 
   useEffect(() => {
@@ -109,6 +184,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       setChecked(true);
       return;
     }
+    // Pendant la lecture, ni mur ni bandeau : on ne conclut pas avant de savoir.
+    setChecked(false);
     let alive = true;
     getCurrentUser().then((u) => {
       if (alive) {
@@ -122,6 +199,30 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       off();
     };
   }, [gateOn]);
+
+  // Une session vue marque le navigateur : après déconnexion, ses fiches sont gardées.
+  useEffect(() => {
+    if (!user) return;
+    marquerCompteVu();
+    setDejaVu(true);
+    setFormOuvert(false);
+  }, [user]);
+
+  /**
+   * LE MUR — fermé seulement là où dorment les fiches d'un compte. Le serveur
+   * qui répond EXPLICITEMENT « pas de compte requis » le lève (usage solo) ;
+   * son silence (panne, réponse pas arrivée) ne le lève pas.
+   */
+  const murFerme = Boolean(
+    gateOn && checked && !user && (Boolean(requireAuth) || (dejaVu && serveur?.compteRequis !== false))
+  );
+  /** Le VISITEUR : le serveur a des comptes, ce navigateur n'en a jamais porté. */
+  const visiteur = Boolean(gateOn && checked && !user && !murFerme && serveur?.compteRequis);
+
+  // Envoyé sur `/compte` par un écran payant ou un lien : il vient pour le compte.
+  useEffect(() => {
+    if (visiteur && pathname?.startsWith("/compte")) setFormOuvert(true);
+  }, [visiteur, pathname]);
 
   /**
    * ⚠ L'IMPASSE, DITE AU LIEU D'ÊTRE SUBIE.
@@ -151,8 +252,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Porte fermée seulement si : gate active, vérification faite, aucune session.
-  if (!gateOn || !checked || user) return <>{children}</>;
+  // Le formulaire s'affiche si le mur est fermé, ou si le visiteur l'a demandé.
+  if (!murFerme && !(formOuvert && !user && authAvailable())) {
+    return (
+      <>
+        {visiteur && <BandeauVisiteur />}
+        {children}
+      </>
+    );
+  }
+
+  /** Le visiteur referme le formulaire et retrouve l'app — jamais sur un mur fermé. */
+  const continuerSansCompte = () => {
+    setFormOuvert(false);
+    setError(null);
+    setInfo(null);
+    // `/compte` n'a rien à montrer à quelqu'un qui n'a pas de compte.
+    if (pathname?.startsWith("/compte")) router.push("/aujourdhui");
+  };
 
   const submit = async () => {
     if (!email.trim() || !password) {
@@ -218,6 +335,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <p className="mt-1 text-[12px] text-paper-faint">
           {mode === "in" ? "Connecte-toi à ton compte." : "Crée ton compte commercial."}
         </p>
+        {!murFerme && mode === "up" && (
+          <p className="mt-2 text-[11.5px] text-paper-dim">
+            Le compte sert à brancher ta boîte d&apos;envoi et ta clé d&apos;IA, et ouvre {DUREE_ESSAI_JOURS} jours
+            d&apos;essai. Les fiches déjà saisies dans ce navigateur restent là.
+          </p>
+        )}
 
         <input
           type="email"
@@ -279,6 +402,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           c'est la porte d'entrée qui manquait : il faut déjà savoir ce qu'on
           vient chercher pour avoir envie de créer un compte.
         */}
+        {!murFerme && (
+          <button className="btn-ghost mt-4 w-full" onClick={continuerSansCompte}>
+            Continuer sans compte
+          </button>
+        )}
+
         <p className="mt-4 text-[12px] text-paper-faint">
           Vous découvrez ?{" "}
           <a href="/vitrine" className="text-bronze-400 hover:underline">
@@ -289,6 +418,33 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           Eagleye Corp — Lyon · données isolées par compte
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Le bandeau du VISITEUR : une ligne, deux gestes, aucun mur.
+ *
+ * ⚠ Il ne dit que ce qui est vrai sans compte : les fiches vivent dans ce
+ * navigateur (le stockage local, rien côté serveur). Il ne promet pas de les
+ * retrouver ailleurs — ce n'est pas ce qu'un compte gratuit fait.
+ */
+function BandeauVisiteur() {
+  return (
+    <div
+      role="region"
+      aria-label="Utilisation sans compte"
+      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-bronze-700/50 bg-ink-900 px-4 py-2 text-center text-[12px] text-paper-dim"
+    >
+      <span>Sans compte : tes fiches restent dans ce navigateur.</span>
+      <span className="flex items-center gap-3">
+        <button className="font-semibold text-bronze-400 hover:underline" onClick={() => ouvrirConnexion("up")}>
+          Créer un compte
+        </button>
+        <button className="text-paper-faint hover:text-bronze-400" onClick={() => ouvrirConnexion("in")}>
+          Se connecter
+        </button>
+      </span>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   comptesActifs,
   deploiementSansSerrure,
   installationClient,
+  pageOuverteAuVisiteur,
   raisonDuRefus,
   resoudreDroits,
   verrouDeComptesActif,
@@ -514,7 +515,10 @@ export async function middleware(req: NextRequest) {
      * accorder : ce qui est en jeu ici est notre facture.
      * ─────────────────────────────────────────────────────────────────
      */
-    const ouvert = autorise(droits, chemin) || (await cleOuvreLeChemin(droits, chemin));
+    // ⚠ Le visiteur SANS session reçoit les ÉCRANS gratuits (`pageOuverteAuVisiteur`),
+    // jamais une API : les données et la dépense restent derrière le compte.
+    const visiteur = !droits.tenantId && pageOuverteAuVisiteur(pathname);
+    const ouvert = visiteur || autorise(droits, chemin) || (await cleOuvreLeChemin(droits, chemin));
     if (!ouvert) {
       if (pathname.startsWith("/api/")) {
         return NextResponse.json(
