@@ -22,7 +22,7 @@ import { TAG_A_TRAITER, confirmationRdv, deciderReponse, introRenseignement, pro
 import type { MessageLu } from "@/lib/mime-lecture";
 import {
   CYCLE_MS, ETAT_AUTOPILOTE_VIDE, MARQUE_PREMIER, MARQUE_RELANCE, REGLAGES_AUTOPILOTE_DEFAUT, REPONSES_VUES_MAX, TAG_ENVOI_REFUSE,
-  adressesSuivies, cleRecherche, depuisLecture, envoisSuspendus, expediteurDuPilote, idReponse, issueEnvoi, journaliser, planifier, premierMessage,
+  adressesSuivies, cleRecherche, depuisLecture, envoisSuspendus, expediteurDuPilote, idReponse, issueEnvoi, journaliser, nb, planifier, premierMessage,
   type EntreeJournal, type Envoi, type EtatAutopilote,
 } from "@/lib/autopilote-inscrit";
 
@@ -276,8 +276,8 @@ async function traiterReponse(m: MessageLu, profilInscrit: boolean) {
   if (!(await repondre(propositionCreneaux(p, creneaux, exp, m.sujet, intro)))) return;
   s.patchProspect(p.id, { rdvPropose: { creneaux: creneaux.map((c) => c.toISOString()), le: maintenant.toISOString() } });
   const libres = agenda.etat === "lu" ? ", libres dans ton agenda" : "";
-  s.addEvent(p.id, { date: maintenant.toISOString(), kind: "email", summary: `ALPHA a répondu : ${creneaux.length} créneau(x) proposé(s)${libres}.` });
-  noter({ type: "repond", texte: `${p.company} est intéressé : ${creneaux.length} créneau(x) proposé(s)${libres}.`, prospectId: p.id });
+  s.addEvent(p.id, { date: maintenant.toISOString(), kind: "email", summary: `ALPHA a répondu : ${nb(creneaux.length, "créneau proposé", "créneaux proposés")}${libres}.` });
+  noter({ type: "repond", texte: `${p.company} est intéressé : ${nb(creneaux.length, "créneau proposé", "créneaux proposés")}${libres}.`, prospectId: p.id });
 }
 
 async function relireEnrichissements(requestIds: string[], cle: string) {
@@ -301,7 +301,7 @@ async function relireEnrichissements(requestIds: string[], cle: string) {
       useAlpha.getState().patchProspect(id, patch);
       useAlpha.getState().addEvent(id, { date: new Date().toISOString(), kind: "note", summary: resumeEnrichissement(c) });
     });
-    noter({ type: "enrichit", texte: `Coordonnées trouvées pour ${trouves} entreprise(s) sur ${lot.prospectIds.length}${r.credits !== null ? ` · ${r.credits} crédits Dropcontact restants` : ""}.` });
+    noter({ type: "enrichit", texte: `Coordonnées trouvées pour ${nb(trouves, "entreprise", "entreprises")} sur ${lot.prospectIds.length}${r.credits !== null ? ` · ${r.credits} crédits Dropcontact restants` : ""}.` });
   }
 }
 
@@ -317,7 +317,7 @@ async function lancerEnrichissements(ids: string[], cle: string) {
     enrichissements: [...e.enrichissements, { requestId: r.requestId, prospectIds: fiches.map((p) => p.id), lance: new Date().toISOString() }],
     enrichisJour: { jour, n: (e.enrichisJour.jour === jour ? e.enrichisJour.n : 0) + fiches.length },
   }));
-  noter({ type: "enrichit", texte: `Recherche des coordonnées de ${fiches.length} entreprise(s) lancée chez Dropcontact.` });
+  noter({ type: "enrichit", texte: `Recherche des coordonnées de ${nb(fiches.length, "entreprise", "entreprises")} lancée chez Dropcontact.` });
 }
 
 async function ecrire(id: string, inscrit: ReturnType<typeof useExpediteurInscrit>) {
@@ -375,7 +375,7 @@ async function chercher(c: { activites: string[]; zone: string; taille: "toutes"
   }));
   noter({
     type: "cherche",
-    texte: `Registre, page ${r.lecture.page} : ${added} entreprise(s) ajoutée(s)${x.exclues.length ? `, ${x.exclues.length} écartée(s) par une annonce légale` : ""}.`,
+    texte: `Registre, page ${r.lecture.page} : ${nb(added, "entreprise ajoutée", "entreprises ajoutées")}${x.exclues.length ? `, ${nb(x.exclues.length, "écartée", "écartées")} par une annonce légale` : ""}.`,
   });
 }
 

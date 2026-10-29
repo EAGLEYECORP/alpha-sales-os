@@ -132,6 +132,12 @@ export const REPONSES_VUES_MAX = 600;
 export const RESERVE_MIN = 10;
 export const RECHERCHES_PAR_JOUR = 6;
 /** Un passage toutes les trois minutes : vingt envois par heure au plus, bien sous le plafond horaire. */
+/**
+ * « 3 créneaux proposés », jamais « 3 créneau(x) proposé(s) » : le journal se
+ * lit à l'écran (et se filme). En français, 0 et 1 restent au singulier.
+ */
+export const nb = (n: number, un: string, plusieurs: string) => `${n} ${n > 1 ? plusieurs : un}`;
+
 export const CYCLE_MS = 3 * 60_000;
 const LECTURE_MIN_MS = 4 * 60_000;
 const ATTENTE_DROPCONTACT_MS = 30_000;
@@ -340,7 +346,7 @@ export function planifier(
   const dejaLances = etat.enrichisJour.jour === auj ? etat.enrichisJour.n : 0;
   const budget = Math.max(0, reglages.enrichissementsParJour - dejaLances);
   if (aJoindre.length) {
-    if (!capacites.cleDropcontact) attentes.push(`${aJoindre.length} entreprise(s) sans email : branche ta clé Dropcontact pour qu'ALPHA trouve leurs coordonnées.`);
+    if (!capacites.cleDropcontact) attentes.push(`${nb(aJoindre.length, "entreprise", "entreprises")} sans email : branche ta clé Dropcontact pour qu'ALPHA trouve leurs coordonnées.`);
     else if (!budget) attentes.push(`Budget Dropcontact du jour atteint (${reglages.enrichissementsParJour}) : reprise demain.`);
     else if (!etat.enrichissements.length) plan.lancerEnrichissement = aJoindre.slice(0, Math.min(budget, LOT_ENRICHISSEMENT)).map((p) => p.id);
   }

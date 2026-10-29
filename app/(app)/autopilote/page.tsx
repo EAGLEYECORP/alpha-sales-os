@@ -15,7 +15,7 @@ import { labelCreneau } from "@/lib/creneaux-rdv";
 import type { MeetingChannel } from "@/lib/types";
 import type { TailleCible } from "@/lib/trouver-clients";
 import {
-  ETAT_AUTOPILOTE_VIDE, REGLAGES_AUTOPILOTE_DEFAUT, aContacter, envoisAlpha24h, planifier, preRequis,
+  ETAT_AUTOPILOTE_VIDE, REGLAGES_AUTOPILOTE_DEFAUT, aContacter, envoisAlpha24h, nb, planifier, preRequis,
   type ReglagesAutopilote, type TypeJournal,
 } from "@/lib/autopilote-inscrit";
 import { aEnrichir } from "@/lib/enrichissement";
@@ -304,8 +304,8 @@ export default function AutopilotePage() {
           {lectureAgenda === "en-cours" && <p className="mt-1 text-[12px] text-paper-faint">ALPHA lit ton agenda…</p>}
           {lectureAgenda && lectureAgenda !== "en-cours" && lectureAgenda.etat === "lu" && (
             <p className="mt-1 text-[12px] text-signal-green">
-              Lu : {lectureAgenda.plages.length} plage(s) occupée(s) sur les 30 prochains jours
-              {lectureAgenda.approximes > 0 && ` (dont ${lectureAgenda.approximes} série(s) bloquée(s) par prudence : règle que je ne sais pas déplier exactement)`}.
+              Lu : {nb(lectureAgenda.plages.length, "plage occupée", "plages occupées")} sur les 30 prochains jours
+              {lectureAgenda.approximes > 0 && ` (dont ${nb(lectureAgenda.approximes, "série bloquée", "séries bloquées")} par prudence : règle que je ne sais pas déplier exactement)`}.
             </p>
           )}
           {lectureAgenda && lectureAgenda !== "en-cours" && lectureAgenda.etat === "non-lu" && (

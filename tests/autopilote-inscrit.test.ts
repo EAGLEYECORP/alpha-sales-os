@@ -493,3 +493,22 @@ test("⚠⚠ CE QUI ARRIVE CHEZ LE PROSPECT : une signature, pas deux ; la quest
     assert.equal(t.split("Camille Démo").length - 1, 1, `une seule signature :\n${t}`);
   }
 });
+
+test("le journal s'accorde au nombre : « 3 créneaux proposés », jamais « 3 créneau(x) proposé(s) »", async () => {
+  /**
+   * Vu au rendu le 29/10/2026 en préparant le film : le journal du pilote — la
+   * surface qui DIT ce qu'ALPHA a fait — écrivait « 3 entreprise(s) ajoutée(s) ».
+   * Un écran qui parle comme un formulaire administratif ne se lit pas comme un
+   * agent qui travaille.
+   */
+  const { nb } = await import("../lib/autopilote-inscrit");
+  assert.equal(nb(0, "créneau proposé", "créneaux proposés"), "0 créneau proposé");
+  assert.equal(nb(1, "créneau proposé", "créneaux proposés"), "1 créneau proposé");
+  assert.equal(nb(3, "créneau proposé", "créneaux proposés"), "3 créneaux proposés");
+  const sansCommentaires = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+  for (const f of ["components/autopilote/moteur-autopilote.tsx", "app/(app)/autopilote/page.tsx", "lib/autopilote-inscrit.ts", "lib/reponses-inscrit.ts"]) {
+    const src = sansCommentaires(readFileSync(join(process.cwd(), f), "utf8"));
+    // Un MOT en minuscules collé à « (s) » : une fonction (`Boolean(x)`, `identiteEnvoi(s)`) n'en est pas un.
+    assert.doesNotMatch(src, /(?<=[\s"'`>])[a-zàâçéèêëîïôûùüÿœ]{3,}\((?:s|x|es|e)\)/u, `${f} : un pluriel entre parenthèses`);
+  }
+});
