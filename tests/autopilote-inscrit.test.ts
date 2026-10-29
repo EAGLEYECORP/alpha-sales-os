@@ -515,3 +515,35 @@ test("le journal s'accorde au nombre : « 3 créneaux proposés », jamais « 3 
     assert.doesNotMatch(src, /(?<=[\s"'`>])[a-zàâçéèêëîïôûùüÿœ]{3,}\((?:s|x|es|e)\)/u, `${f} : un pluriel entre parenthèses`);
   }
 });
+
+test("⚠⚠ NOTRE boîte se lit avec le serveur SAISI s'il est du même domaine — jamais chez un autre", async () => {
+  /**
+   * Notre boîte (« maison ») est chez un hébergeur absent de la table, et
+   * `IMAP_HOST` n'est pas posé en production : sans la saisie de l'écran, ALPHA
+   * écrivait depuis `contact@` sans jamais pouvoir y lire une réponse. On joue la
+   * VRAIE route en mode solo (maître), avec des domaines `.invalid` (RFC 2606) :
+   * la connexion échoue vite, et le message dit QUEL serveur a été essayé.
+   */
+  const avant = { ...process.env };
+  for (const k of ["SUPABASE_JWT_SECRET", "NEXT_PUBLIC_SUPABASE_URL", "SITE_PASSWORD", "IMAP_HOST", "REQUIRE_AUTH"]) delete process.env[k];
+  Object.assign(process.env, { SMTP_HOST: "smtp.boite-maison.invalid", SMTP_PORT: "465", SMTP_USER: "contact@boite-maison.invalid", SMTP_PASS: "x" });
+  const appel = async (imapHost?: string) => {
+    const r = await postReponses(new NextRequest("https://alpha.example/api/reponses", { method: "POST", body: JSON.stringify({ adresses: ["a@example.com"], imapHost }) }));
+    return (await r.json()) as { etat: string; raison?: string };
+  };
+  try {
+    const sans = await appel();
+    assert.equal(sans.etat, "non-lu");
+    assert.match(sans.raison ?? "", /ne connaît pas le serveur de lecture/, "sans saisie ni table : on le dit");
+    const saisi = await appel("imap.boite-maison.invalid");
+    assert.equal(saisi.etat, "non-lu");
+    // ⚠ Pas seulement « le message cite le serveur » : le REFUS le cite aussi, et
+    // la première version de ce test passait sur l'ancien code (mutation).
+    assert.match(saisi.raison ?? "", /imap\.boite-maison\.invalid n'a pas répondu/, "la saisie du même domaine est ESSAYÉE (une connexion a eu lieu) pour la boîte maison");
+    const ailleurs = await appel("imap.autre-domaine.invalid");
+    assert.match(ailleurs.raison ?? "", /n'est pas du même domaine/, "un autre domaine est REFUSÉ avant toute connexion : notre mot de passe n'y part jamais");
+    assert.doesNotMatch(ailleurs.raison ?? "", /n'a pas répondu/, "aucune connexion n'a été tentée vers l'autre domaine");
+  } finally {
+    process.env = avant;
+  }
+});

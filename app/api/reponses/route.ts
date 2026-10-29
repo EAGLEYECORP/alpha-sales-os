@@ -59,12 +59,25 @@ export async function POST(req: NextRequest) {
     return nonLu("Ta boîte n'est pas branchée : sans elle, ALPHA ne peut pas lire les réponses. Réglages → Boîte d'envoi.");
   }
 
+  /**
+   * Le serveur de lecture : celui que l'écran a saisi s'il est du MÊME domaine
+   * que le serveur d'envoi (le mot de passe ne part que chez cet hébergeur),
+   * sinon celui de l'environnement (boîte maison), sinon la table.
+   *
+   * ⚠ LA SAISIE ÉTAIT IGNORÉE POUR LA BOÎTE MAISON (vu le 29/10/2026 en écrivant
+   * la configuration « ALPHA vend ALPHA ») : notre boîte est chez Amen
+   * (`smtp-fr.securemail.pro`), absente de la table, et `IMAP_HOST` n'est pas
+   * posé en production. Le champ « Serveur de lecture » de `/autopilote`
+   * s'affichait au maître et ne servait à rien — ALPHA écrivait depuis
+   * `contact@` sans jamais pouvoir y lire un « oui ». La même règle de domaine
+   * vaut pour la boîte maison, et elle seule.
+   */
   const saisi = typeof body.imapHost === "string" ? body.imapHost.trim() : "";
   const host =
-    smtp.origine === "maison"
-      ? process.env.IMAP_HOST?.trim() || imapPourSmtp(smtp.host)
-      : saisi && imapSaisiAcceptable(saisi, smtp.host)
-        ? saisi
+    saisi && imapSaisiAcceptable(saisi, smtp.host)
+      ? saisi
+      : smtp.origine === "maison"
+        ? process.env.IMAP_HOST?.trim() || imapPourSmtp(smtp.host)
         : imapPourSmtp(smtp.host);
   if (!host) {
     return nonLu(
