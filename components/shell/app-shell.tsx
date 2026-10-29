@@ -147,8 +147,9 @@ const NAV_GROUPES: NavGroup[] = [
   },
   {
     id: "attirer",
-    label: "Se faire connaître",
+    label: "Trouver des clients",
     items: [
+      { href: "/trouver", label: "Trouver des clients", icon: Search },
       { href: "/linkedin", label: "LinkedIn", icon: Linkedin },
       { href: "/social", label: "Studio social", icon: Megaphone },
       { href: "/newsletter", label: "Newsletter", icon: Newspaper },

@@ -141,6 +141,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "L'audit ne part jamais avec la lettre. Il s'envoie depuis la fiche, après un « oui » — c'est ce qui en fait un cadeau.",
   },
   {
+    path: "/trouver",
+    title: "Trouver des clients — le registre officiel",
+    role: "Tu dis quel métier tu vises et où ; ALPHA lit le registre des entreprises de l'État et leurs annonces légales, depuis ton navigateur. Tu coches, tu importes : les fiches arrivent dans ton CRM avec leur SIREN.",
+    steps: [
+      "Tape le métier de tes clients et clique la proposition : chaque activité est un code officiel, retire ce qui ne te concerne pas.",
+      "Donne la zone par son CODE : un département (69) ou des codes postaux (69003, 69006).",
+      "Importe : chaque fiche arrive avec la tâche « trouver le bon interlocuteur et son numéro » — le registre ne donne ni téléphone ni email.",
+    ],
+    tip: "Une société en liquidation, radiée ou dissoute n'est pas importée : ses annonces légales sont lues avant.",
+  },
+  {
     path: "/linkedin",
     title: "Machine LinkedIn — assistée, jamais automatisée",
     role: "La séquence de la campagne : invitation, puis message deux jours après, puis relance. L'app prépare le texte et ouvre le bon profil ; c'est toi qui colles et envoies — donc zéro risque de restriction.",

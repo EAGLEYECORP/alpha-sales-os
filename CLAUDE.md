@@ -241,6 +241,46 @@ produit à un inscrit qui vend autre chose :
 > un secteur à démarchage téléphonique interdit. Un test refuse le retour d'une
 > offre retirée.
 
+## TROUVER DES CLIENTS : LE REGISTRE OFFICIEL, PAR MÉTIER ET PAR ZONE (29/10/2026)
+`/trouver` · `lib/trouver-clients.ts` · `lib/naf.ts` + `lib/naf-sous-classes.ts` ·
+`lib/fusion-fiches.ts` · `tests/trouver-clients.test.ts`.
+
+La promesse est qu'ALPHA trouve les clients pendant que l'inscrit travaille son
+produit. Il ne trouvait rien : il triait ce qu'on lui donnait, et un inscrit sans
+fichier restait devant un CRM vide. L'inscrit dit le métier de ses clients et la
+zone ; le registre de l'État (`recherche-entreprises.api.gouv.fr`, sans clé)
+rend des entreprises ACTIVES avec leur SIREN ; leurs annonces légales sont lues
+au passage ; un clic les importe. **Gratuit, ouvert au visiteur sans compte.**
+- **⚠⚠ Du NAVIGATEUR, jamais par notre serveur** (même règle que le BODACC) :
+  une route à nous recevrait le métier et la zone que vise chaque inscrit. Un
+  test refuse une recherche par activité sous `app/api/`. (`/api/onboarding/site`
+  y lit le SIREN de l'inscrit LUI-MÊME : sa raison sociale, pas sa cible.)
+- **Ce n'est pas un collecteur** : une requête au clic, une page de 25, vers un
+  service public fait pour ça. `lib/registre-entreprises.ts` (l'appariement
+  d'un import Maps) garde le choix inverse — 1 000 fiches = 1 000 requêtes.
+- **⚠⚠ LE REGISTRE OUBLIE EN SILENCE UN FILTRE QU'IL NE CONNAÎT PAS** (mesuré :
+  un paramètre inconnu rend les 10 000 premières entreprises du département).
+  La lecture revérifie activité, zone et taille sur CHAQUE résultat ; ce qui ne
+  correspond pas est écarté et compté, jamais importé.
+- **Il ne donne ni téléphone ni email**, et l'écran le dit AVANT le premier
+  résultat : la fiche arrive `a-joindre`, sans canal, sans nom deviné (le
+  dirigeant déclaré va dans les notes ; ni date de naissance ni nationalité).
+- **La zone est un CODE** (département ou codes postaux, jamais les deux),
+  « 10 000 » se dit « 10 000 ou plus », une panne est `non-lu`, une société en
+  liquidation n'est PAS importée, le non-diffusible ne se nomme pas.
+- **La table NAF est celle de l'INSEE, vérifiée par empreinte** (732 lignes) ;
+  `METIERS` relie les mots de tous les jours à des codes que le test cherche
+  dans la table. Un métier non prévu se trouve dans les libellés officiels.
+  ⚠ Vu au rendu : « plombiers » proposait la métallurgie du plomb — un radical
+  commun n'est pas un métier, seul le pluriel l'est.
+- **La fusion d'import est SIREN d'abord** (`memeFiche`) : deux SIREN différents
+  sont deux entreprises, même homonymes (« GARAGE DU CENTRE » écrasait l'autre).
+- **⚠ NAF 2025 au 1ᵉʳ janvier 2027** (`BASCULE_NAF_2025`) : le filtre lit la
+  rév. 2, aucun filtre NAF 2025 n'existe aujourd'hui (mesuré). Après la date
+  l'écran prévient ; si le registre bascule, il répond 400 et l'écran le dit.
+- **Reste** : le numéro. Le relever à la main reste le geste ; l'enrichissement
+  payant est une décision ouverte (C), pas codée.
+
 ## LE SIGNAL DE TOUTE ENTREPRISE : LES ANNONCES LÉGALES (22/10/2026)
 `lib/signaux-publics.ts` · `lib/siren.ts` · `components/prospects/signaux-publics-panel.tsx` ·
 `components/appels/annonces-de-la-file.tsx` · `tests/signaux-publics.test.ts`.
@@ -2027,7 +2067,8 @@ fois dans la coquille, sous la bande de présence.
   écrans existants, et un test refuse un écran inconnu du contrôle d'accès.
 - **Chaque agent dit ce qu'il n'a pas le droit de faire, et nomme le fichier
   qui l'en empêche** — la règle « plus un agent réfléchit, moins il a le
-  droit d'agir ». ALPHA SCOUT trie ce qu'on lui donne et ne collecte jamais.
+  droit d'agir ». ALPHA SCOUT cherche au registre public À LA DEMANDE, trie
+  ce qu'on lui donne, et n'aspire jamais rien (voir « TROUVER DES CLIENTS »).
 - **La disponibilité est DÉCLARÉE (le module n'importe rien : la vitrine est
   un composant client) et VÉRIFIÉE** contre `peutOuvrir` et
   `cheminOuvertParCle`. ⚠ Elle a mordu au premier passage : j'avais annoncé

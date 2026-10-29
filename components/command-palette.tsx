@@ -21,6 +21,7 @@ const PAGES = [
   { href: "/debrief", label: "Débrief terrain (voix)", icon: Mic },
   { href: "/voice", label: "Alpha Voice (agent vocal)", icon: AudioLines },
   { href: "/appels", label: "Session d'appels", icon: PhoneCall },
+  { href: "/trouver", label: "Trouver des clients (registre officiel)", icon: Search },
   { href: "/linkedin", label: "Machine LinkedIn", icon: Linkedin },
   { href: "/prescripteurs", label: "Prescripteurs (apporteurs)", icon: Handshake },
   { href: "/agent", label: "Agent ALPHA", icon: Bot },

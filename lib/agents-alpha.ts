@@ -88,11 +88,11 @@ export const AGENTS_ALPHA: readonly AgentAlpha[] = [
   {
     nom: "ALPHA SCOUT",
     camp: "reflechit",
-    ecrans: ["/linkedin", "/audits", "/appels"],
+    ecrans: ["/trouver", "/linkedin", "/audits", "/appels"],
     fait:
-      "Trie ce que vous lui donnez et lit les annonces légales de chaque entreprise par son SIREN : il écarte qui est en liquidation, radiée ou dissoute, et remonte celle qui vient de changer de dirigeant, d'adresse ou de propriétaire.",
+      "Trouve, dans le registre officiel, les entreprises du métier et de la zone que vous visez, trie ce que vous lui donnez, et lit les annonces légales de chaque entreprise par son SIREN : il écarte qui est en liquidation, radiée ou dissoute, et remonte celle qui vient de changer de dirigeant, d'adresse ou de propriétaire.",
     interdit:
-      "Collecter lui-même, ou rattacher une annonce par le nom. La collecte reste dehors ; une annonce ne s'attache qu'au SIREN exact, et le changement qu'elle révèle ne se cite pas au prospect.",
+      "Aspirer un site, un annuaire ou un réseau social, deviner un contact, ou rattacher une annonce par le nom. Il ne lit que les registres publics de l'État, à votre demande ; le numéro se relève à la main, et le changement qu'une annonce révèle ne se cite pas au prospect.",
     preuve: "lib/signaux-publics.ts",
     disponibilite: "en-ligne",
   },

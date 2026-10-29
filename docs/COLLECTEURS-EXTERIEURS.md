@@ -15,6 +15,12 @@ collecteur. Deux gardes l'appliquent :
 refusent qu'un fichier de `lib/`, `components/` ou `app/` importe un script de
 collecte.
 
+> ⚠ **Ce qui n'est PAS un collecteur (29/10/2026)** : `/trouver` interroge le
+> registre officiel des entreprises (API publique de l'État, sans clé, faite
+> pour être réutilisée) — une requête au clic, depuis le navigateur, une page
+> de 25. Rien n'est aspiré, rien ne tourne en fond, rien ne contourne une
+> protection. Détail : `lib/trouver-clients.ts` et `CLAUDE.md`.
+
 ---
 
 ## 1. `Mahanaicoach/google-maps-scraper-kit` — **branché, comme un pont**

@@ -114,6 +114,13 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
   // ── CRM & Pipeline : le socle de la vente ──
   "/pipeline": ["crm"],
   "/prospects": ["crm"],
+  /**
+   * TROUVER DES CLIENTS : la recherche au registre part du NAVIGATEUR vers une
+   * API publique de l'État (`lib/trouver-clients.ts`). Aucune route à nous,
+   * aucun coût chez nous — c'est du CRM, donc gratuit. C'est même la première
+   * marche du gratuit : sans elle, un inscrit sans fichier n'a rien à appeler.
+   */
+  "/trouver": ["crm"],
   "/aujourdhui": ["crm"],
   // ALPHA au travail : lit le CRM du navigateur, ne dépense rien chez nous — gratuit.
   "/travail": ["crm"],

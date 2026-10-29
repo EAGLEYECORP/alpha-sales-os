@@ -442,7 +442,7 @@ test("⚠ l'email se normalise aussi, et un numéro illisible vaut « je ne sais
 test("⚠ la clé ne redéfinit PAS la normalisation — elle importe toE164", () => {
   /**
    * Le dépôt porte déjà deux définitions du « même numéro » (`toE164` côté
-   * serveur, `normTel` côté store pour la fusion de fiches). Une troisième,
+   * serveur, `normTel` dans `lib/fusion-fiches.ts` pour la fusion de fiches). Une troisième,
    * écrite ici, finirait par diverger des deux autres — et c'est le canal
    * d'envoi qui trancherait à sa façon, sans que personne le voie.
    */
