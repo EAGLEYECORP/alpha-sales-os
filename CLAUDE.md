@@ -366,6 +366,20 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
   · Prouvé au rendu dans les deux sens (mercredi bloqué ⇒ jeudi/vendredi/lundi ;
     agenda en 404 ⇒ rien proposé, à toi). 15 mutations unitaires mordent, et deux
     au rendu sur le câblage. **Non prouvé : un vrai flux Google ou Outlook.**
+- **⚠⚠ ALPHA CONCLUT PAR ÉCRIT (29/10/2026, décision de Zakaria : « même le closing »)**
+  (`closingPret`, `reponsePrix`, `envoiLienSignature` · `tests/closing-inscrit.test.ts`).
+  L'opérateur DÉCLARE dans `/autopilote` une phrase de prix et un lien (paiement, signature
+  électronique, inscription) : « c'est combien ? » reçoit le prix, « on y va » reçoit le lien
+  (tag `lien-signature-envoye`, étape « vérifier qu'il a signé » à J+2). **Non déclarés : ça
+  remonte, comme avant — ALPHA n'invente jamais un prix.** Le DOUTE remonte toujours.
+  « Jamais de prix avant la démo » reste la règle de l'APPEL : par écrit, le prospect a posé
+  la question. Le maître reçoit le sien du serveur (`prixAlphaVendAlpha`, DÉRIVÉ des
+  constantes ; lien = `/compte` de l'origine servie). Deux mutations mordent.
+- **⚠⚠ `/settings` montrait NOTRE portefeuille à un visiteur** (29/10/2026, vu sur un PDF
+  imprimé sans compte) : validation partenaire Nuwacom, nos offres, la charte, le
+  dictionnaire de notre Sheets, notre taux. Le panneau opérateur suit désormais
+  `useMaitreProuve` (pessimiste) et les englobe (`tests/settings-operateur.test.ts`). Les
+  routes étaient déjà fermées : c'est l'ÉCRAN qui racontait.
 - **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
   l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
   · **⚠⚠ ALPHA VEND ALPHA (29/10/2026)** : sur le maître, l'expéditeur inscrit est

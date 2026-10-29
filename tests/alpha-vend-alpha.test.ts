@@ -57,7 +57,9 @@ test("⚠⚠ la route ne sert qu'au MAÎTRE : un déploiement sans serrure (grat
     Object.assign(process.env, { NODE_ENV: "test" }); // solo de développement = maître
     const ok = await GET(new NextRequest("https://alpha.exemple.test/api/autopilote/configuration"));
     assert.equal(ok.status, 200);
-    assert.deepEqual(await ok.json(), JSON.parse(JSON.stringify(C)));
+    const attendu = JSON.parse(JSON.stringify(C));
+    attendu.closing.lienSignature = "https://alpha.exemple.test/compte"; // posé par la route, sur l'origine servie
+    assert.deepEqual(await ok.json(), attendu);
   } finally {
     Object.assign(process.env, { NODE_ENV: nodeEnv });
   }

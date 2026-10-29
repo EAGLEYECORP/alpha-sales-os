@@ -213,6 +213,82 @@ export function confirmationRdv(p: Pick<Prospect, "name">, creneau: Date, canal:
   };
 }
 
+// ══════════ LE CLOSING — ALPHA CONCLUT PAR ÉCRIT (29/10/2026) ══════════
+/**
+ * ⚠⚠ DÉCISION DE ZAKARIA : « ALPHA doit tout faire, même le closing ».
+ * Jusqu'ici le prix et la signature REMONTAIENT toujours, parce qu'ALPHA ne
+ * savait ni ce que l'opérateur facture ni où l'on signe — répondre aurait été
+ * INVENTER un prix. La règle de fond ne change pas : on n'invente rien. Ce qui
+ * change, c'est que l'opérateur peut DÉCLARER les deux :
+ *  · `prix` — une phrase qu'il assume d'écrire à un prospect qui la demande ;
+ *  · `lienSignature` — l'endroit où l'on signe, paie ou crée son compte
+ *    (lien de paiement, signature électronique, inscription).
+ * Déclarés : « c'est combien ? » reçoit le prix, « on y va » reçoit le lien.
+ * Non déclarés : ça remonte, comme avant.
+ *
+ * ⚠ Ce qui REMONTE TOUJOURS : l'objection (le doute ne se traite pas par un
+ * gabarit) et une négociation. Et « jamais de prix avant la démo » reste la
+ * règle de l'APPEL : ici, le prospect a posé la question par écrit — lui
+ * refuser la réponse, c'est le perdre.
+ */
+export interface ClosingDeclare {
+  prix?: string;
+  lienSignature?: string;
+}
+
+/** Bornes de la phrase de prix : assez pour dire quelque chose, pas un devis entier. */
+export const PRIX_MIN = 10;
+export const PRIX_MAX = 600;
+
+/** Ce qui est réellement utilisable : un prix lisible, un lien HTTPS. Le reste vaut « non déclaré ». */
+export function closingPret(c: ClosingDeclare | null | undefined): { prix: string | null; lien: string | null } {
+  const prix = (c?.prix ?? "").replace(/\s+/g, " ").trim();
+  let lien: string | null = null;
+  try {
+    const u = new URL((c?.lienSignature ?? "").trim());
+    if (u.protocol === "https:" && u.hostname.includes(".")) lien = u.toString();
+  } catch {
+    lien = null;
+  }
+  return { prix: prix.length >= PRIX_MIN && prix.length <= PRIX_MAX ? prix : null, lien };
+}
+
+/** « C'est combien ? » — le prix déclaré, le lien s'il existe, et la porte d'un échange. */
+export function reponsePrix(p: Pick<Prospect, "name">, c: { prix: string; lien: string | null }, sujet: string): MailSortant {
+  return {
+    subject: re(sujet),
+    body: [
+      bonjour(p),
+      "",
+      `Bien sûr. ${c.prix}`,
+      ...(c.lien ? ["", `Pour démarrer, tout se fait ici : ${c.lien}`] : []),
+      "",
+      "Si vous préférez en parler 20 minutes avant, dites-le moi et je vous propose des créneaux.",
+      "",
+      DIVULGATION_ECRITE,
+    ].join("\n"),
+  };
+}
+
+/** « On y va » — le lien, et rien d'autre à faire pour lui. */
+export function envoiLienSignature(p: Pick<Prospect, "name">, lien: string, sujet: string): MailSortant {
+  return {
+    subject: re(sujet),
+    body: [
+      bonjour(p),
+      "",
+      `Parfait, merci. Pour démarrer, tout se fait ici : ${lien}`,
+      "",
+      "Si quelque chose bloque en route, répondez simplement à ce message.",
+      "",
+      DIVULGATION_ECRITE,
+    ].join("\n"),
+  };
+}
+
+/** Posé quand ALPHA a envoyé le lien : l'humain ne vérifie plus que l'encaissement. */
+export const TAG_LIEN_ENVOYE = "lien-signature-envoye";
+
 // ══════════ CE QUE LA FICHE DEVIENT ══════════
 
 export interface DecisionReponse {
@@ -222,7 +298,7 @@ export interface DecisionReponse {
   /** Ce qui s'écrit sur la timeline (un FAIT). */
   evenement: string;
   /** Faut-il répondre, et quoi (sans les créneaux : le moteur les calcule). */
-  repondre: "creneaux" | "renseignement" | "confirmer" | null;
+  repondre: "creneaux" | "renseignement" | "confirmer" | "prix" | "signer" | null;
   /** Remonte à l'humain, avec la raison. */
   escalade: string | null;
 }
@@ -236,7 +312,13 @@ const extrait = (t: string) => {
  * Ce qu'une réponse fait à la fiche. Pur : aucune I/O, aucune horloge lue.
  * L'envoi, la réservation et le journal se font chez l'appelant.
  */
-export function deciderReponse(p: Prospect, m: MessageLu, profil: ProfilOperateur | null | undefined, maintenant: Date): DecisionReponse {
+export function deciderReponse(
+  p: Prospect,
+  m: MessageLu,
+  profil: ProfilOperateur | null | undefined,
+  maintenant: Date,
+  closing?: ClosingDeclare | null,
+): DecisionReponse {
   const proposes = (p.rdvPropose?.creneaux ?? []).map((c) => new Date(c)).filter((d) => Number.isFinite(d.getTime()));
   const classement = classerReponse(m, proposes);
   const dit = `Réponse reçue : « ${extrait(m.texte) || m.sujet} »`;
@@ -265,16 +347,43 @@ export function deciderReponse(p: Prospect, m: MessageLu, profil: ProfilOperateu
         repondre: null,
         escalade: "Il pose une question, et ton profil ne dit pas ce que tu vends.",
       };
-    default: {
-      // prix, veut-signer, objection, hors-sujet : l'humain.
+    case "prix":
+    case "veut-signer": {
+      const c = closingPret(closing);
+      const avance: Prospect["stage"] = ["prospect", "contact", "audit", "demo"].includes(p.stage) ? "offre" : p.stage;
+      if (classement.intention === "prix" && c.prix) {
+        return { ...base, patch: { stage: avance }, repondre: "prix", escalade: null };
+      }
+      if (classement.intention === "veut-signer" && c.lien) {
+        const dans2j = new Date(maintenant.getTime() + 2 * 86_400_000).toISOString().slice(0, 10);
+        return {
+          ...base,
+          patch: {
+            stage: avance,
+            tags: [...new Set([...(p.tags ?? []), TAG_LIEN_ENVOYE])],
+            nextStep: { date: dans2j, action: "Vérifier qu'il a signé (ALPHA lui a envoyé le lien)" },
+          },
+          repondre: "signer",
+          escalade: null,
+        };
+      }
       const action =
         classement.intention === "prix"
-          ? "Répondre sur le prix (de vive voix, jamais par écrit avant la démo)"
-          : classement.intention === "veut-signer"
-            ? "Il veut avancer : appelle-le pour signer"
-            : classement.intention === "objection"
-              ? "Lever son objection (lire sa réponse)"
-              : "Lire sa réponse et lui répondre";
+          ? "Répondre sur le prix — ou déclare ton prix dans /autopilote pour qu'ALPHA réponde seul"
+          : "Il veut avancer : envoie-lui de quoi signer — ou déclare ton lien dans /autopilote";
+      return {
+        ...base,
+        patch: { tags: [...new Set([...(p.tags ?? []), TAG_A_TRAITER])], nextStep: { date: auj, action } },
+        repondre: null,
+        escalade: classement.motif,
+      };
+    }
+    default: {
+      // objection, hors-sujet : l'humain.
+      const action =
+        classement.intention === "objection"
+          ? "Lever son objection (lire sa réponse)"
+          : "Lire sa réponse et lui répondre";
       return {
         ...base,
         patch: { tags: [...new Set([...(p.tags ?? []), TAG_A_TRAITER])], nextStep: { date: auj, action } },

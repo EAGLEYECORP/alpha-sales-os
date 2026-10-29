@@ -1,4 +1,5 @@
 import type { ProfilOperateur } from "./profil-operateur";
+import { PACK_SETUP_HT, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT } from "./offres-publiques";
 import type { ReglagesAutopilote } from "./autopilote-inscrit";
 
 /**
@@ -33,6 +34,28 @@ export interface ConfigurationAlphaVendAlpha {
   profil: ProfilOperateur;
   /** Sans `actif` : lancer reste un geste humain, jamais une configuration. */
   autopilote: Omit<ReglagesAutopilote, "actif">;
+  /**
+   * Le closing (`closingPret`). Le LIEN n'est pas ici : la route le bâtit sur
+   * l'origine de la requête (`/compte` du domaine servi), pour qu'un email ne
+   * parte jamais avec l'adresse d'un déploiement de prévisualisation.
+   */
+  closing: { prix: string };
+}
+
+const eur = (n: number) => `${n.toLocaleString("fr-FR")} € HT`;
+
+/**
+ * Le prix d'ALPHA tel qu'ALPHA l'écrit à qui le demande. ⚠ DÉRIVÉ des
+ * constantes (`lib/offres-publiques.ts`), jamais recopié : une grille écrite
+ * dans une prose survit à la décision qui l'a changée — et celle-ci part chez
+ * des prospects. Deux formes (20/10/2026) : en ligne gratuit, chez vous payant.
+ */
+export function prixAlphaVendAlpha(): string {
+  return (
+    "En ligne, ALPHA est gratuit, sans limite de durée : vous créez votre compte et il travaille avec vos propres outils. " +
+    `Installé sur votre serveur, avec le travail en continu et les appels : ${eur(PACK_SETUP_HT)} d'installation, ` +
+    `puis ${eur(SOCLE_PLATEFORME_HT)} par mois et ${eur(PRIX_SIEGE_HT)} par utilisateur.`
+  );
 }
 
 export const CONFIGURATION_ALPHA_VEND_ALPHA: ConfigurationAlphaVendAlpha = {
@@ -70,5 +93,6 @@ export const CONFIGURATION_ALPHA_VEND_ALPHA: ConfigurationAlphaVendAlpha = {
     canalRdv: "visio",
     dureeRdvMin: 20,
   },
+  closing: { prix: prixAlphaVendAlpha() },
 };
 

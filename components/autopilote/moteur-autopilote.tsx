@@ -18,7 +18,7 @@ import { construireRelanceMail, raisonRelance, type SuiteConversation } from "@/
 import { TAG_DEJA_ECRIT } from "@/lib/mail-autopilote";
 import { chercherEntreprises, croiserAnnonces, entrepriseVersProspect } from "@/lib/trouver-clients";
 import { associerContacts, demandeDepuisFiche, lancerEnrichissement, lireEnrichissement, patchDepuisContact, resumeEnrichissement } from "@/lib/enrichissement";
-import { TAG_A_TRAITER, confirmationRdv, deciderReponse, introRenseignement, propositionCreneaux, rdvChoisi, type MailSortant } from "@/lib/reponses-inscrit";
+import { TAG_A_TRAITER, closingPret, confirmationRdv, deciderReponse, envoiLienSignature, introRenseignement, propositionCreneaux, rdvChoisi, reponsePrix, type MailSortant } from "@/lib/reponses-inscrit";
 import type { MessageLu } from "@/lib/mime-lecture";
 import {
   CYCLE_MS, ETAT_AUTOPILOTE_VIDE, MARQUE_PREMIER, MARQUE_RELANCE, REGLAGES_AUTOPILOTE_DEFAUT, REPONSES_VUES_MAX, TAG_ENVOI_REFUSE,
@@ -186,7 +186,7 @@ async function traiterReponse(m: MessageLu, profilInscrit: boolean) {
   const vu = () => majEtat((e) => ({ ...e, reponsesVues: [id, ...e.reponsesVues].slice(0, REPONSES_VUES_MAX) }));
   if (!p) return vu();
   const profil = profilInscrit ? s.settings.profil : null;
-  const d = deciderReponse(p, m, profil, maintenant);
+  const d = deciderReponse(p, m, profil, maintenant, s.settings.closing);
   // Répondre hors des heures utiles, ou pendant une pause d'envoi, attendra le
   // passage suivant : on NE marque PAS la réponse comme traitée, sinon elle ne
   // serait jamais reprise.
@@ -218,6 +218,21 @@ async function traiterReponse(m: MessageLu, profilInscrit: boolean) {
     if (d.escalade) return noter({ type: "escalade", texte: `${p.company} : ${d.escalade}`, prospectId: p.id });
     if (d.classement.intention === "refus") return noter({ type: "lit", texte: `${p.company} refuse : retiré, plus aucun message.`, prospectId: p.id });
     return;
+  }
+
+  // ── LE CLOSING : le prix déclaré, ou le lien pour signer (`closingPret`). ──
+  if (d.repondre === "prix" || d.repondre === "signer") {
+    const c = closingPret(s.settings.closing);
+    const mail = d.repondre === "prix" && c.prix ? reponsePrix(p, { prix: c.prix, lien: c.lien }, m.sujet) : c.lien ? envoiLienSignature(p, c.lien, m.sujet) : null;
+    // Le closing a changé entre la décision et l'envoi : on ne devine pas, on remonte.
+    if (!mail) {
+      consigner();
+      return noter({ type: "escalade", texte: `${p.company} : ${d.classement.motif}`, prospectId: p.id });
+    }
+    if (!(await repondre(mail))) return;
+    const quoi = d.repondre === "prix" ? (c.lien ? "le prix et le lien pour démarrer" : "le prix") : "le lien pour signer";
+    s.addEvent(p.id, { date: maintenant.toISOString(), kind: "email", summary: `ALPHA a répondu : ${quoi}.` });
+    return noter({ type: "repond", texte: `${p.company} : ${quoi} envoyé${d.repondre === "signer" ? " — vérifie l'encaissement" : ""}.`, prospectId: p.id });
   }
 
   const exp = { closerName: s.settings.closerName, agencyName: s.settings.agencyName, bookingUrl: s.settings.bookingUrl };

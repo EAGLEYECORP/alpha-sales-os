@@ -539,6 +539,13 @@ export interface AppSettings {
    * cours). Absent = jamais lancé, donc arrêté.
    */
   autopilote?: { reglages: ReglagesAutopilote; etat: EtatAutopilote };
+  /**
+   * LE CLOSING DÉCLARÉ — ce qui permet à ALPHA de conclure SEUL par écrit
+   * (`lib/reponses-inscrit.ts`, `closingPret`). Le prix est une phrase que
+   * l'opérateur assume d'écrire ; le lien est l'endroit où l'on signe, paie
+   * ou crée son compte. Absent : le prix et la signature remontent à l'humain.
+   */
+  closing?: { prix?: string; lienSignature?: string };
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
   /**

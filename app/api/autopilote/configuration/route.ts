@@ -17,5 +17,12 @@ export async function GET(req: NextRequest) {
   if (!droits.maitre) {
     return NextResponse.json({ error: "réservé au compte maître" }, { status: 403 });
   }
-  return NextResponse.json(CONFIGURATION_ALPHA_VEND_ALPHA, { headers: { "Cache-Control": "no-store" } });
+  // Le lien de signature = la création de compte, sur le domaine qui a SERVI la
+  // requête (jamais une variable : un déploiement de prévisualisation aurait
+  // envoyé des prospects vers une adresse jetable).
+  const lienSignature = new URL("/compte", req.nextUrl.origin).toString();
+  return NextResponse.json(
+    { ...CONFIGURATION_ALPHA_VEND_ALPHA, closing: { ...CONFIGURATION_ALPHA_VEND_ALPHA.closing, lienSignature } },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

@@ -21,7 +21,7 @@ import {
   type ReglagesAutopilote, type TypeJournal,
 } from "@/lib/autopilote-inscrit";
 import { aEnrichir } from "@/lib/enrichissement";
-import { TAG_A_TRAITER } from "@/lib/reponses-inscrit";
+import { TAG_A_TRAITER, closingPret } from "@/lib/reponses-inscrit";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export default function AutopilotePage() {
     try {
       const res = await fetch("/api/autopilote/configuration", { cache: "no-store" });
       if (!res.ok) return setConfigMaitre("echec");
-      const c = (await res.json()) as ConfigurationAlphaVendAlpha;
+      const c = (await res.json()) as ConfigurationAlphaVendAlpha & { closing: { prix: string; lienSignature: string } };
       patchSettings({
         agencyName: c.agencyName,
         // Le libellé d'USINE signerait « Le Closer ». On l'efface (on n'invente
@@ -124,6 +124,7 @@ export default function AutopilotePage() {
         offer: { ...(settings.offer ?? { whatYouSell: "", valueProp: "" }), city: c.ville },
       });
       appliquerProfil(c.profil);
+      patchSettings({ closing: c.closing });
       patchSettings({ autopilote: { reglages: { ...reglages, ...c.autopilote, actif: reglages.actif }, etat } });
       setSaisieMetier(c.profil.cibleSecteur);
       setConfigMaitre("appliquee");
@@ -184,7 +185,7 @@ export default function AutopilotePage() {
         <section className="card flex flex-wrap items-center justify-between gap-3 p-4">
           <p className="min-w-0 flex-1 text-[13px] text-paper-dim">
             {configMaitre === "appliquee"
-              ? "ALPHA vend ALPHA : identité, offre, cible (agences immobilières, 69) et serveur de lecture sont réglés. Il reste à toi : ton nom (Réglages → Closer, sinon on signe « EAGLEYE CORP »), ta clé Dropcontact, ton agenda, puis « Lancer ALPHA »."
+              ? "ALPHA vend ALPHA : identité, offre, cible (agences immobilières, 69), serveur de lecture et closing (prix + lien d'inscription) sont réglés. Il reste à toi : ton nom (Réglages → Closer, sinon on signe « EAGLEYE CORP »), ta clé Dropcontact, ton agenda, puis « Lancer ALPHA »."
               : configMaitre === "echec"
                 ? "La configuration « ALPHA vend ALPHA » n'a pas pu être lue sur le serveur. Rien n'a été changé."
                 : "ALPHA vend ALPHA : une configuration complète du compte maître est prête sur le serveur (sans aucune clé)."}
@@ -393,6 +394,47 @@ export default function AutopilotePage() {
           <label htmlFor="imap-ap" className="text-sm font-semibold text-paper">Serveur de lecture (IMAP) — seulement si ALPHA te le demande</label>
           <input id="imap-ap" className="input mt-2 w-full" placeholder="imap.ton-hebergeur.fr" value={reglages.imapHost ?? ""} onChange={(e) => regler({ imapHost: e.target.value.trim() || undefined })} />
         </div>
+      </section>
+
+      {/* LE CLOSING — ce qui permet à ALPHA de conclure seul (`closingPret`). */}
+      <section className="card space-y-4 p-5">
+        <div>
+          <h2 className="font-display text-base font-bold text-paper">Le closing</h2>
+          <p className="mt-1 text-[13px] text-paper-dim">
+            Déclare ton prix et ton lien : ALPHA répond seul à « c&apos;est combien ? » et envoie le lien à qui dit « on y va ». Sans eux, le prix et la
+            signature te remontent. Le doute (« trop cher », « déjà un outil ») te remonte toujours.
+          </p>
+        </div>
+        <div>
+          <label htmlFor="prix-ap" className="text-sm font-semibold text-paper">Ton prix, tel que tu l&apos;écrirais à un prospect</label>
+          <textarea
+            id="prix-ap"
+            rows={2}
+            className="input mt-2 w-full"
+            placeholder="L'installation est à 1 200 € HT, puis 90 € HT par mois, sans engagement."
+            value={settings.closing?.prix ?? ""}
+            onChange={(e) => patchSettings({ closing: { ...settings.closing, prix: e.target.value } })}
+          />
+        </div>
+        <div>
+          <label htmlFor="lien-ap" className="text-sm font-semibold text-paper">Le lien pour signer, payer ou créer son compte</label>
+          <input
+            id="lien-ap"
+            className="input mt-2 w-full"
+            placeholder="https://… (lien de paiement, de signature électronique, d'inscription)"
+            value={settings.closing?.lienSignature ?? ""}
+            onChange={(e) => patchSettings({ closing: { ...settings.closing, lienSignature: e.target.value.trim() } })}
+          />
+        </div>
+        <p className="text-[12px] text-paper-faint">
+          {(() => {
+            const c = closingPret(settings.closing);
+            if (c.prix && c.lien) return "ALPHA conclut seul : le prix à qui le demande, le lien à qui veut signer. Toi, tu vérifies l'encaissement.";
+            if (c.prix) return "ALPHA répond seul sur le prix. Sans lien, « on y va » te remonte.";
+            if (c.lien) return "ALPHA envoie seul le lien à qui veut signer. Sans prix déclaré, « c'est combien ? » te remonte.";
+            return "Rien de déclaré : le prix et la signature te remontent (un prix doit faire 10 caractères au moins, un lien commencer par https://).";
+          })()}
+        </p>
       </section>
 
       <section className="card space-y-3 p-5">
