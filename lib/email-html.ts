@@ -67,12 +67,21 @@ function bodyToHtml(body: string): string {
     if (lines.length === 0) continue;
     const isList = lines.every((l) => /^\s*(\d+[.)]|[-·•*])\s+/.test(l));
     if (isList) {
+      /**
+       * ⚠ UNE LISTE NUMÉROTÉE GARDE SES NUMÉROS. Elle devenait une liste à puces :
+       * vu le 29/10/2026 en filmant le pilote, l'email des créneaux disait
+       * « Répondez simplement 1, 2 ou 3 » au-dessus de trois puces. Le numéro EST
+       * la réponse attendue — le perdre, c'est demander au prospect de compter.
+       */
       const items = lines
-        .map((l) => l.replace(/^\s*(\d+[.)]|[-·•*])\s+/, "").trim())
+        .map((l) => {
+          const m = /^\s*(\d+[.)]|[-·•*])\s+/.exec(l)!;
+          return { marque: /^\d/.test(m[1]) ? m[1] : "·", texte: l.slice(m[0].length).trim() };
+        })
         .map(
-          (t) =>
-            `<tr><td style="padding:3px 0;vertical-align:top;color:${SAGE};font-weight:700;width:18px;font-family:${SANS};">·</td><td style="padding:3px 0;color:${INK_SOFT};font-family:${SANS};font-size:15px;line-height:1.65;">${esc(
-              t
+          ({ marque, texte }) =>
+            `<tr><td style="padding:3px 8px 3px 0;vertical-align:top;color:${SAGE};font-weight:700;min-width:18px;font-family:${SANS};font-size:15px;line-height:1.65;">${esc(marque)}</td><td style="padding:3px 0;color:${INK_SOFT};font-family:${SANS};font-size:15px;line-height:1.65;">${esc(
+              texte
             )}</td></tr>`
         )
         .join("");

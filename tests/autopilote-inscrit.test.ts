@@ -488,6 +488,9 @@ test("⚠⚠ CE QUI ARRIVE CHEZ LE PROSPECT : une signature, pas deux ; la quest
 
   const r = propositionCreneaux({ name: "Jean Démo" }, CRENEAUX, { closerName: "Camille Démo", agencyName: "ATELIER (DÉMO)" }, m.subject);
   const c = confirmationRdv({ name: "Jean Démo" }, CRENEAUX[0], "visio", { closerName: "Camille Démo", agencyName: "ATELIER (DÉMO)" }, m.subject, "BEGIN:VCALENDAR\r\nEND:VCALENDAR");
+  // Les créneaux se choisissent par leur NUMÉRO : le rendu HTML doit le montrer.
+  const html = renderEmail({ ...habillage, body: r.body });
+  for (const n of ["1.", "2.", "3."]) assert.match(html, new RegExp(`>${n.replace(".", "\\.")}</td>`), `le numéro ${n} a disparu du rendu`);
   for (const corps of [r.body, c.body]) {
     const t = plainText({ ...habillage, body: corps });
     assert.equal(t.split("Camille Démo").length - 1, 1, `une seule signature :\n${t}`);
