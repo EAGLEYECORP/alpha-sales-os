@@ -17,6 +17,7 @@ import {
   type ReglagesAutopilote,
 } from "../lib/autopilote-inscrit";
 import { DIVULGATION_ECRITE } from "../lib/signature-ia";
+import { plainText, renderEmail } from "../lib/email-html";
 import { DO_NOT_CALL_TAG } from "../lib/voice-script";
 import { lireSignaux } from "../lib/signaux-publics";
 import { imapPourSmtp, imapSaisiAcceptable } from "../lib/identifiants-assistes";
@@ -465,4 +466,30 @@ test("⚠⚠ ALPHA VEND ALPHA : sur le compte maître, le pilote écrit sur « C
   assert.equal(expediteurDuPilote({ inscrit: null, profil: { ...profil, metier: "  " }, agencyName: "", city: "" }), null);
   const sien = { profil: { ...profil, metier: "des cuisines sur mesure" }, agencyName: "Atelier Démo", city: "Lyon" };
   assert.equal(expediteurDuPilote({ inscrit: sien, profil, agencyName: "EAGLEYE CORP", city: "Lyon" }), sien);
+});
+
+test("⚠⚠ CE QUI ARRIVE CHEZ LE PROSPECT : une signature, pas deux ; la question sur sa ligne ; un pied sans clientèle affirmée", () => {
+  /**
+   * Mesuré le 29/10/2026 en préparant le film « ALPHA vend ALPHA » : le corps du
+   * pilote portait sa signature et son « STOP », puis `/api/send` les ajoutait
+   * au rendu — deux signatures, TROIS « STOP » dans le même email. On teste ce
+   * qui PART (le corps passé par le vrai rendu), pas le corps seul : c'est la
+   * chaîne qui doublait, chaque maillon était juste.
+   */
+  const exp = { profil: { poste: "dirigeant" as const, metier: "un OS de vente qui trouve vos clients et pose vos rendez-vous", cibleSecteur: "agences immobilières", cibleRole: "dirigeants", cibleZone: "" }, agencyName: "ATELIER (DÉMO)", city: "Lyon" };
+  const p = fiche({ name: "Jean Démo", company: "AGENCE (DÉMO)" });
+  const m = premierMessage(p, { accountId: "eagleye", closerName: "Camille Démo", agencyName: "ATELIER (DÉMO)" }, exp);
+  const habillage = { subject: m.subject, body: m.body, closerName: "Camille Démo", addressLine: "ATELIER (DÉMO) — Lyon" };
+  const texte = plainText(habillage);
+  assert.equal(texte.split("Camille Démo").length - 1, 1, `une seule signature dans ce qui part :\n${texte}`);
+  assert.equal(texte.match(/STOP/g)?.length, 2, "le pied du rendu + l'aveu de l'IA (qui porte son moyen de refus) — pas un de plus");
+  assert.match(m.body, /vraiment\.\n\nEst-ce qu'un OS de vente/, "la question sur sa ligne, jamais une capitale après « : »");
+  assert.doesNotMatch(renderEmail(habillage), /nous accompagnons/i, "le pied affirmait une clientèle sous chaque email");
+
+  const r = propositionCreneaux({ name: "Jean Démo" }, CRENEAUX, { closerName: "Camille Démo", agencyName: "ATELIER (DÉMO)" }, m.subject);
+  const c = confirmationRdv({ name: "Jean Démo" }, CRENEAUX[0], "visio", { closerName: "Camille Démo", agencyName: "ATELIER (DÉMO)" }, m.subject, "BEGIN:VCALENDAR\r\nEND:VCALENDAR");
+  for (const corps of [r.body, c.body]) {
+    const t = plainText({ ...habillage, body: corps });
+    assert.equal(t.split("Camille Démo").length - 1, 1, `une seule signature :\n${t}`);
+  }
 });

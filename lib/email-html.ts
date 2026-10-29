@@ -128,7 +128,13 @@ function button(label: string, url: string): string {
  *    prospect lisait deux sociétés, dont une qui n'était pas l'expéditeur ;
  *  · les replis `|| "EAGLEYE"` de la signature et de l'adresse légale ;
  *  · « nous accompagnons les professionnels de votre secteur à Lyon » — faux
- *    dès qu'un compte vend ailleurs.
+ *    dès qu'un compte vend ailleurs. Le « à Lyon » est parti ; le reste est
+ *    resté jusqu'au 29/10/2026, et il était faux PARTOUT : une clientèle
+ *    affirmée au présent, sous chaque email, à zéro client (la cinquième forme
+ *    de `tests/preuve-sociale` — ce fichier n'était pas dans sa liste). Le pied
+ *    dit désormais pourquoi on écrit, pas à qui on prétend déjà vendre.
+ *    ⚠ Un commentaire HTML part avec l'email (code source) : l'histoire s'écrit
+ *    ici, jamais dans le gabarit.
  *
  * Ce qui RESTE, et qui est d'une autre nature : « Envoyé avec Alpha Sales
  * OS® — Eagleye Corp, Lyon ». Celle-là nomme l'ÉDITEUR DE L'OUTIL, pas celui
@@ -258,7 +264,7 @@ export function renderEmail(opts: EmailOptions): string {
         )}</p>
         <p style="margin:0 0 6px;font-family:${SANS};font-size:12px;line-height:1.55;color:${INK_SOFT};">
           <!-- « à Lyon » était en dur : faux dès qu'un compte vend ailleurs. -->
-          Vous recevez cet email car nous accompagnons les professionnels de votre secteur.
+          Vous recevez cet email à votre adresse professionnelle, au sujet de l&#8217;activité de votre entreprise.
           Vos coordonnées professionnelles proviennent de sources publiques (annuaires professionnels,
           site web de votre entreprise).
         </p>

@@ -54,6 +54,17 @@ export interface ComposeOptions {
   accountId?: string;
   /** Présent hors compte maître : le texte parle de SON offre, signe de SA société. */
   inscrit?: ExpediteurInscrit | null;
+  /**
+   * Qui pose la signature et le pied « STOP » ?
+   * · `"texte"` (défaut) : le corps les porte — il sera COPIÉ ou ouvert dans
+   *   une fenêtre de rédaction, où personne ne les ajoute.
+   * · `"rendu"` : il partira par `renderEmail` (`/api/send`), qui les ajoute
+   *   déjà. Les écrire ici les doublait — mesuré le 29/10/2026 sur le premier
+   *   message du pilote : deux signatures et TROIS « STOP » dans le même email,
+   *   la marque d'un envoi de masse au moment précis où l'on prétend écrire à
+   *   une personne. Même règle que `construireMailCold` (`lib/mail-autopilote.ts`).
+   */
+  pied?: "texte" | "rendu";
 }
 
 /**
@@ -91,15 +102,23 @@ export function emailBody(p: Prospect, opts: ComposeOptions = {}): string {
     "",
     `Je n'écris pas au hasard : ${a.phraseCritere}.${a.critereMetier ? ` ${a.critereMetier}` : ""}`,
     "",
-    `Une seule question, celle qui m'intéresse vraiment : ${a.question}`,
+    // La question sur SA ligne : après « : », la typographie française veut une
+    // minuscule, et la question commence par une capitale (« Est-ce… »).
+    `Une seule question, celle qui m'intéresse vraiment.`,
+    "",
+    a.question,
     ...(a.signal ? ["", a.signal] : []),
     ...booking,
-    "",
-    // La ville vient du compte : « Lyon » était en dur, donc un partenaire
-    // établi ailleurs signait depuis une ville où il n'est pas.
-    [closer, [agency, ville].filter(Boolean).join(", ")].filter(Boolean).join(" — "),
-    "",
-    `Si vous ne souhaitez plus recevoir de message de ma part, répondez STOP : je vous retire immédiatement.`,
+    ...(opts.pied === "rendu"
+      ? []
+      : [
+          "",
+          // La ville vient du compte : « Lyon » était en dur, donc un partenaire
+          // établi ailleurs signait depuis une ville où il n'est pas.
+          [closer, [agency, ville].filter(Boolean).join(", ")].filter(Boolean).join(" — "),
+          "",
+          `Si vous ne souhaitez plus recevoir de message de ma part, répondez STOP : je vous retire immédiatement.`,
+        ]),
   ].join("\n");
 }
 

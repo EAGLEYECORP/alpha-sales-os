@@ -135,7 +135,11 @@ export interface MailSortant {
 
 const prenomDe = (p: Pick<Prospect, "name">) => (p.name || "").trim().split(/\s+/)[0] || "";
 const bonjour = (p: Pick<Prospect, "name">) => (prenomDe(p) ? `Bonjour ${prenomDe(p)},` : "Bonjour,");
-const signature = (e: Expediteur) => [e.closerName.trim(), e.agencyName.trim()].filter(Boolean).join(" — ");
+/**
+ * ⚠ AUCUNE SIGNATURE DANS CES CORPS : ils partent tous par `/api/send`, dont le
+ * rendu (`renderEmail`) signe « — <nom> » et pose l'adresse et le pied « STOP ».
+ * Les signer ici faisait deux signatures par email (mesuré le 29/10/2026).
+ */
 const re = (sujet: string) => (/^re\s*:/i.test(sujet.trim()) ? sujet.trim() : `Re: ${sujet.trim() || "votre message"}`);
 
 /**
@@ -168,8 +172,6 @@ export function propositionCreneaux(p: Pick<Prospect, "name">, creneaux: Date[],
       "",
       `${choix} et je vous envoie l'invitation.`,
       ...(e.bookingUrl?.trim() ? ["", `Si aucun ne vous va, choisissez directement ici : ${e.bookingUrl.trim()}`] : []),
-      "",
-      signature(e),
       "",
       DIVULGATION_ECRITE,
     ]
@@ -204,8 +206,6 @@ export function confirmationRdv(p: Pick<Prospect, "name">, creneau: Date, canal:
       bonjour(p),
       "",
       `C'est noté : ${labelCreneau(creneau)}, ${comment}. L'invitation est jointe pour votre agenda.`,
-      "",
-      signature(e),
       "",
       DIVULGATION_ECRITE,
     ].join("\n"),

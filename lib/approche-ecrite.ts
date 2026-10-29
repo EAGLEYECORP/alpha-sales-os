@@ -252,5 +252,5 @@ export function messageCourt(p: Prospect, accountId?: string, inscrit?: Expedite
   // Zéro pitch, zéro chiffre, zéro prix : une phrase de critère et UNE
   // question. C'est la même discipline que l'invitation LinkedIn, qui est
   // plafonnée, et que l'appel à froid, qui n'a droit à aucune improvisation.
-  return `${salut} je n'écris pas au hasard : ${a.phraseCritere}. Une question, celle qui m'intéresse vraiment : ${a.question}`;
+  return `${salut} je n'écris pas au hasard : ${a.phraseCritere}. Une question, celle qui m'intéresse vraiment. ${a.question}`;
 }

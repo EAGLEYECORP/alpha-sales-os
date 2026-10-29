@@ -81,6 +81,12 @@ const REDACTEURS = [
    * or il dicte. Troisième endroit du dépôt où cette tentation était écrite.
    */
   "lib/seed.ts",
+  /**
+   * Le pied de CHAQUE email rendu (29/10/2026). Il disait « nous accompagnons
+   * les professionnels de votre secteur » — le motif existait plus bas, le
+   * fichier n'était pas dans la liste. Encore le fichier, pas le motif.
+   */
+  "lib/email-html.ts",
 ];
 
 const sansCommentaires = (src: string) =>

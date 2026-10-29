@@ -199,7 +199,10 @@ export function messageText(
     ``,
     `Je n'écris pas au hasard : ${a.phraseCritere}. ${a.critereMetier ?? ""}`.trim(),
     ``,
-    `Une seule question, celle qui m'intéresse vraiment : ${a.question}`,
+    // Sur sa ligne : après « : », une minuscule — la question commence par une capitale.
+    `Une seule question, celle qui m'intéresse vraiment.`,
+    ``,
+    a.question,
     ...(a.signal ? [``, a.signal] : []),
     ...booking,
     ``,

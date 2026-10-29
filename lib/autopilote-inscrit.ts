@@ -424,7 +424,8 @@ export function premierMessage(
   return {
     subject: emailSubject(p, s.accountId, inscrit),
     body: [
-      emailBody(p, { accountId: s.accountId, inscrit, closerName: s.closerName, agencyName: s.agencyName, bookingUrl: s.bookingUrl }),
+      // Il part par `/api/send`, dont le rendu signe et pose le pied « STOP ».
+      emailBody(p, { accountId: s.accountId, inscrit, closerName: s.closerName, agencyName: s.agencyName, bookingUrl: s.bookingUrl, pied: "rendu" }),
       "",
       DIVULGATION_ECRITE,
     ].join("\n"),
