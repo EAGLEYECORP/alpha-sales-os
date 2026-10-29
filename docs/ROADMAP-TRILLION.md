@@ -3,9 +3,23 @@
 > État vivant. `CLAUDE.md` porte la doctrine STABLE (comptes, tarifs, cible,
 > sécurité) ; **ce fichier porte le PLAN et l'AVANCEMENT RÉEL**.
 >
-> Dernière révision : **2026-09-10** · **1 636 tests verts** · `tsc --noEmit`
-> propre · `next build` propre · 179 modules `lib/`, 148 fichiers de test,
-> 44 écrans.
+> Dernière révision : **2026-10-30** · **2 739 tests verts** (4 sautés : données
+> privées absentes) · `tsc --noEmit` propre · `next build` propre · 257 modules
+> `lib/`, 247 fichiers de test, 51 écrans, 77 routes d'API.
+
+> 📍 **OÙ ON EN EST LE 30/10/2026 — lu, pas recopié.**
+> · **Produit** : en ligne gratuit, la chaîne complète tourne dans le navigateur
+>   (registre → coordonnées → 1er message → réponses → créneaux de SON agenda →
+>   rendez-vous → prix déclaré et lien de signature). Connexion Google active
+>   et testée. Compte maître configuré pour vendre ALPHA.
+> · **Vente** : **zéro message parti de l'app** (`tracking_messages` = 0),
+>   zéro client. Le prochain geste qui compte n'est pas une fonction : c'est
+>   « Lancer ALPHA » sur le compte maître (`docs/ALPHA-VEND-ALPHA.md`).
+> · **Ouvert** : le cron Supabase vise encore la copie Netlify de l'app ; le
+>   dépôt GitHub est toujours public ; aucune formule payante en ligne (un
+>   inscrit ne paie jamais) — `docs/A-FAIRE-ZAKARIA.md`, section du 30/10.
+> · Les sections datées plus bas gardent leur date : ce sont des constats de
+>   leur jour, pas l'état d'aujourd'hui.
 
 > ⚠⚠ **CE FICHIER AVAIT 19 JOURS DE RETARD, et ce n'est pas un détail de
 > tenue.** Il annonçait « 579 tests · révision du 22 août », décrivait une

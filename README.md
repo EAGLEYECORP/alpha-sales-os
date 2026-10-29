@@ -60,6 +60,40 @@ Le seul levier dont l'effet soit **constaté** : l'**audit écrit**. Là où une
 pièce écrite est partie, le taux monte ; 26 appels sans audit n'ont rien
 produit.
 
+**Au 30/10/2026, l'outillage de la vente est branché ; aucun message n'est
+encore parti de l'app vers un prospect** (`tracking_messages` vide en
+production). Ce qui est en place et vérifié :
+- le compte propriétaire est reconnu par le serveur (`OWNER_EMAILS`), et
+  `/autopilote` s'y configure seul pour vendre ALPHA (`docs/ALPHA-VEND-ALPHA.md`) ;
+- les variables d'envoi sont posées sur Vercel ; le premier envoi réel dira si
+  le mot de passe est le bon ;
+- « Continuer avec Google » fonctionne pour les inscrits (testé en vrai) : plus
+  d'email de confirmation à attendre (`docs/CONNEXION-GOOGLE.md`).
+
+Ce qui ne l'est pas encore : un vrai Dropcontact, une vraie lecture IMAP chez
+Amen, un vrai agenda Google lu par ALPHA. Le premier passage du pilote est le test.
+
+---
+
+## ALPHA fait la chaîne — de la cible au lien de signature
+
+`/autopilote` · `lib/autopilote-inscrit.ts` · `components/autopilote/moteur-autopilote.tsx` ·
+`lib/reponses-inscrit.ts`.
+
+| Étape | Ce qu'ALPHA fait | Avec quoi |
+|---|---|---|
+| Trouver | entreprises ACTIVES par métier (code NAF) et zone, au registre de l'État | le navigateur, sans clé |
+| Joindre | email professionnel du dirigeant | la clé Dropcontact de l'utilisateur |
+| Écrire | un premier message, une seule question, divulgation IA | SA boîte |
+| Lire | ses réponses, en lecture seule | SA boîte (IMAP) |
+| Caler | trois créneaux libres dans SON agenda ; « 2 » pose le rendez-vous et l'invitation | son agenda (adresse iCal secrète) |
+| Conclure | à « c'est combien ? » : le prix **qu'il a déclaré** ; à « on y va » : **son** lien de paiement, de signature ou d'inscription | `closingPret` |
+| Remonter | le doute, la négociation, tout ce qui est ambigu | la bande « ALPHA a besoin de toi » |
+
+Rien n'est inventé : sans prix déclaré, la question de prix remonte ; sans
+lien, « on y va » remonte. En ligne, ALPHA travaille **onglet ouvert** — le
+CRM d'un inscrit vit dans son navigateur, et c'est la promesse de souveraineté.
+
 ---
 
 ## À qui ça s'adresse
@@ -459,8 +493,10 @@ La doctrine n'est pas dans des commentaires, elle est **exécutée** :
 - **Dès qu'il répond**, Alpha Voice s'arrête et passe la main à l'humain.
 - **Opposition** (« ne me rappelez plus ») → arrêt définitif, prioritaire sur
   tout le reste.
-- **Jamais de prix avant la démo**, jamais de closing sur un signal vital au
-  rouge, jamais de relance sur un prospect saturé.
+- **Jamais de prix avant la démo à l'oral**, jamais de closing sur un signal
+  vital au rouge, jamais de relance sur un prospect saturé. Par écrit, ALPHA ne
+  donne un prix qu'à qui le demande, et seulement celui que l'opérateur a
+  déclaré.
 - **Aucun chiffre inventé** : sans données, l'argumentaire dit « je ne vous
   annonce pas de chiffre » au lieu d'estimer.
 

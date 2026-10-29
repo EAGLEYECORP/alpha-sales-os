@@ -4,6 +4,22 @@ Le compte MAÎTRE donne notre offre au pilote automatique (`/autopilote`) et le
 laisse prospecter. Chaque étape ci-dessous a été vérifiée dans le code ; ce qui
 n'a PAS été vérifié contre un vrai service est dit.
 
+## ✅ État au 30/10/2026 (nuit) — ce qui est fait, ce qui reste
+
+| | État | Comment c'est su |
+|---|---|---|
+| Compte maître reconnu (`OWNER_EMAILS`) | ✅ | `/api/compte/droits` → `"maitre": true`, lu par Zakaria |
+| `SMTP_*` sur Vercel | ✅ posé | `/api/autopilote` → `smtpPret` ; le mot de passe ne sera prouvé qu'au 1er envoi |
+| Configuration ALPHA vend ALPHA (cible, IMAP, closing) | ✅ servie par le serveur | vu au rendu, build de production |
+| Closing écrit (prix + lien `/compte`) | ✅ | `tests/closing-inscrit.test.ts` |
+| Connexion Google des inscrits | ✅ testée en vrai | `docs/CONNEXION-GOOGLE.md` |
+| Ton nom (Réglages → Closer) | ⏳ à toi | |
+| Clé Dropcontact · agenda iCal | ⏳ à toi | secrets du navigateur |
+| « Lancer ALPHA » (jour ouvré, 9 h–12 h ou 14 h–18 h) | ⏳ à toi | |
+
+Le serveur IMAP (`pop.securemail.pro`) reste NON vérifié avec la boîte : si le
+journal dit « Réponses non lues », mettre `mail.securemail.pro`.
+
 ## ⚡ Depuis le 29/10 (soir) : la configuration arrive toute faite
 
 Connecté en `contact@eagleyecorp.fr`, ouvre `/autopilote` : si rien n'y est
@@ -16,7 +32,6 @@ Ce qui reste à toi, et ne peut pas venir du serveur :
 - ton nom dans Réglages → Closer (on ne pose jamais l'identité d'un humain
   par configuration ; sans lui, les emails signent « EAGLEYE CORP ») ;
 - la clé Dropcontact et l'adresse secrète de l'agenda (secrets, navigateur) ;
-- `SMTP_*` sur Vercel si `/api/health` dit `email.configured: false` ;
 - « Lancer ALPHA ».
 
 Vu au rendu (build de production, navigateur vierge, maître) : identité,

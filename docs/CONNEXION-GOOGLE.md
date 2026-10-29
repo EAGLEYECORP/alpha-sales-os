@@ -1,5 +1,14 @@
 # Activer « Continuer avec Google » (27/10/2026)
 
+> ✅ **ACTIVÉ ET TESTÉ LE 30/10/2026.** Projet Google Cloud « ALPHA SALES OS », écran de
+> consentement publié, client « Application Web ». Relu dans Supabase (lecture seule, aucun
+> secret affiché) : `external_google_enabled = true`, ID client du projet, secret posé, retours
+> `https://alphasalesos.eagleyecorp.fr/**` autorisés. Zakaria a fait l'aller-retour complet en
+> navigation privée : ça marche.
+> ⚠ Le premier secret a été collé dans une conversation : il a été remplacé dans Google
+> (nouveau secret dans Supabase, ancien supprimé — déclaré fait par Zakaria, non vérifiable d'ici).
+> Un secret de client Google ne se colle nulle part ailleurs que dans Supabase.
+
 Le bouton est codé et en production. **Il reste invisible tant que Supabase ne sert pas Google**
 (`connexionGoogleDisponible`, `lib/auth.ts`) : un inscrit ne voit jamais un bouton qui échoue.
 Il apparaît tout seul dès que le fournisseur est activé — aucun redéploiement.

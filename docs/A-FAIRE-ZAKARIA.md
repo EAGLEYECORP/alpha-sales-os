@@ -10,6 +10,38 @@
 
 ---
 
+## ✅ 30/10/2026 (nuit) — FAIT CETTE NUIT, ET LA LISTE QUI RESTE (elle passe devant tout ce qui suit)
+
+**Fait par toi, vérifié :**
+- `OWNER_EMAILS` sur Vercel → `/api/compte/droits` rend `"maitre": true` pour `contact@`.
+- `SMTP_*` sur Vercel (le mot de passe ne sera prouvé qu'au premier envoi).
+- « Continuer avec Google » : projet Google Cloud, écran de consentement publié, client Web,
+  Supabase activé (relu : `external_google_enabled = true`), **testé en navigation privée**.
+  ⚠ Le premier secret Google a été collé dans la conversation : remplacé (déclaré par toi).
+
+**Fait de mon côté, en production :**
+- `/autopilote` se configure seul pour le maître (cible agences immobilières 69, 5 envois/jour,
+  IMAP Amen, closing) — `docs/ALPHA-VEND-ALPHA.md`.
+- ALPHA répond seul au prix déclaré et envoie le lien de signature (`/compte` pour nous).
+- `/settings` ne montre plus Nuwacom, nos offres ni notre charte à un inscrit ou un visiteur.
+
+**Mesuré à l'instant, toujours vrai :**
+- **Zéro message parti de l'app** (`tracking_messages` : 0).
+- **Le cron Supabase tape toujours la copie NETLIFY** de l'app (6 derniers retours :
+  `server: Netlify`, 503 « IA indisponible » et « Clés VAPID non configurées »). Ordre du 27/10
+  ci-dessous, étapes 2 à 4, inchangé.
+- **Le dépôt GitHub est toujours PUBLIC.**
+
+**Ce qui reste, dans l'ordre :**
+1. Dans `/autopilote` (connecté en `contact@`) : ton nom (Réglages → Closer), ta clé Dropcontact,
+   l'adresse iCal secrète de ton agenda, puis **« Lancer ALPHA »** un jour ouvré, 9 h–12 h ou
+   14 h–18 h, onglet ouvert. Me dire ce que dit le journal après une heure.
+2. Vercel Pro + `CRON_SECRET` copié vers Vercel → une session rebascule le cron (§ 27/10).
+3. Dépôt GitHub en privé.
+4. Trancher : une formule payante EN LIGNE (aujourd'hui, un inscrit ne paie jamais rien).
+
+---
+
 ## 🚀 29/10/2026 — ALPHA FAIT TOUTE LA CHAÎNE : CE QU'IL TE FAUT POUR LE VOIR TOURNER EN VRAI
 
 Le pilote automatique (`/autopilote`) est en ligne et prouvé au rendu, de bout
@@ -49,7 +81,7 @@ c'est toi, dans cet ordre :
 Livré : un visiteur utilise les écrans gratuits sans compte (voir `CLAUDE.md`, « Essayer
 sans compte »). Mesuré avant : 6 comptes en tout, aucun depuis le 13/10.
 **Reste la création de compte**, qui exige un email confirmé (réglage Supabase lu :
-`mailer_autoconfirm: false`, Google désactivé). **TRANCHÉ : Google.** Le bouton est codé et
+`mailer_autoconfirm: false`, Google désactivé). **TRANCHÉ : Google — ✅ ACTIVÉ ET TESTÉ le 30/10.** Le bouton est codé et
 déployé ; il s'affichera dès que tu actives Google — les gestes sont dans
 `docs/CONNEXION-GOOGLE.md`. Les deux sorties, telles qu'elles avaient été posées :
 - **Recommandé — « Continuer avec Google »** : email vérifié par Google, aucun email envoyé

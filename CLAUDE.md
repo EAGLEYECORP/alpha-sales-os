@@ -2423,8 +2423,8 @@ son email — **6 comptes en tout, aucun depuis le 13/10**. Décision de Zakaria
   — adresse vérifiée, aucun envoi. Couper la confirmation était l'autre sortie, écartée : un
   essai sans boîte à lui envoie depuis NOTRE `contact@` (`resoudreSmtp`, repli « maison »).
   **Le bouton ne s'affiche que si Supabase sert Google** (`connexionGoogleDisponible`, panne =
-  non) : il apparaît sans redéploiement. L'activation (Google Cloud + Supabase) est sur Zakaria,
-  `docs/CONNEXION-GOOGLE.md`.
+  non) : il apparaît sans redéploiement. **✅ ACTIVÉ ET TESTÉ EN VRAI le 30/10/2026** (relu dans
+  Supabase : `external_google_enabled = true`) — `docs/CONNEXION-GOOGLE.md`.
 
 **Notre compte** : `OWNER_EMAILS` (+ `NEXT_PUBLIC_OWNER_EMAILS`, même liste) =
 `contact@eagleyecorp.fr,eagleyecorp.ad@gmail.com`. `estMaitre()` lit l'email du
