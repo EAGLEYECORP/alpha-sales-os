@@ -39,6 +39,9 @@ c'est toi, dans cet ordre :
 > ⚠ Sur NOTRE compte (maître), l'autopilote SERVEUR existe déjà (Pilote). Ne
 > lance pas les deux sur les mêmes fiches.
 
+> 🎯 **ALPHA vend ALPHA** — la configuration complète du compte maître, champ
+> par champ : `docs/ALPHA-VEND-ALPHA.md`.
+
 ---
 
 ## ⚡ 27/10/2026 (soir) — L'APP S'OUVRE SANS COMPTE ; LE MUR SUIVANT EST L'EMAIL DE CONFIRMATION
