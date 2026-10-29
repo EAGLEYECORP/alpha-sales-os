@@ -144,6 +144,10 @@ function button(label: string, url: string): string {
  *    dit désormais pourquoi on écrit, pas à qui on prétend déjà vendre.
  *    ⚠ Un commentaire HTML part avec l'email (code source) : l'histoire s'écrit
  *    ici, jamais dans le gabarit.
+ *  · Le bandeau « Envoyé avec » était une table de 600 px SANS classe : la règle
+ *    mobile ne la touchait pas, et elle forçait tout l'email à 600 px sur un
+ *    téléphone — défilement horizontal (vu le 29/10/2026 en filmant à 480 px).
+ *    Toute table à largeur fixe porte une classe que la règle mobile élargit.
  *
  * Ce qui RESTE, et qui est d'une autre nature : « Envoyé avec Alpha Sales
  * OS® — Eagleye Corp, Lyon ». Celle-là nomme l'ÉDITEUR DE L'OUTIL, pas celui
@@ -229,7 +233,8 @@ export function renderEmail(opts: EmailOptions): string {
     .card { background:${CARD} !important; border-color:${LINE} !important; }
   }
   @media only screen and (max-width:600px) {
-    .card { width:100% !important; border-radius:0 !important; }
+    .card, .bandeau { width:100% !important; }
+    .card { border-radius:0 !important; }
     .pad { padding:24px !important; }
   }
   a { color:${SAGE_DEEP}; }
@@ -284,7 +289,7 @@ export function renderEmail(opts: EmailOptions): string {
         </p>
       </td></tr>
     </table>
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
+    <table role="presentation" class="bandeau" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
       <!-- Bandeau expéditeur : voir la note au-dessus de renderEmail. -->
       <tr><td style="padding:16px 8px 14px;text-align:center;font-family:${SANS};font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${SAGE};">
         Envoyé avec <span style="font-family:${SERIF};font-style:italic;font-size:12px;letter-spacing:.04em;text-transform:none;color:${INK};">Alpha Sales OS</span><span style="color:${INK};">&#174;</span>
