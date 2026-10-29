@@ -572,11 +572,18 @@ test("les sections OPÉRATEUR des réglages sont bien derrière la porte", () =>
 test("les réglages du CLIENT restent chez le client", () => {
   /**
    * Contre-test. Tout envelopper serait aussi faux que ne rien envelopper :
-   * l'agence, la doctrine, l'ICP et les offres que le titulaire vend à SES
-   * prospects lui appartiennent — c'est le principe même du white-label.
+   * l'agence, la doctrine et l'ICP du titulaire lui appartiennent — c'est le
+   * principe même du white-label.
+   *
+   * ⚠ `<OffresEditor />` A QUITTÉ CETTE LISTE le 29/10/2026 (décision de
+   * Zakaria, « Nuwacom accessible à tout le monde ? »). Il y était au temps des
+   * REVENDEURS. Depuis le 21/10, l'offre d'un inscrit est son PROFIL (« ce que
+   * tu vends », `ProfilIcp`) ; cet éditeur ne connaît que NOS familles de
+   * routage et naît pré-rempli de NOS offres. `tests/settings-operateur.test.ts`
+   * exige désormais l'inverse pour lui.
    */
   const page = readFileSync(join(process.cwd(), "app/(app)/settings/page.tsx"), "utf8");
-  for (const composant of ["<OffresEditor />", "<IcpGenerator />", "<PushToggle />"]) {
+  for (const composant of ["<ProfilIcp compact />", "<IcpGenerator />", "<PushToggle />"]) {
     const i = page.indexOf(composant);
     assert.ok(i > 0, `${composant} introuvable`);
     const avant = page.slice(Math.max(0, i - 400), i);

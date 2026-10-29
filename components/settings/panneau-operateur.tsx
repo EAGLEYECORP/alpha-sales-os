@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import { useDroits } from "@/lib/use-droits";
+import { useMaitreProuve } from "@/lib/use-droits";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -28,9 +28,14 @@ import { useDroits } from "@/lib/use-droits";
  * Une prose qui dérive du code ne casse rien : elle ment, à l'endroit précis
  * où quelqu'un vient chercher la règle.
  *
- * Par défaut, `useDroits` est OPTIMISTE (tout ouvert tant qu'on ne sait pas).
- * C'est le bon choix pour un menu — un écran qui clignote fait croire à une
- * panne — et c'est acceptable ici pour la même raison : le serveur tranche.
+ * ⚠⚠ LE VERDICT EST PESSIMISTE (`useMaitreProuve`), PLUS OPTIMISTE (29/10/2026).
+ * `useDroits` rendait « maître » tant que la réponse n'était pas arrivée — et
+ * pour de bon si elle échouait. Vu en production, sur un `/settings` imprimé
+ * par un VISITEUR sans compte : le panneau de validation partenaire Nuwacom,
+ * nos trois offres, la charte interne. Le serveur tranchait bien les API ;
+ * l'écran, lui, avait déjà raconté notre portefeuille. Ce panneau montre ce
+ * qui n'est qu'à nous : dans le doute, il se tait. Même règle que les textes
+ * qui se copient (`useMaitreProuve`, 22/10).
  * ─────────────────────────────────────────────────────────────────────
  */
 export function PanneauOperateur({
@@ -41,8 +46,8 @@ export function PanneauOperateur({
   titre?: string;
   children: React.ReactNode;
 }) {
-  const d = useDroits();
-  if (!d.maitre && !d.solo) return null;
+  const maitre = useMaitreProuve();
+  if (!maitre) return null;
 
   return (
     <div className="relative">
@@ -58,6 +63,5 @@ export function PanneauOperateur({
 
 /** Le booléen nu, pour les cas où un fragment ne peut pas être enveloppé. */
 export function useEstOperateur(): boolean {
-  const d = useDroits();
-  return d.maitre || d.solo;
+  return useMaitreProuve();
 }

@@ -33,7 +33,7 @@ import { AccountSwitcher } from "@/components/settings/account-switcher";
 import { BoiteEnvoi, CleIA } from "@/components/settings/cle-ia";
 import { ImportTriagePanel } from "@/components/settings/import-triage";
 import { triageImport, type ImportTriage } from "@/lib/import-triage";
-import { PanneauOperateur } from "@/components/settings/panneau-operateur";
+import { PanneauOperateur, useEstOperateur } from "@/components/settings/panneau-operateur";
 import { CharteMarque } from "@/components/settings/charte-marque";
 import { openSetupWizard } from "@/components/setup-wizard";
 import { openOperatorTour } from "@/components/tour/operator-tour";
@@ -42,6 +42,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function SettingsPage() {
   const { settings, patchSettings, exportData, importData, importProspects, clearAllData, resetToSeed, loadPipelineJuillet, loadProspectsICP, prospects } = useAlpha();
+  const operateur = useEstOperateur();
   const importRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [sheetUrl, setSheetUrl] = useState("");
@@ -438,7 +439,9 @@ export default function SettingsPage() {
         </PanneauOperateur>
 
         {/* Dictionnaire CRM — toutes les variables suivies par Google Sheets */}
-        <CrmDictionary />
+        <PanneauOperateur titre="Dictionnaire CRM (notre Sheets + n8n)">
+          <CrmDictionary />
+        </PanneauOperateur>
 
         {/* ── OPÉRATEUR. Le portefeuille : EAGLEYE, Nuwacom. Ce sont
             NOS identités commerciales et NOS taux de reversement. Un client
@@ -463,10 +466,13 @@ export default function SettingsPage() {
               <label className="label">Objectif MRR (€)</label>
               <input type="number" className="input" value={settings.targetMRR} onChange={(e) => patchSettings({ targetMRR: +e.target.value })} />
             </div>
-            <div>
-              <label className="label">Commission sur CA (%)</label>
-              <input type="number" className="input" value={settings.commissionPct} onChange={(e) => patchSettings({ commissionPct: +e.target.value })} />
-            </div>
+            {/* Le taux d'un compte du PORTEFEUILLE (ce qui nous revient) : à nous seuls. */}
+            {operateur && (
+              <div>
+                <label className="label">Commission sur CA (%)</label>
+                <input type="number" className="input" value={settings.commissionPct} onChange={(e) => patchSettings({ commissionPct: +e.target.value })} />
+              </div>
+            )}
           </div>
           {/*
             ⚠ LE LIEN DE RENDEZ-VOUS ET L'ICP SE SAISISSENT AU MÊME ENDROIT,
@@ -482,8 +488,7 @@ export default function SettingsPage() {
           <div className="rounded-xl border border-bronze-700/40 bg-bronze-900/10 p-3">
             <p className="text-[12px] font-medium text-paper">Mon offre — ce que je vends</p>
             <p className="mt-0.5 text-[11px] text-paper-faint">
-              Le nom d&apos;agence ci-dessus + ces champs personnalisent tes documents (audit, projection). Chez EAGLEYE,
-              tu vends Alpha Sales OS ; un autre commercial met la sienne.
+              Le nom d&apos;agence ci-dessus + ces champs personnalisent tes documents (audit, projection).
             </p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div>
@@ -499,7 +504,7 @@ export default function SettingsPage() {
                 <label className="label">Ce que tu vends (une ligne)</label>
                 <input
                   className="input"
-                  placeholder="Alpha Sales OS — l'OS de vente terrain"
+                  placeholder="logiciel de paie pour PME, rénovation de cuisines…"
                   value={settings.offer?.whatYouSell ?? ""}
                   onChange={(e) => patchSettings({ offer: { city: settings.offer?.city ?? "", whatYouSell: e.target.value, valueProp: settings.offer?.valueProp ?? "" } })}
                 />
@@ -509,7 +514,7 @@ export default function SettingsPage() {
               <label className="label">Ta proposition de valeur (une phrase)</label>
               <input
                 className="input"
-                placeholder="Zéro lead perdu, la machine tourne 24/7."
+                placeholder="Ce que ton client gagne, en une phrase."
                 value={settings.offer?.valueProp ?? ""}
                 onChange={(e) => patchSettings({ offer: { city: settings.offer?.city ?? "", whatYouSell: settings.offer?.whatYouSell ?? "", valueProp: e.target.value } })}
               />
@@ -540,14 +545,18 @@ export default function SettingsPage() {
             tarifaire : on définit l'offre, puis on la chiffre. */}
         {/* Ce que le TITULAIRE du compte vend à SES prospects : ça lui
             appartient, white-label oblige. Reste côté client. */}
-        <OffresEditor />
+        <PanneauOperateur titre="Nos offres (familles de routage)">
+          <OffresEditor />
+        </PanneauOperateur>
 
         {/* ── La charte de marque. Elle reste CÔTÉ CLIENT et n'est pas réservée
             au maître : elle décrit le matériau de l'outil (que tout le monde
             voit) et surtout la frontière « ce qui est à l'outil / ce qui suit
             ton compte ». C'est exactement ce qu'un opérateur white-label doit
             pouvoir lire avant de fabriquer une plaquette à son nom. ── */}
-        <CharteMarque />
+        <PanneauOperateur titre="Charte de marque">
+          <CharteMarque />
+        </PanneauOperateur>
 
         {/* ── OPÉRATEUR. La grille tarifaire d'Alpha Sales OS — nos prix, nos
             paliers. Le client achète l'outil ; il n'édite pas son prix. ── */}
@@ -894,7 +903,9 @@ export default function SettingsPage() {
         <CleIA />
         <BoiteEnvoi />
         {/* Ce qui sort au nom d'un partenaire passe devant lui d'abord. */}
-        <ValidationPartenairePanel />
+        <PanneauOperateur titre="Validation partenaire">
+          <ValidationPartenairePanel />
+        </PanneauOperateur>
 
         {/* Supabase — linkable from the UI */}
         {/* ── OPÉRATEUR. Clés d'infrastructure Supabase. ── */}
