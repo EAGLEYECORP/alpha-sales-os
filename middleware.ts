@@ -46,6 +46,8 @@ import { creerLimiteur } from "@/lib/limiteur";
 
 const INTERNAL = [
   "/api/send",
+  // Lecture de SA boîte avec SES identifiants : même origine exigée.
+  "/api/reponses",
   "/api/ai",
   "/api/agent",
   "/api/sparring",

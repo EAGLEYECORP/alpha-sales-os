@@ -5,6 +5,7 @@
 import type { ProfilOperateur } from "./profil-operateur";
 import type { EtatCadrage } from "./cadrage";
 import type { LectureSignaux } from "./signaux-publics";
+import type { EtatAutopilote, ReglagesAutopilote } from "./autopilote-inscrit";
 
 export type { ProfilOperateur };
 
@@ -314,6 +315,19 @@ export interface Prospect {
    * Absent = jamais lue, ce qui ne veut PAS dire « rien à signaler ».
    */
   signauxPublics?: LectureSignaux;
+  /**
+   * Le représentant légal DÉCLARÉ au registre, quand il est UNIQUE et que c'est
+   * une personne (`lib/trouver-clients.ts`). Il sert à chercher des
+   * coordonnées (`lib/enrichissement.ts`), jamais de nom de contact affiché :
+   * le dirigeant d'une société n'est pas forcément la personne qu'on joint.
+   */
+  representant?: { prenom: string; nom: string };
+  /**
+   * Les créneaux qu'ALPHA a PROPOSÉS par écrit (ISO), et quand. Sa réponse
+   * « 2 » ne se comprend qu'avec cette liste : sans elle, on ne pose aucun
+   * rendez-vous (`lib/reponses-inscrit.ts`).
+   */
+  rdvPropose?: { creneaux: string[]; le: string };
   /** Suivi de satisfaction 0–100 (post-livraison). */
   satisfaction?: number;
   /** Témoignage / avis obtenu. */
@@ -519,6 +533,12 @@ export interface AppSettings {
    * obligatoire casserait chaque store déjà en circulation.
    */
   profil?: ProfilOperateur;
+  /**
+   * L'autopilote de l'inscrit (`lib/autopilote-inscrit.ts`) : ce qu'il vise,
+   * ses budgets, et son état (journal, réponses déjà traitées, recherches en
+   * cours). Absent = jamais lancé, donc arrêté.
+   */
+  autopilote?: { reglages: ReglagesAutopilote; etat: EtatAutopilote };
   apiKeys: { id: string; name: string; masked: string }[];
   supabaseSync: boolean;
   /**

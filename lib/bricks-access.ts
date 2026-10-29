@@ -121,6 +121,14 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
    * marche du gratuit : sans elle, un inscrit sans fichier n'a rien à appeler.
    */
   "/trouver": ["crm"],
+  /**
+   * LE PILOTE AUTOMATIQUE : l'écran et le moteur tournent dans le NAVIGATEUR
+   * (registre, Dropcontact avec SA clé). Ce qui dépense — écrire et lire SA
+   * boîte — passe par `/api/send` et `/api/reponses`, gardées par leur propre
+   * chemin (`/campaigns`, ouvert par sa clé email). L'écran est donc gratuit ;
+   * la porte qui coûte reste fermée là où elle l'était.
+   */
+  "/autopilote": ["crm"],
   "/aujourdhui": ["crm"],
   // ALPHA au travail : lit le CRM du navigateur, ne dépense rien chez nous — gratuit.
   "/travail": ["crm"],

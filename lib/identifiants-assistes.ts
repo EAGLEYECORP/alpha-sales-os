@@ -185,6 +185,62 @@ export const PRESETS_EMAIL: readonly PresetEmail[] = [
   }),
 ];
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LE SERVEUR DE LECTURE (IMAP) DE CHAQUE HÉBERGEUR, PAR SON SERVEUR D'ENVOI
+ * (29/10/2026) — pour lire les réponses des prospects (`lib/imap-lecture.ts`).
+ *
+ * ⚠⚠ MÊME STATUT QUE LA TABLE SMTP : ÉCRITE DE MÉMOIRE, ELLE NE FAIT JAMAIS
+ * FOI. C'est la vraie connexion qui tranche ; une ligne fausse donne un refus
+ * lisible, jamais une lecture vide qui passerait pour « personne n'a répondu ».
+ * · Un hébergeur absent ⇒ `null` : on DEMANDE le serveur, on ne devine pas
+ *   « imap.<domaine> » (même règle que pour l'envoi).
+ * · `null` aussi pour un relais d'envoi pur (Brevo) : il n'a pas de boîte.
+ * · Microsoft (Outlook, 365) est listé, mais il refuse la lecture par mot de
+ *   passe depuis la fin de l'authentification de base : la route le DIT.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+const IMAP_PAR_SMTP: Readonly<Record<string, string | null>> = {
+  "smtp.gmail.com": "imap.gmail.com",
+  "smtp-mail.outlook.com": "outlook.office365.com",
+  "smtp.office365.com": "outlook.office365.com",
+  "smtp.mail.me.com": "imap.mail.me.com",
+  "smtp.mail.yahoo.com": "imap.mail.yahoo.com",
+  "smtp.orange.fr": "imap.orange.fr",
+  "smtp.free.fr": "imap.free.fr",
+  "smtp.sfr.fr": "imap.sfr.fr",
+  "smtp.laposte.net": "imap.laposte.net",
+  "ssl0.ovh.net": "ssl0.ovh.net",
+  "smtp.ionos.fr": "imap.ionos.fr",
+  "mail.gandi.net": "mail.gandi.net",
+  "smtp.zoho.eu": "imap.zoho.eu",
+  "mail.infomaniak.com": "mail.infomaniak.com",
+  "smtp-relay.brevo.com": null,
+};
+
+/** Le serveur IMAP d'un serveur SMTP connu, ou `null` (inconnu, ou pas de boîte). */
+export function imapPourSmtp(smtpHost: string): string | null {
+  return IMAP_PAR_SMTP[smtpHost.trim().toLowerCase()] ?? null;
+}
+
+/** Les hébergeurs dont la lecture par mot de passe est fermée (on le dit avant de lire). */
+export const LECTURE_FERMEE_PAR_MOT_DE_PASSE: readonly string[] = ["outlook.office365.com"];
+
+/**
+ * Un serveur IMAP SAISI par l'inscrit est-il acceptable ? Seulement s'il est
+ * du même domaine que son serveur d'envoi : la route lui transmet SON mot de
+ * passe, et un champ libre en ferait un moyen d'envoyer ce mot de passe à
+ * n'importe quel serveur (le sien d'abord, celui d'un tiers ensuite).
+ */
+export function imapSaisiAcceptable(imapHost: string, smtpHost: string): boolean {
+  const norme = (h: string) => h.trim().toLowerCase();
+  const i = norme(imapHost);
+  const s = norme(smtpHost);
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(i)) return false;
+  const racine = (h: string) => h.split(".").slice(-2).join(".");
+  return racine(i) === racine(s);
+}
+
 export const presetParId = (id: string | null | undefined): PresetEmail | null =>
   PRESETS_EMAIL.find((p) => p.id === id) ?? null;
 

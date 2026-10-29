@@ -141,6 +141,17 @@ export const PAGE_GUIDES: PageGuide[] = [
     tip: "L'audit ne part jamais avec la lettre. Il s'envoie depuis la fiche, après un « oui » — c'est ce qui en fait un cadeau.",
   },
   {
+    path: "/autopilote",
+    title: "Pilote automatique — ALPHA fait toute la chaîne",
+    role: "Tu dis qui tu vises ; ALPHA cherche les entreprises au registre, trouve leurs coordonnées (ta clé Dropcontact), leur écrit depuis TA boîte, lit leurs réponses, propose trois créneaux et pose le rendez-vous avec son invitation.",
+    steps: [
+      "Remplis ce qui manque : ce que tu vends, le métier et la zone de tes clients, ta clé Dropcontact, ta boîte email.",
+      "Lance ALPHA. Un passage toutes les trois minutes, tant qu'un onglet est ouvert — il écrit en heures ouvrées seulement.",
+      "Reviens quand il t'appelle : le prix, la signature et le doute te sont toujours renvoyés, avec leur raison.",
+    ],
+    tip: "Chaque message dit qu'un assistant IA l'a écrit, et comment refuser. C'est la loi, et le serveur refuse un message qui l'oublie.",
+  },
+  {
     path: "/trouver",
     title: "Trouver des clients — le registre officiel",
     role: "Tu dis quel métier tu vises et où ; ALPHA lit le registre des entreprises de l'État et leurs annonces légales, depuis ton navigateur. Tu coches, tu importes : les fiches arrivent dans ton CRM avec leur SIREN.",

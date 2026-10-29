@@ -10,6 +10,31 @@
 
 ---
 
+## 🚀 29/10/2026 — ALPHA FAIT TOUTE LA CHAÎNE : CE QU'IL TE FAUT POUR LE VOIR TOURNER EN VRAI
+
+Le pilote automatique (`/autopilote`) est en ligne et prouvé au rendu, de bout
+en bout, avec des services simulés. **Rien n'a encore touché un vrai service** :
+ni Dropcontact, ni une vraie boîte en lecture (IMAP). Le premier vrai passage,
+c'est toi, dans cet ordre :
+
+1. **Un compte Dropcontact** (payant, tu ne paies que les emails trouvés) → sa
+   clé API → collée dans `/autopilote`, « Ses moyens ». Elle reste dans ton
+   navigateur.
+2. **Ta boîte branchée** dans Réglages (adresse + mot de passe d'application).
+   ⚠ Pour LIRE les réponses, l'accès IMAP doit être ouvert chez l'hébergeur.
+   Outlook / Microsoft 365 refusent la lecture par mot de passe : avec eux,
+   ALPHA écrit mais ne lit pas.
+3. **`/autopilote`** : ce que tu vends, le métier et la zone de tes clients
+   (par CODE : 69, ou 69003), puis « Lancer ALPHA ». Laisse un onglet ouvert.
+4. **Dis-moi ce que le journal affiche** après une heure : c'est le seul test
+   qui compte, et le premier « Coordonnées non lues » ou « Réponses non lues »
+   me dira quoi corriger.
+
+> ⚠ Sur NOTRE compte (maître), l'autopilote SERVEUR existe déjà (Pilote). Ne
+> lance pas les deux sur les mêmes fiches.
+
+---
+
 ## ⚡ 27/10/2026 (soir) — L'APP S'OUVRE SANS COMPTE ; LE MUR SUIVANT EST L'EMAIL DE CONFIRMATION
 
 Livré : un visiteur utilise les écrans gratuits sans compte (voir `CLAUDE.md`, « Essayer

@@ -276,6 +276,12 @@ export interface EntrepriseTrouvee {
   etablissementsDansLaZone: number;
   /** « Prénoms NOM — qualité ». Ni date de naissance, ni nationalité. */
   dirigeants: string[];
+  /**
+   * Le représentant, structuré — seulement s'il est l'UNIQUE dirigeant personne
+   * physique. Plusieurs : on ne choisit pas (ce serait deviner), et Dropcontact
+   * cherche lui-même le représentant légal à partir du SIREN.
+   */
+  representant?: { prenom: string; nom: string };
 }
 
 export type MotifEcart = "deja-dans-le-crm" | "non-diffusible" | "fermee" | "hors-zone" | "autre-activite" | "hors-taille" | "siren-invalide";
@@ -318,6 +324,19 @@ export function casseCommune(s: string): string {
     .split(/([\s'-]+)/)
     .map((m, i) => (/^[\s'-]+$/.test(m) || (i > 0 && petits.has(m)) ? m : m.charAt(0).toUpperCase() + m.slice(1)))
     .join("");
+}
+
+/**
+ * « JEAN PIERRE » / « DUPONT (MARTIN) » → { prenom: « JEAN », nom: « DUPONT » }.
+ * Le premier prénom est celui qu'on passe à un annuaire pour CHERCHER, pas un
+ * nom qu'on affiche : le registre ne dit pas lequel est l'usuel.
+ */
+function representantUnique(ds: DirigeantBrut[] | null | undefined): { prenom: string; nom: string } | undefined {
+  const personnes = (ds ?? []).filter((d) => d.type_dirigeant !== "personne morale" && (d.nom ?? "").trim());
+  if (personnes.length !== 1) return undefined;
+  const nom = (personnes[0].nom ?? "").replace(/\(.*?\)/g, "").trim();
+  const prenom = (personnes[0].prenoms ?? "").trim().split(/\s+/)[0] ?? "";
+  return nom ? { prenom, nom } : undefined;
 }
 
 function dirigeantsLisibles(ds: DirigeantBrut[] | null | undefined): string[] {
@@ -405,6 +424,7 @@ export function lireReponse(json: unknown, c: CriteresValides, dejaConnus: Reado
       entrepreneurIndividuel: brut.complements?.est_entrepreneur_individuel === true,
       etablissementsDansLaZone: sirets.size,
       dirigeants: dirigeantsLisibles(brut.dirigeants),
+      representant: representantUnique(brut.dirigeants),
     });
   }
 
@@ -499,6 +519,7 @@ export function entrepriseVersProspect(e: EntrepriseTrouvee, maintenant: Date = 
     city: e.commune,
     stage: "prospect",
     siren: e.siren,
+    ...(e.representant ? { representant: e.representant } : {}),
     // Les annonces lues avant l'import voyagent avec la fiche : la file
     // d'appels ne les relira qu'à leur péremption (`lectureAFaire`).
     ...(annonces ? { signauxPublics: annonces } : {}),

@@ -119,6 +119,9 @@ export const CHEMIN_PAR_API: Record<string, string> = {
 
   // ── Campagnes & outreach ──
   "/api/send": "/campaigns",
+  // Lire les réponses dans la boîte d'où l'on envoie : même chemin que l'envoi,
+  // ouvert par la même clé (`email`). Sans boîte à lui, la route refuse.
+  "/api/reponses": "/campaigns",
   "/api/compose": "/outbox",
   /**
    * ⚠⚠ CLASSÉE SUR `/campaigns`, DONC PAYANTE — ET ELLE N'ENVOIE RIEN.

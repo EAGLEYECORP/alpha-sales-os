@@ -278,8 +278,54 @@ au passage ; un clic les importe. **Gratuit, ouvert au visiteur sans compte.**
 - **⚠ NAF 2025 au 1ᵉʳ janvier 2027** (`BASCULE_NAF_2025`) : le filtre lit la
   rév. 2, aucun filtre NAF 2025 n'existe aujourd'hui (mesuré). Après la date
   l'écran prévient ; si le registre bascule, il répond 400 et l'écran le dit.
-- **Reste** : le numéro. Le relever à la main reste le geste ; l'enrichissement
-  payant est une décision ouverte (C), pas codée.
+- **Le numéro et l'email** : fermé le même jour par le pilote automatique
+  (Dropcontact avec la clé de l'inscrit, section suivante).
+
+## ⚠⚠ ALPHA FAIT TOUTE LA CHAÎNE — LE PILOTE AUTOMATIQUE DE L'INSCRIT (29/10/2026)
+`/autopilote` · `lib/autopilote-inscrit.ts` (décide) · `components/autopilote/moteur-autopilote.tsx`
+(exécute, monté dans la coquille) · `lib/enrichissement.ts` · `lib/imap-lecture.ts` +
+`lib/mime-lecture.ts` · `app/api/reponses` · `lib/reponses-inscrit.ts` · `tests/autopilote-inscrit.test.ts`.
+
+Décision de Zakaria : « ALPHA doit tout faire ». La chaîne existait — pour NOTRE
+compte seulement (ticks serveur sur notre pipe, notre boîte, n8n). Pour un inscrit,
+elle est rebâtie sur SES outils : registre (navigateur) → coordonnées Dropcontact
+(navigateur, SA clé) → premier message depuis SA boîte (`/api/send`, autonome) →
+lecture de SA boîte (`/api/reponses`) → trois créneaux numérotés → « 2 » pose le
+rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
+- **⚠⚠ L'onglet ouvert reste la frontière** (décision du 21/10) : un passage
+  toutes les 3 min tant qu'ALPHA est ouvert. L'écran le dit ; rien ne prétend la nuit.
+- **Dropcontact du navigateur** : préflight CORS vérifié (notre origine,
+  `x-access-token`). La clé vit HORS du magasin (`lib/cle-locale.ts`) — le magasin
+  s'exporte et se synchronise. Email `nominative@pro` puis `generic@pro`, JAMAIS
+  `@perso` ni `catch_all`. Non testé contre le vrai service (payant, pas de clé ici).
+- **⚠⚠ Un contact va à la fiche que son SIREN désigne** (`associerContacts`) — vu au
+  rendu : associer par position aurait posé l'email d'une société sur une autre.
+- **IMAP fait main, `EXAMINE` (lecture seule)** : rien marqué lu, déplacé, effacé ; seul
+  le corps des expéditeurs listés est rapatrié ; rien stocké. Le serveur IMAP vient
+  d'une table par SMTP (de mémoire, la connexion tranche) ; un serveur saisi doit
+  être du MÊME domaine (sinon son mot de passe partirait n'importe où). **NOTRE boîte
+  ne se lit que pour le maître.** Microsoft refuse la lecture par mot de passe : dit.
+- **L'historique cité est coupé** avant de classer : notre « STOP » et nos « 1. 2. 3. »
+  seraient relus comme sa réponse.
+- **Le classement sans modèle est ÉTROIT** : refus > prix > signature > doute >
+  choix de créneau > oui > question > `hors-sujet`. Le prix, la signature, le doute et
+  tout ce qui est ambigu REMONTENT (tag `reponse-a-traiter` + étape datée). Une
+  réponse aux créneaux qui n'en choisit aucun remonte : on ne réserve pas une heure
+  mal comprise. La table de `reponse-auto` est réutilisée ; ses TEXTES (notre offre)
+  ne le sont pas — un inscrit répond sur SON profil, et sans profil la question remonte.
+- **Gardes** : tout part en `autonome` (divulgation IA dans le corps) ; hors fenêtre
+  utile il lit sans écrire (une réponse qui demande un envoi attend la fenêtre sans
+  être marquée vue) ; le palier du SERVEUR gagne (429 ⇒ suspension) ; jamais à une
+  fiche de DÉMO (vu au rendu : le 1er envoi partait vers le jeu d'accueil), ni à qui a
+  refusé, est liquidé, a déjà reçu un message ou attend l'humain ; une cible épuisée
+  n'est relue que le lendemain (vu au rendu) ; le mur de stockage est consulté avant
+  d'importer ; budget Dropcontact par jour.
+- **Prouvé au RENDU** (build de production, Chromium, horloge accélérée, services
+  extérieurs simulés) : registre → 3 entreprises → coordonnées (ordre inversé, bien
+  associées) → 3 premiers messages → « oui » → 3 créneaux → « 2 » → RDV + `.ics`.
+  **25 mutations mordent.** Non prouvé : un vrai Dropcontact, une vraie boîte IMAP.
+- **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
+  l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
 
 ## LE SIGNAL DE TOUTE ENTREPRISE : LES ANNONCES LÉGALES (22/10/2026)
 `lib/signaux-publics.ts` · `lib/siren.ts` · `components/prospects/signaux-publics-panel.tsx` ·

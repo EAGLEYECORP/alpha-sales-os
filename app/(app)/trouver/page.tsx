@@ -352,6 +352,8 @@ export default function TrouverPage() {
                 <p className="text-sm text-paper">
                   {bilan}{" "}
                   <Link href="/pipeline" className="text-bronze-400 hover:underline">Voir le pipeline</Link>
+                  {" · "}
+                  <Link href="/autopilote" className="text-bronze-400 hover:underline">Laisser ALPHA trouver leurs emails et leur écrire</Link>
                 </p>
               )}
             </>

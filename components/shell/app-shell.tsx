@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   AudioLines,
+  Rocket,
   BadgeEuro,
   BarChart3,
   Brain,
@@ -73,6 +74,7 @@ import { StorageAlert } from "@/components/security/storage-alert";
 import { PipeServeur } from "@/components/pipe-serveur";
 import { SyncMoteur } from "@/components/sync-moteur";
 import { IdentiteInscrit } from "@/components/shell/identite-inscrit";
+import { MoteurAutopilote } from "@/components/autopilote/moteur-autopilote";
 import { KnowledgeSeedLoader } from "@/components/cerveau/seed-loader";
 import { useDroits } from "@/lib/use-droits";
 import { etatChemin } from "@/lib/verrous";
@@ -149,6 +151,7 @@ const NAV_GROUPES: NavGroup[] = [
     id: "attirer",
     label: "Trouver des clients",
     items: [
+      { href: "/autopilote", label: "Pilote automatique", icon: Rocket },
       { href: "/trouver", label: "Trouver des clients", icon: Search },
       { href: "/linkedin", label: "LinkedIn", icon: Linkedin },
       { href: "/social", label: "Studio social", icon: Megaphone },
@@ -623,6 +626,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             moitié « prévenir » d'un agent qui travaille — elle lit la même
             définition que l'accueil et `/pilote` (`computeRoutines`). */}
         <IdentiteInscrit />
+        {/* L'autopilote tourne sur n'importe quel écran ouvert, jamais sur un seul. */}
+        <MoteurAutopilote />
         <AlphaPresence />
         {/* Et, sur les écrans que le registre a lus, ce que la machine y fait —
             fermé par défaut, une ligne. Un écran absent du registre n'affiche rien. */}

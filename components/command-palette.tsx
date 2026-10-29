@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Activity, AudioLines, BarChart3, Bot, CalendarCheck, CalendarDays, CornerDownLeft, Cpu, Footprints, Gauge, Kanban, Mail, Mic,
-  Gem, Handshake, Linkedin, Navigation, Newspaper, PhoneCall, ScrollText, Search, Send, Settings, Sprout, Swords, User,
+  Gem, Handshake, Linkedin, Navigation, Newspaper, PhoneCall, Rocket, ScrollText, Search, Send, Settings, Sprout, Swords, User,
 } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { StageBadge } from "@/components/ui/stage-badge";
@@ -21,6 +21,7 @@ const PAGES = [
   { href: "/debrief", label: "Débrief terrain (voix)", icon: Mic },
   { href: "/voice", label: "Alpha Voice (agent vocal)", icon: AudioLines },
   { href: "/appels", label: "Session d'appels", icon: PhoneCall },
+  { href: "/autopilote", label: "Pilote automatique (ALPHA fait toute la chaîne)", icon: Rocket },
   { href: "/trouver", label: "Trouver des clients (registre officiel)", icon: Search },
   { href: "/linkedin", label: "Machine LinkedIn", icon: Linkedin },
   { href: "/prescripteurs", label: "Prescripteurs (apporteurs)", icon: Handshake },

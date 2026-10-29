@@ -64,6 +64,7 @@ export const CAPACITES_PAR_API: Readonly<Record<string, readonly Capacite[]>> = 
    * sécurité ne dépend jamais de l'écran. » Ici : jamais de la porte non plus.
    */
   "/api/send": ["email"],
+  "/api/reponses": ["email"],
   "/api/digest": ["email"],
   /**
    * ⚠ `/api/gmail` est VOLONTAIREMENT ABSENTE, alors qu'elle appartient à la
