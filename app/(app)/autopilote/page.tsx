@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CalendarPlus, Check, CircleDashed, KeyRound, Power, Rocket, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, CalendarPlus, Check, CircleDashed, KeyRound, Power, Rocket, X } from "lucide-react";
 import { useAlpha } from "@/lib/store";
 import { useMaitreProuve } from "@/lib/use-droits";
 import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 import { libelleNaf, proposerActivites } from "@/lib/naf";
-import { cleMasquee, enregistrerCleDropcontact, lireCleDropcontact } from "@/lib/cle-locale";
+import { agendaMasque, cleMasquee, enregistrerAdresseAgenda, enregistrerCleDropcontact, lireAdresseAgenda, lireCleDropcontact } from "@/lib/cle-locale";
+import { adresseAgenda, lireReponseAgenda, type EtatAgenda } from "@/lib/agenda-occupe";
 import { meetingToIcs } from "@/lib/ics";
 import { labelCreneau } from "@/lib/creneaux-rdv";
 import type { MeetingChannel } from "@/lib/types";
@@ -18,6 +19,7 @@ import {
   type ReglagesAutopilote, type TypeJournal,
 } from "@/lib/autopilote-inscrit";
 import { aEnrichir } from "@/lib/enrichissement";
+import { TAG_A_TRAITER } from "@/lib/reponses-inscrit";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -61,9 +63,25 @@ export default function AutopilotePage() {
   const [cle, setCle] = useState("");
   const [saisieCle, setSaisieCle] = useState("");
   const [saisieMetier, setSaisieMetier] = useState(settings.profil?.cibleSecteur ?? "");
+  const [agenda, setAgenda] = useState("");
+  const [saisieAgenda, setSaisieAgenda] = useState("");
+  const [lectureAgenda, setLectureAgenda] = useState<EtatAgenda | "en-cours" | null>(null);
   const [maintenant, setMaintenant] = useState(() => new Date());
 
-  useEffect(() => setCle(lireCleDropcontact()), []);
+  useEffect(() => {
+    setCle(lireCleDropcontact());
+    setAgenda(lireAdresseAgenda());
+  }, []);
+  // La même lecture que celle du pilote (`/api/agenda`) : ce que l'écran annonce est ce qu'il utilisera.
+  const verifierAgenda = async (url: string) => {
+    setLectureAgenda("en-cours");
+    try {
+      const res = await fetch("/api/agenda", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+      setLectureAgenda(lireReponseAgenda(await res.json().catch(() => null), res.status));
+    } catch {
+      setLectureAgenda({ etat: "non-lu", raison: "réseau indisponible" });
+    }
+  };
   useEffect(() => {
     const id = setInterval(() => setMaintenant(new Date()), 30_000);
     return () => clearInterval(id);
@@ -88,7 +106,7 @@ export default function AutopilotePage() {
   const prets = aContacter(prospects, maintenant).length;
   const aJoindre = prospects.filter(aEnrichir).length;
   const envoyes = envoisAlpha24h(prospects, maintenant);
-  const aToi = prospects.filter((p) => (p.tags ?? []).includes("reponse-a-traiter") && p.stage !== "perdu" && p.stage !== "signe");
+  const aToi = prospects.filter((p) => (p.tags ?? []).includes(TAG_A_TRAITER) && p.stage !== "perdu" && p.stage !== "signe");
   const rdvAlpha = meetings.filter((m) => !m.done && prospects.find((p) => p.id === m.prospectId)?.events.some((e) => e.summary.startsWith("Rendez-vous posé par ALPHA")));
 
   return (
@@ -226,6 +244,76 @@ export default function AutopilotePage() {
             )}
           </div>
         </div>
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold text-paper">
+            <CalendarClock size={14} className="text-bronze-400" /> Ton agenda {agenda && <span className="font-mono text-[11px] text-paper-faint">{agendaMasque(agenda)}</span>}
+          </p>
+          <p className="mt-1 text-[12px] text-paper-faint">
+            ALPHA ne propose que des créneaux libres dans ton agenda. Colle son adresse secrète : dans Google Agenda, paramètres de l&apos;agenda,
+            « adresse secrète au format iCal » ; dans Outlook, publie ton calendrier en « disponibilités seulement ». Il transite par notre serveur à
+            chaque lecture sans y être gardé, et seules les plages occupées reviennent ici — jamais un titre.
+            {!agenda && " Sans lui, ALPHA n'évite que les rendez-vous qu'il a posés lui-même."}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <input
+              className="input min-w-0 flex-1"
+              type="password"
+              autoComplete="off"
+              placeholder={agenda ? "Remplacer l'adresse" : "https://… ou webcal://…"}
+              value={saisieAgenda}
+              onChange={(e) => setSaisieAgenda(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={!adresseAgenda(saisieAgenda)}
+              onClick={() => {
+                const url = adresseAgenda(saisieAgenda);
+                if (url && enregistrerAdresseAgenda(url)) {
+                  setAgenda(url);
+                  void verifierAgenda(url);
+                }
+                setSaisieAgenda("");
+              }}
+            >
+              Enregistrer
+            </button>
+            {agenda && (
+              <>
+                <button type="button" className="btn-ghost" disabled={lectureAgenda === "en-cours"} onClick={() => void verifierAgenda(agenda)}>
+                  Vérifier
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    if (enregistrerAdresseAgenda("")) {
+                      setAgenda("");
+                      setLectureAgenda(null);
+                    }
+                  }}
+                >
+                  Retirer
+                </button>
+              </>
+            )}
+          </div>
+          {saisieAgenda.trim() && !adresseAgenda(saisieAgenda) && (
+            <p className="mt-1 text-[12px] text-signal-amber">L&apos;adresse doit commencer par https:// ou webcal://.</p>
+          )}
+          {lectureAgenda === "en-cours" && <p className="mt-1 text-[12px] text-paper-faint">ALPHA lit ton agenda…</p>}
+          {lectureAgenda && lectureAgenda !== "en-cours" && lectureAgenda.etat === "lu" && (
+            <p className="mt-1 text-[12px] text-signal-green">
+              Lu : {lectureAgenda.plages.length} plage(s) occupée(s) sur les 30 prochains jours
+              {lectureAgenda.approximes > 0 && ` (dont ${lectureAgenda.approximes} série(s) bloquée(s) par prudence : règle que je ne sais pas déplier exactement)`}.
+            </p>
+          )}
+          {lectureAgenda && lectureAgenda !== "en-cours" && lectureAgenda.etat === "non-lu" && (
+            <p className="mt-1 text-[12px] text-signal-amber">
+              Non lu : {lectureAgenda.raison.replace(/[.!]?$/, ".")} Tant qu&apos;il ne l&apos;est pas, ALPHA te passe la main au lieu de proposer des heures.
+            </p>
+          )}
+        </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="envois-ap" className="text-sm font-semibold text-paper">Premiers messages / jour</label>
@@ -327,6 +415,7 @@ export default function AutopilotePage() {
       <section className="card space-y-1 p-5 text-[13px] text-paper-dim">
         <h2 className="font-display text-base font-bold text-paper">Ce qu&apos;il ne fera jamais</h2>
         <p>Parler du prix, faire signer ou répondre à un doute : ces réponses te reviennent, avec leur raison.</p>
+        <p>Proposer une heure prise dans ton agenda : s&apos;il ne peut pas le lire, il te passe la main.</p>
         <p>Écrire la nuit, le week-end, à qui a dit non, à une société en liquidation, ou relancer sans raison neuve.</p>
         <p>Envoyer un message sans dire qu&apos;il est rédigé par un assistant IA, ni sans moyen de refus.</p>
         <p>Travailler onglet fermé : ton pipe vit dans ton navigateur, pas chez nous.</p>

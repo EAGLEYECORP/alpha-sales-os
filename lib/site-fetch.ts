@@ -142,6 +142,29 @@ export async function fetchSitePage(url: string, maxChars = 600_000): Promise<Pa
   return { url: res.url || safe, html: (await res.text()).slice(0, maxChars) };
 }
 
+/**
+ * Le texte d'un agenda iCalendar publié (adresse secrète Google / Outlook) —
+ * pour le pilote automatique (`lib/agenda-occupe.ts`).
+ *
+ * Même garde-fou SSRF que les pages : chaque redirection revalidée. HTTPS
+ * seulement (une adresse secrète en clair n'est plus secrète), et le contenu
+ * doit ÊTRE un agenda — sinon n'importe quelle URL deviendrait lisible par
+ * notre serveur sous prétexte d'agenda.
+ */
+export async function fetchCalendrier(url: string, maxChars = 3_000_000): Promise<string> {
+  const safe = safePublicUrl(url);
+  if (!safe || !safe.startsWith("https://")) throw new Error("Adresse d'agenda non valide (https uniquement).");
+  const res = await fetchNoRedirect(safe, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; AlphaSalesOS/1.0; lecture d'agenda)", Accept: "text/calendar, text/plain;q=0.5" },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (res.status === 401 || res.status === 403 || res.status === 404) throw new Error(`Agenda refusé ou introuvable (HTTP ${res.status}) : l'adresse a peut-être été réinitialisée.`);
+  if (!res.ok) throw new Error(`Agenda injoignable (HTTP ${res.status}).`);
+  const texte = (await res.text()).slice(0, maxChars);
+  if (!/^\s*BEGIN:VCALENDAR/i.test(texte)) throw new Error("Cette adresse ne renvoie pas un agenda (format iCalendar attendu).");
+  return texte;
+}
+
 export interface SiteText {
   text: string;
   source: "endpoint" | "fetch";

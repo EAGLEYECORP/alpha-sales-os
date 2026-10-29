@@ -324,6 +324,48 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
   extérieurs simulés) : registre → 3 entreprises → coordonnées (ordre inversé, bien
   associées) → 3 premiers messages → « oui » → 3 créneaux → « 2 » → RDV + `.ics`.
   **25 mutations mordent.** Non prouvé : un vrai Dropcontact, une vraie boîte IMAP.
+- **⚠⚠ ET LA CHAÎNE CASSAIT AU « OUI » EN PRODUCTION** — trouvé le même jour en
+  suivant l'envoi jusqu'au serveur, pas au rendu. `/api/send` refuse en 409 toute
+  adresse écrite depuis moins de 14 jours (la fenêtre de recontact, juste pour un
+  PREMIER message) : la proposition de créneaux et chaque relance (72/96/168 h)
+  tombaient dedans. **Le rendu ne pouvait pas le voir : son faux `/api/send`
+  acceptait tout.** Il est désormais STRICT (409 sans `suite`, 429 au premier
+  essai de réponse), et le pilote du maître n'avait jamais rien vu (ses ticks
+  envoient par le transport direct).
+  · **`suite: "reponse" | "relance"`** (`decisionRecontact`, `lib/relance-mail.ts`),
+    borné sur l'historique du SERVEUR, jamais sur la parole du navigateur : une
+    réponse exige un message de notre part sur 60 j (sinon c'est un premier
+    message déguisé) ; une relance rejoue `relanceDue` (plafond du décret,
+    espacement). **`force` n'était pas la réponse** : il passe aussi outre le score
+    anti-spam et ne borne rien. Valeur inconnue = premier message. Prouvé sur la
+    VRAIE route derrière un faux SMTP local (`tests/suite-conversation.test.ts`).
+  · **Une réponse reçue n'est consignée qu'une fois la nôtre partie**
+    (`issueEnvoi`) : marquée vue AVANT l'envoi, un 429 (palier) faisait perdre le
+    « oui » pour toujours. Passager ⇒ pause, et elle repassera ; définitif ⇒ à toi.
+    Pendant une pause d'envoi (`envoisSuspendus`, une seule définition), le moteur
+    ne retente pas. Deux contre-épreuves au rendu mordent.
+- **L'AGENDA RÉEL DE L'INSCRIT** (`lib/agenda-occupe.ts` · `/api/agenda` ·
+  `tests/agenda-occupe.test.ts`) : il collait des créneaux en n'évitant que ses
+  propres rendez-vous. Adresse SECRÈTE iCal (Google, Outlook « disponibilités
+  seulement »), sans OAuth, rangée HORS du magasin (`lib/cle-locale.ts`).
+  · **Elle transite par notre serveur** (comme la boîte dans `/api/reponses`) :
+    à ma connaissance, ces agendas ne répondent pas à un navigateur d'une autre
+    origine (NON vérifié : le proxy d'ici bloque leurs hôtes). Rien n'est gardé ; seules des
+    plages `{ debut, fin }` reviennent, jamais un titre. HTTPS seul, garde-fou SSRF
+    de la lecture de site, et le contenu doit ÊTRE un agenda.
+  · **Dans le doute, on bloque** : une règle de récurrence non dépliable bloque la
+    même heure chaque jour ; un fuseau inconnu se lit à Paris, compté. Seuls
+    « disponible » et « annulé » libèrent — c'est l'agenda qui le dit.
+  · **Agenda branché mais illisible ⇒ aucune heure proposée**, la fiche remonte.
+    À la CONFIRMATION il est relu : pris ⇒ à toi ; illisible ⇒ on confirme (le
+    créneau était libre quand on l'a proposé, et le prospect s'est engagé).
+  · Le texte s'accorde au NOMBRE proposé (« 1 ou 2 », jamais « 1, 2 ou 3 » sur
+    deux). La confirmation part en **copie cachée à l'expéditeur seul**
+    (`copieExpediteur`, adresse prise côté serveur) : l'invitation arrive dans SA
+    boîte, donc son agenda.
+  · Prouvé au rendu dans les deux sens (mercredi bloqué ⇒ jeudi/vendredi/lundi ;
+    agenda en 404 ⇒ rien proposé, à toi). 15 mutations unitaires mordent, et deux
+    au rendu sur le câblage. **Non prouvé : un vrai flux Google ou Outlook.**
 - **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
   l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
 

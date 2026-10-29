@@ -36,6 +36,9 @@ import { DO_NOT_CALL_TAG } from "./voice-script";
  * ─────────────────────────────────────────────────────────────────────
  */
 
+/** Posé sur toute fiche qui attend un humain : une réponse qu'ALPHA ne tranche pas. Une seule écriture. */
+export const TAG_A_TRAITER = "reponse-a-traiter";
+
 export type IntentionInscrit = IntentionReponse | "choix-creneau" | "auto-reponse";
 
 export interface Classement {
@@ -139,18 +142,31 @@ const re = (sujet: string) => (/^re\s*:/i.test(sujet.trim()) ? sujet.trim() : `R
  * Trois créneaux numérotés, et la façon d'y répondre en un caractère. Le lien
  * de réservation de l'inscrit, s'il en a un, reste une sortie.
  */
+/**
+ * « trois créneaux » / « 1, 2 ou 3 » — accordés au NOMBRE réellement proposé.
+ * Depuis que son agenda est lu, il peut n'en rester qu'un ou deux : annoncer
+ * trois et en lister deux, ou inviter à répondre « 3 » sur une liste de deux,
+ * c'est une phrase fausse dans le message qui doit inspirer confiance.
+ */
+export function annonceCreneaux(n: number): { annonce: string; choix: string } {
+  if (n <= 1) return { annonce: "voici un créneau", choix: "Répondez simplement 1" };
+  if (n === 2) return { annonce: "voici deux créneaux", choix: "Répondez simplement 1 ou 2" };
+  return { annonce: "voici trois créneaux", choix: "Répondez simplement 1, 2 ou 3" };
+}
+
 export function propositionCreneaux(p: Pick<Prospect, "name">, creneaux: Date[], e: Expediteur, sujet: string, intro?: string): MailSortant {
   const lignes = creneaux.map((d, i) => `${i + 1}. ${labelCreneau(d)}`);
+  const { annonce, choix } = annonceCreneaux(creneaux.length);
   return {
     subject: re(sujet),
     body: [
       bonjour(p),
       "",
-      intro ?? "Avec plaisir. Un échange de 20 minutes suffit — voici trois créneaux :",
+      intro ?? `Avec plaisir. Un échange de 20 minutes suffit — ${annonce} :`,
       "",
       ...lignes,
       "",
-      "Répondez simplement 1, 2 ou 3 et je vous envoie l'invitation.",
+      `${choix} et je vous envoie l'invitation.`,
       ...(e.bookingUrl?.trim() ? ["", `Si aucun ne vous va, choisissez directement ici : ${e.bookingUrl.trim()}`] : []),
       "",
       signature(e),
@@ -166,10 +182,10 @@ export function propositionCreneaux(p: Pick<Prospect, "name">, creneaux: Date[],
  * La question factuelle. ⚠ Elle ne s'automatise que si l'inscrit a dit CE
  * QU'IL VEND : sans ça, on ne répondrait rien de vrai — on remonte.
  */
-export function introRenseignement(profil: ProfilOperateur | null | undefined): string | null {
+export function introRenseignement(profil: ProfilOperateur | null | undefined, nbCreneaux = 3): string | null {
   const metier = profil?.metier?.trim();
   if (!metier) return null;
-  return `En deux mots : ${metier.charAt(0).toLowerCase()}${metier.slice(1).replace(/\.$/, "")}. Le plus simple est d'en parler 20 minutes — voici trois créneaux :`;
+  return `En deux mots : ${metier.charAt(0).toLowerCase()}${metier.slice(1).replace(/\.$/, "")}. Le plus simple est d'en parler 20 minutes — ${annonceCreneaux(nbCreneaux).annonce} :`;
 }
 
 /** Base64 d'un texte UTF-8 — sans `Buffer`, qui n'existe pas dans le navigateur où tourne l'autopilote. */
@@ -261,7 +277,7 @@ export function deciderReponse(p: Prospect, m: MessageLu, profil: ProfilOperateu
               : "Lire sa réponse et lui répondre";
       return {
         ...base,
-        patch: { tags: [...new Set([...(p.tags ?? []), "reponse-a-traiter"])], nextStep: { date: auj, action } },
+        patch: { tags: [...new Set([...(p.tags ?? []), TAG_A_TRAITER])], nextStep: { date: auj, action } },
         repondre: null,
         escalade: classement.motif,
       };

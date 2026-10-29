@@ -24,11 +24,17 @@ c'est toi, dans cet ordre :
    ⚠ Pour LIRE les réponses, l'accès IMAP doit être ouvert chez l'hébergeur.
    Outlook / Microsoft 365 refusent la lecture par mot de passe : avec eux,
    ALPHA écrit mais ne lit pas.
-3. **`/autopilote`** : ce que tu vends, le métier et la zone de tes clients
+3. **Ton agenda** (recommandé), dans `/autopilote`, « Ses moyens » : colle son
+   adresse SECRÈTE (Google Agenda → paramètres de l'agenda → « adresse secrète
+   au format iCal » ; Outlook → publier le calendrier en « disponibilités
+   seulement »), puis « Vérifier ». ALPHA ne proposera que des heures libres,
+   et l'invitation d'un rendez-vous posé arrivera aussi dans ta boîte. Sans
+   agenda, il n'évite que les rendez-vous qu'il a posés lui-même.
+4. **`/autopilote`** : ce que tu vends, le métier et la zone de tes clients
    (par CODE : 69, ou 69003), puis « Lancer ALPHA ». Laisse un onglet ouvert.
-4. **Dis-moi ce que le journal affiche** après une heure : c'est le seul test
-   qui compte, et le premier « Coordonnées non lues » ou « Réponses non lues »
-   me dira quoi corriger.
+5. **Dis-moi ce que le journal affiche** après une heure : c'est le seul test
+   qui compte, et le premier « Coordonnées non lues », « Réponses non lues » ou
+   « agenda n'a pas pu être lu » me dira quoi corriger.
 
 > ⚠ Sur NOTRE compte (maître), l'autopilote SERVEUR existe déjà (Pilote). Ne
 > lance pas les deux sur les mêmes fiches.

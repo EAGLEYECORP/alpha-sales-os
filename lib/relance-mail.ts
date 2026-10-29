@@ -81,6 +81,75 @@ export function relanceDue(opts: {
   return { du: true, numero: opts.nbContacts30j, motif: `Relance n°${opts.nbContacts30j} due — raison neuve disponible, dans le plafond.` };
 }
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * UNE SUITE DE CONVERSATION N'EST PAS UN RECONTACT (29/10/2026).
+ *
+ * `/api/send` refuse en 409 toute adresse écrite dans les 14 derniers jours
+ * (la fenêtre de recontact). Juste pour un PREMIER message : deux campagnes ne
+ * doivent pas tomber sur la même boîte. Fatal pour tout le reste — mesuré en
+ * suivant le pilote automatique d'un inscrit jusqu'au serveur : la réponse
+ * « voici trois créneaux » part quelques jours après le premier message, donc
+ * DANS la fenêtre, et chaque relance aussi (72 h, 96 h, 168 h < 14 j). La
+ * chaîne cassait au moment exact où le prospect disait oui, et le rendu ne le
+ * montrait pas : `/api/send` y était simulé.
+ *
+ * Le pilote du maître ne l'a jamais vu : ses ticks serveur envoient par le
+ * transport direct, sans passer par cette fenêtre.
+ *
+ * ⚠⚠ `force` N'ÉTAIT PAS LA RÉPONSE. Il passe AUSSI outre le score anti-spam,
+ * et ne borne rien. `suite` est plus ÉTROIT, et le serveur le borne lui-même
+ * sur SON historique d'envoi (jamais sur ce que dit le navigateur) :
+ *  · `reponse` — exige qu'on ait DÉJÀ écrit à cette adresse sur 60 jours.
+ *    Sinon ce n'est pas une réponse, c'est un premier message déguisé.
+ *  · `relance` — rejoue `relanceDue` sur l'historique du serveur : plafond
+ *    légal (décret 2022-1313) et espacement. La raison neuve, le serveur ne
+ *    peut pas la voir ; l'appelant l'a tranchée, et elle est dans le texte.
+ * Base muette ⇒ historique vide ⇒ REFUS, dans les deux cas. Le doute penche
+ * vers le silence, comme partout ici.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export type SuiteConversation = "reponse" | "relance";
+
+/** Une réponse suppose un message de notre part sur cette fenêtre. */
+export const FENETRE_REPONSE_MS = 60 * 86_400_000;
+/** Le plafond légal se compte sur 30 jours glissants. */
+export const FENETRE_RELANCE_MS = 30 * 86_400_000;
+
+export type DecisionRecontact =
+  | { ok: true; motif: string }
+  | { ok: false; motif: string; alreadyContacted: boolean };
+
+export function decisionRecontact(opts: {
+  suite?: SuiteConversation;
+  force: boolean;
+  /** L'adresse est-elle dans la fenêtre de recontact (premier message) ? */
+  dejaContacte: boolean;
+  /** Historique serveur sur la fenêtre de la suite demandée. */
+  historique: { count: number; dernierISO: string | null };
+  maintenant: number;
+}): DecisionRecontact {
+  if (opts.suite === "reponse") {
+    return opts.historique.count > 0
+      ? { ok: true, motif: "Réponse dans une conversation ouverte — la fenêtre de recontact ne s'applique pas." }
+      : { ok: false, alreadyContacted: false, motif: "Aucun message de notre part vers cette adresse sur 60 jours : ce n'est pas une réponse." };
+  }
+  if (opts.suite === "relance") {
+    const d = relanceDue({
+      nbContacts30j: opts.historique.count,
+      dernierEnvoiISO: opts.historique.dernierISO,
+      aRepondu: false,
+      raisonDisponible: true,
+      maintenant: opts.maintenant,
+    });
+    return d.du ? { ok: true, motif: d.motif } : { ok: false, alreadyContacted: false, motif: `Relance refusée : ${d.motif}` };
+  }
+  if (opts.dejaContacte && !opts.force) {
+    return { ok: false, alreadyContacted: true, motif: "Déjà contacté dans la fenêtre de recontact." };
+  }
+  return { ok: true, motif: "Premier message." };
+}
+
 /** Le prénom d'accroche, ou un « bonjour » neutre. */
 function prenomDe(p: Prospect): string {
   return (p.name || "").trim().split(/\s+/)[0] || "bonjour";

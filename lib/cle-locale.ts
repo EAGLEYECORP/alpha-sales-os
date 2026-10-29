@@ -42,3 +42,39 @@ export function cleMasquee(cle: string): string {
   const v = cle.trim();
   return v.length <= 8 ? "••••" : `${v.slice(0, 4)}…${v.slice(-4)}`;
 }
+
+/**
+ * L'ADRESSE SECRÈTE DE SON AGENDA — même régime que la clé : hors du magasin.
+ * Qui la détient lit son agenda (Google l'appelle « adresse secrète »). Elle
+ * part vers `/api/agenda` à chaque lecture, n'y est pas stockée, et ne doit
+ * pas voyager dans un export.
+ */
+const CLE_AGENDA = "alpha-agenda-ics";
+
+export function lireAdresseAgenda(): string {
+  try {
+    return (globalThis.localStorage?.getItem(CLE_AGENDA) ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
+export function enregistrerAdresseAgenda(adresse: string): boolean {
+  try {
+    const v = adresse.trim();
+    if (v) globalThis.localStorage?.setItem(CLE_AGENDA, v);
+    else globalThis.localStorage?.removeItem(CLE_AGENDA);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** « https://calendar.google.com/…/basic.ics » → l'hôte seul : la partie secrète ne s'affiche jamais. */
+export function agendaMasque(adresse: string): string {
+  try {
+    return `${new URL(adresse.replace(/^webcals?:/i, "https:")).host}/…`;
+  } catch {
+    return "••••";
+  }
+}

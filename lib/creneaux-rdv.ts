@@ -1,5 +1,6 @@
 import { prochaineFenetreOuverte } from "@/lib/call-cadence";
 import { BUSINESS_TZ } from "@/lib/business-hours";
+import { plageQuiGene, type Plage } from "@/lib/agenda-occupe";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -23,6 +24,14 @@ import { BUSINESS_TZ } from "@/lib/business-hours";
 const HEURE_MS = 3_600_000;
 /** Même espacement minimal que la cadence : on ne colle pas un créneau à un RDV. */
 const COLLISION_MS = 3 * HEURE_MS;
+/**
+ * Autour d'une plage de SON agenda (un chantier, une réunion), une demi-heure
+ * de battement : on ne pose pas un rendez-vous à la minute où l'autre finit.
+ * C'est une DÉCISION, plus courte que `COLLISION_MS` qui vise un instant seul.
+ */
+export const MARGE_AGENDA_MS = 30 * 60_000;
+/** Durée d'un rendez-vous quand l'appelant ne la dit pas. */
+const DUREE_DEFAUT_MS = 45 * 60_000;
 /** On ne propose pas « dans une heure » : 24 h de préavis par défaut. */
 const PREAVIS_DEFAUT_MS = 24 * HEURE_MS;
 
@@ -30,18 +39,25 @@ function floorHeure(t: number): number {
   return Math.floor(t / HEURE_MS) * HEURE_MS;
 }
 
+function ceilHeure(t: number): number {
+  return Math.ceil(t / HEURE_MS) * HEURE_MS;
+}
+
 /**
  * Les `n` prochains créneaux ouverts (un par jour), à partir de `maintenant`,
- * en sautant ceux qui collent à un RDV de `occupes`. Déterministe : `maintenant`
- * est injecté, jamais lu de l'horloge.
+ * en sautant ceux qui collent à un RDV de `occupes` ou qui chevauchent une
+ * plage de SON agenda (`indisponibles`, `lib/agenda-occupe.ts`). Déterministe :
+ * `maintenant` est injecté, jamais lu de l'horloge.
  */
 export function prochainsCreneaux(
   maintenant: Date,
-  opts: { n?: number; occupes?: Date[]; minPreavisMs?: number } = {},
+  opts: { n?: number; occupes?: Date[]; indisponibles?: Plage[]; dureeMs?: number; minPreavisMs?: number } = {},
 ): Date[] {
   const n = Math.max(1, Math.min(opts.n ?? 3, 5));
   const occupes = (opts.occupes ?? []).map((d) => d.getTime()).filter((t) => Number.isFinite(t));
   const preavis = opts.minPreavisMs ?? PREAVIS_DEFAUT_MS;
+  const indisponibles = opts.indisponibles ?? [];
+  const duree = opts.dureeMs ?? DUREE_DEFAUT_MS;
 
   const res: Date[] = [];
   let curseur = floorHeure(maintenant.getTime() + preavis);
@@ -59,6 +75,12 @@ export function prochainsCreneaux(
     if (collision) {
       // Un créneau plus tard le même jour peut convenir : on avance d'un cran.
       curseur = floorHeure(st + COLLISION_MS);
+      continue;
+    }
+    const gene = plageQuiGene(st, duree, indisponibles, MARGE_AGENDA_MS);
+    if (gene) {
+      // On saute APRÈS la plage (et son battement), à l'heure pleine suivante.
+      curseur = Math.max(ceilHeure(gene.fin + MARGE_AGENDA_MS), floorHeure(st + HEURE_MS));
       continue;
     }
     res.push(new Date(st));

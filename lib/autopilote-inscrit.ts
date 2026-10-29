@@ -4,6 +4,7 @@ import { aRefuseTouteRelance } from "./voice-script";
 import { isDemoProspect } from "./seed";
 import { exclusionPublique, momentFrais } from "./signaux-publics";
 import { fenetreOuverte } from "./conformite";
+import { BUSINESS_TZ } from "./business-hours";
 import { relanceDue, raisonRelance } from "./relance-mail";
 import { aEnrichir, LOT_ENRICHISSEMENT } from "./enrichissement";
 import { TAG_DEJA_ECRIT } from "./mail-autopilote";
@@ -12,6 +13,7 @@ import { codeNafValide } from "./naf";
 import { emailBody, emailSubject } from "./mail-compose";
 import { DIVULGATION_ECRITE } from "./signature-ia";
 import type { ExpediteurInscrit } from "./approche-ecrite";
+import { TAG_A_TRAITER } from "./reponses-inscrit";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -166,6 +168,54 @@ const ouverte = (p: Prospect) => p.stage !== "signe" && p.stage !== "perdu";
 /** Posé quand le serveur a refusé un message construit pour cette fiche : on ne le rejoue pas en boucle. */
 export const TAG_ENVOI_REFUSE = "envoi-refuse";
 
+/** Ce que `/api/send` a répondu, vu du moteur. */
+export type Envoi =
+  | { ok: true }
+  | { ok: false; status: number; erreur: string; attendreMs?: number; dejaContacte?: boolean };
+
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * QUE FAIRE D'UN ENVOI QUI N'EST PAS PARTI ? (29/10/2026)
+ *
+ * ⚠⚠ Trouvé en relisant le chemin réel d'une réponse : la réponse du prospect
+ * était marquée « vue » AVANT l'envoi de la nôtre. Le palier du jour atteint
+ * (429), une panne réseau — et son « oui » n'était plus jamais repris. Il
+ * avait dit oui, personne ne lui répondait, et le journal disait « refus
+ * passager ».
+ *  · `reessayer` — passager (palier, quota, serveur, réseau) : on suspend les
+ *    envois, et une RÉPONSE n'est pas marquée vue — elle repassera.
+ *  · `humain` — définitif sur une RÉPONSE (texte refusé, suite refusée) : il
+ *    attend quelqu'un, ça remonte. Jamais avalé en silence.
+ *  · `abandon` — définitif sur un premier message ou une relance : on ne le
+ *    rejoue pas en boucle (`TAG_ENVOI_REFUSE`), le journal le dit.
+ *  · `deja-ecrit` — premier message vers une adresse déjà écrite ailleurs.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+/**
+ * Les envois sont-ils en pause (palier, quota, panne) ? Rend l'heure de reprise,
+ * sinon `null`. Une seule définition : le plan et la réponse à un prospect la
+ * lisent tous deux — répondre pendant une pause relançait le serveur qui
+ * venait de dire d'attendre, toutes les 3 minutes.
+ */
+export function envoisSuspendus(etat: Pick<EtatAutopilote, "envoisSuspendusJusqua">, maintenant: Date): Date | null {
+  const fin = etat.envoisSuspendusJusqua ? Date.parse(etat.envoisSuspendusJusqua) : NaN;
+  return Number.isFinite(fin) && fin > maintenant.getTime() ? new Date(fin) : null;
+}
+
+function heureParis(d: Date): string {
+  return d.toLocaleString("fr-FR", { timeZone: BUSINESS_TZ, weekday: "long", hour: "2-digit", minute: "2-digit" });
+}
+
+export type IssueEnvoi = "fait" | "reessayer" | "humain" | "abandon" | "deja-ecrit";
+
+export function issueEnvoi(r: Envoi, nature: "premier" | "reponse" | "relance"): IssueEnvoi {
+  if (r.ok) return "fait";
+  if (r.status === 0 || r.status === 402 || r.status === 429 || r.status >= 500) return "reessayer";
+  if (nature === "reponse") return "humain";
+  if (r.dejaContacte && nature === "premier") return "deja-ecrit";
+  return "abandon";
+}
+
 /**
  * ⚠⚠ VU AU RENDU (29/10/2026) : le premier message de l'autopilote est parti
  * vers une fiche du JEU DE DÉMONSTRATION — celui qu'un navigateur neuf reçoit.
@@ -177,7 +227,7 @@ const intouchable = (p: Prospect) =>
   isDemoProspect(p.id) ||
   aRefuseTouteRelance(p) ||
   Boolean(exclusionPublique(p)) ||
-  (p.tags ?? []).some((t) => t === "reponse-a-traiter" || t === TAG_ENVOI_REFUSE);
+  (p.tags ?? []).some((t) => t === TAG_A_TRAITER || t === TAG_ENVOI_REFUSE);
 
 /** Prêtes à recevoir un premier message : les moments frais d'abord, puis les plus anciennes. */
 export function aContacter(prospects: Prospect[], maintenant: Date): Prospect[] {
@@ -297,12 +347,12 @@ export function planifier(
 
   // ── ÉCRIRE / RELANCER ──
   const fenetre = fenetreOuverte(maintenant);
-  const suspendu = etat.envoisSuspendusJusqua && Date.parse(etat.envoisSuspendusJusqua) > t;
+  const suspendu = envoisSuspendus(etat, maintenant);
   const envoyes = envoisAlpha24h(prospects, maintenant);
   const prets = aContacter(prospects, maintenant);
   if (capacites.boite) {
     if (!fenetre.open) attentes.push(`Hors des heures utiles (${fenetre.label}) : ALPHA lit, il n'écrit pas.`);
-    else if (suspendu) attentes.push("Ta boîte a atteint son plafond d'envoi du jour : reprise demain.");
+    else if (suspendu) attentes.push(`Le serveur d'envoi a demandé d'attendre : reprise à ${heureParis(suspendu)}.`);
     else if (envoyes >= reglages.envoisParJour) attentes.push(`Plafond du jour atteint (${reglages.envoisParJour} envois en 24 h).`);
     else {
       const rel = aRelancer(prospects, maintenant)[0];

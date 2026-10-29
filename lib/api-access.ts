@@ -122,6 +122,10 @@ export const CHEMIN_PAR_API: Record<string, string> = {
   // Lire les réponses dans la boîte d'où l'on envoie : même chemin que l'envoi,
   // ouvert par la même clé (`email`). Sans boîte à lui, la route refuse.
   "/api/reponses": "/campaigns",
+  // Les plages occupées de SON agenda, pour que le pilote propose de vrais
+  // créneaux. Rien n'y dépense chez nous (une lecture, rien d'envoyé) : même
+  // chemin que l'écran du pilote, donc le socle gratuit.
+  "/api/agenda": "/autopilote",
   "/api/compose": "/outbox",
   /**
    * ⚠⚠ CLASSÉE SUR `/campaigns`, DONC PAYANTE — ET ELLE N'ENVOIE RIEN.

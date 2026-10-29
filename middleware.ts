@@ -48,6 +48,8 @@ const INTERNAL = [
   "/api/send",
   // Lecture de SA boîte avec SES identifiants : même origine exigée.
   "/api/reponses",
+  // Lecture de SON agenda (adresse secrète) : même origine exigée.
+  "/api/agenda",
   "/api/ai",
   "/api/agent",
   "/api/sparring",

@@ -6,6 +6,7 @@ import {
   contactedEmails,
   firstSendAt,
   aDejaEcrit,
+  historiqueEnvois,
   tracerEnvoiSms,
   supprimerTrace,
 } from "@/lib/tracking";
@@ -23,6 +24,7 @@ import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { resoudreDroits } from "@/lib/entitlements";
 import { resoudreSmtp, resoudreSms, smtpUtilisable } from "@/lib/credentials-secret";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
+import { decisionRecontact, FENETRE_REPONSE_MS, FENETRE_RELANCE_MS, type SuiteConversation } from "@/lib/relance-mail";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -93,6 +95,19 @@ interface SendRequest {
   ctaUrl?: string;
   /** Forcer l'envoi malgré un score anti-spam élevé. */
   force?: boolean;
+  /**
+   * Ce message CONTINUE une conversation (réponse à ce qu'il a écrit, relance
+   * plafonnée) : la fenêtre de recontact ne s'applique pas, le serveur borne
+   * la suite sur SON historique (`decisionRecontact`). Absent = premier message.
+   */
+  suite?: SuiteConversation;
+  /**
+   * Copie cachée à l'EXPÉDITEUR lui-même — et à personne d'autre : le serveur
+   * prend l'adresse d'envoi, jamais une adresse fournie. Sert la confirmation
+   * d'un rendez-vous posé par le pilote : l'invitation arrive dans SA boîte,
+   * donc dans son agenda, pas seulement dans celui du prospect.
+   */
+  copieExpediteur?: boolean;
   /** Pièces jointes (ex. audit cadeau). Contenu en base64. */
   attachments?: { filename: string; contentBase64: string; contentType?: string }[];
 }
@@ -445,15 +460,27 @@ export async function POST(request: NextRequest) {
 
     // Dédup durable « déjà contacté » : ne pas recontacter avant la fenêtre de
     // refroidissement (partagé entre instances via Supabase). force:true passe outre.
+    // ⚠ Une SUITE de conversation (réponse, relance) n'est pas un recontact :
+    // elle est bornée sur l'historique du serveur, jamais sur la parole du
+    // navigateur (`decisionRecontact`, lib/relance-mail.ts). Une valeur
+    // inconnue est lue comme un premier message — le cas le plus gardé.
+    const suite = body.suite === "reponse" || body.suite === "relance" ? body.suite : undefined;
     const cooldownDays = Number(process.env.CONTACT_COOLDOWN_DAYS ?? 14);
-    if (cooldownDays > 0 && !body.force) {
-      const already = await contactedEmails([to], cooldownDays * 86_400_000, tenantId);
-      if (already.has(to.toLowerCase())) {
-        return NextResponse.json(
-          { error: `Déjà contacté dans les ${cooldownDays} derniers jours — renvoie avec force:true si nécessaire.`, alreadyContacted: true },
-          { status: 409 }
-        );
-      }
+    const dejaContacte =
+      !suite && cooldownDays > 0 && !body.force
+        ? (await contactedEmails([to], cooldownDays * 86_400_000, tenantId)).has(to.toLowerCase())
+        : false;
+    const historique = suite
+      ? await historiqueEnvois(to, suite === "reponse" ? FENETRE_REPONSE_MS : FENETRE_RELANCE_MS, tenantId)
+      : { count: 0, dernierISO: null };
+    const recontact = decisionRecontact({ suite, force: Boolean(body.force), dejaContacte, historique, maintenant: Date.now() });
+    if (!recontact.ok) {
+      return NextResponse.json(
+        recontact.alreadyContacted
+          ? { error: `Déjà contacté dans les ${cooldownDays} derniers jours — renvoie avec force:true si nécessaire.`, alreadyContacted: true }
+          : { error: recontact.motif, suiteRefusee: true },
+        { status: 409 }
+      );
     }
 
     const subject = body.subject?.trim() || "(sans objet)";
@@ -563,6 +590,7 @@ export async function POST(request: NextRequest) {
         html: trackedHtml,
         headers: deliverabilityHeaders(stopMailto),
         attachments: safeAttachments(body.attachments),
+        ...(body.copieExpediteur === true && stopMailto.includes("@") ? { bcc: stopMailto } : {}),
       });
       return NextResponse.json({ ok: true, id: info.messageId, trackingId, lint });
     } catch (e) {
