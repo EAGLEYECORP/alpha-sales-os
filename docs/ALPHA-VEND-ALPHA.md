@@ -4,6 +4,25 @@ Le compte MAÎTRE donne notre offre au pilote automatique (`/autopilote`) et le
 laisse prospecter. Chaque étape ci-dessous a été vérifiée dans le code ; ce qui
 n'a PAS été vérifié contre un vrai service est dit.
 
+## ⚡ Depuis le 29/10 (soir) : la configuration arrive toute faite
+
+Connecté en `contact@eagleyecorp.fr`, ouvre `/autopilote` : si rien n'y est
+réglé, l'écran applique de lui-même ce que le serveur sert au maître seul
+(`/api/autopilote/configuration`, `lib/alpha-vend-alpha.ts`) — étapes 4, 5 et 6
+ci-dessous, sauf les secrets. Un bouton « Configurer pour vendre ALPHA » la
+réapplique. Elle ne LANCE rien.
+
+Ce qui reste à toi, et ne peut pas venir du serveur :
+- ton nom dans Réglages → Closer (on ne pose jamais l'identité d'un humain
+  par configuration ; sans lui, les emails signent « EAGLEYE CORP ») ;
+- la clé Dropcontact et l'adresse secrète de l'agenda (secrets, navigateur) ;
+- `SMTP_*` sur Vercel si `/api/health` dit `email.configured: false` ;
+- « Lancer ALPHA ».
+
+Vu au rendu (build de production, navigateur vierge, maître) : identité,
+profil, cible 68.31Z/69, 5 envois/jour, IMAP posés ; ALPHA à l'arrêt ; 0 fiche
+prête à recevoir un message.
+
 ## 0. Ce qui est mesuré avant de commencer
 
 - **Aucun email n'est jamais parti par `/api/send` en production**
@@ -44,7 +63,7 @@ le verdict « maître » vient du serveur (`OWNER_EMAILS`).
 ## 4. Réglages → Agence
 
 - **Nom** : `EAGLEYE CORP`
-- **Closer** : `Zakaria Tazi` (c'est la signature des emails)
+- **Closer** : ton nom, tapé par toi (c'est la signature des emails)
 
 ## 5. Réglages → « À qui vends-tu ? »
 

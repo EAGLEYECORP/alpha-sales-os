@@ -14,6 +14,8 @@ import { meetingToIcs } from "@/lib/ics";
 import { labelCreneau } from "@/lib/creneaux-rdv";
 import type { MeetingChannel } from "@/lib/types";
 import type { TailleCible } from "@/lib/trouver-clients";
+import type { ConfigurationAlphaVendAlpha } from "@/lib/alpha-vend-alpha";
+import { CLOSER_USINE } from "@/lib/signature";
 import {
   ETAT_AUTOPILOTE_VIDE, REGLAGES_AUTOPILOTE_DEFAUT, aContacter, envoisAlpha24h, nb, planifier, preRequis,
   type ReglagesAutopilote, type TypeJournal,
@@ -55,6 +57,7 @@ const ICONE: Record<TypeJournal, string> = {
 
 export default function AutopilotePage() {
   const { settings, patchSettings, prospects, meetings } = useAlpha();
+  const appliquerProfil = useAlpha((s) => s.appliquerProfil);
   const maitre = useMaitreProuve();
   const reglages: ReglagesAutopilote = { ...REGLAGES_AUTOPILOTE_DEFAUT, ...(settings.autopilote?.reglages ?? {}) };
   const etat = { ...ETAT_AUTOPILOTE_VIDE, ...(settings.autopilote?.etat ?? {}) };
@@ -95,6 +98,44 @@ export default function AutopilotePage() {
   }, [maitre]);
 
   const regler = (patch: Partial<ReglagesAutopilote>) => patchSettings({ autopilote: { reglages: { ...reglages, ...patch }, etat } });
+
+  /**
+   * ALPHA VEND ALPHA — la configuration du maître arrive du SERVEUR
+   * (`/api/autopilote/configuration`, `lib/alpha-vend-alpha.ts`), jamais du
+   * bundle : notre cible n'a rien à faire dans un fichier public.
+   * · Elle s'applique d'ELLE-MÊME seulement si rien n'est réglé (ni ce qu'il
+   *   vend, ni une activité) : un réglage posé à la main ne s'écrase jamais
+   *   sans un clic — le bouton reste là pour ça.
+   * · Elle ne LANCE rien : `actif` n'est pas dans la configuration.
+   * · Sur un verdict PROUVÉ seulement (`useMaitreProuve`) : un inscrit ne
+   *   l'appelle pas, et le serveur lui répondrait 403.
+   */
+  const [configMaitre, setConfigMaitre] = useState<"appliquee" | "echec" | null>(null);
+  const configurerAlphaVendAlpha = async () => {
+    try {
+      const res = await fetch("/api/autopilote/configuration", { cache: "no-store" });
+      if (!res.ok) return setConfigMaitre("echec");
+      const c = (await res.json()) as ConfigurationAlphaVendAlpha;
+      patchSettings({
+        agencyName: c.agencyName,
+        // Le libellé d'USINE signerait « Le Closer ». On l'efface (on n'invente
+        // aucun nom) : sans nom saisi, `signataire` retombe sur la société.
+        ...(settings.closerName === CLOSER_USINE ? { closerName: "" } : {}),
+        offer: { ...(settings.offer ?? { whatYouSell: "", valueProp: "" }), city: c.ville },
+      });
+      appliquerProfil(c.profil);
+      patchSettings({ autopilote: { reglages: { ...reglages, ...c.autopilote, actif: reglages.actif }, etat } });
+      setSaisieMetier(c.profil.cibleSecteur);
+      setConfigMaitre("appliquee");
+    } catch {
+      setConfigMaitre("echec");
+    }
+  };
+  const rienNestRegle = !(settings.profil?.metier ?? "").trim() && reglages.activites.length === 0;
+  useEffect(() => {
+    if (maitre && rienNestRegle && configMaitre === null) void configurerAlphaVendAlpha();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maitre, rienNestRegle]);
 
   const manques = preRequis({ metier: settings.profil?.metier ?? "", reglages, boite, cleDropcontact: Boolean(cle), bookingUrl: settings.bookingUrl });
   const plan = useMemo(
@@ -137,6 +178,21 @@ export default function AutopilotePage() {
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           Compte maître : ici, ALPHA écrit sur « Ce que tu vends », pas sur l&apos;escalier de nos offres. L&apos;autopilote SERVEUR (Pilote) travaille déjà sur le pipe du serveur : n&apos;active pas les deux sur les mêmes fiches — `/api/send` refuserait le doublon, mais le journal serait faux.
         </p>
+      )}
+
+      {maitre && (
+        <section className="card flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="min-w-0 flex-1 text-[13px] text-paper-dim">
+            {configMaitre === "appliquee"
+              ? "ALPHA vend ALPHA : identité, offre, cible (agences immobilières, 69) et serveur de lecture sont réglés. Il reste à toi : ton nom (Réglages → Closer, sinon on signe « EAGLEYE CORP »), ta clé Dropcontact, ton agenda, puis « Lancer ALPHA »."
+              : configMaitre === "echec"
+                ? "La configuration « ALPHA vend ALPHA » n'a pas pu être lue sur le serveur. Rien n'a été changé."
+                : "ALPHA vend ALPHA : une configuration complète du compte maître est prête sur le serveur (sans aucune clé)."}
+          </p>
+          <button type="button" className="btn-ghost" onClick={() => void configurerAlphaVendAlpha()}>
+            <Rocket size={16} /> {configMaitre === "appliquee" ? "Réappliquer" : "Configurer pour vendre ALPHA"}
+          </button>
+        </section>
       )}
 
       <section className="card space-y-3 p-5">
