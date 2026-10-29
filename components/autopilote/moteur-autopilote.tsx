@@ -22,7 +22,7 @@ import { TAG_A_TRAITER, confirmationRdv, deciderReponse, introRenseignement, pro
 import type { MessageLu } from "@/lib/mime-lecture";
 import {
   CYCLE_MS, ETAT_AUTOPILOTE_VIDE, MARQUE_PREMIER, MARQUE_RELANCE, REGLAGES_AUTOPILOTE_DEFAUT, REPONSES_VUES_MAX, TAG_ENVOI_REFUSE,
-  adressesSuivies, cleRecherche, depuisLecture, envoisSuspendus, idReponse, issueEnvoi, journaliser, planifier, premierMessage,
+  adressesSuivies, cleRecherche, depuisLecture, envoisSuspendus, expediteurDuPilote, idReponse, issueEnvoi, journaliser, planifier, premierMessage,
   type EntreeJournal, type Envoi, type EtatAutopilote,
 } from "@/lib/autopilote-inscrit";
 
@@ -384,7 +384,14 @@ async function chercher(c: { activites: string[]; zone: string; taille: "toutes"
 export function MoteurAutopilote() {
   const actif = useAlpha((s) => Boolean(s.settings.autopilote?.reglages.actif));
   const maitre = useMaitreProuve();
-  const inscrit = useExpediteurInscrit();
+  // Ce que dit le message : SON profil — celui de l'inscrit, ou celui du maître
+  // dès qu'il a écrit « Ce que tu vends » (`expediteurDuPilote`).
+  const inscrit = expediteurDuPilote({
+    inscrit: useExpediteurInscrit(),
+    profil: useAlpha((s) => s.settings.profil),
+    agencyName: useAlpha((s) => s.settings.agencyName ?? ""),
+    city: useAlpha((s) => s.settings.offer?.city ?? ""),
+  });
   const [boite, setBoite] = useState<boolean | null>(null);
   const enCours = useRef(false);
   const inscritRef = useRef(inscrit);

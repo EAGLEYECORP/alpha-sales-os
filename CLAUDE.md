@@ -368,6 +368,12 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
     au rendu sur le câblage. **Non prouvé : un vrai flux Google ou Outlook.**
 - **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
   l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
+  · **⚠⚠ ALPHA VEND ALPHA (29/10/2026)** : sur le maître, l'expéditeur inscrit est
+    `null` (verdict prouvé) — le pilote retombait sur l'approche de NOTRE escalier
+    (accueil téléphonique, process commercial) au lieu de « Ce que tu vends ».
+    `expediteurDuPilote` : un maître qui a rempli son profil écrit sur LUI ; sans
+    profil, `null` comme avant. Ses textes restent ceux d'un inscrit (divulgation
+    comprise) : vendre Alpha, c'est être son premier utilisateur.
 
 ## LE SIGNAL DE TOUTE ENTREPRISE : LES ANNONCES LÉGALES (22/10/2026)
 `lib/signaux-publics.ts` · `lib/siren.ts` · `components/prospects/signaux-publics-panel.tsx` ·

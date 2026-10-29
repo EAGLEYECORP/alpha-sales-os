@@ -135,7 +135,7 @@ export default function AutopilotePage() {
       {maitre && (
         <p className="card flex gap-2 p-4 text-[13px] text-signal-amber">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-          Compte maître : l&apos;autopilote SERVEUR (Pilote) travaille déjà sur le pipe du serveur. N&apos;active pas les deux sur les mêmes fiches — `/api/send` refuserait le doublon, mais le journal serait faux.
+          Compte maître : ici, ALPHA écrit sur « Ce que tu vends », pas sur l&apos;escalier de nos offres. L&apos;autopilote SERVEUR (Pilote) travaille déjà sur le pipe du serveur : n&apos;active pas les deux sur les mêmes fiches — `/api/send` refuserait le doublon, mais le journal serait faux.
         </p>
       )}
 

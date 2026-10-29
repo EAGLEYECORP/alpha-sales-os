@@ -389,6 +389,33 @@ export function planifier(
  * l'assistant le dit (art. 50). Une seule rédaction du premier message dans
  * le produit, sinon l'autopilote finirait par dire autre chose que l'écran.
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * QUI PARLE DANS LES MESSAGES DU PILOTE — sur « ce que tu vends », maître
+ * compris (29/10/2026).
+ *
+ * ⚠⚠ Trouvé en voulant faire vendre Alpha par Alpha : l'écran du pilote exige
+ * « Ce que tu vends » de TOUT LE MONDE (`preRequis`, ligne « offre »), mais sur
+ * le compte MAÎTRE l'expéditeur restait `null` (`useExpediteurInscrit`), donc
+ * le message suivait l'escalier de NOS offres. Mesuré : à une agence
+ * immobilière, le pilote proposait « un audit de votre accueil téléphonique »
+ * pendant que l'écran affichait « Alpha Sales OS » comme offre. L'écran disait
+ * une chose, la boîte en envoyait une autre.
+ *
+ * Un inscrit garde son expéditeur tel quel. Le maître parle sur son profil dès
+ * qu'il l'a rempli ; vide, rien ne change (l'escalier, comme avant).
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export function expediteurDuPilote(o: {
+  inscrit: ExpediteurInscrit | null;
+  profil: ExpediteurInscrit["profil"];
+  agencyName: string;
+  city: string;
+}): ExpediteurInscrit | null {
+  if (o.inscrit) return o.inscrit;
+  return o.profil?.metier?.trim() ? { profil: o.profil, agencyName: o.agencyName, city: o.city } : null;
+}
+
 export function premierMessage(
   p: Prospect,
   s: { accountId?: string; closerName?: string; agencyName?: string; bookingUrl?: string },

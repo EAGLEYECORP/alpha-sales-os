@@ -443,3 +443,26 @@ test("⚠⚠ NOTRE boîte ne se lit que pour le maître, et le moteur écrit en 
   const imap = lire("lib/imap-lecture.ts").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.doesNotMatch(imap, /SELECT INBOX|\bSTORE\b|EXPUNGE/);
 });
+
+test("⚠⚠ ALPHA VEND ALPHA : sur le compte maître, le pilote écrit sur « Ce que tu vends », plus sur l'escalier de nos offres", async () => {
+  const { expediteurDuPilote, premierMessage } = await import("../lib/autopilote-inscrit");
+  const p: Prospect = { ...prospectDefaults, id: "demo-agence", company: "AGENCE DU PARC (DÉMO)", name: "Camille Démo", tags: ["registre"], email: "camille@agence-du-parc.example.com" } as Prospect;
+  const s = { accountId: "eagleye", closerName: "Zakaria Tazi", agencyName: "EAGLEYE CORP" };
+  const profil = { poste: "dirigeant" as const, metier: "un OS de vente qui trouve vos clients et pose vos rendez-vous", cibleSecteur: "agences immobilières", cibleRole: "dirigeants", cibleZone: "Rhône" };
+
+  // Avant : le maître n'avait AUCUN expéditeur, le message suivait l'escalier.
+  const avant = premierMessage(p, s, null);
+  assert.doesNotMatch(avant.body, /OS de vente/, "état d'avant, mesuré : sans expéditeur, le message suit l'escalier, jamais l'offre déclarée");
+
+  const maitre = expediteurDuPilote({ inscrit: null, profil, agencyName: "EAGLEYE CORP", city: "Lyon" });
+  assert.ok(maitre, "le maître qui a écrit ce qu'il vend parle sur son profil");
+  const apres = premierMessage(p, s, maitre);
+  assert.match(apres.body, /OS de vente qui trouve vos clients/);
+  assert.doesNotMatch(apres.body, /accueil téléphonique|process commercial|acquéreurs/, "plus rien de l'escalier");
+  assert.match(apres.body, /assistant IA/, "la divulgation reste");
+
+  // Profil vide : rien ne change pour le maître ; un inscrit garde toujours le sien.
+  assert.equal(expediteurDuPilote({ inscrit: null, profil: { ...profil, metier: "  " }, agencyName: "", city: "" }), null);
+  const sien = { profil: { ...profil, metier: "des cuisines sur mesure" }, agencyName: "Atelier Démo", city: "Lyon" };
+  assert.equal(expediteurDuPilote({ inscrit: sien, profil, agencyName: "EAGLEYE CORP", city: "Lyon" }), sien);
+});
