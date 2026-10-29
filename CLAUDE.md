@@ -1960,7 +1960,7 @@ et ce qu'il change, avant de valider.
   l'agenda). **Le tournage a trouvé cinq défauts de ce qui part chez un prospect** (double
   signature et triple « STOP », pied qui affirmait une clientèle, créneaux sans numéros, email
   bloqué à 600 px sur téléphone, maître écrivant sur notre escalier) — tous corrigés avant.
-  37,5 s, assumé. **Prêt, pas publié.**
+  37,5 s, assumé. **Publié le 29/10/2026** (`urn:li:ugcPost:7521652429055004672`).
 - **10 M ne se met pas dans un `/goal`** : l'évaluateur ne lit que la
   conversation, et ce conteneur ne joint pas Supabase. Le nord vit dans
   `docs/OBJECTIF-10M.md` ; chaque `/goal` vise un livrable prouvable du palier

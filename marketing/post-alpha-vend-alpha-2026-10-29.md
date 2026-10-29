@@ -1,6 +1,13 @@
 # Post LinkedIn — « ALPHA vend ALPHA » (29/10/2026)
 
-**Statut : PRÊT, PAS PUBLIÉ** — rien ne part sans le « go » de Zakaria.
+**Statut : PUBLIÉ le 29/10/2026 vers 20 h 25 (Paris)**, sur le « go » de Zakaria —
+`urn:li:ugcPost:7521652429055004672` (vidéo `urn:li:video:D4E10AQHGmGeICbYdAA`, 5 357 238 octets,
+téléversée depuis l'URL de production). Relecture par l'API refusée (403, connu) : vérifier à l'œil.
+
+Vérifié AVANT de publier : le MP4 servi par la production a la même empreinte SHA-256 que
+celui du dépôt ; la vignette rendue par LinkedIn est l'affiche « ALPHA vend ALPHA. »
+(empreinte réduite 16 × 20 : écart moyen 0,6/255, contre 120 pour une image du milieu du film).
+Publié le soir et non à 8 h 30 : le « go » est arrivé à 20 h 19, et aucun post n'était parti ce jour-là.
 
 - Vidéo : `public/media/linkedin/alpha-vend-alpha-2026-10-29.mp4` (1080 × 1350, son synthétisé).
 - Composition : `scripts/video/compositions/alpha-vend-alpha/` · garde : `tests/film-alpha-vend-alpha.test.ts`.
@@ -9,14 +16,12 @@
   réseau est remplacé par des données FICTIVES (`donnees.json`) ; les emails sont rendus par le
   serveur sur le corps exact que le pilote a envoyé.
 
-## Avant de publier — ce qui reste à vérifier
+## Après publication — ce qui reste à surveiller
 
-1. **La production sert le bon code** : les cinq corrections trouvées pendant le tournage sont
-   poussées ; vérifier que Vercel a déployé (le MP4 servi au bon octet, `curl -I` via Composio).
-2. **La vignette** : LinkedIn prend l'image 3 ; l'affiche couvre les premières images. La relire
-   par `LINKEDIN_GET_VIDEOS` (champ `thumbnail`) AVANT de publier.
-3. **Le mur des confirmations** : 30 inscriptions/heure. Un post qui marche peut le toucher —
-   surveiller `/adoption` le jour même.
+- **Le mur des confirmations** : 30 inscriptions/heure. Un post qui marche peut le toucher —
+  surveiller `/adoption` le soir même et le lendemain matin.
+- ⚠ Le shell distant de Composio a répondu 403 ce soir-là ; l'atelier Python, lui, joignait la
+  production et les images LinkedIn. C'est par lui que l'empreinte et la vignette ont été lues.
 
 ## Texte du post
 
