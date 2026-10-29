@@ -1952,6 +1952,15 @@ et ce qu'il change, avant de valider.
   (lue dans la police, revue sur l'image : 23 px), −23 LUFS relus sur le fichier
   écrit (`scripts/video/mastering-tv.sh`). **Prêt pour l'avis ARPP, pas diffusé** —
   l'avis et le format de la régie sont sur Zakaria.
+- **⚠⚠ LE FILM « ALPHA VEND ALPHA » (29/10/2026)** — `scripts/video/compositions/alpha-vend-alpha/` ·
+  `tests/film-alpha-vend-alpha.test.ts` · `marketing/post-alpha-vend-alpha-2026-10-29.md`. Le
+  MAÎTRE (verdict serveur) donne notre offre au vrai pilote ; cycle A→Z sur les vrais écrans,
+  réseau remplacé par des données fictives, emails rendus par le serveur. Chaque légende est
+  REJOUÉE par le test sur le code de production (mercredi pris ⇒ pas proposé, et proposé sans
+  l'agenda). **Le tournage a trouvé cinq défauts de ce qui part chez un prospect** (double
+  signature et triple « STOP », pied qui affirmait une clientèle, créneaux sans numéros, email
+  bloqué à 600 px sur téléphone, maître écrivant sur notre escalier) — tous corrigés avant.
+  37,5 s, assumé. **Prêt, pas publié.**
 - **10 M ne se met pas dans un `/goal`** : l'évaluateur ne lit que la
   conversation, et ce conteneur ne joint pas Supabase. Le nord vit dans
   `docs/OBJECTIF-10M.md` ; chaque `/goal` vise un livrable prouvable du palier

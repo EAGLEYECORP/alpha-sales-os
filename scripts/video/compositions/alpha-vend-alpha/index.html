@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — ALPHA vend ALPHA</title>
+    <!--
+      Film LinkedIn du 29/10/2026 — « ALPHA vend ALPHA ». Le compte MAÎTRE donne
+      NOTRE offre au pilote automatique, et le cycle se déroule de A à Z : la
+      cible, le registre, les coordonnées, le premier message, la réponse, les
+      créneaux libres de l'agenda, le rendez-vous — et ce qui revient à l'humain.
+      Doctrine : .claude/skills/alpha-motion/SKILL.md. Garde : tests/film-alpha-vend-alpha.test.ts.
+
+      ⚠ LES ÉCRANS SONT RÉELS. `capturer.mjs` (à côté) sert l'app construite en
+      mode MAÎTRE, lance le vrai pilote (horloge accélérée, réseau remplacé par
+      des données FICTIVES : `donnees.json`) et photographie chaque ligne de son
+      journal là où il l'écrit. Les emails sont rendus par le serveur
+      (`/api/email/preview`, même habillage que `/api/send`) sur le corps EXACT
+      que le pilote a envoyé. Les surlignages sont posés sur des positions
+      MESURÉES (`caps/inventaire.json`), jamais à l'œil.
+
+      Chaque phrase est vraie dans le code :
+        · la recherche au registre, par métier et par zone → lib/trouver-clients.ts · lib/naf.ts
+        · les coordonnées avec la clé de l'utilisateur    → lib/enrichissement.ts (Dropcontact)
+        · « il dit qu'il est une IA »                       → lib/signature-ia.ts (DIVULGATION_ECRITE)
+        · « mercredi est pris : pas proposé »               → lib/agenda-occupe.ts · lib/creneaux-rdv.ts
+        · l'invitation + la copie dans ta boîte             → lib/reponses-inscrit.ts (confirmationRdv) · copieExpediteur
+        · « le prix et la signature : à toi »               → lib/reponses-inscrit.ts (classerReponse)
+        · la devise                                         → lib/promesse.ts (PROMESSE_COURTE)
+
+      Refaire le rendu (depuis la racine du dépôt) :
+        npm run build && (SITE_PASSWORD=film npx next start -p 3113 &)
+        node scripts/video/compositions/alpha-vend-alpha/capturer.mjs
+        bash scripts/video/hyperframes-bac-a-sable.sh && source "${ALPHA_VIDEO_OUTILS:-$HOME/.cache/alpha-video}/env.sh"
+        cp -r scripts/video/compositions/alpha-vend-alpha /tmp/ava && gsap_local /tmp/ava
+        node scripts/video/bande-son.mjs scripts/video/partitions/alpha-vend-alpha.json /tmp/ava/bande.wav
+        cd /tmp/ava && hyperframes check && hyperframes render
+      Puis l'image d'affiche couvre les premières images (LinkedIn prend l'image 3 : compétence, § 5).
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      /* Fond partagé, IMMOBILE : la doctrine refuse la dérive d'ambiance. */
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.12); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.09); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 55px; right: 55px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 28px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .surtitre { position: absolute; left: 55px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 30px; letter-spacing: 0.12em; color: #e8c98a; white-space: nowrap; }
+      .surtitre b { display: inline-block; min-width: 46px; color: #0a0807; background: #e8c98a; border-radius: 10px; text-align: center; margin-right: 14px; }
+      #sous1 { position: absolute; left: 80px; top: 800px; font-size: 46px; font-weight: 500; color: #a79f92; white-space: nowrap; }
+      #sous1 b { color: #f3eee4; font-weight: 600; }
+      .legende { position: absolute; left: 55px; width: 970px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 54px; letter-spacing: -0.02em; line-height: 1.1; color: #f3eee4; }
+      .legende em { font-style: normal; color: #e8c98a; }
+
+      /* ── Les écrans RÉELS : posés sur la couleur de la carte de l'app ── */
+      .ecran { position: absolute; left: 55px; width: 970px; padding: 30px; border-radius: 36px; background: #120e0b;
+        border: 1.5px solid rgba(243, 238, 228, 0.1); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 50px 90px -40px rgba(0, 0, 0, 0.95); }
+      .ecran img { display: block; width: 910px; height: auto; }
+      /* Pendant la frappe, la fenêtre a la hauteur du champ AGRANDI ; elle se replie avec lui. */
+      .pile { position: relative; width: 910px; height: 165px; overflow: hidden; }
+      #aZ { position: absolute; left: 0; top: 0; width: 1547px; height: 165px; transform-origin: 0 0; }
+      /* « #aZ img » et non « .frappe » : « .ecran img » (plus spécifique) imposait 910 px —
+         vu au rendu, la caméra glissait sur une image qui n'était pas agrandie. */
+      #aZ img.frappe { position: absolute; left: 0; top: 0; width: 1547px; opacity: 0; }
+      .zoom { position: absolute; inset: 0; }
+      .fenetre { position: relative; overflow: hidden; }
+      .fenetre > img { position: absolute; left: 0; }
+      .rangee { position: relative; }
+      .rangee > div { position: absolute; left: 0; width: 910px; }
+      /* Un email : la boîte de réception est CLAIRE, comme chez le prospect. */
+      .mail { position: absolute; left: 55px; width: 970px; border-radius: 28px; overflow: hidden; background: #fffdf9;
+        box-shadow: 0 50px 90px -40px rgba(0, 0, 0, 0.95), 0 0 0 1.5px rgba(243, 238, 228, 0.12); }
+      .mail > img { position: absolute; left: 0; width: 970px; height: auto; }
+      .surligne { position: absolute; left: 22px; right: 22px; border-radius: 14px; border: 3px solid rgba(201, 150, 63, 0.95);
+        box-shadow: 0 0 34px rgba(232, 201, 138, 0.45); }
+
+      #illustr { position: absolute; left: 0; width: 1080px; top: 1276px; text-align: center; font-family: "JetBrains Mono"; font-weight: 500; font-size: 28px; letter-spacing: 0.1em; color: #a79f92; }
+
+      /* ── La fin ── */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #zK { top: 240px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 34px; letter-spacing: 0.14em; color: #e8c98a; }
+      #grandAigle { position: absolute; left: 445px; top: 330px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 525px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 670px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #appel { top: 880px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="37.5" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">LE CYCLE, DE A À Z</div>
+      </div>
+
+      <!-- 1 · L'accroche -->
+      <section id="s1" class="scene clip" data-start="0.0" data-duration="3.8" data-track-index="1">
+        <div id="s1in" class="scene">
+          <div class="titre" id="t1" style="top: 430px; font-size: 168px">
+            <span class="ligne"><span class="mot">ALPHA</span> <span class="mot">vend</span></span>
+            <span class="ligne"><span class="mot or">ALPHA.</span></span>
+          </div>
+          <div id="sous1">On lui donne <b>notre offre.</b> On regarde.</div>
+        </div>
+      </section>
+
+      <!-- 2 · A ce qu'on vend, B à qui -->
+      <section id="s2" class="scene clip" data-start="3.8" data-duration="6.9" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="scene" id="aG">
+          <div class="surtitre" id="aK" style="top: 150px"><b>A</b>CE QUE TU VENDS</div>
+          <div class="ecran" id="aE" style="top: 198px">
+            <div class="pile" id="aP">
+              <div id="aZ">
+                <img class="frappe" id="af00" src="caps/frappe-00.png" alt="" style="opacity: 1" />
+                <img class="frappe" id="af01" src="caps/frappe-01.png" alt="" />
+                <img class="frappe" id="af02" src="caps/frappe-02.png" alt="" />
+                <img class="frappe" id="af03" src="caps/frappe-03.png" alt="" />
+                <img class="frappe" id="af04" src="caps/frappe-04.png" alt="" />
+                <img class="frappe" id="af05" src="caps/frappe-05.png" alt="" />
+                <img class="frappe" id="af06" src="caps/frappe-06.png" alt="" />
+                <img class="frappe" id="af07" src="caps/frappe-07.png" alt="" />
+                <img class="frappe" id="af08" src="caps/frappe-08.png" alt="" />
+                <img class="frappe" id="af09" src="caps/frappe-09.png" alt="" />
+                <img class="frappe" id="af10" src="caps/frappe-10.png" alt="" />
+                <img class="frappe" id="af11" src="caps/frappe-11.png" alt="" />
+                <img class="frappe" id="af12" src="caps/frappe-12.png" alt="" />
+                <img class="frappe" id="af13" src="caps/frappe-13.png" alt="" />
+                <img class="frappe" id="af14" src="caps/frappe-14.png" alt="" />
+                <img class="frappe" id="af15" src="caps/frappe-15.png" alt="" />
+                <img class="frappe" id="af16" src="caps/frappe-16.png" alt="" />
+                <img class="frappe" id="af17" src="caps/frappe-17.png" alt="" />
+                <img class="frappe" id="af18" src="caps/frappe-18.png" alt="" />
+                <img class="frappe" id="af19" src="caps/frappe-19.png" alt="" />
+                <img class="frappe" id="af20" src="caps/frappe-20.png" alt="" />
+                <img class="frappe" id="af21" src="caps/frappe-21.png" alt="" />
+                <img class="frappe" id="af22" src="caps/frappe-22.png" alt="" />
+                <img class="frappe" id="af23" src="caps/frappe-23.png" alt="" />
+                <img class="frappe" id="af24" src="caps/frappe-24.png" alt="" />
+                <img class="frappe" id="af25" src="caps/frappe-25.png" alt="" />
+                <img class="frappe" id="af26" src="caps/frappe-26.png" alt="" />
+                <img class="frappe" id="af27" src="caps/frappe-27.png" alt="" />
+                <img class="frappe" id="af28" src="caps/frappe-28.png" alt="" />
+                <img class="frappe" id="af29" src="caps/frappe-29.png" alt="" />
+                <img class="frappe" id="af30" src="caps/frappe-30.png" alt="" />
+                <img class="frappe" id="af31" src="caps/frappe-31.png" alt="" />
+                <img class="frappe" id="af32" src="caps/frappe-32.png" alt="" />
+                <img class="frappe" id="af33" src="caps/frappe-33.png" alt="" />
+                <img class="frappe" id="af34" src="caps/frappe-34.png" alt="" />
+                <img class="frappe" id="af35" src="caps/frappe-35.png" alt="" />
+                <img class="frappe" id="af36" src="caps/frappe-36.png" alt="" />
+                <img class="frappe" id="af37" src="caps/frappe-37.png" alt="" />
+                <img class="frappe" id="af38" src="caps/frappe-38.png" alt="" />
+                <img class="frappe" id="af39" src="caps/frappe-39.png" alt="" />
+                <img class="frappe" id="af40" src="caps/frappe-40.png" alt="" />
+                <img class="frappe" id="af41" src="caps/frappe-41.png" alt="" />
+                <img class="frappe" id="af42" src="caps/frappe-42.png" alt="" />
+                <img class="frappe" id="af43" src="caps/frappe-43.png" alt="" />
+                <img class="frappe" id="af44" src="caps/frappe-44.png" alt="" />
+                <img class="frappe" id="af45" src="caps/frappe-45.png" alt="" />
+                <img class="frappe" id="af46" src="caps/frappe-46.png" alt="" />
+                <img class="frappe" id="af47" src="caps/frappe-47.png" alt="" />
+                <img class="frappe" id="af48" src="caps/frappe-48.png" alt="" />
+                <img class="frappe" id="af49" src="caps/frappe-49.png" alt="" />
+                <img class="frappe" id="af50" src="caps/frappe-50.png" alt="" />
+                <img class="frappe" id="af51" src="caps/frappe-51.png" alt="" />
+                <img class="frappe" id="af52" src="caps/frappe-52.png" alt="" />
+                <img class="frappe" id="af53" src="caps/frappe-53.png" alt="" />
+                <img class="frappe" id="af54" src="caps/frappe-54.png" alt="" />
+                <img class="frappe" id="af55" src="caps/frappe-55.png" alt="" />
+                <img class="frappe" id="af56" src="caps/frappe-56.png" alt="" />
+                <img class="frappe" id="af57" src="caps/frappe-57.png" alt="" />
+                <img class="frappe" id="af58" src="caps/frappe-58.png" alt="" />
+                <img class="frappe" id="af59" src="caps/frappe-59.png" alt="" />
+                <img class="frappe" id="af60" src="caps/frappe-60.png" alt="" />
+                <img class="frappe" id="af61" src="caps/frappe-61.png" alt="" />
+              </div>
+            </div>
+          </div>
+          </div>
+          <div class="surtitre" id="bK" style="top: 395px"><b>B</b>À QUI</div>
+          <div class="ecran" id="bE" style="top: 443px">
+            <div class="fenetre" style="height: 571px"><img src="caps/cible.png" alt="" style="top: -143px; width: 910px" data-layout-allow-overflow /></div>
+          </div>
+          <div class="legende" id="bL" style="top: 1118px">Par métier et par zone, <em>au registre officiel.</em></div>
+        </div>
+      </section>
+
+      <!-- 3 · C il cherche, il trouve -->
+      <section id="s3" class="scene clip" data-start="10.7" data-duration="4.4" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="cK" style="top: 150px"><b>C</b>IL CHERCHE, IL TROUVE</div>
+          <div class="ecran" id="cT" style="top: 198px"><img src="caps/travaille.png" alt="" /></div>
+          <div class="ecran" id="cJ" style="top: 661px">
+            <div class="rangee" style="height: 322px">
+              <div id="cJ2" style="top: 0"><img src="caps/j-coordonnees.png" alt="" /></div>
+              <div id="cJ1" style="top: 0"><img src="caps/j-cherche.png" alt="" /></div>
+            </div>
+          </div>
+          <div class="legende" id="cL" style="top: 1087px">Des entreprises actives, <em>puis leurs coordonnées.</em></div>
+        </div>
+      </section>
+
+      <!-- 4 · D le premier message -->
+      <section id="s4" class="scene clip" data-start="15.1" data-duration="5.3" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="surtitre" id="dK" style="top: 150px"><b>D</b>IL ÉCRIT DEPUIS TA BOÎTE</div>
+          <div class="mail" id="dE" style="top: 198px; height: 860px">
+            <div class="zoom" id="dZ">
+              <img src="caps/mail-premier.png" alt="" style="position: absolute; left: 0; width: 970px; top: 0" data-layout-allow-overflow />
+              <div class="surligne" id="dH1" style="top: 835px; height: 129px"></div>
+              <div class="surligne" id="dH2" style="top: 978px; height: 183px"></div>
+            </div>
+          </div>
+          <div class="legende" id="dL" style="top: 1102px">Une seule question. <em>Et il dit qu'il est une IA.</em></div>
+        </div>
+      </section>
+
+      <!-- 5 · E la réponse, les créneaux -->
+      <section id="s5" class="scene clip" data-start="20.4" data-duration="5.3" data-track-index="1">
+        <div id="s5in" class="scene">
+          <div class="surtitre" id="eK" style="top: 150px"><b>E</b>« OUI » : DES CRÉNEAUX LIBRES</div>
+          <div class="ecran" id="eJ" style="top: 198px"><img src="caps/j-repond.png" alt="" /></div>
+          <div class="mail" id="eE" style="top: 487px; height: 571px">
+            <div class="zoom" id="eZ">
+              <img src="caps/mail-creneaux.png" alt="" style="position: absolute; left: 0; width: 970px; top: -408px" data-layout-allow-overflow />
+              <div class="surligne" id="eH" style="top: 248px; height: 221px"></div>
+            </div>
+          </div>
+          <div class="legende" id="eL" style="top: 1102px">Mercredi est pris dans ton agenda : <em>pas proposé.</em></div>
+        </div>
+      </section>
+
+      <!-- 6 · F le rendez-vous -->
+      <section id="s6" class="scene clip" data-start="25.7" data-duration="4.0" data-track-index="1">
+        <div id="s6in" class="scene">
+          <div class="surtitre" id="fK" style="top: 150px"><b>F</b>« 2 » : LE RENDEZ-VOUS EST POSÉ</div>
+          <div class="ecran" id="fJ" style="top: 198px"><img src="caps/j-rdv.png" alt="" /></div>
+          <div class="mail" id="fE" style="top: 590px; height: 160px">
+            <img src="caps/mail-confirmation.png" alt="" style="top: -500px" data-layout-allow-overflow />
+          </div>
+          <div class="ecran" id="fR" style="top: 780px"><img src="caps/rdv.png" alt="" /></div>
+          <div class="legende" id="fL" style="top: 1032px">L'invitation part avec, <em>copie dans ta boîte.</em></div>
+        </div>
+      </section>
+
+      <!-- 7 · G ce qui revient à l'humain -->
+      <section id="s7" class="scene clip" data-start="29.7" data-duration="3.9" data-track-index="1">
+        <div id="s7in" class="scene">
+          <div class="surtitre" id="gK" style="top: 150px"><b>G</b>CE QUI REVIENT À TOI</div>
+          <div class="ecran" id="gJ" style="top: 198px"><img src="caps/j-escalade.png" alt="" /></div>
+          <div class="ecran" id="gA" style="top: 539px"><img src="caps/a-toi.png" alt="" /></div>
+          <div class="legende" id="gL" style="top: 871px">Le prix et la signature : <em>à toi.</em></div>
+        </div>
+      </section>
+
+      <!-- 8 · Z la fin -->
+      <section id="s8" class="scene clip" data-start="33.6" data-duration="3.9" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="zK" class="centre">Z · TOI, TU CLOSES.</div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">Les humains closent.</span><b class="ligne">Alpha fait tourner la machine.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+      </section>
+
+      <div id="illustr">ÉCRANS RÉELS · EXEMPLES ILLUSTRATIFS</div>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="37.5" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond ;
+      // révélation dans l'ordre de lecture ; tenues IMMOBILES ; sortie de l'ancien
+      // AVANT l'entrée du nouveau. Chaque mouvement accompagne un FAIT : une lettre
+      // tapée (une vraie capture par lettre), une ligne que le journal écrit, la
+      // phrase de l'email qui compte. Rien ne boucle.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.08 }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+      const surligne = (cible, t) => tl.fromTo(cible, { opacity: 0, scale: 0.98 }, { opacity: 1, scale: 1, duration: 0.5, ease: ENTREE }, t);
+
+      // En-tête : il cède la place au logo final.
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 33.250);
+
+      // 1 · L'accroche
+      titre("#t1", 0.100);
+      arrive("#sous1", 0.600, 24, 0.7);
+      sort("#s1in", 3.550);
+
+      // L'étiquette entre AVANT le premier écran et ne sort qu'avec la fin.
+      arrive("#illustr", 3.900, 10, 0.6);
+      tl.to("#illustr", { opacity: 0, duration: 0.35, ease: "power2.in" }, 33.250);
+
+      // 2 · A — notre offre, tapée lettre par lettre dans le vrai champ. La caméra
+      // suit le curseur MESURÉ (caps/inventaire.json), puis recule pour montrer la
+      // phrase entière. B — la cible.
+      arrive("#aK", 3.950, 18, 0.5);
+      arrive("#aE", 4.000, 40, 0.7);
+      tl.set("#af01", { opacity: 1 }, 4.450); tl.set("#af00", { opacity: 0 }, 4.450);
+      tl.set("#af02", { opacity: 1 }, 4.480); tl.set("#af01", { opacity: 0 }, 4.480);
+      tl.set("#af03", { opacity: 1 }, 4.510); tl.set("#af02", { opacity: 0 }, 4.510);
+      tl.set("#af04", { opacity: 1 }, 4.540); tl.set("#af03", { opacity: 0 }, 4.540);
+      tl.set("#af05", { opacity: 1 }, 4.570); tl.set("#af04", { opacity: 0 }, 4.570);
+      tl.set("#af06", { opacity: 1 }, 4.600); tl.set("#af05", { opacity: 0 }, 4.600);
+      tl.set("#af07", { opacity: 1 }, 4.630); tl.set("#af06", { opacity: 0 }, 4.630);
+      tl.set("#af08", { opacity: 1 }, 4.660); tl.set("#af07", { opacity: 0 }, 4.660);
+      tl.set("#af09", { opacity: 1 }, 4.690); tl.set("#af08", { opacity: 0 }, 4.690);
+      tl.set("#af10", { opacity: 1 }, 4.720); tl.set("#af09", { opacity: 0 }, 4.720);
+      tl.set("#af11", { opacity: 1 }, 4.750); tl.set("#af10", { opacity: 0 }, 4.750);
+      tl.set("#af12", { opacity: 1 }, 4.780); tl.set("#af11", { opacity: 0 }, 4.780);
+      tl.set("#af13", { opacity: 1 }, 4.810); tl.set("#af12", { opacity: 0 }, 4.810);
+      tl.set("#af14", { opacity: 1 }, 4.840); tl.set("#af13", { opacity: 0 }, 4.840);
+      tl.set("#af15", { opacity: 1 }, 4.870); tl.set("#af14", { opacity: 0 }, 4.870);
+      tl.set("#af16", { opacity: 1 }, 4.900); tl.set("#af15", { opacity: 0 }, 4.900);
+      tl.set("#af17", { opacity: 1 }, 4.930); tl.set("#af16", { opacity: 0 }, 4.930);
+      tl.set("#af18", { opacity: 1 }, 4.960); tl.set("#af17", { opacity: 0 }, 4.960);
+      tl.set("#af19", { opacity: 1 }, 4.990); tl.set("#af18", { opacity: 0 }, 4.990);
+      tl.set("#af20", { opacity: 1 }, 5.020); tl.set("#af19", { opacity: 0 }, 5.020);
+      tl.set("#af21", { opacity: 1 }, 5.050); tl.set("#af20", { opacity: 0 }, 5.050);
+      tl.set("#af22", { opacity: 1 }, 5.080); tl.set("#af21", { opacity: 0 }, 5.080);
+      tl.set("#af23", { opacity: 1 }, 5.110); tl.set("#af22", { opacity: 0 }, 5.110);
+      tl.set("#af24", { opacity: 1 }, 5.140); tl.set("#af23", { opacity: 0 }, 5.140);
+      tl.set("#af25", { opacity: 1 }, 5.170); tl.set("#af24", { opacity: 0 }, 5.170);
+      tl.set("#af26", { opacity: 1 }, 5.200); tl.set("#af25", { opacity: 0 }, 5.200);
+      tl.set("#af27", { opacity: 1 }, 5.230); tl.set("#af26", { opacity: 0 }, 5.230);
+      tl.set("#af28", { opacity: 1 }, 5.260); tl.set("#af27", { opacity: 0 }, 5.260);
+      tl.set("#af29", { opacity: 1 }, 5.290); tl.set("#af28", { opacity: 0 }, 5.290);
+      tl.set("#af30", { opacity: 1 }, 5.320); tl.set("#af29", { opacity: 0 }, 5.320);
+      tl.set("#af31", { opacity: 1 }, 5.350); tl.set("#af30", { opacity: 0 }, 5.350);
+      tl.set("#af32", { opacity: 1 }, 5.380); tl.set("#af31", { opacity: 0 }, 5.380);
+      tl.set("#af33", { opacity: 1 }, 5.410); tl.set("#af32", { opacity: 0 }, 5.410);
+      tl.set("#af34", { opacity: 1 }, 5.440); tl.set("#af33", { opacity: 0 }, 5.440);
+      tl.set("#af35", { opacity: 1 }, 5.470); tl.set("#af34", { opacity: 0 }, 5.470);
+      tl.set("#af36", { opacity: 1 }, 5.500); tl.set("#af35", { opacity: 0 }, 5.500);
+      tl.set("#af37", { opacity: 1 }, 5.530); tl.set("#af36", { opacity: 0 }, 5.530);
+      tl.set("#af38", { opacity: 1 }, 5.560); tl.set("#af37", { opacity: 0 }, 5.560);
+      tl.set("#af39", { opacity: 1 }, 5.590); tl.set("#af38", { opacity: 0 }, 5.590);
+      tl.set("#af40", { opacity: 1 }, 5.620); tl.set("#af39", { opacity: 0 }, 5.620);
+      tl.set("#af41", { opacity: 1 }, 5.650); tl.set("#af40", { opacity: 0 }, 5.650);
+      tl.set("#af42", { opacity: 1 }, 5.680); tl.set("#af41", { opacity: 0 }, 5.680);
+      tl.set("#af43", { opacity: 1 }, 5.710); tl.set("#af42", { opacity: 0 }, 5.710);
+      tl.set("#af44", { opacity: 1 }, 5.740); tl.set("#af43", { opacity: 0 }, 5.740);
+      tl.set("#af45", { opacity: 1 }, 5.770); tl.set("#af44", { opacity: 0 }, 5.770); tl.set("#aZ", { x: -14 }, 5.770);
+      tl.set("#af46", { opacity: 1 }, 5.800); tl.set("#af45", { opacity: 0 }, 5.800); tl.set("#aZ", { x: -24 }, 5.800);
+      tl.set("#af47", { opacity: 1 }, 5.830); tl.set("#af46", { opacity: 0 }, 5.830); tl.set("#aZ", { x: -44 }, 5.830);
+      tl.set("#af48", { opacity: 1 }, 5.860); tl.set("#af47", { opacity: 0 }, 5.860); tl.set("#aZ", { x: -64 }, 5.860);
+      tl.set("#af49", { opacity: 1 }, 5.890); tl.set("#af48", { opacity: 0 }, 5.890); tl.set("#aZ", { x: -83 }, 5.890);
+      tl.set("#af50", { opacity: 1 }, 5.920); tl.set("#af49", { opacity: 0 }, 5.920); tl.set("#aZ", { x: -92 }, 5.920);
+      tl.set("#af51", { opacity: 1 }, 5.950); tl.set("#af50", { opacity: 0 }, 5.950); tl.set("#aZ", { x: -104 }, 5.950);
+      tl.set("#af52", { opacity: 1 }, 5.980); tl.set("#af51", { opacity: 0 }, 5.980); tl.set("#aZ", { x: -125 }, 5.980);
+      tl.set("#af53", { opacity: 1 }, 6.010); tl.set("#af52", { opacity: 0 }, 6.010); tl.set("#aZ", { x: -146 }, 6.010);
+      tl.set("#af54", { opacity: 1 }, 6.040); tl.set("#af53", { opacity: 0 }, 6.040); tl.set("#aZ", { x: -168 }, 6.040);
+      tl.set("#af55", { opacity: 1 }, 6.070); tl.set("#af54", { opacity: 0 }, 6.070); tl.set("#aZ", { x: -188 }, 6.070);
+      tl.set("#af56", { opacity: 1 }, 6.100); tl.set("#af55", { opacity: 0 }, 6.100); tl.set("#aZ", { x: -208 }, 6.100);
+      tl.set("#af57", { opacity: 1 }, 6.130); tl.set("#af56", { opacity: 0 }, 6.130); tl.set("#aZ", { x: -224 }, 6.130);
+      tl.set("#af58", { opacity: 1 }, 6.160); tl.set("#af57", { opacity: 0 }, 6.160); tl.set("#aZ", { x: -244 }, 6.160);
+      tl.set("#af59", { opacity: 1 }, 6.190); tl.set("#af58", { opacity: 0 }, 6.190); tl.set("#aZ", { x: -264 }, 6.190);
+      tl.set("#af60", { opacity: 1 }, 6.220); tl.set("#af59", { opacity: 0 }, 6.220); tl.set("#aZ", { x: -286 }, 6.220);
+      tl.set("#af61", { opacity: 1 }, 6.250); tl.set("#af60", { opacity: 0 }, 6.250); tl.set("#aZ", { x: -305 }, 6.250);
+      tl.to("#aZ", { x: 0, scale: 0.5882, duration: 0.6, ease: "power3.inOut" }, 6.500);
+      tl.to("#aP", { height: 97, duration: 0.6, ease: "power3.inOut" }, 6.500);
+      // Pendant la frappe, le champ tient le CENTRE du cadre ; il remonte quand la cible arrive.
+      tl.fromTo("#aG", { y: 430 }, { y: 0, duration: 0.6, ease: "power3.inOut" }, 6.500);
+      arrive("#bK", 7.050, 18, 0.5);
+      arrive("#bE", 7.100, 40, 0.7);
+      arrive("#bL", 7.350, 34, 0.7);
+      sort("#s2in", 10.450);
+
+      // 3 · C — le journal écrit ses lignes : la plus récente EN HAUT, comme dans l'app
+      arrive("#cK", 10.850, 18, 0.5);
+      arrive("#cT", 10.900, 40, 0.7);
+      arrive("#cJ", 11.500, 40, 0.6);
+      tl.fromTo("#cJ1", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.45, ease: ENTREE }, 11.700);
+      tl.fromTo("#cJ1", { y: 0 }, { y: 220, duration: 0.5, ease: "power3.inOut" }, 12.400);
+      tl.fromTo("#cJ2", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.45, ease: ENTREE }, 12.550);
+      arrive("#cL", 11.700, 34, 0.7);
+      sort("#s3in", 14.850);
+
+      // 4 · D — l'email tel qu'il arrive chez le prospect ; puis on s'approche de la question
+      arrive("#dK", 15.250, 18, 0.5);
+      arrive("#dE", 15.300, 50, 0.8);
+      arrive("#dL", 16.000, 34, 0.7);
+      // L'email est plus haut que l'écran : la caméra descend vers la question AVANT de la surligner.
+      tl.fromTo("#dZ", { y: 0 }, { y: -426, duration: 0.7, ease: "power3.inOut" }, 16.200);
+      surligne("#dH1", 16.850);
+      surligne("#dH2", 17.550);
+      sort("#s4in", 20.150);
+
+      // 5 · E — « oui » : le journal, puis les créneaux libres ; on s'approche de la liste
+      arrive("#eK", 20.550, 18, 0.5);
+      arrive("#eJ", 20.600, 40, 0.7);
+      arrive("#eE", 21.150, 50, 0.8);
+      arrive("#eL", 21.550, 34, 0.7);
+      surligne("#eH", 22.050);
+      sort("#s5in", 25.450);
+
+      // 6 · F — « 2 » : le rendez-vous
+      arrive("#fK", 25.850, 18, 0.5);
+      arrive("#fJ", 25.900, 40, 0.7);
+      arrive("#fE", 26.350, 40, 0.7);
+      arrive("#fR", 26.700, 40, 0.7);
+      arrive("#fL", 26.500, 34, 0.7);
+      sort("#s6in", 29.450);
+
+      // 7 · G — ce qui remonte à l'humain
+      arrive("#gK", 29.850, 18, 0.5);
+      arrive("#gJ", 29.900, 40, 0.7);
+      arrive("#gA", 30.350, 40, 0.7);
+      arrive("#gL", 30.200, 34, 0.7);
+      sort("#s7in", 33.350);
+
+      // 8 · Z — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 33.600);
+      arrive("#zK", 33.650, 20, 0.6);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 33.700);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 33.850);
+      arrive("#devise", 34.050, 22, 0.7);
+      arrive("#appel", 34.600, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 35.200);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>

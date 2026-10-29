@@ -1,0 +1,34 @@
+{
+  "_note": "Film « ALPHA vend ALPHA » (29/10/2026). Tout ici est FICTIF : sociétés suffixées (DÉMO), SIREN hors registre (fixtures déjà utilisées par les tests), domaines RFC 2606, numéro dans une plage ARCEP de fiction. Le profil est le NÔTRE : c'est le compte maître qui donne son offre à ALPHA. Relu par tests/film-alpha-vend-alpha.test.ts.",
+  "maintenant": "2026-11-03T08:58:00Z",
+  "reglages": {
+    "accountId": "eagleye",
+    "agencyName": "EAGLEYE CORP",
+    "closerName": "Zakaria Tazi",
+    "offer": { "city": "Lyon", "whatYouSell": "", "valueProp": "" },
+    "profil": {
+      "poste": "dirigeant",
+      "metier": "un OS de vente qui trouve vos clients et pose vos rendez-vous",
+      "cibleSecteur": "agences immobilières",
+      "cibleRole": "dirigeants",
+      "cibleZone": "Rhône"
+    },
+    "onboarded": true
+  },
+  "cible": { "saisie": "agence immobiliere", "activite": "Agences immobilières", "naf": "68.31Z", "zone": "69" },
+  "agenda": {
+    "_note": "Mercredi 4 novembre, 8 h – 18 h de Paris : la journée est prise. ALPHA ne doit pas la proposer.",
+    "occupe": [{ "debut": "2026-11-04T07:00:00.000Z", "fin": "2026-11-04T17:00:00.000Z" }]
+  },
+  "entreprises": [
+    { "siren": "000000018", "nom": "AGENCE DU PARC (DÉMO)", "prenom": "Camille", "email": "camille@agence-du-parc.example.com", "qualification": "nominative@pro" },
+    { "siren": "000000026", "nom": "IMMO DES DEUX RIVES (DÉMO)", "prenom": "Dominique", "email": "contact@deux-rives.example.com", "qualification": "generic@pro" },
+    { "siren": "000000042", "nom": "CABINET HORIZON (DÉMO)", "prenom": "Alex", "email": "alex@cabinet-horizon.example.com", "qualification": "nominative@pro" }
+  ],
+  "telephone": "0465710000",
+  "reponses": [
+    { "de": 0, "apres": "premier", "date": "2026-11-03T09:10:00.000Z", "texte": "Oui, avec plaisir. On peut en parler.", "attendu": "veut-rdv" },
+    { "de": 1, "apres": "premier", "date": "2026-11-03T09:12:00.000Z", "texte": "Bonjour, c'est combien ?", "attendu": "prix" },
+    { "de": 0, "apres": "creneaux", "date": "2026-11-03T09:16:00.000Z", "texte": "2, c'est parfait.", "attendu": "choix-creneau" }
+  ]
+}

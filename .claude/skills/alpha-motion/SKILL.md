@@ -273,6 +273,34 @@ réelle qui flotte, texte qui passe du gris à l'encre).
   affiche » (§ 2 et § 5) ne suffit pas : vérifier la vignette RENVOYÉE par LinkedIn
   (`LINKEDIN_GET_VIDEOS` → `thumbnail`) AVANT de publier, jamais après.
 
+### Ce que le film « ALPHA vend ALPHA » (29/10/2026) a appris — `tests/film-alpha-vend-alpha.test.ts`
+
+`scripts/video/compositions/alpha-vend-alpha/` (+ `capturer.mjs`, `donnees.json`) ·
+`scripts/video/partitions/alpha-vend-alpha.json` · `marketing/post-alpha-vend-alpha-2026-10-29.md`.
+Le compte MAÎTRE donne notre offre au vrai pilote automatique ; le film montre le cycle de A à Z.
+
+- **⚠⚠ FILMER LE PRODUIT, C'EST LE TESTER — quatrième fois, et la plus rentable : CINQ défauts**
+  de ce qui part chez un prospect, aucun vu par un test. Le maître écrivait sur notre escalier ;
+  chaque email portait deux signatures et trois « STOP » (le rendu ajoutait ce que le corps
+  portait déjà) ; le pied affirmait une clientèle ; l'email des créneaux montrait des puces sous
+  « Répondez 1, 2 ou 3 » ; le bandeau forçait l'email à 600 px sur téléphone. Plus le journal
+  en « créneau(x) proposé(s) ». **On montre ce qui ARRIVE** : l'email rendu par le serveur
+  (`/api/email/preview`, même habillage que `/api/send`) sur le corps exact envoyé.
+- **Les surlignages se posent sur des positions MESURÉES** (`reperes`, `caps/inventaire.json`),
+  et la caméra de frappe suit la position RÉELLE du curseur, lettre par lettre. Un repère à l'œil
+  glisse sur la ligne voisine au premier changement de texte.
+- **Pièges d'atelier** : le cookie du mot de passe est `Secure` — Chromium l'envoie à 127.0.0.1,
+  le client HTTP de Playwright non (401) : lire le serveur par une PAGE. Un `setContent` sur une
+  page de l'app hérite de sa CSP (logo refusé) : rendre l'email sur une page vierge. Le conteneur
+  est en UTC : `timezoneId: "Europe/Paris"`, sinon un rendez-vous à 9 h s'affiche 08:00. Une règle
+  `.ecran img` (plus spécifique) écrasait la largeur des images de frappe : la caméra glissait sur
+  une image non agrandie — vu à la planche, invisible au `check`.
+- **Un email à 600 px de large se lit mal dans un fil mobile (24 px dans le film)** : capturé à
+  480 px, 32 px. Zoomer n'était pas la solution — ses lignes occupent toute la largeur, un zoom
+  les coupe. Panoramique vers la question quand la hauteur déborde.
+- **37,5 s, au-delà de la règle des 25 s, et c'est assumé** : la demande était le cycle ENTIER,
+  étape par étape. Le test borne à 38 s et dit pourquoi.
+
 ## 6. Avant de dire « c'est prêt »
 
 - [ ] L'accroche se comprend en 2 s, sans le son.

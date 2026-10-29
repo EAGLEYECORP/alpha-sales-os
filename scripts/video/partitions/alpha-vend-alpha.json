@@ -1,0 +1,315 @@
+{
+  "_note": "Film LinkedIn « ALPHA vend ALPHA » du 29/10/2026 — ré mineur (l'accroche), puis une couleur par étape du cycle (si bémol, fa, do, sol mineur, si bémol, la), ré majeur sur le logo. Les déclics suivent la frappe réelle (une capture par lettre, un déclic toutes les trois). Calée sur scripts/video/compositions/alpha-vend-alpha.",
+  "duree": 37.5,
+  "accords": [
+    [
+      0.0,
+      [
+        73.42,
+        146.83,
+        220.0,
+        261.63,
+        329.63
+      ]
+    ],
+    [
+      3.8,
+      [
+        116.54,
+        146.83,
+        174.61,
+        220.0,
+        293.66
+      ]
+    ],
+    [
+      10.7,
+      [
+        87.31,
+        130.81,
+        174.61,
+        220.0,
+        261.63
+      ]
+    ],
+    [
+      15.1,
+      [
+        65.41,
+        130.81,
+        196.0,
+        261.63,
+        329.63
+      ]
+    ],
+    [
+      20.4,
+      [
+        98.0,
+        146.83,
+        233.08,
+        293.66,
+        196.0
+      ]
+    ],
+    [
+      25.7,
+      [
+        116.54,
+        174.61,
+        233.08,
+        293.66,
+        349.23
+      ]
+    ],
+    [
+      29.7,
+      [
+        110.0,
+        146.83,
+        164.81,
+        220.0,
+        277.18
+      ]
+    ],
+    [
+      33.6,
+      [
+        73.42,
+        146.83,
+        220.0,
+        293.66,
+        369.99
+      ]
+    ]
+  ],
+  "evenements": [
+    {
+      "t": 0.3,
+      "type": "tinte",
+      "hz": 587.33,
+      "pan": -0.2
+    },
+    {
+      "t": 0.62,
+      "type": "tinte",
+      "hz": 880,
+      "pan": 0.2
+    },
+    {
+      "t": 3.55,
+      "type": "souffle"
+    },
+    {
+      "t": 4.0,
+      "type": "appui"
+    },
+    {
+      "t": 4.45,
+      "type": "declic",
+      "pan": -0.29
+    },
+    {
+      "t": 4.54,
+      "type": "declic",
+      "pan": -0.26
+    },
+    {
+      "t": 4.63,
+      "type": "declic",
+      "pan": -0.23
+    },
+    {
+      "t": 4.72,
+      "type": "declic",
+      "pan": -0.2
+    },
+    {
+      "t": 4.81,
+      "type": "declic",
+      "pan": -0.17
+    },
+    {
+      "t": 4.9,
+      "type": "declic",
+      "pan": -0.15
+    },
+    {
+      "t": 4.99,
+      "type": "declic",
+      "pan": -0.12
+    },
+    {
+      "t": 5.08,
+      "type": "declic",
+      "pan": -0.09
+    },
+    {
+      "t": 5.17,
+      "type": "declic",
+      "pan": -0.06
+    },
+    {
+      "t": 5.26,
+      "type": "declic",
+      "pan": -0.03
+    },
+    {
+      "t": 5.35,
+      "type": "declic",
+      "pan": 0.0
+    },
+    {
+      "t": 5.44,
+      "type": "declic",
+      "pan": 0.03
+    },
+    {
+      "t": 5.53,
+      "type": "declic",
+      "pan": 0.06
+    },
+    {
+      "t": 5.62,
+      "type": "declic",
+      "pan": 0.09
+    },
+    {
+      "t": 5.71,
+      "type": "declic",
+      "pan": 0.12
+    },
+    {
+      "t": 5.8,
+      "type": "declic",
+      "pan": 0.15
+    },
+    {
+      "t": 5.89,
+      "type": "declic",
+      "pan": 0.17
+    },
+    {
+      "t": 5.98,
+      "type": "declic",
+      "pan": 0.2
+    },
+    {
+      "t": 6.07,
+      "type": "declic",
+      "pan": 0.23
+    },
+    {
+      "t": 6.16,
+      "type": "declic",
+      "pan": 0.26
+    },
+    {
+      "t": 6.25,
+      "type": "declic",
+      "pan": 0.29
+    },
+    {
+      "t": 7.1,
+      "type": "appui"
+    },
+    {
+      "t": 10.45,
+      "type": "souffle"
+    },
+    {
+      "t": 10.9,
+      "type": "appui"
+    },
+    {
+      "t": 11.7,
+      "type": "tic",
+      "hz": 880,
+      "pan": -0.1
+    },
+    {
+      "t": 12.55,
+      "type": "tic",
+      "hz": 987.77,
+      "pan": 0.1
+    },
+    {
+      "t": 14.85,
+      "type": "souffle"
+    },
+    {
+      "t": 15.3,
+      "type": "appui"
+    },
+    {
+      "t": 16.85,
+      "type": "tinte",
+      "hz": 1174.66,
+      "pan": 0.2
+    },
+    {
+      "t": 17.55,
+      "type": "tic",
+      "hz": 880,
+      "pan": -0.1
+    },
+    {
+      "t": 20.15,
+      "type": "souffle"
+    },
+    {
+      "t": 20.6,
+      "type": "appui"
+    },
+    {
+      "t": 22.05,
+      "type": "tinte",
+      "hz": 1174.66,
+      "pan": 0.2
+    },
+    {
+      "t": 25.45,
+      "type": "souffle"
+    },
+    {
+      "t": 25.9,
+      "type": "appui"
+    },
+    {
+      "t": 26.7,
+      "type": "tic",
+      "hz": 987.77,
+      "pan": 0.2
+    },
+    {
+      "t": 29.45,
+      "type": "souffle"
+    },
+    {
+      "t": 29.9,
+      "type": "appui"
+    },
+    {
+      "t": 30.35,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": -0.2
+    },
+    {
+      "t": 33.35,
+      "type": "souffle"
+    },
+    {
+      "t": 33.6,
+      "type": "impact"
+    },
+    {
+      "t": 34.6,
+      "type": "pop"
+    },
+    {
+      "t": 35.2,
+      "type": "brillance"
+    }
+  ]
+}
