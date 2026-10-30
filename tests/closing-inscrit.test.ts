@@ -98,8 +98,9 @@ test("ce qui part : le prix déclaré mot pour mot, le lien, la divulgation — 
 });
 
 test("⚠⚠ le moteur passe le closing DÉCLARÉ à la décision, et envoie les deux réponses", () => {
-  const src = readFileSync(join(RACINE, "components/autopilote/moteur-autopilote.tsx"), "utf8");
-  assert.match(src, /deciderReponse\(p, m, profil, maintenant, s\.settings\.closing\)/);
+  // La boucle vit dans l'exécuteur PARTAGÉ (navigateur + serveur) : `lib/pilote-executeur.ts`.
+  const src = readFileSync(join(RACINE, "lib/pilote-executeur.ts"), "utf8");
+  assert.match(src, /deciderReponse\(p, m, profil, maintenant, pp\.closing\(\)\)/);
   assert.match(src, /reponsePrix\(/);
   assert.match(src, /envoiLienSignature\(/);
   const page = readFileSync(join(RACINE, "app/(app)/autopilote/page.tsx"), "utf8");

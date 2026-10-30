@@ -509,7 +509,7 @@ test("le journal s'accorde au nombre : « 3 créneaux proposés », jamais « 3 
   assert.equal(nb(1, "créneau proposé", "créneaux proposés"), "1 créneau proposé");
   assert.equal(nb(3, "créneau proposé", "créneaux proposés"), "3 créneaux proposés");
   const sansCommentaires = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
-  for (const f of ["components/autopilote/moteur-autopilote.tsx", "app/(app)/autopilote/page.tsx", "lib/autopilote-inscrit.ts", "lib/reponses-inscrit.ts"]) {
+  for (const f of ["components/autopilote/moteur-autopilote.tsx", "lib/pilote-executeur.ts", "app/(app)/autopilote/page.tsx", "lib/autopilote-inscrit.ts", "lib/reponses-inscrit.ts"]) {
     const src = sansCommentaires(readFileSync(join(process.cwd(), f), "utf8"));
     // Un MOT en minuscules collé à « (s) » : une fonction (`Boolean(x)`, `identiteEnvoi(s)`) n'en est pas un.
     assert.doesNotMatch(src, /(?<=[\s"'`>])[a-zàâçéèêëîïôûùüÿœ]{3,}\((?:s|x|es|e)\)/u, `${f} : un pluriel entre parenthèses`);

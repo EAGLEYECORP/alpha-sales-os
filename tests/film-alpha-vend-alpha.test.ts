@@ -140,7 +140,7 @@ test("F — « l'invitation part avec, copie dans ta boîte » : un .ics joint, 
   assert.match(visible, /L'invitation part avec, copie dans ta boîte\./);
   const c = confirmationRdv({ name: "Camille Démo" }, new Date("2026-11-06T08:00:00Z"), "visio", { closerName: "", agencyName: "" }, "Re: x", "BEGIN:VCALENDAR\r\nEND:VCALENDAR");
   assert.equal(c.attachments?.[0].filename, "rendez-vous.ics");
-  const moteur = readFileSync(join(RACINE, "components/autopilote/moteur-autopilote.tsx"), "utf8");
+  const moteur = readFileSync(join(RACINE, "lib/pilote-executeur.ts"), "utf8");
   assert.match(moteur, /repondre\(confirmationRdv\([^;]*\), true\)/, "la confirmation part avec `copieExpediteur` : l'invitation arrive dans SON agenda");
 });
 

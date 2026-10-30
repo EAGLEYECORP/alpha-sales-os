@@ -21,7 +21,8 @@ import { cadreParId } from "@/lib/templates";
 import { empreinte } from "@/lib/apprentissage";
 import { habillageEnvoi, QUOI_FAIRE_SOCIETE } from "@/lib/expediteur";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
-import { resoudreDroits } from "@/lib/entitlements";
+import { DROIT_SOLO, resoudreDroits } from "@/lib/entitlements";
+import { emailMaitrePrincipal, estAppelPiloteServeur } from "@/lib/pilote-serveur-appel";
 import { resoudreSmtp, resoudreSms, smtpUtilisable } from "@/lib/credentials-secret";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
 import { decisionRecontact, FENETRE_REPONSE_MS, FENETRE_RELANCE_MS, type SuiteConversation } from "@/lib/relance-mail";
@@ -249,7 +250,10 @@ export async function POST(request: NextRequest) {
   // Les droits servent à trancher QUI PAIE l'envoi (`resoudreSmtp`) et sous
   // quelle MARQUE il part — jamais à décider seul de l'accès : ça, c'est le
   // middleware, en amont. Résolus ici, avant l'habillage, qui en dépend.
-  const droits = await resoudreDroits(request);
+  // Le pilote serveur (onglet fermé) : droits du maître, comme `mail-tick`.
+  // Reconnu par le CRON_SECRET, et seulement en processus (`lib/pilote-serveur-appel.ts`).
+  const pilote = estAppelPiloteServeur(request);
+  const droits = pilote ? DROIT_SOLO : await resoudreDroits(request);
   const habillage = habillageEnvoi({
     maitre: droits.maitre,
     accountId: body.accountId,
@@ -336,7 +340,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Locataire courant (multi-compte) : identité + accès. Résolu une fois, réutilisé.
-  const tenant = await getTenant(request);
+  const tenant = pilote ? null : await getTenant(request);
   const tenantId = tenant?.id ?? null;
 
   // Freemium (opt-in REQUIRE_SUBSCRIPTION). Envoyer est l'action à valeur :
@@ -344,7 +348,7 @@ export async function POST(request: NextRequest) {
   //  · anon (aucun compte)    → bloqué ;
   //  · free                   → autorisé jusqu'au quota mensuel, puis 402.
   // Solo / facturation non exigée : « unmetered » → aucun effet.
-  const tier = await accountTier(tenantId, tenant?.email ?? null);
+  const tier = await accountTier(tenantId, pilote ? emailMaitrePrincipal() : (tenant?.email ?? null));
   if (tier === "anon") {
     return NextResponse.json(
       { error: "Compte requis pour envoyer — connecte-toi (/compte).", needsSubscription: true },
