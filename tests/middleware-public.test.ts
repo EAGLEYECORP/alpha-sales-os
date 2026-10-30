@@ -101,6 +101,9 @@ test("chemins publics — aucune route de DONNÉES n'y figure par erreur", () =>
     // Auto-relance email (B2) : cron, CRON_SECRET, refuse tout sans secret.
     // Vérifié en source dans le bloc des crons plus bas.
     "/api/campaign/relance-tick",
+    // Pilote serveur « ALPHA vend ALPHA » : cron, CRON_SECRET, refuse tout sans
+    // secret. Vérifié en source dans le bloc des crons plus bas.
+    "/api/campaign/pilote-tick",
     "/api/push/tick",
     "/api/calendar",
     "/api/webhooks/inbound",
@@ -240,7 +243,7 @@ test("MCP — le cockpit `diagnostic` est BRANCHÉ, en lecture seule", () => {
 test("les routes de cron exigent leur secret, et refusent tout sans lui", () => {
   // Être public ne veut pas dire ouvert : ces deux routes déclenchent des
   // appels téléphoniques et font vibrer des téléphones.
-  for (const f of ["app/api/campaign/tick/route.ts", "app/api/campaign/reply-tick/route.ts", "app/api/campaign/mail-tick/route.ts", "app/api/campaign/relance-tick/route.ts", "app/api/push/tick/route.ts"]) {
+  for (const f of ["app/api/campaign/tick/route.ts", "app/api/campaign/reply-tick/route.ts", "app/api/campaign/mail-tick/route.ts", "app/api/campaign/relance-tick/route.ts", "app/api/campaign/pilote-tick/route.ts", "app/api/push/tick/route.ts"]) {
     const r = readFileSync(join(process.cwd(), f), "utf8");
     assert.match(r, /CRON_SECRET/, `${f} doit exiger CRON_SECRET`);
     assert.match(r, /if \(!secret\) return false/, `${f} doit refuser quand le secret n'est pas configuré`);

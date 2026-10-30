@@ -4,7 +4,7 @@ import { safeEqual } from "./access";
 /**
  * ─────────────────────────────────────────────────────────────────────
  * L'APPEL DU PILOTE SERVEUR — comment `/api/send` reconnaît qu'il est appelé
- * par le pilote qui tourne onglet fermé (`app/api/autopilote/tick`).
+ * par le pilote qui tourne onglet fermé (`app/api/campaign/pilote-tick`).
  *
  * Décision de Zakaria (30/10/2026) : « ALPHA vend ALPHA » doit tourner dans le
  * cloud, sans navigateur ouvert et sans n8n. Le pilote serveur envoie donc par

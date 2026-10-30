@@ -12,7 +12,7 @@ import { lireReponseAgenda, type EtatAgenda } from "@/lib/agenda-occupe";
 import { projeterImport, readStorageHealth } from "@/lib/storage-health";
 import type { SuiteConversation } from "@/lib/relance-mail";
 import type { MailSortant } from "@/lib/reponses-inscrit";
-import { passagePilote, type PortesPilote, type RecuDeLecture } from "@/lib/pilote-executeur";
+import { corpsEnvoiPilote, envoiDepuisReponse, passagePilote, type PortesPilote, type RecuDeLecture } from "@/lib/pilote-executeur";
 import {
   CYCLE_MS, ETAT_AUTOPILOTE_VIDE, REGLAGES_AUTOPILOTE_DEFAUT,
   expediteurDuPilote, journaliser,
@@ -51,47 +51,20 @@ function noter(e: Omit<EntreeJournal, "le">) {
   majEtat((etat) => journaliser(etat, e, new Date()));
 }
 
-/**
- * ⚠ `suite` dit au serveur que ce message CONTINUE une conversation (réponse,
- * relance) : sans lui, la fenêtre de recontact de 14 jours refusait la
- * proposition de créneaux et chaque relance (`decisionRecontact`).
- */
+/** Envoyer par `/api/send` : le corps et la lecture de la réponse sont ceux du serveur aussi (`lib/pilote-executeur.ts`). */
 async function envoyer(p: Prospect, mail: MailSortant, suite?: SuiteConversation, copieExpediteur = false): Promise<Envoi> {
-  const s = useAlpha.getState().settings;
   try {
     const res = await fetch("/api/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channel: "email",
-        // ⚠ Personne ne relit : la divulgation IA est exigée, et elle est dans le corps.
-        modeProduction: "autonome",
-        to: p.email,
-        subject: mail.subject,
-        body: mail.body,
-        prospectId: p.id,
-        attachments: mail.attachments,
-        ...(suite ? { suite } : {}),
-        ...(copieExpediteur ? { copieExpediteur } : {}),
-        ...identiteEnvoi(s),
-      }),
+      body: JSON.stringify(corpsEnvoiPilote(p, mail, identiteEnvoi(useAlpha.getState().settings), suite, copieExpediteur)),
     });
-    if (res.ok) return { ok: true };
-    const j = (await res.json().catch(() => ({}))) as { error?: string; alreadyContacted?: boolean };
-    const apres = Number(res.headers.get("retry-after"));
-    return {
-      ok: false,
-      status: res.status,
-      erreur: j.error ?? `erreur ${res.status}`,
-      attendreMs: Number.isFinite(apres) && apres > 0 ? apres * 1000 : undefined,
-      dejaContacte: Boolean(j.alreadyContacted),
-    };
+    return await envoiDepuisReponse(res);
   } catch {
     return { ok: false, status: 0, erreur: "réseau indisponible" };
   }
 }
 
-/** Ce qu'un refus du serveur fait à l'autopilote : suspendre, marquer la fiche, ou réessayer plus tard. */
 /**
  * SON agenda (adresse secrète, `lib/agenda-occupe.ts`), relu au plus toutes les
  * 5 minutes : un passage qui traite trois réponses ne le lit qu'une fois. Sans

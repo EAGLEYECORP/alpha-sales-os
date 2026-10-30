@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resoudreDroits } from "@/lib/entitlements";
+import { DROIT_SOLO, resoudreDroits } from "@/lib/entitlements";
+import { estAppelPiloteServeur } from "@/lib/pilote-serveur-appel";
 import { fetchCalendrier } from "@/lib/site-fetch";
 import { adresseAgenda, lireAgendaIcs } from "@/lib/agenda-occupe";
 
@@ -37,7 +38,9 @@ function nonLu(raison: string, status = 200) {
 }
 
 export async function POST(req: NextRequest) {
-  const droits = await resoudreDroits(req);
+  // Le pilote serveur (onglet fermé) appelle ce gestionnaire EN PROCESSUS, avec le
+  // CRON_SECRET : droits du maître, comme `/api/send` (`lib/pilote-serveur-appel.ts`).
+  const droits = estAppelPiloteServeur(req) ? DROIT_SOLO : await resoudreDroits(req);
   if (!droits.tenantId && !droits.solo) return nonLu("Connecte-toi : la lecture de ton agenda est réservée à ton compte.", 401);
 
   let body: { url?: unknown };

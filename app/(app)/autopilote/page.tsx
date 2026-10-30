@@ -16,6 +16,7 @@ import type { MeetingChannel } from "@/lib/types";
 import type { TailleCible } from "@/lib/trouver-clients";
 import type { ConfigurationAlphaVendAlpha } from "@/lib/alpha-vend-alpha";
 import { CLOSER_USINE } from "@/lib/signature";
+import { PiloteServeurPanel } from "@/components/autopilote/pilote-serveur-panel";
 import {
   ETAT_AUTOPILOTE_VIDE, REGLAGES_AUTOPILOTE_DEFAUT, aContacter, envoisAlpha24h, nb, planifier, preRequis,
   type ReglagesAutopilote, type TypeJournal,
@@ -192,9 +193,11 @@ export default function AutopilotePage() {
       {maitre && (
         <p className="card flex gap-2 p-4 text-[13px] text-signal-amber">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-          Compte maître : ici, ALPHA écrit sur « Ce que tu vends », pas sur l&apos;escalier de nos offres. L&apos;autopilote SERVEUR (Pilote) travaille déjà sur le pipe du serveur : n&apos;active pas les deux sur les mêmes fiches — `/api/send` refuserait le doublon, mais le journal serait faux.
+          Compte maître : ici, ALPHA écrit sur « Ce que tu vends », pas sur l&apos;escalier de nos offres. Le pilote de cet onglet travaille sur les fiches du navigateur, celui du cloud sur celles du serveur : lancer le cloud arrête l&apos;onglet.
         </p>
       )}
+
+      {maitre && <PiloteServeurPanel reglages={reglages} arreterOnglet={() => regler({ actif: false })} />}
 
       {maitre && (
         <section className="card flex flex-wrap items-center justify-between gap-3 p-4">

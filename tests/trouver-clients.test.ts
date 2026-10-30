@@ -353,6 +353,20 @@ test("⚠⚠ LA RECHERCHE NE PASSE PAS PAR NOTRE SERVEUR : aucune route ne cherc
   assert.deepEqual(fautifs, []);
 });
 
+test("⚠⚠ LA SEULE EXCEPTION : le pilote serveur du MAÎTRE cherche au registre — sur SA cible, jamais sur une cible reçue", () => {
+  /**
+   * Depuis le 30/10/2026 (« tout dans le cloud, sans n8n »), le pilote du maître
+   * tourne aussi sur le serveur, et ses étapes (`lib/pilote-executeur.ts`)
+   * comprennent la recherche. La règle protège la cible d'un INSCRIT ; celle du
+   * maître est la nôtre. Ce qui la garde : le tick ne lit AUCUN corps de requête
+   * (aucune cible ne peut lui être envoyée) et ses portes ne connaissent que
+   * `CONFIGURATION_ALPHA_VEND_ALPHA` et le pipe opérateur.
+   */
+  const tick = sansCommentaires(lire("app/api/campaign/pilote-tick/route.ts"));
+  assert.doesNotMatch(tick, /req\.json\(|req\.nextUrl\.searchParams/, "une cible reçue ferait de notre serveur le collecteur d'un inscrit");
+  assert.match(tick, /lireProspectsOperateur\(db\)/);
+});
+
 test("⚠ « Trouver des clients » est GRATUIT et s'ouvre au visiteur sans compte", () => {
   assert.equal(autorise(DROIT_GRATUIT, "/trouver"), true);
   assert.equal(pageOuverteAuVisiteur("/trouver"), true);

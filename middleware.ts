@@ -214,6 +214,9 @@ const PUBLIC_PREFIXES = [
   // Auto-relance email (B2) : même porte (CRON_SECRET). Envoie de VRAIES
   // relances — plafond 4/30 j, raison neuve obligatoire, armement requis.
   "/api/campaign/relance-tick",
+  // Le pilote serveur « ALPHA vend ALPHA » (30/10/2026) : même porte
+  // (CRON_SECRET), interrupteur en base posé par le maître, verrou d'un passage.
+  "/api/campaign/pilote-tick",
   "/api/push/tick",
   // Flux calendrier : lu par les serveurs de Google/Apple/Microsoft, jamais
   // par un navigateur connecté — donc aucun cookie possible. Il porte son

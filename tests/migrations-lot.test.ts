@@ -137,6 +137,19 @@ test("⚠⚠ LA VÉRIFICATION NE RÉFÉRENCE NI `cron.job` NI LE VAULT", () => {
   assert.ok(!/vault\./.test(verif), "idem pour le Vault");
 });
 
+test("⚠⚠ 020 RESTE DEHORS (pg_cron), MAIS SA TABLE (019) EST DANS LE LOT", () => {
+  /**
+   * Le pilote serveur (30/10/2026) : sa TABLE se rejoue sur une base fraîche,
+   * sa PLANIFICATION exige le Vault de 004. Les deux étaient d'abord dans un
+   * seul fichier — l'exclure aurait sorti la table du lot avec le cron.
+   */
+  const src = readFileSync(join(RACINE, "supabase/migrations/020-pilote-tick.sql"), "utf8");
+  assert.match(src, /cron\.schedule/, "020 planifie via pg_cron : il reste hors du lot");
+  assert.ok(!lot().includes("│ 020-"), "le lot ne doit pas contenir 020");
+  assert.ok(lot().includes("│ 019-"), "la table du pilote serveur doit être dans le lot");
+  assert.doesNotMatch(readFileSync(join(RACINE, "supabase/migrations/019-pilote-serveur.sql"), "utf8"), /cron\.schedule/);
+});
+
 test("⚠ AUCUNE MIGRATION N'EST OUBLIÉE EN SILENCE", () => {
   /**
    * Le mode de panne d'un générateur qui filtre : une migration `013` nommée
@@ -152,8 +165,8 @@ test("⚠ AUCUNE MIGRATION N'EST OUBLIÉE EN SILENCE", () => {
 
   assert.deepEqual(
     manquantes,
-    ["004-ordonnanceur.sql", "014-autopilote-email.sql", "016-boucles-reply-relance.sql"],
-    "seuls 004, 014 et 016 peuvent manquer (pg_cron/Vault), pour la raison écrite dans les tests précédents",
+    ["004-ordonnanceur.sql", "014-autopilote-email.sql", "016-boucles-reply-relance.sql", "020-pilote-tick.sql"],
+    "seuls 004, 014, 016 et 020 peuvent manquer (pg_cron/Vault), pour la raison écrite dans les tests précédents",
   );
 });
 

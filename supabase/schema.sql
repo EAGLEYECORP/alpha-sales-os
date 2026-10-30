@@ -441,3 +441,19 @@ create table if not exists public.autopilote_reglage (
   updated_by text
 );
 alter table public.autopilote_reglage enable row level security;
+
+-- ── Pilote serveur « ALPHA vend ALPHA » (onglet fermé, sans n8n) ──
+-- Détail et motifs : supabase/migrations/019-pilote-serveur.sql
+-- ⚠ RLS actif, AUCUNE policy, aucun secret (Dropcontact et agenda vivent dans
+-- l'environnement). Une seule ligne (id='maitre').
+create table if not exists public.pilote_serveur (
+  id              text primary key default 'maitre' check (id = 'maitre'),
+  actif           boolean not null default false,
+  reglages        jsonb not null default '{}'::jsonb,
+  expediteur      jsonb not null default '{}'::jsonb,
+  etat            jsonb not null default '{}'::jsonb,
+  verrou_jusqua   timestamptz,
+  dernier_passage timestamptz,
+  modifie_le      timestamptz not null default now()
+);
+alter table public.pilote_serveur enable row level security;

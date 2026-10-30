@@ -10,6 +10,29 @@
 
 ---
 
+## ☁️ 30/10/2026 — ALPHA VEND ALPHA DANS LE CLOUD, SANS N8N : CE QUI RESTE (passe devant tout)
+
+Le pilote du compte maître tourne désormais AUSSI sur le serveur, onglet fermé :
+`pg_cron` → `/api/campaign/pilote-tick`, toutes les 5 min en journée ouvrée, mêmes
+règles que l'onglet (`lib/pilote-executeur.ts`). Code en ligne ; **rien ne tourne
+tant que ces trois étapes ne sont pas faites, dans cet ordre :**
+
+1. **Vercel → Settings → Environment Variables (Production)** :
+   - `CRON_SECRET` = la MÊME valeur que sur la copie Netlify (Netlify → Site settings →
+     Environment variables) — c'est celle que le Vault Supabase envoie déjà.
+   - `DROPCONTACT_API_KEY` = ta clé Dropcontact.
+   - `AGENDA_ICS_URL` = l'adresse SECRÈTE iCal de ton agenda (facultatif).
+   - Puis **Redeploy**. ⚠ Tape-les dans Vercel, ne les colle jamais ici.
+2. **Me dire « go base »** : j'applique `019` (la table du pilote), je rebascule
+   `alpha_base_url` du Vault vers `https://alphasalesos.eagleyecorp.fr`, j'applique `020`
+   (la planification). Écritures en production : je ne les fais pas sans ton go.
+3. **`/autopilote`** (connecté en `contact@`) → **« Lancer dans le cloud »**. L'écran dit ce qui
+   manque encore et montre le journal du serveur.
+
+Ensuite : dépôt GitHub en privé, et trancher une formule payante en ligne.
+
+---
+
 ## ✅ 30/10/2026 (nuit) — FAIT CETTE NUIT, ET LA LISTE QUI RESTE (elle passe devant tout ce qui suit)
 
 **Fait par toi, vérifié :**

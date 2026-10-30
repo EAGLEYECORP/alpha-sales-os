@@ -20,6 +20,26 @@ n'a PAS été vérifié contre un vrai service est dit.
 Le serveur IMAP (`pop.securemail.pro`) reste NON vérifié avec la boîte : si le
 journal dit « Réponses non lues », mettre `mail.securemail.pro`.
 
+## ☁️ Depuis le 30/10 : il tourne aussi DANS LE CLOUD, onglet fermé, sans n8n
+
+`/autopilote` → « Lancer dans le cloud » (maître seul). Le serveur joue les MÊMES
+étapes que l'onglet (`lib/pilote-executeur.ts`) sur le pipe du serveur :
+
+| | Où |
+|---|---|
+| Déclencheur | `pg_cron` → `/api/campaign/pilote-tick`, toutes les 5 min, lun–ven 8 h–19 h UTC (migration 020) |
+| Interrupteur, réglages, ton nom, journal | table `pilote_serveur` (migration 019) — aucun secret dedans |
+| Envoi, lecture de la boîte, agenda | gestionnaires de `/api/send`, `/api/reponses`, `/api/agenda` appelés en processus (mêmes gardes) |
+| Clé Dropcontact, agenda | `DROPCONTACT_API_KEY`, `AGENDA_ICS_URL` dans Vercel |
+| Fenêtre d'écriture | inchangée : hors 9 h–12 h / 14 h–18 h, il lit sans écrire |
+
+Gardes : CRON_SECRET · interrupteur posé par toi · refus si l'ancien autopilote d'envoi
+(`mail-tick`) est armé · un passage à la fois (verrou de 5 min) · sans boîte, il n'écrit pas.
+Lancer le cloud arrête le pilote de l'onglet (deux pipes, une cible : pas deux fois).
+
+**Pas encore prouvé en vrai** : aucun passage serveur n'a tourné (la table n'est pas posée,
+le cron vise encore la copie Netlify). Ordre exact : `docs/A-FAIRE-ZAKARIA.md`, § 30/10 cloud.
+
 ## ⚡ Depuis le 29/10 (soir) : la configuration arrive toute faite
 
 Connecté en `contact@eagleyecorp.fr`, ouvre `/autopilote` : si rien n'y est

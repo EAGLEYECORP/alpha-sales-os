@@ -380,6 +380,25 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
   dictionnaire de notre Sheets, notre taux. Le panneau opérateur suit désormais
   `useMaitreProuve` (pessimiste) et les englobe (`tests/settings-operateur.test.ts`). Les
   routes étaient déjà fermées : c'est l'ÉCRAN qui racontait.
+- **⚠⚠ LE PILOTE DU MAÎTRE TOURNE DANS LE CLOUD, SANS N8N (30/10/2026, décision de Zakaria :
+  « tout dans le cloud »)** — `lib/pilote-executeur.ts` (les étapes, UNE définition) ·
+  `lib/pilote-serveur.ts` (portes du serveur) · `app/api/campaign/pilote-tick` · interrupteur
+  `/api/autopilote/serveur` + `components/autopilote/pilote-serveur-panel.tsx` · migrations
+  019 (table `pilote_serveur`, dans le lot) et 020 (pg_cron, hors lot) · `tests/pilote-serveur.test.ts`.
+  · **La boucle a QUITTÉ le composant React** : navigateur et serveur fournissent leurs portes,
+    les étapes sont communes. Réécrire la boucle côté serveur aurait fait deux définitions de
+    « ce qu'ALPHA fait d'un oui ».
+  · **Envoi, boîte, agenda passent par les gestionnaires voisins EN PROCESSUS** (`/api/send`,
+    `/api/reponses`, `/api/agenda`), reconnus par `x-alpha-pilote-serveur` = `CRON_SECRET`
+    (`estAppelPiloteServeur` → `DROIT_SOLO`). Du réseau, le middleware exige encore une session.
+  · **Maître seul, par construction** : une cible (`CONFIGURATION_ALPHA_VEND_ALPHA` + réglages
+    tapés par le maître, triés clé par clé), un pipe (`operateur`), aucun corps lu par le tick.
+    C'est l'unique exception à « le registre et le BODACC partent du navigateur » : la règle
+    protège la cible d'un INSCRIT. La frontière du 21/10 tient pour lui.
+  · **Secrets dans l'environnement** (`DROPCONTACT_API_KEY`, `AGENDA_ICS_URL`), jamais en base.
+  · Refuse si l'ancien `mail-tick` est armé ; un passage à la fois (verrou 5 min) ; l'état
+    s'écrit AVANT chaque envoi (un passage tué ne fait pas renvoyer le précédent).
+  · **Non prouvé en vrai** : table et cron pas encore posés en production (go de Zakaria).
 - **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
   l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
   · **⚠⚠ ALPHA VEND ALPHA (29/10/2026)** : sur le maître, l'expéditeur inscrit est

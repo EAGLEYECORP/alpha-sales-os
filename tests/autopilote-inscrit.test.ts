@@ -438,8 +438,11 @@ test("⚠⚠ /api/reponses : pas de session, pas de lecture", async () => {
 test("⚠⚠ NOTRE boîte ne se lit que pour le maître, et le moteur écrit en mode AUTONOME", () => {
   const route = lire("app/api/reponses/route.ts").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.match(route, /if \(smtp\.origine === "maison" && !droits\.maitre\)/);
-  const moteur = lire("components/autopilote/moteur-autopilote.tsx").replace(/\/\*[\s\S]*?\*\//g, "");
+  // Le corps d'envoi vit dans l'exécuteur PARTAGÉ (navigateur + serveur, 30/10/2026).
+  const moteur = lire("lib/pilote-executeur.ts").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.match(moteur, /modeProduction: "autonome"/);
+  assert.match(lire("components/autopilote/moteur-autopilote.tsx"), /corpsEnvoiPilote\(/, "le navigateur poste ce corps-là");
+  assert.match(lire("app/api/campaign/pilote-tick/route.ts"), /corpsEnvoiPilote\(/, "le serveur aussi");
   assert.doesNotMatch(moteur, /modeProduction: "valide-par-humain"/, "personne ne relit : le dire serait faux");
   const imap = lire("lib/imap-lecture.ts").replace(/\/\*[\s\S]*?\*\//g, "");
   assert.doesNotMatch(imap, /SELECT INBOX|\bSTORE\b|EXPUNGE/);

@@ -99,6 +99,48 @@ export interface PortesPilote {
   fetch(url: string, init?: RequestInit): Promise<Response>;
 }
 
+/**
+ * Le corps que le pilote poste à `/api/send` — UNE définition pour le navigateur
+ * et le serveur. ⚠ `suite` dit au serveur que ce message CONTINUE une
+ * conversation (réponse, relance) : sans lui, la fenêtre de recontact de 14
+ * jours refusait la proposition de créneaux et chaque relance.
+ */
+export function corpsEnvoiPilote(
+  p: Prospect,
+  mail: MailSortant,
+  identite: { accountId: string; closerName: string; agencyName: string },
+  suite?: SuiteConversation,
+  copieExpediteur = false,
+) {
+  return {
+    channel: "email" as const,
+    // ⚠ Personne ne relit : la divulgation IA est exigée, et elle est dans le corps.
+    modeProduction: "autonome" as const,
+    to: p.email,
+    subject: mail.subject,
+    body: mail.body,
+    prospectId: p.id,
+    attachments: mail.attachments,
+    ...(suite ? { suite } : {}),
+    ...(copieExpediteur ? { copieExpediteur } : {}),
+    ...identite,
+  };
+}
+
+/** Ce que la réponse de `/api/send` veut dire pour le pilote (`issueEnvoi` tranche ensuite). */
+export async function envoiDepuisReponse(res: Response): Promise<Envoi> {
+  if (res.ok) return { ok: true };
+  const j = (await res.json().catch(() => ({}))) as { error?: string; alreadyContacted?: boolean };
+  const apres = Number(res.headers.get("retry-after"));
+  return {
+    ok: false,
+    status: res.status,
+    erreur: j.error ?? `erreur ${res.status}`,
+    attendreMs: Number.isFinite(apres) && apres > 0 ? apres * 1000 : undefined,
+    dejaContacte: Boolean(j.alreadyContacted),
+  };
+}
+
 const fiche = (pp: PortesPilote, id: string) => pp.prospects().find((p) => p.id === id);
 const noter = (pp: PortesPilote, e: Omit<EntreeJournal, "le">) => pp.majEtat((etat) => journaliser(etat, e, pp.maintenant()));
 
