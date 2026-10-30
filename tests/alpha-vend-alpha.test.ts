@@ -93,3 +93,10 @@ test("sans nom saisi, les emails signent la SOCIÉTÉ — jamais « Le Closer »
   assert.match(page, /settings\.closerName === CLOSER_USINE \? \{ closerName: "" \}/);
   assert.ok(!("closerName" in C), "aucun nom humain dans la configuration");
 });
+
+test("⚠ la réponse « boîte d'inscrit » ne réécrit pas le verdict du maître arrivé entre-temps (course vue en production)", () => {
+  const page = readFileSync(join(RACINE, "app/(app)/autopilote/page.tsx"), "utf8");
+  const bloc = page.slice(page.indexOf('fetch("/api/credentials")') - 200, page.indexOf('fetch("/api/credentials")') + 400);
+  assert.match(bloc, /vivant && setBoite\(Boolean/);
+  assert.match(bloc, /vivant = false/);
+});

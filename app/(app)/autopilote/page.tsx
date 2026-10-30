@@ -89,12 +89,27 @@ export default function AutopilotePage() {
     const id = setInterval(() => setMaintenant(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
+  /**
+   * ⚠ UNE COURSE, VUE EN PRODUCTION LE 30/10/2026 sur le compte maître : au
+   * premier rendu le verdict prouvé vaut encore « pas maître », la question
+   * « boîte d'inscrit branchée ? » part ; le verdict arrive, `setBoite(true)` ;
+   * PUIS la réponse lente atterrit et réécrit `false`. L'écran affichait « ta
+   * boîte n'est pas branchée » à un maître dont la boîte est celle du serveur.
+   * Une réponse périmée ne s'applique plus (`vivant`), comme dans le moteur.
+   */
   useEffect(() => {
-    if (maitre) return setBoite(true);
+    let vivant = true;
+    if (maitre) {
+      setBoite(true);
+      return;
+    }
     fetch("/api/credentials")
       .then((r) => r.json())
-      .then((j: { cles?: Record<string, { verifieLe?: string | null }> }) => setBoite(Boolean(j.cles?.email?.verifieLe)))
-      .catch(() => setBoite(false));
+      .then((j: { cles?: Record<string, { verifieLe?: string | null }> }) => vivant && setBoite(Boolean(j.cles?.email?.verifieLe)))
+      .catch(() => vivant && setBoite(false));
+    return () => {
+      vivant = false;
+    };
   }, [maitre]);
 
   const regler = (patch: Partial<ReglagesAutopilote>) => patchSettings({ autopilote: { reglages: { ...reglages, ...patch }, etat } });
