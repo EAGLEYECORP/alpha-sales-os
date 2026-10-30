@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Bot,
   CheckCircle2,
+  CircleDashed,
   Clock,
   Cpu,
   Gauge,
@@ -17,7 +18,7 @@ import {
 import { useAlpha } from "@/lib/store";
 import { lireRapportDns, type EtatDns } from "@/lib/deliverability-dns";
 import { CATEGORY_META, computeRoutines, type Routine } from "@/lib/routines";
-import { n8nConnected } from "@/lib/n8n";
+import { useMaitreProuve } from "@/lib/use-droits";
 import { DEFAULT_DAILY_TARGET, buildDailyPlan } from "@/lib/daily-plan";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
@@ -69,7 +70,15 @@ export default function PilotePage() {
   const { prospects, meetings, campaigns, drafts } = useAlpha();
   const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
-  const [n8n, setN8n] = useState(false);
+  /**
+   * Le pilote qui tourne SANS TOI : celui du cloud pour le maître (`/api/autopilote/serveur`),
+   * celui de l'onglet pour un inscrit. ⚠ n8n n'est plus un organe (30/10/2026, décision de
+   * Zakaria : « pas de n8n, tout dans le cloud ») — l'afficher « non connecté » en rouge
+   * disait qu'il manquait une pièce que personne n'a à poser.
+   */
+  const maitre = useMaitreProuve();
+  const piloteOnglet = useAlpha((s) => Boolean(s.settings.autopilote?.reglages.actif));
+  const [piloteCloud, setPiloteCloud] = useState<boolean | null>(null);
   /** Verdict DNS du domaine d'envoi — null tant qu'on n'a pas de réponse. */
   const [dns, setDns] = useState<EtatDns | null>(null);
 
@@ -92,8 +101,19 @@ export default function PilotePage() {
 
   useEffect(() => {
     load();
-    setN8n(n8nConnected());
   }, []);
+
+  useEffect(() => {
+    if (!maitre) return;
+    let vivant = true;
+    fetch("/api/autopilote/serveur", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { actif?: boolean } | null) => vivant && setPiloteCloud(j ? Boolean(j.actif) : null))
+      .catch(() => vivant && setPiloteCloud(null));
+    return () => {
+      vivant = false;
+    };
+  }, [maitre]);
 
   const routines = useMemo(
     () => computeRoutines({ prospects, meetings, campaigns, drafts }),
@@ -123,36 +143,58 @@ export default function PilotePage() {
   const minutes = routines.reduce((sum, r) => sum + (MINUTES[r.category] ?? 2), 0);
 
   const c = health?.capabilities;
-  const organs: { label: string; ok: boolean; detail: string; autonomous: string }[] = [
+  /**
+   * ⚠ `null` = NON LU, jamais « absent ». `/api/health` ne rend son détail qu'au
+   * maître authentifié ou derrière le mot de passe du site : sans lui, l'écran
+   * affichait « SMTP absent — rien ne peut partir » sur un déploiement où le SMTP
+   * était posé. Ne rien voir et voir un manque appellent deux gestes opposés.
+   */
+  const lu = Boolean(c);
+  const NON_LU = "non lu — état du serveur invisible depuis cette session";
+  const pilote = maitre ? piloteCloud : piloteOnglet;
+  const organs: { label: string; ok: boolean | null; detail: string; autonomous: string }[] = [
     {
       label: "Envoi email",
-      ok: Boolean(c?.email?.configured),
-      detail: c?.email?.configured ? "SMTP configuré" : "SMTP absent — rien ne peut partir",
-      autonomous: "Envoie, trace les ouvertures et les clics, applique le quota horaire.",
+      ok: lu ? Boolean(c?.email?.configured) : null,
+      detail: !lu ? NON_LU : c?.email?.configured ? "SMTP configuré" : "SMTP absent — rien ne peut partir",
+      autonomous: "Envoie, trace les ouvertures et les clics, applique le palier du jour.",
     },
     {
       label: "IA",
-      ok: Boolean(c?.ai?.configured),
-      detail: c?.ai?.configured ? c.ai.model : "moteur de templates (hors-ligne)",
-      autonomous: "Rédige les brouillons, structure les recherches, joue le sparring.",
+      ok: lu ? Boolean(c?.ai?.configured) : null,
+      detail: !lu ? NON_LU : c?.ai?.configured ? c.ai.model : "moteur de templates (hors-ligne)",
+      autonomous: "Rédige les brouillons, structure les recherches, joue le sparring. Le pilote, lui, écrit sans IA.",
     },
     {
-      label: "Cerveau n8n",
-      ok: n8n,
-      detail: n8n ? "connecté" : "non connecté — les automatisations dorment",
-      autonomous: "Synchronise le CRM, traite les réponses entrantes, remonte le tracking, alerte en cas d'erreur.",
+      label: maitre ? "Pilote dans le cloud" : "Pilote automatique",
+      ok: pilote,
+      detail:
+        pilote === null
+          ? NON_LU
+          : pilote
+            ? maitre
+              ? "lancé — tourne onglet fermé (planificateur Supabase)"
+              : "lancé — tourne tant qu'un onglet d'ALPHA est ouvert"
+            : "à l'arrêt — /autopilote",
+      autonomous: "Cherche les entreprises, trouve leurs emails, écrit, lit les réponses, propose des créneaux, pose le RDV.",
     },
     {
       label: "Réponses entrantes",
-      ok: Boolean(c?.inboundWebhook?.configured),
-      detail: c?.inboundWebhook?.configured ? "webhook armé" : "WEBHOOK_SECRET absent",
-      autonomous: "Capte les réponses, détecte les STOP et désinscrit automatiquement.",
+      ok: lu ? Boolean(c?.inboundWebhook?.configured) || pilote === true : pilote,
+      detail: pilote
+        ? "lues dans ta boîte par le pilote (IMAP), à chaque passage"
+        : !lu
+          ? NON_LU
+          : c?.inboundWebhook?.configured
+            ? "webhook armé"
+            : "personne ne les lit — lance le pilote",
+      autonomous: "Capte les réponses, détecte les STOP, répond au prix et aux créneaux, remonte le doute.",
     },
     {
       label: "Tracking",
-      ok: Boolean(c?.tracking?.baseUrl),
-      detail: c?.tracking?.baseUrl ? `URL publique OK · ${c.tracking.persistence}` : "TRACKING_BASE_URL absente",
-      autonomous: "Compte ouvertures et clics même quand l'app locale est éteinte.",
+      ok: lu ? true : null,
+      detail: !lu ? NON_LU : c?.tracking?.baseUrl ? `URL publique fixée · ${c.tracking.persistence}` : `adresse du domaine servi · ${c?.tracking?.persistence ?? ""}`,
+      autonomous: "Compte ouvertures et clics : les liens pointent vers l'app en ligne, pas vers ton ordinateur.",
     },
     {
       label: "Délivrabilité",
@@ -172,13 +214,13 @@ export default function PilotePage() {
     },
     {
       label: "Mémoire durable",
-      ok: Boolean(c?.supabase?.serviceRole),
-      detail: c?.supabase?.serviceRole ? "Supabase (service role)" : "mémoire volatile",
+      ok: lu ? Boolean(c?.supabase?.serviceRole) : null,
+      detail: !lu ? NON_LU : c?.supabase?.serviceRole ? "Supabase (service role)" : "mémoire volatile",
       autonomous: "Conserve tracking et anti-doublons entre les redémarrages.",
     },
   ];
 
-  const running = organs.filter((o) => o.ok).length;
+  const running = organs.filter((o) => o.ok === true).length;
   const allGreen = running === organs.length;
 
   return (
@@ -213,7 +255,9 @@ export default function PilotePage() {
             <p className="text-[13px] text-paper-faint">
               {allGreen
                 ? "Tout ce qui peut être autonome l'est. Le reste attend ta décision."
-                : "Certains organes dorment — les automatisations correspondantes ne tournent pas."}
+                : organs.some((o) => o.ok === null)
+                  ? "Une partie de l'état n'est pas lisible depuis cette session (gris) : ce n'est pas un manque, c'est une absence de lecture."
+                  : "Certains organes dorment — les automatisations correspondantes ne tournent pas."}
             </p>
           </div>
         </div>
@@ -309,8 +353,10 @@ export default function PilotePage() {
           <ul className="mt-3 space-y-2.5">
             {organs.map((o) => (
               <li key={o.label} className="flex items-start gap-2.5">
-                {o.ok ? (
+                {o.ok === true ? (
                   <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-signal-green" />
+                ) : o.ok === null ? (
+                  <CircleDashed size={15} className="mt-0.5 shrink-0 text-paper-faint" />
                 ) : (
                   <XCircle size={15} className="mt-0.5 shrink-0 text-signal-red" />
                 )}
@@ -324,9 +370,10 @@ export default function PilotePage() {
             ))}
           </ul>
           <p className="panel mt-3 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-paper-faint">
-            <strong className="text-paper-dim">Condition matérielle :</strong> l&apos;app et n8n tournent sur ta machine.
-            Portable fermé = tout s&apos;arrête, sauf le tracking (hébergé) qui continue de compter. Voir{" "}
-            <code className="code">docs/AUTOPILOTE.md</code> pour le laisser tourner en continu.
+            <strong className="text-paper-dim">Où ça tourne :</strong>{" "}
+            {maitre
+              ? "le pilote du cloud tourne sur le serveur, ordinateur éteint, sans n8n (planificateur Supabase, jours ouvrés). Ce que tu fais à l'écran reste dans ce navigateur."
+              : "en ligne, ALPHA travaille tant qu'un onglet est ouvert. Le travail onglet fermé existe sur l'installation « chez vous »."}
           </p>
         </section>
 

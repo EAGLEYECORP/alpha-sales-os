@@ -47,7 +47,22 @@ export async function GET(req: NextRequest) {
 
   const sitePassword = env.SITE_PASSWORD;
   const attendu = sitePassword ? await accessToken(sitePassword) : null;
-  if (!detailAutorise(req, attendu)) {
+  // ⚠ Résolu UNE fois : deux appels poseraient deux fois la même question à la
+  // base, et rien ne garantirait qu'ils répondent pareil.
+  const droits = await resoudreDroits(req);
+  /**
+   * ⚠ LE MAÎTRE CONNECTÉ VOIT LE DÉTAIL (30/10/2026). Il était réservé au cookie
+   * du mot de passe du site : connecté en `contact@` sans être passé par
+   * `/gate`, `/pilote` recevait `{ ok }` seul et affichait « SMTP absent »,
+   * « mémoire volatile », « IA hors-ligne » sur un déploiement où tout était
+   * posé. Le compte propriétaire (verdict SERVEUR, `OWNER_EMAILS`) est une
+   * serrure au moins aussi forte qu'un mot de passe partagé.
+   * ⚠⚠ `!droits.solo` : sans comptes configurés, `resoudreDroits` rend le mode
+   * SOLO, qui est « maître » pour TOUT LE MONDE — sur cette route publique, il
+   * aurait ouvert le détail au premier venu. Seul un maître AUTHENTIFIÉ passe.
+   */
+  const maitreAuthentifie = droits.maitre && !droits.solo;
+  if (!detailAutorise(req, attendu) && !maitreAuthentifie) {
     // Assez pour un moniteur, rien pour un curieux.
     return NextResponse.json({ ok: true, checkedAt: new Date().toISOString() });
   }
@@ -60,10 +75,6 @@ export async function GET(req: NextRequest) {
   // plafond d'essai à chaque rafraîchissement — et `/api/health` est
   // précisément ce qu'on rafraîchit quand quelque chose ne va pas.
   const moteurIA = await moteurIADeLaRequete(req, { depense: false });
-  // ⚠ Résolu UNE fois : deux appels poseraient deux fois la même question à la
-  // base, et rien ne garantirait qu'ils répondent pareil.
-  const droits = await resoudreDroits(req);
-
   return NextResponse.json({
     ok: true,
     checkedAt: new Date().toISOString(),

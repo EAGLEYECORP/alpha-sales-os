@@ -230,8 +230,8 @@ export const STEPS: StepDef[] = [
   {
     id: "n8n",
     phase: "brancher",
-    title: "Connecter le cerveau n8n",
-    why: "n8n fait tourner ce qui doit tourner sans toi : synchro CRM, réponses entrantes, remontée du tracking. Sans lui, les automatisations dorment et tu ressaisis à la main.",
+    title: "Connecter n8n (facultatif)",
+    why: "Facultatif depuis le 30/10/2026 : le pilote automatique trouve, écrit, lit les réponses et pose les RDV sans lui (dans le cloud pour le compte maître). n8n ne sert plus qu'à brancher un outil à toi — une feuille Google synchronisée, un CRM tiers.",
     how: [
       "Lance n8n en local, importe les workflows du dossier integrations/.",
       "Réglages → Connexion n8n → colle l'URL du webhook → « Tester la connexion ».",

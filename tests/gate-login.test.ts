@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -158,4 +159,26 @@ test("la sonde de santé garde son détail derrière le mot de passe", () => {
   const i = h.indexOf("if (!detailAutorise(");
   assert.ok(i > 0, "le détail doit rester conditionné à l'entrée de la route");
   assert.match(h.slice(i, i + 250), /return NextResponse\.json\(\{ ok: true, checkedAt/);
+});
+
+test("⚠⚠ la sonde : le maître AUTHENTIFIÉ voit le détail, le mode solo (personne d'authentifié) non", async () => {
+  /**
+   * 30/10/2026 : `/pilote` affichait « SMTP absent » au maître connecté sans
+   * cookie de `/gate`. Le maître prouvé passe désormais — mais le mode solo
+   * est « maître » pour tout le monde, et la route est publique.
+   */
+  const { GET } = await import("../app/api/health/route");
+  const avant = { ...process.env };
+  for (const k of ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_JWT_SECRET", "REQUIRE_AUTH", "ALPHA_INSTALLATION"]) delete process.env[k];
+  process.env.SITE_PASSWORD = "mot-de-passe-de-test";
+  try {
+    const r = await GET(new NextRequest("https://alpha.example.com/api/health"));
+    const j = (await r.json()) as Record<string, unknown>;
+    assert.equal(j.capabilities, undefined, "solo sans cookie : rien de plus que { ok, checkedAt }");
+  } finally {
+    for (const k of Object.keys(process.env)) if (!(k in avant)) delete process.env[k];
+    Object.assign(process.env, avant);
+  }
+  const h = sansCommentaires(lire("app/api/health/route.ts"));
+  assert.match(h, /const maitreAuthentifie = droits\.maitre && !droits\.solo;/);
 });
