@@ -329,29 +329,64 @@ const audit = (actor: string, action: string, target: string): AuditLogEntry => 
  * sans bruit : l'échec est mémorisé et remonté dans l'état, un écran le
  * montre, et l'opérateur sait qu'il doit synchroniser ou alléger AVANT de
  * perdre quoi que ce soit.
+ *
+ * ── L'ÉCRITURE DIFFÉRÉE ──
+ *
+ * MESURÉ : chaque écriture sérialise l'état entier. À 500 fiches, taper une
+ * note réécrivait ~1,9 Mo de JSON par caractère. On groupe les écritures :
+ * la dernière gagne, après un court silence. Vidage forcé sur `pagehide` et
+ * `visibilitychange` pour ne pas perdre la saisie si l'onglet meurt pendant
+ * le délai. `flushStorage()` est aussi exporté pour les tests.
+ *
+ * ── NODE / TESTS ──
+ *
+ * Hors navigateur, `localStorage` n'existe pas. On fournit un Map en mémoire
+ * pour que le store reste utilisable dans les tests Node sans polyfill global.
  */
-/**
- * ── L'ÉCRITURE DIFFÉRÉE, et pourquoi elle est indispensable ──
- *
- * MESURÉ : zustand n'a pas de `partialize`, donc CHAQUE écriture sérialise
- * l'état entier. Et le champ « Notes » de la fiche prospect appelle
- * `patchProspect` à chaque frappe. Résultat : à 500 fiches, taper une note
- * réécrivait ~1,9 Mo de JSON par caractère — 10 ms de `JSON.stringify` mesurés
- * en Node, et `localStorage.setItem` est SYNCHRONE et plus lent que ça dans un
- * navigateur. La frappe devient visiblement saccadée bien avant le quota.
- *
- * On groupe donc les écritures : la dernière gagne, après un court silence.
- *
- * ⚠ LE PIÈGE DE TOUT DÉBOUNCE DE PERSISTANCE : si l'onglet se ferme pendant
- * le délai, l'écriture n'a jamais lieu et la saisie est perdue — exactement le
- * bug qu'on prétend éviter. D'où le vidage forcé sur `pagehide` et sur
- * `visibilitychange`, les deux seuls événements qu'un navigateur mobile
- * garantit avant de tuer un onglet (`beforeunload` ne se déclenche pas sur
- * iOS). `flushStorage()` est aussi exporté pour les tests.
- */
+const memoire = new Map<string, string>();
+
+const storage: Storage =
+  typeof globalThis !== "undefined" &&
+  typeof (globalThis as { localStorage?: Storage }).localStorage !== "undefined" &&
+  typeof (globalThis as { localStorage?: Storage }).localStorage?.setItem === "function"
+    ? (globalThis as { localStorage: Storage }).localStorage
+    : {
+        get length() {
+          return memoire.size;
+        },
+        key(i: number) {
+          return [...memoire.keys()][i] ?? null;
+        },
+        getItem(k: string) {
+          return memoire.get(k) ?? null;
+        },
+        setItem(k: string, v: string) {
+          memoire.set(String(k), String(v));
+        },
+        removeItem(k: string) {
+          memoire.delete(k);
+        },
+        clear() {
+          memoire.clear();
+        },
+      };
+
 const DELAI_ECRITURE_MS = 400;
 let enAttente: { cle: string; valeur: string } | null = null;
 let minuterie: ReturnType<typeof setTimeout> | null = null;
+let storageFailed = false;
+
+/**
+ * Remontée de l'échec vers l'interface.
+ *
+ * Passe par un évènement plutôt que par `setState` : on est ici DANS
+ * l'écriture du store, et déclencher une mise à jour d'état au milieu
+ * provoquerait une nouvelle écriture, donc une boucle.
+ */
+function notifyStorage(failed: boolean): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("alpha:storage", { detail: { failed } }));
+}
 
 /** Écrit immédiatement ce qui attend. Idempotent. */
 export function flushStorage(): void {
@@ -375,7 +410,7 @@ if (typeof window !== "undefined") {
 
 function ecrireVraiment(k: string, v: string): void {
   try {
-    localStorage.setItem(k, v);
+    storage.setItem(k, v);
     // Une écriture qui repasse efface l'alerte : le problème est réglé.
     if (storageFailed) {
       storageFailed = false;
@@ -395,23 +430,23 @@ function ecrireVraiment(k: string, v: string): void {
 
 const guardedLocalStorage: Storage = {
   get length() {
-    return localStorage.length;
+    return storage.length;
   },
-  key: (i: number) => localStorage.key(i),
+  key: (i: number) => storage.key(i),
   getItem: (k: string) => {
     // Une lecture doit voir ce qui attend : sans ça, un rechargement de l'état
     // juste après une écriture différée renverrait la version d'avant.
     if (enAttente?.cle === k) return enAttente.valeur;
-    return localStorage.getItem(k);
+    return storage.getItem(k);
   },
   removeItem: (k: string) => {
     // Effacer annule ce qui attend, sinon la minuterie ressusciterait la clé.
     if (enAttente?.cle === k) enAttente = null;
-    localStorage.removeItem(k);
+    storage.removeItem(k);
   },
   clear: () => {
     enAttente = null;
-    localStorage.clear();
+    storage.clear();
   },
   setItem: (k: string, v: string) => {
     // Hors navigateur (tests), on écrit tout de suite : pas de minuterie qui
@@ -431,22 +466,9 @@ const guardedLocalStorage: Storage = {
   },
 };
 
-let storageFailed = false;
-
-/**
- * Remontée de l'échec vers l'interface.
- *
- * Passe par un évènement plutôt que par `setState` : on est ici DANS
- * l'écriture du store, et déclencher une mise à jour d'état au milieu
- * provoquerait une nouvelle écriture, donc une boucle.
- */
-function notifyStorage(failed: boolean): void {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("alpha:storage", { detail: { failed } }));
-}
-
 /** L'écriture locale est-elle en échec ? Lu par l'alerte d'interface. */
 export const storageIsFailing = (): boolean => storageFailed;
+
 
 export const useAlpha = create<AlphaState>()(
   persist(
@@ -1177,17 +1199,9 @@ export const useAlpha = create<AlphaState>()(
     {
       name: "alpha-sales-os-v2",
       version: 5,
-      // Hors navigateur (tests, rendu serveur), on ne fournit AUCUN stockage :
-      // zustand désactive alors la persistance. C'est ce que faisait
-      // `() => localStorage` en levant une ReferenceError — en la remplaçant
-      // par un objet, il fallait rendre ce cas explicite.
-      storage: createJSONStorage(() => {
-        // Lever ici, comme le faisait `() => localStorage`, est ce que zustand
-        // attend pour désactiver la persistance : la signature exige un
-        // Storage, pas un `undefined`.
-        if (typeof localStorage === "undefined") throw new Error("localStorage indisponible");
-        return guardedLocalStorage;
-      }),
+      // Toujours guardedLocalStorage : navigateur = localStorage + debounce,
+      // Node/tests = Map en mémoire. Plus de throw — le store reste testable.
+      storage: createJSONStorage(() => guardedLocalStorage),
       /**
        * ─────────────────────────────────────────────────────────────────
        * CE QUI PART SUR LE DISQUE — et les deux choses qui n'y vont plus.
