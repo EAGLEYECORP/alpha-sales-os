@@ -13,6 +13,13 @@
 > (→ `graphify-out/graph.html` + `GRAPH_REPORT.md`). Voir aussi `lib/os-map.ts`
 > pour la carte **produit** (les routes, donnée à l'IA pour qu'elle se guide).
 
+## Gouvernance & conformité (nouveau)
+
+- [EU AI Act — Positionnement & Dossier technique](./EU_AI_ACT.md)
+- [Article 15 — Exactitude, Robustesse, Cybersécurité](./ARTICLE_15.md)
+- [FinOps & Token Budgeting](./FINOPS.md)
+- [Safety & Human-in-the-Loop](./SAFETY.md)
+
 ## Topologie — trois zones
 
 ```
