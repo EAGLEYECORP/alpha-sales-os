@@ -12,6 +12,16 @@ capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — 
 
 ---
 
+## 📐 Architecture, conformité EU AI Act & FinOps
+
+* 🏗️ [Architecture](docs/ARCHITECTURE.md)
+* ⚖️ [EU AI Act — Positionnement & dossier technique](docs/EU_AI_ACT.md)
+* 🛡️ [Article 15 — Exactitude, Robustesse, Cybersécurité](docs/ARTICLE_15.md)
+* 💰 [FinOps & Token Budgeting](docs/FINOPS.md)
+* 🔒 [Safety & HITL](docs/SAFETY.md)
+* 🔐 [Sécurité](docs/SECURITE.md) · [SECURITY.md](../SECURITY.md)
+
+
 ## LE BUT
 
 **Qu'un bon vendeur arrête de passer sa journée à ne pas vendre.**
