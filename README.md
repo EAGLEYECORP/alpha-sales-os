@@ -19,7 +19,7 @@ capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — 
 * 🛡️ [Article 15 — Exactitude, Robustesse, Cybersécurité](docs/ARTICLE_15.md)
 * 💰 [FinOps & Token Budgeting](docs/FINOPS.md)
 * 🔒 [Safety & HITL](docs/SAFETY.md)
-* 🔐 [Sécurité](docs/SECURITE.md) · [SECURITY.md](../blob/claude/crm-n8n-email-tracking-4qxtwr/SECURITY.md)
+* 🔐 [Sécurité](docs/SECURITE.md) · [SECURITY.md](/SECURITY.md)
 
 
 ## LE BUT
