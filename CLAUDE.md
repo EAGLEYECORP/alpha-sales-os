@@ -1994,6 +1994,11 @@ et ce qu'il change, avant de valider.
   signature et triple « STOP », pied qui affirmait une clientèle, créneaux sans numéros, email
   bloqué à 600 px sur téléphone, maître écrivant sur notre escalier) — tous corrigés avant.
   37,5 s, assumé. **Publié le 29/10/2026** (`urn:li:ugcPost:7521652429055004672`).
+- **LE FILM « LE DOSSIER QUI SE VÉRIFIE » (04/11/2026)** — `scripts/video/compositions/dossier/` ·
+  `tests/film-dossier.test.ts` · `marketing/post-dossier-conformite-2026-11-04.md`. Le dossier EU AI Act
+  vérifié à chaque `npm test` : citations, nombre (59), citation cassée et sortie réelle du garde sont
+  RELUS par le test dans le dépôt. « Garantie » est refusé par les interdits (`garanti…`) : la devise dit
+  « intention ». **Publié le 04/11/2026** (`urn:li:ugcPost:7523852479122362368`).
 - **10 M ne se met pas dans un `/goal`** : l'évaluateur ne lit que la
   conversation, et ce conteneur ne joint pas Supabase. Le nord vit dans
   `docs/OBJECTIF-10M.md` ; chaque `/goal` vise un livrable prouvable du palier

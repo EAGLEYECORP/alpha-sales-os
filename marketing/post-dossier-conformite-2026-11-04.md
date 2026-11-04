@@ -1,6 +1,12 @@
 # Post LinkedIn — « Le dossier qui se vérifie » (04/11/2026)
 
-**Statut : PRÊT, NON PUBLIÉ.** Rien ne part sans le « go » de Zakaria.
+**Statut : PUBLIÉ le 04/11/2026 au soir**, sur le « go » de Zakaria —
+`urn:li:ugcPost:7523852479122362368` (vidéo `urn:li:video:D4E10AQFfVp6AsRx9bQ`, 3 090 182 octets,
+téléversée depuis l'URL de production).
+
+Vérifié AVANT de publier : le MP4 servi par la production a la même empreinte SHA-256 que celui du
+dépôt (`b3a7b65f…`) ; la vignette renvoyée par LinkedIn est l'affiche (empreinte réduite 16 × 20 :
+écart moyen 2,9/255, contre ~15 pour une image du milieu du film).
 
 - Vidéo : `public/media/linkedin/dossier-2026-11-04.mp4` (1080 × 1350, son synthétisé, 26 s).
 - Composition : `scripts/video/compositions/dossier/` · partition : `scripts/video/partitions/dossier.json` ·
