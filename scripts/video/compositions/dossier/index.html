@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — le dossier qui se vérifie</title>
+    <!--
+      Film LinkedIn du 04/11/2026 — le dossier de conformité EU AI Act, vérifié à
+      chaque `npm test`. Doctrine : .claude/skills/alpha-motion/SKILL.md.
+      Garde : tests/film-dossier.test.ts.
+
+      RIEN N'EST ILLUSTRATIF DANS LE FOND : chaque citation, le message d'erreur,
+      « not ok 1 », « # fail 1 » et le nombre de garanties sont relus par le test
+      dans le dépôt (docs/*.md, tests/dossier-conformite.test.ts). Seule la mise en
+      page est composée — d'où « EXTRAITS RÉELS DU DÉPÔT » à l'écran.
+
+        · les quatre citations       → docs/EU_AI_ACT.md, docs/ARTICLE_15.md, docs/SAFETY.md
+        · « 59 citations »            → recompté par le test sur le dossier
+        · la citation cassée et l'erreur → sortie réelle de node --test le 04/11/2026
+        · les quatre affirmations retirées → les interdits de tests/dossier-conformite.test.ts
+
+      Refaire le rendu (depuis la racine du dépôt) :
+        bash scripts/video/hyperframes-bac-a-sable.sh && source "${ALPHA_VIDEO_OUTILS:-$HOME/.cache/alpha-video}/env.sh"
+        cp -r scripts/video/compositions/dossier /tmp/dossier && gsap_local /tmp/dossier
+        node scripts/video/bande-son.mjs scripts/video/partitions/dossier.json /tmp/dossier/bande.wav
+        cd /tmp/dossier && hyperframes check && hyperframes render
+      Puis l'affiche sur les premières images (LinkedIn prend l'image 3 — compétence § spot TV).
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.13); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.1); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #e8c98a; }
+
+      /* ── La plaque : un fichier du dépôt, ouvert ── */
+      .plaque { position: absolute; left: 80px; width: 920px; border-radius: 28px; overflow: hidden;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)); border: 1.5px solid rgba(243, 238, 228, 0.14);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 50px 90px -40px rgba(0, 0, 0, 0.95); }
+      .contenu { position: absolute; left: 80px; width: 920px; }
+      .onglet { height: 68px; display: flex; align-items: center; gap: 12px; padding: 0 30px; border-bottom: 1.5px solid rgba(243, 238, 228, 0.1);
+        font-family: "JetBrains Mono"; font-weight: 500; font-size: 26px; color: #a79f92; white-space: nowrap; }
+      .onglet svg { width: 28px; height: 28px; flex: none; }
+      .rangee { position: absolute; left: 30px; right: 30px; height: 112px; border-bottom: 1px solid rgba(243, 238, 228, 0.08); }
+      .rangee .quoi { position: absolute; left: 0; top: 18px; font-weight: 600; font-size: 34px; color: #f3eee4; white-space: nowrap; }
+      .rangee .ou { position: absolute; left: 0; top: 64px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 28px; color: #e8c98a; white-space: nowrap; }
+      #compte { position: absolute; left: 80px; top: 1080px; width: 920px; display: flex; align-items: baseline; gap: 22px; white-space: nowrap; }
+      #compte b { font-family: "JetBrains Mono"; font-weight: 600; font-size: 92px; color: #e8c98a; letter-spacing: -0.02em; }
+      #compte span { font-weight: 600; font-size: 38px; color: #f3eee4; line-height: 1.2; }
+      #compte em { display: block; font-style: normal; font-weight: 500; font-size: 30px; color: #a79f92; }
+
+      /* ── Le terminal : la sortie réelle ── */
+      .term { font-family: "JetBrains Mono"; font-weight: 500; font-size: 29px; line-height: 1.5; white-space: nowrap; }
+      .lt { position: absolute; left: 30px; }
+      .invite { color: #a79f92; }
+      .cite { color: #e8c98a; font-weight: 600; }
+      .rouge { color: #e5564e; font-weight: 600; }
+      .vert { color: #7fbf7a; font-weight: 600; }
+      .barre { text-decoration: line-through; text-decoration-color: #e5564e; text-decoration-thickness: 3px; }
+      #verdict { position: absolute; left: 80px; top: 1080px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 84px; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+
+      /* ── Ce qu'il a refusé ── */
+      .refus { position: absolute; left: 80px; width: 920px; height: 118px; border-radius: 26px; background: #f7f2ea; color: #1e1914; box-shadow: 0 46px 90px -40px rgba(0, 0, 0, 0.85); }
+      .refus .croix { position: absolute; left: 28px; top: 29px; width: 60px; height: 60px; border-radius: 50%; background: #f3d9d4; display: flex; align-items: center; justify-content: center; }
+      .refus .croix svg { width: 30px; height: 30px; }
+      .refus .txt { position: absolute; left: 112px; top: 33px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 42px; letter-spacing: -0.02em; white-space: nowrap; }
+      .refus .rature { position: absolute; left: 108px; top: 61px; height: 4px; border-radius: 2px; background: #c0443c; transform-origin: 0 50%; }
+
+      #reel { position: absolute; left: 0; width: 1080px; top: 1282px; text-align: center; font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; color: #a79f92; }
+
+      /* ── La fin ── */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 270px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 470px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 620px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #cadre { top: 790px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 26px; letter-spacing: 0.08em; color: #a79f92; }
+      #appel { top: 880px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="26" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">EU AI ACT</div>
+      </div>
+
+      <!-- 1 · L'accroche -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.6" data-track-index="1">
+        <div class="titre" id="t1" style="top: 430px; font-size: 104px">
+          <span class="ligne"><span class="mot">Une</span> <span class="mot">doc</span> <span class="mot">qui</span> <span class="mot">ment</span></span>
+          <span class="ligne"><span class="mot">ne</span> <span class="mot">casse</span> <span class="mot">aucun</span></span>
+          <span class="ligne"><span class="mot or">build.</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · La nôtre, si : chaque garantie pointe vers le code -->
+      <section id="s2" class="scene clip" data-start="3.6" data-duration="7" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="surtitre" id="k2" style="top: 150px">LE DOSSIER DE CONFORMITÉ</div>
+          <div class="titre" id="t2" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot or">La</span> <span class="mot or">nôtre,</span> <span class="mot or">si.</span></span>
+          </div>
+          <div class="plaque" id="p2" style="top: 340px; height: 690px"></div>
+          <div class="contenu" style="top: 340px; height: 690px">
+            <div class="onglet" id="o2"><svg viewBox="0 0 24 24" fill="none" stroke="#a79f92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>docs/EU_AI_ACT.md</div>
+            <div class="rangee" id="r1" style="top: 88px"><div class="quoi">L'IA se déclare au téléphone</div><div class="ou">lib/voice-script.ts#auditScript</div></div>
+            <div class="rangee" id="r2" style="top: 238px"><div class="quoi">… et par écrit</div><div class="ou">lib/signature-ia.ts#verifieDivulgation</div></div>
+            <div class="rangee" id="r3" style="top: 388px"><div class="quoi">Un texte entrant reste une donnée</div><div class="ou">lib/untrusted.ts#wrapUntrusted</div></div>
+            <div class="rangee" id="r4" style="top: 538px; border-bottom: none"><div class="quoi">Le doute remonte à l'humain</div><div class="ou">lib/reponses-inscrit.ts#deciderReponse</div></div>
+          </div>
+          <div id="compte"><b>59</b><span>citations fichier#symbole<em>rouvertes à chaque npm test</em></span></div>
+        </div>
+      </section>
+
+      <!-- 3 · On casse une citation : la vraie sortie du test -->
+      <section id="s3" class="scene clip" data-start="10.6" data-duration="7" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="k3" style="top: 150px">ON CASSE UNE CITATION</div>
+          <div class="titre" id="t3" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Une</span> <span class="mot">lettre</span> <span class="mot or">en</span> <span class="mot or">moins.</span></span>
+          </div>
+          <div class="plaque" id="p3" style="top: 340px; height: 700px"></div>
+          <div class="contenu term" style="top: 340px; height: 700px">
+            <div class="onglet" id="o3"><svg viewBox="0 0 24 24" fill="none" stroke="#a79f92" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></svg>docs/ARTICLE_15.md</div>
+            <div class="lt" id="l1" style="top: 100px"><span class="invite">Agent vocal absent →</span></div>
+            <div class="lt" id="l2a" style="top: 150px"><span class="cite">lib/presence-agent.ts#presenceAgent</span></div>
+            <div class="lt" id="l2b" style="top: 150px"><span class="cite">lib/presence-agent.ts#presenceAgen</span><span class="rouge barre">t</span></div>
+            <div class="lt" id="l3" style="top: 252px"><span class="invite">$</span> npm test</div>
+            <div class="lt" id="l4" style="top: 324px"><span class="rouge">not ok 1</span></div>
+            <div class="lt" id="l5" style="top: 384px">docs/ARTICLE_15.md :</div>
+            <div class="lt" id="l6" style="top: 428px">lib/presence-agent.ts n'exporte pas presenceAgen</div>
+            <div class="lt" id="l7" style="top: 520px"><span class="rouge"># fail 1</span></div>
+          </div>
+          <div id="verdict"><span class="ligne"><span class="mot">La</span> <span class="mot">suite</span> <span class="mot or">tombe.</span></span></div>
+        </div>
+      </section>
+
+      <!-- 4 · Ce que le test refuse déjà -->
+      <section id="s4" class="scene clip" data-start="17.6" data-duration="4.6" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="surtitre" id="k4" style="top: 150px">DÉJÀ RETIRÉ DU DOSSIER</div>
+          <div class="titre" id="t4" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Ce</span> <span class="mot">qu'on</span> <span class="mot">avait</span></span>
+            <span class="ligne"><span class="mot or">trop</span> <span class="mot or">vite</span> <span class="mot or">écrit.</span></span>
+          </div>
+          <div class="refus" id="f1" style="top: 470px"><div class="croix"><svg viewBox="0 0 24 24" fill="none" stroke="#c0443c" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div><div class="txt">une bibliothèque absente du code</div><div class="rature" id="x1" style="width: 640px"></div></div>
+          <div class="refus" id="f2" style="top: 612px"><div class="croix"><svg viewBox="0 0 24 24" fill="none" stroke="#c0443c" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div><div class="txt">des sous-agents qui n'existent pas</div><div class="rature" id="x2" style="width: 640px"></div></div>
+          <div class="refus" id="f3" style="top: 754px"><div class="croix"><svg viewBox="0 0 24 24" fill="none" stroke="#c0443c" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div><div class="txt">un seuil de confiance inventé</div><div class="rature" id="x3" style="width: 560px"></div></div>
+          <div class="refus" id="f4" style="top: 896px"><div class="croix"><svg viewBox="0 0 24 24" fill="none" stroke="#c0443c" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div><div class="txt">une latence jamais mesurée</div><div class="rature" id="x4" style="width: 500px"></div></div>
+          <div class="lt term" id="l8" style="left: 80px; top: 1060px"><span class="vert"># fail 0</span></div>
+        </div>
+      </section>
+
+      <div id="reel">EXTRAITS RÉELS DU DÉPÔT</div>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="22.2" data-duration="3.8" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">Une phrase sans code</span><b class="ligne">n'est qu'une intention.</b></div>
+        <div id="cadre" class="centre">EU AI ACT · RISQUE LIMITÉ · ART. 50</div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="26" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond ;
+      // révélation dans l'ordre de lecture ; tenues IMMOBILES ; sortie de l'ancien
+      // AVANT l'entrée du nouveau. Chaque mouvement accompagne un FAIT : une citation
+      // qui se pose, une lettre qui tombe, une ligne de test qui sort, une rature.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.06 }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      // Une ligne de terminal ne glisse pas : elle APPARAÎT, comme une sortie.
+      const sortie = (cible, t) => tl.fromTo(cible, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 21.85);
+
+      // 1 · L'accroche
+      // Huit mots : la salve est plus serrée (40 ms) pour qu'ils tiennent leurs 2,4 s.
+      tl.fromTo(mots("#t1"), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.04 }, 0.05);
+      tl.to("#t1", { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.05, ease: "power2.in" }, 3.55);
+
+      // 2 · La nôtre, si — quatre règles, chacune avec le fichier qui l'applique.
+      arrive("#k2", 3.8, 20, 0.6);
+      titre("#t2", 3.85);
+      arrive("#p2", 4.3, 40, 0.8);
+      arrive("#o2", 4.4, 20, 0.6);
+      [4.7, 5.2, 5.7, 6.2].forEach((t, i) => arrive("#r" + (i + 1), t, 18, 0.6));
+      arrive("#compte", 6.9, 26, 0.7);
+      arrive("#reel", 3.9, 10, 0.6);
+      sort("#s2in", 10.35);
+
+      // 3 · Une lettre en moins — la citation casse, la suite tombe.
+      arrive("#k3", 10.8, 20, 0.6);
+      titre("#t3", 10.85);
+      arrive("#p3", 11.3, 40, 0.8);
+      arrive("#o3", 11.4, 20, 0.6);
+      sortie("#l1", 11.7);
+      sortie("#l2a", 11.8);
+      tl.set("#l2b", { opacity: 0 }, 0);
+      // La lettre tombe : l'ancienne ligne cède, la nouvelle (rature rouge) prend sa place.
+      tl.set("#l2a", { opacity: 0 }, 13.0);
+      tl.set("#l2b", { opacity: 1 }, 13.0);
+      sortie("#l3", 13.5);
+      sortie("#l4", 14.0);
+      sortie("#l5", 14.2);
+      sortie("#l6", 14.25);
+      sortie("#l7", 14.65);
+      titre("#verdict", 14.9);
+      sort("#s3in", 17.35);
+
+      // 4 · Ce qu'on avait trop vite écrit — quatre cartes, chacune raturée quand elle se pose.
+      arrive("#k4", 17.8, 20, 0.6);
+      titre("#t4", 17.85);
+      [18.3, 18.65, 19.0, 19.35].forEach((t, i) => {
+        arrive("#f" + (i + 1), t, 30, 0.6);
+        tl.fromTo("#x" + (i + 1), { scaleX: 0 }, { scaleX: 1, duration: 0.45, ease: "power2.inOut" }, t + 0.5);
+      });
+      sortie("#l8", 20.1);
+      sort("#s4in", 21.95);
+      sort("#reel", 21.95);
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 22.2);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 22.25);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 22.45);
+      arrive("#devise", 22.65, 22, 0.7);
+      arrive("#cadre", 22.85, 16, 0.6);
+      arrive("#appel", 23.15, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 23.9);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
