@@ -14,13 +14,17 @@ capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — 
 
 ## 📐 Architecture, conformité EU AI Act & FinOps
 
-* 🏗️ [Architecture](docs/ARCHITECTURE.md)
-* ⚖️ [EU AI Act — Positionnement & dossier technique](docs/EU_AI_ACT.md)
-* 🛡️ [Article 15 — Exactitude, Robustesse, Cybersécurité](docs/ARTICLE_15.md)
-* 💰 [FinOps & Token Budgeting](docs/FINOPS.md)
-* 🔒 [Safety & HITL](docs/SAFETY.md)
-* 🔐 [Sécurité](docs/SECURITE.md) · [SECURITY.md](https://github.com/EAGLEYECORP/alpha-sales-os/blob/claude/crm-n8n-email-tracking-4qxtwr/SECURITY.md)
+Un dossier **falsifiable** : chaque garantie cite le fichier et le symbole qui
+l'appliquent (`fichier#symbole`), et `tests/dossier-conformite.test.ts` ouvre
+chaque citation à chaque `npm test`. Ce qui n'est pas prouvé est écrit comme tel.
 
+* 🏗️ [Architecture](docs/ARCHITECTURE.md)
+* ⚖️ [EU AI Act — classification et dossier technique](docs/EU_AI_ACT.md) — risque limité (art. 50), annexe IV suivie volontairement
+* 🛡️ [Article 15 — exactitude, robustesse, cybersécurité](docs/ARTICLE_15.md) — menace par menace, et ce qui reste ouvert
+* 💰 [FinOps — ce que coûte une décision d'IA](docs/FINOPS.md)
+* 🔒 [Supervision humaine et transparence](docs/SAFETY.md)
+* 🧪 [Red teaming — testé / à tester](docs/RED_TEAMING.md)
+* 🔐 [Sécurité](docs/SECURITE.md) · [SECURITY.md](SECURITY.md)
 
 ## LE BUT
 

@@ -1,42 +1,32 @@
-# SAFETY, RED TEAMING & HUMAN-IN-THE-LOOP PROTOCOL
-**System:** Alpha Sales OS (`eagleyecorp/alpha-sales-os`)  
-**Compliance Standards:** EU AI Act Article 50 & Article 14  
+# Sécurité d'usage — l'humain garde la main
+**Art. 14 (supervision humaine) et art. 50 (transparence) · chaque règle cite `fichier#symbole`**
 
----
+## 1. Ce que la machine ne fait jamais seule
 
-## 1. Transparency & Disclosure Enforcement (Article 50)
-
-1. **Programmatic Disclosure:** `audit_script` mandates that every automated phone or text interaction starts with explicit disclosure of synthetic identity.
-2. **Hard Halt Circuit:** If a script or prompt template omits the required disclosure sentence, `lib/campaign-runner.ts` rejects the execution payload.
-
----
-
-## 2. Human-in-the-Loop (HITL) Escalation Matrix
-
-Automated agents are constrained to strict confidence bounds. The system triggers immediate human escalation under the following conditions:
-
-| Trigger Condition | Agent Action | Human Handoff Mechanism |
+| Situation | Ce qu'ALPHA fait | Où |
 |---|---|---|
-| **Explicit Objection / Negotiation** | Halts response generation | Places prospect in "Needs Review" band (`app/controle/page.tsx`) |
-| **Unrecognized Intent / Low Confidence (<0.75)** | Suppresses auto-reply | Generates draft response for manual review (`app/campaigns/page.tsx`) |
-| **Opt-Out / Opposition Request** | Immediately logs permanent block | Blacklists prospect email/phone across all tables (`lib/store.ts`) |
+| Le prospect parle de prix (sans prix déclaré), veut signer (sans lien déclaré), doute, négocie | N'envoie rien ; tag `reponse-a-traiter` + étape datée pour l'humain | `lib/reponses-inscrit.ts#deciderReponse` · `lib/reponses-inscrit.ts#TAG_A_TRAITER` |
+| Réponse aux créneaux qui n'en choisit aucun clairement | Ne réserve pas une heure mal comprise : remonte | `lib/reponses-inscrit.ts#classerReponse` |
+| « Ne me recontactez plus » | Arrêt définitif, sur tous les canaux | `lib/voice-script.ts#aRefuseTouteRelance` |
+| Plafond légal de sollicitations atteint | Plus de rappel | `lib/call-cadence.ts#plafondRappels` |
+| Hors jours ouvrés et heures utiles | Lit, n'écrit pas | `lib/conformite.ts#fenetreOuverte` |
 
----
+Ce qui attend un humain est rassemblé en un seul endroit, la bande « ALPHA a
+besoin de toi » : `lib/presence-alpha.ts#attendentUnHumain`.
 
-## 3. Red Teaming & Anti-Prompt Injection
+## 2. Transparence (art. 50)
 
-* **System/User Prompt Separation:** User inputs (e.g., incoming prospect reply emails) are sanitized and isolated inside structured Zod schemas before being passed to LLM contexts.
-* **Tool Hijacking Prevention:** Sub-agents running via Model Context Protocol (MCP) do not have permissions to alter organization settings, change bank credentials, or bypass RLS boundaries.
+- Appel : `lib/voice-script.ts#auditScript` refuse un script sans divulgation.
+- Écrit autonome : `lib/signature-ia.ts#verifieDivulgation`, appelée avant tout envoi.
+- Preuve : `tests/art50-disclosure.test.ts`.
 
-* ---
+## 3. Contenu hostile
 
-## 4. Mapping Article 15 (Exactitude, Robustesse, Cybersécurité)
+Tout texte qui vient de l'extérieur est encadré comme donnée
+(`lib/untrusted.ts#wrapUntrusted`) et l'IA de l'app n'a aucun outil d'écriture.
+Détail menace par menace : `docs/ARTICLE_15.md`. Preuve : `tests/prompt-injection.test.ts`.
 
-Voir le document dédié : [ARTICLE_15_ROBUSTNESS_CYBERSECURITY.md](./ARTICLE_15_ROBUSTNESS_CYBERSECURITY.md)
+## 4. Arrêter la machine
 
-Résumé des défenses actives :
-- Prompt injection → Zod + séparation system/user + HITL
-- Tool hijacking → permissions minimales des agents
-- Feedback loops → pas de retrain live
-- Provider failure → cascade locale + templates
-- Exactitude → règle « null jamais 0 » codée en types
+- Pilote de l'onglet : bouton « Arrêter ALPHA » (`/autopilote`).
+- Pilote serveur : « Arrêter dans le cloud » ; l'interrupteur est relu à chaque passage.

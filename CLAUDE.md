@@ -2817,6 +2817,18 @@ ce qu'on ÉCRIT (SQL et code) sur un vrai Postgres 16 jusqu'à **1 000 000 de co
     compatible avec lui) : `enveloppeEcart` n'apparaît dans `/api/health` qu'une fois
     ce commit déployé.
 
+## LE DOSSIER DE CONFORMITÉ EST FALSIFIABLE (04/11/2026)
+`docs/EU_AI_ACT.md` · `docs/ARTICLE_15.md` · `docs/FINOPS.md` · `docs/SAFETY.md` ·
+`docs/RED_TEAMING.md` · `tests/dossier-conformite.test.ts`.
+- **Classification** : risque LIMITÉ (art. 50) ; PAS de haut risque (annexe III), donc ni
+  déclaration UE (art. 47), ni CE, ni enregistrement. L'annexe IV est suivie VOLONTAIREMENT.
+  Ce qui ferait basculer : vendre Alpha pour trier des candidats ou noter des salariés.
+- **Chaque garantie s'écrit `fichier#symbole`**, et le test exige que le fichier EXPORTE le
+  symbole ; chaque case cochée du red teaming nomme son test.
+- **⚠ La première version (31/10, poussée depuis GitHub) affirmait « Zod », des « sous-agents
+  MCP », un seuil « < 0,75 », et trois tests gabarits qui ne compilaient pas — `npm test` était
+  TOMBÉ en entier.** Le test refuse ces formes ; une prose qui ment ne casse aucun build.
+
 ## OÙ TOURNE LA PRODUCTION — vérifié le 22/10/2026, pas supposé
 - **L'app (`alphasalesos.eagleyecorp.fr`) est sur VERCEL**, et **un push sur la branche de
   travail arrive en production tout seul** : vu par les en-têtes (`server: Vercel`,
