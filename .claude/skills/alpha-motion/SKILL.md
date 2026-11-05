@@ -301,6 +301,19 @@ Le compte MAÎTRE donne notre offre au vrai pilote automatique ; le film montre 
 - **37,5 s, au-delà de la règle des 25 s, et c'est assumé** : la demande était le cycle ENTIER,
   étape par étape. Le test borne à 38 s et dit pourquoi.
 
+### Ce que le film « PO d'une IA » (05/11/2026) a appris — `tests/film-po-ia.test.ts`
+
+- **⚠⚠ UN POST LINKEDIN, CHEZ ZAKARIA, EST UN POST AVEC FILM.** Le 05/11, un texte seul validé
+  (« go now ») est parti sans vidéo ; réponse immédiate : « tu publies sans vidéo ni animation ?
+  No way ». LinkedIn ne permet pas d'ajouter une vidéo à un post existant : le film a dû partir
+  dans un SECOND post, avec un nouvel angle. Proposer un texte seul se DIT avant le « go ».
+- **Ce qu'on prend des compétences de motion tierces** (`greensock/gsap-skills`,
+  `lottiefiles/motion-design-skill`, lues hors du dépôt) : la structure « impact » pour un geste
+  humain (action nette → onde → retombée lente) et le placement absolu sur la timeline. Leurs
+  rebonds (« overshoot settle ») restent INTERDITS ici : le tampon part de 1,12, jamais au-delà de 1.
+- Une citation dans un film est un RÉSUMÉ si elle n'est pas mot pour mot : le dire dans le
+  fichier du post, et ne pas la remettre entre guillemets dans le texte publié.
+
 ## 6. Avant de dire « c'est prêt »
 
 - [ ] L'accroche se comprend en 2 s, sans le son.
