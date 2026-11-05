@@ -236,6 +236,23 @@ const intouchable = (p: Prospect) =>
   Boolean(exclusionPublique(p)) ||
   (p.tags ?? []).some((t) => t === TAG_A_TRAITER || t === TAG_ENVOI_REFUSE);
 
+/**
+ * La fiche est-elle dans la cible ACTUELLE du pilote ? (05/11/2026)
+ *
+ * ⚠⚠ Le premier message nomme la cible (« je m'adresse aux dirigeants (BTP,
+ * …) »). Le jour où l'opérateur change de cible, les fiches trouvées pour
+ * l'ancienne restent dans le pipe : sans cette garde, une agence immobilière
+ * aurait reçu un message adressé au BTP. Une fiche du registre porte son code
+ * d'activité (`naf-…`) ; hors des activités visées, le pilote ne la cherche
+ * plus à joindre et ne lui écrit pas de PREMIER message. Une conversation
+ * déjà ouverte (réponses, relances) continue : on n'abandonne pas quelqu'un
+ * qui a répondu. Une fiche sans code d'activité (saisie, import) passe.
+ */
+export function dansLaCible(p: Pick<Prospect, "tags">, reglages: Pick<ReglagesAutopilote, "activites">): boolean {
+  const nafs = (p.tags ?? []).filter((t) => t.startsWith("naf-")).map((t) => t.slice(4));
+  return !nafs.length || nafs.some((n) => reglages.activites.includes(n));
+}
+
 /** Prêtes à recevoir un premier message : les moments frais d'abord, puis les plus anciennes. */
 export function aContacter(prospects: Prospect[], maintenant: Date): Prospect[] {
   return prospects
@@ -352,7 +369,7 @@ export function planifier(
   // ── JOINDRE (coordonnées) ──
   plan.relireEnrichissements = etat.enrichissements.filter((e) => t - Date.parse(e.lance) >= ATTENTE_DROPCONTACT_MS).map((e) => e.requestId);
   const enAttente = new Set(etat.enrichissements.flatMap((e) => e.prospectIds));
-  const aJoindre = prospects.filter((p) => aEnrichir(p) && !enAttente.has(p.id) && !intouchable(p) && ouverte(p));
+  const aJoindre = prospects.filter((p) => aEnrichir(p) && !enAttente.has(p.id) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages));
   const dejaLances = etat.enrichisJour.jour === auj ? etat.enrichisJour.n : 0;
   const budget = Math.max(0, reglages.enrichissementsParJour - dejaLances);
   if (aJoindre.length) {
@@ -362,14 +379,14 @@ export function planifier(
   }
 
   // ── LIRE LE SITE (l'email que l'entreprise publie elle-même) ──
-  const sites = capacites.lectureSite ? prospects.filter((p) => siteALire(p) && !intouchable(p) && ouverte(p)) : [];
+  const sites = capacites.lectureSite ? prospects.filter((p) => siteALire(p) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages)) : [];
   plan.lireSites = sites.slice(0, SITES_PAR_PASSAGE).map((p) => p.id);
 
   // ── ÉCRIRE / RELANCER ──
   const fenetre = fenetreOuverte(maintenant);
   const suspendu = envoisSuspendus(etat, maintenant);
   const envoyes = envoisAlpha24h(prospects, maintenant);
-  const prets = aContacter(prospects, maintenant);
+  const prets = aContacter(prospects, maintenant).filter((p) => dansLaCible(p, reglages));
   if (capacites.boite) {
     if (!fenetre.open) attentes.push(`Hors des heures utiles (${fenetre.label}) : ALPHA lit, il n'écrit pas.`);
     else if (suspendu) attentes.push(`Le serveur d'envoi a demandé d'attendre : reprise à ${heureParis(suspendu)}.`);

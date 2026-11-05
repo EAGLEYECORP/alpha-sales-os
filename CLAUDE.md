@@ -403,13 +403,21 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
   · **⚠⚠ L'EMAIL PUBLIÉ SUR LE SITE (05/11/2026, « go site »)** — `lib/email-publie.ts` ·
     `tests/email-publie.test.ts`. Mesuré en production : 33 agences du Rhône au registre, 18
     passées à Dropcontact → **0 email** (6 téléphones). Le pilote ne pouvait écrire à personne.
-    Il lit désormais l'accueil + 3 pages (contact, mentions) du site CONNU de la fiche (« Site : »
+    Il lit désormais l'accueil et les pages contact et mentions du site CONNU de la fiche (« Site : »
     posé par l'enrichissement, jamais deviné), et ne retient qu'une adresse **du domaine du
     site** — jamais l'hébergeur ni l'agence web des mentions légales, jamais `dpo@`/`rgpd@`/
     technique, jamais une adresse devinée ni une forme « [at] » reconstituée. **Serveur
     seulement** (`lirePagesSite`, porte optionnelle) : du navigateur d'un inscrit ce serait
     notre serveur qui apprendrait sa cible. 3 sites par passage, tag `site-lu` (pas de relecture
-    en boucle) ; une panne se dit sur la fiche. Cinq mutations mordent.
+    en boucle) ; une panne se dit sur la fiche. Les mutations mordent (`tests/email-publie.test.ts`).
+  · **⚠⚠ LA VERTICALE DU MAÎTRE EST LE BTP À ÉQUIPES TERRAIN (05/11/2026, décision de Zakaria)** :
+    entreprises qui vivent de commerciaux sur le terrain tous les jours — constructeurs de maisons,
+    menuiserie, chauffage / PAC, isolation, toiture, 10 salariés ou plus (`CONFIGURATION_ALPHA_VEND_ALPHA`
+    + `pilote_serveur.reglages`). **`dansLaCible`** : le premier message NOMME la cible, donc une fiche
+    de l'ancienne cible (code `naf-…` hors activités visées) n'est plus ni enrichie, ni lue, ni
+    écrite — une conversation déjà ouverte continue. ⚠ Isolation et PAC relèvent de la rénovation
+    énergétique : LEUR démarchage téléphonique des particuliers est interdit (loi n° 2020-901) — on ne
+    leur vend jamais ALPHA VOICE pour appeler des particuliers sur ce sujet.
 - **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
   l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
   · **⚠⚠ ALPHA VEND ALPHA (29/10/2026)** : sur le maître, l'expéditeur inscrit est
