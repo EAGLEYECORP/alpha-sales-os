@@ -17,6 +17,7 @@ import type { TailleCible } from "@/lib/trouver-clients";
 import type { ConfigurationAlphaVendAlpha } from "@/lib/alpha-vend-alpha";
 import { CLOSER_USINE } from "@/lib/signature";
 import { PiloteServeurPanel } from "@/components/autopilote/pilote-serveur-panel";
+import { AssistantIaPanel } from "@/components/autopilote/assistant-ia-panel";
 import {
   ETAT_AUTOPILOTE_VIDE, REGLAGES_AUTOPILOTE_DEFAUT, aContacter, envoisAlpha24h, nb, planifier, preRequis,
   type ReglagesAutopilote, type TypeJournal,
@@ -198,6 +199,7 @@ export default function AutopilotePage() {
       )}
 
       {maitre && <PiloteServeurPanel reglages={reglages} arreterOnglet={() => regler({ actif: false })} />}
+      <AssistantIaPanel />
 
       {maitre && (
         <section className="card flex flex-wrap items-center justify-between gap-3 p-4">

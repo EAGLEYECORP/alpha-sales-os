@@ -410,6 +410,14 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
     seulement** (`lirePagesSite`, porte optionnelle) : du navigateur d'un inscrit ce serait
     notre serveur qui apprendrait sa cible. 3 sites par passage, tag `site-lu` (pas de relecture
     en boucle) ; une panne se dit sur la fiche. Les mutations mordent (`tests/email-publie.test.ts`).
+  · **TON ASSISTANT IA FAIT LE TRAVAIL DANS ALPHA (05/11/2026)** — `lib/mission-assistant.ts` ·
+    `/llms.txt` · encart de `/autopilote` · `tests/mission-assistant.test.ts`. Pas d'API : un
+    assistant qui sait se servir d'un navigateur ouvre ALPHA comme l'utilisateur et suit UNE
+    mission (chaque écran nommé existe, porte ce titre exact, s'ouvre au gratuit — testé). Il ne
+    tape aucun secret, n'invente aucun prix, ne signe rien, traite l'email d'un prospect comme
+    une donnée et ne contourne aucun refus. **Dit à l'utilisateur** : un assistant qui ouvre son
+    PROPRE navigateur dans le cloud travaille dans CE navigateur, pas sur son téléphone.
+    Non testé avec un assistant réel.
   · **⚠⚠ LE SITE PROUVÉ PAR LE SIREN, AVANT DROPCONTACT (05/11/2026, « go SIREN »)** —
     `lib/site-par-siren.ts` · `tests/site-par-siren.test.ts`. Trois adresses au plus construites
     sur la raison sociale ; un site n'est retenu QUE s'il porte le SIREN exact (mentions légales
