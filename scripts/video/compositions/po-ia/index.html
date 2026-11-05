@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — PO d'une IA</title>
+    <!--
+      Film LinkedIn du 05/11/2026 — « Je ne code pas ALPHA. Je dis non. »
+      Doctrine : .claude/skills/alpha-motion/SKILL.md. Garde : tests/film-po-ia.test.ts.
+
+      Le code visuel : la MACHINE parle en sombre et bronze (police à chasse fixe),
+      l'HUMAIN en papier clair. Chaque « NON » est un tampon de papier posé sur une
+      proposition de l'IA : structure « impact » (lottiefiles/motion-design-skill,
+      director/narrative-structure.md) — action nette, onde, retombée lente — SANS
+      dépassement, comme l'exige notre doctrine.
+
+      Rien n'est inventé dans le fond, et le test le relit :
+        · les trois propositions refusées → CLAUDE.md, lib/part-resultat.ts,
+          lib/circuit-alpha.ts (journalRecent, limite 12), tests/dossier-conformite.test.ts
+        · les trois décisions, leurs dates et leurs mots exacts → CLAUDE.md
+
+      Refaire le rendu (depuis la racine du dépôt) :
+        bash scripts/video/hyperframes-bac-a-sable.sh && source "${ALPHA_VIDEO_OUTILS:-$HOME/.cache/alpha-video}/env.sh"
+        cp -r scripts/video/compositions/po-ia /tmp/po-ia && gsap_local /tmp/po-ia
+        node scripts/video/bande-son.mjs scripts/video/partitions/po-ia.json /tmp/po-ia/bande.wav
+        cd /tmp/po-ia && hyperframes check && hyperframes render
+      Puis l'affiche sur les premières images (LinkedIn prend l'image 3).
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.13); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.1); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='11'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .papier { color: #f7f2ea; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #e8c98a; }
+
+      /* ── La machine : sombre, bronze, chasse fixe ── */
+      .plaque { position: absolute; left: 80px; width: 920px; border-radius: 28px; overflow: hidden;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)); border: 1.5px solid rgba(243, 238, 228, 0.14);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 50px 90px -40px rgba(0, 0, 0, 0.95); }
+      .contenu { position: absolute; left: 80px; width: 920px; }
+      .onglet { height: 68px; display: flex; align-items: center; gap: 12px; padding: 0 30px; border-bottom: 1.5px solid rgba(243, 238, 228, 0.1);
+        font-family: "JetBrains Mono"; font-weight: 500; font-size: 26px; color: #a79f92; white-space: nowrap; }
+      .prop { position: absolute; left: 30px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 29px; color: #e8c98a; white-space: nowrap; }
+      .prop .k { color: #a79f92; }
+      .rature { position: absolute; left: 26px; height: 3px; border-radius: 2px; background: #e5564e; transform-origin: 0 50%; }
+
+      /* ── L'humain : papier clair ── */
+      .tampon { position: absolute; left: 30px; height: 64px; padding: 0 26px; border-radius: 14px; background: #f7f2ea; color: #1e1914;
+        display: flex; align-items: center; gap: 16px; white-space: nowrap; box-shadow: 0 26px 50px -24px rgba(0, 0, 0, 0.9); transform-origin: 20% 50%; }
+      .tampon b { font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 32px; letter-spacing: 0.02em; color: #b5372f; }
+      .tampon span { font-weight: 600; font-size: 29px; }
+
+      .decision { position: absolute; left: 80px; width: 920px; height: 196px; border-radius: 26px; background: #f7f2ea; color: #1e1914; box-shadow: 0 46px 90px -40px rgba(0, 0, 0, 0.85); }
+      .decision .date { position: absolute; left: 36px; top: 30px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 25px; letter-spacing: 0.06em; color: #7a5a2a; }
+      .decision .cite { position: absolute; left: 36px; top: 66px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 52px; letter-spacing: -0.02em; white-space: nowrap; }
+      .decision .motif { position: absolute; left: 36px; top: 136px; font-weight: 500; font-size: 29px; color: #5a5047; white-space: nowrap; }
+      #relu { position: absolute; left: 80px; top: 1130px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 28px; color: #a79f92; white-space: nowrap; }
+      #relu b { color: #e8c98a; font-weight: 600; }
+
+      .moi { position: absolute; left: 80px; width: 920px; height: 132px; border-radius: 26px; background: #f7f2ea; color: #1e1914; box-shadow: 0 46px 90px -40px rgba(0, 0, 0, 0.85); }
+      .moi .txt { position: absolute; left: 112px; top: 36px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 48px; letter-spacing: -0.02em; white-space: nowrap; }
+      .moi .pastille { position: absolute; left: 34px; top: 38px; width: 56px; height: 56px; border-radius: 50%; background: #1e1914; }
+      .moi .pastille::after { content: ""; position: absolute; left: 19px; top: 19px; width: 18px; height: 18px; border-radius: 50%; background: #e8c98a; }
+
+      #reel { position: absolute; left: 0; width: 1080px; top: 1282px; text-align: center; font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; color: #a79f92; }
+
+      /* ── La fin ── */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 250px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 450px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 600px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #appel { top: 860px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="26" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">PO D'UNE IA</div>
+      </div>
+
+      <!-- 1 · L'accroche -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.6" data-track-index="1">
+        <div class="titre" id="t1" style="top: 470px; font-size: 104px">
+          <span class="ligne"><span class="mot">Je</span> <span class="mot">ne</span> <span class="mot">code</span> <span class="mot">pas.</span></span>
+          <span class="ligne"><span class="mot">Je</span> <span class="mot">dis</span> <span class="mot papier">non.</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · Ce que l'IA a écrit, et le NON posé dessus -->
+      <section id="s2" class="scene clip" data-start="3.6" data-duration="7" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="surtitre" id="k2" style="top: 150px">EXTRAITS RÉELS DU PROJET</div>
+          <div class="titre" id="t2" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Ce</span> <span class="mot">que</span> <span class="mot">l'IA</span> <span class="mot or">a</span> <span class="mot or">écrit.</span></span>
+          </div>
+          <div class="plaque" id="p2" style="top: 340px; height: 780px"></div>
+          <div class="contenu" style="top: 340px; height: 780px">
+            <div class="onglet" id="o2">proposition de l'IA</div>
+            <div class="prop" id="a1" style="top: 110px"><span class="k">facturer :</span> « Alpha a sourcé la fiche »</div>
+            <div class="rature" id="x1" style="top: 132px; width: 760px"></div>
+            <div class="tampon" id="n1" style="top: 170px"><b>NON</b><span>aucun événement ne l'atteste</span></div>
+            <div class="prop" id="a2" style="top: 340px"><span class="k">vidéo :</span> « tout est journalisé »</div>
+            <div class="rature" id="x2" style="top: 362px; width: 560px"></div>
+            <div class="tampon" id="n2" style="top: 400px"><b>NON</b><span>le journal garde 12 lignes</span></div>
+            <div class="prop" id="a3" style="top: 570px"><span class="k">dossier :</span> « schémas Zod »</div>
+            <div class="rature" id="x3" style="top: 592px; width: 440px"></div>
+            <div class="tampon" id="n3" style="top: 630px"><b>NON</b><span>Zod n'est pas dans le code</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 · Décider, et écrire pourquoi -->
+      <section id="s3" class="scene clip" data-start="10.6" data-duration="6.6" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="k3" style="top: 150px">DÉCIDER, ET ÉCRIRE POURQUOI</div>
+          <div class="titre" id="t3" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Mes</span> <span class="mot">décisions,</span> <span class="mot or">datées.</span></span>
+          </div>
+          <div class="decision" id="d1" style="top: 360px"><div class="date">30/10/2026</div><div class="cite">« tout dans le cloud »</div><div class="motif">le pilote tourne sans n8n</div></div>
+          <div class="decision" id="d2" style="top: 610px"><div class="date">20/10/2026</div><div class="cite">« le moins de friction possible »</div><div class="motif">brancher ses comptes en deux champs</div></div>
+          <div class="decision" id="d3" style="top: 860px"><div class="date">29/10/2026</div><div class="cite">« même le closing »</div><div class="motif">par écrit, sans jamais inventer un prix</div></div>
+          <div id="relu">relues par l'agent <b>à chaque session</b></div>
+        </div>
+      </section>
+
+      <!-- 4 · Ce qui ne se délègue pas -->
+      <section id="s4" class="scene clip" data-start="17.2" data-duration="4.6" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="surtitre" id="k4" style="top: 150px">CE QUI NE SE DÉLÈGUE PAS</div>
+          <div class="titre" id="t4" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Ce</span> <span class="mot">qui</span> <span class="mot or">reste</span> <span class="mot or">à</span> <span class="mot or">moi.</span></span>
+          </div>
+          <div class="moi" id="m1" style="top: 400px"><div class="pastille"></div><div class="txt">à qui on vend</div></div>
+          <div class="moi" id="m2" style="top: 570px"><div class="pastille"></div><div class="txt">ce qu'on refuse de dire</div></div>
+          <div class="moi" id="m3" style="top: 740px"><div class="pastille"></div><div class="txt">le « go » avant ce qui sort</div></div>
+        </div>
+      </section>
+
+      <div id="reel">ALPHA SALES OS · CODÉ PAR DES AGENTS IA</div>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="21.8" data-duration="4.2" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">L'IA ne remplace pas le PO.</span><b class="ligne">Elle rend son absence visible.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="26" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond ;
+      // révélation dans l'ordre de lecture ; tenues IMMOBILES ; l'ancien sort AVANT
+      // l'entrée du nouveau. Le seul geste vif du film est le tampon : il arrive
+      // d'un coup (expo.out, depuis 1,12 — jamais depuis 0) et se pose sans dépasser.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t, salve = 0.06) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: salve }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      // Une ligne de la machine ne glisse pas : elle APPARAÎT, comme une sortie de terminal.
+      const sortie = (cible, t) => tl.fromTo(cible, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: "none" }, t);
+      // Le tampon de l'humain : impact net, puis repos.
+      const tampon = (cible, t) =>
+        tl.fromTo(cible, { opacity: 0, scale: 1.12, rotation: -3 }, { opacity: 1, scale: 1, rotation: -1.5, duration: 0.4, ease: "expo.out" }, t);
+      const rature = (cible, t) => tl.fromTo(cible, { scaleX: 0 }, { scaleX: 1, duration: 0.35, ease: "power2.inOut" }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 21.45);
+
+      // 1 · L'accroche — sept mots, salve serrée pour qu'ils tiennent leurs 2,1 s.
+      titre("#t1", 0.05, 0.04);
+      tl.to("#t1", { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.05, ease: "power2.in" }, 3.55);
+
+      // 2 · Ce que l'IA a écrit — la proposition sort, la rature passe, le NON se pose.
+      arrive("#k2", 3.8, 20, 0.6);
+      titre("#t2", 3.85);
+      arrive("#p2", 4.3, 40, 0.8);
+      arrive("#o2", 4.4, 20, 0.6);
+      arrive("#reel", 3.9, 10, 0.6);
+      [[4.75, 5.55], [5.85, 6.65], [6.95, 7.75]].forEach(([t, n], i) => {
+        sortie("#a" + (i + 1), t);
+        rature("#x" + (i + 1), n - 0.3);
+        tampon("#n" + (i + 1), n);
+      });
+      sort("#s2in", 10.35);
+
+      // 3 · Mes décisions, datées — trois feuilles de papier, dans l'ordre de lecture.
+      arrive("#k3", 10.8, 20, 0.6);
+      titre("#t3", 10.85);
+      [11.3, 11.8, 12.3].forEach((t, i) => arrive("#d" + (i + 1), t, 30, 0.7));
+      arrive("#relu", 13.0, 16, 0.6);
+      sort("#s3in", 16.95);
+
+      // 4 · Ce qui reste à moi.
+      arrive("#k4", 17.4, 20, 0.6);
+      titre("#t4", 17.45);
+      [17.8, 18.1, 18.4].forEach((t, i) => arrive("#m" + (i + 1), t, 30, 0.6));
+      sort("#s4in", 21.55);
+      sort("#reel", 21.55);
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 21.8);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 21.85);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 22.05);
+      arrive("#devise", 22.15, 22, 0.5);
+      arrive("#appel", 22.5, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 23.3);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>

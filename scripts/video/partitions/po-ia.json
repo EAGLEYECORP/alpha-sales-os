@@ -1,0 +1,167 @@
+{
+  "_note": "Film LinkedIn « PO d'une IA » du 05/11/2026 — ré mineur (l'accroche) → si bémol (la machine propose) → fa majeur (les décisions) → sol mineur (ce qui ne se délègue pas) → ré majeur sur le logo. Chaque NON tombe sur un « impact ». Calée sur scripts/video/compositions/po-ia.",
+  "duree": 26.0,
+  "accords": [
+    [
+      0.0,
+      [
+        73.42,
+        146.83,
+        220.0,
+        261.63,
+        349.23
+      ]
+    ],
+    [
+      3.6,
+      [
+        116.54,
+        174.61,
+        233.08,
+        293.66,
+        349.23
+      ]
+    ],
+    [
+      10.6,
+      [
+        87.31,
+        174.61,
+        220.0,
+        261.63,
+        349.23
+      ]
+    ],
+    [
+      17.2,
+      [
+        98.0,
+        146.83,
+        233.08,
+        293.66,
+        220.0
+      ]
+    ],
+    [
+      21.8,
+      [
+        73.42,
+        146.83,
+        220.0,
+        293.66,
+        369.99,
+        329.63
+      ]
+    ]
+  ],
+  "evenements": [
+    {
+      "t": 0.3,
+      "type": "tinte",
+      "hz": 587.33,
+      "pan": -0.2
+    },
+    {
+      "t": 1.4,
+      "type": "appui"
+    },
+    {
+      "t": 3.35,
+      "type": "souffle"
+    },
+    {
+      "t": 4.3,
+      "type": "appui"
+    },
+    {
+      "t": 4.75,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": -0.3
+    },
+    {
+      "t": 5.55,
+      "type": "impact"
+    },
+    {
+      "t": 5.85,
+      "type": "tic",
+      "hz": 698.46,
+      "pan": 0.0
+    },
+    {
+      "t": 6.65,
+      "type": "impact"
+    },
+    {
+      "t": 6.95,
+      "type": "tic",
+      "hz": 783.99,
+      "pan": 0.3
+    },
+    {
+      "t": 7.75,
+      "type": "impact"
+    },
+    {
+      "t": 10.3,
+      "type": "souffle"
+    },
+    {
+      "t": 11.3,
+      "type": "declic"
+    },
+    {
+      "t": 11.8,
+      "type": "declic"
+    },
+    {
+      "t": 12.3,
+      "type": "declic"
+    },
+    {
+      "t": 13.0,
+      "type": "brillance"
+    },
+    {
+      "t": 16.9,
+      "type": "souffle"
+    },
+    {
+      "t": 17.8,
+      "type": "tic",
+      "hz": 587.33,
+      "pan": -0.2
+    },
+    {
+      "t": 18.1,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": 0.0
+    },
+    {
+      "t": 18.4,
+      "type": "tic",
+      "hz": 739.99,
+      "pan": 0.2
+    },
+    {
+      "t": 21.5,
+      "type": "souffle"
+    },
+    {
+      "t": 21.8,
+      "type": "impact"
+    },
+    {
+      "t": 22.1,
+      "type": "tinte",
+      "hz": 880,
+      "pan": 0.0
+    },
+    {
+      "t": 23.3,
+      "type": "brillance"
+    }
+  ]
+}
