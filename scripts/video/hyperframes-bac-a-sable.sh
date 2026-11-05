@@ -33,7 +33,7 @@ npm i -s hyperframes@0.8.181 gsap@3.14.2 ffprobe-static@3.1.0 @ffmpeg-installer/
 ln -sf "$OUTILS/node_modules/@ffmpeg-installer/linux-x64/ffmpeg" bin/ffmpeg
 ln -sf "$OUTILS/node_modules/ffprobe-static/bin/linux/x64/ffprobe" bin/ffprobe
 
-NAV="${CHROMIUM_HEADLESS:-$(ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell 2>/dev/null | head -1)}"
+NAV="${CHROMIUM_HEADLESS:-$( { ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell /opt/pw-browsers/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell 2>/dev/null || true; } | head -1)}"
 if [ -z "$NAV" ]; then
   echo "⚠ Aucun Chromium headless trouvé : HyperFrames tentera d'en télécharger un." >&2
 fi
