@@ -74,18 +74,21 @@ Le seul levier dont l'effet soit **constaté** : l'**audit écrit**. Là où une
 pièce écrite est partie, le taux monte ; 26 appels sans audit n'ont rien
 produit.
 
-**Au 30/10/2026, l'outillage de la vente est branché ; aucun message n'est
-encore parti de l'app vers un prospect** (`tracking_messages` vide en
-production). Ce qui est en place et vérifié :
-- le compte propriétaire est reconnu par le serveur (`OWNER_EMAILS`), et
-  `/autopilote` s'y configure seul pour vendre ALPHA (`docs/ALPHA-VEND-ALPHA.md`) ;
-- les variables d'envoi sont posées sur Vercel ; le premier envoi réel dira si
-  le mot de passe est le bon ;
-- « Continuer avec Google » fonctionne pour les inscrits (testé en vrai) : plus
-  d'email de confirmation à attendre (`docs/CONNEXION-GOOGLE.md`).
+**Au 05/11/2026 : le pilote prospecte dans le cloud, aucun message n'est encore
+parti vers un prospect.** Ce qui tourne et a été relu en base de production :
+- le pilote du compte maître tourne **sans n8n**, toutes les cinq minutes en
+  semaine (pg_cron → `/api/campaign/pilote-tick`), onglet fermé ;
+- il cherche au registre de l'État, écarte ce que les annonces légales
+  disqualifient, cherche les coordonnées (Dropcontact), puis lit la page contact
+  du site de l'entreprise pour y prendre l'email qu'elle publie ;
+- **mesuré le 05/11** : sur 18 agences immobilières passées à Dropcontact,
+  **zéro email** — d'où la lecture du site, branchée le jour même, et le
+  changement de cible vers le BTP (ci-dessous) ;
+- « Continuer avec Google » fonctionne pour les inscrits : plus d'email de
+  confirmation à attendre (`docs/CONNEXION-GOOGLE.md`).
 
-Ce qui ne l'est pas encore : un vrai Dropcontact, une vraie lecture IMAP chez
-Amen, un vrai agenda Google lu par ALPHA. Le premier passage du pilote est le test.
+Pas encore prouvé : un premier message réellement parti, une vraie lecture IMAP
+chez Amen, un vrai agenda Google lu par ALPHA.
 
 ---
 
@@ -98,6 +101,7 @@ Amen, un vrai agenda Google lu par ALPHA. Le premier passage du pilote est le te
 |---|---|---|
 | Trouver | entreprises ACTIVES par métier (code NAF) et zone, au registre de l'État | le navigateur, sans clé |
 | Joindre | email professionnel du dirigeant | la clé Dropcontact de l'utilisateur |
+| Lire le site | l'email que l'entreprise publie elle-même sur sa page contact, de SON domaine seulement | le serveur, pour le pilote du maître (`lib/email-publie.ts`) |
 | Écrire | un premier message, une seule question, divulgation IA | SA boîte |
 | Lire | ses réponses, en lecture seule | SA boîte (IMAP) |
 | Caler | trois créneaux libres dans SON agenda ; « 2 » pose le rendez-vous et l'invitation | son agenda (adresse iCal secrète) |
@@ -107,48 +111,47 @@ Amen, un vrai agenda Google lu par ALPHA. Le premier passage du pilote est le te
 Rien n'est inventé : sans prix déclaré, la question de prix remonte ; sans
 lien, « on y va » remonte. En ligne, ALPHA travaille **onglet ouvert** — le
 CRM d'un inscrit vit dans son navigateur, et c'est la promesse de souveraineté.
+Seul le compte maître (ALPHA vend ALPHA) tourne aussi onglet fermé, dans le
+cloud : `lib/pilote-serveur.ts`, `docs/ALPHA-VEND-ALPHA.md`.
 
 ---
 
 ## À qui ça s'adresse
 
-### 🎯 Qui EAGLEYE prospecte en ce moment (décidé le 13/09/2026)
+### 🎯 Qui EAGLEYE prospecte en ce moment (décidé le 05/11/2026)
 
-**Les sociétés de services B2B lyonnaises de 10 à 50 commerciaux qui reçoivent
-plus de demandes qu'elles n'en traitent** — intérim et recrutement d'abord,
-puis maintenance sous contrat B2B, propreté et sécurité.
+**Les entreprises du BTP qui vivent de commerciaux sur le terrain, tous les
+jours** : constructeurs de maisons, menuiserie, chauffage et pompes à chaleur,
+isolation, toiture — 10 salariés ou plus, dans le Rhône. *Si l'équipe ne
+prospecte pas, le business ne tourne pas.*
 
-L'effet doit être **immédiat** : le retard existe déjà, il est comptable, et le
-premier rappel produit un résultat dans la journée. On ne crée pas un marché,
-on rattrape ce qui arrive déjà. Critères exécutables : `lib/plan-traction.ts`.
+Ce qu'ALPHA leur apporte : la journée préparée, les devis relancés avec une
+raison (ou pas relancés du tout), les rendez-vous posés. Ce qu'il **ne** fait
+**pas** : trouver leurs clients — ce sont surtout des particuliers, et ALPHA
+cherche des entreprises au registre. Le premier message du pilote ne le promet
+pas, et un test l'interdit (`tests/cible-pilote.test.ts`).
 
-> ⚠ **La maîtrise d'ouvrage reste le jeu de DÉMONSTRATION** (`lib/seed.ts`,
-> `lib/permis-construire.ts`) : un ICP à déclencheur, daté et vérifiable, qui
-> montre exactement ce que le tri sait faire. Ce n'est plus la cible
-> commerciale — son marché ne démarche pas au téléphone, et l'actif le plus
-> défendable du produit (le moteur de conformité) n'y vaut rien.
+> ⚠ **Isolation et pompes à chaleur relèvent de la rénovation énergétique** :
+> le démarchage téléphonique des particuliers y est interdit (loi n° 2020-901).
+> On ne leur vend jamais ALPHA VOICE pour appeler des particuliers.
+
+Configuration : `CONFIGURATION_ALPHA_VEND_ALPHA` (`lib/alpha-vend-alpha.ts`).
+Les cibles d'avant (sociétés de services B2B, agences immobilières) restent dans
+le pipe ; `dansLaCible` empêche qu'elles reçoivent un message adressé au BTP.
+
+> ⚠ **Le produit, lui, est horizontal** : un inscrit vend ce qu'il vend, à qui
+> il veut. Nos cibles, nos offres et nos prix ne servent qu'au compte maître ;
+> tout ce qu'un inscrit voit, dit ou envoie vient de SON profil.
 
 <details>
-<summary>L'ancien ICP, gardé pour la démo — maître d'ouvrage à permis actif</summary>
+<summary>Le module permis de construire — gardé comme source optionnelle</summary>
 
-**Le maître d'ouvrage professionnel dont le permis de construire est actif, sur
-Lyon et Villeurbanne.** Promoteurs, SCCV, sociétés d'aménagement, constructeurs
-de maisons individuelles — ceux qui construisent **pour vendre**.
-
-C'est un ICP à **déclencheur**, pas à secteur : « les promoteurs » dit QUI, un
-permis dit QUI *et* **où en est l'affaire au mois près**, donc **quand**
-appeler. L'arrêté est public, daté, vérifiable.
-
-> ⚠ « Maître d'ouvrage » est un rôle **juridique**, pas un métier. Le même
-> export contient le bailleur social qui construit pour *attribuer*, la commune
-> qui bâtit une école, et le couple qui fait construire sa maison — ce dernier
-> étant le gros du volume. Aucun des trois n'a rien à vendre, et démarcher le
-> couple relève du B2C (décret n° 2022-1313). Le tri les sort par **exclusion
-> sèche** : [`lib/permis-construire.ts`](./lib/permis-construire.ts).
-
-Play opérationnel complet : [`docs/PERMIS-LYON.md`](./docs/PERMIS-LYON.md).
-**Zéro permis converti à ce jour** — les seuils sont des décisions, pas des
-mesures.
+Un export de permis importé est encore reconnu et trié : le maître d'ouvrage
+professionnel à permis actif, ICP **à déclencheur** (un permis dit QUI et OÙ EN
+EST l'affaire au mois près). Le particulier, le bailleur social et la commune
+sortent par **exclusion sèche** : [`lib/permis-construire.ts`](./lib/permis-construire.ts),
+play complet dans [`docs/PERMIS-LYON.md`](./docs/PERMIS-LYON.md). Zéro permis
+converti à ce jour.
 
 </details>
 
@@ -189,28 +192,6 @@ Ce n'est pas un CRM avec des citations Hormozi — les règles sont **exécutée
 
 > Écran vivant : **`/trajectoire`**. Modules : `lib/paliers.ts` (blueprint),
 > `lib/opportunites.ts` (argent hors client), `lib/voice-costs.ts` (coût usine).
-
-### ⚫ French Tech 2030 — porte FERMÉE, et ce n'est plus une tâche
-
-> **NON ÉLIGIBLE — vérifié le 3 septembre 2026.** Le critère d'entrée est
-> **3 M€ de financements et/ou de CA cumulés depuis le 1ᵉʳ janvier 2024** (plus
-> TRL 6). EAGLEYE CORP est à 0 €. Le seuil est **éliminatoire** : la qualité du
-> dossier ne le rattrape pas, et **la promotion suivante appliquera le même
-> seuil**. L'échéance du 4 septembre est par ailleurs passée sans dépôt.
->
-> ⚠⚠ **Ce constat a vécu six jours dans ce README pendant que le code disait
-> autre chose.** `lib/opportunites.ts` ne listait pas le seuil et annonçait
-> « adéquation : plausible » ; `/trajectoire` l'affichait en ambre — une
-> couleur qui encourage — et `lib/mission-french-tech.ts` découpait neuf lots
-> de travail pour un dossier rejeté à la première page. La **vitrine
-> publique**, elle, affirmait « c'est aussi ce qui nous vaut de candidater à
-> French Tech 2030 ». Corrigé le 10/09 : le blocage est porté par le code
-> (`Opportunity.bloquant`), et un test refuse toute affiliation
-> institutionnelle sur une page publique.
->
-> Ce qui reste utile : le dossier écrit — souveraineté, conformité,
-> différenciation — resservira pour Bpifrance ou une page de vente.
-> [`docs/DOSSIER-FRENCH-TECH-2030.md`](./docs/DOSSIER-FRENCH-TECH-2030.md).
 
 ### Les 4 paliers — une seule contrainte à la fois
 
@@ -257,7 +238,7 @@ C'est spectaculaire *et* tenable — contrairement au doublement quotidien.
 | IA (texte) | Endpoint compatible OpenAI (NVIDIA NIM / Groq / Ollama) avec **fallback moteur de templates hors-ligne** |
 | **Alpha Voice** | LiveKit Agents (Python) · Deepgram STT · LLM compatible OpenAI · Fish Audio TTS · Silero VAD · SIP Telnyx |
 | RAG | BM25 lexical fait main (`lib/knowledge.ts`) — pas de base vectorielle, pas de clé |
-| Cloud (optionnel) | Supabase : auth lien magique, Postgres + RLS, Storage, Realtime |
+| Cloud (optionnel) | Supabase : auth (Google, email), Postgres + RLS, Storage, pg_cron + pg_net (le pilote dans le cloud) |
 
 ## Structure du projet
 
@@ -276,7 +257,8 @@ alpha-sales-os/
 │   ├── campaigns/ · outbox/     # Séquences, relecture avant envoi
 │   └── api/
 │       ├── v1/prospects         # ⭐ API publique (clé) — ingestion + triage
-│       ├── campaign/tick        # ⭐ Autopilote (cron n8n, triple verrou)
+│       ├── campaign/pilote-tick # ⭐ Pilote du maître dans le cloud (pg_cron, sans n8n)
+│       ├── campaign/tick        # Autopilote d'appels (pg_cron, triple verrou)
 │       ├── voice/{call,session} # Dispatch + journal de sessions/transcriptions
 │       └── track/ · webhooks/   # Ouvertures, clics, réponses entrantes
 ├── lib/                         # Modules PURS et testés
@@ -294,7 +276,9 @@ alpha-sales-os/
 │   ├── bricks · pricing · voice-costs · paliers · opportunites
 │   ├── webpush · push-digest · ics · notion  # ⭐ notifications, agenda, CRM
 │   ├── deck · client-onboarding             # ⭐ présentation par étape, mise en route
-│   ├── token-budget · mission-french-tech   # ⭐ coût des prompts, dossier FT2030
+│   ├── pilote-executeur · pilote-serveur    # ⭐ les étapes du pilote, une seule définition
+│   ├── email-publie · trouver-clients       # ⭐ l'email publié sur le site · le registre de l'État
+│   ├── token-budget             # coût des prompts, plafonné par route
 │   ├── wizard-progress          # L'assistant ET la visite : une seule règle d'ouverture
 │   └── knowledge · store · types
 ├── components/ui/page-header    # Le SEUL endroit où s'écrit un titre d'écran
@@ -304,6 +288,13 @@ alpha-sales-os/
 ```
 
 ### Les briques vendables
+
+> **Ce qu'on vend réellement (depuis le 20/10/2026) : deux formes.** En ligne,
+> gratuit, avec les comptes du client (IA, email) ; **chez vous**, le pack
+> complet installé sur son serveur (10 000 € + socle + siège). Les abonnements
+> Alpha Voice du cloud sont **retirés de la vente en ligne** (`OFFRES_RETIREES`) :
+> ALPHA VOICE s'installe chez le client. Le tableau ci-dessous reste la grille
+> INTERNE du catalogue, testée ligne à ligne contre `lib/bricks.ts`.
 
 Chaque brique se vend seule (`lib/bricks.ts`) ; l'addition des dix dépasse
 largement le pack — c'est l'ancrage.
@@ -714,6 +705,10 @@ du CRM.
 
 ## Tableau de bord branché sur n8n (assistant de configuration)
 
+> **n8n est FACULTATIF depuis le 30/10/2026** : le pilote du compte maître tourne
+> dans le cloud sans lui (pg_cron). Ce qui suit reste valable pour qui veut un
+> CRM Sheets piloté par n8n.
+
 L'app peut fonctionner en **thin client** : la mémoire et les automatisations
 vivent dans **n8n**, l'app **récupère** les données, fait les calculs et
 affiche les métriques.
@@ -785,7 +780,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-C'est tout. L'app démarre **sans aucune configuration** : données de démo lyonnaises, persistance localStorage, IA en mode templates Hormozi.
+C'est tout. L'app démarre **sans aucune configuration** : une démo de six métiers fictifs (`demoDeDepart`, `lib/demo-icp.ts`), persistance localStorage, IA en mode gabarits hors-ligne.
 
 **Ou toute la pile (app + n8n + Ollama) en une commande** avec Docker :
 
@@ -808,13 +803,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
-L'onglet **AI Coach** passe automatiquement du moteur de templates à Claude (scripts terrain, notes d'audit, recadrage d'objections, résumés). Modèle par défaut : `claude-opus-4-8` (surchargeable via `AI_MODEL`).
+L'onglet **AI Coach** passe automatiquement du moteur de templates à Claude (scripts terrain, notes d'audit, recadrage d'objections, résumés). Modèle par défaut : `MODELE_ANTHROPIC_DEFAUT` (`lib/modeles.ts`), surchargeable via `AI_MODEL`.
 
 ### Activer Supabase (production)
 
 1. Crée un projet sur [supabase.com](https://supabase.com).
 2. SQL Editor → colle `supabase/schema.sql` → Run (tables + RLS + bucket attachments + audit log).
-3. Authentication → Providers → Email → active **Magic Link**.
+3. Authentication → Providers → active **Email** et **Google** (`docs/CONNEXION-GOOGLE.md`).
 4. Renseigne dans `.env.local` :
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
@@ -834,7 +829,7 @@ Dans Vercel → Project → Settings → Environment Variables :
 | Variable | Rôle |
 |---|---|
 | `ANTHROPIC_API_KEY` | IA (server-only, jamais exposée au client) |
-| `AI_MODEL` | optionnel, défaut `claude-opus-4-8` |
+| `AI_MODEL` | optionnel, défaut `MODELE_ANTHROPIC_DEFAUT` (`lib/modeles.ts`) |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sync + auth |
 
 Puis `vercel --prod`. Le manifest PWA est servi ; l'app s'installe sur mobile (bottom nav dédiée).
@@ -885,7 +880,7 @@ les sources uniques de prix, et la mise en page.
 
 - **Export** : Réglages → JSON complet (prospects, campagnes, RDV, réglages) ou CSV prospects.
 - **Import** : JSON au même format (le seed est un exemple valide).
-- **Reset** : Réglages → « Reset seed » restaure la démo Lyon.
+- **Reset** : Réglages → « Reset seed » restaure la démo.
 
 ---
 
