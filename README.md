@@ -128,6 +128,34 @@ demandes du site, contacts de salon). Commence par là, pas par la chasse.
 > Chaque titre entre guillemets est le titre exact de l'écran : c'est comme ça
 > que tu sais que tu es au bon endroit.
 
+### Avant de commencer — trois réponses, dix minutes
+
+ALPHA écrit tes messages et tes scripts à partir de ce que tu lui dis. Prends
+dix minutes pour répondre, par écrit, à trois questions :
+
+1. **Qui achète ?** Un métier et une taille, pas « tout le monde » :
+   « les menuiseries de 10 à 50 salariés du Rhône », pas « les PME ».
+2. **Quel problème tu règles, dit avec SES mots ?** « Ses devis partent sans
+   relance », pas « nous optimisons son processus commercial ».
+3. **Pourquoi maintenant ?** Ce qui fait qu'il en a besoin cette année et pas
+   dans trois ans (un recrutement, une saison, une nouvelle règle).
+
+Et un test honnête : **ta cible a-t-elle déjà plus de demandes qu'elle n'en
+traite ?** ALPHA empêche de perdre la demande qui arrive ; il ne la crée pas.
+
+Deux codes à préparer, si tu veux le pilote automatique complet :
+
+- **Le mot de passe d'application de ta boîte mail.** Gmail : active la
+  validation en deux étapes, puis `myaccount.google.com/apppasswords`. Les
+  autres hébergeurs ont le même principe ; l'écran de réglage te donne le lien
+  du tien. Ce n'est PAS le mot de passe de ta messagerie, et il se révoque à
+  tout moment.
+- **L'adresse secrète de ton agenda (iCal).** Google Agenda : Paramètres → ton
+  agenda → « Intégrer l'agenda » → « Adresse secrète au format iCal ». Outlook :
+  Paramètres → Calendrier → Calendriers partagés → Publier un calendrier, en
+  « disponibilités seulement ». ALPHA n'y lit que des plages occupées, jamais
+  un titre.
+
 ### Étape 0 — Ouvrir, sans rien installer
 
 Va sur `alphasalesos.eagleyecorp.fr`. Les écrans gratuits s'ouvrent **sans
@@ -220,6 +248,61 @@ relance pour chaque fiche : tu copies, tu colles, tu envoies toi-même.
   passé et l'objection entendue. La leçon entre dans le **Cerveau** et ressort
   dans la file d'appels des fiches du même métier. C'est comme ça qu'ALPHA
   apprend **ton** marché.
+
+### Étape 10 — Du rendez-vous à la signature
+
+Le pilote s'arrête au rendez-vous posé. La suite est à toi, et ALPHA t'y
+accompagne :
+
+**La veille.** Ouvre la fiche du prospect : son historique, ses échanges, ce
+qu'il a dit. Le bouton **« 🥊 Sparring »** te fait jouer le rendez-vous contre
+le prospect simulé par l'IA (il faut ta clé d'IA, étape 2) : mieux vaut buter
+sur une objection devant l'IA que devant lui.
+
+**Le jour J.** « ALPHA CLOSER OS » (`/closer`) est ta feuille de route du jour
+sur le téléphone : qui tu vois, dans quel ordre, l'itinéraire, l'appel en un
+geste. « Rendez-vous » (`/meetings`) liste tes rendez-vous, chacun avec un seul
+objectif.
+
+**Pendant le rendez-vous.**
+- **« Mode Closing »** (sur la fiche et dans CLOSER OS) : en plein écran, la
+  trame à dérouler, écrite sur ton profil — accroche, constat, **démonstration
+  avant le prix**, le chiffre posé ensemble avec SES nombres, ton offre, la
+  demande (« de 1 à 10 ? »). Les objections les plus courantes sont à un tap,
+  avec leur réponse.
+- **ALPHA LIVE**, en visio : une petite fenêtre qui reste au-dessus de Zoom ou
+  Meet (Chrome ou Edge). Tu tapes ce que dit le prospect, il te souffle la
+  réponse et te rappelle tes notes. Gratuit, rien ne sort de ton navigateur.
+- À la fin du Mode Closing, tu choisis **signé**, **zone rouge** ou **perdu**.
+  « Signé » vérifie d'abord que la décision est mûre (conviction à 10 sur 10,
+  démonstration faite avant le prix, aucune objection encore ouverte) et te dit
+  ce qui manque ; « perdu » demande pourquoi — c'est ce qui t'apprendra quelque
+  chose.
+
+**Après.**
+- **« Débrief terrain »** (`/debrief`), cinq minutes, même si ça s'est bien
+  passé.
+- Il dit « c'est combien ? » ou « on y va » par écrit : si tu as déclaré ton
+  prix et ton lien (étape 5), ALPHA répond et envoie le lien, puis te pose une
+  étape « vérifier qu'il a signé » deux jours plus tard. Sinon, la question
+  t'attend dans « À décider ».
+- Il dit « je reviens vers vous mardi » : note **sa** date. La relance partira
+  ce jour-là, avec une raison, pas trois jours plus tard par défaut.
+- Il dit non : c'est noté, et plus personne ne le relance. C'est aussi ce qui
+  protège ton nom.
+
+### Ta première semaine
+
+| Quand | Quoi | Combien de temps |
+|---|---|---|
+| **Jour 1** | Les trois réponses, étapes 0 à 3 : ton site, tes outils, ta demande existante importée | une heure |
+| **Jour 2** | Étapes 4 et 5 : de nouvelles entreprises, le pilote réglé et allumé | une demi-heure |
+| **Chaque matin** | La bande « ALPHA a besoin de toi », puis ta « Session d'appels » | cinq minutes, puis tes appels |
+| **Chaque soir** | « ALPHA au travail », « À décider », un débrief par rendez-vous | dix minutes |
+| **Fin de semaine** | Relis les réponses reçues : celles qui ont dit oui, celles qui ont dit non, et pourquoi. Ajuste ton profil (ce que tu vends, à qui) si les non disent tous la même chose | une demi-heure |
+
+Ne juge pas sur trois jours : le nombre de premiers messages par jour démarre
+bas exprès, pour protéger ton adresse. Juge sur les réponses, pas sur le volume.
 
 ### Les cinq réglages qui font toute la différence
 

@@ -151,7 +151,7 @@ export const croyancesReady = (c: Croyances) =>
 export function signingBlockers(p: Prospect): string[] {
   const blockers: string[] = [];
   if (p.conviction < 10) blockers.push(`Conviction ${p.conviction}/10 — il faut 10/10. La conviction se transfère, elle ne se négocie pas.`);
-  if (!p.demoShownBeforePrice) blockers.push("Démo mobile jamais montrée avant le prix. Émotion d'abord, logique ensuite.");
+  if (!p.demoShownBeforePrice) blockers.push("Démonstration jamais montrée avant le prix. Émotion d'abord, logique ensuite.");
   if (!croyancesReady(p.croyances)) blockers.push("Les 3 Croyances ne sont pas toutes à 10 (produit / soutien / pour lui).");
   const open = p.objections.filter((o) => o.status !== "traitee");
   if (open.length) blockers.push(`${open.length} objection(s) Red Zone encore ouverte(s).`);

@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Check, ChevronLeft, Dumbbell, Trophy, X } from "lucide-react";
 import type { Prospect } from "@/lib/types";
-import { OBJECTION_LIBRARY, signingBlockers } from "@/lib/hormozi";
+import { signingBlockers } from "@/lib/hormozi";
+import { etapesClosing, objectionsClosing } from "@/lib/closing-mode";
+import { useMaitreProuve } from "@/lib/use-droits";
 import { useAlpha } from "@/lib/store";
 import { fireSignedConfetti } from "@/lib/confetti";
 import { Eagle } from "@/components/eagle";
@@ -32,51 +34,22 @@ export function ClosingMode({ p, onClose, onSpar }: { p: Prospect; onClose: () =
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, reasonAsk]);
 
+  // Le script suit le verdict PROUVÉ (pessimiste) : dans le doute, c'est la trame
+  // de l'inscrit, jamais notre offre (lib/closing-mode.ts).
   const firstName = p.name.split(" ")[0] || "chef";
-  const steps = useMemo(() => {
-    const s: [string, string][] = [
-      [
-        "Accroche",
-        `« Bonjour ${firstName} — merci de me recevoir. Je vais être direct : je ne suis pas là pour vous vendre un site, je suis là pour une décision. Dans 20 minutes, vous saurez exactement ce que vous perdez et ce que ça coûte de le régler. »`,
-      ],
-      [
-        "Constat",
-        p.problems.length
-          ? `« Voilà ce qu'on a mesuré chez ${p.company} : ${p.problems.slice(0, 3).join(" ; ")}. »`
-          : `« Voilà ce que je constate chez ${p.company} : les clients qui vous cherchent en ligne ne vous trouvent pas — ils trouvent le concurrent qui répond. »`,
-      ],
-      [
-        "Démo mobile",
-        `Sortir le téléphone. Ouvrir la maquette de ${p.company}. Se taire 10 secondes.\n\n« Voilà à quoi ressemble ${p.company} quand on le cherche. C'est vous, avec vos couleurs, votre carte, votre réalité. »`,
-      ],
-      [
-        "Le chiffre",
-        p.ignoranceTax > 0
-          ? `« Chaque mois sans agir, ${p.company} laisse partir environ ${p.ignoranceTax.toLocaleString("fr-FR")} €. Ce n'est pas mon chiffre — c'est le vôtre, on l'a calculé ensemble. La vraie question n'est pas "combien ça coûte", c'est "combien coûte le fait de ne rien faire". »`
-          : `« On chiffre ensemble, maintenant : combien d'appels ratés par semaine ? Combien vaut un client ? Multipliez. C'est ça, le coût de l'attente. »`,
-      ],
-      [
-        "L'offre",
-        p.personalizedOffer
-          ? `« Voilà ce que je vous propose, à vous et personne d'autre : ${p.personalizedOffer} »`
-          : `« Mon offre : ${p.setupValue.toLocaleString("fr-FR")} € de mise en place + ${p.monthlyValue.toLocaleString("fr-FR")} €/mois, tout compris. Comparez à ce que vous perdez chaque mois — le calcul se fait tout seul. »`,
-      ],
-      [
-        "La demande",
-        `« De 1 à 10, à combien vous croyez que ça marcherait pour ${p.company} ? »\n\n— Sous 10 → « Qu'est-ce qui manque pour un 10 ? » (et on répare CETTE croyance)\n— À 10 → « Alors on démarre. Je vous envoie le contrat ce soir. »`,
-      ],
-    ];
-    return s;
-  }, [p, firstName]);
+  const maitre = useMaitreProuve();
+  const profil = useAlpha((s) => s.settings.profil);
+  const steps = useMemo(() => etapesClosing(p, maitre, profil), [p, maitre, profil]);
+  const bibliotheque = useMemo(() => objectionsClosing(maitre), [maitre]);
 
   // Objections du prospect (ouvertes) d'abord, puis la bibliothèque.
   const objections = useMemo(() => {
     const own = p.objections
       .filter((o) => o.status !== "traitee")
-      .map((o) => ({ q: o.label, a: o.counter ?? OBJECTION_LIBRARY.find((l) => l.label === o.label)?.counter ?? "Isoler la croyance cassée : le produit ? le soutien ? ou « pour moi » ? Puis réparer avec une preuve." }));
-    const lib = OBJECTION_LIBRARY.filter((l) => !own.some((o) => o.q === l.label)).map((l) => ({ q: l.label, a: l.counter }));
+      .map((o) => ({ q: o.label, a: o.counter ?? bibliotheque.find((l) => l.label === o.label)?.counter ?? "Isoler la croyance cassée : le produit ? le soutien ? ou « pour moi » ? Puis réparer avec une preuve." }));
+    const lib = bibliotheque.filter((l) => !own.some((o) => o.q === l.label)).map((l) => ({ q: l.label, a: l.counter }));
     return [...own, ...lib].slice(0, 5);
-  }, [p]);
+  }, [p, bibliotheque]);
 
   const last = i >= steps.length - 1;
 
