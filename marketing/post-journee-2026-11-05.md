@@ -1,6 +1,9 @@
 # Post LinkedIn — « Une journée avec ALPHA » (05/11/2026)
 
-**Statut : PRÊT, PAS PUBLIÉ.** Rien ne part sur LinkedIn sans le « go » de Zakaria.
+**Statut : PUBLIÉ le 05/11/2026 vers 19 h (Paris)**, sur le « go now » de Zakaria —
+`urn:li:ugcPost:7524165538596466689` (vidéo `urn:li:video:D4E10AQE4FPt0ggZqfA`, 2 441 143 octets,
+téléversée depuis l'URL de production). Quatrième post du jour, contre la règle d'un post par jour.
+Vérifié AVANT : SHA-256 du MP4 servi = celui du dépôt (`144cbaaa…`) ; vignette renvoyée par LinkedIn = l'accroche.
 
 - Vidéo : `public/media/linkedin/journee-2026-11-05.mp4` (1080 × 1350, 25,2 s, son synthétisé ;
   affiche = l'accroche posée, sur les images 0 à 23, raccord mesuré à plus de 44 dB).
