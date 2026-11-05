@@ -410,6 +410,13 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
     seulement** (`lirePagesSite`, porte optionnelle) : du navigateur d'un inscrit ce serait
     notre serveur qui apprendrait sa cible. 3 sites par passage, tag `site-lu` (pas de relecture
     en boucle) ; une panne se dit sur la fiche. Les mutations mordent (`tests/email-publie.test.ts`).
+  · **⚠⚠ LE SITE PROUVÉ PAR LE SIREN, AVANT DROPCONTACT (05/11/2026, « go SIREN »)** —
+    `lib/site-par-siren.ts` · `tests/site-par-siren.test.ts`. Trois adresses au plus construites
+    sur la raison sociale ; un site n'est retenu QUE s'il porte le SIREN exact (mentions légales
+    obligatoires) — un homonyme d'une autre ville est refusé. Puis la lecture de l'email publié,
+    sur les pages déjà chargées. Une entreprise par passage, jamais en même temps que la lecture
+    des sites connus (passage borné à 60 s). **Un crédit Dropcontact ne se dépense qu'après
+    l'échec de cette piste** (tag `site-cherche`). Serveur seulement, comme la lecture du site.
   · **⚠⚠ LA VERTICALE DU MAÎTRE EST LE BTP À ÉQUIPES TERRAIN (05/11/2026, décision de Zakaria)** :
     entreprises qui vivent de commerciaux sur le terrain tous les jours — constructeurs de maisons,
     menuiserie, chauffage / PAC, isolation, toiture, 10 salariés ou plus (`CONFIGURATION_ALPHA_VEND_ALPHA`

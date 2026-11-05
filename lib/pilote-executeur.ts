@@ -25,6 +25,8 @@ import {
 } from "./reponses-inscrit";
 import type { MessageLu } from "./mime-lecture";
 import { emailPublie, patchDepuisSite, siteDeLaFiche, type PageSite } from "./email-publie";
+import { domainesCandidats, pageProuveSiren, TAG_SITE_CHERCHE, TAG_SITE_PROUVE } from "./site-par-siren";
+import { sirenDeLaFiche } from "./siren";
 import {
   MARQUE_PREMIER,
   MARQUE_RELANCE,
@@ -391,6 +393,60 @@ async function lireSites(pp: PortesPilote, ids: string[], lirePages: (url: strin
   if (lus) noter(pp, { type: "enrichit", texte: `${nb(lus, "site lu", "sites lus")} : ${nb(trouves, "email publié trouvé", "emails publiés trouvés")}.` });
 }
 
+/**
+ * Retrouver le site d'une entreprise et le PROUVER par son SIREN
+ * (`lib/site-par-siren.ts`), puis y lire l'email publié — avec les pages déjà
+ * chargées, sans les relire. Rien de prouvé : la fiche le dit, et Dropcontact
+ * prend le relais au passage suivant.
+ */
+async function chercherSites(pp: PortesPilote, ids: string[], lirePages: (url: string) => Promise<PageSite[]>) {
+  for (const id of ids) {
+    const p = fiche(pp, id);
+    const siren = p ? sirenDeLaFiche(p) : undefined;
+    if (!p || !siren) continue;
+    const essais = domainesCandidats(p.company ?? "");
+    let prouve: { url: string; pages: PageSite[] } | null = null;
+    for (const d of essais) {
+      const url = `https://${d}/`;
+      try {
+        const pages = await lirePages(url);
+        if (pages.some((pg) => pageProuveSiren(pg.html, siren))) {
+          prouve = { url, pages };
+          break;
+        }
+      } catch {
+        // Domaine inexistant ou injoignable : c'est le cas le plus fréquent, pas une panne.
+      }
+    }
+    const now = pp.maintenant();
+    const tags = new Set([...(p.tags ?? []), TAG_SITE_CHERCHE]);
+    if (!prouve) {
+      pp.patchProspect(p.id, { tags: [...tags] });
+      const essayes = essais.length ? essais.join(", ") : "aucune (nom trop court)";
+      pp.addEvent(p.id, { date: now.toISOString(), kind: "note", summary: `Site non trouvé par le SIREN (adresses essayées : ${essayes}).` });
+      noter(pp, { type: "enrichit", texte: `Site de ${p.company} non trouvé par le SIREN : Dropcontact prendra le relais.`, prospectId: p.id });
+      continue;
+    }
+    tags.add(TAG_SITE_PROUVE);
+    const notes = [p.notes, `Site : ${prouve.url}`].filter(Boolean).join("\n");
+    const avecSite = { ...p, tags: [...tags], notes };
+    const trouve = emailPublie(prouve.pages, prouve.url);
+    pp.patchProspect(p.id, { notes, ...patchDepuisSite(avecSite, trouve, now) });
+    pp.addEvent(p.id, {
+      date: now.toISOString(),
+      kind: "note",
+      summary: trouve
+        ? `Site prouvé par le SIREN (${prouve.url}) ; email publié : ${trouve.email}.`
+        : `Site prouvé par le SIREN (${prouve.url}) ; aucune adresse publiée par l'entreprise.`,
+    });
+    noter(pp, {
+      type: "enrichit",
+      texte: `Site de ${p.company} prouvé par le SIREN${trouve ? " : email publié trouvé" : ", sans email publié"}.`,
+      prospectId: p.id,
+    });
+  }
+}
+
 async function ecrire(pp: PortesPilote, id: string) {
   const p = fiche(pp, id);
   if (!p) return;
@@ -463,6 +519,7 @@ export async function passagePilote(pp: PortesPilote, capacites: { boite: boolea
     if (plan.relireEnrichissements.length && cle) await relireEnrichissements(pp, plan.relireEnrichissements, cle);
     if (plan.lancerEnrichissement.length && cle) await lancerEnrichissements(pp, plan.lancerEnrichissement, cle);
     if (plan.lireSites.length && pp.lirePagesSite) await lireSites(pp, plan.lireSites, pp.lirePagesSite);
+    if (plan.chercherSites.length && pp.lirePagesSite) await chercherSites(pp, plan.chercherSites, pp.lirePagesSite);
     if (plan.relancer) await relancer(pp, plan.relancer.prospectId, plan.relancer.numero);
     else if (plan.ecrire) await ecrire(pp, plan.ecrire);
     if (plan.chercher) await chercher(pp, plan.chercher);

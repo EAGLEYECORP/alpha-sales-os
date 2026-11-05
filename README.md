@@ -79,8 +79,9 @@ parti vers un prospect.** Ce qui tourne et a été relu en base de production :
 - le pilote du compte maître tourne **sans n8n**, toutes les cinq minutes en
   semaine (pg_cron → `/api/campaign/pilote-tick`), onglet fermé ;
 - il cherche au registre de l'État, écarte ce que les annonces légales
-  disqualifient, cherche les coordonnées (Dropcontact), puis lit la page contact
-  du site de l'entreprise pour y prendre l'email qu'elle publie ;
+  disqualifient, retrouve le site de l'entreprise **prouvé par son SIREN**
+  (gratuit), y lit l'email qu'elle publie, et ne paie Dropcontact que si cette
+  piste échoue ;
 - **mesuré le 05/11** : sur 18 agences immobilières passées à Dropcontact,
   **zéro email** — d'où la lecture du site, branchée le jour même, et le
   changement de cible vers le BTP (ci-dessous) ;

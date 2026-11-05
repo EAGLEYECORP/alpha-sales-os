@@ -7,7 +7,9 @@ import { fenetreOuverte } from "./conformite";
 import { BUSINESS_TZ } from "./business-hours";
 import { relanceDue, raisonRelance } from "./relance-mail";
 import { aEnrichir, LOT_ENRICHISSEMENT } from "./enrichissement";
-import { siteALire, SITES_PAR_PASSAGE } from "./email-publie";
+import { siteALire, siteDeLaFiche, SITES_PAR_PASSAGE } from "./email-publie";
+import { TAG_SITE_CHERCHE } from "./site-par-siren";
+import { sirenDeLaFiche } from "./siren";
 import { TAG_DEJA_ECRIT } from "./mail-autopilote";
 import { lireZone } from "./trouver-clients";
 import { codeNafValide } from "./naf";
@@ -330,6 +332,8 @@ export interface Plan {
   lancerEnrichissement: string[];
   /** Fiches dont on lit le site pour y prendre l'email que l'entreprise publie. */
   lireSites: string[];
+  /** Fiches dont on cherche le site, prouvé par le SIREN (gratuit, avant Dropcontact). */
+  chercherSites: string[];
   ecrire: string | null;
   relancer: { prospectId: string; numero: number } | null;
   chercher: { activites: string[]; zone: string; taille: TailleCible; page: number } | null;
@@ -350,7 +354,7 @@ export function planifier(
   maintenant: Date
 ): Plan {
   const attentes: string[] = [];
-  const plan: Plan = { lire: false, relireEnrichissements: [], lancerEnrichissement: [], lireSites: [], ecrire: null, relancer: null, chercher: null, attentes };
+  const plan: Plan = { lire: false, relireEnrichissements: [], lancerEnrichissement: [], lireSites: [], chercherSites: [], ecrire: null, relancer: null, chercher: null, attentes };
   if (!reglages.actif) {
     attentes.push("L'autopilote est arrêté.");
     return plan;
@@ -366,10 +370,21 @@ export function planifier(
     plan.lire = t - derniere >= LECTURE_MIN_MS;
   }
 
+  // ── LA PISTE GRATUITE D'ABORD : le site prouvé par le SIREN (`lib/site-par-siren.ts`) ──
+  // Une fiche du registre qui n'a ni email ni site connu attend cette étape avant
+  // de coûter un crédit Dropcontact : on ne paie que si la piste gratuite a échoué.
+  const attendSite = (p: Prospect) =>
+    Boolean(capacites.lectureSite) &&
+    !p.email?.trim() &&
+    !siteDeLaFiche(p) &&
+    Boolean(sirenDeLaFiche(p)) &&
+    !(p.tags ?? []).includes(TAG_SITE_CHERCHE);
+  const sansSite = prospects.filter((p) => attendSite(p) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages));
+
   // ── JOINDRE (coordonnées) ──
   plan.relireEnrichissements = etat.enrichissements.filter((e) => t - Date.parse(e.lance) >= ATTENTE_DROPCONTACT_MS).map((e) => e.requestId);
   const enAttente = new Set(etat.enrichissements.flatMap((e) => e.prospectIds));
-  const aJoindre = prospects.filter((p) => aEnrichir(p) && !enAttente.has(p.id) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages));
+  const aJoindre = prospects.filter((p) => aEnrichir(p) && !attendSite(p) && !enAttente.has(p.id) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages));
   const dejaLances = etat.enrichisJour.jour === auj ? etat.enrichisJour.n : 0;
   const budget = Math.max(0, reglages.enrichissementsParJour - dejaLances);
   if (aJoindre.length) {
@@ -381,6 +396,10 @@ export function planifier(
   // ── LIRE LE SITE (l'email que l'entreprise publie elle-même) ──
   const sites = capacites.lectureSite ? prospects.filter((p) => siteALire(p) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages)) : [];
   plan.lireSites = sites.slice(0, SITES_PAR_PASSAGE).map((p) => p.id);
+  // UNE entreprise par passage, et jamais en même temps que la lecture des sites
+  // connus : chaque adresse essayée peut coûter une douzaine de secondes, et un
+  // passage serveur est borné à une minute.
+  plan.chercherSites = plan.lireSites.length ? [] : sansSite.slice(0, 1).map((p) => p.id);
 
   // ── ÉCRIRE / RELANCER ──
   const fenetre = fenetreOuverte(maintenant);
@@ -399,7 +418,7 @@ export function planifier(
   }
 
   // ── CHERCHER ──
-  const reserve = prets.length + aJoindre.length + enAttente.size + sites.length;
+  const reserve = prets.length + aJoindre.length + enAttente.size + sites.length + sansSite.length;
   if (reserve < RESERVE_MIN) {
     const zone = lireZone(reglages.zone);
     const activites = reglages.activites.filter(codeNafValide);
@@ -414,7 +433,7 @@ export function planifier(
     }
   }
 
-  if (!plan.lire && !plan.ecrire && !plan.relancer && !plan.chercher && !plan.lancerEnrichissement.length && !plan.relireEnrichissements.length && !plan.lireSites.length && !attentes.length) {
+  if (!plan.lire && !plan.ecrire && !plan.relancer && !plan.chercher && !plan.lancerEnrichissement.length && !plan.relireEnrichissements.length && !plan.lireSites.length && !plan.chercherSites.length && !attentes.length) {
     attentes.push("Rien à faire à ce passage : tout ce qui pouvait partir est parti.");
   }
   return plan;
