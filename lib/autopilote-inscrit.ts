@@ -7,6 +7,7 @@ import { fenetreOuverte } from "./conformite";
 import { BUSINESS_TZ } from "./business-hours";
 import { relanceDue, raisonRelance } from "./relance-mail";
 import { aEnrichir, LOT_ENRICHISSEMENT } from "./enrichissement";
+import { siteALire, SITES_PAR_PASSAGE } from "./email-publie";
 import { TAG_DEJA_ECRIT } from "./mail-autopilote";
 import { lireZone } from "./trouver-clients";
 import { codeNafValide } from "./naf";
@@ -297,12 +298,21 @@ export interface Capacites {
   boite: boolean;
   /** Une clé Dropcontact dans ce navigateur. */
   cleDropcontact: boolean;
+  /**
+   * Lire la page contact du site d'une entreprise (`lib/email-publie.ts`).
+   * ⚠ SERVEUR SEULEMENT (pilote du maître) : du navigateur, les sites tiers
+   * refusent la lecture (CORS), et la faire passer par notre serveur pour un
+   * inscrit nous apprendrait SA cible — la règle du registre et du BODACC.
+   */
+  lectureSite?: boolean;
 }
 
 export interface Plan {
   lire: boolean;
   relireEnrichissements: string[];
   lancerEnrichissement: string[];
+  /** Fiches dont on lit le site pour y prendre l'email que l'entreprise publie. */
+  lireSites: string[];
   ecrire: string | null;
   relancer: { prospectId: string; numero: number } | null;
   chercher: { activites: string[]; zone: string; taille: TailleCible; page: number } | null;
@@ -323,7 +333,7 @@ export function planifier(
   maintenant: Date
 ): Plan {
   const attentes: string[] = [];
-  const plan: Plan = { lire: false, relireEnrichissements: [], lancerEnrichissement: [], ecrire: null, relancer: null, chercher: null, attentes };
+  const plan: Plan = { lire: false, relireEnrichissements: [], lancerEnrichissement: [], lireSites: [], ecrire: null, relancer: null, chercher: null, attentes };
   if (!reglages.actif) {
     attentes.push("L'autopilote est arrêté.");
     return plan;
@@ -351,6 +361,10 @@ export function planifier(
     else if (!etat.enrichissements.length) plan.lancerEnrichissement = aJoindre.slice(0, Math.min(budget, LOT_ENRICHISSEMENT)).map((p) => p.id);
   }
 
+  // ── LIRE LE SITE (l'email que l'entreprise publie elle-même) ──
+  const sites = capacites.lectureSite ? prospects.filter((p) => siteALire(p) && !intouchable(p) && ouverte(p)) : [];
+  plan.lireSites = sites.slice(0, SITES_PAR_PASSAGE).map((p) => p.id);
+
   // ── ÉCRIRE / RELANCER ──
   const fenetre = fenetreOuverte(maintenant);
   const suspendu = envoisSuspendus(etat, maintenant);
@@ -368,7 +382,7 @@ export function planifier(
   }
 
   // ── CHERCHER ──
-  const reserve = prets.length + aJoindre.length + enAttente.size;
+  const reserve = prets.length + aJoindre.length + enAttente.size + sites.length;
   if (reserve < RESERVE_MIN) {
     const zone = lireZone(reglages.zone);
     const activites = reglages.activites.filter(codeNafValide);
@@ -383,7 +397,7 @@ export function planifier(
     }
   }
 
-  if (!plan.lire && !plan.ecrire && !plan.relancer && !plan.chercher && !plan.lancerEnrichissement.length && !plan.relireEnrichissements.length && !attentes.length) {
+  if (!plan.lire && !plan.ecrire && !plan.relancer && !plan.chercher && !plan.lancerEnrichissement.length && !plan.relireEnrichissements.length && !plan.lireSites.length && !attentes.length) {
     attentes.push("Rien à faire à ce passage : tout ce qui pouvait partir est parti.");
   }
   return plan;

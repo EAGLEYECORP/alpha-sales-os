@@ -14,6 +14,7 @@ import {
   type ReglagesAutopilote,
 } from "./autopilote-inscrit";
 import type { PortesPilote, RecuDeLecture } from "./pilote-executeur";
+import type { PageSite } from "./email-publie";
 
 /**
  * ─────────────────────────────────────────────────────────────────────
@@ -105,6 +106,8 @@ export interface DepsServeur {
   lireReponses(q: { adresses: string[]; depuis: string; imapHost?: string }): Promise<RecuDeLecture>;
   agenda(): Promise<EtatAgenda>;
   fetch(url: string, init?: RequestInit): Promise<Response>;
+  /** Les pages du site d'une entreprise (garde-fou SSRF côté route). */
+  lirePagesSite?(url: string): Promise<PageSite[]>;
 }
 
 export function portesServeur(m: MondeServeur, d: DepsServeur): PortesPilote {
@@ -164,6 +167,7 @@ export function portesServeur(m: MondeServeur, d: DepsServeur): PortesPilote {
     lireReponses: d.lireReponses,
     agenda: d.agenda,
     fetch: d.fetch,
+    ...(d.lirePagesSite ? { lirePagesSite: d.lirePagesSite } : {}),
   };
 }
 

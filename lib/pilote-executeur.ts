@@ -24,6 +24,7 @@ import {
   type MailSortant,
 } from "./reponses-inscrit";
 import type { MessageLu } from "./mime-lecture";
+import { emailPublie, patchDepuisSite, siteDeLaFiche, type PageSite } from "./email-publie";
 import {
   MARQUE_PREMIER,
   MARQUE_RELANCE,
@@ -97,6 +98,11 @@ export interface PortesPilote {
   agenda(): Promise<EtatAgenda>;
   /** Le réseau pour le registre, les annonces légales et Dropcontact. */
   fetch(url: string, init?: RequestInit): Promise<Response>;
+  /**
+   * Les pages d'un site d'entreprise (accueil + contact/mentions, même hôte,
+   * garde-fou SSRF) — SERVEUR seulement. Absente ⇒ l'étape ne se planifie pas.
+   */
+  lirePagesSite?(url: string): Promise<PageSite[]>;
 }
 
 /**
@@ -350,6 +356,41 @@ async function lancerEnrichissements(pp: PortesPilote, ids: string[], cle: strin
   noter(pp, { type: "enrichit", texte: `Recherche des coordonnées de ${nb(fiches.length, "entreprise", "entreprises")} lancée chez Dropcontact.` });
 }
 
+/**
+ * Lire le site de chaque fiche et y prendre l'email que l'entreprise publie
+ * (`emailPublie` décide de tout ce qui est retenu ou refusé). Une panne de
+ * lecture n'est pas « aucun email » : elle se dit sur la fiche, et le site
+ * n'est pas relu en boucle pour autant (tag `site-lu`).
+ */
+async function lireSites(pp: PortesPilote, ids: string[], lirePages: (url: string) => Promise<PageSite[]>) {
+  let trouves = 0;
+  let lus = 0;
+  for (const id of ids) {
+    const p = fiche(pp, id);
+    const site = p ? siteDeLaFiche(p) : null;
+    if (!p || !site) continue;
+    let pages: PageSite[] = [];
+    let panne = "";
+    try {
+      pages = await lirePages(site);
+    } catch (e) {
+      panne = e instanceof Error ? e.message.slice(0, 120) : "site injoignable";
+    }
+    const trouve = emailPublie(pages, site);
+    const now = pp.maintenant();
+    lus++;
+    if (trouve) trouves++;
+    pp.patchProspect(p.id, patchDepuisSite(p, trouve, now));
+    const summary = trouve
+      ? `Email publié sur son site : ${trouve.email} (lu sur ${trouve.page}).`
+      : panne
+        ? `Site injoignable (${panne}) : aucun email lu.`
+        : `Site lu (${nb(pages.length, "page", "pages")}) : aucune adresse publiée par l'entreprise.`;
+    pp.addEvent(p.id, { date: now.toISOString(), kind: "note", summary });
+  }
+  if (lus) noter(pp, { type: "enrichit", texte: `${nb(lus, "site lu", "sites lus")} : ${nb(trouves, "email publié trouvé", "emails publiés trouvés")}.` });
+}
+
 async function ecrire(pp: PortesPilote, id: string) {
   const p = fiche(pp, id);
   if (!p) return;
@@ -409,12 +450,19 @@ async function chercher(pp: PortesPilote, c: NonNullable<Plan["chercher"]>) {
 export async function passagePilote(pp: PortesPilote, capacites: { boite: boolean }): Promise<Plan> {
   const reglages = pp.reglages();
   const cle = pp.cleDropcontact();
-  const plan = planifier(pp.prospects(), reglages, pp.etat(), { boite: capacites.boite, cleDropcontact: Boolean(cle) }, pp.maintenant());
+  const plan = planifier(
+    pp.prospects(),
+    reglages,
+    pp.etat(),
+    { boite: capacites.boite, cleDropcontact: Boolean(cle), lectureSite: Boolean(pp.lirePagesSite) },
+    pp.maintenant()
+  );
   if (!reglages.actif) return plan;
   try {
     if (plan.lire) await lire(pp);
     if (plan.relireEnrichissements.length && cle) await relireEnrichissements(pp, plan.relireEnrichissements, cle);
     if (plan.lancerEnrichissement.length && cle) await lancerEnrichissements(pp, plan.lancerEnrichissement, cle);
+    if (plan.lireSites.length && pp.lirePagesSite) await lireSites(pp, plan.lireSites, pp.lirePagesSite);
     if (plan.relancer) await relancer(pp, plan.relancer.prospectId, plan.relancer.numero);
     else if (plan.ecrire) await ecrire(pp, plan.ecrire);
     if (plan.chercher) await chercher(pp, plan.chercher);

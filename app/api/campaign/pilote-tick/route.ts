@@ -9,6 +9,8 @@ import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
 import { autopiloteArmeEnv, estArme, lireDrapeauAutopilote } from "@/lib/autopilote";
 import { lireReponseAgenda, type EtatAgenda } from "@/lib/agenda-occupe";
 import { ENTETE_PILOTE_SERVEUR } from "@/lib/pilote-serveur-appel";
+import { fetchSitePage } from "@/lib/site-fetch";
+import { pagesUtiles } from "@/lib/lecture-site";
 import { corpsEnvoiPilote, envoiDepuisReponse, passagePilote, type RecuDeLecture } from "@/lib/pilote-executeur";
 import { CONFIGURATION_ALPHA_VEND_ALPHA } from "@/lib/alpha-vend-alpha";
 import { journaliser } from "@/lib/autopilote-inscrit";
@@ -183,6 +185,13 @@ export async function POST(req: NextRequest) {
       return agendaLu;
     },
     fetch: (u, i) => fetch(u, i),
+    // Le site d'une agence : l'accueil, puis trois pages utiles au plus (contact,
+    // mentions, à propos), MÊME hôte, chaque redirection revalidée (SSRF).
+    lirePagesSite: async (url) => {
+      const accueil = await fetchSitePage(url);
+      const suivantes = await Promise.allSettled(pagesUtiles(accueil.url, accueil.html).map((u) => fetchSitePage(u)));
+      return [accueil, ...suivantes.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []))];
+    },
   });
 
   const boite = smtpUtilisable(await resoudreSmtp(null, DROIT_SOLO));

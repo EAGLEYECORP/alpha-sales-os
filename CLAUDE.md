@@ -398,7 +398,18 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
   · **Secrets dans l'environnement** (`DROPCONTACT_API_KEY`, `AGENDA_ICS_URL`), jamais en base.
   · Refuse si l'ancien `mail-tick` est armé ; un passage à la fois (verrou 5 min) ; l'état
     s'écrit AVANT chaque envoi (un passage tué ne fait pas renvoyer le précédent).
-  · **Non prouvé en vrai** : table et cron pas encore posés en production (go de Zakaria).
+  · **Posé en production** (019 + 020, secret Vault vers Vercel) ; ticks en 200 relus dans
+    `net._http_response` le 05/11.
+  · **⚠⚠ L'EMAIL PUBLIÉ SUR LE SITE (05/11/2026, « go site »)** — `lib/email-publie.ts` ·
+    `tests/email-publie.test.ts`. Mesuré en production : 33 agences du Rhône au registre, 18
+    passées à Dropcontact → **0 email** (6 téléphones). Le pilote ne pouvait écrire à personne.
+    Il lit désormais l'accueil + 3 pages (contact, mentions) du site CONNU de la fiche (« Site : »
+    posé par l'enrichissement, jamais deviné), et ne retient qu'une adresse **du domaine du
+    site** — jamais l'hébergeur ni l'agence web des mentions légales, jamais `dpo@`/`rgpd@`/
+    technique, jamais une adresse devinée ni une forme « [at] » reconstituée. **Serveur
+    seulement** (`lirePagesSite`, porte optionnelle) : du navigateur d'un inscrit ce serait
+    notre serveur qui apprendrait sa cible. 3 sites par passage, tag `site-lu` (pas de relecture
+    en boucle) ; une panne se dit sur la fiche. Cinq mutations mordent.
 - **Compte maître** : son autopilote SERVEUR (`/api/autopilote`, Pilote) existe déjà ;
   l'écran le prévient de ne pas lancer les deux sur les mêmes fiches.
   · **⚠⚠ ALPHA VEND ALPHA (29/10/2026)** : sur le maître, l'expéditeur inscrit est
