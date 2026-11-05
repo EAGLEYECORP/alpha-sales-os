@@ -73,11 +73,14 @@ export const CONFIGURATION_ALPHA_VEND_ALPHA: ConfigurationAlphaVendAlpha = {
      * qui vivent de commerciaux sur le terrain, tous les jours — constructeurs
      * de maisons, menuiserie (fenêtres, vérandas), chauffage / pompes à
      * chaleur, isolation, toiture. « Si l'équipe ne prospecte pas, le business
-     * ne tourne pas. » La phrase ne promet que ce qu'ALPHA fait : trouver,
-     * relancer avec une raison, poser un rendez-vous.
+     * ne tourne pas. » La phrase ne promet que ce qu'ALPHA fait : préparer la
+     * journée, relancer avec une raison, poser un rendez-vous.
+     * ⚠ PAS « trouve vos prospects » : leurs clients sont surtout des
+     * PARTICULIERS, et ALPHA cherche des ENTREPRISES au registre. La première
+     * rédaction (05/11, quelques heures) le promettait — retirée avant tout envoi.
      * Avant : les agences immobilières du Rhône (29/10 → 05/11).
      */
-    metier: "un OS de vente qui trouve les prospects de vos commerciaux, relance vos devis et pose leurs rendez-vous",
+    metier: "un OS de vente qui prépare la journée de vos commerciaux terrain, relance vos devis et pose leurs rendez-vous",
     cibleSecteur: "BTP, équipes commerciales terrain",
     cibleRole: "dirigeants",
     cibleZone: "Rhône",

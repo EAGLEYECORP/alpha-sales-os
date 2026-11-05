@@ -1,0 +1,155 @@
+{
+  "_note": "Film LinkedIn « BTP, équipes terrain » du 05/11/2026 — ré mineur (l'accroche) → fa majeur (la route) → si bémol (les règles) → sol mineur (l'humain) → ré majeur sur le logo. Calée sur scripts/video/compositions/btp.",
+  "duree": 25.6,
+  "accords": [
+    [
+      0.0,
+      [
+        73.42,
+        146.83,
+        220.0,
+        261.63,
+        349.23
+      ]
+    ],
+    [
+      3.6,
+      [
+        87.31,
+        174.61,
+        220.0,
+        261.63,
+        349.23
+      ]
+    ],
+    [
+      10.6,
+      [
+        116.54,
+        174.61,
+        233.08,
+        293.66,
+        349.23
+      ]
+    ],
+    [
+      17.0,
+      [
+        98.0,
+        146.83,
+        233.08,
+        293.66,
+        220.0
+      ]
+    ],
+    [
+      21.6,
+      [
+        73.42,
+        146.83,
+        220.0,
+        293.66,
+        369.99,
+        329.63
+      ]
+    ]
+  ],
+  "evenements": [
+    {
+      "t": 0.3,
+      "type": "tinte",
+      "hz": 587.33,
+      "pan": -0.2
+    },
+    {
+      "t": 1.3,
+      "type": "appui"
+    },
+    {
+      "t": 3.35,
+      "type": "souffle"
+    },
+    {
+      "t": 4.4,
+      "type": "air"
+    },
+    {
+      "t": 4.6,
+      "type": "tic",
+      "hz": 587.33,
+      "pan": -0.3
+    },
+    {
+      "t": 5.7,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": 0.0
+    },
+    {
+      "t": 6.8,
+      "type": "tic",
+      "hz": 739.99,
+      "pan": 0.3
+    },
+    {
+      "t": 7.6,
+      "type": "brillance"
+    },
+    {
+      "t": 10.3,
+      "type": "souffle"
+    },
+    {
+      "t": 11.4,
+      "type": "declic"
+    },
+    {
+      "t": 12.0,
+      "type": "declic"
+    },
+    {
+      "t": 12.6,
+      "type": "declic"
+    },
+    {
+      "t": 16.7,
+      "type": "souffle"
+    },
+    {
+      "t": 17.8,
+      "type": "tic",
+      "hz": 587.33,
+      "pan": -0.2
+    },
+    {
+      "t": 18.15,
+      "type": "tic",
+      "hz": 659.25,
+      "pan": 0.0
+    },
+    {
+      "t": 18.5,
+      "type": "tic",
+      "hz": 739.99,
+      "pan": 0.2
+    },
+    {
+      "t": 21.3,
+      "type": "souffle"
+    },
+    {
+      "t": 21.6,
+      "type": "impact"
+    },
+    {
+      "t": 21.9,
+      "type": "tinte",
+      "hz": 880,
+      "pan": 0.0
+    },
+    {
+      "t": 23.5,
+      "type": "brillance"
+    }
+  ]
+}

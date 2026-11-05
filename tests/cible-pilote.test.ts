@@ -27,6 +27,9 @@ test("la cible du maître : BTP à équipes terrain, 10 salariés ou plus, codes
   for (const c of C.autopilote.activites) assert.ok(codeNafValide(c), `${c} n'est pas un code NAF de la table INSEE`);
   assert.equal(C.autopilote.taille, "10-plus");
   assert.match(C.profil.cibleSecteur, /BTP/);
+  // Leurs clients sont surtout des PARTICULIERS ; ALPHA cherche des ENTREPRISES
+  // au registre. Promettre de « trouver leurs prospects » serait faux.
+  assert.doesNotMatch(C.profil.metier, /trouve|trouver|vos prospects|vos clients/i);
 });
 
 test("⚠⚠ le premier message dit la cible BTP, et ne promet que ce qu'ALPHA fait", () => {

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — les équipes terrain du BTP</title>
+    <!--
+      Film LinkedIn du 05/11/2026 — la verticale BTP : les entreprises qui vivent de
+      commerciaux sur le terrain (décision de Zakaria). Doctrine : .claude/skills/alpha-motion.
+      Garde : tests/film-btp.test.ts.
+
+      Ce que le film affirme, le test le relit dans le code :
+        · « 4 sollicitations au plus sur 30 jours » → lib/call-cadence.ts (PLAFOND_SOLLICITATIONS_B2C, décret 2022-1313)
+        · « une relance a une raison, ou ne part pas » → lib/raison-neuve.ts (AUCUNE_RAISON)
+        · « pas d'appel pendant la pause déjeuner » → lib/conformite.ts (fenetreOuverte, 12 h – 14 h)
+        · la devise → lib/promesse.ts (PROMESSE_COURTE), mot pour mot
+      ⚠ Le film ne dit PAS qu'ALPHA trouve leurs clients : ce sont surtout des
+      particuliers, et ALPHA cherche des entreprises au registre.
+
+      Rendu : comme scripts/video/compositions/po-ia (gsap_local, bande-son, check, render, affiche).
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #0a0807; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #f3eee4; }
+
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #18130d 0%, #0a0807 62%); }
+      .halo { position: absolute; border-radius: 50%; filter: blur(110px); }
+      #halo1 { width: 820px; height: 820px; left: -220px; top: -280px; background: rgba(232, 201, 138, 0.13); }
+      #halo2 { width: 720px; height: 720px; right: -240px; bottom: -220px; background: rgba(185, 143, 75, 0.1); }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.06; mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='11'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #e8c98a; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; }
+      #marque i { font-style: normal; color: #e8c98a; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.12em; color: #a79f92; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { background: linear-gradient(100deg, #f4e6c4 0%, #e8c98a 45%, #c9963f 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .papier { color: #f7f2ea; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #e8c98a; }
+
+      /* ── La machine : sombre, bronze, chasse fixe ── */
+      .plaque { position: absolute; left: 80px; width: 920px; border-radius: 28px; overflow: hidden;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)); border: 1.5px solid rgba(243, 238, 228, 0.14);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 50px 90px -40px rgba(0, 0, 0, 0.95); }
+      .contenu { position: absolute; left: 80px; width: 920px; }
+      .onglet { height: 68px; display: flex; align-items: center; gap: 12px; padding: 0 30px; border-bottom: 1.5px solid rgba(243, 238, 228, 0.1);
+        font-family: "JetBrains Mono"; font-weight: 500; font-size: 26px; color: #a79f92; white-space: nowrap; }
+      .prop { position: absolute; left: 30px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 29px; color: #e8c98a; white-space: nowrap; }
+      .prop .k { color: #a79f92; }
+      .rature { position: absolute; left: 26px; height: 3px; border-radius: 2px; background: #e5564e; transform-origin: 0 50%; }
+
+      /* ── L'humain : papier clair ── */
+      .tampon { position: absolute; left: 30px; height: 64px; padding: 0 26px; border-radius: 14px; background: #f7f2ea; color: #1e1914;
+        display: flex; align-items: center; gap: 16px; white-space: nowrap; box-shadow: 0 26px 50px -24px rgba(0, 0, 0, 0.9); transform-origin: 20% 50%; }
+      .tampon b { font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 32px; letter-spacing: 0.02em; color: #b5372f; }
+      .tampon span { font-weight: 600; font-size: 29px; }
+
+      .decision { position: absolute; left: 80px; width: 920px; height: 196px; border-radius: 26px; background: #f7f2ea; color: #1e1914; box-shadow: 0 46px 90px -40px rgba(0, 0, 0, 0.85); }
+      .decision .date { position: absolute; left: 36px; top: 30px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 25px; letter-spacing: 0.06em; color: #7a5a2a; }
+      .decision .cite { position: absolute; left: 36px; top: 66px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 52px; letter-spacing: -0.02em; white-space: nowrap; }
+      .decision .motif { position: absolute; left: 36px; top: 136px; font-weight: 500; font-size: 29px; color: #5a5047; white-space: nowrap; }
+      #relu { position: absolute; left: 80px; top: 1130px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 28px; color: #a79f92; white-space: nowrap; }
+      #relu b { color: #e8c98a; font-weight: 600; }
+
+      .moi { position: absolute; left: 80px; width: 920px; height: 132px; border-radius: 26px; background: #f7f2ea; color: #1e1914; box-shadow: 0 46px 90px -40px rgba(0, 0, 0, 0.85); }
+      .moi .txt { position: absolute; left: 112px; top: 36px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 48px; letter-spacing: -0.02em; white-space: nowrap; }
+      .moi .pastille { position: absolute; left: 34px; top: 38px; width: 56px; height: 56px; border-radius: 50%; background: #1e1914; }
+      .moi .pastille::after { content: ""; position: absolute; left: 19px; top: 19px; width: 18px; height: 18px; border-radius: 50%; background: #e8c98a; }
+
+      #reel { position: absolute; left: 0; width: 1080px; top: 1282px; text-align: center; font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; color: #a79f92; }
+
+      /* ── La fin ── */
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.35), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 250px; width: 190px; height: 152px; filter: drop-shadow(0 0 44px rgba(232, 201, 138, 0.5)); }
+      #nom { top: 450px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; }
+      #devise { top: 600px; font-size: 46px; font-weight: 500; color: #a79f92; line-height: 1.32; }
+      #devise b { color: #f3eee4; font-weight: 600; }
+      #appel { top: 860px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #b07d35, #7e5527); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(201, 150, 63, 0.7); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+
+      /* ── La route du commercial ── */
+      #route { position: absolute; left: 0; top: 0; width: 1080px; height: 1350px; overflow: visible; }
+      .arret { position: absolute; left: 132px; width: 36px; height: 36px; border-radius: 50%; background: #0a0807; border: 5px solid #e8c98a; box-shadow: 0 0 24px rgba(232, 201, 138, 0.45); }
+      .etape { position: absolute; left: 210px; width: 790px; height: 196px; border-radius: 26px; overflow: hidden;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)); border: 1.5px solid rgba(243, 238, 228, 0.14);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 40px 80px -40px rgba(0, 0, 0, 0.95); }
+      .etape .quand { position: absolute; left: 34px; top: 30px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 25px; letter-spacing: 0.12em; color: #e8c98a; }
+      .etape .quoi { position: absolute; left: 34px; top: 74px; width: 730px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 42px; line-height: 1.12; letter-spacing: -0.02em; color: #f3eee4; }
+      .regle { position: absolute; left: 30px; right: 30px; height: 210px; border-bottom: 1px solid rgba(243, 238, 228, 0.08); }
+      .regle .quoi { position: absolute; left: 0; top: 30px; width: 860px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 40px; line-height: 1.14; letter-spacing: -0.02em; color: #f3eee4; }
+      .regle .ou { position: absolute; left: 0; top: 140px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 26px; color: #e8c98a; white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="25.6" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="halo1" class="halo" data-layout-allow-overflow></div>
+      <div id="halo2" class="halo" data-layout-allow-overflow></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">BTP · TERRAIN</div>
+      </div>
+
+      <!-- 1 · L'accroche — les mots de Zakaria, resserrés -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.6" data-track-index="1">
+        <div class="titre" id="t1" style="top: 430px; font-size: 104px">
+          <span class="ligne"><span class="mot">Dans</span> <span class="mot">le</span> <span class="mot or">BTP,</span></span>
+          <span class="ligne"><span class="mot">pas</span> <span class="mot">de</span> <span class="mot">terrain,</span></span>
+          <span class="ligne"><span class="mot">pas</span> <span class="mot">de</span> <span class="mot papier">chiffre.</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · La journée d'un commercial terrain : la route, trois arrêts -->
+      <section id="s2" class="scene clip" data-start="3.6" data-duration="7" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="surtitre" id="k2" style="top: 150px">LA JOURNÉE D'UN COMMERCIAL TERRAIN</div>
+          <div class="titre" id="t2" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">ALPHA</span> <span class="mot">fait</span> <span class="mot or">sa</span> <span class="mot or">part.</span></span>
+          </div>
+          <svg id="route" viewBox="0 0 1080 1350" aria-hidden="true">
+            <path id="trace" d="M150 400 L 150 930" fill="none" stroke="#e8c98a" stroke-width="6" stroke-linecap="round" stroke-dasharray="530" stroke-dashoffset="530" opacity="0.85" />
+          </svg>
+          <div class="arret" id="p1" style="top: 452px"></div>
+          <div class="etape" id="e1" style="top: 372px"><div class="quand">AVANT DE PARTIR</div><div class="quoi">la liste du jour est prête</div></div>
+          <div class="arret" id="p2" style="top: 682px"></div>
+          <div class="etape" id="e2" style="top: 602px"><div class="quand">SUR LA ROUTE</div><div class="quoi">les devis à relancer arrivent avec leur raison</div></div>
+          <div class="arret" id="p3" style="top: 912px"></div>
+          <div class="etape" id="e3" style="top: 832px"><div class="quand">EN RENTRANT</div><div class="quoi">les rendez-vous pris sont dans son agenda</div></div>
+        </div>
+      </section>
+
+      <!-- 3 · Dans les règles — ce que le code applique -->
+      <section id="s3" class="scene clip" data-start="10.6" data-duration="6.4" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="k3" style="top: 150px">CE QUE LE LOGICIEL APPLIQUE</div>
+          <div class="titre" id="t3" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Dans</span> <span class="mot or">les</span> <span class="mot or">règles.</span></span>
+          </div>
+          <div class="plaque" id="p3f" style="top: 340px; height: 700px"></div>
+          <div class="contenu" style="top: 340px; height: 700px">
+            <div class="regle" id="r1" style="top: 20px"><div class="quoi">Un particulier : 4 sollicitations<br>au plus sur 30 jours</div><div class="ou">décret n° 2022-1313</div></div>
+            <div class="regle" id="r2" style="top: 245px"><div class="quoi">Une relance a une raison,<br>ou elle ne part pas</div><div class="ou">lib/raison-neuve.ts</div></div>
+            <div class="regle" id="r3" style="top: 470px; border-bottom: none"><div class="quoi">Pas d'appel pendant<br>la pause déjeuner</div><div class="ou">12 h – 14 h, fenêtre fermée</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 · Ce qui reste aux commerciaux -->
+      <section id="s4" class="scene clip" data-start="17" data-duration="4.6" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="surtitre" id="k4" style="top: 150px">CE QUI RESTE À L'HUMAIN</div>
+          <div class="titre" id="t4" style="top: 196px; font-size: 84px">
+            <span class="ligne"><span class="mot">Ce</span> <span class="mot">qui</span> <span class="mot">reste</span> <span class="mot or">à</span> <span class="mot or">eux.</span></span>
+          </div>
+          <div class="moi" id="m1" style="top: 400px"><div class="pastille"></div><div class="txt">le terrain</div></div>
+          <div class="moi" id="m2" style="top: 570px"><div class="pastille"></div><div class="txt">la poignée de main</div></div>
+          <div class="moi" id="m3" style="top: 740px"><div class="pastille"></div><div class="txt">la signature</div></div>
+        </div>
+      </section>
+
+      <div id="reel">ALPHA SALES OS · ÉQUIPES TERRAIN DU BTP</div>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="21.6" data-duration="4" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #e8c98a">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">Les humains closent.</span><b class="ligne">Alpha fait tourner la machine.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="25.6" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond, tenues
+      // immobiles, l'ancien sort AVANT l'entrée du nouveau. Le seul mouvement continu du film
+      // est la ROUTE qui se trace — et elle accompagne un fait : la journée qui avance.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t, salve = 0.06) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: salve }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 21.25);
+
+      // 1 · L'accroche — neuf mots, entrée courte et salve serrée pour tenir 2,7 s.
+      tl.fromTo(mots("#t1"), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.6, ease: ENTREE, stagger: 0.02 }, 0.05);
+      tl.to("#t1", { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.05, ease: "power2.in" }, 3.55);
+
+      // 2 · La route se trace ; chaque arrêt s'allume quand le trait l'atteint.
+      arrive("#k2", 3.8, 20, 0.6);
+      titre("#t2", 3.85);
+      arrive("#reel", 3.9, 10, 0.6);
+      tl.fromTo("#trace", { strokeDashoffset: 530 }, { strokeDashoffset: 0, duration: 2.6, ease: "power1.inOut" }, 4.4);
+      [[4.6, 1], [5.7, 2], [6.8, 3]].forEach(([t, i]) => {
+        tl.fromTo("#p" + i, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: "expo.out" }, t);
+        arrive("#e" + i, t + 0.05, 24, 0.65);
+      });
+      sort("#s2in", 10.35);
+
+      // 3 · Les règles, une par une.
+      arrive("#k3", 10.8, 20, 0.6);
+      titre("#t3", 10.85);
+      arrive("#p3f", 11.2, 40, 0.8);
+      [11.4, 12.0, 12.6].forEach((t, i) => arrive("#r" + (i + 1), t, 18, 0.6));
+      sort("#s3in", 16.75);
+
+      // 4 · Ce qui reste à eux.
+      arrive("#k4", 17.2, 20, 0.6);
+      titre("#t4", 17.25);
+      [17.8, 18.15, 18.5].forEach((t, i) => arrive("#m" + (i + 1), t, 30, 0.6));
+      sort("#s4in", 21.35);
+      sort("#reel", 21.35);
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 21.6);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 21.65);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 21.85);
+      arrive("#devise", 22.2, 22, 0.5);
+      arrive("#appel", 22.6, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 23.5);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
