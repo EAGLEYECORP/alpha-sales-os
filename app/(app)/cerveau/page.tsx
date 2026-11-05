@@ -352,7 +352,7 @@ function AskBrain({ notes, settings, onOpen }: { notes: KnowledgeNote[]; setting
         <Sparkles size={16} className="text-bronze-400" />
         <input
           className="input flex-1"
-          placeholder="Demander au Cerveau… (ex : « quelle offre pour un garage qui rate des appels ? »)"
+          placeholder="Demander au Cerveau… (ex : « que répondre à “je vais réfléchir” ? »)"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && ask()}

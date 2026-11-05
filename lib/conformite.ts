@@ -151,8 +151,8 @@ export function fenetreOuverte(now = new Date(), timeZone = BUSINESS_TZ): { open
     return { open: false, label: "pause déjeuner", why: "12h–14h : taux de décroché au plancher, et l'agacement au plafond." };
   return {
     open: false,
-    label: "hors fenêtre",
-    why: "Avant 9h ou après 18h, on ne joint pas un dirigeant de TPE — on le dérange.",
+    label: "avant 9 h ou après 18 h",
+    why: "À ces heures-là, on ne joint pas un dirigeant : on le dérange.",
   };
 }
 

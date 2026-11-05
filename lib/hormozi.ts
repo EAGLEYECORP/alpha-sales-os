@@ -27,7 +27,7 @@ export const STAGES: {
 }[] = [
   { id: "prospect", label: "Prospect", probability: 5, hint: "Repéré, pas encore contacté" },
   { id: "contact", label: "Contact", probability: 15, hint: "Premier échange fait — next step daté obligatoire" },
-  { id: "audit", label: "Audit", probability: 30, hint: "Diagnostic terrain : Taxe d'Ignorance chiffrée" },
+  { id: "audit", label: "Audit", probability: 30, hint: "Diagnostic : le coût du problème, chiffré avec lui" },
   // « Démo mobile » était NOTRE démonstration (Alpha montré sur un téléphone).
   // L'étape est la même pour tout vendeur : montrer avant de chiffrer (22/10/2026).
   { id: "demo", label: "Démonstration", probability: 50, hint: "Émotion d'abord — montrer AVANT le prix" },

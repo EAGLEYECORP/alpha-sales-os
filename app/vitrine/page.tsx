@@ -509,16 +509,16 @@ export default function VitrinePage() {
             Voilà à quoi ça ressemble.
           </h2>
           <p className="mt-5 max-w-2xl text-[17px] leading-[1.65]" style={{ color: MUTED }}>
-            Les quatre écrans du socle gratuit, tels quels. Le jeu de démonstration est affiché —
+            Quatre écrans du socle gratuit, tels quels. Le jeu de démonstration est affiché —
             c&apos;est ce que vous verrez en créant votre compte, avant d&apos;y mettre vos propres
             fiches.
           </p>
 
           <div className="mt-10 grid gap-8 sm:grid-cols-2">
             {[
-              ["/produit/tableau-de-bord.jpg", "Le tableau de bord", "Ce qui bouge, en un écran : les routines du matin, le pipe pondéré, le prochain rendez-vous."],
-              ["/produit/pipeline.jpg", "Le pipeline", "Chaque fiche avec son étape et sa prochaine action datée. Une fiche sans date est une décision qu'on n'a pas prise."],
-              ["/produit/closer.jpg", "Le Closer OS", "La tournée du jour, priorisée — et le débrief à la voix en sortant de rendez-vous."],
+              ["/produit/aujourdhui.jpg", "Aujourd'hui", "Votre journée préparée : ce qui attend une décision en premier, le temps que ça prend, et la bande « ALPHA a besoin de toi »."],
+              ["/produit/travail.jpg", "ALPHA au travail", "Ce que la machine fait pour vous, étape par étape — et ce qu'elle refuse de faire."],
+              ["/produit/appels.jpg", "La session d'appels", "Votre liste du jour, dans l'ordre, avec le script et l'historique de chaque fiche. C'est vous qui appelez."],
               ["/produit/cerveau.jpg", "Le Cerveau", "Votre doctrine, vos scripts, vos objections. Cherchables en une phrase, pas rangés dans un dossier."],
             ].map(([src, titre, texte]) => (
               <figure key={src}>
