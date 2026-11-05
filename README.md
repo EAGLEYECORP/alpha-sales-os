@@ -10,6 +10,8 @@ capteraient de la donnée métier — RAG, extraction PDF/DOCX, CSV, crypto — 
 
 > La décision EST le produit. Émotion d'abord (démo avant le prix), logique ensuite.
 
+**Nouvel utilisateur ?** → [Démarrer — le guide pas à pas](#-démarrer--le-guide-pas-à-pas)
+
 ---
 
 ## 📐 Architecture, conformité EU AI Act & FinOps
@@ -114,6 +116,139 @@ lien, « on y va » remonte. En ligne, ALPHA travaille **onglet ouvert** — le
 CRM d'un inscrit vit dans son navigateur, et c'est la promesse de souveraineté.
 Seul le compte maître (ALPHA vend ALPHA) tourne aussi onglet fermé, dans le
 cloud : `lib/pilote-serveur.ts`, `docs/ALPHA-VEND-ALPHA.md`.
+
+---
+
+## 🚀 Démarrer — le guide pas à pas
+
+Pour un nouvel utilisateur, dans l'ordre où ça rapporte. L'idée qui guide tout :
+**ALPHA est le plus fort sur la demande que tu as déjà** (devis en attente,
+demandes du site, contacts de salon). Commence par là, pas par la chasse.
+
+> Chaque titre entre guillemets est le titre exact de l'écran : c'est comme ça
+> que tu sais que tu es au bon endroit.
+
+### Étape 0 — Ouvrir, sans rien installer
+
+Va sur `alphasalesos.eagleyecorp.fr`. Les écrans gratuits s'ouvrent **sans
+compte** ; « Continuer avec Google » crée ton compte en un clic. **Travaille
+toujours depuis le même navigateur** : en ligne, tes fiches vivent dans ce
+navigateur, pas sur nos serveurs. C'est ce qui garantit que personne d'autre
+— nous compris — ne lit ton pipe.
+
+### Étape 1 — « Donne ton site. Alpha se configure devant toi. » (`/bienvenue`)
+
+Colle l'adresse de ton site. ALPHA lit l'accueil, la page contact et les
+mentions légales, puis te montre ce qu'il a compris (ce que tu vends, à qui,
+ta ville, ton lien de rendez-vous), **avec l'extrait où il l'a lu**. Corrige
+ce qui est faux, valide. Ce qu'il n'a pas trouvé, il te le dit au lieu de
+l'inventer. Coche « c'est moi » seulement si tu es bien la personne qui signera
+les messages.
+
+### Étape 2 — « Réglages » (`/settings`) : tes outils, à ton nom
+
+- **Ta boîte mail** : ton adresse + un **mot de passe d'application** (pas celui
+  de ta messagerie — l'écran te donne le lien pour le créer). ALPHA trouve le
+  serveur tout seul et vérifie la connexion avant d'enregistrer. Les messages
+  partent **de chez toi, à ton nom**.
+- **Ta clé d'IA** (facultative) : colle-la n'importe où, ALPHA la reconnaît. Sans
+  clé, tout ce qui se fait sans modèle continue de marcher.
+- **Ce que tu vends, à qui, où** : c'est ce qui écrit tes messages et tes
+  scripts. Un profil flou donne des messages flous.
+
+### Étape 3 — Charge la demande que tu as DÉJÀ (`/pipeline`)
+
+C'est l'étape qui rapporte le plus vite. Importe ton fichier (CSV, ou le lien
+d'une feuille Google) : devis envoyés sans réponse, demandes du formulaire,
+contacts de salon, anciens clients. Chaque ligne entre ; le tri range les
+fiches à appeler en tête et marque `a-qualifier` celles à qui il manque une
+info. Seules les fiches hors sujet sont écartées — et nommées, jamais tues.
+
+### Étape 4 — « Trouver des clients » (`/trouver`) : de nouvelles entreprises
+
+Dis le métier de tes clients et la zone (département ou codes postaux). ALPHA
+interroge le registre officiel des entreprises, lit au passage leurs annonces
+légales (une société en liquidation n'est jamais importée) et t'en propose une
+page. Un clic les met dans ton pipe. ⚠ Le registre ne donne **ni téléphone ni
+email** : l'écran le dit avant le premier résultat. Pour les obtenir, voir
+l'étape 5 (Dropcontact) ou relève-les toi-même.
+
+### Étape 5 — « Pilote automatique » (`/autopilote`) : le régler une fois
+
+- **Qui il cherche** : le métier de tes clients, la zone, la taille.
+- **Ses moyens** : ta clé Dropcontact si tu en as une (coordonnées
+  professionnelles), l'**adresse secrète iCal de ton agenda** (Google ou
+  Outlook — ALPHA ne propose alors que des heures où tu es libre), le nombre de
+  premiers messages par jour, le format du rendez-vous (visio, téléphone, sur
+  place).
+- **Le closing** : ta phrase de prix telle que tu l'écrirais, et ton lien pour
+  signer, payer ou s'inscrire. **Sans eux, ALPHA ne parle jamais de prix** : la
+  question te revient.
+- Allume. À partir de là, tant que l'onglet est ouvert : premier message →
+  lecture des réponses → « oui » : trois créneaux → « 2 » : rendez-vous posé et
+  invitation dans ton agenda → relance **seulement avec une raison neuve**. Le
+  journal de l'écran dit ce qu'il a fait.
+
+### Étape 6 — Chaque matin, cinq minutes
+
+- **La bande « ALPHA a besoin de toi »** (en haut de l'application) : ce qui
+  attend un humain, le plus urgent d'abord. Le « (3) » dans l'onglet du
+  navigateur dit combien.
+- **« Session d'appels »** (`/appels`) : ta liste du jour, dans l'ordre, avec le
+  script et l'historique de chaque fiche. C'est toi qui appelles, depuis ton
+  téléphone. Après chaque appel, note le résultat en un clic ; s'il te dit
+  « rappelez-moi mardi », saisis **sa** date — c'est elle qui déclenchera la
+  relance, pas un délai par défaut.
+
+### Étape 7 — « À décider » (`/decisions`) : ce qu'ALPHA te garde
+
+Le prix quand tu ne l'as pas déclaré, la signature, la négociation, et toute
+réponse ambiguë (« on verra plus tard », un créneau mal compris). **ALPHA ne
+tranche jamais à ta place** : il te met le fil de l'échange sous les yeux.
+
+### Étape 8 — LinkedIn et les modèles
+
+« Machine LinkedIn » (`/linkedin`) prépare l'invitation, le message et la
+relance pour chaque fiche : tu copies, tu colles, tu envoies toi-même.
+« Templates » (`/templates`) montre l'aperçu de tes emails avant qu'ils partent.
+
+### Étape 9 — Le soir, et après chaque rendez-vous
+
+- **« ALPHA au travail »** (`/travail`) : le journal de ce qu'il a fait, les
+  garde-fous armés, ce qui t'attend.
+- **« Débrief terrain »** (`/debrief`) : après un rendez-vous, dis ce qui s'est
+  passé et l'objection entendue. La leçon entre dans le **Cerveau** et ressort
+  dans la file d'appels des fiches du même métier. C'est comme ça qu'ALPHA
+  apprend **ton** marché.
+
+### Les cinq réglages qui font toute la différence
+
+1. **Un profil précis** (ce que tu vends, à qui) : il écrit chaque message.
+2. **Ta boîte mail** : sans elle, rien ne part.
+3. **Ton agenda iCal** : sans lui, ALPHA propose des heures sans savoir si tu es libre.
+4. **Ton prix et ton lien** : sans eux, chaque « c'est combien ? » t'attend.
+5. **La date donnée par le prospect** à chaque « rappelez-moi » : c'est la
+   meilleure raison de relancer qui existe.
+
+### Ce qu'ALPHA ne fera pas — pour que tu n'attendes pas ce qui ne viendra pas
+
+- **Travailler onglet fermé, en ligne** : ton pipe vit dans ton navigateur.
+  L'ALPHA qui tourne seul, même la nuit, existe — **installé sur ton serveur**
+  (la formule « chez vous »).
+- **Inventer** un prix, une adresse email ou un nom : ce qui manque se dit.
+- **Dépasser les règles** : 4 sollicitations au plus sur 30 jours pour un
+  particulier (décret n° 2022-1313), rien hors des heures utiles, un « STOP »
+  arrête tout, l'IA se présente comme une IA.
+- **Envoyer en masse** : le nombre de messages par jour monte progressivement
+  pour protéger ton nom de domaine.
+- **Remplacer le terrain, la poignée de main, la signature** : ça reste à toi.
+
+### Bonus — ton assistant IA peut faire tout ça pour toi
+
+Un assistant qui sait se servir d'un navigateur peut suivre ce guide à ta
+place. Copie la mission depuis l'encart de « Pilote automatique », ou
+donne-lui `alphasalesos.eagleyecorp.fr/llms.txt`. Il ne tape aucun mot de
+passe, n'invente aucun prix et ne signe rien : ces moments te reviennent.
 
 ---
 
