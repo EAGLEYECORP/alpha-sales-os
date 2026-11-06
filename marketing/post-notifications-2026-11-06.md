@@ -1,6 +1,9 @@
 # Post LinkedIn — « Notifications » (06/11/2026)
 
-**Statut : PRÊT, PAS PUBLIÉ.** Rien ne part sur LinkedIn sans le « go » de Zakaria.
+**Statut : PUBLIÉ le 06/11/2026 vers 14 h 30 (Paris)**, sur le « go now » de Zakaria —
+`urn:li:ugcPost:7524469533152055296` (vidéo `urn:li:video:D4E10AQHWRZUjyVdNnw`, 3 701 762 octets,
+téléversée depuis l'URL de production). Vérifié AVANT : SHA-256 du MP4 servi = celui du dépôt
+(`8674208a…`) ; vignette renvoyée par LinkedIn = l'accroche.
 
 - Vidéo : `public/media/linkedin/notifications-2026-11-06.mp4` (1080 × 1350, 26 s, thème clair, son
   synthétisé ; affiche = l'accroche posée, images 0 à 26, raccord mesuré à plus de 42 dB).
