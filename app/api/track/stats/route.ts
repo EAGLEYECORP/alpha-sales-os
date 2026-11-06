@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStats } from "@/lib/tracking";
 import { getTenantId } from "@/lib/tenant";
+import { resoudreDroits } from "@/lib/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +24,9 @@ export async function GET(req: NextRequest) {
         campaignId: sp.get("campaignId") ?? undefined,
         messageId: sp.get("messageId") ?? undefined,
       },
-      tenantId
+      tenantId,
+      // Le maître voit aussi les envois de son pilote serveur (sans session).
+      (await resoudreDroits(req)).maitre
     );
     return NextResponse.json(stats);
   } catch (e) {

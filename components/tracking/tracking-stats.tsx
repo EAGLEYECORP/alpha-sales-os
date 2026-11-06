@@ -68,6 +68,12 @@ function useStats(qs: string) {
 
   useEffect(() => {
     void load();
+    // En direct : on relit toutes les 30 s tant que l'onglet est visible —
+    // une ouverture arrive pendant qu'on regarde, sans recharger la page.
+    const t = setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 30_000);
+    return () => clearInterval(t);
   }, [load]);
 
   return { data, loading, error, reload: load };

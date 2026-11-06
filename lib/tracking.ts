@@ -606,12 +606,21 @@ export interface StatsSummary {
   records: TrackingRecord[];
 }
 
-export async function getStats(filter: StatsFilter = {}, userId?: string | null): Promise<StatsSummary> {
+/**
+ * ⚠ `avecEnvoisDuPilote` (maître seulement, 06/11/2026) : le pilote serveur
+ * envoie SANS session — ses messages portent `user_id` vide. Filtré sur
+ * l'identifiant du maître, l'écran ne montrait AUCUN des messages partis : 5
+ * envois, 3 ouvertures, et un tableau vide. Les lignes sans propriétaire ne
+ * viennent que du serveur (pilote, mode solo) — c'est-à-dire de nous. Un
+ * inscrit envoie toujours avec sa session : il ne les voit jamais.
+ */
+export async function getStats(filter: StatsFilter = {}, userId?: string | null, avecEnvoisDuPilote = false): Promise<StatsSummary> {
   let records: TrackingRecord[] = [];
   const sb = serviceClient();
   if (sb) {
     let q = sb.from("tracking_messages").select("*").order("created_at", { ascending: false }).limit(500);
-    if (userId) q = q.eq("user_id", userId);
+    if (userId && avecEnvoisDuPilote) q = q.or(`user_id.eq.${userId},user_id.is.null`);
+    else if (userId) q = q.eq("user_id", userId);
     if (filter.prospectId) q = q.eq("prospect_id", filter.prospectId);
     if (filter.campaignId) q = q.eq("campaign_id", filter.campaignId);
     if (filter.messageId) q = q.eq("id", filter.messageId);
@@ -621,7 +630,7 @@ export async function getStats(filter: StatsFilter = {}, userId?: string | null)
     records = [...memory.values()]
       .filter(
         (r) =>
-          (!userId || r.userId === userId) &&
+          (!userId || r.userId === userId || (avecEnvoisDuPilote && !r.userId)) &&
           (!filter.prospectId || r.prospectId === filter.prospectId) &&
           (!filter.campaignId || r.campaignId === filter.campaignId) &&
           (!filter.messageId || r.id === filter.messageId)
