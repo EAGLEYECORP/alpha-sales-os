@@ -77,15 +77,13 @@ export default function NotificationsPage() {
                   <Icone size={18} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className={n.important ? "text-[15px] font-semibold text-paper" : "text-[15px] text-paper"}>
-                    {n.titre}
+                  <time className="block font-mono text-[12px] text-paper-faint" dateTime={n.quand}>
+                    {heure(n.quand)}
                     {nouveau && <span className="ml-2 rounded-full bg-bronze-400 px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase text-ink-950">nouveau</span>}
-                  </p>
+                  </time>
+                  <p className={n.important ? "mt-1 text-[15px] font-semibold text-paper" : "mt-1 text-[15px] text-paper"}>{n.titre}</p>
                   {n.detail && <p className="mt-1 text-[13px] text-paper-faint">{n.detail}</p>}
                 </div>
-                <time className="shrink-0 font-mono text-[12px] text-paper-faint" dateTime={n.quand}>
-                  {heure(n.quand)}
-                </time>
               </li>
             );
           })}

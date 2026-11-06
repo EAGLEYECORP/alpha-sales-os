@@ -1,0 +1,17 @@
+{
+  "_note": "Données FICTIVES du film « Notifications » (06/11/2026). Entreprises marquées (DÉMO), aucune adresse. Les textes du journal suivent mot pour mot les gabarits de lib/pilote-executeur.ts (tests/film-notifications.test.ts le vérifie).",
+  "suivi": [
+    { "id": "film-m1", "subject": "MENUISERIE QUIXOTZ (DÉMO) — une question", "createdAt": "2026-11-09T08:05:00.000Z", "opens": 2, "clicks": 0, "lastOpenAt": "2026-11-09T08:41:00.000Z", "links": [] },
+    { "id": "film-m2", "subject": "CHAUFFAGE TÉMOIN (DÉMO) — une question", "createdAt": "2026-11-09T08:10:00.000Z", "opens": 1, "clicks": 1, "lastOpenAt": "2026-11-09T08:52:00.000Z", "lastClickAt": "2026-11-09T08:55:00.000Z", "links": [] }
+  ],
+  "journal": [
+    { "le": "2026-11-09T10:30:00.000Z", "type": "rdv", "texte": "Rendez-vous avec MENUISERIE QUIXOTZ (DÉMO) : jeudi 12 novembre à 10:00. L'invitation est aussi dans ta boîte." },
+    { "le": "2026-11-09T09:12:00.000Z", "type": "repond", "texte": "MENUISERIE QUIXOTZ (DÉMO) est intéressé : 3 créneaux proposés." }
+  ],
+  "etapes": [
+    { "nom": "e1", "jusqua": "2026-11-09T08:15:00.000Z", "vu": "2026-11-09T07:00:00.000Z" },
+    { "nom": "e2", "jusqua": "2026-11-09T09:00:00.000Z", "vu": "2026-11-09T08:15:00.000Z" },
+    { "nom": "e3", "jusqua": "2026-11-09T09:30:00.000Z", "vu": "2026-11-09T09:00:00.000Z" },
+    { "nom": "e4", "jusqua": "2026-11-09T11:00:00.000Z", "vu": "2026-11-09T09:30:00.000Z" }
+  ]
+}

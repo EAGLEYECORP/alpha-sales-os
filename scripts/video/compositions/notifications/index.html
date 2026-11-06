@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1350" />
+    <title>Alpha — notifications</title>
+    <!--
+      Film LinkedIn du 06/11/2026 — l'onglet Notifications, en THÈME CLAIR (demande
+      de Zakaria). Doctrine : .claude/skills/alpha-motion. Garde : tests/film-notifications.test.ts.
+      Les écrans sont RÉELS (capturer.mjs, app construite, thème clair) ; seules les
+      données sont fictives (donnees.json, entreprises « (DÉMO) »). Chaque phrase du fil
+      est rejouée par le test dans lib/notifications.ts.
+      Polices : Bricolage Grotesque, Inter Tight, JetBrains Mono — licence SIL OFL 1.1.
+    -->
+    <script src="gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 700; src: url(BricolageGrotesque-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Bricolage Grotesque"; font-weight: 800; src: url(BricolageGrotesque-800-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 500; src: url(InterTight-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 600; src: url(InterTight-600-latin.woff2) format("woff2"); }
+      @font-face { font-family: "Inter Tight"; font-weight: 700; src: url(InterTight-700-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url(JetBrainsMono-500-latin.woff2) format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 600; src: url(JetBrainsMono-600-latin.woff2) format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; background: #f3eee4; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Inter Tight", sans-serif; color: #1e1914; }
+      #fond { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 0%, #fbf7ef 0%, #f3eee4 60%, #ebe3d4 100%); }
+      #grain { position: absolute; inset: 0; opacity: 0.05; mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+      #entete { position: absolute; left: 80px; right: 80px; top: 66px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+      .aigle { background: #8a5d22; -webkit-mask: url(eagle-net.png) center / contain no-repeat; mask: url(eagle-net.png) center / contain no-repeat; }
+      #marque { display: flex; align-items: center; gap: 14px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 28px; letter-spacing: 0.05em; color: #1e1914; }
+      #marque i { font-style: normal; color: #8a5d22; }
+      #rubrique { font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.12em; color: #6b6157; }
+
+      .scene { position: absolute; inset: 0; }
+      .titre { position: absolute; left: 80px; width: 920px; font-family: "Bricolage Grotesque"; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; perspective: 900px; color: #1e1914; }
+      .ligne { display: block; white-space: nowrap; }
+      .mot { display: inline-block; transform-origin: 50% 80%; }
+      .or { color: #8a5d22; }
+      .surtitre { position: absolute; left: 80px; font-family: "JetBrains Mono"; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; color: #8a5d22; }
+
+      .ecran { position: absolute; left: 110px; width: 860px; border-radius: 32px; overflow: hidden; background: #f6f1e8;
+        border: 1.5px solid rgba(30, 25, 20, 0.12); box-shadow: 0 50px 90px -40px rgba(60, 40, 15, 0.45), 0 2px 0 rgba(255, 255, 255, 0.8) inset; }
+      .ecran img { position: absolute; left: 0; width: 860px; display: block; }
+      .etiquette { position: absolute; left: 110px; height: 66px; padding: 0 26px; border-radius: 999px; background: #1e1914; color: #f7f2ea;
+        display: flex; align-items: center; gap: 16px; white-space: nowrap; font-weight: 600; font-size: 30px; }
+      .etiquette b { font-family: "JetBrains Mono"; font-weight: 600; color: #e8c98a; font-size: 28px; }
+      #illustratif { position: absolute; left: 110px; top: 1232px; font-family: "JetBrains Mono"; font-weight: 500; font-size: 26px; letter-spacing: 0.1em; color: #6b6157; }
+
+      .regle { position: absolute; left: 80px; width: 920px; height: 196px; border-radius: 26px; background: #fffaf2; border: 1.5px solid rgba(30, 25, 20, 0.12);
+        box-shadow: 0 40px 80px -46px rgba(60, 40, 15, 0.5); }
+      .regle .quoi { position: absolute; left: 40px; top: 34px; width: 840px; font-family: "Bricolage Grotesque"; font-weight: 700; font-size: 44px; line-height: 1.12; letter-spacing: -0.02em; }
+      .regle .pourquoi { position: absolute; left: 40px; top: 126px; width: 840px; font-weight: 500; font-size: 29px; color: #6b6157; white-space: nowrap; }
+      .regle.fort { background: #1e1914; border-color: #1e1914; }
+      .regle.fort .quoi { color: #f7f2ea; }
+      .regle.fort .pourquoi { color: #c9b994; }
+
+      #reel { position: absolute; left: 0; width: 1080px; top: 1282px; text-align: center; font-family: "JetBrains Mono"; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; color: #6b6157; }
+
+      .centre { position: absolute; left: 0; width: 1080px; text-align: center; }
+      #eclair { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 30%, rgba(232, 201, 138, 0.55), transparent 70%); }
+      #grandAigle { position: absolute; left: 445px; top: 250px; width: 190px; height: 152px; }
+      #nom { top: 450px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 96px; letter-spacing: 0.01em; perspective: 900px; color: #1e1914; }
+      #devise { top: 600px; font-size: 46px; font-weight: 500; color: #6b6157; line-height: 1.32; }
+      #devise b { color: #1e1914; font-weight: 600; }
+      #appel { top: 860px; display: flex; justify-content: center; }
+      #pastille { position: relative; overflow: hidden; padding: 28px 50px; border-radius: 999px; background: linear-gradient(110deg, #9a6a2e, #6e4a1f); color: #fff8ea; font-weight: 600; font-size: 38px; box-shadow: 0 22px 56px -18px rgba(110, 74, 31, 0.6); }
+      #reflet { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%); mix-blend-mode: overlay; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="26" data-width="1080" data-height="1350">
+      <div id="fond"></div>
+      <div id="grain"></div>
+
+      <div id="entete">
+        <div id="marque"><div class="aigle" style="width: 50px; height: 40px"></div><span>ALPHA <i>SALES OS</i></span></div>
+        <div id="rubrique">NOTIFICATIONS</div>
+      </div>
+
+      <!-- 1 · L'accroche : les trois questions qu'on se pose après chaque envoi -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="4.5" data-track-index="1">
+        <div class="titre" id="t1" style="top: 420px; font-size: 108px">
+          <span class="ligne"><span class="mot">Il</span> <span class="mot">est</span> <span class="mot">parti ?</span></span>
+          <span class="ligne"><span class="mot">Il</span> <span class="mot">l'a</span> <span class="mot">ouvert ?</span></span>
+          <span class="ligne"><span class="mot or">Il</span> <span class="mot or">a</span> <span class="mot or">répondu ?</span></span>
+        </div>
+      </section>
+
+      <!-- 2 · La cloche : sur chaque écran, le nombre de nouveautés -->
+      <section id="s2" class="scene clip" data-start="4.5" data-duration="2.8" data-track-index="1">
+        <div id="s2in" class="scene">
+          <div class="titre" id="t2" style="top: 190px; font-size: 84px">
+            <span class="ligne"><span class="mot">ALPHA</span> <span class="mot or">vous</span> <span class="mot or">le</span> <span class="mot or">dit.</span></span>
+          </div>
+          <div class="ecran" id="cloche" style="top: 380px; height: 310px"><img src="caps/cloche.png" style="top: -300px" alt="" data-layout-allow-overflow /></div>
+        </div>
+      </section>
+
+      <!-- 3 · Le fil se remplit, au fil de la journée -->
+      <section id="s3" class="scene clip" data-start="7.3" data-duration="10.6" data-track-index="1">
+        <div id="s3in" class="scene">
+          <div class="surtitre" id="k3" style="top: 150px">UNE MATINÉE, DANS L'ONGLET NOTIFICATIONS</div>
+          <div class="ecran" id="fil" style="top: 210px; height: 900px">
+            <img id="f1" src="caps/fil-e1.png" style="top: -600px" alt="" data-layout-allow-overflow />
+            <img id="f2" src="caps/fil-e2.png" style="top: -600px" alt="" data-layout-allow-overflow />
+            <img id="f3" src="caps/fil-e3.png" style="top: -600px" alt="" data-layout-allow-overflow />
+            <img id="f4" src="caps/fil-e4.png" style="top: -600px" alt="" data-layout-allow-overflow />
+          </div>
+          <div class="etiquette" id="l1" style="top: 1136px"><b>09:05</b> les messages partent</div>
+          <div class="etiquette" id="l2" style="top: 1136px"><b>09:55</b> ouvert, puis un lien cliqué</div>
+          <div class="etiquette" id="l3" style="top: 1136px"><b>10:12</b> il est intéressé</div>
+          <div class="etiquette" id="l4" style="top: 1136px"><b>11:30</b> le rendez-vous est posé</div>
+          <div id="illustratif">SCÈNE ILLUSTRATIVE · DONNÉES DE DÉMO</div>
+        </div>
+      </section>
+
+      <!-- 4 · Ce qui compte, et ce qui ne compte pas -->
+      <section id="s4" class="scene clip" data-start="17.9" data-duration="4.8" data-track-index="1">
+        <div id="s4in" class="scene">
+          <div class="titre" id="t4" style="top: 196px; font-size: 80px">
+            <span class="ligne"><span class="mot">Sans</span> <span class="mot">vous</span> <span class="mot">raconter</span></span>
+            <span class="ligne"><span class="mot or">d'histoires.</span></span>
+          </div>
+          <div class="regle" id="r1" style="top: 470px"><div class="quoi">Une ouverture : indicatif.</div><div class="pourquoi">Un antivirus peut ouvrir un message.</div></div>
+          <div class="regle fort" id="r2" style="top: 690px"><div class="quoi">Un clic, une réponse : du solide.</div><div class="pourquoi">Ça, c'est un humain.</div></div>
+        </div>
+      </section>
+
+      <div id="reel">ALPHA SALES OS · L'ONGLET NOTIFICATIONS</div>
+
+      <!-- 5 · La fin -->
+      <section id="s5" class="scene clip" data-start="22.7" data-duration="3.3" data-track-index="1">
+        <div id="eclair"></div>
+        <div id="grandAigle" class="aigle"></div>
+        <div id="nom" class="centre"><span class="mot">ALPHA</span> <span class="mot" style="color: #8a5d22">SALES OS</span></div>
+        <div id="devise" class="centre"><span class="ligne">Les humains closent.</span><b class="ligne">Alpha fait tourner la machine.</b></div>
+        <div id="appel" class="centre"><div id="pastille"><div id="reflet" data-layout-allow-overflow></div><span>alphasalesos.eagleyecorp.fr/vitrine</span></div></div>
+      </section>
+
+      <audio id="bande" src="bande.wav" data-start="0" data-duration="26" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // Doctrine (.claude/skills/alpha-motion) : longue décélération, aucun rebond,
+      // tenues immobiles. Le fil change par COUPE nette (une image remplace l'autre) :
+      // c'est l'écran réel à quatre moments de la journée, pas une animation inventée.
+      const ENTREE = "power3.out";
+      const tl = gsap.timeline({ paused: true });
+      const mots = (sel) => gsap.utils.toArray(sel + " .mot");
+      const titre = (sel, t, salve = 0.06) =>
+        tl.fromTo(mots(sel), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+          { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: salve }, t);
+      const arrive = (cible, t, dy = 50, duree = 0.8) =>
+        tl.fromTo(cible, { opacity: 0, y: dy, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: duree, ease: ENTREE }, t);
+      const sort = (cible, t) => tl.to(cible, { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.3, ease: "power2.in" }, t);
+
+      tl.fromTo("#entete", { opacity: 1 }, { opacity: 0, duration: 0.35, ease: "power2.in" }, 22.35);
+
+      // 1 · L'accroche — neuf mots, salve serrée.
+      tl.fromTo(mots("#t1"), { opacity: 0, y: 60, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.5, ease: ENTREE, stagger: 0.03 }, 0.03);
+      tl.to("#t1", { opacity: 0, y: -30, filter: "blur(8px)", duration: 0.05, ease: "power2.in" }, 4.45);
+
+      // 2 · La cloche.
+      titre("#t2", 4.6);
+      arrive("#cloche", 4.95, 40, 0.8);
+      sort("#s2in", 7.05);
+
+      // 3 · Le fil : quatre états réels, coupés net ; l'étiquette dit l'heure.
+      arrive("#k3", 7.4, 20, 0.6);
+      arrive("#fil", 7.45, 40, 0.8);
+      arrive("#reel", 7.55, 10, 0.6);
+      arrive("#illustratif", 7.65, 10, 0.6);
+      tl.set(["#f2", "#f3", "#f4"], { opacity: 0 }, 0);
+      [["#l1", 7.9], ["#l2", 10.5], ["#l3", 13.1], ["#l4", 15.3]].forEach(([id, t], i) => {
+        if (i > 0) {
+          tl.set("#f" + (i + 1), { opacity: 1 }, t);
+          tl.to("#l" + i, { opacity: 0, duration: 0.15, ease: "power2.in" }, t - 0.15);
+        }
+        tl.fromTo(id, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: ENTREE }, t);
+      });
+      sort("#s3in", 17.65);
+
+      // 4 · Ce qui compte.
+      titre("#t4", 18.1);
+      arrive("#r1", 18.35, 30, 0.6);
+      arrive("#r2", 18.5, 30, 0.6);
+      sort("#s4in", 22.45);
+      sort("#reel", 22.45);
+
+      // 5 · La fin — un seul éclat, puis l'immobilité.
+      tl.fromTo("#eclair", { opacity: 0.9 }, { opacity: 0, duration: 0.9, ease: "expo.out" }, 22.7);
+      tl.fromTo("#grandAigle", { opacity: 0, y: 40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: ENTREE }, 22.75);
+      tl.fromTo("#nom .mot", { opacity: 0, y: 50, rotationX: -45, filter: "blur(10px)" },
+        { opacity: 1, y: 0, rotationX: 0, filter: "blur(0px)", duration: 0.8, ease: ENTREE, stagger: 0.12 }, 22.85);
+      arrive("#devise", 23.05, 22, 0.5);
+      arrive("#appel", 23.35, 26, 0.7);
+      tl.fromTo("#reflet", { xPercent: -120 }, { xPercent: 260, duration: 0.8, ease: "power2.inOut" }, 24.4);
+
+      document.fonts.ready.then(() => {
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
