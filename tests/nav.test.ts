@@ -64,6 +64,12 @@ test("navigation — chaque page de l'app est atteignable, et une seule fois", (
      * permanent de ce qu'il ne lui manque pas.
      */
     "/offre-brique",
+    /**
+     * Atteinte par la CLOCHE de la coquille, présente sur chaque écran de l'app
+     * avec le nombre de nouveautés : une entrée de menu en plus ferait deux
+     * chemins vers le même fil, et le quotidien est plafonné à quatre.
+     */
+    "/notifications",
   ]);
 
   const orphelines = routes.filter((r) => !tous.includes(r) && !horsMenu.has(r));

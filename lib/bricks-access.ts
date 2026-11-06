@@ -132,6 +132,8 @@ export const ACCES_PAR_CHEMIN: Record<string, BrickId[]> = {
   "/aujourdhui": ["crm"],
   // ALPHA au travail : lit le CRM du navigateur, ne dépense rien chez nous — gratuit.
   "/travail": ["crm"],
+  // Notifications : le journal du pilote et le suivi, relus — ne dépense rien chez nous.
+  "/notifications": ["crm"],
   "/decisions": ["crm"],
   "/meetings": ["crm"],
   "/nurture": ["crm"],

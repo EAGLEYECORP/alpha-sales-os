@@ -66,6 +66,7 @@ import { Onboarding } from "@/components/onboarding";
 import { OperatorTour } from "@/components/tour/operator-tour";
 import { AlphaPresence } from "@/components/shell/alpha-presence";
 import { AlphaIci } from "@/components/shell/alpha-ici";
+import { ClocheNotifications } from "@/components/shell/cloche-notifications";
 import { PageGuide } from "@/components/page-guide";
 import { CommandPalette } from "@/components/command-palette";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -629,6 +630,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* L'autopilote tourne sur n'importe quel écran ouvert, jamais sur un seul. */}
         <MoteurAutopilote />
         <AlphaPresence />
+        {/* La cloche : ce qu'ALPHA a fait (envois, ouvertures, réponses), en un fil. */}
+        <ClocheNotifications />
         {/* Et, sur les écrans que le registre a lus, ce que la machine y fait —
             fermé par défaut, une ligne. Un écran absent du registre n'affiche rien. */}
         <AlphaIci />
