@@ -171,7 +171,16 @@ export async function POST(req: NextRequest) {
       const err = await ecrireMonde(db, m, false);
       if (err) return { ok: false, status: 503, erreur: `écriture impossible avant envoi (${err})` };
       try {
-        return await envoiDepuisReponse(await envoyerPOST(requeteInterne(base, "/api/send", corpsEnvoiPilote(p, mail, identite, suite, copie))));
+        /**
+         * ⚠ COPIE CACHÉE À NOTRE BOÎTE SUR CHAQUE ENVOI DU PILOTE SERVEUR (06/11/2026).
+         * Un envoi SMTP ne dépose aucune copie dans « Envoyés » : Zakaria a ouvert
+         * son webmail, n'y a rien vu, et a conclu que rien n'était parti — alors
+         * que 5 messages avaient été acceptés et 3 ouverts. La copie fait voir
+         * chaque message tel qu'il est arrivé. Serveur du maître seulement : le
+         * pilote d'un inscrit n'est pas touché.
+         */
+        void copie;
+        return await envoiDepuisReponse(await envoyerPOST(requeteInterne(base, "/api/send", corpsEnvoiPilote(p, mail, identite, suite, true))));
       } catch (e) {
         return { ok: false, status: 0, erreur: e instanceof Error ? e.message.slice(0, 160) : "envoi impossible" };
       }
