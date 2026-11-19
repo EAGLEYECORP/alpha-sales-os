@@ -1,5 +1,5 @@
 import type { ProfilOperateur } from "./profil-operateur";
-import { PACK_SETUP_HT, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT } from "./offres-publiques";
+import { OFFRE_CLIENT_FONDATEUR, PACK_SETUP_HT, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT, placesFondateurRestantes } from "./offres-publiques";
 import type { ReglagesAutopilote } from "./autopilote-inscrit";
 
 /**
@@ -50,11 +50,28 @@ const eur = (n: number) => `${n.toLocaleString("fr-FR")} € HT`;
  * dans une prose survit à la décision qui l'a changée — et celle-ci part chez
  * des prospects. Deux formes (20/10/2026) : en ligne gratuit, chez vous payant.
  */
+/**
+ * L'offre « client fondateur », dite tant qu'il reste des places — et seulement
+ * alors (`placesFondateurRestantes`). Dérivée des constantes, jamais recopiée.
+ */
+function offreFondateur(): string {
+  const n = placesFondateurRestantes();
+  if (n === 0) return "";
+  const o = OFFRE_CLIENT_FONDATEUR;
+  return (
+    (n === 1 ? " Pour la dernière place de client fondateur : " : ` Pour nos ${n} premiers clients : `) +
+    `installation à ${eur(o.installationHT)}, ` +
+    `payable seulement après un premier rendez-vous obtenu dans les ${o.garantieJours} jours, ` +
+    `en échange du droit de mesurer et de citer le résultat.`
+  );
+}
+
 export function prixAlphaVendAlpha(): string {
   return (
     "En ligne, ALPHA est gratuit, sans limite de durée : vous créez votre compte et il travaille avec vos propres outils. " +
     `Installé sur votre serveur, avec le travail en continu et les appels : ${eur(PACK_SETUP_HT)} d'installation, ` +
-    `puis ${eur(SOCLE_PLATEFORME_HT)} par mois et ${eur(PRIX_SIEGE_HT)} par utilisateur.`
+    `puis ${eur(SOCLE_PLATEFORME_HT)} par mois et ${eur(PRIX_SIEGE_HT)} par utilisateur.` +
+    offreFondateur()
   );
 }
 

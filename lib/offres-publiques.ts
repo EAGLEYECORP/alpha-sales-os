@@ -244,6 +244,48 @@ export const PACK_MENSUALITES = 10;
 export const PACK_MENSUALITE_HT = 800;
 
 /**
+ * ── L'OFFRE « CLIENT FONDATEUR » — décidée par Zakaria le 19/11/2026 ──
+ *
+ * Le premier client est le seul qui rend tous les autres possibles : sans une
+ * entreprise qui a payé et dont on a MESURÉ le résultat, aucun prix de cette
+ * grille n'est défendable (`docs/VALORISATION.md`). L'offre échange une
+ * installation réduite contre ce qui manque le plus : le droit de mesurer, et
+ * de dire ce qu'on a mesuré.
+ *
+ * ⚠⚠ LA RARETÉ EST UN FAIT, PAS UN COMPTEUR INVENTÉ : l'installation se fait à
+ * la main, par une seule personne. `places` est fixe ; `placesPrises` se met à
+ * jour À LA MAIN à chaque signature — une phrase qui annonce trois places
+ * quand deux sont prises ment au prospect suivant, et ça se vérifie au coup de
+ * fil d'après.
+ *
+ * ⚠ L'installation ne se paie qu'au PREMIER rendez-vous obtenu par ALPHA dans
+ * les 30 jours de mise en service : un RDV PRIS (pas honoré), une durée, un
+ * périmètre (l'installation, pas l'abonnement). Mêmes trois bords que la
+ * garantie d'Alpha Voice (`lib/offre-alpha-voice.ts`) — sans bords, une
+ * garantie s'active au bout de trois jours.
+ *
+ * Ce sont des DÉCISIONS : aucune vente ne les a validées.
+ */
+export const OFFRE_CLIENT_FONDATEUR = {
+  places: 3,
+  placesPrises: 0,
+  installationHT: 2_500,
+  /** L'installation n'est due qu'après un premier rendez-vous obtenu dans ce délai. */
+  garantieJours: 30,
+  engagementMois: 3,
+  /** Le prix de l'abonnement est bloqué pendant cette durée. */
+  prixBloqueMois: 12,
+  contreparties: [
+    "l'accès aux chiffres de l'affaire : devis relancés, réponses, rendez-vous, signatures",
+    "le droit de citer le nom de l'entreprise et les résultats mesurés, après relecture du client",
+    "30 minutes de retour par mois pendant les 3 premiers mois",
+  ],
+} as const;
+
+export const placesFondateurRestantes = (): number =>
+  Math.max(0, OFFRE_CLIENT_FONDATEUR.places - OFFRE_CLIENT_FONDATEUR.placesPrises);
+
+/**
  * ── L'OFFRE OMNICANALE — la boîte de réception unique, à leur marque ──
  *
  * Ce qu'elle règle, et qu'aucune autre offre ne réglait : un maître d'ouvrage
