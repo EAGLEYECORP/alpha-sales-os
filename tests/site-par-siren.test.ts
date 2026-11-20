@@ -30,7 +30,7 @@ const fiche = (o: Partial<Prospect>): Prospect =>
     stage: "prospect",
     company: "MENUISERIE QUIXOTZ (DÉMO)",
     siren: SIREN,
-    tags: ["registre", "a-joindre", "naf-43.32A"],
+    tags: ["registre", "a-joindre", "naf-41.10A"],
     notes: "",
     createdAt: "2026-10-01T00:00:00.000Z",
     updatedAt: "2026-10-01T00:00:00.000Z",
@@ -69,7 +69,7 @@ test("⚠⚠ une fiche du registre sans site attend la piste gratuite AVANT de c
   const avant = planifier([fiche({ id: "a" })], reglages, ETAT_AUTOPILOTE_VIDE, cap, MARDI_10H);
   assert.deepEqual(avant.chercherSites, ["a"]);
   assert.deepEqual(avant.lancerEnrichissement, [], "aucun crédit dépensé tant que la piste gratuite n'a pas été essayée");
-  const apres = planifier([fiche({ id: "a", tags: ["registre", "a-joindre", "naf-43.32A", TAG_SITE_CHERCHE] })], reglages, ETAT_AUTOPILOTE_VIDE, cap, MARDI_10H);
+  const apres = planifier([fiche({ id: "a", tags: ["registre", "a-joindre", "naf-41.10A", TAG_SITE_CHERCHE] })], reglages, ETAT_AUTOPILOTE_VIDE, cap, MARDI_10H);
   assert.deepEqual(apres.chercherSites, []);
   assert.deepEqual(apres.lancerEnrichissement, ["a"], "la piste gratuite a échoué : Dropcontact prend le relais");
 });

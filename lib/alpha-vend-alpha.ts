@@ -87,29 +87,29 @@ export const CONFIGURATION_ALPHA_VEND_ALPHA: ConfigurationAlphaVendAlpha = {
   profil: {
     poste: "dirigeant",
     /**
-     * ⚠ VERTICALE DU 05/11/2026 (décision de Zakaria) : les entreprises du BTP
-     * qui vivent de commerciaux sur le terrain, tous les jours — constructeurs
-     * de maisons, menuiserie (fenêtres, vérandas), chauffage / pompes à
-     * chaleur, isolation, toiture. « Si l'équipe ne prospecte pas, le business
-     * ne tourne pas. » La phrase ne promet que ce qu'ALPHA fait : préparer la
-     * journée, relancer avec une raison, poser un rendez-vous.
-     * ⚠ PAS « trouve vos prospects » : leurs clients sont surtout des
-     * PARTICULIERS, et ALPHA cherche des ENTREPRISES au registre. La première
-     * rédaction (05/11, quelques heures) le promettait — retirée avant tout envoi.
-     * Avant : les agences immobilières du Rhône (29/10 → 05/11).
+     * ⚠⚠ VERTICALE DU 20/11/2026 (décision de Zakaria) : les MAÎTRES D'OUVRAGE —
+     * les promoteurs immobiliers de logements de la région lyonnaise. Leur perte
+     * n'est pas un appel manqué (interdit de la verticale `maitrise-ouvrage`) :
+     * ce sont des ACQUÉREURS DÉJÀ RENCONTRÉS que personne n'a rappelés. La phrase
+     * ne promet que ce qu'ALPHA fait : relancer avec une raison, poser le rendez-vous.
+     * Pourquoi eux plutôt que les PME du BTP : un promoteur vend au public, donc
+     * publie un contact sur son site (mesuré le 20/11 : 0 email en ligne sur 4 PME
+     * du BTP), et il croule sous des contacts acquéreurs — la règle de l'ICP.
+     * Avant : les PME du BTP à équipes terrain (05/11 → 20/11), les agences
+     * immobilières du Rhône (29/10 → 05/11).
      */
-    metier: "un OS de vente qui prépare la journée de vos commerciaux terrain, relance vos devis et pose leurs rendez-vous",
-    cibleSecteur: "BTP, équipes commerciales terrain",
+    metier: "un OS de vente qui relance les acquéreurs déjà rencontrés par vos commerciaux et pose leurs rendez-vous",
+    cibleSecteur: "promoteurs immobiliers",
     cibleRole: "dirigeants",
     cibleZone: "Rhône",
   },
   autopilote: {
     /**
-     * Constructeurs de maisons (41.20A), menuiserie bois/PVC (43.32A),
-     * chauffage-climatisation (43.22B), isolation (43.29A), couverture (43.91B).
-     * « 10 salariés ou plus » : une équipe commerciale, pas un artisan seul.
+     * Promotion immobilière de logements (41.10A) : ceux qui ont des lots à
+     * VENDRE, donc des acquéreurs à relancer. « 10 salariés ou plus » écarte les
+     * supports de programme (SCCV, 41.10D), qui n'ont ni équipe ni décideur.
      */
-    activites: ["41.20A", "43.32A", "43.22B", "43.29A", "43.91B"],
+    activites: ["41.10A"],
     zone: "69",
     taille: "10-plus",
     enrichissementsParJour: 10,

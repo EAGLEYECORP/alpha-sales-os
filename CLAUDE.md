@@ -425,7 +425,13 @@ rendez-vous + invitation `.ics` → relance seulement avec une raison neuve.
     sur les pages déjà chargées. Une entreprise par passage, jamais en même temps que la lecture
     des sites connus (passage borné à 60 s). **Un crédit Dropcontact ne se dépense qu'après
     l'échec de cette piste** (tag `site-cherche`). Serveur seulement, comme la lecture du site.
-  · **⚠⚠ LA VERTICALE DU MAÎTRE EST LE BTP À ÉQUIPES TERRAIN (05/11/2026, décision de Zakaria)** :
+  · **⚠⚠ LA CIBLE DU MAÎTRE EST LE MAÎTRE D'OUVRAGE — PROMOTEURS DE LOGEMENTS (20/11/2026, décision
+    de Zakaria : « faut trouver les maîtres d'ouvrage, pas les PME »)** : NAF 41.10A, 10 salariés ou plus,
+    zone 69/01/38/42. Le message : « relance les acquéreurs déjà rencontrés par vos commerciaux et pose
+    leurs rendez-vous » — jamais « appels manqués » (interdit de la verticale). Mesuré le même jour : 0 email
+    en ligne sur 4 PME du BTP ; un promoteur vend au public, il publie un contact. Les fiches BTP restent
+    dans le pipe, écartées par `dansLaCible` (`tests/cible-pilote.test.ts`). Ce qui suit est l'état d'avant.
+  · **(Avant le 20/11) LA VERTICALE DU MAÎTRE ÉTAIT LE BTP À ÉQUIPES TERRAIN (05/11/2026, décision de Zakaria)** :
     entreprises qui vivent de commerciaux sur le terrain tous les jours — constructeurs de maisons,
     menuiserie, chauffage / PAC, isolation, toiture, 10 salariés ou plus (`CONFIGURATION_ALPHA_VEND_ALPHA`
     + `pilote_serveur.reglages`). **`dansLaCible`** : le premier message NOMME la cible, donc une fiche
