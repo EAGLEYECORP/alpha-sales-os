@@ -8,7 +8,7 @@ import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
-import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { fromMaison, rampServeur } from "@/lib/email-ramp";
 import { lintForSpam, maxSendsPerHour, deliverabilityHeaders } from "@/lib/deliverability";
 import {
   createTrackedEmail,
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
 
   // ── Le palier du jour + le plafond horaire, lus comme `/api/send` (tenant null = maître/solo). ──
   const premierEnvoi = await firstSendAt("email", null);
-  const ramp = rampDepuisPremierEnvoi(premierEnvoi);
+  const ramp = rampServeur(premierEnvoi, smtpUtilisable(smtp) ? smtp.from : fromMaison());
   const envoyes24h = await countRecentSends("email", 86_400_000, null);
   const envoyes1h = await countRecentSends("email", 3_600_000, null);
   const budgetJour = ramp.today - envoyes24h;
@@ -245,6 +245,6 @@ export async function GET(req: NextRequest) {
   if (lecture.erreur) return NextResponse.json({ error: lecture.erreur }, { status: 500 });
   const eligibles = lecture.prospects.filter((p) => eligibleColdMail(p).ok).length;
   const envoyes24h = await countRecentSends("email", 86_400_000, null);
-  const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
+  const ramp = rampServeur(await firstSendAt("email", null), fromMaison());
   return NextResponse.json({ armed: arme, envoiBranche: false, eligibles, ramp: { jour: ramp.today, envoyes24h } });
 }

@@ -394,7 +394,7 @@ export default function AutopilotePage() {
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="envois-ap" className="text-sm font-semibold text-paper">Premiers messages / jour</label>
-            <input id="envois-ap" type="number" min={1} max={40} className="input mt-2 w-full" value={reglages.envoisParJour} onChange={(e) => regler({ envoisParJour: Math.max(1, Math.min(40, Number(e.target.value) || 1)) })} />
+            <input id="envois-ap" type="number" min={1} max={100} className="input mt-2 w-full" value={reglages.envoisParJour} onChange={(e) => regler({ envoisParJour: Math.max(1, Math.min(100, Number(e.target.value) || 1)) })} />
             <p className="mt-1 text-[11px] text-paper-faint">Ta boîte a son propre plafond (5/jour la première semaine) : c&apos;est lui qui gagne.</p>
           </div>
           <div>

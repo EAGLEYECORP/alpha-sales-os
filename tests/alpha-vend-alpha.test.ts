@@ -10,6 +10,7 @@ import { profilExploitable } from "../lib/profil-operateur";
 import { imapSaisiAcceptable } from "../lib/identifiants-assistes";
 import { preRequis } from "../lib/autopilote-inscrit";
 import { signataire } from "../lib/signature";
+import { boiteRechauffee, PALIER_BOITE_RECHAUFFEE } from "../lib/email-ramp";
 import { GET } from "../app/api/autopilote/configuration/route";
 
 /**
@@ -42,7 +43,10 @@ test("⚠ elle ne LANCE rien, et ne porte aucun secret", () => {
   assert.ok(!("actif" in C.autopilote), "lancer reste un geste humain");
   const texte = JSON.stringify(C);
   assert.doesNotMatch(texte, /api[-_ ]?key|password|mot de passe|secret|token|https?:\/\//i);
-  assert.ok(C.autopilote.envoisParJour <= 5, "au-dessus du palier de la première semaine, ce ne sont que des 429");
+  // `contact@` est déclarée chaude (20/11/2026) : demander plus que son palier
+  // ne produirait que des 429 — et la boîte doit l'être vraiment.
+  assert.ok(boiteRechauffee("contact@eagleyecorp.fr", ""), "la boîte du maître doit être déclarée chaude");
+  assert.ok(C.autopilote.envoisParJour <= PALIER_BOITE_RECHAUFFEE, "au-dessus du palier, ce ne sont que des 429");
 });
 
 test("⚠⚠ la route ne sert qu'au MAÎTRE : un déploiement sans serrure (gratuit) reçoit 403", async () => {

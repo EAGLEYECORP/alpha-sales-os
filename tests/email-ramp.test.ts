@@ -164,7 +164,7 @@ test("⚠ LA ROUTE D'ENVOI APPLIQUE LE PALIER — sur 24 h glissantes", () => {
    */
   const src = routeSend();
   assert.match(src, /firstSendAt\("email", tenantId\)/, "la route doit lire depuis quand la boîte envoie");
-  assert.match(src, /rampDepuisPremierEnvoi\(premierEnvoi\)/, "…et passer par le barème commun");
+  assert.match(src, /rampServeur\(premierEnvoi, smtp\.from\)/, "…et passer par le barème commun, lu sur la boîte qui envoie");
   assert.match(src, /countRecentSends\("email", 86_400_000, tenantId\)/, "le compteur porte sur 24 h glissantes");
   assert.match(src, /if \(envoyes24h >= ramp\.today\)/, "et le dépassement doit REFUSER");
 

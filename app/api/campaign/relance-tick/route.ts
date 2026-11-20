@@ -7,7 +7,7 @@ import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
-import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { fromMaison, rampServeur } from "@/lib/email-ramp";
 import { lintForSpam, maxSendsPerHour, deliverabilityHeaders } from "@/lib/deliverability";
 import { createTrackedEmail, countRecentSends, firstSendAt, historiqueEnvois, supprimerTrace } from "@/lib/tracking";
 import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
   const ontRepondu = new Set((reps ?? []).map((r) => String(r.email ?? "").toLowerCase().trim()).filter(Boolean));
 
   // Palier du jour + plafond horaire, comme mail-tick.
-  const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
+  const ramp = rampServeur(await firstSendAt("email", null), smtpUtilisable(smtp) ? smtp.from : fromMaison());
   const envoyes24h = await countRecentSends("email", 86_400_000, null);
   const envoyes1h = await countRecentSends("email", 3_600_000, null);
   let capacite = Math.max(0, Math.min(ramp.today - envoyes24h, maxSendsPerHour() - envoyes1h, MAX_RELANCES_PAR_TICK));

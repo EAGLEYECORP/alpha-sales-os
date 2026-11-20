@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { autoriserAppelant } from "@/lib/autoriser-appelant";
 import { autopiloteArmeEnv, lireDrapeauAutopilote, estArme } from "@/lib/autopilote";
 import { firstSendAt } from "@/lib/tracking";
-import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { fromMaison, rampServeur } from "@/lib/email-ramp";
 import { autoReponseAttestee } from "@/lib/reply-autosend";
 import { layaDisponible } from "@/lib/laya";
 import { jevDisponible } from "@/lib/jev";
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
   // mail-tick. `firstSendAt` rend null sur une base injoignable → palier le plus
   // bas, jamais le plafond (une panne ne débride pas l'envoi).
   const first = db ? await firstSendAt("email", null) : null;
-  const ramp = rampDepuisPremierEnvoi(first);
+  const ramp = rampServeur(first, fromMaison());
 
   const moteur = moteurDecision();
   const atteste = autoReponseAttestee();

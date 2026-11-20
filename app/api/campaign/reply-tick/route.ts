@@ -12,7 +12,7 @@ import { habillageOperateur } from "@/lib/expediteur-serveur";
 import { renderEmail, plainText } from "@/lib/email-html";
 import { verifieMentions, type RangMessage } from "@/lib/conformite";
 import { verifieDivulgation, type ModeProduction } from "@/lib/signature-ia";
-import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { fromMaison, rampServeur } from "@/lib/email-ramp";
 import { lintForSpam, maxSendsPerHour, deliverabilityHeaders } from "@/lib/deliverability";
 import { createTrackedEmail, countRecentSends, firstSendAt, aDejaEcrit, supprimerTrace } from "@/lib/tracking";
 import { resoudreSmtp, smtpUtilisable } from "@/lib/credentials-secret";
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
   const base = baseUrlFrom(req);
   const habillage = habillageOperateur(base);
   const smtp = envoiLive ? await resoudreSmtp(null, DROIT_SOLO) : null;
-  const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
+  const ramp = rampServeur(await firstSendAt("email", null), smtp && smtpUtilisable(smtp) ? smtp.from : fromMaison());
   const envoyes24h = envoiLive ? await countRecentSends("email", 86_400_000, null) : 0;
   const envoyes1h = envoiLive ? await countRecentSends("email", 3_600_000, null) : 0;
   let capacite = envoiLive

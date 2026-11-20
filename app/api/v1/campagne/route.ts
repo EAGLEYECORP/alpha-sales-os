@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { autoriserAppelant } from "@/lib/autoriser-appelant";
 import { lireProspectsOperateur } from "@/lib/lecture-serveur";
 import { firstSendAt } from "@/lib/tracking";
-import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { fromMaison, rampServeur } from "@/lib/email-ramp";
 import { preparerCampagne } from "@/lib/preparer-campagne";
 
 export const runtime = "nodejs";
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Le palier du jour borne le lot. Toute panne de lecture → palier le plus bas.
-  const ramp = rampDepuisPremierEnvoi(await firstSendAt("email", null));
+  const ramp = rampServeur(await firstSendAt("email", null), fromMaison());
   const plafond = max !== null ? Math.min(max, ramp.today) : ramp.today;
 
   const plan = preparerCampagne(lecture.prospects, { plafond });

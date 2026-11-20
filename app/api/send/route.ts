@@ -10,7 +10,7 @@ import {
   tracerEnvoiSms,
   supprimerTrace,
 } from "@/lib/tracking";
-import { rampDepuisPremierEnvoi } from "@/lib/email-ramp";
+import { rampServeur } from "@/lib/email-ramp";
 import { deliverabilityHeaders, lintForSpam, maxSendsPerHour } from "@/lib/deliverability";
 import { getTenant } from "@/lib/tenant";
 import { accountTier } from "@/lib/stripe";
@@ -448,7 +448,7 @@ export async function POST(request: NextRequest) {
      * ─────────────────────────────────────────────────────────────────────
      */
     const premierEnvoi = await firstSendAt("email", tenantId);
-    const ramp = rampDepuisPremierEnvoi(premierEnvoi);
+    const ramp = rampServeur(premierEnvoi, smtp.from);
     const envoyes24h = await countRecentSends("email", 86_400_000, tenantId);
     if (envoyes24h >= ramp.today) {
       return NextResponse.json(

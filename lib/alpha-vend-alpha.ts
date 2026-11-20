@@ -1,5 +1,6 @@
 import type { ProfilOperateur } from "./profil-operateur";
 import { OFFRE_CLIENT_FONDATEUR, PACK_SETUP_HT, PRIX_SIEGE_HT, SOCLE_PLATEFORME_HT, placesFondateurRestantes } from "./offres-publiques";
+import { PALIER_BOITE_RECHAUFFEE } from "./email-ramp";
 import type { ReglagesAutopilote } from "./autopilote-inscrit";
 
 /**
@@ -112,9 +113,10 @@ export const CONFIGURATION_ALPHA_VEND_ALPHA: ConfigurationAlphaVendAlpha = {
     zone: "69",
     taille: "10-plus",
     enrichissementsParJour: 10,
-    // Le palier du SERVEUR est de 5 la première semaine : demander plus ne
-    // ferait que produire des refus 429 dans le journal.
-    envoisParJour: 5,
+    // `contact@` est déclarée chaude (20/11/2026, `lib/email-ramp.ts`) : le
+    // palier du SERVEUR est de 100/jour. Le pilote écrit au plus un message par
+    // passage (toutes les 5 min, 9 h–18 h) : ~100 est aussi ce qu'il PEUT faire.
+    envoisParJour: PALIER_BOITE_RECHAUFFEE,
     /**
      * ⚠ NON VÉRIFIÉ avec la boîte : deux serveurs IMAPS d'Amen répondent sur
      * le port 993 (bannière lue le 29/10, sans authentification) —

@@ -29,6 +29,46 @@ export const RAMP_STEP = 5;
 /** Plafond soutenable pour UNE boîte, quelle que soit l'ancienneté. */
 export const RAMP_CEILING = 40;
 
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ * LA BOÎTE DÉJÀ CHAUDE — 100/jour, et seulement pour une boîte DÉCLARÉE
+ * (décision de Zakaria, 20/11/2026).
+ *
+ * Le barème ci-dessus suppose une boîte SANS historique de sortant : c'est le
+ * seul cas où le premier envoi consigné dit l'âge de la réputation. Une boîte
+ * qui écrit depuis des années à des humains, et à qui des humains répondent,
+ * n'a pas cet âge-là — la brider à 5/jour la confond avec une boîte neuve.
+ *
+ * ⚠ « Chaude » se DÉCLARE, elle ne se devine pas, et la déclaration vise
+ * l'ADRESSE qui envoie réellement (`from` du SMTP résolu), jamais le compte :
+ * un inscrit qui branche sa boîte neuve garde 5/jour, même sur notre serveur.
+ * La liste : `BOITES_RECHAUFFEES_DECLAREES` + la variable `BOITES_RECHAUFFEES`
+ * (adresses séparées par des virgules).
+ *
+ * ⚠ CE QUE ÇA NE CHANGE PAS : chaude pour de la correspondance n'est pas
+ * chaude pour de la prospection. Le schéma change quand même (des inconnus,
+ * en série), et `contact@` porte aussi les confirmations d'inscription : une
+ * vague de plaintes les fait tomber avec. Le plafond horaire
+ * (`MAX_SENDS_PER_HOUR`) reste, et 100 reste un PLAFOND, jamais un objectif.
+ * ─────────────────────────────────────────────────────────────────────
+ */
+export const PALIER_BOITE_RECHAUFFEE = 100;
+export const BOITES_RECHAUFFEES_DECLAREES: readonly string[] = ["contact@eagleyecorp.fr"];
+
+/** L'adresse nue d'un `from` (« Nom <a@b.fr> » → « a@b.fr »), en minuscules. */
+export function adresseNue(from: string | null | undefined): string {
+  const brut = (from ?? "").trim();
+  return (brut.match(/<([^>]+)>/)?.[1] ?? brut).trim().toLowerCase();
+}
+
+/** Cette adresse d'envoi est-elle déclarée chaude ? Inconnue ou vide ⇒ non. */
+export function boiteRechauffee(from: string | null | undefined, declarees: string | undefined = process.env.BOITES_RECHAUFFEES): boolean {
+  const a = adresseNue(from);
+  if (!a || !a.includes("@")) return false;
+  const liste = [...BOITES_RECHAUFFEES_DECLAREES, ...(declarees ?? "").split(",")].map((x) => adresseNue(x)).filter(Boolean);
+  return liste.includes(a);
+}
+
 export interface EmailRamp {
   /** Plafond applicable aujourd'hui. */
   today: number;
@@ -78,7 +118,18 @@ const DAY = 86_400_000;
  * fonction.
  * ─────────────────────────────────────────────────────────────────────
  */
-export function rampDepuisPremierEnvoi(first: string | null, now = new Date()): EmailRamp {
+export function rampDepuisPremierEnvoi(first: string | null, now = new Date(), opts: { rechauffee?: boolean } = {}): EmailRamp {
+  if (opts.rechauffee) {
+    return {
+      today: PALIER_BOITE_RECHAUFFEE,
+      weeks: 0,
+      fresh: false,
+      ceiling: true,
+      daysToNext: 0,
+      next: PALIER_BOITE_RECHAUFFEE,
+      why: `Boîte déclarée déjà chaude (des années de correspondance) : plafond ${PALIER_BOITE_RECHAUFFEE}/jour. Une boîte neuve, elle, démarre à ${RAMP_START}/jour. Surveille les réponses « STOP » et les rebonds : c'est là que la réputation se lit.`,
+    };
+  }
   if (!first) {
     return {
       today: RAMP_START,
@@ -117,6 +168,19 @@ export function rampDepuisPremierEnvoi(first: string | null, now = new Date()): 
  */
 export function emailRamp(prospects: Prospect[], now = new Date()): EmailRamp {
   return rampDepuisPremierEnvoi(firstEmailDate(prospects), now);
+}
+
+/**
+ * Le palier vu du SERVEUR, pour la boîte qui envoie vraiment. Une seule
+ * définition pour `/api/send` et les ticks : `from` absent ⇒ barème neuf.
+ */
+export function rampServeur(first: string | null, from: string | null | undefined, now = new Date()): EmailRamp {
+  return rampDepuisPremierEnvoi(first, now, { rechauffee: boiteRechauffee(from) });
+}
+
+/** L'adresse d'envoi de NOTRE boîte, lue dans l'environnement (ticks sans SMTP résolu). */
+export function fromMaison(): string | undefined {
+  return process.env.SMTP_FROM?.trim() || process.env.SMTP_USER?.trim() || undefined;
 }
 
 /**

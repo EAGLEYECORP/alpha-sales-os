@@ -1457,6 +1457,15 @@ côté serveur dans `/api/send` — le seul endroit d'où un message PART.
   > plus rien.
   > **Conséquence à connaître** : une newsletter plus large que le palier est
   > COUPÉE au palier. Ce n'est pas une panne.
+  > ⚠⚠ **BOÎTE DÉJÀ CHAUDE → 100/jour (20/11/2026, décision de Zakaria)** :
+  > `contact@eagleyecorp.fr` écrit depuis des années, elle n'est pas une boîte
+  > neuve. `rampServeur(premier, from)` lit l'ADRESSE qui envoie vraiment :
+  > déclarée (`BOITES_RECHAUFFEES_DECLAREES` + variable `BOITES_RECHAUFFEES`)
+  > ⇒ 100/jour ; toute autre, y compris la boîte neuve d'un inscrit sur notre
+  > serveur, garde 5/jour puis +5/semaine. Adresse vide ou illisible ⇒ neuve.
+  > Chaude pour la correspondance ≠ chaude pour la prospection : les « STOP »
+  > et les rebonds se surveillent, et les confirmations d'inscription partagent
+  > la boîte. `tests/boite-rechauffee.test.ts`.
 - **Le câblage** (`lib/expediteur.ts` → `identiteEnvoi`) : les **quatre**
   appelants de `/api/send` (barre d'envoi, revue de campagne, newsletter,
   recette) étalent le même triplet. Trois annonçaient le compte, aucun le
