@@ -1,0 +1,159 @@
+ALPHA — TROUVER LES PROMOTEURS QUI ONT UN PROGRAMME EN COURS SUR LYON, ET LEUR ÉCRIRE
+Guide pas à pas, pour quelqu'un qui ne connaît pas ALPHA. 20/11/2026.
+
+======================================================================
+CE QU'IL FAUT SAVOIR AVANT DE COMMENCER (2 minutes)
+======================================================================
+
+ALPHA a un « pilote automatique » qui tourne sur internet, même ordinateur
+éteint : il passe toutes les 5 minutes, du lundi au vendredi, de 9 h à 18 h.
+
+Depuis aujourd'hui, il vise les MAÎTRES D'OUVRAGE : les promoteurs immobiliers
+de logements, 10 salariés ou plus, dans le Rhône, l'Ain, l'Isère et la Loire.
+
+Ce qu'il fait tout seul :
+  1. il cherche des promoteurs au registre officiel des entreprises ;
+  2. il trouve leur site internet (seulement si le site porte leur numéro
+     SIREN, pour ne pas se tromper d'entreprise) ;
+  3. il lit le site et y prend l'email que l'entreprise publie ;
+  4. il leur écrit un premier email, depuis contact@eagleyecorp.fr.
+
+Ce qu'il NE fait PAS, autant le savoir tout de suite :
+  - il ne lit pas les réponses : ta boîte refuse qu'on la lise avec ce mot de
+    passe. Les réponses arrivent dans contact@, et c'est toi qui réponds ;
+  - il ne fait pas de « deep dive » écrit, fiche par fiche. Ce qu'il fait, c'est
+    un TRI : qui a vraiment des logements à vendre, à quel stade en est
+    l'opération, et si elle est assez grosse pour avoir plus d'acquéreurs que
+    de commerciaux. Ce tri choisit QUI on contacte et QUAND ; l'email, lui, ne
+    cite jamais le programme (ça fait « on vous surveille ») ;
+  - il n'invente jamais une adresse email. Pas d'email publié = pas d'email
+    envoyé.
+
+Le message qui part (relu tel quel) :
+  « Je m'adresse aux dirigeants (promoteurs immobiliers). Est-ce qu'un OS de
+  vente qui relance les acquéreurs déjà rencontrés par vos commerciaux et pose
+  leurs rendez-vous, c'est un sujet chez vous en ce moment ? »
+  + la mention : écrit par un assistant IA, répondez STOP pour ne plus recevoir.
+
+
+======================================================================
+ÉTAPE 1 — RIEN À FAIRE : le pilote tourne déjà
+======================================================================
+
+Le pilote est allumé, la cible est réglée. Il va chercher les promoteurs au
+registre dès le prochain passage. Les premiers emails devraient partir lundi
+matin.
+
+Le registre dit QUI est promoteur, mais pas QUI a un programme EN COURS. Pour
+ça, il faut les permis de construire : c'est l'étape 2.
+
+
+======================================================================
+ÉTAPE 2 — RÉCUPÉRER LES PROGRAMMES EN COURS (les permis de construire)
+======================================================================
+
+Les permis de construire sont publics. La base officielle s'appelle SITADEL
+(ministère de la Transition écologique).
+
+  1. Sur ton ordinateur, va sur data.gouv.fr et cherche :
+     « Liste des autorisations d'urbanisme créant des logements »
+  2. Télécharge le fichier des permis de construire (le CSV le plus récent).
+     Il est gros, c'est normal : il couvre toute la France.
+  3. Envoie-moi ce fichier (dépose-le dans Google Drive et donne-moi le lien,
+     ou mets-le dans le dossier du projet). Je ne peux pas le télécharger
+     moi-même : le réseau d'où je travaille bloque data.gouv.fr.
+
+Ce que je fais avec, et c'est déjà codé :
+  - je garde le Rhône, l'Ain, l'Isère, la Loire (zone lue sur le code postal,
+    jamais sur le nom de la commune) ;
+  - j'écarte les particuliers, les bailleurs sociaux, les communes, les permis
+    annulés ou périmés : ils n'ont rien à vendre ;
+  - je classe chaque opération par stade :
+      · moins de 2 mois : délai de recours, trop tôt pour vendre ;
+      · de 2 à 12 mois, chantier pas ouvert : LA meilleure fenêtre (ils
+        cherchent des acheteurs) ;
+      · plus de 12 mois sans chantier : signal fort mais ambigu (l'opération
+        est peut-être morte) ;
+      · chantier ouvert : il reste les derniers lots à vendre ;
+  - je signale les opérations de 20 logements ou plus (assez d'acquéreurs pour
+    déborder les commerciaux) et celles de moins de 6 (l'outil y coûterait
+    trop cher par rapport à l'opération) ;
+  - je mets les promoteurs retenus dans la base du pilote, avec leur SIREN.
+    Il fait le reste : site, email, premier message.
+
+Tu reçois de moi la liste triée : promoteur, ville, nombre de logements,
+stade. C'est TA liste d'appels, avec en tête ceux de la « meilleure fenêtre ».
+
+
+======================================================================
+ÉTAPE 3 — SUIVRE CE QU'ALPHA FAIT
+======================================================================
+
+Ouvre ALPHA (alphasalesos.eagleyecorp.fr), connecté à ton compte, puis :
+
+  - la cloche en haut, ou l'écran « Notifications » : ce que le pilote a fait
+    (recherches, sites lus, emails partis, ouvertures) ;
+  - l'écran « Pilote automatique » : l'interrupteur du pilote, et la raison quand il
+    ne fait rien (« hors des heures utiles », « Dropcontact a refusé », etc.).
+
+⚠ NE TOUCHE PAS à « Réglages → synchronisation ». Le CRM de ton navigateur et
+la base du pilote sont deux choses différentes. Activer la synchro depuis un
+navigateur qui n'a pas les mêmes fiches peut faire effacer celles du pilote.
+On la branchera ensemble, une fois.
+
+
+======================================================================
+ÉTAPE 4 — QUAND QUELQU'UN RÉPOND
+======================================================================
+
+Les réponses arrivent dans contact@eagleyecorp.fr.
+
+  - « Oui / intéressé » : propose deux créneaux de 20 minutes en visio. Pas de
+    prix avant la démonstration.
+  - « C'est combien ? » : « Ça dépend du nombre de commerciaux. On en parle 20
+    minutes et je vous montre sur un de vos programmes ? »
+  - « STOP » ou « non » : réponds « C'est noté, je ne vous écrirai plus. » et
+    préviens-moi, je marque la fiche « refus ».
+  - Tout le reste : transfère-moi, on décide ensemble.
+
+
+======================================================================
+ÉTAPE 5 — SI ALPHA NE TROUVE PAS LE CONTACT
+======================================================================
+
+Ça arrivera souvent, il faut le savoir. Le pilote trouve un email publié sur
+environ 1 site sur 5 (mesuré sur les PME du BTP, à remesurer sur les
+promoteurs, qui publient davantage leurs contacts).
+
+Pas besoin de Notion ni d'un autre outil. Fais simplement ceci :
+
+  1. Le téléphone : tape le nom du promoteur + la ville sur internet. Le
+     standard est presque toujours dans les annuaires. Appelle et demande le
+     directeur commercial ou le directeur de programmes.
+  2. LinkedIn : cherche « directeur commercial » + le nom du promoteur, et
+     envoie une invitation courte (sans citer le programme).
+  3. Si tu trouves un email (sur une plaquette, une signature, un salon) :
+     envoie-le-moi, ou note-le dans un Google Sheet partagé avec deux
+     colonnes : SIREN ou nom de la société, email. Je le pose sur la fiche, et
+     le pilote écrit au passage suivant.
+
+Pourquoi pas un outil d'extraction automatique (AgentReach ou autre) : il ne
+fait pas apparaître un email qui n'est écrit nulle part, il le DEVINE. Un email
+deviné fait des rebonds, et les rebonds abîment ta boîte contact@, qui envoie
+aussi les confirmations d'inscription à ALPHA. Si tu veux en essayer un, ce
+sera à côté d'ALPHA, sur 10 entreprises, pour mesurer avant de payer.
+
+
+======================================================================
+TA JOURNÉE TYPE (une heure)
+======================================================================
+
+  9 h 00   Regarder contact@ : répondre aux réponses (étape 4).
+  9 h 15   10 appels, en commençant par la « meilleure fenêtre » de ta liste.
+  12 h 00  10 invitations LinkedIn à des directeurs commerciaux de promoteurs.
+  17 h 00  Ouvrir « Notifications » dans ALPHA, et m'envoyer les emails trouvés
+           à la main.
+
+Objectif : 100 contacts, 10 conversations, 1 signature (offre client
+fondateur : installation à 2 500 € au lieu de 10 000 €, payée seulement après
+un premier rendez-vous obtenu par ALPHA).
