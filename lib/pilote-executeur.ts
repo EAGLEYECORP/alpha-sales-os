@@ -34,6 +34,7 @@ import {
   TAG_ENVOI_REFUSE,
   adressesSuivies,
   cleRecherche,
+  creditsDansRefus,
   depuisLecture,
   envoisSuspendus,
   idReponse,
@@ -338,6 +339,10 @@ async function relireEnrichissements(pp: PortesPilote, requestIds: string[], cle
       pp.patchProspect(id, patch);
       pp.addEvent(id, { date: pp.maintenant().toISOString(), kind: "note", summary: resumeEnrichissement(c) });
     });
+    if (r.credits !== null) {
+      const restants = r.credits;
+      pp.majEtat((e) => ({ ...e, creditsDropcontact: restants }));
+    }
     noter(pp, { type: "enrichit", texte: `Coordonnées trouvées pour ${nb(trouves, "entreprise", "entreprises")} sur ${lot.prospectIds.length}${r.credits !== null ? ` · ${r.credits} crédits Dropcontact restants` : ""}.` });
   }
 }
@@ -347,11 +352,22 @@ async function lancerEnrichissements(pp: PortesPilote, ids: string[], cle: strin
   const demandes = fiches.map((p) => demandeDepuisFiche(p)).filter((d): d is NonNullable<typeof d> => d !== null);
   if (demandes.length !== fiches.length) return;
   const r = await lancerEnrichissement(demandes, cle, (u, i) => pp.fetch(u, i));
-  if (r.etat !== "lance") return noter(pp, { type: "erreur", texte: `Recherche de coordonnées impossible : ${r.raison}` });
+  if (r.etat !== "lance") {
+    // Mémorisé pour la journée : sinon le même refus revient à chaque passage.
+    const jourRefus = pp.maintenant().toISOString().slice(0, 10);
+    const restants = creditsDansRefus(r.raison);
+    pp.majEtat((e) => ({
+      ...e,
+      dropcontactRefuse: { jour: jourRefus, raison: r.raison.slice(0, 160) },
+      ...(restants !== null ? { creditsDropcontact: restants } : {}),
+    }));
+    return noter(pp, { type: "erreur", texte: `Recherche de coordonnées impossible : ${r.raison}. Pas de nouvel essai avant demain.` });
+  }
   const now = pp.maintenant();
   const jour = now.toISOString().slice(0, 10);
   pp.majEtat((e) => ({
     ...e,
+    ...(r.credits !== null ? { creditsDropcontact: r.credits } : {}),
     enrichissements: [...e.enrichissements, { requestId: r.requestId, prospectIds: fiches.map((p) => p.id), lance: now.toISOString() }],
     enrichisJour: { jour, n: (e.enrichisJour.jour === jour ? e.enrichisJour.n : 0) + fiches.length },
   }));

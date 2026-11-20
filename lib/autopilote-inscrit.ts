@@ -117,6 +117,17 @@ export interface EtatAutopilote {
   recherchesJour: { jour: string; n: number };
   /** Le serveur a refusé un envoi (palier) : plus d'envoi avant cette heure. */
   envoisSuspendusJusqua?: string;
+  /**
+   * ⚠⚠ Dropcontact a REFUSÉ un lancement ce jour-là (crédits insuffisants, clé
+   * refusée…). Mesuré en production le 20/11/2026 : sans cette mémoire, le pilote
+   * relançait le même lot de 23 fiches toutes les 5 minutes pour 17 crédits —
+   * refus à chaque passage, aucune fiche n'avançait, et comme ces 23 fiches
+   * comptaient dans la RÉSERVE, il n'allait plus chercher de nouvelles entreprises.
+   * Il n'écrivait donc plus à personne depuis 11 jours.
+   */
+  dropcontactRefuse?: { jour: string; raison: string };
+  /** Crédits Dropcontact restants, dernier chiffre connu (réponse ou refus). */
+  creditsDropcontact?: number;
   derniereLecture?: string;
 }
 
@@ -130,6 +141,12 @@ export const ETAT_AUTOPILOTE_VIDE: EtatAutopilote = {
 };
 
 export const JOURNAL_MAX = 80;
+
+/** Les crédits restants annoncés dans un refus Dropcontact (« only have 17 credits left »). */
+export function creditsDansRefus(raison: string): number | null {
+  const m = raison.match(/only have (\d+) credits?/i);
+  return m ? Number(m[1]) : null;
+}
 export const REPONSES_VUES_MAX = 600;
 /** Sous ce nombre de fiches prêtes à recevoir un premier message, ALPHA va en chercher. Décision. */
 export const RESERVE_MIN = 10;
@@ -386,9 +403,15 @@ export function planifier(
   const enAttente = new Set(etat.enrichissements.flatMap((e) => e.prospectIds));
   const aJoindre = prospects.filter((p) => aEnrichir(p) && !attendSite(p) && !enAttente.has(p.id) && !intouchable(p) && ouverte(p) && dansLaCible(p, reglages));
   const dejaLances = etat.enrichisJour.jour === auj ? etat.enrichisJour.n : 0;
-  const budget = Math.max(0, reglages.enrichissementsParJour - dejaLances);
+  const credits = typeof etat.creditsDropcontact === "number" ? Math.max(0, etat.creditsDropcontact) : Infinity;
+  const budget = Math.max(0, Math.min(reglages.enrichissementsParJour - dejaLances, credits));
+  const refusDuJour = etat.dropcontactRefuse?.jour === auj ? etat.dropcontactRefuse : null;
+  // Dropcontact peut-il servir CE passage ? Sinon, ces fiches ne sont pas une réserve.
+  const dropcontactServira = Boolean(capacites.cleDropcontact) && budget > 0 && !refusDuJour;
   if (aJoindre.length) {
     if (!capacites.cleDropcontact) attentes.push(`${nb(aJoindre.length, "entreprise", "entreprises")} sans email : branche ta clé Dropcontact pour qu'ALPHA trouve leurs coordonnées.`);
+    else if (refusDuJour) attentes.push(`Dropcontact a refusé la recherche aujourd'hui (${refusDuJour.raison}) : reprise demain. ALPHA cherche d'autres entreprises en attendant.`);
+    else if (credits === 0) attentes.push("Plus de crédits Dropcontact : ALPHA continue par la piste gratuite (le site de l'entreprise).");
     else if (!budget) attentes.push(`Budget Dropcontact du jour atteint (${reglages.enrichissementsParJour}) : reprise demain.`);
     else if (!etat.enrichissements.length) plan.lancerEnrichissement = aJoindre.slice(0, Math.min(budget, LOT_ENRICHISSEMENT)).map((p) => p.id);
   }
@@ -418,7 +441,9 @@ export function planifier(
   }
 
   // ── CHERCHER ──
-  const reserve = prets.length + aJoindre.length + enAttente.size + sites.length + sansSite.length;
+  // ⚠ Une fiche que Dropcontact ne servira pas aujourd'hui n'est pas une réserve :
+  // la compter empêchait d'aller chercher de nouvelles entreprises (20/11/2026).
+  const reserve = prets.length + (dropcontactServira ? aJoindre.length : 0) + enAttente.size + sites.length + sansSite.length;
   if (reserve < RESERVE_MIN) {
     const zone = lireZone(reglages.zone);
     const activites = reglages.activites.filter(codeNafValide);

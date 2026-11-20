@@ -13,7 +13,7 @@ import {
 } from "../lib/enrichissement";
 import { classerReponse, confirmationRdv, deciderReponse, introRenseignement, propositionCreneaux, base64Utf8 } from "../lib/reponses-inscrit";
 import {
-  ETAT_AUTOPILOTE_VIDE, MARQUE_PREMIER, REGLAGES_AUTOPILOTE_DEFAUT, RESERVE_MIN, TAG_ENVOI_REFUSE, aContacter, adressesSuivies, planifier, preRequis, premierMessage,
+  ETAT_AUTOPILOTE_VIDE, MARQUE_PREMIER, REGLAGES_AUTOPILOTE_DEFAUT, RESERVE_MIN, TAG_ENVOI_REFUSE, aContacter, adressesSuivies, creditsDansRefus, planifier, preRequis, premierMessage,
   type ReglagesAutopilote,
 } from "../lib/autopilote-inscrit";
 import { DIVULGATION_ECRITE } from "../lib/signature-ia";
@@ -393,6 +393,27 @@ test("coordonnées : un lot dans le budget du jour ; sans clé, il le dit au lie
   assert.ok(sansCle.attentes.some((a) => /clé Dropcontact/.test(a)));
   const epuise = planifier(ajoindre, R({ enrichissementsParJour: 5 }), { ...ETAT_AUTOPILOTE_VIDE, enrichisJour: { jour: "2026-11-03", n: 5 } }, CAP, MARDI_10H);
   assert.equal(epuise.lancerEnrichissement.length, 0);
+});
+
+test("⚠⚠ un refus Dropcontact ne se rejoue pas à chaque passage, et ne bloque pas la recherche (production, 20/11/2026)", () => {
+  // Le cas réel : 23 fiches sans email, 17 crédits, refus toutes les 5 minutes,
+  // et aucune nouvelle entreprise cherchée parce que les 23 comptaient en réserve.
+  const ajoindre = Array.from({ length: 23 }, (_, i) => fiche({ id: `j${i}`, siren: A, tags: ["a-joindre"] }));
+  const refus = { ...ETAT_AUTOPILOTE_VIDE, dropcontactRefuse: { jour: "2026-11-03", raison: "Dropcontact : only have 17 credits left" } };
+  const p = planifier(ajoindre, R(), refus, CAP, MARDI_10H);
+  assert.equal(p.lancerEnrichissement.length, 0, "pas de nouvel essai le jour du refus");
+  assert.notEqual(p.chercher, null, "les fiches que Dropcontact ne servira pas ne sont pas une réserve : ALPHA cherche ailleurs");
+  assert.ok(p.attentes.some((x) => /refusé/.test(x)));
+  // Le lendemain, on réessaie, borné aux crédits connus.
+  const lendemain = planifier(ajoindre, R({ enrichissementsParJour: 25 }), { ...refus, dropcontactRefuse: { jour: "2026-11-02", raison: "x" }, creditsDropcontact: 17 }, CAP, MARDI_10H);
+  assert.ok(lendemain.lancerEnrichissement.length > 0 && lendemain.lancerEnrichissement.length <= 17, "un lot borné aux crédits restants");
+  // Plus aucun crédit : rien de lancé, et la recherche continue.
+  const zero = planifier(ajoindre, R(), { ...ETAT_AUTOPILOTE_VIDE, creditsDropcontact: 0 }, CAP, MARDI_10H);
+  assert.equal(zero.lancerEnrichissement.length, 0);
+  assert.notEqual(zero.chercher, null);
+  // Le chiffre se lit dans le refus réel de Dropcontact.
+  assert.equal(creditsDansRefus("Dropcontact : You submitted 23 valid items but only have 17 credits left"), 17);
+  assert.equal(creditsDansRefus("clé refusée"), null);
 });
 
 test("les adresses suivies : celles à qui ALPHA a écrit, pas les autres", () => {
