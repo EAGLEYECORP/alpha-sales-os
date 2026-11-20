@@ -1197,6 +1197,13 @@ catalogue). Éditable dans Réglages : ajouter, modifier, désactiver.
   > Nuwacom. Elle suit maintenant le **COMPTE** — et **des deux côtés** : ce
   > que `buildVoiceScript` ÉCRIT et ce qu'`auditScript` EXIGE doivent poser la
   > même question, sinon l'un des deux ment.
+- **⚠⚠ LOI N° 2025-594 — EN VIGUEUR DEPUIS LE 11/08/2026, LE MOTEUR N'EST PAS À JOUR** (relevé le
+  20/11/2026, `docs/MAROC.md`) : le démarchage téléphonique des **consommateurs** est interdit sans
+  **consentement préalable** ; Bloctel a cessé (exceptions : contrat en cours, appel non commercial —
+  source DGCCRF citée par une recherche, texte à relire). Tout ce qui suit sur le décret n° 2022-1313 et
+  le plafond de 4 sollicitations décrit l'ÉTAT D'AVANT pour les particuliers. Le B2B n'est pas visé.
+  Les posts du 05 et du 06/11 citent encore « 4 sollicitations au plus sur 30 jours » pour un particulier.
+  **Mettre le moteur à jour est la première tâche technique** : notre avantage, c'est la conformité.
 - **Cadence de relance** : après le 1er appel sans réponse → **3 rappels sur
   2 jours** (`[3, 24, 32]` h : même jour plus tard · lendemain matin · lendemain
   après-midi — trois CRÉNEAUX différents, jamais deux fois la même heure). Dès

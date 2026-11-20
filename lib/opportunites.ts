@@ -184,6 +184,101 @@ export const OPPORTUNITIES: Opportunity[] = [
       "Le canal le plus rentable qui existe : coût d'acquisition proche de zéro, et la confiance est " +
       "déjà établie par le prescripteur. C'est ce qui scale sans embaucher de commerciaux.",
   },
+  /**
+   * ── LE MAROC — « AI Made in Morocco » (ajouté le 20/11/2026, demande de Zakaria) ──
+   * Ce qui est VÉRIFIÉ : l'enveloppe (2,5 milliards de dirhams MOBILISABLES via des
+   * fonds de capital-risque, dont 347 millions publics sur trois ans, décret
+   * n° 2.26.576 du 3 août 2026), le programme Startup Venture Building, et GITEX
+   * Africa du 26 au 28 avril 2027 à Marrakech. Ce qui NE l'est PAS : les critères
+   * d'éligibilité d'une société française dont le fondateur est marocain. Aucun
+   * `bloquant` n'est posé tant qu'il n'est pas lu dans un texte — c'est la règle
+   * de ce fichier ; le doute vit dans `risks`.
+   */
+  {
+    id: "maroc-gitex-africa-2027",
+    name: "GITEX AFRICA 2027 — North Star Africa (Marrakech, 26–28 avril 2027)",
+    kind: "concours",
+    gain:
+      "Un stand startup (Startup Pod) au plus grand salon tech d'Afrique, devant les investisseurs, et l'accès " +
+      "au concours Supernova Challenge. En 2026, North Star Africa a réuni ~700 startups et ~400 investisseurs.",
+    deadline: "2027-04-26T09:00:00+01:00",
+    url: "https://gitexafrica.com/",
+    source: "gitexafrica.com + moroccoworldnews.com (vérifié le 20/11/2026) — prix du stand non publié",
+    eligibility: [
+      "Startup qui réserve un Startup Pod via le formulaire officiel (prix sur demande)",
+      "Le Supernova Challenge exige d'être d'abord exposant",
+    ],
+    steps: [
+      "Remplir le formulaire « Book your Startup Pod » sur gitexafrica.com et obtenir le prix",
+      "Arriver avec des clients payants et leurs chiffres : c'est ce que les investisseurs viennent chercher",
+      "S'inscrire au Supernova Challenge une fois exposant",
+      "Lister à l'avance les sociétés de gestion présélectionnées par le Fonds catalytique et leur demander un rendez-vous sur place",
+    ],
+    fit: "fort",
+    fitWhy:
+      "Le salon rassemble exactement l'écosystème du financement marocain, et la diaspora y est attendue. " +
+      "Rien ne demande de traction pour exposer — mais exposer sans client, c'est payer un stand pour montrer une démo.",
+    risks: [
+      "Prix du stand inconnu à ce jour",
+      "Sans client payant d'ici avril, le stand ne sert qu'à de la visibilité",
+    ],
+  },
+  {
+    id: "maroc-startup-venture-building",
+    name: "Startup Venture Building (Maroc Digital 2030, Tamwilcom)",
+    kind: "programme",
+    gain:
+      "Programme de plus de 700 millions de dirhams pour accompagner plus de 800 startups sur trois ans : " +
+      "subventions d'incubation jusqu'à 200 000 dirhams, et une allocation mensuelle pour les porteurs expérimentés. " +
+      "Partenaires : 500 Global, Flat6Labs, Technopark, CEED Morocco, Open Startup International, Renew Capital.",
+    url: "https://www.moroccoworldnews.com/2026/01/274534/morocco-launches-bold-startup-venture-building-program-to-fuel-digital-growth/",
+    source: "moroccoworldnews.com (vérifié le 20/11/2026) — critères officiels à lire chez Tamwilcom et au ministère",
+    eligibility: [
+      "Startup du numérique, du stade du projet à l'amorçage",
+      "⚠ À VÉRIFIER : faut-il une société de droit marocain ? Rien de lu à ce jour",
+    ],
+    steps: [
+      "Lire les critères officiels (Tamwilcom, ministère de la Transition numérique) — l'entité juridique d'abord",
+      "Identifier le partenaire le plus proche de notre profil (500 Global ou Flat6Labs pour le logiciel B2B)",
+      "Préparer le dossier : problème, produit en production, premiers clients, plan Maroc",
+    ],
+    fit: "plausible",
+    fitWhy:
+      "Le programme vise les startups du numérique, et la diaspora y a déjà sa place (près de la moitié du premier " +
+      "lot du Morocco Accelerator). Mais ALPHA est une société française qui vend en France : il faut un vrai plan Maroc.",
+    risks: [
+      "Une société marocaine peut être exigée (non vérifié) : c'est une décision de structure, pas un formulaire",
+      "Un dossier sans activité au Maroc sera faible",
+    ],
+  },
+  {
+    id: "maroc-fonds-catalytique",
+    name: "Fonds catalytique startups — les 9 fonds de capital-risque présélectionnés",
+    kind: "subvention",
+    gain:
+      "Ce n'est pas un guichet : l'État investit 347 millions de dirhams dans des fonds de capital-risque, qui " +
+      "doivent mobiliser ~2,5 milliards pour les startups marocaines, de l'amorçage à la croissance. On lève auprès " +
+      "de ces fonds, pas auprès de l'État.",
+    url: "https://aujourdhui.ma/actualite/financement-des-startups-le-maroc-franchit-un-nouveau-cap",
+    source: "aujourdhui.ma, lenouvelliste.ma (vérifié le 20/11/2026) — décret n° 2.26.576 du 3 août 2026",
+    eligibility: [
+      "Startups marocaines (le mot est dans toutes les annonces ; la définition juridique n'est pas lue)",
+      "Les critères sont ceux de chaque fonds : traction, équipe, marché",
+    ],
+    steps: [
+      "Obtenir la liste des 9 sociétés de gestion présélectionnées",
+      "Avoir ce qu'un fonds d'amorçage regarde : des clients payants, des chiffres mesurés, une équipe",
+      "Les rencontrer à GITEX AFRICA 2027",
+    ],
+    fit: "tire-par-les-cheveux",
+    fitWhy:
+      "Aujourd'hui, aucun fonds d'amorçage n'investit dans une société sans client et sans entité marocaine. " +
+      "Ce fit remonte à « fort » le jour où les deux existent : c'est la réalité qui change, pas le dossier.",
+    risks: [
+      "Annoncer 2,5 milliards n'est pas les distribuer : les fonds doivent encore lever et investir",
+      "Zéro client à ce jour",
+    ],
+  },
 ];
 
 /** Jours restants avant l'échéance (négatif = passée). */
